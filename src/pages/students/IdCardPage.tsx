@@ -57,7 +57,7 @@ export default function IdCardPage() {
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          student.studentId.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesClass = !selectedClass || student.class === selectedClass;
+    const matchesClass = !selectedClass || selectedClass === 'all' || student.class === selectedClass;
     return matchesSearch && matchesClass;
   });
 
@@ -102,7 +102,7 @@ export default function IdCardPage() {
               <SelectValue placeholder={t('Select Class')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{t('All Classes')}</SelectItem>
+              <SelectItem value="all">{t('All Classes')}</SelectItem>
               {classes.map((cls) => (
                 <SelectItem key={cls} value={cls}>{cls}</SelectItem>
               ))}
