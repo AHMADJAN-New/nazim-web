@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { CalendarIcon, Search, Filter, CheckCircle, AlertTriangle, Clock, Play, Eye, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { DateRange } from 'react-day-picker';
 
 interface RevisionSession {
   id: string;
@@ -29,7 +30,7 @@ export function RevisionHistory() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSurah, setFilterSurah] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [dateRange, setDateRange] = useState<Date>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   // Mock data
   const revisionSessions: RevisionSession[] = [
@@ -142,7 +143,7 @@ export function RevisionHistory() {
               <PopoverTrigger asChild>
                 <Button variant="outline" className="justify-start">
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.from ? format(dateRange.from, "PPP") : t('Date Range')}
+                  {dateRange?.from ? format(dateRange.from, "PPP") : t('Date Range')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">

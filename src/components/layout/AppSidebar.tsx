@@ -73,7 +73,8 @@ const navigationItems = [
     children: [
       { title: "Classes & Sections", url: "/academic/classes", icon: School },
       { title: "Subjects", url: "/academic/subjects", icon: BookOpen },
-      { title: "Timetable", url: "/academic/timetable", icon: Calendar }
+      { title: "Timetable", url: "/academic/timetable", icon: Calendar },
+      { title: "Hifz Progress", url: "/academic/hifz-progress", icon: BookOpen }
     ]
   },
   {

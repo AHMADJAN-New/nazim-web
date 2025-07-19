@@ -20,6 +20,7 @@ import CommunicationPage from "./pages/communication/CommunicationPage";
 import ReportsPage from "./pages/reports/ReportsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import IdCardPage from "./pages/students/IdCardPage";
+import HifzProgressPage from "./pages/academic/HifzProgressPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/students/id-cards" element={<IdCardPage />} />
           <Route path="/attendance" element={<AttendancePage />} />
           <Route path="/academic/classes" element={<ClassesPage />} />
+          <Route path="/academic/hifz-progress" element={<HifzProgressPage />} />
           <Route path="/exams/*" element={<ExamsPage />} />
           <Route path="/finance/*" element={<FinancePage />} />
           <Route path="/staff" element={<StaffPage />} />
