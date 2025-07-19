@@ -7,7 +7,9 @@ import { RevisionHistory } from '@/components/hifz/RevisionHistory';
 import { ProgressAnalytics } from '@/components/hifz/ProgressAnalytics';
 import { MistakeLog } from '@/components/hifz/MistakeLog';
 import { MotivationWall } from '@/components/hifz/MotivationWall';
-import { BookOpen, History, BarChart3, AlertTriangle, Trophy } from 'lucide-react';
+import { TeacherFeedback } from '@/components/hifz/TeacherFeedback';
+import { ExportReports } from '@/components/hifz/ExportReports';
+import { BookOpen, History, BarChart3, AlertTriangle, Trophy, MessageCircle, Download } from 'lucide-react';
 
 export default function HifzProgressPage() {
   const { t, isRTL } = useLanguage();
@@ -33,7 +35,7 @@ export default function HifzProgressPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir={isRTL ? 'rtl' : 'ltr'}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="daily" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               {t('Today\'s Session')}
@@ -53,6 +55,14 @@ export default function HifzProgressPage() {
             <TabsTrigger value="motivation" className="flex items-center gap-2">
               <Trophy className="h-4 w-4" />
               {t('Motivation')}
+            </TabsTrigger>
+            <TabsTrigger value="feedback" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              {t('Teacher Feedback')}
+            </TabsTrigger>
+            <TabsTrigger value="export" className="flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              {t('Export Reports')}
             </TabsTrigger>
           </TabsList>
 
@@ -74,6 +84,14 @@ export default function HifzProgressPage() {
 
           <TabsContent value="motivation" className="space-y-6">
             <MotivationWall />
+          </TabsContent>
+
+          <TabsContent value="feedback" className="space-y-6">
+            <TeacherFeedback />
+          </TabsContent>
+
+          <TabsContent value="export" className="space-y-6">
+            <ExportReports />
           </TabsContent>
         </Tabs>
       </div>

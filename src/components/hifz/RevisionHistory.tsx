@@ -28,8 +28,8 @@ interface RevisionSession {
 export function RevisionHistory() {
   const { t, isRTL } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterSurah, setFilterSurah] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterSurah, setFilterSurah] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   // Mock data
@@ -83,8 +83,8 @@ export function RevisionHistory() {
     const matchesSearch = session.surah.includes(searchQuery) || 
                          session.ayahRange.includes(searchQuery) ||
                          session.notes.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSurah = !filterSurah || session.surah === filterSurah;
-    const matchesStatus = !filterStatus || session.status === filterStatus;
+    const matchesSurah = filterSurah === 'all' || session.surah === filterSurah;
+    const matchesStatus = filterStatus === 'all' || session.status === filterStatus;
     return matchesSearch && matchesSurah && matchesStatus;
   });
 
@@ -115,7 +115,7 @@ export function RevisionHistory() {
                 <SelectValue placeholder={t('All Surahs')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t('All Surahs')}</SelectItem>
+                <SelectItem value="all">{t('All Surahs')}</SelectItem>
                 {surahs.map((surah) => (
                   <SelectItem key={surah} value={surah}>{surah}</SelectItem>
                 ))}
@@ -127,7 +127,7 @@ export function RevisionHistory() {
                 <SelectValue placeholder={t('All Status')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t('All Status')}</SelectItem>
+                <SelectItem value="all">{t('All Status')}</SelectItem>
                 {statusOptions.map((status) => (
                   <SelectItem key={status.value} value={status.value}>
                     <span className="flex items-center gap-2">

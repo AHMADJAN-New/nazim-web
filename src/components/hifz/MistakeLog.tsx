@@ -41,8 +41,8 @@ interface Mistake {
 export function MistakeLog() {
   const { t, isRTL } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [newMistakeOpen, setNewMistakeOpen] = useState(false);
   const [newMistake, setNewMistake] = useState<Partial<Mistake>>({
     mistakeType: 'tajwid',
@@ -106,8 +106,8 @@ export function MistakeLog() {
     const matchesSearch = mistake.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          mistake.surah.includes(searchQuery) ||
                          mistake.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesType = !filterType || mistake.mistakeType === filterType;
-    const matchesStatus = !filterStatus || 
+    const matchesType = filterType === 'all' || mistake.mistakeType === filterType;
+    const matchesStatus = filterStatus === 'all' || 
                          (filterStatus === 'resolved' && mistake.resolved) ||
                          (filterStatus === 'unresolved' && !mistake.resolved);
     return matchesSearch && matchesType && matchesStatus;
@@ -297,7 +297,7 @@ export function MistakeLog() {
                 <SelectValue placeholder={t('All Types')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t('All Types')}</SelectItem>
+                <SelectItem value="all">{t('All Types')}</SelectItem>
                 {mistakeTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
                     <span className="flex items-center gap-2">
@@ -314,7 +314,7 @@ export function MistakeLog() {
                 <SelectValue placeholder={t('All Status')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t('All Status')}</SelectItem>
+                <SelectItem value="all">{t('All Status')}</SelectItem>
                 <SelectItem value="resolved">{t('Resolved')}</SelectItem>
                 <SelectItem value="unresolved">{t('Unresolved')}</SelectItem>
               </SelectContent>
