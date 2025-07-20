@@ -11,6 +11,7 @@ import AdmissionsPage from "./pages/students/AdmissionsPage";
 import AttendancePage from "./pages/AttendancePage";
 import ClassesPage from "./pages/academic/ClassesPage";
 import ExamsPage from "./pages/exams/ExamsPage";
+import OMRScanningPage from "./pages/exams/OMRScanningPage";
 import FinancePage from "./pages/finance/FinancePage";
 import StaffPage from "./pages/StaffPage";
 import HostelPage from "./pages/hostel/HostelPage";
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/academic/classes" element={<ClassesPage />} />
           <Route path="/academic/hifz-progress" element={<HifzProgressPage />} />
           <Route path="/exams/*" element={<ExamsPage />} />
+          <Route path="/exams/omr-scanning" element={<OMRScanningPage />} />
           <Route path="/finance/*" element={<FinancePage />} />
           <Route path="/staff" element={<StaffPage />} />
           <Route path="/hostel/*" element={<HostelPage />} />

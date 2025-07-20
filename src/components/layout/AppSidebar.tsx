@@ -91,6 +91,7 @@ const navigationItems = [
     children: [
       { title: "Exam Setup", url: "/exams/setup", icon: Settings },
       { title: "Results Entry", url: "/exams/results", icon: FileText },
+      { title: "OMR Scanning", url: "/exams/omr-scanning", icon: FileText },
       { title: "Report Cards", url: "/exams/reports", icon: Trophy }
     ]
   },
