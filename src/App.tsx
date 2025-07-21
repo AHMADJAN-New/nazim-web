@@ -3,8 +3,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Pages
+import Index from "./pages/Index";
+import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import StudentsPage from "./pages/students/StudentsPage";
 import AdmissionsPage from "./pages/students/AdmissionsPage";
@@ -31,29 +35,101 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/students" element={<StudentsPage />} />
-          <Route path="/students/admissions" element={<AdmissionsPage />} />
-          <Route path="/students/id-cards" element={<IdCardPage />} />
-          <Route path="/attendance" element={<AttendancePage />} />
-          <Route path="/academic/classes" element={<ClassesPage />} />
-          <Route path="/academic/hifz-progress" element={<HifzProgressPage />} />
-          <Route path="/exams/*" element={<ExamsPage />} />
-          <Route path="/exams/omr-scanning" element={<OMRScanningPage />} />
-          <Route path="/finance/*" element={<FinancePage />} />
-          <Route path="/staff" element={<StaffPage />} />
-          <Route path="/hostel/*" element={<HostelPage />} />
-          <Route path="/library" element={<LibraryPage />} />
-          <Route path="/assets" element={<AssetsPage />} />
-          <Route path="/communication/*" element={<CommunicationPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/students" element={
+              <ProtectedRoute>
+                <StudentsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/students/admissions" element={
+              <ProtectedRoute>
+                <AdmissionsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/students/id-cards" element={
+              <ProtectedRoute>
+                <IdCardPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/attendance" element={
+              <ProtectedRoute>
+                <AttendancePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/academic/classes" element={
+              <ProtectedRoute>
+                <ClassesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/academic/hifz-progress" element={
+              <ProtectedRoute>
+                <HifzProgressPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/*" element={
+              <ProtectedRoute>
+                <ExamsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/omr-scanning" element={
+              <ProtectedRoute>
+                <OMRScanningPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/finance/*" element={
+              <ProtectedRoute>
+                <FinancePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/staff" element={
+              <ProtectedRoute>
+                <StaffPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/hostel/*" element={
+              <ProtectedRoute>
+                <HostelPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/library" element={
+              <ProtectedRoute>
+                <LibraryPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/assets" element={
+              <ProtectedRoute>
+                <AssetsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/communication/*" element={
+              <ProtectedRoute>
+                <CommunicationPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <ReportsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            } />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
