@@ -63,12 +63,41 @@ export default function AuthPage() {
         password: formData.password,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Log failed login attempt
+        try {
+          await supabase.rpc('log_auth_event', {
+            event_type: 'login_failed',
+            event_data: { email: formData.email, error_code: error.status },
+            error_message: error.message,
+            user_email: formData.email
+          });
+        } catch {
+          // Silent fail for logging
+        }
+        throw error;
+      }
+      
+      // Log successful login
+      try {
+        await supabase.rpc('log_auth_event', {
+          event_type: 'login_success',
+          event_data: { email: formData.email },
+          error_message: null,
+          user_email: formData.email
+        });
+      } catch {
+        // Silent fail for logging
+      }
       
       toast.success('Logged in successfully!');
       navigate('/redirect');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to sign in');
+      if (error.message.includes('Invalid login credentials')) {
+        toast.error('Invalid email or password. Please check your credentials and try again.');
+      } else {
+        toast.error(error.message || 'Failed to sign in');
+      }
     } finally {
       setLoading(false);
     }

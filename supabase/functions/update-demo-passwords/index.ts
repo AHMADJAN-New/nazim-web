@@ -73,7 +73,8 @@ const handler = async (req: Request): Promise<Response> => {
             email_confirm: true,
             user_metadata: {
               full_name: account.fullName,
-              role: account.role
+              role: account.role,
+              school_id: account.role !== 'super_admin' ? '348b0c64-f47f-4ac0-844f-99438c0c5f51' : undefined
             }
           });
 
@@ -86,10 +87,17 @@ const handler = async (req: Request): Promise<Response> => {
           user = newUser.user;
           console.log(`Successfully created user: ${account.email}`);
         } else {
-          // Update existing user's password
+          // Update existing user's password and metadata
           const { error: updateError } = await supabase.auth.admin.updateUserById(
             user.id,
-            { password: 'admin123' }
+            { 
+              password: 'admin123',
+              user_metadata: {
+                full_name: account.fullName,
+                role: account.role,
+                school_id: account.role !== 'super_admin' ? '348b0c64-f47f-4ac0-844f-99438c0c5f51' : undefined
+              }
+            }
           );
 
           if (updateError) {

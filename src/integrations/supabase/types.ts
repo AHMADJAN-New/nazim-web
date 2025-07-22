@@ -323,6 +323,42 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_monitoring: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          resolved: boolean | null
+          user_agent: string | null
+          user_email: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          resolved?: boolean | null
+          user_agent?: string | null
+          user_email?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          resolved?: boolean | null
+          user_agent?: string | null
+          user_email?: string | null
+        }
+        Relationships: []
+      }
       branches: {
         Row: {
           address: string | null
@@ -1889,6 +1925,15 @@ export type Database = {
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      log_auth_event: {
+        Args: {
+          event_type: string
+          event_data?: Json
+          error_message?: string
+          user_email?: string
+        }
+        Returns: undefined
       }
       reject_registration: {
         Args: { registration_id: string; approver_id: string; reason: string }

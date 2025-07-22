@@ -37,7 +37,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+      // Log successful signout
+      try {
+        await supabase.rpc('log_auth_event', {
+          event_type: 'user_signout',
+          event_data: { user_id: user?.id, email: user?.email },
+          error_message: null,
+          user_email: user?.email || null
+        });
+      } catch {
+        // Silent fail for logging to prevent blocking signout
+      }
+    } catch (error: any) {
+      // Log signout error
+      try {
+        await supabase.rpc('log_auth_event', {
+          event_type: 'signout_error',
+          event_data: { user_id: user?.id },
+          error_message: error.message,
+          user_email: user?.email || null
+        });
+      } catch {
+        // Silent fail for logging
+      }
+      throw error;
+    }
   };
 
   return (
