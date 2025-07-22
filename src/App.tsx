@@ -30,6 +30,7 @@ import SuperAdminPage from "./pages/SuperAdminPage";
 import SchoolAdminPage from "./pages/SchoolAdminPage";
 import PendingApprovalPage from "./pages/PendingApprovalPage";
 import RoleBasedRedirect from "./components/RoleBasedRedirect";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/redirect" element={<ProtectedRoute><RoleBasedRedirect /></ProtectedRoute>} />
             <Route path="/pending-approval" element={<ProtectedRoute><PendingApprovalPage /></ProtectedRoute>} />
             <Route path="/dashboard" element={

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 
 interface School {
   id: string;
@@ -166,6 +167,13 @@ export default function AuthPage() {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Signing In...' : 'Sign In'}
                 </Button>
+                <div className="text-center">
+                  <ForgotPasswordDialog>
+                    <Button variant="link" type="button" className="text-sm text-muted-foreground">
+                      Forgot your password?
+                    </Button>
+                  </ForgotPasswordDialog>
+                </div>
               </form>
             </TabsContent>
 

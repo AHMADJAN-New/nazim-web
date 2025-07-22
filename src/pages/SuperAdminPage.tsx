@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { PasswordManagement } from '@/components/admin/PasswordManagement';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -320,6 +321,11 @@ export default function SuperAdminPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Password Management Section */}
+      <div className="mt-8">
+        <PasswordManagement />
       </div>
     </div>
   );
