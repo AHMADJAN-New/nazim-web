@@ -1911,7 +1911,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      auth_health_summary: {
+        Row: {
+          error_events: number | null
+          failed_logins: number | null
+          hour: string | null
+          registration_errors: number | null
+          resolved_events: number | null
+          total_events: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       approve_registration: {
