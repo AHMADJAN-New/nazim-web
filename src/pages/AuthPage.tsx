@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
+import { DemoAccountsTab } from '@/components/auth/DemoAccountsTab';
 
 interface School {
   id: string;
@@ -166,9 +167,12 @@ export default function AuthPage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className={`grid w-full ${import.meta.env.DEV ? 'grid-cols-3' : 'grid-cols-2'}`}>
               <TabsTrigger value="login">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              {import.meta.env.DEV && (
+                <TabsTrigger value="demo">Demo Accounts</TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="login">
@@ -294,6 +298,12 @@ export default function AuthPage() {
                 </Button>
               </form>
             </TabsContent>
+
+            {import.meta.env.DEV && (
+              <TabsContent value="demo">
+                <DemoAccountsTab />
+              </TabsContent>
+            )}
           </Tabs>
         </CardContent>
       </Card>
