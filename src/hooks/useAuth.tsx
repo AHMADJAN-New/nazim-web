@@ -17,17 +17,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
+    // In development mode, check for mock user first
+    if (import.meta.env.DEV) {
+      const devUser = localStorage.getItem('dev_mode_user');
+      if (devUser) {
+        const userData = JSON.parse(devUser);
+        const mockUser = {
+          id: userData.id,
+          email: userData.email,
+          user_metadata: {
+            full_name: userData.full_name,
+            role: userData.role
+          },
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          email_confirmed_at: new Date().toISOString(),
+          last_sign_in_at: new Date().toISOString(),
+          role: 'authenticated',
+          confirmation_sent_at: null,
+          confirmed_at: new Date().toISOString(),
+          recovery_sent_at: null,
+          email_change_sent_at: null,
+          new_email: null,
+          invited_at: null,
+          action_link: null,
+          email_change: null,
+          email_change_confirm_status: 0,
+          banned_until: null,
+          identities: []
+        };
+
+        const mockSession = {
+          access_token: 'dev-mode-token',
+          refresh_token: 'dev-mode-refresh',
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          token_type: 'bearer',
+          user: mockUser
+        };
+
+        setUser(mockUser);
+        setSession(mockSession);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Set up auth state listener for real authentication
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Don't override development mode authentication
+        if (import.meta.env.DEV && localStorage.getItem('dev_mode_user')) {
+          return;
+        }
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
-    // Get initial session
+    // Get initial session for real authentication
     supabase.auth.getSession().then(({ data: { session } }) => {
+      // Don't override development mode authentication
+      if (import.meta.env.DEV && localStorage.getItem('dev_mode_user')) {
+        return;
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);

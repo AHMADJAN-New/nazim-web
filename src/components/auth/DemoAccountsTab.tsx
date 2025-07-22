@@ -84,59 +84,24 @@ export function DemoAccountsTab() {
     try {
       // In development mode, completely bypass authentication
       if (import.meta.env.DEV) {
-        // Create a mock session object that mimics a real Supabase session
-        const mockUser = {
-          id: account.id,
-          email: account.email,
-          user_metadata: {
-            full_name: account.full_name,
-            role: account.role
-          },
-          app_metadata: {},
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          email_confirmed_at: new Date().toISOString(),
-          last_sign_in_at: new Date().toISOString(),
-          role: 'authenticated',
-          confirmation_sent_at: null,
-          confirmed_at: new Date().toISOString(),
-          recovery_sent_at: null,
-          email_change_sent_at: null,
-          new_email: null,
-          invited_at: null,
-          action_link: null,
-          email_change: null,
-          email_change_confirm_status: 0,
-          banned_until: null,
-          identities: []
-        };
-
-        const mockSession = {
-          access_token: 'dev-mock-token-' + account.id,
-          refresh_token: 'dev-mock-refresh-' + account.id,
-          expires_in: 3600,
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
-          token_type: 'bearer',
-          user: mockUser
-        };
-
-        // Set the mock session directly in Supabase auth
-        await supabase.auth.setSession({
-          access_token: mockSession.access_token,
-          refresh_token: mockSession.refresh_token
-        });
-
-        // Store development mode flag
-        localStorage.setItem('dev_mode_user', JSON.stringify({
+        // Store development mode user data
+        const devUserData = {
           id: account.id,
           email: account.email,
           role: account.role,
           full_name: account.full_name
-        }));
+        };
 
-        toast.success(`Logged in as ${account.full_name} (${account.role})`);
-        navigate('/redirect');
+        localStorage.setItem('dev_mode_user', JSON.stringify(devUserData));
+
+        // Force a page reload to reinitialize auth state
+        toast.success(`Logging in as ${account.full_name} (${account.role})`);
+        
+        // Small delay to show the toast
+        setTimeout(() => {
+          window.location.href = '/redirect';
+        }, 500);
+        
         return;
       }
 
