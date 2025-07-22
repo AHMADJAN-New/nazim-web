@@ -61,7 +61,7 @@ export default function SubjectsPage() {
   const { toast } = useToast();
   const [subjects, setSubjects] = useState<Subject[]>(mockSubjects);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
 
@@ -78,7 +78,7 @@ export default function SubjectsPage() {
   const filteredSubjects = subjects.filter(subject => {
     const matchesSearch = subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          subject.code.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDepartment = !selectedDepartment || subject.department === selectedDepartment;
+    const matchesDepartment = selectedDepartment === "all" || subject.department === selectedDepartment;
     return matchesSearch && matchesDepartment;
   });
 
@@ -252,7 +252,7 @@ export default function SubjectsPage() {
                     <SelectValue placeholder="All Departments" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Departments</SelectItem>
+                    <SelectItem value="all">All Departments</SelectItem>
                     {departments.map(dept => (
                       <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                     ))}
