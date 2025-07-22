@@ -17,53 +17,102 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Demo account emails
-    const demoEmails = [
-      'super.admin@greenvalley.edu',
-      'admin@greenvalley.edu',
-      'teacher@greenvalley.edu',
-      'student@greenvalley.edu',
-      'parent@greenvalley.edu',
-      'staff@greenvalley.edu',
-      'pending@greenvalley.edu'
+    // Demo account emails with their details
+    const demoAccounts = [
+      { 
+        email: 'super.admin@greenvalley.edu', 
+        fullName: 'Super Administrator', 
+        role: 'super_admin' 
+      },
+      { 
+        email: 'admin@greenvalley.edu', 
+        fullName: 'School Administrator', 
+        role: 'admin' 
+      },
+      { 
+        email: 'teacher@greenvalley.edu', 
+        fullName: 'John Teacher', 
+        role: 'teacher' 
+      },
+      { 
+        email: 'student@greenvalley.edu', 
+        fullName: 'Sarah Student', 
+        role: 'student' 
+      },
+      { 
+        email: 'parent@greenvalley.edu', 
+        fullName: 'Parent User', 
+        role: 'parent' 
+      },
+      { 
+        email: 'staff@greenvalley.edu', 
+        fullName: 'Staff Member', 
+        role: 'staff' 
+      },
+      { 
+        email: 'pending@greenvalley.edu', 
+        fullName: 'Pending User', 
+        role: 'student' 
+      }
     ];
 
     const results = [];
 
-    for (const email of demoEmails) {
+    for (const account of demoAccounts) {
       try {
-        // Update password using admin API
+        // First check if user exists
         const { data: users } = await supabase.auth.admin.listUsers();
-        const user = users.users.find(u => u.email === email);
+        let user = users.users.find(u => u.email === account.email);
         
-        if (user) {
-          const { error } = await supabase.auth.admin.updateUserById(
+        if (!user) {
+          // Create the user if they don't exist
+          console.log(`Creating user: ${account.email}`);
+          const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+            email: account.email,
+            password: 'admin123',
+            email_confirm: true,
+            user_metadata: {
+              full_name: account.fullName,
+              role: account.role
+            }
+          });
+
+          if (createError) {
+            console.error(`Error creating user ${account.email}:`, createError);
+            results.push({ email: account.email, success: false, error: `Failed to create: ${createError.message}` });
+            continue;
+          }
+          
+          user = newUser.user;
+          console.log(`Successfully created user: ${account.email}`);
+        } else {
+          // Update existing user's password
+          const { error: updateError } = await supabase.auth.admin.updateUserById(
             user.id,
             { password: 'admin123' }
           );
 
-          if (error) {
-            console.error(`Error updating password for ${email}:`, error);
-            results.push({ email, success: false, error: error.message });
-          } else {
-            console.log(`Successfully updated password for ${email}`);
-            results.push({ email, success: true });
+          if (updateError) {
+            console.error(`Error updating password for ${account.email}:`, updateError);
+            results.push({ email: account.email, success: false, error: updateError.message });
+            continue;
           }
-        } else {
-          console.log(`User not found: ${email}`);
-          results.push({ email, success: false, error: 'User not found' });
+          
+          console.log(`Successfully updated password for: ${account.email}`);
         }
+
+        results.push({ email: account.email, success: true });
       } catch (error: any) {
-        console.error(`Error processing ${email}:`, error);
-        results.push({ email, success: false, error: error.message });
+        console.error(`Error processing ${account.email}:`, error);
+        results.push({ email: account.email, success: false, error: error.message });
       }
     }
 
     const successCount = results.filter(r => r.success).length;
-    console.log(`Updated passwords for ${successCount}/${demoEmails.length} demo accounts`);
+    console.log(`Updated passwords for ${successCount}/${demoAccounts.length} demo accounts`);
 
     return new Response(JSON.stringify({ 
-      message: `Updated passwords for ${successCount}/${demoEmails.length} demo accounts`,
+      message: `Updated passwords for ${successCount}/${demoAccounts.length} demo accounts`,
       results,
       password: 'admin123'
     }), {
