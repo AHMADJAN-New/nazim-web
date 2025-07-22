@@ -74,6 +74,7 @@ const navigationItems = [
       { title: "Classes & Sections", url: "/academic/classes", icon: School },
       { title: "Subjects", url: "/academic/subjects", icon: BookOpen },
       { title: "Timetable", url: "/academic/timetable", icon: Calendar },
+      { title: "Student Timetable", url: "/academic/student-timetable", icon: Calendar },
       { title: "Hifz Progress", url: "/academic/hifz-progress", icon: BookOpen }
     ]
   },
@@ -90,6 +91,9 @@ const navigationItems = [
     roles: ["super_admin", "admin", "teacher"],
     children: [
       { title: "Exam Setup", url: "/exams/setup", icon: Settings },
+      { title: "Student Enrollment", url: "/exams/enrollment", icon: UserCheck },
+      { title: "Roll Number Assignment", url: "/exams/roll-numbers", icon: Users },
+      { title: "Enrolled Students Reports", url: "/exams/enrolled-reports", icon: BarChart3 },
       { title: "Results Entry", url: "/exams/results", icon: FileText },
       { title: "OMR Scanning", url: "/exams/omr-scanning", icon: FileText },
       { title: "Report Cards", url: "/exams/reports", icon: Trophy }

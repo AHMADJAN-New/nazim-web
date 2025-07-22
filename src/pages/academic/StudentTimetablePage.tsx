@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, BookOpen, User, Download, Print } from "lucide-react";
+import { Calendar, Clock, BookOpen, User, Download, Printer } from "lucide-react";
 
 const mockTimetable = {
   "Monday": [
@@ -64,7 +64,7 @@ export default function StudentTimetablePage() {
               Export
             </Button>
             <Button variant="outline">
-              <Print className="h-4 w-4 mr-2" />
+              <Printer className="h-4 w-4 mr-2" />
               Print
             </Button>
           </div>

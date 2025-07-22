@@ -38,6 +38,18 @@ import PendingApprovalPage from "./pages/PendingApprovalPage";
 import RoleBasedRedirect from "./components/RoleBasedRedirect";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
+import ExamEnrollmentPage from "./pages/exams/ExamEnrollmentPage";
+import PaymentsPage from "./pages/finance/PaymentsPage";
+import DonationsPage from "./pages/finance/DonationsPage";
+import RoomManagementPage from "./pages/hostel/RoomManagementPage";
+import StudentAssignmentPage from "./pages/hostel/StudentAssignmentPage";
+import HostelAttendancePage from "./pages/hostel/HostelAttendancePage";
+import MessagingPage from "./pages/communication/MessagingPage";
+import EventsPage from "./pages/communication/EventsPage";
+import StudentTimetablePage from "./pages/academic/StudentTimetablePage";
+import AnnouncementsPage from "./pages/communication/AnnouncementsPage";
+import RollNumberAssignmentPage from "./pages/exams/RollNumberAssignmentPage";
+import ExamEnrolledStudentsReportsPage from "./pages/exams/ExamEnrolledStudentsReportsPage";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +109,74 @@ const App = () => (
             <Route path="/exams/reports" element={
               <ProtectedRoute>
                 <ReportCardsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/enrollment" element={
+              <ProtectedRoute>
+                <ExamEnrollmentPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/roll-numbers" element={
+              <ProtectedRoute>
+                <RollNumberAssignmentPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/enrolled-reports" element={
+              <ProtectedRoute>
+                <ExamEnrolledStudentsReportsPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Finance specific routes */}
+            <Route path="/finance/payments" element={
+              <ProtectedRoute>
+                <PaymentsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/finance/donations" element={
+              <ProtectedRoute>
+                <DonationsPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Hostel specific routes */}
+            <Route path="/hostel/rooms" element={
+              <ProtectedRoute>
+                <RoomManagementPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/hostel/students" element={
+              <ProtectedRoute>
+                <StudentAssignmentPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/hostel/attendance" element={
+              <ProtectedRoute>
+                <HostelAttendancePage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Communication specific routes */}
+            <Route path="/communication/announcements" element={
+              <ProtectedRoute>
+                <AnnouncementsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/communication/messages" element={
+              <ProtectedRoute>
+                <MessagingPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/communication/events" element={
+              <ProtectedRoute>
+                <EventsPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Academic specific routes */}
+            <Route path="/academic/student-timetable" element={
+              <ProtectedRoute>
+                <StudentTimetablePage />
               </ProtectedRoute>
             } />
             <Route path="/students/id-cards" element={
