@@ -18,6 +18,17 @@ export default function RoleBasedRedirect() {
 
     const fetchUserRole = async () => {
       try {
+        // In development mode, check for mock user data first
+        if (import.meta.env.DEV) {
+          const devUser = localStorage.getItem('dev_mode_user');
+          if (devUser) {
+            const userData = JSON.parse(devUser);
+            setUserRole(userData.role);
+            setLoading(false);
+            return;
+          }
+        }
+
         const { data, error } = await supabase
           .from('profiles')
           .select('role')

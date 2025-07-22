@@ -133,6 +133,16 @@ const App = () => (
                 <SettingsPage />
               </ProtectedRoute>
             } />
+            <Route path="/super-admin" element={
+              <ProtectedRoute>
+                <SuperAdminPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/school-admin" element={
+              <ProtectedRoute>
+                <SchoolAdminPage />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
