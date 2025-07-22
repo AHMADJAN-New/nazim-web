@@ -333,6 +333,7 @@ export type Database = {
           name: string
           phone: string | null
           principal_id: string | null
+          school_id: string | null
           updated_at: string
         }
         Insert: {
@@ -344,6 +345,7 @@ export type Database = {
           name: string
           phone?: string | null
           principal_id?: string | null
+          school_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -355,6 +357,7 @@ export type Database = {
           name?: string
           phone?: string | null
           principal_id?: string | null
+          school_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -363,6 +366,13 @@ export type Database = {
             columns: ["principal_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branches_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
             referencedColumns: ["id"]
           },
         ]
@@ -1275,6 +1285,68 @@ export type Database = {
           },
         ]
       }
+      pending_registrations: {
+        Row: {
+          additional_info: Json | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          rejection_reason: string | null
+          requested_at: string
+          requested_role: Database["public"]["Enums"]["user_role"]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          school_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          additional_info?: Json | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_role: Database["public"]["Enums"]["user_role"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          additional_info?: Json | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_role?: Database["public"]["Enums"]["user_role"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_registrations_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -1285,6 +1357,7 @@ export type Database = {
           id: string
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
+          school_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1296,6 +1369,7 @@ export type Database = {
           id: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          school_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1307,9 +1381,18 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          school_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       report_templates: {
         Row: {
@@ -1400,6 +1483,89 @@ export type Database = {
           recipients?: string[]
           schedule_expression?: string
           template_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      school_admins: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          is_active: boolean
+          permissions: Json | null
+          school_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean
+          permissions?: Json | null
+          school_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean
+          permissions?: Json | null
+          school_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_admins_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schools: {
+        Row: {
+          address: string | null
+          code: string
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          max_students: number | null
+          name: string
+          phone: string | null
+          principal_name: string | null
+          subscription_plan: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          code: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          max_students?: number | null
+          name: string
+          phone?: string | null
+          principal_name?: string | null
+          subscription_plan?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          code?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          max_students?: number | null
+          name?: string
+          phone?: string | null
+          principal_name?: string | null
+          subscription_plan?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1658,9 +1824,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_registration: {
+        Args: { registration_id: string; approver_id: string }
+        Returns: boolean
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      reject_registration: {
+        Args: { registration_id: string; approver_id: string; reason: string }
+        Returns: boolean
       }
     }
     Enums: {

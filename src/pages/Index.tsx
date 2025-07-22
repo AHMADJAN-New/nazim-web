@@ -87,8 +87,8 @@ const Index = () => {
                 Get Started
               </Link>
             </Button>
-            <Button variant="outline" size="lg">
-              Learn More
+            <Button asChild size="lg" variant="outline">
+              <Link to="/redirect">Dashboard</Link>
             </Button>
           </div>
         </div>
