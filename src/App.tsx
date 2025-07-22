@@ -26,6 +26,10 @@ import ReportsPage from "./pages/reports/ReportsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import IdCardPage from "./pages/students/IdCardPage";
 import HifzProgressPage from "./pages/academic/HifzProgressPage";
+import SuperAdminPage from "./pages/SuperAdminPage";
+import SchoolAdminPage from "./pages/SchoolAdminPage";
+import PendingApprovalPage from "./pages/PendingApprovalPage";
+import RoleBasedRedirect from "./components/RoleBasedRedirect";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
