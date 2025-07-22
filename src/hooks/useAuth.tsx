@@ -38,6 +38,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      // Clear development mode data
+      if (import.meta.env.DEV) {
+        localStorage.removeItem('dev_mode_user');
+      }
+
       await supabase.auth.signOut();
       // Log successful signout
       try {

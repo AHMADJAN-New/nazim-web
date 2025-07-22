@@ -82,30 +82,65 @@ export function DemoAccountsTab() {
   const handleDemoLogin = async (account: DemoAccount) => {
     setLoggingIn(account.id);
     try {
-      // In development mode, use our bypass function
+      // In development mode, completely bypass authentication
       if (import.meta.env.DEV) {
-        const response = await fetch('/functions/v1/dev-demo-login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        // Create a mock session object that mimics a real Supabase session
+        const mockUser = {
+          id: account.id,
+          email: account.email,
+          user_metadata: {
+            full_name: account.full_name,
+            role: account.role
           },
-          body: JSON.stringify({ email: account.email }),
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          email_confirmed_at: new Date().toISOString(),
+          last_sign_in_at: new Date().toISOString(),
+          role: 'authenticated',
+          confirmation_sent_at: null,
+          confirmed_at: new Date().toISOString(),
+          recovery_sent_at: null,
+          email_change_sent_at: null,
+          new_email: null,
+          invited_at: null,
+          action_link: null,
+          email_change: null,
+          email_change_confirm_status: 0,
+          banned_until: null,
+          identities: []
+        };
+
+        const mockSession = {
+          access_token: 'dev-mock-token-' + account.id,
+          refresh_token: 'dev-mock-refresh-' + account.id,
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          token_type: 'bearer',
+          user: mockUser
+        };
+
+        // Set the mock session directly in Supabase auth
+        await supabase.auth.setSession({
+          access_token: mockSession.access_token,
+          refresh_token: mockSession.refresh_token
         });
 
-        const result = await response.json();
+        // Store development mode flag
+        localStorage.setItem('dev_mode_user', JSON.stringify({
+          id: account.id,
+          email: account.email,
+          role: account.role,
+          full_name: account.full_name
+        }));
 
-        if (!response.ok) {
-          throw new Error(result.error || 'Failed to login');
-        }
-
-        if (result.session_url) {
-          // Use the magic link to establish the session
-          window.location.href = result.session_url;
-          return;
-        }
+        toast.success(`Logged in as ${account.full_name} (${account.role})`);
+        navigate('/redirect');
+        return;
       }
 
-      // Fallback to regular auth (this shouldn't happen in dev mode)
+      // Fallback for production (shouldn't happen)
       const { error } = await supabase.auth.signInWithPassword({
         email: account.email,
         password: 'admin123',
