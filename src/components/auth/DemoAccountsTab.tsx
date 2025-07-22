@@ -82,31 +82,37 @@ export function DemoAccountsTab() {
   const handleDemoLogin = async (account: DemoAccount) => {
     setLoggingIn(account.id);
     try {
-      // First try to sign in with the demo password
+      // In development mode, use our bypass function
+      if (import.meta.env.DEV) {
+        const response = await fetch('/functions/v1/dev-demo-login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: account.email }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to login');
+        }
+
+        if (result.session_url) {
+          // Use the magic link to establish the session
+          window.location.href = result.session_url;
+          return;
+        }
+      }
+
+      // Fallback to regular auth (this shouldn't happen in dev mode)
       const { error } = await supabase.auth.signInWithPassword({
         email: account.email,
-        password: 'admin123', // Default demo password
+        password: 'admin123',
       });
 
       if (error) {
         throw error;
-      }
-
-      // Log the demo login event
-      try {
-        await supabase.rpc('log_auth_event', {
-          event_type: 'demo_login',
-          event_data: { 
-            email: account.email, 
-            role: account.role,
-            account_id: account.id,
-            development_mode: true
-          },
-          error_message: null,
-          user_email: account.email
-        });
-      } catch {
-        // Silent fail for logging
       }
 
       toast.success(`Logged in as ${account.full_name} (${account.role})`);
