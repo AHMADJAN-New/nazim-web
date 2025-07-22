@@ -12,9 +12,15 @@ import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import StudentsPage from "./pages/students/StudentsPage";
 import AdmissionsPage from "./pages/students/AdmissionsPage";
+import BulkImportPage from "./pages/students/BulkImportPage";
 import AttendancePage from "./pages/AttendancePage";
 import ClassesPage from "./pages/academic/ClassesPage";
+import SubjectsPage from "./pages/academic/SubjectsPage";
+import TimetablePage from "./pages/academic/TimetablePage";
 import ExamsPage from "./pages/exams/ExamsPage";
+import ExamSetupPage from "./pages/exams/ExamSetupPage";
+import ResultsEntryPage from "./pages/exams/ResultsEntryPage";
+import ReportCardsPage from "./pages/exams/ReportCardsPage";
 import OMRScanningPage from "./pages/exams/OMRScanningPage";
 import FinancePage from "./pages/finance/FinancePage";
 import StaffPage from "./pages/StaffPage";
@@ -61,6 +67,36 @@ const App = () => (
             <Route path="/students/admissions" element={
               <ProtectedRoute>
                 <AdmissionsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/students/import" element={
+              <ProtectedRoute>
+                <BulkImportPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/academic/subjects" element={
+              <ProtectedRoute>
+                <SubjectsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/academic/timetable" element={
+              <ProtectedRoute>
+                <TimetablePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/setup" element={
+              <ProtectedRoute>
+                <ExamSetupPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/results" element={
+              <ProtectedRoute>
+                <ResultsEntryPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/reports" element={
+              <ProtectedRoute>
+                <ReportCardsPage />
               </ProtectedRoute>
             } />
             <Route path="/students/id-cards" element={
