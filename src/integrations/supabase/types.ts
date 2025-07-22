@@ -52,6 +52,78 @@ export type Database = {
           },
         ]
       }
+      admission_applications: {
+        Row: {
+          address: string | null
+          admission_fee: number | null
+          application_id: string
+          applied_date: string
+          branch_id: string
+          class_applying_for: string
+          created_at: string
+          date_of_birth: string | null
+          documents_submitted: Json | null
+          email: string | null
+          father_name: string
+          id: string
+          interview_date: string | null
+          mother_name: string | null
+          phone: string
+          previous_school: string | null
+          remarks: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["application_status"]
+          student_name: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          admission_fee?: number | null
+          application_id: string
+          applied_date?: string
+          branch_id: string
+          class_applying_for: string
+          created_at?: string
+          date_of_birth?: string | null
+          documents_submitted?: Json | null
+          email?: string | null
+          father_name: string
+          id?: string
+          interview_date?: string | null
+          mother_name?: string | null
+          phone: string
+          previous_school?: string | null
+          remarks?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          student_name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          admission_fee?: number | null
+          application_id?: string
+          applied_date?: string
+          branch_id?: string
+          class_applying_for?: string
+          created_at?: string
+          date_of_birth?: string | null
+          documents_submitted?: Json | null
+          email?: string | null
+          father_name?: string
+          id?: string
+          interview_date?: string | null
+          mother_name?: string | null
+          phone?: string
+          previous_school?: string | null
+          remarks?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          student_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       answer_keys: {
         Row: {
           answers: Json
@@ -211,6 +283,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       branches: {
         Row: {
@@ -451,6 +562,63 @@ export type Database = {
           },
         ]
       }
+      fee_structures: {
+        Row: {
+          academic_year_id: string
+          admission_fee: number
+          branch_id: string
+          class_name: string
+          created_at: string
+          exam_fee: number
+          hostel_fee: number
+          id: string
+          is_active: boolean
+          library_fee: number
+          other_fees: Json | null
+          sports_fee: number
+          total_fee: number | null
+          transport_fee: number
+          tuition_fee: number
+          updated_at: string
+        }
+        Insert: {
+          academic_year_id: string
+          admission_fee?: number
+          branch_id: string
+          class_name: string
+          created_at?: string
+          exam_fee?: number
+          hostel_fee?: number
+          id?: string
+          is_active?: boolean
+          library_fee?: number
+          other_fees?: Json | null
+          sports_fee?: number
+          total_fee?: number | null
+          transport_fee?: number
+          tuition_fee?: number
+          updated_at?: string
+        }
+        Update: {
+          academic_year_id?: string
+          admission_fee?: number
+          branch_id?: string
+          class_name?: string
+          created_at?: string
+          exam_fee?: number
+          hostel_fee?: number
+          id?: string
+          is_active?: boolean
+          library_fee?: number
+          other_fees?: Json | null
+          sports_fee?: number
+          total_fee?: number | null
+          transport_fee?: number
+          tuition_fee?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fees: {
         Row: {
           academic_year_id: string
@@ -510,6 +678,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      file_uploads: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          is_public: boolean
+          mime_type: string
+          original_name: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          is_public?: boolean
+          mime_type: string
+          original_name: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          is_public?: boolean
+          mime_type?: string
+          original_name?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
+      generated_reports: {
+        Row: {
+          download_count: number
+          expires_at: string | null
+          file_path: string | null
+          file_size: number | null
+          format: string
+          generated_at: string
+          generated_by: string
+          id: string
+          is_public: boolean
+          parameters: Json | null
+          report_name: string
+          status: Database["public"]["Enums"]["report_status"]
+          template_id: string
+        }
+        Insert: {
+          download_count?: number
+          expires_at?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          format: string
+          generated_at?: string
+          generated_by: string
+          id?: string
+          is_public?: boolean
+          parameters?: Json | null
+          report_name: string
+          status?: Database["public"]["Enums"]["report_status"]
+          template_id: string
+        }
+        Update: {
+          download_count?: number
+          expires_at?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          format?: string
+          generated_at?: string
+          generated_by?: string
+          id?: string
+          is_public?: boolean
+          parameters?: Json | null
+          report_name?: string
+          status?: Database["public"]["Enums"]["report_status"]
+          template_id?: string
+        }
+        Relationships: []
       }
       hifz_progress: {
         Row: {
@@ -679,6 +937,108 @@ export type Database = {
           },
         ]
       }
+      id_cards: {
+        Row: {
+          card_number: string
+          created_at: string
+          expiry_date: string
+          id: string
+          is_active: boolean
+          issue_date: string
+          issued_by: string
+          photo_url: string | null
+          qr_code: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          card_number: string
+          created_at?: string
+          expiry_date: string
+          id?: string
+          is_active?: boolean
+          issue_date?: string
+          issued_by: string
+          photo_url?: string | null
+          qr_code?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          card_number?: string
+          created_at?: string
+          expiry_date?: string
+          id?: string
+          is_active?: boolean
+          issue_date?: string
+          issued_by?: string
+          photo_url?: string | null
+          qr_code?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          academic_year_id: string
+          created_at: string
+          created_by: string
+          discount_amount: number
+          due_date: string
+          fee_structure_id: string
+          id: string
+          invoice_date: string
+          invoice_number: string
+          notes: string | null
+          paid_amount: number
+          payment_date: string | null
+          payment_method: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          student_id: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          academic_year_id: string
+          created_at?: string
+          created_by: string
+          discount_amount?: number
+          due_date: string
+          fee_structure_id: string
+          id?: string
+          invoice_date?: string
+          invoice_number: string
+          notes?: string | null
+          paid_amount?: number
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          student_id: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          academic_year_id?: string
+          created_at?: string
+          created_by?: string
+          discount_amount?: number
+          due_date?: string
+          fee_structure_id?: string
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          notes?: string | null
+          paid_amount?: number
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          student_id?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       library_books: {
         Row: {
           author: string
@@ -803,6 +1163,48 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          expires_at: string | null
+          id: string
+          is_read: boolean
+          message: string
+          priority: string
+          recipient_id: string
+          sender_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          priority?: string
+          recipient_id: string
+          sender_id?: string | null
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          priority?: string
+          recipient_id?: string
+          sender_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       omr_scans: {
         Row: {
           answers: Json | null
@@ -905,6 +1307,99 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      report_templates: {
+        Row: {
+          access_level: string
+          category: string
+          created_at: string
+          created_by: string
+          description: string | null
+          format_options: Json | null
+          id: string
+          is_active: boolean
+          name: string
+          parameters: Json | null
+          query_template: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          access_level?: string
+          category: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          format_options?: Json | null
+          id?: string
+          is_active?: boolean
+          name: string
+          parameters?: Json | null
+          query_template: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          access_level?: string
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          format_options?: Json | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          parameters?: Json | null
+          query_template?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scheduled_reports: {
+        Row: {
+          created_at: string
+          created_by: string
+          format: string
+          id: string
+          is_active: boolean
+          name: string
+          next_run: string
+          parameters: Json | null
+          recipients: string[]
+          schedule_expression: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          format?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          next_run: string
+          parameters?: Json | null
+          recipients?: string[]
+          schedule_expression: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          format?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          next_run?: string
+          parameters?: Json | null
+          recipients?: string[]
+          schedule_expression?: string
+          template_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -1086,6 +1581,78 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          key: string
+          updated_at: string
+          updated_by: string
+          value: Json
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          key: string
+          updated_at?: string
+          updated_by: string
+          value: Json
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          key?: string
+          updated_at?: string
+          updated_by?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          branch_id: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          permissions: Json | null
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          branch_id?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          permissions?: Json | null
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          branch_id?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          permissions?: Json | null
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1097,9 +1664,17 @@ export type Database = {
       }
     }
     Enums: {
+      application_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "interview"
+        | "waitlist"
       attendance_status: "present" | "absent" | "late" | "excused"
       exam_type: "midterm" | "final" | "quiz" | "assignment" | "omr"
       fee_status: "pending" | "paid" | "overdue" | "waived"
+      invoice_status: "pending" | "paid" | "overdue" | "cancelled" | "partial"
+      report_status: "processing" | "completed" | "failed" | "cancelled"
       student_status:
         | "active"
         | "inactive"
@@ -1240,9 +1815,18 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      application_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "interview",
+        "waitlist",
+      ],
       attendance_status: ["present", "absent", "late", "excused"],
       exam_type: ["midterm", "final", "quiz", "assignment", "omr"],
       fee_status: ["pending", "paid", "overdue", "waived"],
+      invoice_status: ["pending", "paid", "overdue", "cancelled", "partial"],
+      report_status: ["processing", "completed", "failed", "cancelled"],
       student_status: [
         "active",
         "inactive",
