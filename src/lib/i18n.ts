@@ -1,7 +1,7 @@
 // Nazim School Management System - Internationalization
-// Translation system supporting English, Pashto, and Arabic
+// Translation system supporting English, Pashto, Dari, and Arabic
 
-export type Language = 'en' | 'ps' | 'ar';
+export type Language = 'en' | 'ps' | 'fa' | 'ar';
 
 export interface TranslationKeys {
   // Common
@@ -281,6 +281,96 @@ const ps: TranslationKeys = {
   },
 };
 
+// Dari (Farsi) translations
+const fa: TranslationKeys = {
+  common: {
+    loading: 'در حال بارگذاری...',
+    save: 'ذخیره',
+    cancel: 'لغو',
+    delete: 'حذف',
+    edit: 'ویرایش',
+    add: 'افزودن',
+    search: 'جستجو',
+    filter: 'فیلتر',
+    export: 'صدور',
+    import: 'وارد کردن',
+    print: 'چاپ',
+    close: 'بستن',
+    confirm: 'تایید',
+    yes: 'بله',
+    no: 'خیر',
+    back: 'بازگشت',
+    next: 'بعدی',
+    previous: 'قبلی',
+    submit: 'ارسال',
+    reset: 'بازنشانی',
+  },
+  nav: {
+    dashboard: 'داشبورد',
+    students: 'دانش‌آموزان',
+    admissions: 'پذیرش',
+    attendance: 'حاضری',
+    classes: 'کلاس‌ها',
+    exams: 'امتحانات',
+    finance: 'مالی',
+    staff: 'کارکنان',
+    hostel: 'خوابگاه',
+    library: 'کتابخانه',
+    assets: 'دارایی‌ها',
+    communication: 'ارتباطات',
+    reports: 'گزارش‌ها',
+    settings: 'تنظیمات',
+  },
+  dashboard: {
+    title: 'داشبورد',
+    totalStudents: 'تعداد کل دانش‌آموزان',
+    totalStaff: 'تعداد کل کارکنان',
+    activeClasses: 'کلاس‌های فعال',
+    pendingFees: 'هزینه‌های معوق',
+    todayAttendance: 'حضور امروز',
+    upcomingExams: 'امتحانات پیش رو',
+    recentActivity: 'فعالیت‌های اخیر',
+    quickActions: 'اقدامات سریع',
+    addStudent: 'اضافه کردن دانش‌آموز',
+    markAttendance: 'ثبت حضور',
+    viewReports: 'مشاهده گزارش‌ها',
+    manageClasses: 'مدیریت کلاس‌ها',
+  },
+  students: {
+    title: 'دانش‌آموزان',
+    addStudent: 'اضافه کردن دانش‌آموز',
+    studentProfile: 'پروفایل دانش‌آموز',
+    personalInfo: 'اطلاعات شخصی',
+    guardianInfo: 'اطلاعات سرپرست',
+    academicInfo: 'اطلاعات تحصیلی',
+    health: 'اطلاعات سلامت',
+    documents: 'اسناد',
+    name: 'نام',
+    fatherName: 'نام پدر',
+    cnic: 'شناسه',
+    phone: 'تلفن',
+    email: 'ایمیل',
+    address: 'آدرس',
+    admissionDate: 'تاریخ پذیرش',
+    class: 'کلاس',
+    section: 'بخش',
+    rollNumber: 'شماره ثبت',
+    status: 'وضعیت',
+    active: 'فعال',
+    inactive: 'غیرفعال',
+    graduated: 'فارغ‌التحصیل',
+  },
+  forms: {
+    required: 'پر کردن این فیلد الزامی است',
+    invalidEmail: 'لطفا ایمیل معتبر وارد کنید',
+    invalidPhone: 'لطفا شماره تلفن معتبر وارد کنید',
+    invalidCnic: 'لطفا شناسه معتبر وارد کنید',
+    passwordMismatch: 'رمزها مطابقت ندارند',
+    minLength: 'حداقل طول {min} کاراکتر است',
+    maxLength: 'حداکثر طول {max} کاراکتر است',
+  },
+};
+
 // Arabic translations  
 const ar: TranslationKeys = {
   common: {
@@ -372,18 +462,23 @@ const ar: TranslationKeys = {
 };
 
 // Translation dictionary
-export const translations = { en, ps, ar };
+export const translations = { en, ps, fa, ar };
 
 // RTL languages
-export const RTL_LANGUAGES: Language[] = ['ar', 'ps'];
+export const RTL_LANGUAGES: Language[] = ['ar', 'ps', 'fa'];
 
 // Get translation function
 export function t(key: string, lang: Language = 'en', params?: Record<string, string | number>): string {
   const keys = key.split('.');
-  let value: any = translations[lang];
+  let value: unknown = translations[lang];
   
   for (const k of keys) {
-    value = value?.[k];
+    if (typeof value === 'object' && value !== null && k in (value as Record<string, unknown>)) {
+      value = (value as Record<string, unknown>)[k];
+    } else {
+      value = undefined;
+      break;
+    }
   }
   
   if (typeof value !== 'string') {
@@ -423,6 +518,7 @@ export function getFontClass(lang: Language): string {
   switch (lang) {
     case 'ar':
     case 'ps':
+    case 'fa':
       return 'font-arabic';
     default:
       return 'font-inter';
