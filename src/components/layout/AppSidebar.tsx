@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { type LucideIcon } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
+import type { UserRole } from "@/types/auth";
 import {
   Users,
   GraduationCap,
@@ -40,23 +43,38 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-// Mock user data - in real app, this would come from auth context
-const currentUser = {
+interface NavigationChild {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+}
+
+interface NavigationItem {
+  titleKey: string;
+  url?: string;
+  icon: LucideIcon;
+  badge?: { text: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } | null;
+  roles: UserRole[];
+  children?: NavigationChild[];
+}
+
+const currentUser: { name: string; role: UserRole; profilePhoto: string } = {
   name: "Ahmed Khan",
   role: "admin",
-  profilePhoto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
+  profilePhoto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
 };
 
-const navigationItems = [
+
+const navigationItems: NavigationItem[] = [
   {
-    title: "Dashboard",
+    titleKey: "dashboard",
     url: "/",
     icon: Home,
     badge: null,
     roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"]
   },
   {
-    title: "Students",
+    titleKey: "students",
     icon: Users,
     roles: ["super_admin", "admin", "teacher", "parent"],
     children: [
@@ -67,7 +85,7 @@ const navigationItems = [
     ]
   },
   {
-    title: "Academic",
+    titleKey: "classes",
     icon: GraduationCap,
     roles: ["super_admin", "admin", "teacher"],
     children: [
@@ -79,14 +97,14 @@ const navigationItems = [
     ]
   },
   {
-    title: "Attendance",
+    titleKey: "attendance",
     url: "/attendance",
     icon: UserCheck,
     badge: { text: "5", variant: "destructive" },
     roles: ["super_admin", "admin", "teacher", "hostel_manager"]
   },
   {
-    title: "Examinations",
+    titleKey: "exams",
     icon: Trophy,
     roles: ["super_admin", "admin", "teacher"],
     children: [
@@ -100,7 +118,7 @@ const navigationItems = [
     ]
   },
   {
-    title: "Finance",
+    titleKey: "finance",
     icon: CreditCard,
     roles: ["super_admin", "admin", "accountant"],
     children: [
@@ -110,13 +128,13 @@ const navigationItems = [
     ]
   },
   {
-    title: "Staff",
+    titleKey: "staff",
     url: "/staff",
     icon: Users,
     roles: ["super_admin", "admin"]
   },
   {
-    title: "Hostel",
+    titleKey: "hostel",
     icon: Building,
     roles: ["super_admin", "admin", "hostel_manager"],
     children: [
@@ -126,19 +144,19 @@ const navigationItems = [
     ]
   },
   {
-    title: "Library",
+    titleKey: "library",
     url: "/library",
     icon: BookOpen,
     roles: ["super_admin", "admin", "librarian", "teacher", "student"]
   },
   {
-    title: "Assets",
+    titleKey: "assets",
     url: "/assets",
     icon: Package,
     roles: ["super_admin", "admin", "asset_manager"]
   },
   {
-    title: "Communication",
+    titleKey: "communication",
     icon: MessageSquare,
     roles: ["super_admin", "admin", "teacher"],
     children: [
@@ -148,13 +166,13 @@ const navigationItems = [
     ]
   },
   {
-    title: "Reports",
+    titleKey: "reports",
     url: "/reports",
     icon: BarChart3,
     roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"]
   },
   {
-    title: "Settings",
+    titleKey: "settings",
     url: "/settings",
     icon: Settings,
     roles: ["super_admin", "admin"]
@@ -163,6 +181,7 @@ const navigationItems = [
 
 export function AppSidebar() {
   const { state } = useSidebar();
+  const { t, isRTL } = useLanguage();
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   
@@ -185,23 +204,24 @@ export function AppSidebar() {
     );
   };
 
-  const filteredItems = navigationItems.filter(item => 
-    item.roles.includes(currentUser.role as any)
+  const filteredItems = navigationItems.filter(item =>
+    item.roles.includes(currentUser.role)
   );
 
-  const renderMenuItem = (item: any) => {
+  const renderMenuItem = (item: NavigationItem) => {
+    const label = t(`nav.${item.titleKey}`);
     if (item.children) {
-      const isExpanded = expandedItems.includes(item.title) || isChildActive(item.children);
+      const isExpanded = expandedItems.includes(item.titleKey) || isChildActive(item.children);
       
       return (
-        <Collapsible key={item.title} open={isExpanded} onOpenChange={() => toggleExpanded(item.title)}>
+        <Collapsible key={item.titleKey} open={isExpanded} onOpenChange={() => toggleExpanded(item.titleKey)}>
           <SidebarMenuItem>
             <CollapsibleTrigger asChild>
               <SidebarMenuButton className={getNavCls({ isActive: isChildActive(item.children) })}>
                 <item.icon className="h-4 w-4" />
                 {!collapsed && (
                   <>
-                    <span className="flex-1">{item.title}</span>
+                    <span className="flex-1">{label}</span>
                     {isExpanded ? (
                       <ChevronDown className="h-4 w-4" />
                     ) : (
@@ -213,8 +233,8 @@ export function AppSidebar() {
             </CollapsibleTrigger>
             {!collapsed && (
               <CollapsibleContent>
-                <SidebarMenu className="ml-4 border-l border-sidebar-border">
-                  {item.children.map((child: any) => (
+                <SidebarMenu className={`${isRTL ? 'mr-4 border-r' : 'ml-4 border-l'} border-sidebar-border`}>
+                  {item.children.map((child: NavigationChild) => (
                     <SidebarMenuItem key={child.url}>
                       <SidebarMenuButton asChild>
                         <NavLink 
@@ -245,9 +265,9 @@ export function AppSidebar() {
             <item.icon className="h-4 w-4" />
             {!collapsed && (
               <>
-                <span className="flex-1">{item.title}</span>
+                <span className="flex-1">{label}</span>
                 {item.badge && (
-                  <Badge variant={item.badge.variant as any} className="text-xs">
+                  <Badge variant={item.badge.variant} className="text-xs">
                     {item.badge.text}
                   </Badge>
                 )}
@@ -263,6 +283,7 @@ export function AppSidebar() {
     <Sidebar
       className={`${collapsed ? "w-14" : "w-64"} transition-all duration-300`}
       collapsible="icon"
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Logo Section */}
       <div className="p-4 border-b border-sidebar-border">

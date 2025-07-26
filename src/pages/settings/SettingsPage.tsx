@@ -266,13 +266,14 @@ export default function SettingsPage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Language</Label>
-                    <Select value={language} onValueChange={(value: 'en' | 'ps' | 'ar') => setLanguage(value)}>
+                    <Select value={language} onValueChange={(value: 'en' | 'ps' | 'fa' | 'ar') => setLanguage(value)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="en">English</SelectItem>
                         <SelectItem value="ps">پښتو (Pashto)</SelectItem>
+                        <SelectItem value="fa">دری (Dari)</SelectItem>
                         <SelectItem value="ar">العربية (Arabic)</SelectItem>
                       </SelectContent>
                     </Select>

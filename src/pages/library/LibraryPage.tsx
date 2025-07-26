@@ -1,5 +1,6 @@
 // Nazim School Management System - Library Management
 import { useState } from "react";
+import type { Book } from "@/types/book";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,7 +141,7 @@ export default function LibraryPage() {
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
-  const [selectedBook, setSelectedBook] = useState<any>(null);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   const getBookStatusBadge = (status: string) => {
     switch (status) {

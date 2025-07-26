@@ -1,5 +1,6 @@
 // Nazim School Management System - Communication Management
 import { useState } from "react";
+import type { Announcement } from "@/types/announcement";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -196,7 +197,7 @@ export default function CommunicationPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {

@@ -28,7 +28,7 @@ export interface User {
 }
 
 export interface UserPreferences {
-  language: 'en' | 'ps' | 'ar';
+  language: 'en' | 'ps' | 'fa' | 'ar';
   theme: 'light' | 'dark';
   rtl: boolean;
   dashboardLayout?: string;
