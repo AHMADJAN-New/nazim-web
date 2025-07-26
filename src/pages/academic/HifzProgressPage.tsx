@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useHifzProgress } from '@/hooks/useHifzProgress';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

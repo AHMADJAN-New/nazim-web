@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useHostelRooms, useCreateHostelRoom } from "@/hooks/useHostel";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

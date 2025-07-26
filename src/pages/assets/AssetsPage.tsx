@@ -1,6 +1,7 @@
 // Nazim School Management System - Asset Management
 import { useState } from "react";
 import type { Asset } from "@/types/asset";
+import { useAssets, useCreateAsset, useUpdateAsset, useDeleteAsset } from "@/hooks/useAssets";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

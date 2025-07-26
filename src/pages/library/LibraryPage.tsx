@@ -1,6 +1,7 @@
 // Nazim School Management System - Library Management
 import { useState } from "react";
 import type { Book } from "@/types/book";
+import { useLibraryBooks, useLibraryTransactions, useCreateLibraryBook, useIssueBook, useReturnBook } from "@/hooks/useLibrary";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
