@@ -1,6 +1,7 @@
 // Nazim School Management System - Communication Management
 import { useState } from "react";
 import type { Announcement } from "@/types/announcement";
+import { useCommunications, useCreateCommunication, useUpdateCommunication, useDeleteCommunication } from "@/hooks/useCommunications";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -198,6 +199,11 @@ export default function CommunicationPage() {
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  
+  const { data: communications = [], isLoading } = useCommunications();
+  const createCommunication = useCreateCommunication();
+  const updateCommunication = useUpdateCommunication();
+  const deleteCommunication = useDeleteCommunication();
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
@@ -452,7 +458,13 @@ export default function CommunicationPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => setSelectedAnnouncement(announcement)}
+                                 onClick={() => setSelectedAnnouncement({
+                                   ...announcement,
+                                   priority: announcement.priority as 'high' | 'low' | 'normal' | 'urgent',
+                                   status: announcement.status as 'draft' | 'published' | 'expired',
+                                   author: announcement.createdBy || 'Unknown',
+                                   notificationSent: false
+                                 })}
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
