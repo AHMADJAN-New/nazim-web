@@ -15,6 +15,9 @@ import {
   Phone,
   Mail
 } from "lucide-react";
+import { useStudents, useUpdateStudent, useDeleteStudent } from "@/hooks/useStudents";
+import { useClasses } from "@/hooks/useClasses";
+import { toast } from "sonner";
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -43,63 +46,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Mock data - in real app, this would come from API
-const mockStudents = [
-  {
-    id: "1",
-    admissionNumber: "ADM001",
-    rollNumber: "10A001",
-    firstName: "Ahmed",
-    lastName: "Ali",
-    class: "Class 10",
-    section: "A",
-    fatherName: "Ali Hassan",
-    phone: "+92-300-1234567",
-    email: "ahmed.ali@gmail.com",
-    status: "active",
-    profilePhoto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-    admissionDate: "2024-01-15",
-    isHostelStudent: true
-  },
-  {
-    id: "2", 
-    admissionNumber: "ADM002",
-    rollNumber: "9B012",
-    firstName: "Fatima",
-    lastName: "Khan",
-    class: "Class 9",
-    section: "B", 
-    fatherName: "Muhammad Khan",
-    phone: "+92-301-2345678",
-    email: "fatima.khan@gmail.com",
-    status: "active",
-    profilePhoto: "https://images.unsplash.com/photo-1494790108755-2616b612b647?w=100&h=100&fit=crop&crop=face",
-    admissionDate: "2024-01-12",
-    isHostelStudent: false
-  },
-  {
-    id: "3",
-    admissionNumber: "ADM003", 
-    rollNumber: "8A025",
-    firstName: "Omar",
-    lastName: "Sheikh",
-    class: "Class 8",
-    section: "A",
-    fatherName: "Abdullah Sheikh",
-    phone: "+92-302-3456789",
-    email: "omar.sheikh@gmail.com",
-    status: "on_leave",
-    profilePhoto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-    admissionDate: "2024-01-10",
-    isHostelStudent: true
-  }
-];
+// Database integration
 
 const statusColors = {
   active: "default",
-  on_leave: "secondary", 
+  inactive: "secondary", 
   suspended: "destructive",
   graduated: "outline",
+  transferred: "outline",
   expelled: "destructive"
 } as const;
 
@@ -114,20 +68,29 @@ export default function StudentsPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedSection, setSelectedSection] = useState("all");
 
-  const filteredStudents = mockStudents.filter(student => {
-    const matchesSearch = 
-      student.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.admissionNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.rollNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.fatherName.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesClass = selectedClass === "all" || student.class === selectedClass;
-    const matchesStatus = selectedStatus === "all" || student.status === selectedStatus;
-    const matchesSection = selectedSection === "all" || student.section === selectedSection;
+  const { data: students = [], isLoading } = useStudents();
+  const { data: classes = [] } = useClasses();
+  const updateStudent = useUpdateStudent();
+  const deleteStudent = useDeleteStudent();
 
-    return matchesSearch && matchesClass && matchesStatus && matchesSection;
+  const filteredStudents = students.filter(student => {
+    const fullName = student.profiles?.full_name || '';
+    const matchesSearch = 
+      fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.student_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.guardian_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesClass = selectedClass === "all" || student.class_id === selectedClass;
+    const matchesStatus = selectedStatus === "all" || student.status === selectedStatus;
+    
+    return matchesSearch && matchesClass && matchesStatus;
   });
+
+  // Calculate stats from real data
+  const totalStudents = students.length;
+  const activeStudents = students.filter(s => s.status === 'active').length;
+  const onLeaveStudents = students.filter(s => s.status === 'inactive').length;
+  const hostelStudents = students.filter(s => s.status === 'active').length; // Adjust based on hostel data
 
   const handleViewStudent = (studentId: string) => {
     // Navigate to student details page
@@ -140,9 +103,24 @@ export default function StudentsPage() {
   };
 
   const handleDeleteStudent = (studentId: string) => {
-    // Show confirmation dialog and delete
-    console.log("Delete student:", studentId);
+    if (confirm("Are you sure you want to delete this student?")) {
+      deleteStudent.mutate(studentId);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout 
+        title="Students Management"
+        showBreadcrumb
+        breadcrumbItems={breadcrumbItems}
+      >
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout 
@@ -173,9 +151,11 @@ export default function StudentsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Classes</SelectItem>
-                  <SelectItem value="Class 10">Class 10</SelectItem>
-                  <SelectItem value="Class 9">Class 9</SelectItem>
-                  <SelectItem value="Class 8">Class 8</SelectItem>
+                  {classes.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id}>
+                      {cls.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
@@ -185,9 +165,11 @@ export default function StudentsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Sections</SelectItem>
-                  <SelectItem value="A">Section A</SelectItem>
-                  <SelectItem value="B">Section B</SelectItem>
-                  <SelectItem value="C">Section C</SelectItem>
+                  {Array.from(new Set(classes.map(cls => cls.section).filter(Boolean))).map((section) => (
+                    <SelectItem key={section} value={section!}>
+                      Section {section}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
@@ -198,9 +180,10 @@ export default function StudentsPage() {
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="on_leave">On Leave</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="graduated">Graduated</SelectItem>
+                  <SelectItem value="transferred">Transferred</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -232,7 +215,7 @@ export default function StudentsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Students</p>
-                  <p className="text-2xl font-bold">2,847</p>
+                  <p className="text-2xl font-bold">{totalStudents}</p>
                 </div>
                 <Users className="h-8 w-8 text-primary" />
               </div>
@@ -243,7 +226,7 @@ export default function StudentsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Active</p>
-                  <p className="text-2xl font-bold text-success">2,756</p>
+                  <p className="text-2xl font-bold text-success">{activeStudents}</p>
                 </div>
                 <UserPlus className="h-8 w-8 text-success" />
               </div>
@@ -253,8 +236,8 @@ export default function StudentsPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">On Leave</p>
-                  <p className="text-2xl font-bold text-warning">67</p>
+                  <p className="text-sm text-muted-foreground">Inactive</p>
+                  <p className="text-2xl font-bold text-warning">{onLeaveStudents}</p>
                 </div>
                 <GraduationCap className="h-8 w-8 text-warning" />
               </div>
@@ -264,8 +247,8 @@ export default function StudentsPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Hostel Students</p>
-                  <p className="text-2xl font-bold text-accent">1,234</p>
+                  <p className="text-sm text-muted-foreground">Enrolled Students</p>
+                  <p className="text-2xl font-bold text-accent">{hostelStudents}</p>
                 </div>
                 <Users className="h-8 w-8 text-accent" />
               </div>
@@ -302,56 +285,58 @@ export default function StudentsPage() {
                     <TableRow key={student.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <img
-                            src={student.profilePhoto}
-                            alt={`${student.firstName} ${student.lastName}`}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Users className="h-5 w-5 text-primary" />
+                          </div>
                           <div>
                             <p className="font-medium">
-                              {student.firstName} {student.lastName}
+                              {student.profiles?.full_name || 'Unknown'}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              Admitted: {student.admissionDate}
+                              Admitted: {new Date(student.admission_date).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="font-mono">
-                        {student.admissionNumber}
+                        {student.student_id}
                       </TableCell>
                       <TableCell className="font-mono">
-                        {student.rollNumber}
+                        {student.student_id}
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{student.class}</p>
+                          <p className="font-medium">{student.classes?.name || 'No Class'}</p>
                           <p className="text-sm text-muted-foreground">
-                            Section {student.section}
+                            Section {student.classes?.section || 'A'}
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell>{student.fatherName}</TableCell>
+                      <TableCell>{student.guardian_name || 'N/A'}</TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <div className="flex items-center gap-1 text-sm">
-                            <Phone className="h-3 w-3" />
-                            {student.phone}
-                          </div>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Mail className="h-3 w-3" />
-                            {student.email}
-                          </div>
+                          {student.guardian_phone && (
+                            <div className="flex items-center gap-1 text-sm">
+                              <Phone className="h-3 w-3" />
+                              {student.guardian_phone}
+                            </div>
+                          )}
+                          {student.profiles?.email && (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Mail className="h-3 w-3" />
+                              {student.profiles.email}
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={statusColors[student.status as keyof typeof statusColors]}>
+                        <Badge variant={statusColors[student.status as keyof typeof statusColors] || "default"}>
                           {student.status.replace('_', ' ').toUpperCase()}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={student.isHostelStudent ? "default" : "outline"}>
-                          {student.isHostelStudent ? "Yes" : "No"}
+                        <Badge variant="outline">
+                          Student
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">

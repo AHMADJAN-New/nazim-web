@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { useCreateStudent } from "@/hooks/useStudents";
+import { useClasses } from "@/hooks/useClasses";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +56,20 @@ export default function AdmissionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showNewForm, setShowNewForm] = useState(false);
+  const [newStudentData, setNewStudentData] = useState({
+    email: '',
+    full_name: '',
+    student_id: '',
+    admission_date: '',
+    class_id: '',
+    guardian_name: '',
+    guardian_phone: '',
+    branch_id: 'branch-1' // Default branch
+  });
+  
   const { toast } = useToast();
+  const createStudent = useCreateStudent();
+  const { data: classes = [] } = useClasses();
 
   const handleStatusChange = (id: string, newStatus: AdmissionApplication['status']) => {
     setApplications(prev => prev.map(app => 
@@ -230,52 +245,109 @@ export default function AdmissionsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="student-name">Student Name *</Label>
-                    <Input id="student-name" placeholder="Enter student name" />
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  createStudent.mutate({
+                    ...newStudentData,
+                    admission_date: newStudentData.admission_date || new Date().toISOString().split('T')[0]
+                  });
+                }}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="student-name">Student Name *</Label>
+                      <Input 
+                        id="student-name" 
+                        placeholder="Enter student name"
+                        value={newStudentData.full_name}
+                        onChange={(e) => setNewStudentData(prev => ({ ...prev, full_name: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="student-id">Student ID *</Label>
+                      <Input 
+                        id="student-id" 
+                        placeholder="Enter student ID"
+                        value={newStudentData.student_id}
+                        onChange={(e) => setNewStudentData(prev => ({ ...prev, student_id: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email *</Label>
+                      <Input 
+                        id="email" 
+                        type="email"
+                        placeholder="student@example.com"
+                        value={newStudentData.email}
+                        onChange={(e) => setNewStudentData(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="guardian-name">Guardian Name</Label>
+                      <Input 
+                        id="guardian-name" 
+                        placeholder="Enter guardian name"
+                        value={newStudentData.guardian_name}
+                        onChange={(e) => setNewStudentData(prev => ({ ...prev, guardian_name: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="guardian-phone">Guardian Phone</Label>
+                      <Input 
+                        id="guardian-phone" 
+                        placeholder="+92-300-0000000"
+                        value={newStudentData.guardian_phone}
+                        onChange={(e) => setNewStudentData(prev => ({ ...prev, guardian_phone: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="class-applying">Class Applying For *</Label>
+                      <Select value={newStudentData.class_id} onValueChange={(value) => setNewStudentData(prev => ({ ...prev, class_id: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select class" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classes.map((cls) => (
+                            <SelectItem key={cls.id} value={cls.id}>
+                              {cls.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="admission-date">Admission Date</Label>
+                      <Input 
+                        id="admission-date" 
+                        type="date"
+                        value={newStudentData.admission_date}
+                        onChange={(e) => setNewStudentData(prev => ({ ...prev, admission_date: e.target.value }))}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="father-name">Father Name *</Label>
-                    <Input id="father-name" placeholder="Enter father name" />
+                  
+                  <div className="flex gap-4 mt-6">
+                    <Button type="submit" className="flex-1" disabled={createStudent.isPending}>
+                      {createStudent.isPending ? 'Creating...' : 'Create Student'}
+                    </Button>
+                    <Button type="button" variant="outline" className="flex-1" onClick={() => {
+                      setNewStudentData({
+                        email: '',
+                        full_name: '',
+                        student_id: '',
+                        admission_date: '',
+                        class_id: '',
+                        guardian_name: '',
+                        guardian_phone: '',
+                        branch_id: 'branch-1'
+                      });
+                    }}>
+                      Clear Form
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input id="phone" placeholder="+92-300-0000000" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="class-applying">Class Applying For *</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select class" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="nursery">Nursery</SelectItem>
-                        <SelectItem value="prep">Prep</SelectItem>
-                        <SelectItem value="class-1">Class 1</SelectItem>
-                        <SelectItem value="class-2">Class 2</SelectItem>
-                        <SelectItem value="class-3">Class 3</SelectItem>
-                        <SelectItem value="class-4">Class 4</SelectItem>
-                        <SelectItem value="class-5">Class 5</SelectItem>
-                        <SelectItem value="class-6">Class 6</SelectItem>
-                        <SelectItem value="class-7">Class 7</SelectItem>
-                        <SelectItem value="class-8">Class 8</SelectItem>
-                        <SelectItem value="class-9">Class 9</SelectItem>
-                        <SelectItem value="class-10">Class 10</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Textarea id="address" placeholder="Enter complete address" />
-                </div>
-                
-                <div className="flex gap-4">
-                  <Button className="flex-1">Save Draft</Button>
-                  <Button variant="outline" className="flex-1">Preview Form</Button>
-                </div>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>

@@ -67,9 +67,15 @@ export default function SchoolAdminPage() {
         .select('school_id')
         .eq('user_id', user?.id)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (adminError) throw adminError;
+      
+      if (!adminData) {
+        console.log('No school admin data found for user');
+        setSchoolUsers([]);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('profiles')
