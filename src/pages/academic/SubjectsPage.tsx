@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSubjects, useCreateSubject, useUpdateSubject } from "@/hooks/useSubjects";
+import { useSubjects, useCreateSubject, useUpdateSubject, type Subject } from "@/hooks/useSubjects";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,57 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, BookOpen, Search } from "lucide-react";
+import { Plus, Edit, Trash2, BookOpen, Search, Loader2 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
-
-interface Subject {
-  id: string;
-  code: string;
-  name: string;
-  description: string;
-  department: string;
-  credits: number;
-  teacherIds: string[];
-  isActive: boolean;
-}
-
-const mockSubjects: Subject[] = [
-  {
-    id: "1",
-    code: "MATH101",
-    name: "Mathematics",
-    description: "Basic mathematics for primary level",
-    department: "Science",
-    credits: 3,
-    teacherIds: ["teacher1", "teacher2"],
-    isActive: true
-  },
-  {
-    id: "2",
-    code: "ENG101",
-    name: "English Language",
-    description: "English language and literature",
-    department: "Languages",
-    credits: 4,
-    teacherIds: ["teacher3"],
-    isActive: true
-  },
-  {
-    id: "3",
-    code: "SCI101",
-    name: "General Science",
-    description: "Introduction to basic science concepts",
-    department: "Science",
-    credits: 3,
-    teacherIds: ["teacher4"],
-    isActive: true
-  }
-];
 
 export default function SubjectsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [subjects, setSubjects] = useState<Subject[]>(mockSubjects);
+  const { data: subjects = [], isLoading } = useSubjects();
+  const createSubject = useCreateSubject();
+  const updateSubject = useUpdateSubject();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -70,8 +29,8 @@ export default function SubjectsPage() {
     code: "",
     name: "",
     description: "",
-    department: "",
-    credits: 1
+    credits: 1,
+    branch_id: "branch-1" // Default branch
   });
 
   const departments = ["Science", "Languages", "Social Studies", "Arts", "Physical Education"];
@@ -79,7 +38,8 @@ export default function SubjectsPage() {
   const filteredSubjects = subjects.filter(subject => {
     const matchesSearch = subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          subject.code.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDepartment = selectedDepartment === "all" || subject.department === selectedDepartment;
+    const matchesDepartment = selectedDepartment === "all" || 
+                             (subject.description && subject.description.toLowerCase().includes(selectedDepartment.toLowerCase()));
     return matchesSearch && matchesDepartment;
   });
 
@@ -87,30 +47,15 @@ export default function SubjectsPage() {
     e.preventDefault();
     
     if (editingSubject) {
-      setSubjects(prev => prev.map(subject =>
-        subject.id === editingSubject.id
-          ? { ...subject, ...formData }
-          : subject
-      ));
-      toast({
-        title: "Subject Updated",
-        description: "Subject has been updated successfully"
+      updateSubject.mutate({
+        id: editingSubject.id,
+        ...formData
       });
     } else {
-      const newSubject: Subject = {
-        id: Date.now().toString(),
-        ...formData,
-        teacherIds: [],
-        isActive: true
-      };
-      setSubjects(prev => [...prev, newSubject]);
-      toast({
-        title: "Subject Added",
-        description: "New subject has been added successfully"
-      });
+      createSubject.mutate(formData);
     }
 
-    setFormData({ code: "", name: "", description: "", department: "", credits: 1 });
+    setFormData({ code: "", name: "", description: "", credits: 1, branch_id: "branch-1" });
     setEditingSubject(null);
     setIsAddDialogOpen(false);
   };
@@ -120,20 +65,22 @@ export default function SubjectsPage() {
     setFormData({
       code: subject.code,
       name: subject.name,
-      description: subject.description,
-      department: subject.department,
-      credits: subject.credits
+      description: subject.description || "",
+      credits: subject.credits,
+      branch_id: subject.branch_id
     });
     setIsAddDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setSubjects(prev => prev.filter(subject => subject.id !== id));
-    toast({
-      title: "Subject Deleted",
-      description: "Subject has been deleted successfully"
-    });
-  };
+  if (isLoading) {
+    return (
+      <MainLayout title="Subjects Management">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Subjects Management">
@@ -148,7 +95,7 @@ export default function SubjectsPage() {
             <DialogTrigger asChild>
               <Button onClick={() => {
                 setEditingSubject(null);
-                setFormData({ code: "", name: "", description: "", department: "", credits: 1 });
+                setFormData({ code: "", name: "", description: "", credits: 1, branch_id: "branch-1" });
               }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Subject
@@ -194,22 +141,6 @@ export default function SubjectsPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="department">Department</Label>
-                  <Select
-                    value={formData.department}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map(dept => (
-                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
                   <Label htmlFor="description">Description</Label>
                   <Input
                     id="description"
@@ -221,8 +152,15 @@ export default function SubjectsPage() {
                   <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit">
-                    {editingSubject ? 'Update' : 'Add'} Subject
+                  <Button type="submit" disabled={createSubject.isPending || updateSubject.isPending}>
+                    {createSubject.isPending || updateSubject.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {editingSubject ? 'Updating...' : 'Creating...'}
+                      </>
+                    ) : (
+                      editingSubject ? 'Update Subject' : 'Add Subject'
+                    )}
                   </Button>
                 </div>
               </form>
@@ -278,9 +216,8 @@ export default function SubjectsPage() {
                 <TableRow>
                   <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Department</TableHead>
+                  <TableHead>Description</TableHead>
                   <TableHead>Credits</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -289,20 +226,14 @@ export default function SubjectsPage() {
                   <TableRow key={subject.id}>
                     <TableCell className="font-mono">{subject.code}</TableCell>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{subject.name}</div>
-                        <div className="text-sm text-muted-foreground">{subject.description}</div>
+                      <div className="font-medium">{subject.name}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-muted-foreground">
+                        {subject.description || 'No description'}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{subject.department}</Badge>
-                    </TableCell>
                     <TableCell>{subject.credits}</TableCell>
-                    <TableCell>
-                      <Badge variant={subject.isActive ? "default" : "secondary"}>
-                        {subject.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
@@ -312,17 +243,17 @@ export default function SubjectsPage() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(subject.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
+                {filteredSubjects.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                      No subjects found
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

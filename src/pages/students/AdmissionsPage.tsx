@@ -168,10 +168,10 @@ export default function AdmissionsPage() {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="applications" className="w-full">
+        <Tabs defaultValue="admission-form" className="w-full">
           <TabsList>
             <TabsTrigger value="applications">Applications</TabsTrigger>
-            <TabsTrigger value="admission-form">Admission Form</TabsTrigger>
+            <TabsTrigger value="admission-form">New Student Form</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 

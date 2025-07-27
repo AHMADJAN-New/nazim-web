@@ -9,72 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Building, Bed, Users, Plus, Search, Filter, Edit, Trash2, Eye } from "lucide-react";
+import { Building, Bed, Users, Plus, Search, Filter, Edit, Trash2, Eye, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Room {
-  id: string;
-  roomNumber: string;
-  floor: number;
-  roomType: 'single' | 'double' | 'triple' | 'dormitory';
-  capacity: number;
-  currentOccupancy: number;
-  monthlyFee: number;
-  facilities: string[];
-  status: 'available' | 'occupied' | 'maintenance' | 'reserved';
-  building: string;
-}
-
-const mockRooms: Room[] = [
-  {
-    id: "1",
-    roomNumber: "101",
-    floor: 1,
-    roomType: "double",
-    capacity: 2,
-    currentOccupancy: 2,
-    monthlyFee: 3000,
-    facilities: ["AC", "Attached Bathroom", "Study Table", "Wardrobe"],
-    status: "occupied",
-    building: "Block A"
-  },
-  {
-    id: "2",
-    roomNumber: "102",
-    floor: 1,
-    roomType: "single",
-    capacity: 1,
-    currentOccupancy: 0,
-    monthlyFee: 4500,
-    facilities: ["AC", "Attached Bathroom", "Study Table", "Wardrobe", "Balcony"],
-    status: "available",
-    building: "Block A"
-  },
-  {
-    id: "3",
-    roomNumber: "201",
-    floor: 2,
-    roomType: "triple",
-    capacity: 3,
-    currentOccupancy: 1,
-    monthlyFee: 2500,
-    facilities: ["Fan", "Common Bathroom", "Study Table", "Wardrobe"],
-    status: "available",
-    building: "Block B"
-  },
-  {
-    id: "4",
-    roomNumber: "301",
-    floor: 3,
-    roomType: "dormitory",
-    capacity: 8,
-    currentOccupancy: 6,
-    monthlyFee: 1500,
-    facilities: ["Fan", "Common Bathroom", "Common Study Area"],
-    status: "occupied",
-    building: "Block C"
-  }
-];
 
 const roomTypes = ["single", "double", "triple", "dormitory"];
 const statusOptions = ["available", "occupied", "maintenance", "reserved"];
@@ -91,84 +27,79 @@ const statusVariants = {
 
 export default function RoomManagementPage() {
   const { toast } = useToast();
-  const [rooms, setRooms] = useState<Room[]>(mockRooms);
+  const { data: rooms = [], isLoading } = useHostelRooms();
+  const createRoom = useCreateHostelRoom();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<any>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
   const [isEditRoomOpen, setIsEditRoomOpen] = useState(false);
-  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [editingRoom, setEditingRoom] = useState<any>(null);
 
   const filteredRooms = rooms.filter(room => {
-    const matchesSearch = room.roomNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         room.building.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || room.status === statusFilter;
+    const matchesSearch = room.room_number.toLowerCase().includes(searchQuery.toLowerCase());
+    // Since hostel_rooms doesn't have status field, we'll filter by availability
+    const isAvailable = (room.occupied_count || 0) < room.capacity;
+    const matchesStatus = statusFilter === "all" || 
+                         (statusFilter === "available" && isAvailable) ||
+                         (statusFilter === "occupied" && !isAvailable);
     return matchesSearch && matchesStatus;
   });
 
   const totalRooms = rooms.length;
-  const occupiedRooms = rooms.filter(r => r.status === 'occupied').length;
-  const availableRooms = rooms.filter(r => r.status === 'available').length;
-  const totalCapacity = rooms.reduce((sum, room) => sum + room.capacity, 0);
-  const currentOccupancy = rooms.reduce((sum, room) => sum + room.currentOccupancy, 0);
+  const occupiedRooms = rooms.filter(r => r.occupied_count === r.capacity).length;
+  const availableRooms = rooms.filter(r => r.occupied_count < r.capacity).length;
+  const totalCapacity = rooms.reduce((sum, room) => sum + (room.capacity || 0), 0);
+  const currentOccupancy = rooms.reduce((sum, room) => sum + (room.occupied_count || 0), 0);
 
-  const handleAddRoom = (newRoom: Partial<Room>) => {
-    const room: Room = {
-      id: `${rooms.length + 1}`,
-      roomNumber: newRoom.roomNumber || "",
-      floor: newRoom.floor || 1,
-      roomType: newRoom.roomType || "single",
-      capacity: newRoom.capacity || 1,
-      currentOccupancy: 0,
-      monthlyFee: newRoom.monthlyFee || 0,
-      facilities: newRoom.facilities || [],
-      status: "available",
-      building: newRoom.building || ""
-    };
-
-    setRooms([...rooms, room]);
-    setIsAddRoomOpen(false);
-    toast({
-      title: "Room Added",
-      description: `Room ${room.roomNumber} has been successfully added.`
+  const handleAddRoom = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const facilities = Array.from(formData.getAll('facilities')) as string[];
+    
+    createRoom.mutate({
+      room_number: formData.get('roomNumber') as string,
+      floor: Number(formData.get('floor')),
+      room_type: formData.get('roomType') as string,
+      capacity: Number(formData.get('capacity')),
+      occupied_count: 0, // Initialize as empty
+      monthly_fee: Number(formData.get('monthlyFee')),
+      facilities,
+      branch_id: 'branch-1' // Default branch
     });
+    
+    setIsAddRoomOpen(false);
   };
 
-  const handleEditRoom = (updatedRoom: Partial<Room>) => {
-    if (!editingRoom) return;
-
-    const room: Room = {
-      ...editingRoom,
-      ...updatedRoom,
-    };
-
-    setRooms(prev => prev.map(r => r.id === editingRoom.id ? room : r));
+  const handleEditRoom = () => {
+    // For now, we'll just close the dialog since we don't have update hook
+    // This can be implemented later when needed
     setIsEditRoomOpen(false);
     setEditingRoom(null);
-    toast({
-      title: "Room Updated",
-      description: `Room ${room.roomNumber} has been successfully updated.`
-    });
+    toast({ title: "Edit functionality coming soon" });
   };
 
-  const handleDeleteRoom = (roomId: string) => {
-    setRooms(prev => prev.filter(r => r.id !== roomId));
-    toast({
-      title: "Room Deleted",
-      description: "Room has been successfully deleted."
-    });
-  };
-
-  const viewRoomDetails = (room: Room) => {
+  const viewRoomDetails = (room: any) => {
     setSelectedRoom(room);
     setIsDetailsDialogOpen(true);
   };
 
-  const editRoom = (room: Room) => {
+  const editRoom = (room: any) => {
     setEditingRoom(room);
     setIsEditRoomOpen(true);
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout title="Room Management">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout 
@@ -200,7 +131,7 @@ export default function RoomManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{occupiedRooms}</div>
-              <p className="text-xs text-muted-foreground">{Math.round((occupiedRooms/totalRooms)*100)}% occupancy rate</p>
+              <p className="text-xs text-muted-foreground">{totalRooms > 0 ? Math.round((occupiedRooms/totalRooms)*100) : 0}% occupancy rate</p>
             </CardContent>
           </Card>
           
@@ -222,7 +153,7 @@ export default function RoomManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{currentOccupancy}/{totalCapacity}</div>
-              <p className="text-xs text-muted-foreground">{Math.round((currentOccupancy/totalCapacity)*100)}% capacity used</p>
+              <p className="text-xs text-muted-foreground">{totalCapacity > 0 ? Math.round((currentOccupancy/totalCapacity)*100) : 0}% capacity used</p>
             </CardContent>
           </Card>
         </div>
@@ -246,7 +177,7 @@ export default function RoomManagementPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground transform -translate-y-1/2" />
                 <Input
-                  placeholder="Search by room number or building..."
+                  placeholder="Search by room number..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -272,39 +203,31 @@ export default function RoomManagementPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Room Number</TableHead>
-                    <TableHead>Building</TableHead>
                     <TableHead>Floor</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Occupancy</TableHead>
                     <TableHead>Monthly Fee</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredRooms.map((room) => (
                     <TableRow key={room.id}>
-                      <TableCell className="font-medium">{room.roomNumber}</TableCell>
-                      <TableCell>{room.building}</TableCell>
+                      <TableCell className="font-medium">{room.room_number}</TableCell>
                       <TableCell>{room.floor}</TableCell>
-                      <TableCell className="capitalize">{room.roomType}</TableCell>
+                      <TableCell className="capitalize">{room.room_type}</TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {room.currentOccupancy}/{room.capacity}
+                          {room.occupied_count || 0}/{room.capacity}
                           <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
                             <div 
                               className="bg-primary h-1.5 rounded-full" 
-                              style={{ width: `${(room.currentOccupancy / room.capacity) * 100}%` }}
+                              style={{ width: `${((room.occupied_count || 0) / room.capacity) * 100}%` }}
                             ></div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>₹{room.monthlyFee}</TableCell>
-                      <TableCell>
-                        <Badge variant={statusVariants[room.status]}>
-                          {room.status}
-                        </Badge>
-                      </TableCell>
+                      <TableCell>₹{room.monthly_fee}</TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <Button
@@ -321,18 +244,17 @@ export default function RoomManagementPage() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteRoom(room.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
+                  {filteredRooms.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        No rooms found
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -348,28 +270,11 @@ export default function RoomManagementPage() {
                 Add a new room to the hostel inventory.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const facilities = Array.from(formData.getAll('facilities')) as string[];
-              handleAddRoom({
-                roomNumber: formData.get('roomNumber') as string,
-                building: formData.get('building') as string,
-                floor: Number(formData.get('floor')),
-                roomType: formData.get('roomType') as Room['roomType'],
-                capacity: Number(formData.get('capacity')),
-                monthlyFee: Number(formData.get('monthlyFee')),
-                facilities,
-              });
-            }}>
+            <form onSubmit={handleAddRoom}>
               <div className="grid gap-4 py-4 max-h-96 overflow-y-auto">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="roomNumber" className="text-right">Room Number</Label>
                   <Input id="roomNumber" name="roomNumber" className="col-span-3" required />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="building" className="text-right">Building</Label>
-                  <Input id="building" name="building" className="col-span-3" required />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="floor" className="text-right">Floor</Label>
@@ -415,7 +320,9 @@ export default function RoomManagementPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Add Room</Button>
+                <Button type="submit" disabled={createRoom.isPending}>
+                  {createRoom.isPending ? 'Adding...' : 'Add Room'}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -431,29 +338,11 @@ export default function RoomManagementPage() {
               </DialogDescription>
             </DialogHeader>
             {editingRoom && (
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const facilities = Array.from(formData.getAll('facilities')) as string[];
-                handleEditRoom({
-                  roomNumber: formData.get('roomNumber') as string,
-                  building: formData.get('building') as string,
-                  floor: Number(formData.get('floor')),
-                  roomType: formData.get('roomType') as Room['roomType'],
-                  capacity: Number(formData.get('capacity')),
-                  monthlyFee: Number(formData.get('monthlyFee')),
-                  status: formData.get('status') as Room['status'],
-                  facilities,
-                });
-              }}>
+              <div>
                 <div className="grid gap-4 py-4 max-h-96 overflow-y-auto">
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="editRoomNumber" className="text-right">Room Number</Label>
-                    <Input id="editRoomNumber" name="roomNumber" defaultValue={editingRoom.roomNumber} className="col-span-3" required />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="editBuilding" className="text-right">Building</Label>
-                    <Input id="editBuilding" name="building" defaultValue={editingRoom.building} className="col-span-3" required />
+                    <Input id="editRoomNumber" name="roomNumber" defaultValue={editingRoom.room_number} className="col-span-3" required />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="editFloor" className="text-right">Floor</Label>
@@ -461,7 +350,7 @@ export default function RoomManagementPage() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="editRoomType" className="text-right">Room Type</Label>
-                    <Select name="roomType" defaultValue={editingRoom.roomType} required>
+                    <Select name="roomType" defaultValue={editingRoom.room_type} required>
                       <SelectTrigger className="col-span-3">
                         <SelectValue />
                       </SelectTrigger>
@@ -478,20 +367,7 @@ export default function RoomManagementPage() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="editMonthlyFee" className="text-right">Monthly Fee</Label>
-                    <Input id="editMonthlyFee" name="monthlyFee" type="number" min="0" defaultValue={editingRoom.monthlyFee} className="col-span-3" required />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="editStatus" className="text-right">Status</Label>
-                    <Select name="status" defaultValue={editingRoom.status} required>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map(status => (
-                          <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input id="editMonthlyFee" name="monthlyFee" type="number" min="0" defaultValue={editingRoom.monthly_fee} className="col-span-3" required />
                   </div>
                   <div className="grid grid-cols-4 items-start gap-4">
                     <Label className="text-right">Facilities</Label>
@@ -503,7 +379,7 @@ export default function RoomManagementPage() {
                             id={`edit-${facility}`} 
                             name="facilities" 
                             value={facility}
-                            defaultChecked={editingRoom.facilities.includes(facility)}
+                            defaultChecked={editingRoom.facilities?.includes(facility)}
                             className="rounded border-gray-300"
                           />
                           <Label htmlFor={`edit-${facility}`} className="text-sm">{facility}</Label>
@@ -513,9 +389,11 @@ export default function RoomManagementPage() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit">Update Room</Button>
+                  <Button type="button" onClick={handleEditRoom}>
+                    Update Room
+                  </Button>
                 </DialogFooter>
-              </form>
+              </div>
             )}
           </DialogContent>
         </Dialog>
@@ -531,11 +409,7 @@ export default function RoomManagementPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium">Room Number</Label>
-                    <p className="text-sm">{selectedRoom.roomNumber}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Building</Label>
-                    <p className="text-sm">{selectedRoom.building}</p>
+                    <p className="text-sm">{selectedRoom.room_number}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Floor</Label>
@@ -543,7 +417,7 @@ export default function RoomManagementPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Room Type</Label>
-                    <p className="text-sm capitalize">{selectedRoom.roomType}</p>
+                    <p className="text-sm capitalize">{selectedRoom.room_type}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Capacity</Label>
@@ -551,25 +425,19 @@ export default function RoomManagementPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Current Occupancy</Label>
-                    <p className="text-sm">{selectedRoom.currentOccupancy} students</p>
+                    <p className="text-sm">{selectedRoom.occupied_count || 0} students</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Monthly Fee</Label>
-                    <p className="text-sm">₹{selectedRoom.monthlyFee}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Status</Label>
-                    <Badge variant={statusVariants[selectedRoom.status]} className="capitalize">
-                      {selectedRoom.status}
-                    </Badge>
+                    <p className="text-sm">₹{selectedRoom.monthly_fee}</p>
                   </div>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Facilities</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedRoom.facilities.map(facility => (
+                    {selectedRoom.facilities?.map((facility: string) => (
                       <Badge key={facility} variant="secondary">{facility}</Badge>
-                    ))}
+                    )) || <span className="text-sm text-muted-foreground">No facilities listed</span>}
                   </div>
                 </div>
                 <DialogFooter>
