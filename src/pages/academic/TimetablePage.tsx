@@ -22,14 +22,6 @@ interface TimetableEntry {
   class: string;
 }
 
-const mockTimetable: TimetableEntry[] = [
-  { id: "1", day: "Monday", time: "08:00-09:00", subject: "Mathematics", teacher: "Mr. Smith", room: "101", class: "Grade 5A" },
-  { id: "2", day: "Monday", time: "09:00-10:00", subject: "English", teacher: "Ms. Johnson", room: "102", class: "Grade 5A" },
-  { id: "3", day: "Monday", time: "10:00-11:00", subject: "Science", teacher: "Dr. Brown", room: "Lab 1", class: "Grade 5A" },
-  { id: "4", day: "Tuesday", time: "08:00-09:00", subject: "History", teacher: "Mr. Wilson", room: "103", class: "Grade 5A" },
-  { id: "5", day: "Tuesday", time: "09:00-10:00", subject: "Mathematics", teacher: "Mr. Smith", room: "101", class: "Grade 5A" },
-];
-
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const timeSlots = [
   "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00",
@@ -39,7 +31,7 @@ const timeSlots = [
 export default function TimetablePage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [timetable, setTimetable] = useState<TimetableEntry[]>(mockTimetable);
+  const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
   const [selectedClass, setSelectedClass] = useState("Grade 5A");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);

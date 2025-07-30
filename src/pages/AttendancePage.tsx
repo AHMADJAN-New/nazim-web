@@ -14,69 +14,29 @@ import { CalendarIcon, Search, QrCode, Camera, Download, Upload, CheckCircle, XC
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-
-interface AttendanceRecord {
-  id: string;
-  studentId: string;
-  studentName: string;
-  rollNumber: string;
-  class: string;
-  section: string;
-  status: 'present' | 'absent' | 'late' | 'leave';
-  date: string;
-  time: string;
-  subject?: string;
-  period?: number;
-}
-
-const mockAttendance: AttendanceRecord[] = [
-  {
-    id: "ATT001",
-    studentId: "STU001",
-    studentName: "احمد علی",
-    rollNumber: "001",
-    class: "Class 6",
-    section: "A",
-    status: "present",
-    date: "2024-01-15",
-    time: "08:00",
-    subject: "Mathematics",
-    period: 1
-  },
-  {
-    id: "ATT002",
-    studentId: "STU002", 
-    studentName: "فاطمہ خان",
-    rollNumber: "002",
-    class: "Class 6",
-    section: "A",
-    status: "absent",
-    date: "2024-01-15",
-    time: "08:00",
-    subject: "Mathematics",
-    period: 1
-  }
-];
+import { useAttendance, useMarkAttendance, useUpdateAttendance } from "@/hooks/useAttendance";
+import { useClasses } from "@/hooks/useClasses";
 
 export default function AttendancePage() {
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>(mockAttendance);
+  const { data: attendanceData = [], isLoading } = useAttendance();
+  const { data: classes = [] } = useClasses();
+  const markAttendanceMutation = useMarkAttendance();
+  const updateAttendanceMutation = useUpdateAttendance();
+  
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [selectedSection, setSelectedSection] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
-  const handleAttendanceChange = (id: string, status: AttendanceRecord['status']) => {
-    setAttendance(prev => prev.map(att => 
-      att.id === id ? { ...att, status } : att
-    ));
-    toast({
-      title: "Attendance Updated",
-      description: `Student attendance marked as ${status}`
+  const handleAttendanceChange = (id: string, status: 'present' | 'absent' | 'late' | 'leave') => {
+    updateAttendanceMutation.mutate({
+      id,
+      status: status as any
     });
   };
 
-  const getStatusBadge = (status: AttendanceRecord['status']) => {
+  const getStatusBadge = (status: 'present' | 'absent' | 'late' | 'leave') => {
     const variants = {
       present: "default",
       absent: "destructive", 
@@ -101,13 +61,23 @@ export default function AttendancePage() {
     );
   };
 
-  const bulkMarkAttendance = (status: AttendanceRecord['status']) => {
-    setAttendance(prev => prev.map(att => ({ ...att, status })));
+  const bulkMarkAttendance = (status: 'present' | 'absent' | 'late' | 'leave') => {
+    // Bulk marking logic would go here
     toast({
       title: "Bulk Attendance",
       description: `All students marked as ${status}`
     });
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout title="Attendance Management">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">Loading attendance data...</div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout 
@@ -144,11 +114,11 @@ export default function AttendancePage() {
                 <SelectValue placeholder="Select Class" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="class-6">Class 6</SelectItem>
-                <SelectItem value="class-7">Class 7</SelectItem>
-                <SelectItem value="class-8">Class 8</SelectItem>
-                <SelectItem value="class-9">Class 9</SelectItem>
-                <SelectItem value="class-10">Class 10</SelectItem>
+                {classes.map(cls => (
+                  <SelectItem key={cls.id} value={cls.id}>
+                    {cls.name} - {cls.section}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             
@@ -195,7 +165,7 @@ export default function AttendancePage() {
                   <div>
                     <CardTitle>Daily Attendance - {format(selectedDate, "PPP")}</CardTitle>
                     <CardDescription>
-                      Mark attendance for Class 6-A ({attendance.length} students)
+                      Mark attendance for selected class ({attendanceData.length} students)
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
@@ -232,13 +202,13 @@ export default function AttendancePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {attendance.map((record) => (
+                      {attendanceData.map((record) => (
                         <TableRow key={record.id}>
-                          <TableCell className="font-medium">{record.rollNumber}</TableCell>
-                          <TableCell>{record.studentName}</TableCell>
-                          <TableCell>{record.class} - {record.section}</TableCell>
-                          <TableCell>{getStatusBadge(record.status)}</TableCell>
-                          <TableCell>{record.time}</TableCell>
+                          <TableCell className="font-medium">{record.student?.student_id || 'N/A'}</TableCell>
+                          <TableCell>{record.student?.profiles?.full_name || 'N/A'}</TableCell>
+                          <TableCell>{record.classes?.name || 'N/A'}</TableCell>
+                          <TableCell>{getStatusBadge(record.status === 'excused' ? 'leave' : record.status)}</TableCell>
+                          <TableCell>{record.date}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
                               <Button 
@@ -264,7 +234,7 @@ export default function AttendancePage() {
                               </Button>
                               <Button 
                                 size="sm" 
-                                variant={record.status === 'leave' ? 'outline' : 'outline'}
+                                variant={record.status === 'excused' ? 'outline' : 'outline'}
                                 onClick={() => handleAttendanceChange(record.id, 'leave')}
                               >
                                 Leave

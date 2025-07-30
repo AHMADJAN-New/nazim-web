@@ -11,64 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Search, Edit, Trash2, Users, Calendar, Clock, MapPin, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface ClassInfo {
-  id: string;
-  name: string;
-  section: string;
-  grade: string;
-  capacity: number;
-  enrolled: number;
-  classTeacher: string;
-  room: string;
-  schedule: Array<{
-    day: string;
-    periods: Array<{
-      time: string;
-      subject: string;
-      teacher: string;
-    }>;
-  }>;
-}
-
-const mockClasses: ClassInfo[] = [
-  {
-    id: "CLS001",
-    name: "Class 6",
-    section: "A",
-    grade: "6",
-    capacity: 40,
-    enrolled: 35,
-    classTeacher: "استاد احمد",
-    room: "Room 101",
-    schedule: [
-      {
-        day: "Monday",
-        periods: [
-          { time: "8:00-8:40", subject: "Mathematics", teacher: "استاد احمد" },
-          { time: "8:40-9:20", subject: "English", teacher: "Miss Sarah" },
-          { time: "9:20-10:00", subject: "Urdu", teacher: "استاد علی" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "CLS002",
-    name: "Class 6",
-    section: "B", 
-    grade: "6",
-    capacity: 40,
-    enrolled: 38,
-    classTeacher: "استاد فاطمہ",
-    room: "Room 102",
-    schedule: []
-  }
-];
-
-const subjects = [
-  "Mathematics", "English", "Urdu", "Science", "Social Studies", 
-  "Islamiat", "Computer Science", "Art", "Physical Education"
-];
+import { useClasses, useCreateClass } from "@/hooks/useClasses";
+import { useSubjects } from "@/hooks/useSubjects";
 
 const timeSlots = [
   "8:00-8:40", "8:40-9:20", "9:20-10:00", "10:20-11:00", 
@@ -78,14 +22,16 @@ const timeSlots = [
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 export default function ClassesPage() {
-  const [classes, setClasses] = useState<ClassInfo[]>(mockClasses);
+  const { data: classes = [], isLoading } = useClasses();
+  const { data: subjects = [] } = useSubjects();
+  const createClassMutation = useCreateClass();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null);
+  const [selectedClass, setSelectedClass] = useState<any>(null);
   const [showNewClassDialog, setShowNewClassDialog] = useState(false);
   const { toast } = useToast();
 
   const handleDeleteClass = (id: string) => {
-    setClasses(prev => prev.filter(cls => cls.id !== id));
+    // Delete class logic would go here
     toast({
       title: "Class Deleted",
       description: "Class has been successfully deleted"
@@ -94,9 +40,18 @@ export default function ClassesPage() {
 
   const filteredClasses = classes.filter(cls =>
     cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cls.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cls.classTeacher.toLowerCase().includes(searchTerm.toLowerCase())
+    (cls.section || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <MainLayout title="Classes Management">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">Loading classes data...</div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout 
@@ -239,7 +194,7 @@ export default function ClassesPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Students</p>
-                      <p className="text-2xl font-bold">{classes.reduce((sum, cls) => sum + cls.enrolled, 0)}</p>
+                       <p className="text-2xl font-bold">0</p>
                     </div>
                     <Users className="h-8 w-8 text-muted-foreground" />
                   </div>
@@ -251,9 +206,9 @@ export default function ClassesPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Average Class Size</p>
-                      <p className="text-2xl font-bold">
-                        {Math.round(classes.reduce((sum, cls) => sum + cls.enrolled, 0) / classes.length)}
-                      </p>
+                       <p className="text-2xl font-bold">
+                         0
+                       </p>
                     </div>
                     <Users className="h-8 w-8 text-muted-foreground" />
                   </div>
@@ -293,24 +248,24 @@ export default function ClassesPage() {
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {filteredClasses.map((classInfo) => (
-                      <TableRow key={classInfo.id}>
-                        <TableCell className="font-medium">{classInfo.name}</TableCell>
-                        <TableCell>{classInfo.section}</TableCell>
-                        <TableCell>{classInfo.classTeacher}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4 text-muted-foreground" />
-                            {classInfo.room}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={classInfo.enrolled >= classInfo.capacity * 0.9 ? "destructive" : "default"}>
-                            {classInfo.enrolled}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{classInfo.capacity}</TableCell>
+                    <TableBody>
+                      {filteredClasses.map((classInfo) => (
+                        <TableRow key={classInfo.id}>
+                          <TableCell className="font-medium">{classInfo.name}</TableCell>
+                          <TableCell>{classInfo.section || 'N/A'}</TableCell>
+                          <TableCell>N/A</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4 text-muted-foreground" />
+                              N/A
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="default">
+                              0
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{classInfo.capacity}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={() => setSelectedClass(classInfo)}>
@@ -413,15 +368,15 @@ export default function ClassesPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {subjects.map((subject, index) => (
-                    <Card key={index}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-medium">{subject}</span>
-                          </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                   {subjects.map((subject) => (
+                     <Card key={subject.id}>
+                       <CardContent className="p-4">
+                         <div className="flex items-center justify-between">
+                           <div className="flex items-center gap-2">
+                             <BookOpen className="w-4 h-4 text-muted-foreground" />
+                             <span className="font-medium">{subject.name}</span>
+                           </div>
                           <div className="flex gap-1">
                             <Button variant="ghost" size="sm">
                               <Edit className="w-3 h-3" />

@@ -12,103 +12,29 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { UserPlus, Search, Edit, Trash2, Eye, Users, GraduationCap, Shield, Calculator, BookOpen, Coffee } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface StaffMember {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: 'teacher' | 'admin' | 'accountant' | 'librarian' | 'security' | 'support';
-  department: string;
-  joiningDate: string;
-  salary: number;
-  subjects?: string[];
-  classes?: string[];
-  status: 'active' | 'inactive' | 'on-leave';
-  address: string;
-  qualification: string;
-  experience: number; // years
-}
-
-const mockStaff: StaffMember[] = [
-  {
-    id: "STF001",
-    name: "استاد احمد علی",
-    email: "ahmad.ali@school.edu.pk",
-    phone: "+92-300-1234567",
-    role: "teacher",
-    department: "Mathematics",
-    joiningDate: "2022-01-15",
-    salary: 45000,
-    subjects: ["Mathematics", "Physics"],
-    classes: ["Class 6-A", "Class 7-A"],
-    status: "active",
-    address: "House 123, Street 45, Islamabad",
-    qualification: "M.Sc Mathematics",
-    experience: 5
-  },
-  {
-    id: "STF002",
-    name: "Miss Sarah Khan",
-    email: "sarah.khan@school.edu.pk",
-    phone: "+92-301-2345678",
-    role: "teacher",
-    department: "English",
-    joiningDate: "2021-08-20",
-    salary: 42000,
-    subjects: ["English", "Literature"],
-    classes: ["Class 8-A", "Class 9-A"],
-    status: "active",
-    address: "Apartment 45, Block B, Rawalpindi",
-    qualification: "M.A English Literature",
-    experience: 7
-  },
-  {
-    id: "STF003",
-    name: "محمد حسن",
-    email: "hassan@school.edu.pk",
-    phone: "+92-302-3456789",
-    role: "accountant",
-    department: "Finance",
-    joiningDate: "2020-03-10",
-    salary: 50000,
-    status: "active",
-    address: "House 67, Street 12, Islamabad",
-    qualification: "MBA Finance",
-    experience: 8
-  }
-];
+import { useStaff, useDeleteStaff } from "@/hooks/useStaff";
 
 export default function StaffPage() {
-  const [staff, setStaff] = useState<StaffMember[]>(mockStaff);
+  const { data: staff = [], isLoading } = useStaff();
+  const deleteStaffMutation = useDeleteStaff();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [showNewStaffDialog, setShowNewStaffDialog] = useState(false);
   const { toast } = useToast();
 
   const handleDeleteStaff = (id: string) => {
-    setStaff(prev => prev.filter(member => member.id !== id));
-    toast({
-      title: "Staff Member Deleted",
-      description: "Staff member has been successfully removed"
-    });
+    deleteStaffMutation.mutate(id);
   };
 
-  const getStatusBadge = (status: StaffMember['status']) => {
-    const variants = {
-      active: "default",
-      inactive: "secondary",
-      "on-leave": "outline"
-    } as const;
-    
+  const getStatusBadge = (role: string) => {
     return (
-      <Badge variant={variants[status]}>
-        {status.replace('-', ' ').charAt(0).toUpperCase() + status.slice(1)}
+      <Badge variant="default">
+        {role.charAt(0).toUpperCase() + role.slice(1)}
       </Badge>
     );
   };
 
-  const getRoleIcon = (role: StaffMember['role']) => {
+  const getRoleIcon = (role: string) => {
     const icons = {
       teacher: GraduationCap,
       admin: Shield,
@@ -121,19 +47,29 @@ export default function StaffPage() {
   };
 
   const filteredStaff = staff.filter(member => {
-    const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.department.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === "all" || member.role === roleFilter;
+    const matchesSearch = (member.profile?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (member.profile?.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (member.department || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === "all" || member.designation === roleFilter;
     return matchesSearch && matchesRole;
   });
 
   const statsData = {
     total: staff.length,
-    teachers: staff.filter(s => s.role === 'teacher').length,
-    admin: staff.filter(s => s.role === 'admin').length,
-    support: staff.filter(s => s.role !== 'teacher' && s.role !== 'admin').length
+    teachers: staff.filter(s => s.designation === 'teacher').length,
+    admin: staff.filter(s => s.designation === 'admin').length,
+    support: staff.filter(s => s.designation !== 'teacher' && s.designation !== 'admin').length
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout title="Staff Management">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">Loading staff data...</div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout 
@@ -325,23 +261,23 @@ export default function StaffPage() {
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {filteredStaff.map((member) => {
-                      const RoleIcon = getRoleIcon(member.role);
-                      return (
-                        <TableRow key={member.id}>
-                          <TableCell className="font-medium">{member.name}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <RoleIcon className="w-4 h-4 text-muted-foreground" />
-                              {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
-                            </div>
-                          </TableCell>
-                          <TableCell>{member.department}</TableCell>
-                          <TableCell>{member.email}</TableCell>
-                          <TableCell>{member.phone}</TableCell>
-                          <TableCell>{member.joiningDate}</TableCell>
-                          <TableCell>{getStatusBadge(member.status)}</TableCell>
+                   <TableBody>
+                     {filteredStaff.map((member) => {
+                       const RoleIcon = getRoleIcon(member.designation || 'support');
+                       return (
+                         <TableRow key={member.id}>
+                           <TableCell className="font-medium">{member.profile?.full_name || 'N/A'}</TableCell>
+                           <TableCell>
+                             <div className="flex items-center gap-2">
+                               <RoleIcon className="w-4 h-4 text-muted-foreground" />
+                               {(member.designation || 'staff').charAt(0).toUpperCase() + (member.designation || 'staff').slice(1)}
+                             </div>
+                           </TableCell>
+                           <TableCell>{member.department || 'N/A'}</TableCell>
+                           <TableCell>{member.profile?.email || 'N/A'}</TableCell>
+                           <TableCell>{member.profile?.phone || 'N/A'}</TableCell>
+                           <TableCell>{member.hire_date || 'N/A'}</TableCell>
+                           <TableCell>{getStatusBadge(member.designation || 'staff')}</TableCell>
                           <TableCell>
                             <div className="flex gap-2">
                               <Button variant="outline" size="sm">
@@ -388,26 +324,18 @@ export default function StaffPage() {
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {staff.filter(s => s.role === 'teacher').map((teacher) => (
-                      <TableRow key={teacher.id}>
-                        <TableCell className="font-medium">{teacher.name}</TableCell>
-                        <TableCell>{teacher.qualification}</TableCell>
-                        <TableCell>{teacher.experience} years</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {teacher.subjects?.map((subject, index) => (
-                              <Badge key={index} variant="outline">{subject}</Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {teacher.classes?.map((cls, index) => (
-                              <Badge key={index} variant="secondary">{cls}</Badge>
-                            ))}
-                          </div>
-                        </TableCell>
+                   <TableBody>
+                     {staff.filter(s => s.designation === 'teacher').map((teacher) => (
+                       <TableRow key={teacher.id}>
+                         <TableCell className="font-medium">{teacher.profile?.full_name || 'N/A'}</TableCell>
+                         <TableCell>{teacher.qualification || 'N/A'}</TableCell>
+                         <TableCell>{teacher.experience_years || 0} years</TableCell>
+                         <TableCell>
+                           <Badge variant="outline">N/A</Badge>
+                         </TableCell>
+                         <TableCell>
+                           <Badge variant="secondary">N/A</Badge>
+                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm">Assign</Button>
@@ -452,18 +380,18 @@ export default function StaffPage() {
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {staff.map((member) => (
-                      <TableRow key={member.id}>
-                        <TableCell className="font-medium">{member.name}</TableCell>
-                        <TableCell>{member.role}</TableCell>
-                        <TableCell>PKR {member.salary.toLocaleString()}</TableCell>
-                        <TableCell>PKR 5,000</TableCell>
-                        <TableCell>PKR 2,000</TableCell>
-                        <TableCell className="font-bold">PKR {(member.salary + 5000 - 2000).toLocaleString()}</TableCell>
-                        <TableCell>
-                          <Badge variant="default">Processed</Badge>
-                        </TableCell>
+                   <TableBody>
+                     {staff.map((member) => (
+                       <TableRow key={member.id}>
+                         <TableCell className="font-medium">{member.profile?.full_name || 'N/A'}</TableCell>
+                         <TableCell>{member.designation || 'N/A'}</TableCell>
+                         <TableCell>PKR {(member.salary || 0).toLocaleString()}</TableCell>
+                         <TableCell>PKR 5,000</TableCell>
+                         <TableCell>PKR 2,000</TableCell>
+                         <TableCell className="font-bold">PKR {((member.salary || 0) + 5000 - 2000).toLocaleString()}</TableCell>
+                         <TableCell>
+                           <Badge variant="default">Processed</Badge>
+                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm">View Slip</Button>
@@ -487,13 +415,13 @@ export default function StaffPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {staff.filter(s => s.role === 'teacher').map((teacher) => (
-                    <Card key={teacher.id}>
-                      <CardContent className="p-4">
-                        <div className="space-y-2">
-                          <h4 className="font-semibold">{teacher.name}</h4>
-                          <p className="text-sm text-muted-foreground">{teacher.department}</p>
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                   {staff.filter(s => s.designation === 'teacher').map((teacher) => (
+                     <Card key={teacher.id}>
+                       <CardContent className="p-4">
+                         <div className="space-y-2">
+                           <h4 className="font-semibold">{teacher.profile?.full_name || 'N/A'}</h4>
+                           <p className="text-sm text-muted-foreground">{teacher.department || 'N/A'}</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-sm">
                               <span>Teaching Quality:</span>
