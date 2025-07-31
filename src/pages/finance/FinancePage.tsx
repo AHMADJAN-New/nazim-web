@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFees, useInvoices } from "@/hooks/useFinance";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -100,11 +101,27 @@ const mockPayments: PaymentRecord[] = [
 ];
 
 export default function FinancePage() {
+  const { data: fees = [], isLoading: feesLoading } = useFees();
+  const { data: invoices = [], isLoading: invoicesLoading } = useInvoices();
   const [feeStructure, setFeeStructure] = useState<FeeStructure[]>(mockFeeStructure);
-  const [payments, setPayments] = useState<PaymentRecord[]>(mockPayments);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date>();
   const { toast } = useToast();
+
+  // Transform database fees to payment records format
+  const payments: PaymentRecord[] = fees.map(fee => ({
+    id: fee.id,
+    studentId: fee.student_id,
+    studentName: 'Student Name', // Would need to join with student data
+    class: 'Unknown Class', // Would need to join with student/class data
+    feeType: fee.fee_type,
+    amount: Number(fee.amount),
+    dueDate: fee.due_date,
+    paidDate: fee.paid_date || undefined,
+    status: fee.status as 'paid' | 'pending' | 'overdue',
+    method: fee.payment_method as 'cash' | 'bank' | 'online' | undefined,
+    receiptNo: fee.transaction_id || undefined
+  }));
 
   const getStatusBadge = (status: PaymentRecord['status']) => {
     const variants = {

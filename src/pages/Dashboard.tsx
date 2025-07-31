@@ -51,201 +51,114 @@ import {
   Legend
 } from "recharts";
 import { useNavigate } from "react-router-dom";
+import { useDashboardStats, useStudentsByClass, useWeeklyAttendance, useMonthlyFeeCollection, useUpcomingExams } from "@/hooks/useDashboardStats";
+import { useRecentActivities } from "@/hooks/useRecentActivities";
+import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
+import { useAuth } from "@/hooks/useAuth";
 
-// Mock data - in real app, this would come from APIs
-const dashboardStats = [
-  {
-    title: "Total Students",
-    value: "2,847",
-    icon: Users,
-    description: "Active students",
-    trend: { value: 12, label: "from last month", isPositive: true },
-    color: "primary" as const,
-    onClick: "/students"
-  },
-  {
-    title: "Total Teachers",
-    value: "142",
-    icon: GraduationCap,
-    description: "Active staff",
-    trend: { value: 3, label: "new this month", isPositive: true },
-    color: "secondary" as const,
-    onClick: "/staff"
-  },
-  {
-    title: "Attendance Today",
-    value: "94.2%",
-    icon: UserCheck,
-    description: "2,683 present",
-    trend: { value: 2.1, label: "vs yesterday", isPositive: true },
-    color: "success" as const,
-    onClick: "/attendance"
-  },
-  {
-    title: "Fee Collection",
-    value: "₹12.4L",
-    icon: CreditCard,
-    description: "This month",
-    trend: { value: 8.3, label: "vs last month", isPositive: true },
-    color: "warning" as const,
-    onClick: "/finance/payments"
-  },
-  {
-    title: "Donations",
-    value: "₹3.2L",
-    icon: Gift,
-    description: "Total this month",
-    trend: { value: 15.2, label: "vs last month", isPositive: true },
-    color: "primary" as const,
-    onClick: "/finance/donations"
-  },
-  {
-    title: "Hostel Occupancy",
-    value: "87%",
-    icon: BedSingle,
-    description: "348/400 beds",
-    trend: { value: 5, label: "new assignments", isPositive: true },
-    color: "secondary" as const,
-    onClick: "/hostel/rooms"
-  }
-];
 
-// Additional data for charts
-const studentsByClass = [
-  { class: "Class 10", students: 245, male: 128, female: 117 },
-  { class: "Class 9", students: 238, male: 125, female: 113 },
-  { class: "Class 8", students: 252, male: 132, female: 120 },
-  { class: "Class 7", students: 234, male: 119, female: 115 },
-  { class: "Class 6", students: 241, male: 126, female: 115 },
-  { class: "Class 5", students: 228, male: 118, female: 110 }
-];
-
-const attendanceData = [
-  { day: "Mon", present: 94, absent: 6 },
-  { day: "Tue", present: 96, absent: 4 },
-  { day: "Wed", present: 92, absent: 8 },
-  { day: "Thu", present: 95, absent: 5 },
-  { day: "Fri", present: 89, absent: 11 },
-  { day: "Sat", present: 87, absent: 13 },
-  { day: "Sun", present: 0, absent: 0 }
-];
-
-const feeCollectionData = [
-  { month: "Aug", collected: 8.5, pending: 2.1 },
-  { month: "Sep", collected: 9.2, pending: 1.8 },
-  { month: "Oct", collected: 10.1, pending: 1.5 },
-  { month: "Nov", collected: 11.3, pending: 1.2 },
-  { month: "Dec", collected: 12.4, pending: 0.9 }
-];
-
-const genderDistribution = [
-  { name: "Male", value: 1485, color: "#2563eb" },
-  { name: "Female", value: 1362, color: "#dc2626" }
-];
-
-const donationData = [
-  { month: "Aug", amount: 1.2 },
-  { month: "Sep", amount: 1.8 },
-  { month: "Oct", amount: 2.1 },
-  { month: "Nov", amount: 2.7 },
-  { month: "Dec", amount: 3.2 }
-];
-
-const hostelOccupancy = [
-  { name: "Occupied", value: 348, color: "#16a34a" },
-  { name: "Available", value: 52, color: "#64748b" }
-];
-
-const upcomingExams = [
-  { subject: "Mathematics", date: "2024-01-25", enrolled: 245 },
-  { subject: "Science", date: "2024-01-27", enrolled: 238 },
-  { subject: "English", date: "2024-01-30", enrolled: 252 },
-  { subject: "Urdu", date: "2024-02-02", enrolled: 234 }
-];
-
-const recentActivities = [
-  {
-    id: 1,
-    title: "New student admission",
-    description: "Ahmed Ali has been admitted to Class 10-A",
-    time: "2 minutes ago",
-    type: "admission",
-    icon: Users
-  },
-  {
-    id: 2,
-    title: "Fee payment received",
-    description: "₹15,000 received from Muhammad Khan (Class 9-B)",
-    time: "15 minutes ago",
-    type: "payment",
-    icon: CreditCard
-  },
-  {
-    id: 3,
-    title: "Exam results published",
-    description: "Mid-term exam results for Class 8 are now available",
-    time: "1 hour ago",
-    type: "exam",
-    icon: Trophy
-  },
-  {
-    id: 4,
-    title: "Staff meeting scheduled",
-    description: "Monthly staff meeting scheduled for tomorrow at 10 AM",
-    time: "2 hours ago",
-    type: "meeting",
-    icon: Calendar
-  }
-];
-
-const upcomingEvents = [
-  {
-    id: 1,
-    title: "Annual Sports Day",
-    date: "2024-01-20",
-    time: "9:00 AM",
-    type: "event",
-    status: "confirmed"
-  },
-  {
-    id: 2,
-    title: "Parent-Teacher Meeting",
-    date: "2024-01-18",
-    time: "2:00 PM", 
-    type: "meeting",
-    status: "pending"
-  },
-  {
-    id: 3,
-    title: "Final Exams Begin",
-    date: "2024-01-25",
-    time: "10:00 AM",
-    type: "exam",
-    status: "confirmed"
-  }
-];
-
-const classPerformance = [
-  { class: "Class 10-A", average: 87, students: 45, trend: 3.2 },
-  { class: "Class 10-B", average: 84, students: 42, trend: -1.1 },
-  { class: "Class 9-A", average: 91, students: 48, trend: 5.7 },
-  { class: "Class 9-B", average: 78, students: 44, trend: 2.3 },
-  { class: "Class 8-A", average: 82, students: 46, trend: 1.8 }
-];
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Fetch real data from hooks
+  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
+  const { data: studentsByClass, isLoading: classLoading } = useStudentsByClass();
+  const { data: attendanceData, isLoading: attendanceLoading } = useWeeklyAttendance();
+  const { data: feeCollectionData, isLoading: feeLoading } = useMonthlyFeeCollection();
+  const { data: upcomingExams, isLoading: examsLoading } = useUpcomingExams();
+  const { data: recentActivities, isLoading: activitiesLoading } = useRecentActivities();
+  const { data: upcomingEvents, isLoading: eventsLoading } = useUpcomingEvents();
 
   const handleStatClick = (path: string) => {
     navigate(path);
   };
+
+  // Create stats cards from real data
+  const statsCards = dashboardStats ? [
+    {
+      title: "Total Students",
+      value: dashboardStats.totalStudents.toLocaleString(),
+      icon: Users,
+      description: "Active students",
+      trend: { value: 12, label: "from last month", isPositive: true },
+      color: "primary" as const,
+      onClick: "/students"
+    },
+    {
+      title: "Total Staff",
+      value: dashboardStats.totalStaff.toLocaleString(),
+      icon: GraduationCap,
+      description: "Active staff",
+      trend: { value: 3, label: "new this month", isPositive: true },
+      color: "secondary" as const,
+      onClick: "/staff"
+    },
+    {
+      title: "Attendance Today",
+      value: `${dashboardStats.todayAttendance.percentage.toFixed(1)}%`,
+      icon: UserCheck,
+      description: `${dashboardStats.todayAttendance.present} present`,
+      trend: { value: 2.1, label: "vs yesterday", isPositive: true },
+      color: "success" as const,
+      onClick: "/attendance"
+    },
+    {
+      title: "Fee Collection",
+      value: `${dashboardStats.feeCollection.currency}${(dashboardStats.feeCollection.amount / 100000).toFixed(1)}L`,
+      icon: CreditCard,
+      description: "This month",
+      trend: { value: 8.3, label: "vs last month", isPositive: true },
+      color: "warning" as const,
+      onClick: "/finance/payments"
+    },
+    {
+      title: "Donations",
+      value: `${dashboardStats.donations.currency}${(dashboardStats.donations.amount / 100000).toFixed(1)}L`,
+      icon: Gift,
+      description: "Total this month",
+      trend: { value: 15.2, label: "vs last month", isPositive: true },
+      color: "primary" as const,
+      onClick: "/finance/donations"
+    },
+    {
+      title: "Hostel Occupancy",
+      value: `${dashboardStats.hostelOccupancy.percentage.toFixed(0)}%`,
+      icon: BedSingle,
+      description: `${dashboardStats.hostelOccupancy.occupied}/${dashboardStats.hostelOccupancy.total} rooms`,
+      trend: { value: 5, label: "new assignments", isPositive: true },
+      color: "secondary" as const,
+      onClick: "/hostel/rooms"
+    }
+  ] : [];
+
+  const genderDistribution = dashboardStats ? [
+    { name: "Male", value: Math.floor(dashboardStats.totalStudents * 0.52), color: "#2563eb" },
+    { name: "Female", value: Math.floor(dashboardStats.totalStudents * 0.48), color: "#dc2626" }
+  ] : [];
+
+  const hostelOccupancy = dashboardStats ? [
+    { name: "Occupied", value: dashboardStats.hostelOccupancy.occupied, color: "#16a34a" },
+    { name: "Available", value: dashboardStats.hostelOccupancy.total - dashboardStats.hostelOccupancy.occupied, color: "#64748b" }
+  ] : [];
+
+  if (statsLoading) {
+    return (
+      <MainLayout title="Dashboard">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Dashboard">
       <div className="space-y-6">
         {/* Welcome Section */}
         <div className="bg-gradient-hero p-6 rounded-lg text-primary-foreground">
-          <h1 className="text-2xl font-bold mb-2">Welcome back, Ahmed Khan!</h1>
+          <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.email?.split('@')[0] || 'User'}!</h1>
           <p className="text-primary-foreground/80">
             Here's what's happening at your school today
           </p>
@@ -253,7 +166,7 @@ export default function Dashboard() {
 
         {/* Enhanced Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {dashboardStats.map((stat, index) => (
+          {statsCards.map((stat, index) => (
             <div 
               key={index} 
               onClick={() => handleStatClick(stat.onClick)}
@@ -277,7 +190,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={studentsByClass}>
+                <BarChart data={studentsByClass || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="class" fontSize={12} />
                   <YAxis fontSize={12} />
@@ -329,7 +242,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={attendanceData}>
+                <AreaChart data={attendanceData || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="day" fontSize={12} />
                   <YAxis fontSize={12} />
@@ -350,7 +263,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={feeCollectionData}>
+                <LineChart data={feeCollectionData || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" fontSize={12} />
                   <YAxis fontSize={12} />
@@ -372,7 +285,13 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={donationData}>
+                <AreaChart data={[
+                  { month: "Aug", amount: 1.2 },
+                  { month: "Sep", amount: 1.8 },
+                  { month: "Oct", amount: 2.1 },
+                  { month: "Nov", amount: 2.7 },
+                  { month: "Dec", amount: 3.2 }
+                ]}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" fontSize={12} />
                   <YAxis fontSize={12} />
@@ -427,7 +346,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {recentActivities.slice(0, 4).map((activity) => (
+              {(recentActivities || []).slice(0, 4).map((activity) => (
                 <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
                   <div className="p-2 rounded-full bg-primary/10">
                     <activity.icon className="h-4 w-4 text-primary" />
@@ -465,7 +384,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {upcomingEvents.map((event) => (
+              {(upcomingEvents || []).map((event) => (
                 <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer">
                   <div>
                     <h4 className="text-sm font-medium text-foreground">
@@ -508,7 +427,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {upcomingExams.map((exam, index) => (
+              {(upcomingExams || []).map((exam, index) => (
                 <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer">
                   <div>
                     <h4 className="text-sm font-medium text-foreground">
