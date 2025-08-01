@@ -284,6 +284,135 @@ export type Database = {
           },
         ]
       }
+      attendance_devices: {
+        Row: {
+          branch_id: string
+          created_at: string
+          device_name: string
+          device_type: string
+          id: string
+          ip_address: unknown | null
+          is_active: boolean
+          last_sync: string | null
+          location: string | null
+          port: number | null
+          settings: Json | null
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          device_name: string
+          device_type?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_sync?: string | null
+          location?: string | null
+          port?: number | null
+          settings?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          device_name?: string
+          device_type?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_sync?: string | null
+          location?: string | null
+          port?: number | null
+          settings?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      attendance_logs: {
+        Row: {
+          created_at: string
+          device_id: string
+          device_user_id: string | null
+          id: string
+          log_type: string
+          processed: boolean
+          raw_data: Json | null
+          student_id: string
+          timestamp: string
+          verification_method: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          device_user_id?: string | null
+          id?: string
+          log_type?: string
+          processed?: boolean
+          raw_data?: Json | null
+          student_id: string
+          timestamp: string
+          verification_method: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          device_user_id?: string | null
+          id?: string
+          log_type?: string
+          processed?: boolean
+          raw_data?: Json | null
+          student_id?: string
+          timestamp?: string
+          verification_method?: string
+        }
+        Relationships: []
+      }
+      attendance_summary: {
+        Row: {
+          absent_days: number
+          class_id: string
+          created_at: string
+          id: string
+          late_days: number
+          month: number
+          percentage: number | null
+          present_days: number
+          student_id: string
+          total_days: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          absent_days?: number
+          class_id: string
+          created_at?: string
+          id?: string
+          late_days?: number
+          month: number
+          percentage?: number | null
+          present_days?: number
+          student_id: string
+          total_days?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          absent_days?: number
+          class_id?: string
+          created_at?: string
+          id?: string
+          late_days?: number
+          month?: number
+          percentage?: number | null
+          present_days?: number
+          student_id?: string
+          total_days?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -530,6 +659,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      exam_results: {
+        Row: {
+          created_at: string
+          entered_by: string
+          exam_id: string
+          grade: string | null
+          id: string
+          marks_obtained: number
+          percentage: number | null
+          remarks: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entered_by: string
+          exam_id: string
+          grade?: string | null
+          id?: string
+          marks_obtained: number
+          percentage?: number | null
+          remarks?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entered_by?: string
+          exam_id?: string
+          grade?: string | null
+          id?: string
+          marks_obtained?: number
+          percentage?: number | null
+          remarks?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       exams: {
         Row: {

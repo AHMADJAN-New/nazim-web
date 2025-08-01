@@ -10,10 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CalendarIcon, Plus, Search, FileText, BarChart3, Award, Download, Upload, Eye, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useExams } from "@/hooks/useExams";
+import { useExamResults, useCreateExamResult, useBulkCreateExamResults } from "@/hooks/useExamResults";
+import { useClasses } from "@/hooks/useClasses";
+import { useSubjects } from "@/hooks/useSubjects";
 
 interface Exam {
   id: string;
@@ -105,11 +110,28 @@ const mockResults: ExamResult[] = [
 ];
 
 export default function ExamsPage() {
-  const [exams, setExams] = useState<Exam[]>(mockExams);
-  const [results, setResults] = useState<ExamResult[]>(mockResults);
+  const { data: exams = [], isLoading: examsLoading } = useExams();
+  const { data: examResults = [], isLoading: resultsLoading } = useExamResults();
+  const { data: classes = [] } = useClasses();
+  const { data: subjects = [] } = useSubjects();
+  const createResult = useCreateExamResult();
+  const bulkCreateResults = useBulkCreateExamResults();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedExam, setSelectedExam] = useState<string>("");
+  const [showResultDialog, setShowResultDialog] = useState(false);
+  const [resultForm, setResultForm] = useState({
+    student_id: '',
+    marks_obtained: 0,
+    remarks: ''
+  });
   const { toast } = useToast();
+
+  // Filter results by selected exam
+  const filteredResults = selectedExam 
+    ? examResults.filter(result => result.exam_id === selectedExam)
+    : examResults;
 
   const getStatusBadge = (status: Exam['status']) => {
     const variants = {
@@ -128,8 +150,11 @@ export default function ExamsPage() {
 
   const getGradeBadge = (grade: string) => {
     const variants = {
+      'A+': "default",
       'A': "default",
+      'B+': "secondary",
       'B': "secondary", 
+      'C+': "outline",
       'C': "outline",
       'D': "outline",
       'F': "destructive"
@@ -141,6 +166,44 @@ export default function ExamsPage() {
       </Badge>
     );
   };
+
+  const handleCreateResult = () => {
+    if (!selectedExam || !resultForm.student_id || resultForm.marks_obtained < 0) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    createResult.mutate({
+      exam_id: selectedExam,
+      student_id: resultForm.student_id,
+      marks_obtained: resultForm.marks_obtained,
+      remarks: resultForm.remarks,
+      entered_by: 'current-user-id' // This should come from auth context
+    }, {
+      onSuccess: () => {
+        setShowResultDialog(false);
+        setResultForm({
+          student_id: '',
+          marks_obtained: 0,
+          remarks: ''
+        });
+      }
+    });
+  };
+
+  if (examsLoading || resultsLoading) {
+    return (
+      <MainLayout title="Examinations">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">Loading exams data...</div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout 
@@ -226,7 +289,7 @@ export default function ExamsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Scheduled</p>
-                      <p className="text-2xl font-bold">{exams.filter(e => e.status === 'scheduled').length}</p>
+                      <p className="text-2xl font-bold">{exams.filter(e => new Date(e.exam_date) > new Date()).length}</p>
                     </div>
                     <CalendarIcon className="h-8 w-8 text-muted-foreground" />
                   </div>
@@ -238,7 +301,7 @@ export default function ExamsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                      <p className="text-2xl font-bold">{exams.filter(e => e.status === 'completed').length}</p>
+                      <p className="text-2xl font-bold">{exams.filter(e => new Date(e.exam_date) < new Date()).length}</p>
                     </div>
                     <Award className="h-8 w-8 text-muted-foreground" />
                   </div>
@@ -250,7 +313,11 @@ export default function ExamsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Pass Rate</p>
-                      <p className="text-2xl font-bold">75%</p>
+                       <p className="text-2xl font-bold">
+                         {examResults.length > 0 
+                           ? Math.round((examResults.filter(r => (r.percentage || 0) >= 40).length / examResults.length) * 100)
+                           : 0}%
+                       </p>
                     </div>
                     <BarChart3 className="h-8 w-8 text-muted-foreground" />
                   </div>
@@ -281,38 +348,42 @@ export default function ExamsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {exams.map((exam) => (
-                      <TableRow key={exam.id}>
-                        <TableCell className="font-medium">{exam.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{exam.type}</Badge>
-                        </TableCell>
-                        <TableCell>{exam.class}</TableCell>
-                        <TableCell>{exam.subject}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div>{format(new Date(exam.date), "PPP")}</div>
-                            <div className="text-sm text-muted-foreground">{exam.time}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{exam.duration} min</TableCell>
-                        <TableCell>{exam.totalMarks}</TableCell>
-                        <TableCell>{getStatusBadge(exam.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <FileText className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                   {exams.map((exam) => (
+                     <TableRow key={exam.id}>
+                       <TableCell className="font-medium">{exam.name}</TableCell>
+                       <TableCell>
+                         <Badge variant="outline">{exam.type}</Badge>
+                       </TableCell>
+                       <TableCell>{classes.find(c => c.id === exam.class_id)?.name || 'N/A'}</TableCell>
+                       <TableCell>{subjects.find(s => s.id === exam.subject_id)?.name || 'N/A'}</TableCell>
+                       <TableCell>
+                         <div className="space-y-1">
+                           <div>{format(new Date(exam.exam_date), "PPP")}</div>
+                           <div className="text-sm text-muted-foreground">{exam.duration_minutes} min</div>
+                         </div>
+                       </TableCell>
+                       <TableCell>{exam.duration_minutes} min</TableCell>
+                       <TableCell>{exam.total_marks}</TableCell>
+                       <TableCell>
+                         <Badge variant={new Date(exam.exam_date) > new Date() ? "outline" : "secondary"}>
+                           {new Date(exam.exam_date) > new Date() ? "Scheduled" : "Completed"}
+                         </Badge>
+                       </TableCell>
+                       <TableCell>
+                         <div className="flex gap-2">
+                           <Button variant="outline" size="sm">
+                             <Eye className="w-4 h-4" />
+                           </Button>
+                           <Button variant="outline" size="sm">
+                             <Edit className="w-4 h-4" />
+                           </Button>
+                           <Button variant="outline" size="sm">
+                             <FileText className="w-4 h-4" />
+                           </Button>
+                         </div>
+                       </TableCell>
+                     </TableRow>
+                   ))}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -330,19 +401,72 @@ export default function ExamsPage() {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Select>
+                    <Select value={selectedExam} onValueChange={setSelectedExam}>
                       <SelectTrigger className="w-48">
                         <SelectValue placeholder="Select Exam" />
                       </SelectTrigger>
                       <SelectContent>
-                        {exams.filter(e => e.status === 'completed').map(exam => (
+                        {exams.map(exam => (
                           <SelectItem key={exam.id} value={exam.id}>
                             {exam.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button>Enter Marks</Button>
+                    <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
+                      <DialogTrigger asChild>
+                        <Button>Enter Marks</Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Enter Exam Result</DialogTitle>
+                          <DialogDescription>
+                            Add marks for the selected exam
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="student_id">Student</Label>
+                            <Select value={resultForm.student_id} onValueChange={(value) => setResultForm(prev => ({ ...prev, student_id: value }))}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Student" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="student-1">Ahmad Ali</SelectItem>
+                                <SelectItem value="student-2">Fatima Khan</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="marks">Marks Obtained</Label>
+                            <Input
+                              id="marks"
+                              type="number"
+                              value={resultForm.marks_obtained}
+                              onChange={(e) => setResultForm(prev => ({ ...prev, marks_obtained: parseInt(e.target.value) || 0 }))}
+                              placeholder="Enter marks"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="remarks">Remarks (Optional)</Label>
+                            <Input
+                              id="remarks"
+                              value={resultForm.remarks}
+                              onChange={(e) => setResultForm(prev => ({ ...prev, remarks: e.target.value }))}
+                              placeholder="Additional comments"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setShowResultDialog(false)}>
+                              Cancel
+                            </Button>
+                            <Button onClick={handleCreateResult} disabled={createResult.isPending}>
+                              Save Result
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </CardHeader>
@@ -361,31 +485,38 @@ export default function ExamsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {results.map((result) => (
-                      <TableRow key={result.id}>
-                        <TableCell className="font-medium">{result.rollNumber}</TableCell>
-                        <TableCell>{result.studentName}</TableCell>
-                        <TableCell>{result.marksObtained}</TableCell>
-                        <TableCell>{result.totalMarks}</TableCell>
-                        <TableCell>{result.percentage}%</TableCell>
-                        <TableCell>{getGradeBadge(result.grade)}</TableCell>
-                        <TableCell>
-                          <Badge variant={result.status === 'pass' ? 'default' : 'destructive'}>
-                            {result.status.toUpperCase()}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                   {filteredResults.map((result) => (
+                     <TableRow key={result.id}>
+                       <TableCell className="font-medium">{result.student?.student_id || 'N/A'}</TableCell>
+                       <TableCell>{result.student?.profiles?.full_name || 'N/A'}</TableCell>
+                       <TableCell>{result.marks_obtained}</TableCell>
+                       <TableCell>{result.exam?.total_marks || 'N/A'}</TableCell>
+                       <TableCell>{result.percentage ? `${result.percentage}%` : 'N/A'}</TableCell>
+                       <TableCell>{result.grade ? getGradeBadge(result.grade) : 'N/A'}</TableCell>
+                       <TableCell>
+                         <Badge variant={(result.percentage || 0) >= 40 ? 'default' : 'destructive'}>
+                           {(result.percentage || 0) >= 40 ? 'PASS' : 'FAIL'}
+                         </Badge>
+                       </TableCell>
+                       <TableCell>
+                         <div className="flex gap-2">
+                           <Button variant="outline" size="sm">
+                             <Eye className="w-4 h-4" />
+                           </Button>
+                           <Button variant="outline" size="sm">
+                             <Edit className="w-4 h-4" />
+                           </Button>
+                         </div>
+                       </TableCell>
+                     </TableRow>
+                   ))}
+                   {filteredResults.length === 0 && (
+                     <TableRow>
+                       <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                         {selectedExam ? 'No results found for selected exam' : 'Select an exam to view results'}
+                       </TableCell>
+                     </TableRow>
+                   )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -495,9 +626,9 @@ export default function ExamsPage() {
                           <SelectValue placeholder="Choose exam" />
                         </SelectTrigger>
                         <SelectContent>
-                          {exams.filter(e => e.status === 'scheduled').map(exam => (
+                          {exams.filter(e => new Date(e.exam_date) > new Date()).map(exam => (
                             <SelectItem key={exam.id} value={exam.id}>
-                              {exam.name} - {exam.class}
+                              {exam.name} - {classes.find(c => c.id === exam.class_id)?.name || 'N/A'}
                             </SelectItem>
                           ))}
                         </SelectContent>

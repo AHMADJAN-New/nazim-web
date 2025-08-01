@@ -10,23 +10,38 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Search, QrCode, Camera, Download, Upload, CheckCircle, XCircle, Clock, Users } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CalendarIcon, Search, QrCode, Camera, Download, Upload, CheckCircle, XCircle, Clock, Users, Settings, Wifi, WifiOff, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAttendance, useMarkAttendance, useUpdateAttendance } from "@/hooks/useAttendance";
 import { useClasses } from "@/hooks/useClasses";
+import { useAttendanceDevices, useCreateAttendanceDevice, useCreateAttendanceLog, useSyncDeviceData } from "@/hooks/useAttendanceDevices";
 
 export default function AttendancePage() {
   const { data: attendanceData = [], isLoading } = useAttendance();
   const { data: classes = [] } = useClasses();
+  const { data: devices = [], isLoading: devicesLoading } = useAttendanceDevices();
   const markAttendanceMutation = useMarkAttendance();
   const updateAttendanceMutation = useUpdateAttendance();
+  const createDevice = useCreateAttendanceDevice();
+  const createLog = useCreateAttendanceLog();
+  const syncDevice = useSyncDeviceData();
   
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [selectedSection, setSelectedSection] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showDeviceDialog, setShowDeviceDialog] = useState(false);
+  const [deviceForm, setDeviceForm] = useState({
+    device_name: '',
+    device_type: 'zkt',
+    ip_address: '',
+    port: 4370,
+    location: '',
+    branch_id: classes[0]?.branch_id || ''
+  });
   const { toast } = useToast();
 
   const handleAttendanceChange = (id: string, status: 'present' | 'absent' | 'late' | 'leave') => {
@@ -67,6 +82,70 @@ export default function AttendancePage() {
       title: "Bulk Attendance",
       description: `All students marked as ${status}`
     });
+  };
+
+  const handleCreateDevice = () => {
+    if (!deviceForm.device_name) {
+      toast({
+        title: "Error",
+        description: "Please fill in required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    createDevice.mutate({
+      ...deviceForm,
+      branch_id: classes[0]?.branch_id || '',
+      is_active: true,
+      settings: {}
+    }, {
+      onSuccess: () => {
+        setShowDeviceDialog(false);
+        setDeviceForm({
+          device_name: '',
+          device_type: 'zkt',
+          ip_address: '',
+          port: 4370,
+          location: '',
+          branch_id: classes[0]?.branch_id || ''
+        });
+      }
+    });
+  };
+
+  const handleSyncDevice = async (deviceId: string) => {
+    // Simulate device data sync - in real implementation, this would connect to the actual device
+    const mockLogs = [
+      {
+        student_id: 'STU001',
+        timestamp: new Date().toISOString(),
+        type: 'check_in',
+        method: 'fingerprint',
+        device_user_id: '1001'
+      }
+    ];
+
+    syncDevice.mutate({
+      deviceId,
+      logs: mockLogs
+    });
+  };
+
+  const handleManualLog = () => {
+    const studentId = prompt('Enter Student ID:');
+    const deviceId = devices?.[0]?.id;
+    
+    if (studentId && deviceId) {
+      createLog.mutate({
+        device_id: deviceId,
+        student_id: studentId,
+        timestamp: new Date().toISOString(),
+        log_type: 'check_in',
+        verification_method: 'manual',
+        raw_data: {}
+      });
+    }
   };
 
   if (isLoading) {
@@ -135,14 +214,133 @@ export default function AttendancePage() {
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleManualLog}>
               <QrCode className="w-4 h-4 mr-2" />
-              QR Scan
+              Manual Entry
             </Button>
             <Button variant="outline" size="sm">
               <Camera className="w-4 h-4 mr-2" />
               Face Recognition
             </Button>
+            <Dialog open={showDeviceDialog} onOpenChange={setShowDeviceDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Devices
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Attendance Devices</DialogTitle>
+                  <DialogDescription>
+                    Manage biometric and attendance devices
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {/* Device List */}
+                  <div className="border rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="font-semibold">Connected Devices</h4>
+                      <Badge variant="outline">{devices.length} devices</Badge>
+                    </div>
+                    <div className="space-y-2">
+                      {devices.map((device) => (
+                        <div key={device.id} className="flex items-center justify-between p-3 border rounded">
+                          <div className="flex items-center gap-3">
+                            {device.is_active ? (
+                              <Wifi className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <WifiOff className="w-4 h-4 text-red-500" />
+                            )}
+                            <div>
+                              <p className="font-medium">{device.device_name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {device.device_type.toUpperCase()} - {device.location}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleSyncDevice(device.id)}>
+                              Sync
+                            </Button>
+                            <Badge variant={device.is_active ? "default" : "secondary"}>
+                              {device.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                      {devices.length === 0 && (
+                        <p className="text-center text-muted-foreground py-4">No devices configured</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Add New Device Form */}
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-semibold mb-4">Add New Device</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="device_name">Device Name</Label>
+                        <Input
+                          id="device_name"
+                          value={deviceForm.device_name}
+                          onChange={(e) => setDeviceForm(prev => ({ ...prev, device_name: e.target.value }))}
+                          placeholder="ZKT Device 1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="device_type">Device Type</Label>
+                        <Select value={deviceForm.device_type} onValueChange={(value) => setDeviceForm(prev => ({ ...prev, device_type: value }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="zkt">ZKT Biometric</SelectItem>
+                            <SelectItem value="rfid">RFID Card Reader</SelectItem>
+                            <SelectItem value="qr">QR Code Scanner</SelectItem>
+                            <SelectItem value="face">Face Recognition</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="ip_address">IP Address</Label>
+                        <Input
+                          id="ip_address"
+                          value={deviceForm.ip_address}
+                          onChange={(e) => setDeviceForm(prev => ({ ...prev, ip_address: e.target.value }))}
+                          placeholder="192.168.1.100"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="port">Port</Label>
+                        <Input
+                          id="port"
+                          type="number"
+                          value={deviceForm.port}
+                          onChange={(e) => setDeviceForm(prev => ({ ...prev, port: parseInt(e.target.value) }))}
+                          placeholder="4370"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label htmlFor="location">Location</Label>
+                        <Input
+                          id="location"
+                          value={deviceForm.location}
+                          onChange={(e) => setDeviceForm(prev => ({ ...prev, location: e.target.value }))}
+                          placeholder="Main Entrance"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                      <Button onClick={handleCreateDevice} disabled={createDevice.isPending}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Device
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Button variant="outline" size="sm">
               <Download className="w-4 h-4 mr-2" />
               Export
@@ -154,6 +352,7 @@ export default function AttendancePage() {
           <TabsList>
             <TabsTrigger value="daily">Daily Attendance</TabsTrigger>
             <TabsTrigger value="period">Period-wise</TabsTrigger>
+            <TabsTrigger value="devices">Device Logs</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="bulk">Bulk Actions</TabsTrigger>
           </TabsList>
@@ -291,6 +490,58 @@ export default function AttendancePage() {
                 
                 <div className="text-center py-8 text-muted-foreground">
                   Select subject and period to load attendance
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="devices" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Device Attendance Logs</CardTitle>
+                <CardDescription>
+                  View attendance logs from biometric and other devices
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex gap-4">
+                    <Select>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Select Device" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {devices.map((device) => (
+                          <SelectItem key={device.id} value={device.id}>
+                            {device.device_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline">
+                      Sync All Devices
+                    </Button>
+                  </div>
+                  
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Timestamp</TableHead>
+                        <TableHead>Student ID</TableHead>
+                        <TableHead>Device</TableHead>
+                        <TableHead>Method</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          No device logs available. Sync devices to see logs.
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>
