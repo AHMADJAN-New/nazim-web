@@ -180,6 +180,11 @@ const assignments = [
 
 export default function AssetsPage() {
   const { t } = useLanguage();
+  const { data: dbAssets = [], isLoading } = useAssets();
+  const createAsset = useCreateAsset();
+  const updateAsset = useUpdateAsset();
+  const deleteAsset = useDeleteAsset();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -413,23 +418,23 @@ export default function AssetsPage() {
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {assets.map((asset) => (
+                   <TableBody>
+                     {dbAssets.map((asset) => (
                       <TableRow key={asset.id}>
                         <TableCell className="font-medium">{asset.name}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{asset.category}</Badge>
                         </TableCell>
-                        <TableCell className="font-mono text-sm">{asset.serialNumber}</TableCell>
+                        <TableCell className="font-mono text-sm">{asset.asset_code}</TableCell>
                         <TableCell>
                           <div className="flex items-center">
                             <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
                             {asset.location}
                           </div>
                         </TableCell>
-                        <TableCell>{asset.assignedPerson}</TableCell>
+                        <TableCell>{asset.assigned_to || 'Unassigned'}</TableCell>
                         <TableCell>{getConditionBadge(asset.condition)}</TableCell>
-                        <TableCell>{getStatusBadge(asset.status)}</TableCell>
+                        <TableCell>{getConditionBadge(asset.condition || 'Unknown')}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Dialog>
@@ -437,7 +442,23 @@ export default function AssetsPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => setSelectedAsset(asset)}
+                                   onClick={() => setSelectedAsset({
+                                     ...asset,
+                                     category: asset.category || 'Equipment',
+                                     type: 'Equipment',
+                                     serialNumber: asset.asset_code,
+                                     barcode: asset.asset_code,
+                                     purchaseDate: asset.purchase_date || '',
+                                     purchasePrice: Number(asset.purchase_cost) || 0,
+                                     currentValue: Number(asset.current_value) || 0,
+                                     location: asset.location || 'Unknown',
+                                     assignedTo: asset.assigned_to || '',
+                                     assignedPerson: asset.assigned_to || '',
+                                     condition: asset.condition || 'Unknown',
+                                     status: 'active',
+                                     warranty: '',
+                                     vendor: ''
+                                   })}
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>

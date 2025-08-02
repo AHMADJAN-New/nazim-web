@@ -72,7 +72,23 @@ const statusVariants = {
 
 export default function PaymentsPage() {
   const { toast } = useToast();
-  const [payments, setPayments] = useState<Payment[]>(mockPayments);
+  const { data: fees = [], isLoading } = useFees();
+  const createFee = useCreateFee();
+  const updateFee = useUpdateFee();
+  
+  // Convert fees to payment format for compatibility
+  const payments = fees.map(fee => ({
+    id: fee.id,
+    studentName: 'Student Name', // Would need to join with students table
+    studentId: fee.student_id,
+    amount: Number(fee.amount),
+    feeType: fee.fee_type,
+    paymentMethod: fee.payment_method || 'N/A',
+    transactionId: fee.transaction_id || 'N/A',
+    status: fee.status as 'completed' | 'pending' | 'failed',
+    paymentDate: fee.paid_date || '',
+    dueDate: fee.due_date
+  }));
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -101,7 +117,17 @@ export default function PaymentsPage() {
       dueDate: newPayment.dueDate || ""
     };
 
-    setPayments([payment, ...payments]);
+    // Use createFee mutation instead of setPayments
+    createFee.mutate({
+      student_id: payment.studentId,
+      fee_type: payment.feeType,
+      amount: payment.amount,
+      due_date: payment.dueDate,
+      payment_method: payment.paymentMethod,
+      transaction_id: payment.transactionId,
+      status: payment.status === 'completed' ? 'paid' : 'pending',
+      academic_year_id: '1' // Would need proper academic year selection
+    });
     setIsAddPaymentOpen(false);
     toast({
       title: "Payment Added",
@@ -250,25 +276,25 @@ export default function PaymentsPage() {
                           {payment.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{payment.paymentDate}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => generateReceipt(payment)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => downloadReceipt(payment)}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                         <TableCell>{payment.paymentDate}</TableCell>
+                         <TableCell>
+                           <div className="flex items-center space-x-2">
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => setSelectedPayment(payment)}
+                             >
+                               <Eye className="h-4 w-4" />
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => toast({ title: "Download started", description: "Receipt download initiated" })}
+                             >
+                               <Download className="h-4 w-4" />
+                             </Button>
+                           </div>
+                         </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

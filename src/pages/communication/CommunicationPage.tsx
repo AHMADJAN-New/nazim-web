@@ -431,26 +431,30 @@ export default function CommunicationPage() {
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {announcements.map((announcement) => (
-                      <TableRow key={announcement.id}>
-                        <TableCell className="font-medium">{announcement.title}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{announcement.type}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {announcement.targetAudience.map((audience, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
-                                {audience}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>{getPriorityBadge(announcement.priority)}</TableCell>
-                        <TableCell>{announcement.createdDate}</TableCell>
-                        <TableCell>{announcement.views.toLocaleString()}</TableCell>
-                        <TableCell>{getStatusBadge(announcement.status)}</TableCell>
+                   <TableBody>
+                     {communications.map((communication) => (
+                     <TableRow key={communication.id}>
+                         <TableCell className="font-medium">{communication.title}</TableCell>
+                         <TableCell>
+                           <Badge variant="outline">{communication.type}</Badge>
+                         </TableCell>
+                         <TableCell>
+                           <div className="flex flex-wrap gap-1">
+                             {communication.target_audience?.map((audience, index) => (
+                               <Badge key={index} variant="secondary" className="text-xs">
+                                 {audience}
+                               </Badge>
+                             ))}
+                           </div>
+                         </TableCell>
+                         <TableCell>{getPriorityBadge(communication.priority || 'normal')}</TableCell>
+                         <TableCell>{new Date(communication.created_at).toLocaleDateString()}</TableCell>
+                         <TableCell>-</TableCell>
+                         <TableCell>
+                           <Badge variant={communication.published_date ? 'default' : 'secondary'}>
+                             {communication.published_date ? 'Published' : 'Draft'}
+                           </Badge>
+                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Dialog>
@@ -458,13 +462,23 @@ export default function CommunicationPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                 onClick={() => setSelectedAnnouncement({
-                                   ...announcement,
-                                   priority: announcement.priority as 'high' | 'low' | 'normal' | 'urgent',
-                                   status: announcement.status as 'draft' | 'published' | 'expired',
-                                   author: announcement.createdBy || 'Unknown',
-                                   notificationSent: false
-                                 })}
+                                  onClick={() => setSelectedAnnouncement({
+                                    id: communication.id,
+                                    title: communication.title,
+                                    content: communication.content,
+                                    type: communication.type,
+                                    priority: communication.priority as 'high' | 'low' | 'normal' | 'urgent' || 'normal',
+                                    targetAudience: communication.target_audience || [],
+                                    publishDate: communication.published_date || '',
+                                    expiryDate: communication.expires_at || '',
+                                    status: communication.published_date ? 'published' : 'draft' as 'draft' | 'published' | 'expired',
+                                    notificationSent: false,
+                                    author: 'Unknown',
+                                    createdBy: 'Unknown',
+                                    createdDate: new Date(communication.created_at).toLocaleDateString(),
+                                    views: 0,
+                                    sendVia: []
+                                  })}
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>

@@ -660,6 +660,120 @@ export type Database = {
           },
         ]
       }
+      donations: {
+        Row: {
+          amount: number
+          branch_id: string
+          created_at: string
+          donation_date: string
+          donation_type: string
+          donor_email: string | null
+          donor_name: string
+          donor_phone: string | null
+          id: string
+          notes: string | null
+          payment_method: string
+          purpose: string
+          receipt_generated: boolean
+          transaction_id: string
+        }
+        Insert: {
+          amount: number
+          branch_id: string
+          created_at?: string
+          donation_date?: string
+          donation_type: string
+          donor_email?: string | null
+          donor_name: string
+          donor_phone?: string | null
+          id?: string
+          notes?: string | null
+          payment_method: string
+          purpose: string
+          receipt_generated?: boolean
+          transaction_id: string
+        }
+        Update: {
+          amount?: number
+          branch_id?: string
+          created_at?: string
+          donation_date?: string
+          donation_type?: string
+          donor_email?: string | null
+          donor_name?: string
+          donor_phone?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          purpose?: string
+          receipt_generated?: boolean
+          transaction_id?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          branch_id: string
+          category: string
+          created_at: string
+          created_by: string
+          description: string
+          end_time: string
+          event_date: string
+          id: string
+          location: string
+          max_participants: number | null
+          notification_sent: boolean
+          organizer: string
+          participants: string[]
+          priority: string
+          registration_required: boolean
+          start_time: string
+          status: string
+          title: string
+        }
+        Insert: {
+          branch_id: string
+          category: string
+          created_at?: string
+          created_by: string
+          description: string
+          end_time: string
+          event_date: string
+          id?: string
+          location: string
+          max_participants?: number | null
+          notification_sent?: boolean
+          organizer: string
+          participants?: string[]
+          priority?: string
+          registration_required?: boolean
+          start_time: string
+          status?: string
+          title: string
+        }
+        Update: {
+          branch_id?: string
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          end_time?: string
+          event_date?: string
+          id?: string
+          location?: string
+          max_participants?: number | null
+          notification_sent?: boolean
+          organizer?: string
+          participants?: string[]
+          priority?: string
+          registration_required?: boolean
+          start_time?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       exam_results: {
         Row: {
           created_at: string
@@ -1376,6 +1490,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      messages: {
+        Row: {
+          branch_id: string
+          content: string
+          created_at: string
+          id: string
+          message_type: string
+          priority: string
+          recipients: string[]
+          sender_id: string
+          sent_at: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          branch_id: string
+          content: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          priority?: string
+          recipients: string[]
+          sender_id: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          branch_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          priority?: string
+          recipients?: string[]
+          sender_id?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
