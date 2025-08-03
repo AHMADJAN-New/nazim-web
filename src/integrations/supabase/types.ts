@@ -774,6 +774,54 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_questions: {
+        Row: {
+          correct_answer: string | null
+          created_at: string
+          created_by: string
+          difficulty_level: string | null
+          exam_id: string
+          id: string
+          marks: number
+          options: Json | null
+          question_number: number
+          question_text: string
+          question_type: string
+          subject_area: string | null
+          updated_at: string
+        }
+        Insert: {
+          correct_answer?: string | null
+          created_at?: string
+          created_by: string
+          difficulty_level?: string | null
+          exam_id: string
+          id?: string
+          marks?: number
+          options?: Json | null
+          question_number: number
+          question_text: string
+          question_type?: string
+          subject_area?: string | null
+          updated_at?: string
+        }
+        Update: {
+          correct_answer?: string | null
+          created_at?: string
+          created_by?: string
+          difficulty_level?: string | null
+          exam_id?: string
+          id?: string
+          marks?: number
+          options?: Json | null
+          question_number?: number
+          question_text?: string
+          question_type?: string
+          subject_area?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exam_results: {
         Row: {
           created_at: string

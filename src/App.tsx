@@ -50,6 +50,7 @@ import StudentTimetablePage from "./pages/academic/StudentTimetablePage";
 import AnnouncementsPage from "./pages/communication/AnnouncementsPage";
 import RollNumberAssignmentPage from "./pages/exams/RollNumberAssignmentPage";
 import ExamEnrolledStudentsReportsPage from "./pages/exams/ExamEnrolledStudentsReportsPage";
+import ExamPaperGeneratorPage from "./pages/exams/ExamPaperGeneratorPage";
 
 const queryClient = new QueryClient();
 
@@ -124,6 +125,11 @@ const App = () => (
             <Route path="/exams/enrolled-reports" element={
               <ProtectedRoute>
                 <ExamEnrolledStudentsReportsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/paper-generator/:examId" element={
+              <ProtectedRoute>
+                <ExamPaperGeneratorPage />
               </ProtectedRoute>
             } />
             
