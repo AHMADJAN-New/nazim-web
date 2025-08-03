@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Bell } from 'lucide-react';
 import { useSystemSettings, useUpdateSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/hooks/useAuth';
+import { MainLayout } from '@/components/layout/MainLayout';
 
 export default function CommunicationSettingsPage() {
   const { user } = useAuth();
@@ -28,7 +29,7 @@ export default function CommunicationSettingsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <MainLayout title="Communication Settings">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -88,6 +89,6 @@ export default function CommunicationSettingsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </MainLayout>
   );
 }

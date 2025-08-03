@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { DollarSign } from 'lucide-react';
 import { useSystemSettings, useUpdateSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/hooks/useAuth';
+import { MainLayout } from '@/components/layout/MainLayout';
 
 export default function FinancialSettingsPage() {
   const { user } = useAuth();
@@ -27,7 +28,7 @@ export default function FinancialSettingsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <MainLayout title="Financial Settings">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -64,6 +65,6 @@ export default function FinancialSettingsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </MainLayout>
   );
 }

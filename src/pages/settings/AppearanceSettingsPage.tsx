@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Palette } from 'lucide-react';
 import { useSystemSettings, useUpdateSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/hooks/useAuth';
+import { MainLayout } from '@/components/layout/MainLayout';
 
 export default function AppearanceSettingsPage() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ export default function AppearanceSettingsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <MainLayout title="Appearance Settings">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -136,6 +137,6 @@ export default function AppearanceSettingsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </MainLayout>
   );
 }

@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Settings, School } from 'lucide-react';
 import { useSystemSettings, useUpdateSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/hooks/useAuth';
+import { MainLayout } from '@/components/layout/MainLayout';
 
 export default function SchoolInfoPage() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ export default function SchoolInfoPage() {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <MainLayout title="School Information">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -128,6 +129,6 @@ export default function SchoolInfoPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </MainLayout>
   );
 }

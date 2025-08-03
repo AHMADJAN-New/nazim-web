@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Globe } from 'lucide-react';
 import { useSystemSettings, useUpdateSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/hooks/useAuth';
+import { MainLayout } from '@/components/layout/MainLayout';
 
 export default function SystemSettingsPage() {
   const { user } = useAuth();
@@ -31,7 +32,7 @@ export default function SystemSettingsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <MainLayout title="System Preferences">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -131,6 +132,6 @@ export default function SystemSettingsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </MainLayout>
   );
 }
