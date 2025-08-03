@@ -112,6 +112,7 @@ const navigationItems: NavigationItem[] = [
       { title: "Student Enrollment", url: "/exams/enrollment", icon: UserCheck },
       { title: "Roll Number Assignment", url: "/exams/roll-numbers", icon: Users },
       { title: "Enrolled Students Reports", url: "/exams/enrolled-reports", icon: BarChart3 },
+      { title: "Paper Generator", url: "/exams/paper-generator", icon: FileText },
       { title: "Results Entry", url: "/exams/results", icon: FileText },
       { title: "OMR Scanning", url: "/exams/omr-scanning", icon: FileText },
       { title: "Report Cards", url: "/exams/reports", icon: Trophy }
@@ -151,9 +152,16 @@ const navigationItems: NavigationItem[] = [
   },
   {
     titleKey: "assets",
-    url: "/assets",
     icon: Package,
-    roles: ["super_admin", "admin", "asset_manager"]
+    roles: ["super_admin", "admin", "asset_manager"],
+    children: [
+      { title: "Asset Management", url: "/assets/management", icon: Package },
+      { title: "Asset Categories", url: "/assets/categories", icon: FileText },
+      { title: "Maintenance", url: "/assets/maintenance", icon: Settings },
+      { title: "Asset Reports", url: "/assets/reports", icon: BarChart3 },
+      { title: "Asset Requests", url: "/assets/requests", icon: FileText },
+      { title: "Asset Audit", url: "/assets/audit", icon: UserCheck }
+    ]
   },
   {
     titleKey: "communication",
@@ -173,9 +181,16 @@ const navigationItems: NavigationItem[] = [
   },
   {
     titleKey: "settings",
-    url: "/settings",
     icon: Settings,
-    roles: ["super_admin", "admin"]
+    roles: ["super_admin", "admin"],
+    children: [
+      { title: "School Information", url: "/settings/school-info", icon: School },
+      { title: "Academic Settings", url: "/settings/academic", icon: GraduationCap },
+      { title: "System Preferences", url: "/settings/system", icon: Settings },
+      { title: "Appearance", url: "/settings/appearance", icon: Package },
+      { title: "Communication", url: "/settings/communication", icon: MessageSquare },
+      { title: "Financial", url: "/settings/financial", icon: CreditCard }
+    ]
   }
 ];
 

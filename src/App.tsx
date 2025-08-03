@@ -51,6 +51,12 @@ import AnnouncementsPage from "./pages/communication/AnnouncementsPage";
 import RollNumberAssignmentPage from "./pages/exams/RollNumberAssignmentPage";
 import ExamEnrolledStudentsReportsPage from "./pages/exams/ExamEnrolledStudentsReportsPage";
 import ExamPaperGeneratorPage from "./pages/exams/ExamPaperGeneratorPage";
+import SchoolInfoPage from "./pages/settings/SchoolInfoPage";
+import AcademicSettingsPage from "./pages/settings/AcademicSettingsPage";
+import SystemPreferencesPage from "./pages/settings/SystemPreferencesPage";
+import AppearanceSettingsPage from "./pages/settings/AppearanceSettingsPage";
+import CommunicationSettingsPage from "./pages/settings/CommunicationSettingsPage";
+import FinancialSettingsPage from "./pages/settings/FinancialSettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +131,11 @@ const App = () => (
             <Route path="/exams/enrolled-reports" element={
               <ProtectedRoute>
                 <ExamEnrolledStudentsReportsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/paper-generator" element={
+              <ProtectedRoute>
+                <ExamsPage />
               </ProtectedRoute>
             } />
             <Route path="/exams/paper-generator/:examId" element={
@@ -253,6 +264,68 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute>
                 <SettingsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/school-info" element={
+              <ProtectedRoute>
+                <SchoolInfoPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/academic" element={
+              <ProtectedRoute>
+                <AcademicSettingsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/system" element={
+              <ProtectedRoute>
+                <SystemPreferencesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/appearance" element={
+              <ProtectedRoute>
+                <AppearanceSettingsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/communication" element={
+              <ProtectedRoute>
+                <CommunicationSettingsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/financial" element={
+              <ProtectedRoute>
+                <FinancialSettingsPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Assets specific routes */}
+            <Route path="/assets/management" element={
+              <ProtectedRoute>
+                <AssetsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/assets/categories" element={
+              <ProtectedRoute>
+                <AssetsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/assets/maintenance" element={
+              <ProtectedRoute>
+                <AssetsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/assets/reports" element={
+              <ProtectedRoute>
+                <AssetsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/assets/requests" element={
+              <ProtectedRoute>
+                <AssetsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/assets/audit" element={
+              <ProtectedRoute>
+                <AssetsPage />
               </ProtectedRoute>
             } />
             <Route path="/super-admin" element={
