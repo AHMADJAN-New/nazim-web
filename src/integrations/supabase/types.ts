@@ -2281,6 +2281,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_security_settings: {
+        Row: {
+          account_locked_until: string | null
+          backup_codes: string[] | null
+          created_at: string | null
+          failed_login_attempts: number | null
+          id: string
+          last_failed_login: string | null
+          password_changed_at: string | null
+          requires_password_change: boolean | null
+          two_factor_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_locked_until?: string | null
+          backup_codes?: string[] | null
+          created_at?: string | null
+          failed_login_attempts?: number | null
+          id?: string
+          last_failed_login?: string | null
+          password_changed_at?: string | null
+          requires_password_change?: boolean | null
+          two_factor_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_locked_until?: string | null
+          backup_codes?: string[] | null
+          created_at?: string | null
+          failed_login_attempts?: number | null
+          id?: string
+          last_failed_login?: string | null
+          password_changed_at?: string | null
+          requires_password_change?: boolean | null
+          two_factor_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       auth_health_summary: {
@@ -2307,6 +2349,10 @@ export type Database = {
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      handle_failed_login: {
+        Args: { user_email: string }
+        Returns: Json
       }
       log_auth_event: {
         Args: {
