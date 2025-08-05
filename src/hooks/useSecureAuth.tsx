@@ -15,16 +15,6 @@ export const useSecureAuth = () => {
   const secureSignIn = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Check if account is locked
-      const { data: lockCheck } = await supabase.rpc('is_account_locked', {
-        user_email: email
-      });
-
-      if (lockCheck) {
-        toast.error('Account is temporarily locked. Please try again later.');
-        return { error: { message: 'Account locked' } };
-      }
-
       // Attempt sign in
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -44,7 +34,7 @@ export const useSecureAuth = () => {
             toast.error(`Invalid credentials. ${failureData.remaining} attempts remaining.`);
           }
         } catch (failureError) {
-          console.warn('Failed to log security event:', failureError);
+          // Silently handle failure to avoid blocking auth
         }
 
         // Log authentication event
@@ -56,23 +46,14 @@ export const useSecureAuth = () => {
             }
           });
         } catch (logError) {
-          console.warn('Failed to log password event:', logError);
+          // Silently handle logging failure
         }
 
         return { error };
       }
 
-      // Reset failed attempts on successful login
+      // Log successful login
       if (data.user) {
-        try {
-          await supabase.rpc('reset_failed_login_attempts', {
-            user_id_val: data.user.id
-          });
-        } catch (resetError) {
-          console.warn('Failed to reset login attempts:', resetError);
-        }
-
-        // Log successful login
         try {
           await supabase.functions.invoke('log-password-event', {
             body: {
@@ -81,7 +62,7 @@ export const useSecureAuth = () => {
             }
           });
         } catch (logError) {
-          console.warn('Failed to log password event:', logError);
+          // Silently handle logging failure
         }
       }
 

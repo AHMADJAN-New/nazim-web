@@ -37,7 +37,7 @@ export default function RoleBasedRedirect() {
 
         if (error) {
           // User might be pending approval
-          console.log('User profile not found, checking pending registrations');
+          // Checking pending registrations
           const { data: pendingData } = await supabase
             .from('pending_registrations')
             .select('status')
@@ -51,7 +51,7 @@ export default function RoleBasedRedirect() {
           setUserRole(data.role);
         }
       } catch (error) {
-        console.error('Error fetching user role:', error);
+        // Error fetching user role - handled silently
       } finally {
         setLoading(false);
       }

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +23,7 @@ interface School {
 export default function AuthPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { secureSignIn, secureSignUp, validatePasswordStrength, loading: authLoading } = useSecureAuth();
   const [loading, setLoading] = useState(false);
   const [schools, setSchools] = useState<School[]>([]);
   const [formData, setFormData] = useState({
@@ -32,6 +35,7 @@ export default function AuthPage() {
     role: 'student',
     schoolId: ''
   });
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -51,56 +55,27 @@ export default function AuthPage() {
       if (error) throw error;
       setSchools(data || []);
     } catch (error) {
-      console.error('Error fetching schools:', error);
+      logger.error('Error fetching schools', error);
     }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (error) {
-        // Log failed login attempt
-        try {
-          await supabase.rpc('log_auth_event', {
-            event_type: 'login_failed',
-            event_data: { email: formData.email, error_code: error.status },
-            error_message: error.message,
-            user_email: formData.email
-          });
-        } catch {
-          // Silent fail for logging
-        }
-        throw error;
-      }
-      
-      // Log successful login
-      try {
-        await supabase.rpc('log_auth_event', {
-          event_type: 'login_success',
-          event_data: { email: formData.email },
-          error_message: null,
-          user_email: formData.email
-        });
-      } catch {
-        // Silent fail for logging
-      }
-      
-      toast.success('Logged in successfully!');
-      navigate('/redirect');
-    } catch (error: any) {
+    
+    const { data, error } = await secureSignIn(formData.email, formData.password);
+    
+    if (error) {
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Invalid email or password. Please check your credentials and try again.');
-      } else {
+      } else if (error.message !== 'Account locked') {
         toast.error(error.message || 'Failed to sign in');
       }
-    } finally {
-      setLoading(false);
+      return;
+    }
+    
+    if (data) {
+      toast.success('Logged in successfully!');
+      navigate('/redirect');
     }
   };
 
@@ -122,35 +97,26 @@ export default function AuthPage() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: formData.fullName,
-            phone: formData.phone,
-            role: formData.role,
-            school_id: formData.schoolId
-          }
-        }
-      });
+    const userData = {
+      full_name: formData.fullName,
+      phone: formData.phone,
+      role: formData.role,
+      school_id: formData.schoolId
+    };
 
-      if (error) throw error;
-      
+    const { data, error } = await secureSignUp(formData.email, formData.password, userData);
+    
+    if (error) {
+      toast.error(error.message || 'Failed to create account');
+      return;
+    }
+    
+    if (data) {
       if (formData.role === 'super_admin') {
         toast.success('Super Admin account created! You can now sign in.');
       } else {
         toast.success('Registration submitted! Please wait for approval from your school administrator.');
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create account');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -197,8 +163,8 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Signing In...' : 'Sign In'}
+                <Button type="submit" className="w-full" disabled={authLoading}>
+                  {authLoading ? 'Signing In...' : 'Sign In'}
                 </Button>
                 <div className="text-center">
                   <ForgotPasswordDialog>
@@ -279,9 +245,22 @@ export default function AuthPage() {
                     id="signup-password"
                     type="password"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) => {
+                      const password = e.target.value;
+                      setFormData({ ...formData, password });
+                      setPasswordErrors(validatePasswordStrength(password));
+                    }}
                     required
                   />
+                  {passwordErrors.length > 0 && formData.password && (
+                    <div className="mt-2 space-y-1">
+                      {passwordErrors.map((error, index) => (
+                        <p key={index} className="text-sm text-destructive">
+                          • {error}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="confirm-password">Confirm Password</Label>
@@ -293,8 +272,8 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating Account...' : 'Sign Up'}
+                <Button type="submit" className="w-full" disabled={authLoading || passwordErrors.length > 0}>
+                  {authLoading ? 'Creating Account...' : 'Sign Up'}
                 </Button>
               </form>
             </TabsContent>

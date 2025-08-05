@@ -2354,6 +2354,10 @@ export type Database = {
         Args: { user_email: string }
         Returns: Json
       }
+      is_account_locked: {
+        Args: { user_email: string }
+        Returns: boolean
+      }
       log_auth_event: {
         Args: {
           event_type: string
@@ -2366,6 +2370,10 @@ export type Database = {
       reject_registration: {
         Args: { registration_id: string; approver_id: string; reason: string }
         Returns: boolean
+      }
+      reset_failed_login_attempts: {
+        Args: { user_id_val: string }
+        Returns: undefined
       }
     }
     Enums: {
