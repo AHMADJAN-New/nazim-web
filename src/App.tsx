@@ -1,64 +1,55 @@
+import { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
-
-// Pages
+import RoleBasedRedirect from "./components/RoleBasedRedirect";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
-import Dashboard from "./pages/Dashboard";
-import StudentsPage from "./pages/students/StudentsPage";
-import AdmissionsPage from "./pages/students/AdmissionsPage";
-import BulkImportPage from "./pages/students/BulkImportPage";
-import AttendancePage from "./pages/AttendancePage";
-import ClassesPage from "./pages/academic/ClassesPage";
-import SubjectsPage from "./pages/academic/SubjectsPage";
-import TimetablePage from "./pages/academic/TimetablePage";
-import ExamsPage from "./pages/exams/ExamsPage";
-import ExamSetupPage from "./pages/exams/ExamSetupPage";
-import ResultsEntryPage from "./pages/exams/ResultsEntryPage";
-import ReportCardsPage from "./pages/exams/ReportCardsPage";
-import OMRScanningPage from "./pages/exams/OMRScanningPage";
-import FinancePage from "./pages/finance/FinancePage";
-import StaffPage from "./pages/StaffPage";
-import HostelPage from "./pages/hostel/HostelPage";
-import LibraryPage from "./pages/library/LibraryPage";
-import AssetsPage from "./pages/assets/AssetsPage";
-import CommunicationPage from "./pages/communication/CommunicationPage";
-import ReportsPage from "./pages/reports/ReportsPage";
-import SettingsPage from "./pages/settings/SettingsPage";
-import IdCardPage from "./pages/students/IdCardPage";
-import HifzProgressPage from "./pages/academic/HifzProgressPage";
-import SuperAdminPage from "./pages/SuperAdminPage";
-import SchoolAdminPage from "./pages/SchoolAdminPage";
-import PendingApprovalPage from "./pages/PendingApprovalPage";
-import RoleBasedRedirect from "./components/RoleBasedRedirect";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
-import ExamEnrollmentPage from "./pages/exams/ExamEnrollmentPage";
-import PaymentsPage from "./pages/finance/PaymentsPage";
-import DonationsPage from "./pages/finance/DonationsPage";
-import RoomManagementPage from "./pages/hostel/RoomManagementPage";
-import StudentAssignmentPage from "./pages/hostel/StudentAssignmentPage";
-import HostelAttendancePage from "./pages/hostel/HostelAttendancePage";
-import MessagingPage from "./pages/communication/MessagingPage";
-import EventsPage from "./pages/communication/EventsPage";
-import StudentTimetablePage from "./pages/academic/StudentTimetablePage";
-import AnnouncementsPage from "./pages/communication/AnnouncementsPage";
-import RollNumberAssignmentPage from "./pages/exams/RollNumberAssignmentPage";
-import ExamEnrolledStudentsReportsPage from "./pages/exams/ExamEnrolledStudentsReportsPage";
-import ExamPaperGeneratorPage from "./pages/exams/ExamPaperGeneratorPage";
-import SchoolInfoPage from "./pages/settings/SchoolInfoPage";
-import AcademicSettingsPage from "./pages/settings/AcademicSettingsPage";
-import SystemPreferencesPage from "./pages/settings/SystemPreferencesPage";
-import AppearanceSettingsPage from "./pages/settings/AppearanceSettingsPage";
-import CommunicationSettingsPage from "./pages/settings/CommunicationSettingsPage";
-import FinancialSettingsPage from "./pages/settings/FinancialSettingsPage";
 
-const queryClient = new QueryClient();
+// Lazy-loaded components with optimized loading
+import { 
+  Dashboard, AttendancePage, StaffPage, SuperAdminPage, 
+  SchoolAdminPage, PendingApprovalPage, ResetPasswordPage, ClassesPage, 
+  HifzProgressPage, StudentTimetablePage, SubjectsPage, TimetablePage, 
+  AssetsPage, AnnouncementsPage, CommunicationPage, EventsPage, MessagingPage,
+  ExamEnrolledStudentsReportsPage, ExamEnrollmentPage, ExamPaperGeneratorPage,
+  ExamSetupPage, ExamsPage, OMRScanningPage, ReportCardsPage, ResultsEntryPage,
+  RollNumberAssignmentPage, DonationsPage, FinancePage, PaymentsPage,
+  HostelAttendancePage, HostelPage, RoomManagementPage, StudentAssignmentPage,
+  LibraryPage, ReportsPage, SettingsPage, AcademicSettingsPage,
+  AppearanceSettingsPage, CommunicationSettingsPage, FinancialSettingsPage,
+  SchoolInfoPage, SystemPreferencesPage, AdmissionsPage, BulkImportPage,
+  IdCardPage, StudentsPage, DashboardSkeleton, PageSkeleton
+} from "@/components/LazyComponents";
+
+// Optimized QueryClient with better caching and performance settings
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors
+        if (error?.status >= 400 && error?.status < 500) {
+          return false;
+        }
+        return failureCount < 3;
+      },
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      retry: 2,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -73,277 +64,389 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/redirect" element={<ProtectedRoute><RoleBasedRedirect /></ProtectedRoute>} />
             <Route path="/pending-approval" element={<ProtectedRoute><PendingApprovalPage /></ProtectedRoute>} />
+            
+            {/* Dashboard with optimized loading */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <Dashboard />
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <Dashboard />
+                </Suspense>
               </ProtectedRoute>
             } />
+            
+            {/* Students routes */}
             <Route path="/students" element={
               <ProtectedRoute>
-                <StudentsPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <StudentsPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/students/admissions" element={
               <ProtectedRoute>
-                <AdmissionsPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <AdmissionsPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/students/import" element={
               <ProtectedRoute>
-                <BulkImportPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/academic/subjects" element={
-              <ProtectedRoute>
-                <SubjectsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/academic/timetable" element={
-              <ProtectedRoute>
-                <TimetablePage />
-              </ProtectedRoute>
-            } />
-            <Route path="/exams/setup" element={
-              <ProtectedRoute>
-                <ExamSetupPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/exams/results" element={
-              <ProtectedRoute>
-                <ResultsEntryPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/exams/reports" element={
-              <ProtectedRoute>
-                <ReportCardsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/exams/enrollment" element={
-              <ProtectedRoute>
-                <ExamEnrollmentPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/exams/roll-numbers" element={
-              <ProtectedRoute>
-                <RollNumberAssignmentPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/exams/enrolled-reports" element={
-              <ProtectedRoute>
-                <ExamEnrolledStudentsReportsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/exams/paper-generator" element={
-              <ProtectedRoute>
-                <ExamsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/exams/paper-generator/:examId" element={
-              <ProtectedRoute>
-                <ExamPaperGeneratorPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Finance specific routes */}
-            <Route path="/finance/payments" element={
-              <ProtectedRoute>
-                <PaymentsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/finance/donations" element={
-              <ProtectedRoute>
-                <DonationsPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Hostel specific routes */}
-            <Route path="/hostel/rooms" element={
-              <ProtectedRoute>
-                <RoomManagementPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/hostel/students" element={
-              <ProtectedRoute>
-                <StudentAssignmentPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/hostel/attendance" element={
-              <ProtectedRoute>
-                <HostelAttendancePage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Communication specific routes */}
-            <Route path="/communication/announcements" element={
-              <ProtectedRoute>
-                <AnnouncementsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/communication/messages" element={
-              <ProtectedRoute>
-                <MessagingPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/communication/events" element={
-              <ProtectedRoute>
-                <EventsPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Academic specific routes */}
-            <Route path="/academic/student-timetable" element={
-              <ProtectedRoute>
-                <StudentTimetablePage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <BulkImportPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/students/id-cards" element={
               <ProtectedRoute>
-                <IdCardPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <IdCardPage />
+                </Suspense>
               </ProtectedRoute>
             } />
-            <Route path="/attendance" element={
-              <ProtectedRoute>
-                <AttendancePage />
-              </ProtectedRoute>
-            } />
+            
+            {/* Academic routes */}
             <Route path="/academic/classes" element={
               <ProtectedRoute>
-                <ClassesPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <ClassesPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/academic/subjects" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <SubjectsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/academic/timetable" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <TimetablePage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/academic/student-timetable" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <StudentTimetablePage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/academic/hifz-progress" element={
               <ProtectedRoute>
-                <HifzProgressPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <HifzProgressPage />
+                </Suspense>
               </ProtectedRoute>
             } />
+            
+            {/* Exams routes */}
             <Route path="/exams/*" element={
               <ProtectedRoute>
-                <ExamsPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <ExamsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/setup" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ExamSetupPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/results" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ResultsEntryPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/reports" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ReportCardsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/enrollment" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ExamEnrollmentPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/roll-numbers" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <RollNumberAssignmentPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/enrolled-reports" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ExamEnrolledStudentsReportsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/paper-generator" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ExamsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/exams/paper-generator/:examId" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ExamPaperGeneratorPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/exams/omr-scanning" element={
               <ProtectedRoute>
-                <OMRScanningPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <OMRScanningPage />
+                </Suspense>
               </ProtectedRoute>
             } />
+            
+            {/* Finance routes */}
             <Route path="/finance/*" element={
               <ProtectedRoute>
-                <FinancePage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <FinancePage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/finance/payments" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <PaymentsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/finance/donations" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <DonationsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            
+            {/* Communication routes */}
+            <Route path="/communication/*" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <CommunicationPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/communication/announcements" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <AnnouncementsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/communication/messages" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <MessagingPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/communication/events" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <EventsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            
+            {/* Other routes */}
+            <Route path="/attendance" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <AttendancePage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/staff" element={
               <ProtectedRoute>
-                <StaffPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <StaffPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/hostel/*" element={
               <ProtectedRoute>
-                <HostelPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <HostelPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/hostel/rooms" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <RoomManagementPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/hostel/students" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <StudentAssignmentPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/hostel/attendance" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <HostelAttendancePage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/library" element={
               <ProtectedRoute>
-                <LibraryPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <LibraryPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/assets" element={
               <ProtectedRoute>
-                <AssetsPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <AssetsPage />
+                </Suspense>
               </ProtectedRoute>
             } />
-            <Route path="/communication/*" element={
-              <ProtectedRoute>
-                <CommunicationPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute>
-                <ReportsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <SettingsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings/school-info" element={
-              <ProtectedRoute>
-                <SchoolInfoPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings/academic" element={
-              <ProtectedRoute>
-                <AcademicSettingsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings/system" element={
-              <ProtectedRoute>
-                <SystemPreferencesPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings/appearance" element={
-              <ProtectedRoute>
-                <AppearanceSettingsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings/communication" element={
-              <ProtectedRoute>
-                <CommunicationSettingsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings/financial" element={
-              <ProtectedRoute>
-                <FinancialSettingsPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Assets specific routes */}
             <Route path="/assets/management" element={
               <ProtectedRoute>
-                <AssetsPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <AssetsPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/assets/categories" element={
               <ProtectedRoute>
-                <AssetsPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <AssetsPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/assets/maintenance" element={
               <ProtectedRoute>
-                <AssetsPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <AssetsPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/assets/reports" element={
               <ProtectedRoute>
-                <AssetsPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <AssetsPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/assets/requests" element={
               <ProtectedRoute>
-                <AssetsPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <AssetsPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/assets/audit" element={
               <ProtectedRoute>
-                <AssetsPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <AssetsPage />
+                </Suspense>
               </ProtectedRoute>
             } />
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ReportsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            
+            {/* Settings routes */}
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <SettingsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/school-info" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <SchoolInfoPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/academic" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <AcademicSettingsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/system" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <SystemPreferencesPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/appearance" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <AppearanceSettingsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/communication" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <CommunicationSettingsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/financial" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <FinancialSettingsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            
+            {/* Admin routes */}
             <Route path="/super-admin" element={
               <ProtectedRoute>
-                <SuperAdminPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <SuperAdminPage />
+                </Suspense>
               </ProtectedRoute>
             } />
             <Route path="/school-admin" element={
               <ProtectedRoute>
-                <SchoolAdminPage />
+                <Suspense fallback={<PageSkeleton />}>
+                  <SchoolAdminPage />
+                </Suspense>
               </ProtectedRoute>
             } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            
+            {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
+    
   </QueryClientProvider>
 );
 
