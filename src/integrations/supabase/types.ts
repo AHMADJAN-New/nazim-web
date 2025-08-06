@@ -2245,6 +2245,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_role_requests: {
+        Row: {
+          created_at: string
+          existing_role: Database["public"]["Enums"]["user_role"] | null
+          id: string
+          justification: string | null
+          rejection_reason: string | null
+          requested_at: string
+          requested_by: string
+          requested_role: Database["public"]["Enums"]["user_role"]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["user_role_request_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          existing_role?: Database["public"]["Enums"]["user_role"] | null
+          id?: string
+          justification?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by: string
+          requested_role: Database["public"]["Enums"]["user_role"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["user_role_request_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          existing_role?: Database["public"]["Enums"]["user_role"] | null
+          id?: string
+          justification?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by?: string
+          requested_role?: Database["public"]["Enums"]["user_role"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["user_role_request_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           assigned_at: string
@@ -2401,6 +2449,7 @@ export type Database = {
         | "staff"
         | "student"
         | "parent"
+      user_role_request_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2555,6 +2604,7 @@ export const Constants = {
         "student",
         "parent",
       ],
+      user_role_request_status: ["pending", "approved", "rejected"],
     },
   },
 } as const
