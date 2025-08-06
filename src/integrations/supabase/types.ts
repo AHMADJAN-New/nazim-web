@@ -2390,6 +2390,10 @@ export type Database = {
         Args: { registration_id: string; approver_id: string }
         Returns: boolean
       }
+      approve_role_change: {
+        Args: { request_id: string; approver_id: string }
+        Returns: boolean
+      }
       cleanup_expired_reset_tokens: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -2417,6 +2421,10 @@ export type Database = {
       }
       reject_registration: {
         Args: { registration_id: string; approver_id: string; reason: string }
+        Returns: boolean
+      }
+      reject_role_change: {
+        Args: { request_id: string; approver_id: string; reason: string }
         Returns: boolean
       }
       reset_failed_login_attempts: {

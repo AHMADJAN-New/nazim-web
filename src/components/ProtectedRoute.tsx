@@ -9,9 +9,6 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
 
-  // Check for development mode user
-  const devUser = import.meta.env.DEV ? localStorage.getItem('dev_mode_user') : null;
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -20,8 +17,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  // Allow access if user is authenticated OR in development mode with dev user
-  if (!user && !devUser) {
+  // Only allow authenticated users - remove development bypass
+  if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
