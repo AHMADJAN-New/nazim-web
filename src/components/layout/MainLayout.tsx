@@ -1,5 +1,5 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "./AppSidebar";
+import { SmartSidebar } from "@/components/navigation/SmartSidebar";
 import { AppHeader } from "./AppHeader";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -19,7 +19,7 @@ export function MainLayout({
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
+        <SmartSidebar />
         
         <div className="flex-1 flex flex-col">
           <AppHeader 

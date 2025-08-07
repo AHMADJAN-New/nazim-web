@@ -2092,6 +2092,54 @@ export type Database = {
           },
         ]
       }
+      student_parents: {
+        Row: {
+          created_at: string
+          id: string
+          is_emergency_contact: boolean
+          is_primary: boolean
+          parent_id: string
+          relationship_type: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_emergency_contact?: boolean
+          is_primary?: boolean
+          parent_id: string
+          relationship_type?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_emergency_contact?: boolean
+          is_primary?: boolean
+          parent_id?: string
+          relationship_type?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_parents_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_parents_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           admission_date: string
@@ -2242,6 +2290,39 @@ export type Database = {
           updated_at?: string
           updated_by?: string
           value?: Json
+        }
+        Relationships: []
+      }
+      user_navigation_context: {
+        Row: {
+          created_at: string
+          current_module: string
+          id: string
+          last_activity: string
+          preferences: Json
+          recent_tasks: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_module: string
+          id?: string
+          last_activity?: string
+          preferences?: Json
+          recent_tasks?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_module?: string
+          id?: string
+          last_activity?: string
+          preferences?: Json
+          recent_tasks?: Json
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
