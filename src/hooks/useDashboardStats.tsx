@@ -39,6 +39,7 @@ export const useDashboardStats = () => {
         staffCount,
         attendanceData,
         feeData,
+        donationData,
         roomsCount,
         allocationsCount
       ] = await Promise.all([
@@ -60,6 +61,11 @@ export const useDashboardStats = () => {
           .gte('paid_date', `${currentMonth}-01`)
           .lt('paid_date', nextMonth.toISOString().split('T')[0]),
         supabase
+          .from('donations')
+          .select('amount')
+          .gte('donation_date', `${currentMonth}-01`)
+          .lt('donation_date', nextMonth.toISOString().split('T')[0]),
+        supabase
           .from('hostel_rooms')
           .select('*', { count: 'exact', head: true }),
         supabase
@@ -77,7 +83,7 @@ export const useDashboardStats = () => {
       const attendancePercentage = totalAttendance > 0 ? (presentCount / totalAttendance) * 100 : 0;
 
       const feeCollectionAmount = feeData.data?.reduce((sum, fee) => sum + Number(fee.amount), 0) || 0;
-      const donationsAmount = 320000; // Mock data for now
+      const donationsAmount = donationData.data?.reduce((sum, donation) => sum + Number(donation.amount), 0) || 0;
 
       const totalRooms = roomsCount.count || 0;
       const occupiedRooms = allocationsCount.count || 0;
