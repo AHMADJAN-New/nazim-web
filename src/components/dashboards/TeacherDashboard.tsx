@@ -46,11 +46,16 @@ export function TeacherDashboard() {
     totalStudents: 0
   };
 
-  const todaySchedule = teacherInfo.classes.slice(0, 4).map((c, i) => ({
-    time: `${8 + i}:00 AM`,
-    class: c.name,
-    subject: 'Class',
-    room: `Room ${101 + i}`
+  const formatTime = (t: string) =>
+    new Date(`1970-01-01T${t}`).toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  const todaySchedule = (data?.schedule || []).map((s) => ({
+    time: `${formatTime(s.start_time)} - ${formatTime(s.end_time)}`,
+    class: s.class_name,
+    subject: s.subject || "Class",
+    room: s.room || "",
   }));
 
   const classPerformance = data?.classPerformance || [];
@@ -174,7 +179,8 @@ export function TeacherDashboard() {
                 <XAxis dataKey="class" fontSize={12} />
                 <YAxis fontSize={12} />
                 <Tooltip />
-                <Bar dataKey="avgGrade" fill="hsl(var(--primary))" name="Avg Grade" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="avgGrade" fill="hsl(var(--primary))" name="Avg Grade" radius={[4,4,0,0]} />
+                <Bar dataKey="attendance" fill="hsl(var(--secondary))" name="Attendance %" radius={[4,4,0,0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

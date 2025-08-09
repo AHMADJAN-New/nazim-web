@@ -10,4 +10,5 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.generate-id-cards-bulk]
+[functions.import-students]
 verify_jwt = true

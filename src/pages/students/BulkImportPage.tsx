@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Download, FileSpreadsheet, Users, CheckCircle, XCircle } from "lucide-react";
+import { Upload, Download, FileSpreadsheet, Users, XCircle } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ImportResult {
   total: number;
@@ -59,39 +60,67 @@ export default function BulkImportPage() {
     window.URL.revokeObjectURL(url);
   };
 
-  const simulateImport = async () => {
+  const handleImport = async () => {
     if (!file) return;
-    
+
     setImporting(true);
     setProgress(0);
     setResult(null);
 
-    // Simulate file processing
-    for (let i = 0; i <= 100; i += 10) {
-      setProgress(i);
-      await new Promise(resolve => setTimeout(resolve, 200));
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/import-students`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`
+        },
+        body: formData
+      });
+
+      const { jobId } = await response.json();
+
+      const poll = setInterval(async () => {
+        const statusRes = await fetch(`${supabaseUrl}/functions/v1/import-students?jobId=${jobId}`, {
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`
+          }
+        });
+        const statusData = await statusRes.json();
+        if (statusData.total) {
+          setProgress(Math.round((statusData.processed / statusData.total) * 100));
+        }
+        if (statusData.status === 'completed') {
+          clearInterval(poll);
+          const finalResult: ImportResult = {
+            total: statusData.total,
+            successful: statusData.successful,
+            failed: statusData.failed,
+            errors: statusData.errors || []
+          };
+          setResult(finalResult);
+          setImporting(false);
+          toast({
+            title: "Import Completed",
+            description: `${finalResult.successful} students imported successfully`,
+            variant: finalResult.failed === 0 ? "default" : "destructive"
+          });
+        }
+      }, 1000);
+    } catch (error) {
+      setImporting(false);
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive"
+      });
     }
-
-    // Simulate results
-    const mockResult: ImportResult = {
-      total: 50,
-      successful: 47,
-      failed: 3,
-      errors: [
-        'Row 5: Invalid email format',
-        'Row 12: Missing guardian phone',
-        'Row 23: Invalid date format'
-      ]
-    };
-
-    setResult(mockResult);
-    setImporting(false);
-    
-    toast({
-      title: "Import Completed",
-      description: `${mockResult.successful} students imported successfully`,
-      variant: mockResult.failed === 0 ? "default" : "destructive"
-    });
   };
 
   return (
@@ -130,8 +159,8 @@ export default function BulkImportPage() {
                   onChange={handleFileChange}
                   className="flex-1"
                 />
-                <Button 
-                  onClick={simulateImport} 
+                <Button
+                  onClick={handleImport}
                   disabled={!file || importing}
                   className="flex items-center gap-2"
                 >
