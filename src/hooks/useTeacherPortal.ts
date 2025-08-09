@@ -9,12 +9,23 @@ interface TeacherInfo {
   totalStudents: number;
 }
 
+interface ClassSchedule {
+  class_id: string;
+  class_name: string;
+  start_time: string;
+  end_time: string;
+  day_of_week: string;
+  subject?: string | null;
+  room?: string | null;
+}
+
 interface TeacherPortalData {
   teacherInfo: TeacherInfo;
-  classPerformance: Array<{ class: string; avgGrade: number; attendance: number }>;
+  classPerformance: Array<{ classId: string; class: string; avgGrade: number; attendance: number }>;
   attendanceOverview: Array<{ name: 'Present' | 'Absent'; value: number; color: string }>;
   upcomingExams: Array<{ subject: string; class: string; date: string; status: string }>;
   recentMessages: Array<{ from: string; subject: string; time: string; unread: boolean }>;
+  schedule: ClassSchedule[];
 }
 
 export function useTeacherPortal() {
@@ -69,8 +80,31 @@ export function useTeacherPortal() {
         { name: 'Absent' as const, value: Math.max(0, total - present), color: 'hsl(var(--destructive))' },
       ];
 
-      // Class performance (avg grade per class)
-      let classPerformance: Array<{ class: string; avgGrade: number; attendance: number }> = [];
+      // Fetch schedule for today
+      const weekday = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+      let schedule: ClassSchedule[] = [];
+      if (user.id) {
+        const { data: sched } = await (supabase as any)
+          .from('teacher_daily_schedule')
+          .select('class_id,class_name,start_time,end_time,day_of_week,subject,room')
+          .eq('teacher_id', user.id)
+          .eq('day_of_week', weekday);
+        schedule = sched || [];
+      }
+
+      // Class performance (avg grade per class) and attendance summary
+      let classPerformance: Array<{ classId: string; class: string; avgGrade: number; attendance: number }> = [];
+      const attendanceSummaryMap: Record<string, number> = {};
+      if (user.id) {
+        const { data: classAtt } = await (supabase as any)
+          .from('class_attendance_summary')
+          .select('class_id,attendance_percentage')
+          .eq('teacher_id', user.id);
+        (classAtt || []).forEach((a: any) => {
+          attendanceSummaryMap[a.class_id] = Number(a.attendance_percentage || 0);
+        });
+      }
+
       if (classIds.length) {
         const { data: std } = await supabase
           .from('students')
@@ -103,10 +137,19 @@ export function useTeacherPortal() {
               return acc;
             }, { sum: 0, count: 0 });
             const avg = totals.count ? Math.round(totals.sum / totals.count) : 0;
-            // Approx attendance from summary current month
-            return { class: cls.name, avgGrade: avg, attendance: 0 };
+            const attendance = Math.round(attendanceSummaryMap[cls.id] || 0);
+            return { classId: cls.id, class: cls.name, avgGrade: avg, attendance };
           });
         }
+      }
+
+      if (!classPerformance.length) {
+        classPerformance = classList.map((cls) => ({
+          classId: cls.id,
+          class: cls.name,
+          avgGrade: 0,
+          attendance: Math.round(attendanceSummaryMap[cls.id] || 0),
+        }));
       }
 
       // Upcoming exams
@@ -148,6 +191,7 @@ export function useTeacherPortal() {
         attendanceOverview,
         upcomingExams,
         recentMessages: (msgs || []).map((m) => ({ from: 'School', subject: m.subject, time: new Date(m.created_at).toLocaleString(), unread: true })),
+        schedule,
       };
     },
   });
