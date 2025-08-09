@@ -5,76 +5,116 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search, Download, Printer, CreditCard, QrCode, User, Calendar, Mail, Phone, MapPin } from 'lucide-react';
+import { Search, Download, Printer, CreditCard, QrCode, User, Calendar, MapPin } from 'lucide-react';
+import { useStudents } from '@/hooks/useStudents';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function IdCardPage() {
+  interface StudentCard {
+    id: string;
+    name: string;
+    studentId: string;
+    class: string;
+    section: string;
+    photo: string;
+    dob: string;
+    fatherName: string;
+    address: string;
+    phone: string;
+    email: string;
+    admissionDate: string;
+    validUntil: string;
+  }
+
   const { t, isRTL } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [selectedStudent, setSelectedStudent] = useState<StudentCard | null>(null);
 
-  // Mock data
-  const students = [
-    {
-      id: 1,
-      name: 'أحمد محمد علي',
-      studentId: 'ST001',
-      class: 'الصف الأول',
-      section: 'أ',
+  const { data: studentsData = [], isLoading } = useStudents();
+  const students: StudentCard[] = studentsData.map((student) => {
+    const admission = new Date(student.admission_date);
+    admission.setFullYear(admission.getFullYear() + 1);
+    return {
+      id: student.id,
+      name: student.profiles?.full_name || '',
+      studentId: student.student_id,
+      class: student.classes?.name || '',
+      section: student.classes?.section || '',
       photo: '/placeholder.svg',
-      dob: '2010-05-15',
-      fatherName: 'محمد علي أحمد',
-      address: 'کابل، افغانستان',
-      phone: '+93 70 123 4567',
-      email: 'ahmad@example.com',
-      admissionDate: '2023-03-01',
-      validUntil: '2024-12-31'
-    },
-    {
-      id: 2,
-      name: 'فاطمة خان',
-      studentId: 'ST002',
-      class: 'الصف الثاني',
-      section: 'ب',
-      photo: '/placeholder.svg',
-      dob: '2009-08-22',
-      fatherName: 'خان محمد',
-      address: 'هرات، افغانستان',
-      phone: '+93 70 234 5678',
-      email: 'fatima@example.com',
-      admissionDate: '2023-03-01',
-      validUntil: '2024-12-31'
-    }
-  ];
+      dob: student.date_of_birth || '',
+      fatherName: student.guardian_name || '',
+      address: student.profiles?.address || '',
+      phone: student.guardian_phone || student.profiles?.phone || '',
+      email: student.profiles?.email || '',
+      admissionDate: student.admission_date,
+      validUntil: admission.toISOString().split('T')[0],
+    };
+  });
 
   const classes = ['الصف الأول', 'الصف الثاني', 'الصف الثالث', 'الصف الرابع'];
 
-  const filteredStudents = students.filter(student => {
+  const filteredStudents = students.filter((student) => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          student.studentId.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesClass = !selectedClass || selectedClass === 'all' || student.class === selectedClass;
     return matchesSearch && matchesClass;
   });
 
-  const handlePreview = (student: any) => {
+  const handlePreview = (student: StudentCard) => {
     setSelectedStudent(student);
     setPreviewOpen(true);
   };
 
-  const handlePrint = (student: any) => {
-    // TODO: Implement print functionality
-    console.log('Printing ID card for:', student.name);
+  const handlePrint = async (student: StudentCard) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-id-card', {
+        body: { studentId: student.id }
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (err) {
+      console.error('Error generating ID card:', err);
+    }
   };
 
-  const handleBulkGenerate = () => {
-    // TODO: Implement bulk generation
-    console.log('Generating bulk ID cards');
+  const handleBulkGenerate = async () => {
+    try {
+      const studentIds = filteredStudents.map((s) => s.id);
+      const { data, error } = await supabase.functions.invoke('generate-id-cards-bulk', {
+        body: { studentIds }
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (err) {
+      console.error('Error generating bulk ID cards:', err);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout
+        title={t('ID Card Generation')}
+        showBreadcrumb
+        breadcrumbItems={[
+          { label: t('Students'), href: '/students' },
+          { label: t('ID Cards') }
+        ]}
+      >
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout

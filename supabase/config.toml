@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.update-demo-passwords]
 verify_jwt = true
+
+[functions.generate-id-card]
+verify_jwt = true
+
+[functions.generate-id-cards-bulk]
+verify_jwt = true
