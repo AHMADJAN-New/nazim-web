@@ -30,78 +30,30 @@ import {
   Cell
 } from "recharts";
 import { useNavigate } from "react-router-dom";
+import { useParentPortal } from "@/hooks/useParentPortal";
 
 export function ParentDashboard() {
   const navigate = useNavigate();
+  const { data, isLoading } = useParentPortal();
 
-  // Mock data for parent dashboard
-  const children = [
-    {
-      id: 1,
-      name: "Ahmed Khan",
-      class: "Grade 5-A",
-      rollNumber: "05-001",
-      attendancePercentage: 92,
-      lastAttendance: "Present",
-      pendingFees: 5000,
-      recentGrade: "A",
-      profilePhoto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
-    },
-    {
-      id: 2,
-      name: "Fatima Khan",
-      class: "Grade 2-B", 
-      rollNumber: "02-015",
-      attendancePercentage: 95,
-      lastAttendance: "Present",
-      pendingFees: 0,
-      recentGrade: "A+",
-      profilePhoto: "https://images.unsplash.com/photo-1494790108755-2616b612b494?w=100&h=100&fit=crop&crop=face"
-    }
-  ];
+  const children = data?.children || [];
 
-  const attendanceTrend = [
-    { week: "Week 1", attendance: 95 },
-    { week: "Week 2", attendance: 92 },
-    { week: "Week 3", attendance: 94 },
-    { week: "Week 4", attendance: 91 }
+  const attendanceTrend = data?.attendanceTrend || [
+    { week: "Week 1", attendance: 0 },
+    { week: "Week 2", attendance: 0 },
+    { week: "Week 3", attendance: 0 },
+    { week: "Week 4", attendance: 0 }
   ];
 
   const feeBreakdown = [
-    { name: "Tuition", amount: 15000, color: "hsl(var(--primary))" },
+    { name: "Tuition", amount: Math.max(10000, children.reduce((s, c) => s + (c.pendingFees || 0), 0)), color: "hsl(var(--primary))" },
     { name: "Transport", amount: 3000, color: "hsl(var(--secondary))" },
     { name: "Activities", amount: 2000, color: "hsl(var(--accent))" }
   ];
 
-  const upcomingEvents = [
-    {
-      title: "Parent-Teacher Meeting",
-      date: "Dec 15, 2024",
-      time: "2:00 PM",
-      type: "meeting"
-    },
-    {
-      title: "Annual Sports Day",
-      date: "Dec 20, 2024", 
-      time: "9:00 AM",
-      type: "event"
-    }
-  ];
+  const upcomingEvents = data?.upcomingEvents || [];
 
-  const recentMessages = [
-    {
-      from: "Class Teacher",
-      subject: "Ahmed's Progress Update",
-      time: "2 hours ago",
-      unread: true
-    },
-    {
-      from: "Principal",
-      subject: "School Holiday Notice",
-      time: "1 day ago", 
-      unread: false
-    }
-  ];
+  const recentMessages = data?.recentMessages || [];
 
   return (
     <div className="space-y-6">

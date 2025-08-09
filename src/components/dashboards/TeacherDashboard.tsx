@@ -33,97 +33,54 @@ import {
   Line
 } from "recharts";
 import { useNavigate } from "react-router-dom";
+import { useTeacherPortal } from "@/hooks/useTeacherPortal";
 
 export function TeacherDashboard() {
   const navigate = useNavigate();
+  const { data, isLoading } = useTeacherPortal();
 
-  // Mock teacher data
-  const teacherInfo = {
-    name: "Mrs. Sarah Ahmed",
-    subject: "Mathematics",
-    classes: ["Grade 5-A", "Grade 5-B", "Grade 6-A"],
-    totalStudents: 90
+  const teacherInfo = data?.teacherInfo || {
+    name: "Teacher",
+    subject: undefined,
+    classes: [],
+    totalStudents: 0
   };
 
-  const todaySchedule = [
-    { time: "8:00 AM", class: "Grade 5-A", subject: "Math", room: "Room 101" },
-    { time: "9:30 AM", class: "Grade 5-B", subject: "Math", room: "Room 102" },
-    { time: "11:00 AM", class: "Grade 6-A", subject: "Math", room: "Room 103" },
-    { time: "2:00 PM", class: "Grade 5-A", subject: "Math Lab", room: "Lab 1" }
-  ];
+  const todaySchedule = teacherInfo.classes.slice(0, 4).map((c, i) => ({
+    time: `${8 + i}:00 AM`,
+    class: c.name,
+    subject: 'Class',
+    room: `Room ${101 + i}`
+  }));
 
-  const classPerformance = [
-    { class: "Grade 5-A", avgGrade: 85, attendance: 92 },
-    { class: "Grade 5-B", avgGrade: 78, attendance: 88 },
-    { class: "Grade 6-A", avgGrade: 82, attendance: 90 }
-  ];
+  const classPerformance = data?.classPerformance || [];
 
-  const attendanceOverview = [
-    { name: "Present", value: 82, color: "hsl(var(--success))" },
-    { name: "Absent", value: 8, color: "hsl(var(--destructive))" }
+  const attendanceOverview = data?.attendanceOverview || [
+    { name: "Present", value: 0, color: "hsl(var(--success))" },
+    { name: "Absent", value: 0, color: "hsl(var(--destructive))" }
   ];
 
   const weeklyTrend = [
-    { day: "Mon", present: 85, absent: 5 },
-    { day: "Tue", present: 82, absent: 8 },
-    { day: "Wed", present: 87, absent: 3 },
-    { day: "Thu", present: 84, absent: 6 },
-    { day: "Fri", present: 86, absent: 4 }
+    { day: "Mon", present: 0, absent: 0 },
+    { day: "Tue", present: 0, absent: 0 },
+    { day: "Wed", present: 0, absent: 0 },
+    { day: "Thu", present: 0, absent: 0 },
+    { day: "Fri", present: 0, absent: 0 }
   ];
 
   const pendingTasks = [
     {
-      task: "Grade Math Test Papers",
-      class: "Grade 5-A",
+      task: "Grade Assignments",
+      class: teacherInfo.classes[0]?.name || "Your Class",
       due: "Today",
       priority: "high",
-      count: 30
-    },
-    {
-      task: "Prepare Lesson Plan",
-      class: "Grade 6-A", 
-      due: "Tomorrow",
-      priority: "medium",
-      count: 1
-    },
-    {
-      task: "Submit Monthly Report",
-      class: "All Classes",
-      due: "Dec 15",
-      priority: "high",
-      count: 1
+      count: 10
     }
   ];
 
-  const upcomingExams = [
-    {
-      subject: "Mathematics",
-      class: "Grade 5-A",
-      date: "Dec 18, 2024",
-      status: "scheduled"
-    },
-    {
-      subject: "Mathematics",
-      class: "Grade 5-B", 
-      date: "Dec 19, 2024",
-      status: "draft"
-    }
-  ];
+  const upcomingExams = data?.upcomingExams || [];
 
-  const recentMessages = [
-    {
-      from: "Principal",
-      subject: "Staff Meeting Tomorrow",
-      time: "2 hours ago",
-      unread: true
-    },
-    {
-      from: "Parent - Ahmed's Father",
-      subject: "Question about Math Assignment",
-      time: "4 hours ago",
-      unread: true
-    }
-  ];
+  const recentMessages = data?.recentMessages || [];
 
   return (
     <div className="space-y-6">

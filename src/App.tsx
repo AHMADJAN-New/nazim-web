@@ -25,7 +25,10 @@ import {
   LibraryPage, ReportsPage, SettingsPage, AcademicSettingsPage,
   AppearanceSettingsPage, CommunicationSettingsPage, FinancialSettingsPage,
   SchoolInfoPage, SystemPreferencesPage, AdmissionsPage, BulkImportPage,
-  IdCardPage, StudentsPage, DashboardSkeleton, PageSkeleton
+  IdCardPage, StudentsPage, DashboardSkeleton, PageSkeleton,
+  ParentChildrenPage, ParentAttendancePage, ParentResultsPage, ParentFeesPage,
+  ParentMessagesPage, ParentAnnouncementsPage, ParentEventsPage,
+  TeacherClassesPortalPage
 } from "@/components/LazyComponents";
 
 // Optimized QueryClient with better caching and performance settings
@@ -266,6 +269,66 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            {/* Parent portal routes */}
+            <Route path="/parent/children" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ParentChildrenPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/parent/attendance" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ParentAttendancePage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/parent/results" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ParentResultsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/parent/fees" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ParentFeesPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/parent/messages" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ParentMessagesPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/parent/announcements" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ParentAnnouncementsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/parent/events" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <ParentEventsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+
+            {/* Teacher portal routes */}
+            <Route path="/teacher/classes" element={
+              <ProtectedRoute>
+                <Suspense fallback={<PageSkeleton />}>
+                  <TeacherClassesPortalPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+
             {/* Other routes */}
             <Route path="/attendance" element={
               <ProtectedRoute>
