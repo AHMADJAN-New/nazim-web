@@ -9,9 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { 
-  BarChart3, 
-  TrendingUp, 
+import {
+  BarChart3,
+  TrendingUp,
   Download,
   FileText,
   Calendar,
@@ -19,179 +19,58 @@ import {
   BookOpen,
   DollarSign,
   Activity,
-  Search, 
-  Filter, 
-  Eye,
+  Search,
+  Filter,
   Printer,
   Mail,
   Share,
-  Edit
+  Edit,
+  Trash,
+  Plus
 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
-
-// Mock data for reports
-const reportsStats = {
-  totalReports: 245,
-  generatedThisMonth: 45,
-  scheduledReports: 8,
-  sharedReports: 125
-};
-
-const availableReports = [
-  {
-    id: "R001",
-    name: "Student Attendance Report",
-    description: "Daily, weekly, and monthly attendance statistics by class and individual students",
-    category: "Attendance",
-    type: "Standard",
-    frequency: "Daily",
-    lastGenerated: "2024-03-01",
-    generatedBy: "Admin",
-    format: ["PDF", "Excel", "CSV"],
-    parameters: ["Date Range", "Class", "Section", "Student"],
-    accessLevel: "Staff"
-  },
-  {
-    id: "R002",
-    name: "Fee Collection Summary",
-    description: "Monthly fee collection status, pending amounts, and payment trends",
-    category: "Finance",
-    type: "Financial",
-    frequency: "Monthly",
-    lastGenerated: "2024-02-28",
-    generatedBy: "Finance Manager",
-    format: ["PDF", "Excel"],
-    parameters: ["Month", "Class", "Fee Type"],
-    accessLevel: "Finance"
-  },
-  {
-    id: "R003",
-    name: "Academic Performance Analysis",
-    description: "Student exam results, class averages, and subject-wise performance trends",
-    category: "Academics", 
-    type: "Academic",
-    frequency: "After Each Exam",
-    lastGenerated: "2024-02-25",
-    generatedBy: "Academic Coordinator",
-    format: ["PDF", "Excel", "Charts"],
-    parameters: ["Exam", "Class", "Subject", "Student"],
-    accessLevel: "Academic"
-  },
-  {
-    id: "R004",
-    name: "Staff Performance Report",
-    description: "Teacher performance metrics, attendance, and professional development tracking",
-    category: "HR",
-    type: "Administrative", 
-    frequency: "Quarterly",
-    lastGenerated: "2024-01-15",
-    generatedBy: "HR Manager",
-    format: ["PDF", "Excel"],
-    parameters: ["Quarter", "Department", "Employee"],
-    accessLevel: "Management"
-  },
-  {
-    id: "R005",
-    name: "Library Usage Report",
-    description: "Book circulation, member activity, and inventory status",
-    category: "Library",
-    type: "Operational",
-    frequency: "Monthly",
-    lastGenerated: "2024-02-29",
-    generatedBy: "Librarian",
-    format: ["PDF", "Excel"],
-    parameters: ["Month", "Book Category", "Member Type"],
-    accessLevel: "Staff"
-  },
-  {
-    id: "R006",
-    name: "Hostel Occupancy Report",
-    description: "Room occupancy rates, student check-ins/outs, and facility utilization",
-    category: "Hostel",
-    type: "Operational",
-    frequency: "Weekly",
-    lastGenerated: "2024-03-01",
-    generatedBy: "Hostel Manager",
-    format: ["PDF", "Excel"],
-    parameters: ["Week", "Building", "Room Type"],
-    accessLevel: "Management"
-  }
-];
-
-const reportHistory = [
-  {
-    id: "H001",
-    reportName: "Student Attendance Report",
-    generatedDate: "2024-03-01",
-    generatedTime: "09:30 AM",
-    generatedBy: "Mr. Ahmad Ali",
-    parameters: "March 2024, All Classes",
-    format: "PDF",
-    size: "2.5 MB",
-    downloads: 15,
-    status: "completed"
-  },
-  {
-    id: "H002",
-    reportName: "Fee Collection Summary",
-    generatedDate: "2024-02-28",
-    generatedTime: "05:45 PM",
-    generatedBy: "Ms. Fatima Shah",
-    parameters: "February 2024, All Classes",
-    format: "Excel",
-    size: "1.8 MB", 
-    downloads: 8,
-    status: "completed"
-  },
-  {
-    id: "H003",
-    reportName: "Academic Performance Analysis",
-    generatedDate: "2024-02-25",
-    generatedTime: "11:20 AM",
-    generatedBy: "Dr. Hassan Khan",
-    parameters: "Mid-Term Exam, Grade 10",
-    format: "PDF",
-    size: "4.2 MB",
-    downloads: 22,
-    status: "completed"
-  }
-];
-
-const scheduledReports = [
-  {
-    id: "S001",
-    reportName: "Daily Attendance Summary",
-    schedule: "Daily at 6:00 PM",
-    nextRun: "2024-03-02 18:00",
-    recipients: ["principal@school.com", "admin@school.com"],
-    format: "PDF",
-    status: "active"
-  },
-  {
-    id: "S002", 
-    reportName: "Weekly Finance Report",
-    schedule: "Every Friday at 4:00 PM",
-    nextRun: "2024-03-08 16:00",
-    recipients: ["finance@school.com"],
-    format: "Excel",
-    status: "active"
-  },
-  {
-    id: "S003",
-    reportName: "Monthly Academic Summary",
-    schedule: "Last day of month at 10:00 AM",
-    nextRun: "2024-03-31 10:00",
-    recipients: ["academic@school.com", "principal@school.com"],
-    format: "PDF",
-    status: "paused"
-  }
-];
+import {
+  useReports,
+  useCreateReport,
+  useUpdateReport,
+  useDeleteReport,
+  useReportHistory,
+  useCreateGeneratedReport,
+  useDeleteGeneratedReport,
+  useReportSchedules,
+  useCreateSchedule,
+  useUpdateSchedule,
+  useDeleteSchedule,
+  ReportTemplate,
+  ScheduledReport,
+} from "@/hooks/useReports";
 
 export default function ReportsPage() {
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterType, setFilterType] = useState("all");
+
+  const { data: reports = [] } = useReports();
+  const { data: reportHistory = [] } = useReportHistory();
+  const { data: scheduledReports = [] } = useReportSchedules();
+
+  const createReport = useCreateReport();
+  const updateReport = useUpdateReport();
+  const deleteReport = useDeleteReport();
+  const createHistory = useCreateGeneratedReport();
+  const deleteHistory = useDeleteGeneratedReport();
+  const createSchedule = useCreateSchedule();
+  const updateSchedule = useUpdateSchedule();
+  const deleteSchedule = useDeleteSchedule();
+
+  const currentMonth = new Date().getMonth();
+  const reportsStats = {
+    totalReports: reports.length,
+    generatedThisMonth: reportHistory.filter(r => new Date(r.generated_at).getMonth() === currentMonth).length,
+    scheduledReports: scheduledReports.length,
+    sharedReports: 0
+  };
 
   const getCategoryBadge = (category: string) => {
     const colors: { [key: string]: string } = {
@@ -218,6 +97,8 @@ export default function ReportsPage() {
         return <Badge variant="secondary">Processing</Badge>;
       case 'failed':
         return <Badge variant="destructive">Failed</Badge>;
+      case 'cancelled':
+        return <Badge variant="destructive">Cancelled</Badge>;
       case 'active':
         return <Badge variant="default">Active</Badge>;
       case 'paused':
@@ -241,6 +122,92 @@ export default function ReportsPage() {
         return <Badge variant="outline">Unknown</Badge>;
     }
   };
+
+  const handleAddReport = () => {
+    const name = prompt('Report name');
+    if (!name) return;
+    createReport.mutate({
+      name,
+      category: 'General',
+      type: 'Standard',
+      created_by: 'system',
+      access_level: 'Staff',
+      query_template: 'SELECT 1'
+    });
+  };
+
+  const handleEditReport = (report: ReportTemplate) => {
+    const name = prompt('New name', report.name);
+    if (!name) return;
+    updateReport.mutate({ id: report.id, name });
+  };
+
+  const handleDeleteReport = (id: string) => {
+    if (confirm('Delete report?')) {
+      deleteReport.mutate(id);
+    }
+  };
+
+  const handleGenerateReport = (report: ReportTemplate) => {
+    createHistory.mutate({
+      template_id: report.id,
+      report_name: report.name,
+      format: 'pdf',
+      generated_by: 'system',
+      status: 'completed',
+      is_public: false,
+      parameters: null,
+      file_size: 0,
+      expires_at: null
+    });
+  };
+
+  const handleDeleteHistory = (id: string) => {
+    if (confirm('Delete history?')) {
+      deleteHistory.mutate(id);
+    }
+  };
+
+  const handleCreateSchedule = () => {
+    const name = prompt('Schedule name');
+    const templateId = prompt('Template ID');
+    if (!name || !templateId) return;
+    createSchedule.mutate({
+      name,
+      template_id: templateId,
+      schedule_expression: '0 0 * * *',
+      next_run: new Date().toISOString(),
+      created_by: 'system',
+      recipients: [],
+      format: 'pdf',
+      is_active: true,
+      parameters: null
+    });
+  };
+
+  const handleEditSchedule = (schedule: ScheduledReport) => {
+    const expr = prompt('Cron expression', schedule.schedule_expression);
+    if (!expr) return;
+    updateSchedule.mutate({ id: schedule.id, schedule_expression: expr });
+  };
+
+  const handleDeleteSchedule = (id: string) => {
+    if (confirm('Delete schedule?')) {
+      deleteSchedule.mutate(id);
+    }
+  };
+
+  const formatFileSize = (size: number | null) => {
+    if (!size) return '-';
+    return `${(size / 1024).toFixed(1)} KB`;
+  };
+
+  const filteredReports = reports.filter((report) => {
+    const matchesSearch = report.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategory === 'all' || report.category.toLowerCase() === filterCategory;
+    const matchesType = filterType === 'all' || report.type.toLowerCase() === filterType;
+    return matchesSearch && matchesCategory && matchesType;
+  });
 
   return (
     <MainLayout
@@ -365,10 +332,21 @@ export default function ReportsPage() {
                   <SelectItem value="operational">Operational</SelectItem>
                 </SelectContent>
               </Select>
+              <Button onClick={handleAddReport} className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Report
+              </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {availableReports.map((report) => (
+              {filteredReports.map((report) => {
+                const formats = Array.isArray(report.format_options)
+                  ? (report.format_options as string[])
+                  : [];
+                const params = Array.isArray(report.parameters)
+                  ? (report.parameters as string[])
+                  : [];
+                return (
                 <Card key={report.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -376,7 +354,7 @@ export default function ReportsPage() {
                         <CardTitle className="text-lg">{report.name}</CardTitle>
                         <div className="flex gap-2">
                           {getCategoryBadge(report.category)}
-                          {getAccessLevelBadge(report.accessLevel)}
+                          {getAccessLevelBadge(report.access_level)}
                         </div>
                       </div>
                     </div>
@@ -393,53 +371,57 @@ export default function ReportsPage() {
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground">Frequency</Label>
-                          <p>{report.frequency}</p>
+                          <p>N/A</p>
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground">Last Generated</Label>
-                          <p>{report.lastGenerated}</p>
+                          <p>{report.updated_at ? new Date(report.updated_at).toLocaleDateString() : '-'}</p>
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground">Generated By</Label>
-                          <p>{report.generatedBy}</p>
+                          <p>{report.created_by}</p>
                         </div>
                       </div>
-                      
+
                       <div>
                         <Label className="text-xs text-muted-foreground">Available Formats</Label>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {report.format.map((format, index) => (
+                          {formats.map((format, index) => (
                             <Badge key={index} variant="outline" className="text-xs">
                               {format}
                             </Badge>
                           ))}
                         </div>
                       </div>
-                      
+
                       <div>
                         <Label className="text-xs text-muted-foreground">Parameters</Label>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {report.parameters.map((param, index) => (
+                          {params.map((param, index) => (
                             <Badge key={index} variant="secondary" className="text-xs">
                               {param}
                             </Badge>
                           ))}
                         </div>
                       </div>
-                      
+
                       <div className="flex gap-2 pt-2">
-                        <Button size="sm" className="flex-1">
+                        <Button size="sm" className="flex-1" onClick={() => handleGenerateReport(report)}>
                           <FileText className="h-4 w-4 mr-1" />
                           Generate
                         </Button>
-                        <Button size="sm" variant="outline">
-                          <Eye className="h-4 w-4" />
+                        <Button size="sm" variant="outline" onClick={() => handleEditReport(report)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDeleteReport(report.id)}>
+                          <Trash className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           </TabsContent>
 
@@ -482,22 +464,22 @@ export default function ReportsPage() {
                   <TableBody>
                     {reportHistory.map((report) => (
                       <TableRow key={report.id}>
-                        <TableCell className="font-medium">{report.reportName}</TableCell>
+                        <TableCell className="font-medium">{report.report_name}</TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div>{report.generatedDate}</div>
-                            <div className="text-muted-foreground">{report.generatedTime}</div>
+                            <div>{new Date(report.generated_at).toLocaleDateString()}</div>
+                            <div className="text-muted-foreground">{new Date(report.generated_at).toLocaleTimeString()}</div>
                           </div>
                         </TableCell>
-                        <TableCell>{report.generatedBy}</TableCell>
+                        <TableCell>{report.generated_by}</TableCell>
                         <TableCell className="max-w-xs truncate">
-                          {report.parameters}
+                          {JSON.stringify(report.parameters)}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">{report.format}</Badge>
                         </TableCell>
-                        <TableCell>{report.size}</TableCell>
-                        <TableCell>{report.downloads}</TableCell>
+                        <TableCell>{formatFileSize(report.file_size)}</TableCell>
+                        <TableCell>{report.download_count}</TableCell>
                         <TableCell>{getStatusBadge(report.status)}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
@@ -509,6 +491,9 @@ export default function ReportsPage() {
                             </Button>
                             <Button variant="outline" size="sm">
                               <Share className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteHistory(report.id)}>
+                              <Trash className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -529,7 +514,7 @@ export default function ReportsPage() {
                   Automatically generated reports on a schedule
                 </p>
               </div>
-              <Button>
+              <Button onClick={handleCreateSchedule}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Schedule Report
               </Button>
@@ -552,9 +537,9 @@ export default function ReportsPage() {
                   <TableBody>
                     {scheduledReports.map((report) => (
                       <TableRow key={report.id}>
-                        <TableCell className="font-medium">{report.reportName}</TableCell>
-                        <TableCell>{report.schedule}</TableCell>
-                        <TableCell>{report.nextRun}</TableCell>
+                        <TableCell className="font-medium">{report.name}</TableCell>
+                        <TableCell>{report.schedule_expression}</TableCell>
+                        <TableCell>{new Date(report.next_run).toLocaleString()}</TableCell>
                         <TableCell>
                           <div className="max-w-xs">
                             {report.recipients.length > 1 ? (
@@ -567,14 +552,14 @@ export default function ReportsPage() {
                         <TableCell>
                           <Badge variant="outline">{report.format}</Badge>
                         </TableCell>
-                        <TableCell>{getStatusBadge(report.status)}</TableCell>
+                        <TableCell>{getStatusBadge(report.is_active ? 'active' : 'paused')}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleEditSchedule(report)}>
                               <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteSchedule(report.id)}>
+                              <Trash className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
