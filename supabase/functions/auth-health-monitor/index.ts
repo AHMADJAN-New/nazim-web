@@ -70,15 +70,19 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     // Check 1: Verify all demo accounts exist in auth.users
-    const demoEmails = [
-      'super.admin@greenvalley.edu',
-      'admin@greenvalley.edu',
-      'teacher@greenvalley.edu',
-      'student@greenvalley.edu',
-      'parent@greenvalley.edu',
-      'staff@greenvalley.edu',
-      'pending@greenvalley.edu'
-    ];
+    const { data: demoAccounts, error: demoError } = await supabase
+      .from('demo_accounts')
+      .select('email');
+
+    if (demoError) {
+      console.error('Error fetching demo accounts:', demoError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch demo accounts' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    const demoEmails = demoAccounts?.map(a => a.email) || [];
 
     const { data: users } = await supabase.auth.admin.listUsers();
     const foundEmails = new Set(users.users.map(u => u.email));
