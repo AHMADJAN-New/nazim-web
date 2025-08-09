@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useCreateStudent } from "@/hooks/useStudents";
 import { useClasses } from "@/hooks/useClasses";
+import { useAdmissions, useUpdateAdmissionStatus, type AdmissionApplication } from "@/hooks/useAdmissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,50 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UserPlus, Search, Filter, Download, Upload, Eye, Edit, CheckCircle, XCircle, Clock } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface AdmissionApplication {
-  id: string;
-  studentName: string;
-  fatherName: string;
-  phone: string;
-  class: string;
-  status: 'pending' | 'approved' | 'rejected' | 'interview';
-  appliedDate: string;
-  documents: string[];
-  fees: number;
-}
-
-const mockApplications: AdmissionApplication[] = [
-  {
-    id: "ADM001",
-    studentName: "احمد علی",
-    fatherName: "محمد علی",
-    phone: "+92-300-1234567",
-    class: "Class 6",
-    status: "pending",
-    appliedDate: "2024-01-15",
-    documents: ["Birth Certificate", "Previous School Certificate"],
-    fees: 15000
-  },
-  {
-    id: "ADM002", 
-    studentName: "فاطمہ خان",
-    fatherName: "عمر خان",
-    phone: "+92-301-2345678",
-    class: "Class 8",
-    status: "approved",
-    appliedDate: "2024-01-14",
-    documents: ["Birth Certificate", "Medical Certificate", "Photos"],
-    fees: 18000
-  }
-];
 
 export default function AdmissionsPage() {
-  const [applications, setApplications] = useState<AdmissionApplication[]>(mockApplications);
+  const { data: applications = [], refetch } = useAdmissions();
+  const updateStatus = useUpdateAdmissionStatus();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [showNewForm, setShowNewForm] = useState(false);
+  const [, setShowNewForm] = useState(false);
   const [newStudentData, setNewStudentData] = useState({
     email: '',
     full_name: '',
@@ -67,33 +31,28 @@ export default function AdmissionsPage() {
     branch_id: 'branch-1' // Default branch
   });
   
-  const { toast } = useToast();
   const createStudent = useCreateStudent();
   const { data: classes = [] } = useClasses();
 
   const handleStatusChange = (id: string, newStatus: AdmissionApplication['status']) => {
-    setApplications(prev => prev.map(app => 
-      app.id === id ? { ...app, status: newStatus } : app
-    ));
-    toast({
-      title: "Status Updated",
-      description: `Application ${id} status changed to ${newStatus}`
-    });
+    updateStatus.mutate({ id, status: newStatus });
   };
 
   const getStatusBadge = (status: AdmissionApplication['status']) => {
     const variants = {
       pending: "secondary",
-      approved: "default", 
+      approved: "default",
       rejected: "destructive",
-      interview: "outline"
+      interview: "outline",
+      waitlist: "secondary"
     } as const;
-    
+
     const icons = {
       pending: Clock,
       approved: CheckCircle,
       rejected: XCircle,
-      interview: Eye
+      interview: Eye,
+      waitlist: Clock
     };
     
     const Icon = icons[status];
@@ -107,9 +66,10 @@ export default function AdmissionsPage() {
   };
 
   const filteredApplications = applications.filter(app => {
-    const matchesSearch = app.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         app.fatherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         app.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      app.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.father_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.application_id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || app.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -147,6 +107,7 @@ export default function AdmissionsPage() {
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
                 <SelectItem value="interview">Interview</SelectItem>
+                <SelectItem value="waitlist">Waitlist</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -200,12 +161,12 @@ export default function AdmissionsPage() {
                   <TableBody>
                     {filteredApplications.map((app) => (
                       <TableRow key={app.id}>
-                        <TableCell className="font-medium">{app.id}</TableCell>
-                        <TableCell>{app.studentName}</TableCell>
-                        <TableCell>{app.fatherName}</TableCell>
-                        <TableCell>{app.class}</TableCell>
+                        <TableCell className="font-medium">{app.application_id}</TableCell>
+                        <TableCell>{app.student_name}</TableCell>
+                        <TableCell>{app.father_name}</TableCell>
+                        <TableCell>{app.class_applying_for}</TableCell>
                         <TableCell>{app.phone}</TableCell>
-                        <TableCell>{app.appliedDate}</TableCell>
+                        <TableCell>{app.applied_date}</TableCell>
                         <TableCell>{getStatusBadge(app.status)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
@@ -224,6 +185,7 @@ export default function AdmissionsPage() {
                                 <SelectItem value="approved">Approve</SelectItem>
                                 <SelectItem value="rejected">Reject</SelectItem>
                                 <SelectItem value="interview">Interview</SelectItem>
+                                <SelectItem value="waitlist">Waitlist</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -247,10 +209,17 @@ export default function AdmissionsPage() {
               <CardContent className="space-y-4">
                 <form onSubmit={(e) => {
                   e.preventDefault();
-                  createStudent.mutate({
-                    ...newStudentData,
-                    admission_date: newStudentData.admission_date || new Date().toISOString().split('T')[0]
-                  });
+                  createStudent.mutate(
+                    {
+                      ...newStudentData,
+                      admission_date: newStudentData.admission_date || new Date().toISOString().split('T')[0],
+                    },
+                    {
+                      onSuccess: () => {
+                        refetch();
+                      },
+                    },
+                  );
                 }}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
