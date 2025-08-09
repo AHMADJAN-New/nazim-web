@@ -1,1 +1,7 @@
 project_id = "wkrzoelctjwpiwdswmdj"
+
+[functions.log-password-event]
+verify_jwt = false
+
+[functions.update-demo-passwords]
+verify_jwt = true

@@ -10,13 +10,31 @@ interface LogEntry {
 
 class Logger {
   private isDevelopment = import.meta.env.DEV;
+
+  private sanitize(data: any): any {
+    try {
+      return JSON.parse(
+        JSON.stringify(data, (key, value) => {
+          const lower = String(key).toLowerCase();
+          if (['password', 'token', 'authorization', 'apikey', 'secret'].includes(lower)) return '[REDACTED]';
+          if (lower.includes('email')) return '[REDACTED]';
+          return value;
+        })
+      );
+    } catch {
+      return undefined;
+    }
+  }
   
   private formatMessage(level: LogLevel, message: string, data?: any): string {
     const timestamp = new Date().toISOString();
     let formattedMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
     
     if (data) {
-      formattedMessage += ` | Data: ${JSON.stringify(data)}`;
+      const safe = this.sanitize(data);
+      if (safe !== undefined) {
+        formattedMessage += ` | Data: ${JSON.stringify(safe)}`;
+      }
     }
     
     return formattedMessage;
@@ -47,10 +65,11 @@ class Logger {
     if (!this.isDevelopment) {
       try {
         const logs = JSON.parse(sessionStorage.getItem('app_logs') || '[]');
+        const safe = this.sanitize(data);
         logs.push({
           level,
           message,
-          data,
+          data: safe,
           timestamp: new Date().toISOString()
         });
         
