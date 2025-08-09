@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, Send, Users, Search, Filter, Plus, MoreHorizontal, Reply, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useUsers } from "@/hooks/useUsers";
+import { useMessages, useCreateMessage, useUpdateMessage } from "@/hooks/useMessages";
 
 interface User {
   id: string;
@@ -42,75 +44,6 @@ interface Conversation {
   unreadCount: number;
 }
 
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "Dr. Ahmad Khan",
-    email: "ahmad.khan@school.edu",
-    role: "Principal",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
-  },
-  {
-    id: "2",
-    name: "Fatima Ali",
-    email: "fatima.ali@school.edu",
-    role: "Teacher",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face"
-  },
-  {
-    id: "3",
-    name: "Hassan Ahmed",
-    email: "hassan.ahmed@parent.com",
-    role: "Parent"
-  },
-  {
-    id: "4",
-    name: "Omar Khan",
-    email: "omar.khan@student.edu",
-    role: "Student"
-  }
-];
-
-const mockMessages: Message[] = [
-  {
-    id: "1",
-    subject: "Parent-Teacher Meeting Schedule",
-    content: "Dear parents, we are organizing a parent-teacher meeting next Friday. Please confirm your attendance.",
-    sender: mockUsers[0],
-    recipients: [mockUsers[2]],
-    timestamp: new Date().toISOString(),
-    isRead: false,
-    isStarred: true,
-    priority: "high"
-  },
-  {
-    id: "2",
-    subject: "Homework Assignment - Mathematics",
-    content: "Please complete chapter 5 exercises by Monday. Let me know if you have any questions.",
-    sender: mockUsers[1],
-    recipients: [mockUsers[3]],
-    timestamp: new Date(Date.now() - 86400000).toISOString(),
-    isRead: true,
-    isStarred: false,
-    priority: "normal"
-  }
-];
-
-const mockConversations: Conversation[] = [
-  {
-    id: "1",
-    participants: [mockUsers[0], mockUsers[2]],
-    lastMessage: mockMessages[0],
-    unreadCount: 2
-  },
-  {
-    id: "2",
-    participants: [mockUsers[1], mockUsers[3]],
-    lastMessage: mockMessages[1],
-    unreadCount: 0
-  }
-];
-
 const priorityVariants = {
   low: "outline",
   normal: "secondary",
@@ -119,8 +52,10 @@ const priorityVariants = {
 
 export default function MessagingPage() {
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
-  const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
+  const { data: users = [] } = useUsers();
+  const { data: messagesData = [] } = useMessages();
+  const createMessage = useCreateMessage();
+  const updateMessage = useUpdateMessage();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -128,6 +63,44 @@ export default function MessagingPage() {
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [isReplyOpen, setIsReplyOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'inbox' | 'conversations'>('conversations');
+
+  const userMap = useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
+
+  const messages = useMemo<Message[]>(() =>
+    messagesData.map(m => ({
+      id: m.id,
+      subject: m.subject,
+      content: m.content,
+      sender: userMap.get(m.sender_id) || { id: m.sender_id, name: 'Unknown', email: '', role: '' },
+      recipients: m.recipients.map(id => userMap.get(id)).filter(Boolean) as User[],
+      timestamp: m.sent_at || new Date().toISOString(),
+      isRead: (m as any).is_read || m.status === 'delivered',
+      isStarred: (m as any).is_starred || false,
+      priority: m.priority,
+    })),
+  [messagesData, userMap]);
+
+  const conversations = useMemo<Conversation[]>(() => {
+    const map = new Map<string, Conversation>();
+    messages.forEach(m => {
+      const key = [m.sender.id, ...m.recipients.map(r => r.id)].sort().join('-');
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, {
+          id: key,
+          participants: [m.sender, ...m.recipients],
+          lastMessage: m,
+          unreadCount: m.isRead ? 0 : 1,
+        });
+      } else {
+        if (new Date(m.timestamp).getTime() > new Date(existing.lastMessage.timestamp).getTime()) {
+          existing.lastMessage = m;
+        }
+        if (!m.isRead) existing.unreadCount += 1;
+      }
+    });
+    return Array.from(map.values());
+  }, [messages]);
 
   const filteredMessages = messages.filter(message => {
     const matchesSearch = message.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -146,74 +119,43 @@ export default function MessagingPage() {
     content: string;
     priority: 'low' | 'normal' | 'high';
   }) => {
-    const recipients = mockUsers.filter(user => messageData.recipients.includes(user.id));
-    
-    const newMessage: Message = {
-      id: `${messages.length + 1}`,
-      subject: messageData.subject,
-      content: messageData.content,
-      sender: mockUsers[0], // Current user
-      recipients,
-      timestamp: new Date().toISOString(),
-      isRead: false,
-      isStarred: false,
-      priority: messageData.priority
-    };
-
-    setMessages([newMessage, ...messages]);
+    createMessage.mutate(messageData);
     setIsComposeOpen(false);
     toast({
       title: "Message Sent",
-      description: `Message sent to ${recipients.length} recipient(s).`
+      description: `Message sent to ${messageData.recipients.length} recipient(s).`
     });
   };
 
-  const handleReply = (replyData: {
-    content: string;
-  }) => {
+  const handleReply = (replyData: { content: string; }) => {
     if (!selectedMessage) return;
-
-    const replyMessage: Message = {
-      id: `${messages.length + 1}`,
+    createMessage.mutate({
+      recipients: [selectedMessage.sender.id],
       subject: `Re: ${selectedMessage.subject}`,
       content: replyData.content,
-      sender: mockUsers[0], // Current user
-      recipients: [selectedMessage.sender],
-      timestamp: new Date().toISOString(),
-      isRead: false,
-      isStarred: false,
-      priority: selectedMessage.priority
-    };
-
-    setMessages([replyMessage, ...messages]);
+      priority: selectedMessage.priority,
+    });
     setIsReplyOpen(false);
     toast({
       title: "Reply Sent",
-      description: "Your reply has been sent successfully."
+      description: "Your reply has been sent successfully.",
     });
   };
 
-  const toggleStar = (messageId: string) => {
-    setMessages(prev => prev.map(message => 
-      message.id === messageId 
-        ? { ...message, isStarred: !message.isStarred }
-        : message
-    ));
+  const toggleStar = (messageId: string, current: boolean) => {
+    updateMessage.mutate({ id: messageId, is_starred: !current });
   };
 
   const markAsRead = (messageId: string) => {
-    setMessages(prev => prev.map(message => 
-      message.id === messageId 
-        ? { ...message, isRead: true }
-        : message
-    ));
+    updateMessage.mutate({ id: messageId, is_read: true, status: 'delivered' });
   };
 
   const selectMessage = (message: Message) => {
-    setSelectedMessage(message);
     if (!message.isRead) {
       markAsRead(message.id);
+      message = { ...message, isRead: true };
     }
+    setSelectedMessage(message);
   };
 
   return (
@@ -413,7 +355,7 @@ export default function MessagingPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toggleStar(selectedMessage.id)}
+                      onClick={() => toggleStar(selectedMessage.id, selectedMessage.isStarred)}
                     >
                       <Star className={`h-4 w-4 ${selectedMessage.isStarred ? 'text-yellow-500 fill-current' : ''}`} />
                     </Button>
@@ -482,12 +424,12 @@ export default function MessagingPage() {
               <div className="grid gap-2">
                 <Label htmlFor="recipients">Recipients</Label>
                 <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                  {mockUsers.map(user => (
+                  {users.map(user => (
                     <div key={user.id} className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        id={user.id} 
-                        name="recipients" 
+                      <input
+                        type="checkbox"
+                        id={user.id}
+                        name="recipients"
                         value={user.id}
                         className="rounded border-gray-300"
                       />

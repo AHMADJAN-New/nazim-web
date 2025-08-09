@@ -14,6 +14,7 @@ import { CalendarDays, MapPin, Users, Clock, Plus, Search, Filter, Edit, Trash2,
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useEvents, useCreateEvent, useUpdateEvent, useDeleteEvent } from "@/hooks/useEvents";
 
 interface SchoolEvent {
   id: string;
@@ -32,74 +33,6 @@ interface SchoolEvent {
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   notificationSent: boolean;
 }
-
-const mockEvents: SchoolEvent[] = [
-  {
-    id: "1",
-    title: "Parent-Teacher Meeting",
-    description: "Monthly parent-teacher meeting to discuss student progress and upcoming activities.",
-    date: "2024-02-15",
-    startTime: "09:00",
-    endTime: "17:00",
-    location: "School Auditorium",
-    category: "meeting",
-    priority: "high",
-    organizer: "Principal Office",
-    participants: ["teachers", "parents"],
-    registrationRequired: true,
-    status: "upcoming",
-    notificationSent: true
-  },
-  {
-    id: "2",
-    title: "Annual Sports Day",
-    description: "Inter-class sports competition featuring various indoor and outdoor games.",
-    date: "2024-02-20",
-    startTime: "08:00",
-    endTime: "16:00",
-    location: "School Playground",
-    category: "sports",
-    priority: "normal",
-    organizer: "Sports Department",
-    participants: ["students", "teachers", "parents"],
-    maxParticipants: 500,
-    registrationRequired: true,
-    status: "upcoming",
-    notificationSent: false
-  },
-  {
-    id: "3",
-    title: "Science Exhibition",
-    description: "Students will showcase their science projects and innovations.",
-    date: "2024-02-25",
-    startTime: "10:00",
-    endTime: "15:00",
-    location: "Science Block",
-    category: "academic",
-    priority: "normal",
-    organizer: "Science Department",
-    participants: ["students", "teachers", "parents"],
-    registrationRequired: false,
-    status: "upcoming",
-    notificationSent: true
-  },
-  {
-    id: "4",
-    title: "Winter Break",
-    description: "School will remain closed for winter holidays.",
-    date: "2024-12-25",
-    startTime: "00:00",
-    endTime: "23:59",
-    location: "N/A",
-    category: "holiday",
-    priority: "low",
-    organizer: "Administration",
-    participants: ["all"],
-    registrationRequired: false,
-    status: "upcoming",
-    notificationSent: true
-  }
-];
 
 const eventCategories = [
   { value: "academic", label: "Academic", color: "bg-blue-500" },
@@ -129,7 +62,10 @@ const priorityVariants = {
 
 export default function EventsPage() {
   const { toast } = useToast();
-  const [events, setEvents] = useState<SchoolEvent[]>(mockEvents);
+  const { data: events = [] } = useEvents();
+  const createEvent = useCreateEvent();
+  const updateEvent = useUpdateEvent();
+  const deleteEventMut = useDeleteEvent();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -154,66 +90,53 @@ export default function EventsPage() {
   const todayEvents = events.filter(e => e.date === new Date().toISOString().split('T')[0]).length;
 
   const handleAddEvent = (eventData: Partial<SchoolEvent>) => {
-    const newEvent: SchoolEvent = {
-      id: `${events.length + 1}`,
-      title: eventData.title || "",
-      description: eventData.description || "",
-      date: eventData.date || "",
-      startTime: eventData.startTime || "09:00",
-      endTime: eventData.endTime || "17:00",
-      location: eventData.location || "",
-      category: eventData.category || "academic",
-      priority: eventData.priority || "normal",
-      organizer: eventData.organizer || "Administration",
+    createEvent.mutate({
+      title: eventData.title || '',
+      description: eventData.description || '',
+      date: eventData.date || '',
+      startTime: eventData.startTime || '09:00',
+      endTime: eventData.endTime || '17:00',
+      location: eventData.location || '',
+      category: eventData.category || 'academic',
+      priority: eventData.priority || 'normal',
+      organizer: eventData.organizer || 'Administration',
       participants: eventData.participants || [],
       maxParticipants: eventData.maxParticipants,
       registrationRequired: eventData.registrationRequired || false,
-      status: "upcoming",
-      notificationSent: false
-    };
-
-    setEvents([...events, newEvent]);
+      status: 'upcoming',
+      notificationSent: false,
+    });
     setIsAddEventOpen(false);
     toast({
-      title: "Event Created",
-      description: `${newEvent.title} has been successfully created.`
+      title: 'Event Created',
+      description: `${eventData.title} has been successfully created.`,
     });
   };
 
   const handleEditEvent = (eventData: Partial<SchoolEvent>) => {
     if (!editingEvent) return;
-
-    const updatedEvent: SchoolEvent = {
-      ...editingEvent,
-      ...eventData,
-    };
-
-    setEvents(prev => prev.map(e => e.id === editingEvent.id ? updatedEvent : e));
+    updateEvent.mutate({ id: editingEvent.id, ...eventData });
     setIsEditEventOpen(false);
     setEditingEvent(null);
     toast({
-      title: "Event Updated",
-      description: `${updatedEvent.title} has been successfully updated.`
+      title: 'Event Updated',
+      description: `${eventData.title || editingEvent.title} has been successfully updated.`,
     });
   };
 
   const handleDeleteEvent = (eventId: string) => {
-    setEvents(prev => prev.filter(e => e.id !== eventId));
+    deleteEventMut.mutate(eventId);
     toast({
-      title: "Event Deleted",
-      description: "Event has been successfully deleted."
+      title: 'Event Deleted',
+      description: 'Event has been successfully deleted.',
     });
   };
 
   const sendNotification = (eventId: string) => {
-    setEvents(prev => prev.map(event => 
-      event.id === eventId 
-        ? { ...event, notificationSent: true }
-        : event
-    ));
+    updateEvent.mutate({ id: eventId, notificationSent: true });
     toast({
-      title: "Notification Sent",
-      description: "Event notification has been sent to all participants."
+      title: 'Notification Sent',
+      description: 'Event notification has been sent to all participants.',
     });
   };
 

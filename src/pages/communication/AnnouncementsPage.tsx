@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Megaphone, Users, Calendar, Plus, Search, Filter, Edit, Trash2, Eye, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useCommunications, useCreateCommunication, useUpdateCommunication, useDeleteCommunication } from "@/hooks/useCommunications";
 
 interface Announcement {
   id: string;
@@ -24,44 +25,6 @@ interface Announcement {
   status: 'draft' | 'published' | 'expired';
   notificationSent: boolean;
 }
-
-const mockAnnouncements: Announcement[] = [
-  {
-    id: "1",
-    title: "School Reopening After Winter Break",
-    content: "School will reopen on January 15, 2024. All students are expected to attend classes regularly. Please bring updated notebooks and uniforms.",
-    priority: "high",
-    targetAudience: ["students", "parents"],
-    publishDate: "2024-01-01",
-    expiryDate: "2024-01-20",
-    author: "Principal Office",
-    status: "published",
-    notificationSent: true
-  },
-  {
-    id: "2",
-    title: "Parent-Teacher Meeting Schedule",
-    content: "Monthly parent-teacher meeting is scheduled for February 15, 2024. Please confirm your attendance by replying to this announcement.",
-    priority: "normal",
-    targetAudience: ["parents", "teachers"],
-    publishDate: "2024-02-01",
-    expiryDate: "2024-02-16",
-    author: "Academic Office",
-    status: "published",
-    notificationSent: false
-  },
-  {
-    id: "3",
-    title: "Sports Day Registration Open",
-    content: "Registration for Annual Sports Day is now open. Students can register for various events through their class teachers.",
-    priority: "normal",
-    targetAudience: ["students", "teachers"],
-    publishDate: "2024-02-10",
-    author: "Sports Department",
-    status: "draft",
-    notificationSent: false
-  }
-];
 
 const priorityVariants = {
   low: "outline",
@@ -78,7 +41,28 @@ const statusVariants = {
 
 export default function AnnouncementsPage() {
   const { toast } = useToast();
-  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
+  const { data: communications = [] } = useCommunications();
+  const createCommunication = useCreateCommunication();
+  const updateCommunication = useUpdateCommunication();
+  const deleteCommunication = useDeleteCommunication();
+  const announcements = useMemo<Announcement[]>(() =>
+    communications.map(c => ({
+      id: c.id,
+      title: c.title,
+      content: c.content,
+      priority: (c.priority as Announcement['priority']) || 'normal',
+      targetAudience: c.target_audience || [],
+      publishDate: c.published_date ? c.published_date.split('T')[0] : '',
+      expiryDate: c.expires_at ? c.expires_at.split('T')[0] : undefined,
+      author: c.created_by || 'Admin',
+      status: !c.published_date
+        ? 'draft'
+        : c.expires_at && new Date(c.expires_at) < new Date()
+          ? 'expired'
+          : 'published',
+      notificationSent: !!c.published_date,
+    })),
+  [communications]);
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -99,56 +83,45 @@ export default function AnnouncementsPage() {
   const pendingNotifications = announcements.filter(a => !a.notificationSent && a.status === 'published').length;
 
   const handleAddAnnouncement = (announcementData: Partial<Announcement>) => {
-    const newAnnouncement: Announcement = {
-      id: `${announcements.length + 1}`,
-      title: announcementData.title || "",
-      content: announcementData.content || "",
-      priority: announcementData.priority || "normal",
-      targetAudience: announcementData.targetAudience || [],
-      publishDate: announcementData.publishDate || new Date().toISOString().split('T')[0],
-      expiryDate: announcementData.expiryDate,
-      author: "Admin",
-      status: "draft",
-      notificationSent: false
-    };
-
-    setAnnouncements([newAnnouncement, ...announcements]);
+    createCommunication.mutate({
+      title: announcementData.title || '',
+      content: announcementData.content || '',
+      priority: announcementData.priority || 'normal',
+      target_audience: announcementData.targetAudience || [],
+      branch_id: '660e8400-e29b-41d4-a716-446655440001',
+      created_by: 'aa0e8400-e29b-41d4-a716-446655440001',
+      published_date: null,
+      expires_at: announcementData.expiryDate ? new Date(announcementData.expiryDate).toISOString() : null,
+      type: 'announcement',
+    });
     setIsAddAnnouncementOpen(false);
     toast({
       title: "Announcement Created",
-      description: `${newAnnouncement.title} has been created as draft.`
+      description: `${announcementData.title} has been created as draft.`,
     });
   };
 
   const publishAnnouncement = (announcementId: string) => {
-    setAnnouncements(prev => prev.map(announcement => 
-      announcement.id === announcementId 
-        ? { ...announcement, status: 'published' as const }
-        : announcement
-    ));
+    updateCommunication.mutate({ id: announcementId, published_date: new Date().toISOString() });
     toast({
       title: "Announcement Published",
-      description: "Announcement is now visible to the target audience."
+      description: "Announcement is now visible to the target audience.",
     });
   };
 
   const sendNotification = (announcementId: string) => {
-    setAnnouncements(prev => prev.map(announcement => 
-      announcement.id === announcementId 
-        ? { ...announcement, notificationSent: true }
-        : announcement
-    ));
+    updateCommunication.mutate({ id: announcementId });
     toast({
       title: "Notification Sent",
-      description: "Announcement notification has been sent to all target users."
+      description: "Announcement notification has been sent to all target users.",
     });
   };
 
   const deleteAnnouncement = (announcementId: string) => {
-    setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
+    deleteCommunication.mutate(announcementId);
     toast({
       title: "Announcement Deleted",
-      description: "Announcement has been successfully deleted."
+      description: "Announcement has been successfully deleted.",
     });
   };
 
