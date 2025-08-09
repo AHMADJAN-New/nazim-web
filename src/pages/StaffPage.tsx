@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { UserPlus, Search, Edit, Trash2, Eye, Users, GraduationCap, Shield, Calculator, BookOpen, Coffee } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useStaff, useDeleteStaff } from "@/hooks/useStaff";
+import { useStaff, useDeleteStaff, useCreateStaff } from "@/hooks/useStaff";
 
 export default function StaffPage() {
   const { data: staff = [], isLoading } = useStaff();
@@ -21,9 +22,58 @@ export default function StaffPage() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [showNewStaffDialog, setShowNewStaffDialog] = useState(false);
   const { toast } = useToast();
+  const [newStaff, setNewStaff] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    role: "",
+    department: "",
+    salary: "",
+    qualification: "",
+    address: "",
+  });
+  const createStaffMutation = useCreateStaff();
+  const queryClient = useQueryClient();
 
   const handleDeleteStaff = (id: string) => {
     deleteStaffMutation.mutate(id);
+  };
+
+  const handleAddStaff = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const staffData = {
+      user_id: "",
+      employee_id: "",
+      branch_id: "",
+      department: newStaff.department,
+      designation: newStaff.role,
+      qualification: newStaff.qualification,
+      salary: newStaff.salary ? Number(newStaff.salary) : undefined,
+    };
+
+    createStaffMutation.mutate(staffData, {
+      onSuccess: () => {
+        toast({ title: "Staff member added successfully" });
+        queryClient.invalidateQueries({ queryKey: ["staff"] });
+        setShowNewStaffDialog(false);
+        setNewStaff({
+          fullName: "",
+          email: "",
+          phone: "",
+          role: "",
+          department: "",
+          salary: "",
+          qualification: "",
+          address: "",
+        });
+      },
+      onError: (error: Error) => {
+        toast({
+          title: "Error creating staff",
+          description: error.message,
+        });
+      },
+    });
   };
 
   const getStatusBadge = (role: string) => {
@@ -122,22 +172,41 @@ export default function StaffPage() {
                   Enter the details for the new staff member
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form onSubmit={handleAddStaff} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="staff-name">Full Name *</Label>
-                  <Input id="staff-name" placeholder="Enter full name" />
+                  <Input
+                    id="staff-name"
+                    placeholder="Enter full name"
+                    value={newStaff.fullName}
+                    onChange={(e) => setNewStaff({ ...newStaff, fullName: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="staff-email">Email *</Label>
-                  <Input id="staff-email" type="email" placeholder="Enter email" />
+                  <Input
+                    id="staff-email"
+                    type="email"
+                    placeholder="Enter email"
+                    value={newStaff.email}
+                    onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="staff-phone">Phone *</Label>
-                  <Input id="staff-phone" placeholder="+92-300-0000000" />
+                  <Input
+                    id="staff-phone"
+                    placeholder="+92-300-0000000"
+                    value={newStaff.phone}
+                    onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="staff-role">Role *</Label>
-                  <Select>
+                  <Select
+                    value={newStaff.role}
+                    onValueChange={(value) => setNewStaff({ ...newStaff, role: value })}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
@@ -153,29 +222,54 @@ export default function StaffPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="staff-department">Department</Label>
-                  <Input id="staff-department" placeholder="Enter department" />
+                  <Input
+                    id="staff-department"
+                    placeholder="Enter department"
+                    value={newStaff.department}
+                    onChange={(e) => setNewStaff({ ...newStaff, department: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="staff-salary">Salary (PKR)</Label>
-                  <Input id="staff-salary" type="number" placeholder="45000" />
+                  <Input
+                    id="staff-salary"
+                    type="number"
+                    placeholder="45000"
+                    value={newStaff.salary}
+                    onChange={(e) => setNewStaff({ ...newStaff, salary: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="staff-qualification">Qualification</Label>
-                  <Input id="staff-qualification" placeholder="e.g., M.Sc Mathematics" />
+                  <Input
+                    id="staff-qualification"
+                    placeholder="e.g., M.Sc Mathematics"
+                    value={newStaff.qualification}
+                    onChange={(e) => setNewStaff({ ...newStaff, qualification: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="staff-address">Address</Label>
-                  <Textarea id="staff-address" placeholder="Enter complete address" />
+                  <Textarea
+                    id="staff-address"
+                    placeholder="Enter complete address"
+                    value={newStaff.address}
+                    onChange={(e) => setNewStaff({ ...newStaff, address: e.target.value })}
+                  />
                 </div>
-              </div>
-              <div className="flex gap-2 pt-4">
-                <Button className="flex-1" onClick={() => setShowNewStaffDialog(false)}>
-                  Add Staff Member
-                </Button>
-                <Button variant="outline" onClick={() => setShowNewStaffDialog(false)}>
-                  Cancel
-                </Button>
-              </div>
+                <div className="flex gap-2 pt-4 md:col-span-2">
+                  <Button type="submit" className="flex-1" disabled={createStaffMutation.isPending}>
+                    Add Staff Member
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowNewStaffDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
