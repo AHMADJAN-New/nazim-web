@@ -15,15 +15,15 @@ import { CalendarIcon, Search, QrCode, Camera, Download, Upload, CheckCircle, XC
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useAttendance, useMarkAttendance, useUpdateAttendance } from "@/hooks/useAttendance";
+import { useAttendance, useUpdateAttendance } from "@/hooks/useAttendance";
 import { useClasses } from "@/hooks/useClasses";
 import { useAttendanceDevices, useCreateAttendanceDevice, useCreateAttendanceLog, useSyncDeviceData } from "@/hooks/useAttendanceDevices";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AttendancePage() {
   const { data: attendanceData = [], isLoading } = useAttendance();
   const { data: classes = [] } = useClasses();
   const { data: devices = [], isLoading: devicesLoading } = useAttendanceDevices();
-  const markAttendanceMutation = useMarkAttendance();
   const updateAttendanceMutation = useUpdateAttendance();
   const createDevice = useCreateAttendanceDevice();
   const createLog = useCreateAttendanceLog();
@@ -44,10 +44,19 @@ export default function AttendancePage() {
   });
   const { toast } = useToast();
 
-  const handleAttendanceChange = (id: string, status: 'present' | 'absent' | 'late' | 'leave') => {
+  const handleAttendanceChange = (
+    id: string,
+    status: 'present' | 'absent' | 'late' | 'leave'
+  ) => {
+    const mappedStatus =
+      (status === 'leave' ? 'excused' : status) as
+        | 'present'
+        | 'absent'
+        | 'late'
+        | 'excused';
     updateAttendanceMutation.mutate({
       id,
-      status: status as any
+      status: mappedStatus
     });
   };
 
@@ -76,12 +85,35 @@ export default function AttendancePage() {
     );
   };
 
-  const bulkMarkAttendance = (status: 'present' | 'absent' | 'late' | 'leave') => {
-    // Bulk marking logic would go here
-    toast({
-      title: "Bulk Attendance",
-      description: `All students marked as ${status}`
-    });
+  const bulkMarkAttendance = async (
+    status: 'present' | 'absent' | 'late' | 'leave'
+  ) => {
+    const mappedStatus =
+      (status === 'leave' ? 'excused' : status) as
+        | 'present'
+        | 'absent'
+        | 'late'
+        | 'excused';
+    try {
+      await Promise.all(
+        attendanceData.map((record) =>
+          updateAttendanceMutation.mutateAsync({
+            id: record.id,
+            status: mappedStatus
+          })
+        )
+      );
+      toast({
+        title: "Bulk Attendance",
+        description: `All students marked as ${status}`
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to update attendance",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleCreateDevice = () => {
@@ -115,21 +147,32 @@ export default function AttendancePage() {
   };
 
   const handleSyncDevice = async (deviceId: string) => {
-    // Simulate device data sync - in real implementation, this would connect to the actual device
-    const mockLogs = [
-      {
-        student_id: 'STU001',
-        timestamp: new Date().toISOString(),
-        type: 'check_in',
-        method: 'fingerprint',
-        device_user_id: '1001'
-      }
-    ];
+    const device = devices.find((d) => d.id === deviceId);
+    if (!device) return;
 
-    syncDevice.mutate({
-      deviceId,
-      logs: mockLogs
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke<{
+        logs: Record<string, unknown>[];
+      }>('fetch-device-logs', {
+        body: { ip: device.ip_address, port: device.port }
+      });
+
+      if (error) throw error;
+
+      const logs = data?.logs || [];
+
+      syncDevice.mutate({
+        deviceId,
+        logs
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to sync device';
+      toast({
+        title: 'Sync Failed',
+        description: message,
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleManualLog = () => {
