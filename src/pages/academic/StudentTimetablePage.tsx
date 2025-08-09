@@ -1,29 +1,24 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, BookOpen, User, Download, Printer } from "lucide-react";
 
-const mockTimetable = {
-  "Monday": [
-    { time: "08:00-08:45", subject: "Mathematics", teacher: "Mr. Ahmad", room: "Room 101" },
-    { time: "08:45-09:30", subject: "English", teacher: "Ms. Fatima", room: "Room 102" },
-    { time: "09:30-10:15", subject: "Physics", teacher: "Dr. Hassan", room: "Lab 1" },
-    { time: "10:15-10:30", subject: "Break", teacher: "", room: "" },
-    { time: "10:30-11:15", subject: "Chemistry", teacher: "Ms. Ayesha", room: "Lab 2" },
-    { time: "11:15-12:00", subject: "Urdu", teacher: "Mr. Ali", room: "Room 103" }
-  ],
-  "Tuesday": [
-    { time: "08:00-08:45", subject: "Biology", teacher: "Dr. Sara", room: "Lab 3" },
-    { time: "08:45-09:30", subject: "Mathematics", teacher: "Mr. Ahmad", room: "Room 101" },
-    { time: "09:30-10:15", subject: "Computer Science", teacher: "Mr. Omar", room: "Computer Lab" },
-    { time: "10:15-10:30", subject: "Break", teacher: "", room: "" },
-    { time: "10:30-11:15", subject: "English", teacher: "Ms. Fatima", room: "Room 102" },
-    { time: "11:15-12:00", subject: "Islamic Studies", teacher: "Maulana Qasim", room: "Room 104" }
-  ]
-};
+interface ScheduleEntry {
+  id: string;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  subject: string | null;
+  room: string | null;
+  teacher?: {
+    full_name: string;
+  } | null;
+}
 
 export default function StudentTimetablePage() {
   const [selectedClass, setSelectedClass] = useState<string>("10-A");
@@ -31,6 +26,59 @@ export default function StudentTimetablePage() {
 
   const classes = ["8-A", "8-B", "9-A", "9-B", "10-A", "10-B", "11-A", "11-B"];
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+  const { data: timetable = [] } = useQuery({
+    queryKey: ["student-timetable", selectedClass, selectedDay],
+    queryFn: async (): Promise<ScheduleEntry[]> => {
+      const { data: classRow } = await supabase
+        .from("classes")
+        .select("id")
+        .eq("name", selectedClass)
+        .single();
+
+      if (!classRow) return [];
+
+      const { data } = await supabase
+        .from("class_schedules")
+        .select("id, day_of_week, start_time, end_time, subject, room, teacher:profiles(full_name)")
+        .eq("class_id", classRow.id)
+        .eq("day_of_week", selectedDay)
+        .order("start_time");
+
+      return (data as ScheduleEntry[]) || [];
+    }
+  });
+
+  const handleExport = () => {
+    if (!timetable.length) return;
+    const header = "Time,Subject,Teacher,Room\n";
+    const rows = timetable
+      .map(t => `${t.start_time}-${t.end_time},${t.subject || ""},${t.teacher?.full_name || ""},${t.room || ""}`)
+      .join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `timetable_${selectedClass}_${selectedDay}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handlePrint = () => {
+    if (!timetable.length) return;
+    const rows = timetable
+      .map(
+        t => `<tr><td>${t.start_time}-${t.end_time}</td><td>${t.subject || ""}</td><td>${t.teacher?.full_name || ""}</td><td>${t.room || ""}</td></tr>`
+      )
+      .join("");
+    const printWindow = window.open("", "", "height=600,width=800");
+    printWindow?.document.write(
+      `<html><head><title>Timetable</title></head><body><table border="1" style="width:100%;border-collapse:collapse"><thead><tr><th>Time</th><th>Subject</th><th>Teacher</th><th>Room</th></tr></thead><tbody>${rows}</tbody></table></body></html>`
+    );
+    printWindow?.document.close();
+    printWindow?.print();
+  };
 
   return (
     <MainLayout title="Student Timetable">
@@ -59,11 +107,11 @@ export default function StudentTimetablePage() {
             </Select>
           </div>
           <div className="flex space-x-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handlePrint}>
               <Printer className="h-4 w-4 mr-2" />
               Print
             </Button>
@@ -79,28 +127,29 @@ export default function StudentTimetablePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {mockTimetable[selectedDay as keyof typeof mockTimetable]?.map((period, index) => (
-                <div key={index} className={`flex items-center p-4 rounded-lg border ${
-                  period.subject === "Break" ? "bg-muted/50" : "bg-background"
-                }`}>
+              {timetable.map(period => (
+                <div
+                  key={period.id}
+                  className={`flex items-center p-4 rounded-lg border ${
+                    period.subject === "Break" ? "bg-muted/50" : "bg-background"
+                  }`}
+                >
                   <div className="flex items-center space-x-4 flex-1">
                     <div className="flex items-center text-sm font-medium w-24">
                       <Clock className="h-4 w-4 mr-2" />
-                      {period.time}
+                      {period.start_time}-{period.end_time}
                     </div>
                     <div className="flex items-center flex-1">
                       <BookOpen className="h-4 w-4 mr-2" />
-                      <span className="font-medium">{period.subject}</span>
+                      <span className="font-medium">{period.subject || ""}</span>
                     </div>
-                    {period.teacher && (
+                    {period.teacher?.full_name && (
                       <div className="flex items-center text-sm text-muted-foreground w-32">
                         <User className="h-4 w-4 mr-2" />
-                        {period.teacher}
+                        {period.teacher.full_name}
                       </div>
                     )}
-                    {period.room && (
-                      <Badge variant="outline">{period.room}</Badge>
-                    )}
+                    {period.room && <Badge variant="outline">{period.room}</Badge>}
                   </div>
                 </div>
               ))}
