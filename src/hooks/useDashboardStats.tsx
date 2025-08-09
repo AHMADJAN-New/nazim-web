@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 
 export interface DashboardStats {
   totalStudents: number;
@@ -39,6 +40,7 @@ export const useDashboardStats = () => {
         staffCount,
         attendanceData,
         feeData,
+        donationsData,
         roomsCount,
         allocationsCount
       ] = await Promise.all([
@@ -60,6 +62,11 @@ export const useDashboardStats = () => {
           .gte('paid_date', `${currentMonth}-01`)
           .lt('paid_date', nextMonth.toISOString().split('T')[0]),
         supabase
+          .from('donations')
+          .select('amount')
+          .gte('donation_date', `${currentMonth}-01`)
+          .lt('donation_date', nextMonth.toISOString().split('T')[0]),
+        supabase
           .from('hostel_rooms')
           .select('*', { count: 'exact', head: true }),
         supabase
@@ -77,7 +84,7 @@ export const useDashboardStats = () => {
       const attendancePercentage = totalAttendance > 0 ? (presentCount / totalAttendance) * 100 : 0;
 
       const feeCollectionAmount = feeData.data?.reduce((sum, fee) => sum + Number(fee.amount), 0) || 0;
-      const donationsAmount = 320000; // Mock data for now
+      const donationsAmount = donationsData.data?.reduce((sum, d) => sum + Number(d.amount), 0) || 0;
 
       const totalRooms = roomsCount.count || 0;
       const occupiedRooms = allocationsCount.count || 0;
@@ -109,6 +116,23 @@ export const useDashboardStats = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('dashboard-stats')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fees' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'donations' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hostel_rooms' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hostel_allocations' }, () => query.refetch())
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [query.refetch]);
 };
 
 export const useStudentsByClass = () => {

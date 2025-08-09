@@ -13,10 +13,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { UserPlus, Search, Edit, Trash2, Eye, Users, GraduationCap, Shield, Calculator, BookOpen, Coffee } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useStaff, useDeleteStaff, useCreateStaff } from "@/hooks/useStaff";
+import { useStaff, useDeleteStaff, useCreateStaff, useStaffStats } from "@/hooks/useStaff";
 
 export default function StaffPage() {
   const { data: staff = [], isLoading } = useStaff();
+  const { data: staffStats } = useStaffStats();
   const deleteStaffMutation = useDeleteStaff();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -103,13 +104,6 @@ export default function StaffPage() {
     const matchesRole = roleFilter === "all" || member.designation === roleFilter;
     return matchesSearch && matchesRole;
   });
-
-  const statsData = {
-    total: staff.length,
-    teachers: staff.filter(s => s.designation === 'teacher').length,
-    admin: staff.filter(s => s.designation === 'admin').length,
-    support: staff.filter(s => s.designation !== 'teacher' && s.designation !== 'admin').length
-  };
 
   if (isLoading) {
     return (
@@ -281,7 +275,7 @@ export default function StaffPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Staff</p>
-                  <p className="text-2xl font-bold">{statsData.total}</p>
+                  <p className="text-2xl font-bold">{staffStats?.total ?? 0}</p>
                 </div>
                 <Users className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -293,7 +287,7 @@ export default function StaffPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Teachers</p>
-                  <p className="text-2xl font-bold">{statsData.teachers}</p>
+                  <p className="text-2xl font-bold">{staffStats?.teachers ?? 0}</p>
                 </div>
                 <GraduationCap className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -305,7 +299,7 @@ export default function StaffPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Admin Staff</p>
-                  <p className="text-2xl font-bold">{statsData.admin}</p>
+                  <p className="text-2xl font-bold">{staffStats?.admin ?? 0}</p>
                 </div>
                 <Shield className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -317,7 +311,7 @@ export default function StaffPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Support Staff</p>
-                  <p className="text-2xl font-bold">{statsData.support}</p>
+                  <p className="text-2xl font-bold">{staffStats?.support ?? 0}</p>
                 </div>
                 <Coffee className="h-8 w-8 text-muted-foreground" />
               </div>

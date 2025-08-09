@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
 
 export interface Staff {
   id: string;
@@ -48,6 +49,53 @@ export const useStaff = () => {
       return data as Staff[];
     },
   });
+};
+
+export interface StaffStats {
+  total: number;
+  teachers: number;
+  admin: number;
+  support: number;
+}
+
+export const useStaffStats = () => {
+  const query = useQuery({
+    queryKey: ['staff-stats'],
+    queryFn: async (): Promise<StaffStats> => {
+      const [total, teachers, admin] = await Promise.all([
+        supabase.from('staff').select('*', { count: 'exact', head: true }),
+        supabase.from('staff').select('*', { count: 'exact', head: true }).eq('designation', 'teacher'),
+        supabase.from('staff').select('*', { count: 'exact', head: true }).eq('designation', 'admin'),
+      ]);
+
+      const totalCount = total.count ?? 0;
+      const teacherCount = teachers.count ?? 0;
+      const adminCount = admin.count ?? 0;
+      const supportCount = totalCount - teacherCount - adminCount;
+
+      return {
+        total: totalCount,
+        teachers: teacherCount,
+        admin: adminCount,
+        support: supportCount,
+      };
+    },
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('staff-stats')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, () => {
+        query.refetch();
+      })
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [query.refetch]);
+
+  return query;
 };
 
 export const useCreateStaff = () => {
