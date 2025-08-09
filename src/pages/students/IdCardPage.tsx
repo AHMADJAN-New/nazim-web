@@ -36,7 +36,8 @@ export default function IdCardPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentCard | null>(null);
 
-  const { data: studentsData = [], isLoading } = useStudents();
+  const { data, isLoading } = useStudents({ page: 1, pageSize: 1000 });
+  const studentsData = data?.students ?? [];
   const { data: classesData = [] } = useClasses();
 
   const students: StudentCard[] = useMemo(() => studentsData.map((student) => {
