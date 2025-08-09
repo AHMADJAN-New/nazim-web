@@ -6,35 +6,33 @@ import { AnswerKeyManager } from '@/components/omr/AnswerKeyManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Upload, BarChart3 } from 'lucide-react';
-
-export interface OMRScanResult {
-  id: string;
-  fileName: string;
-  studentId: string;
-  score: number;
-  totalQuestions: number;
-  answers: Record<string, string>;
-  layoutId: string;
-  scanAccuracy: number;
-  scanDate: Date;
-}
-
-export interface AnswerKey {
-  [questionNumber: string]: string;
-}
+import { useOMRScans, useSaveOMRScans, useClearOMRScans, useAnswerKey, useSaveAnswerKey, useClearAnswerKey } from '@/hooks/useOMR';
+import type { OMRScanResult, AnswerKey } from '@/types/omr';
 
 export default function OMRScanningPage() {
-  const [scanResults, setScanResults] = useState<OMRScanResult[]>([]);
-  const [answerKey, setAnswerKey] = useState<AnswerKey | null>(null);
+  const { data: scanResults = [] } = useOMRScans();
+  const { data: answerKey } = useAnswerKey();
+  const saveScans = useSaveOMRScans();
+  const clearScans = useClearOMRScans();
+  const saveAnswerKey = useSaveAnswerKey();
+  const clearAnswerKey = useClearAnswerKey();
   const [activeTab, setActiveTab] = useState('upload');
 
   const handleScanComplete = (results: OMRScanResult[]) => {
-    setScanResults(prev => [...prev, ...results]);
+    saveScans.mutate(results);
     setActiveTab('results');
   };
 
   const handleClearResults = () => {
-    setScanResults([]);
+    clearScans.mutate();
+  };
+
+  const handleAnswerKeyChange = (key: AnswerKey | null) => {
+    if (key) {
+      saveAnswerKey.mutate(key);
+    } else {
+      clearAnswerKey.mutate();
+    }
   };
 
   return (
@@ -93,9 +91,9 @@ export default function OMRScanningPage() {
           </TabsContent>
 
           <TabsContent value="answer-key" className="space-y-6">
-            <AnswerKeyManager 
+            <AnswerKeyManager
               answerKey={answerKey}
-              onAnswerKeyChange={setAnswerKey}
+              onAnswerKeyChange={handleAnswerKeyChange}
             />
           </TabsContent>
         </Tabs>

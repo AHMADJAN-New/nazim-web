@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Upload, Download, Plus, Trash2, Key } from 'lucide-react';
-import type { AnswerKey } from '@/pages/exams/OMRScanningPage';
+import type { AnswerKey } from '@/types/omr';
 
 interface AnswerKeyManagerProps {
   answerKey: AnswerKey | null;
@@ -17,6 +17,9 @@ interface AnswerKeyManagerProps {
 
 export function AnswerKeyManager({ answerKey, onAnswerKeyChange }: AnswerKeyManagerProps) {
   const [manualKey, setManualKey] = useState<AnswerKey>(answerKey || {});
+  useEffect(() => {
+    setManualKey(answerKey || {});
+  }, [answerKey]);
   const [quickSetup, setQuickSetup] = useState({
     totalQuestions: 50,
     pattern: 'A' as 'A' | 'B' | 'C' | 'D',
