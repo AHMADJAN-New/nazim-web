@@ -24,6 +24,7 @@ interface Student {
     email: string;
     phone?: string;
     address?: string;
+    avatar_url?: string;
   };
   classes?: {
     name: string;
@@ -44,7 +45,8 @@ export const useStudents = () => {
             full_name,
             email,
             phone,
-            address
+            address,
+            avatar_url
           ),
           classes (
             name,
