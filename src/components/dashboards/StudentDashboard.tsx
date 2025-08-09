@@ -1,6 +1,6 @@
-import { 
+import {
   BookOpen,
-  UserCheck, 
+  UserCheck,
   Trophy,
   Calendar,
   MessageSquare,
@@ -14,47 +14,61 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { 
-  LineChart, 
-  Line,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   BarChart,
   Bar
 } from "recharts";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { getISOWeek, parseISO, format } from "date-fns";
 
 export function StudentDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  // Mock student data
-  const studentInfo = {
-    name: "Ahmed Khan",
-    class: "Grade 5-A",
-    rollNumber: "05-001",
-    attendancePercentage: 92,
-    currentGrade: "A",
-    rank: 3,
-    totalStudents: 45
-  };
+  const [studentId, setStudentId] = useState<string | null>(null);
+  const [studentInfo, setStudentInfo] = useState<{
+    name: string;
+    class: string;
+    rollNumber: string;
+    attendancePercentage?: number;
+    currentGrade?: string;
+    rank?: number | null;
+    totalStudents?: number | null;
+  } | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
-  const subjectPerformance = [
-    { subject: "Math", grade: "A+", percentage: 95 },
-    { subject: "Science", grade: "A", percentage: 88 },
-    { subject: "English", grade: "A", percentage: 90 },
-    { subject: "Urdu", grade: "B+", percentage: 82 },
-    { subject: "Islamiyat", grade: "A+", percentage: 96 }
-  ];
+  const [subjectPerformance, setSubjectPerformance] = useState<{
+    subject: string;
+    grade: string;
+    percentage: number;
+  }[]>([]);
+  const [gradesLoading, setGradesLoading] = useState(true);
+  const [gradesError, setGradesError] = useState<string | null>(null);
 
-  const attendanceTrend = [
-    { week: "Week 1", present: 5, absent: 0 },
-    { week: "Week 2", present: 4, absent: 1 },
-    { week: "Week 3", present: 5, absent: 0 },
-    { week: "Week 4", present: 5, absent: 0 }
-  ];
+  const [attendanceTrend, setAttendanceTrend] = useState<{
+    week: string;
+    present: number;
+    absent: number;
+  }[]>([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+
+  const [recentAnnouncements, setRecentAnnouncements] = useState<{
+    title: string;
+    date: string;
+    priority: string;
+  }[]>([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  const [announcementsError, setAnnouncementsError] = useState<string | null>(null);
 
   const upcomingExams = [
     {
@@ -64,7 +78,7 @@ export function StudentDashboard() {
       syllabus: "Chapters 1-5"
     },
     {
-      subject: "Science", 
+      subject: "Science",
       date: "Dec 20, 2024",
       time: "11:00 AM",
       syllabus: "Physics & Chemistry"
@@ -79,60 +93,227 @@ export function StudentDashboard() {
     },
     {
       title: "Basic Chemistry",
-      dueDate: "Dec 10, 2024", 
+      dueDate: "Dec 10, 2024",
       overdue: true
     }
   ];
 
-  const recentAnnouncements = [
-    {
-      title: "Winter Break Schedule",
-      date: "Dec 12, 2024",
-      priority: "high"
-    },
-    {
-      title: "Science Fair Registration",
-      date: "Dec 10, 2024",
-      priority: "medium"
-    }
-  ];
+  const calculateGrade = (percentage: number) => {
+    if (percentage >= 90) return "A+";
+    if (percentage >= 80) return "A";
+    if (percentage >= 70) return "B";
+    if (percentage >= 60) return "C";
+    return "D";
+  };
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchProfile = async () => {
+      setProfileLoading(true);
+      const { data, error } = await supabase
+        .from("students")
+        .select(`
+          id,
+          student_id,
+          classes (name, section),
+          profiles:user_id (full_name)
+        `)
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) {
+        setProfileError(error.message);
+      } else if (data) {
+        setStudentId(data.id);
+        setStudentInfo({
+          name: data.profiles?.full_name || "",
+          class: `${data.classes?.name || ""}${
+            data.classes?.section ? `-${data.classes.section}` : ""
+          }`,
+          rollNumber: data.student_id,
+        });
+      }
+      setProfileLoading(false);
+    };
+
+    fetchProfile();
+  }, [user]);
+
+  useEffect(() => {
+    if (!studentId) return;
+
+    const fetchGrades = async () => {
+      setGradesLoading(true);
+      const { data, error } = await supabase
+        .from("exam_results")
+        .select(`
+          grade,
+          percentage,
+          exam:exams!exam_id (
+            subject:subjects!subject_id (name)
+          )
+        `)
+        .eq("student_id", studentId);
+
+      if (error) {
+        setGradesError(error.message);
+      } else if (data) {
+        const performance = data.map((r: any) => ({
+          subject: r.exam?.subject?.name || "",
+          grade: r.grade || "",
+          percentage: r.percentage || 0,
+        }));
+        setSubjectPerformance(performance);
+        if (performance.length) {
+          const avg =
+            performance.reduce((sum, p) => sum + p.percentage, 0) /
+            performance.length;
+          setStudentInfo((info) =>
+            info ? { ...info, currentGrade: calculateGrade(avg) } : info
+          );
+        }
+      }
+      setGradesLoading(false);
+    };
+
+    const fetchAttendance = async () => {
+      setAttendanceLoading(true);
+      const { data, error } = await supabase
+        .from("attendance")
+        .select("date,status")
+        .eq("student_id", studentId);
+
+      if (error) {
+        setAttendanceError(error.message);
+      } else if (data) {
+        const total = data.length;
+        const present = data.filter((r: any) => r.status === "present").length;
+        const percentage = total ? Math.round((present / total) * 100) : 0;
+        setStudentInfo((info) =>
+          info ? { ...info, attendancePercentage: percentage } : info
+        );
+
+        const weekMap = new Map<string, { present: number; absent: number }>();
+        data.forEach((r: any) => {
+          const week = `Week ${getISOWeek(parseISO(r.date))}`;
+          const entry = weekMap.get(week) || { present: 0, absent: 0 };
+          if (r.status === "present") entry.present += 1;
+          else entry.absent += 1;
+          weekMap.set(week, entry);
+        });
+        setAttendanceTrend(
+          Array.from(weekMap.entries()).map(([week, v]) => ({
+            week,
+            present: v.present,
+            absent: v.absent,
+          }))
+        );
+      }
+      setAttendanceLoading(false);
+    };
+
+    fetchGrades();
+    fetchAttendance();
+  }, [studentId]);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      setAnnouncementsLoading(true);
+      const { data, error } = await supabase
+        .from("communications")
+        .select("title,published_date,priority")
+        .contains("target_audience", ["Students"])
+        .order("published_date", { ascending: false })
+        .limit(5);
+
+      if (error) {
+        setAnnouncementsError(error.message);
+      } else if (data) {
+        setRecentAnnouncements(
+          data.map((a: any) => ({
+            title: a.title,
+            date: a.published_date
+              ? format(parseISO(a.published_date), "MMM d, yyyy")
+              : "",
+            priority: a.priority || "normal",
+          }))
+        );
+      }
+      setAnnouncementsLoading(false);
+    };
+
+    fetchAnnouncements();
+  }, []);
 
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="bg-gradient-hero p-6 rounded-lg text-primary-foreground">
-        <h1 className="text-2xl font-bold mb-2">Welcome back, {studentInfo.name}!</h1>
-        <p className="text-primary-foreground/80">
-          {studentInfo.class} • Roll Number: {studentInfo.rollNumber}
-        </p>
+        {profileLoading ? (
+          <p>Loading profile...</p>
+        ) : profileError ? (
+          <p className="text-destructive">{profileError}</p>
+        ) : studentInfo ? (
+          <>
+            <h1 className="text-2xl font-bold mb-2">Welcome back, {studentInfo.name}!</h1>
+            <p className="text-primary-foreground/80">
+              {studentInfo.class} • Roll Number: {studentInfo.rollNumber}
+            </p>
+          </>
+        ) : null}
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="text-center">
           <CardContent className="pt-6">
-            <UserCheck className="h-8 w-8 mx-auto mb-2 text-success" />
-            <p className="text-2xl font-bold">{studentInfo.attendancePercentage}%</p>
-            <p className="text-sm text-muted-foreground">Attendance</p>
+            {profileLoading ? (
+              <p>Loading...</p>
+            ) : profileError ? (
+              <p className="text-destructive">Error</p>
+            ) : (
+              <>
+                <UserCheck className="h-8 w-8 mx-auto mb-2 text-success" />
+                <p className="text-2xl font-bold">{studentInfo?.attendancePercentage ?? 0}%</p>
+                <p className="text-sm text-muted-foreground">Attendance</p>
+              </>
+            )}
           </CardContent>
         </Card>
-        
+
         <Card className="text-center">
           <CardContent className="pt-6">
-            <Trophy className="h-8 w-8 mx-auto mb-2 text-warning" />
-            <p className="text-2xl font-bold">{studentInfo.currentGrade}</p>
-            <p className="text-sm text-muted-foreground">Current Grade</p>
+            {gradesLoading ? (
+              <p>Loading...</p>
+            ) : gradesError ? (
+              <p className="text-destructive">Error</p>
+            ) : (
+              <>
+                <Trophy className="h-8 w-8 mx-auto mb-2 text-warning" />
+                <p className="text-2xl font-bold">{studentInfo?.currentGrade || "-"}</p>
+                <p className="text-sm text-muted-foreground">Current Grade</p>
+              </>
+            )}
           </CardContent>
         </Card>
-        
+
         <Card className="text-center">
           <CardContent className="pt-6">
-            <Target className="h-8 w-8 mx-auto mb-2 text-primary" />
-            <p className="text-2xl font-bold">#{studentInfo.rank}</p>
-            <p className="text-sm text-muted-foreground">Class Rank</p>
+            {profileLoading ? (
+              <p>Loading...</p>
+            ) : profileError ? (
+              <p className="text-destructive">Error</p>
+            ) : (
+              <>
+                <Target className="h-8 w-8 mx-auto mb-2 text-primary" />
+                <p className="text-2xl font-bold">#{studentInfo?.rank ?? 0}</p>
+                <p className="text-sm text-muted-foreground">Class Rank</p>
+              </>
+            )}
           </CardContent>
         </Card>
-        
+
         <Card className="text-center">
           <CardContent className="pt-6">
             <BookOpen className="h-8 w-8 mx-auto mb-2 text-secondary" />
@@ -153,15 +334,21 @@ export function StudentDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={subjectPerformance}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="subject" fontSize={12} />
-                <YAxis fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="percentage" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {gradesLoading ? (
+              <p>Loading grades...</p>
+            ) : gradesError ? (
+              <p className="text-destructive">{gradesError}</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={subjectPerformance}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="subject" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip />
+                  <Bar dataKey="percentage" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -174,16 +361,22 @@ export function StudentDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={attendanceTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="week" fontSize={12} />
-                <YAxis fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="present" fill="hsl(var(--success))" name="Present" />
-                <Bar dataKey="absent" fill="hsl(var(--destructive))" name="Absent" />
-              </BarChart>
-            </ResponsiveContainer>
+            {attendanceLoading ? (
+              <p>Loading attendance...</p>
+            ) : attendanceError ? (
+              <p className="text-destructive">{attendanceError}</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={attendanceTrend}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="week" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip />
+                  <Bar dataKey="present" fill="hsl(var(--success))" name="Present" />
+                  <Bar dataKey="absent" fill="hsl(var(--destructive))" name="Absent" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -194,23 +387,29 @@ export function StudentDashboard() {
           <CardTitle>Subject Grades</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {subjectPerformance.map((subject, index) => (
-              <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  <span className="font-medium">{subject.subject}</span>
+          {gradesLoading ? (
+            <p>Loading grades...</p>
+          ) : gradesError ? (
+            <p className="text-destructive">{gradesError}</p>
+          ) : (
+            <div className="space-y-4">
+              {subjectPerformance.map((subject, index) => (
+                <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    <span className="font-medium">{subject.subject}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Progress value={subject.percentage} className="w-24" />
+                    <Badge variant={subject.grade.includes('A') ? 'default' : 'secondary'}>
+                      {subject.grade}
+                    </Badge>
+                    <span className="text-sm font-medium w-12 text-right">{subject.percentage}%</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <Progress value={subject.percentage} className="w-24" />
-                  <Badge variant={subject.grade.includes('A') ? 'default' : 'secondary'}>
-                    {subject.grade}
-                  </Badge>
-                  <span className="text-sm font-medium w-12 text-right">{subject.percentage}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -276,20 +475,26 @@ export function StudentDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentAnnouncements.map((announcement, index) => (
-              <div key={index} className="p-3 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-medium text-sm flex-1">{announcement.title}</h4>
-                  <Badge 
-                    variant={announcement.priority === 'high' ? 'destructive' : 'secondary'}
-                    className="text-xs"
-                  >
-                    {announcement.priority}
-                  </Badge>
+            {announcementsLoading ? (
+              <p>Loading announcements...</p>
+            ) : announcementsError ? (
+              <p className="text-destructive">{announcementsError}</p>
+            ) : (
+              recentAnnouncements.map((announcement, index) => (
+                <div key={index} className="p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm flex-1">{announcement.title}</h4>
+                    <Badge
+                      variant={announcement.priority === 'high' ? 'destructive' : 'secondary'}
+                      className="text-xs"
+                    >
+                      {announcement.priority}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{announcement.date}</p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{announcement.date}</p>
-              </div>
-            ))}
+              ))
+            )}
             <Button variant="outline" className="w-full" size="sm">
               View All Announcements
             </Button>
