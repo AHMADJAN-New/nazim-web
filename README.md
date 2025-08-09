@@ -32,7 +32,10 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Copy the example environment file and update the values.
+cp .env.example .env
+
+# Step 5: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
