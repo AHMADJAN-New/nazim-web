@@ -35,11 +35,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLandingStats } from "@/hooks/useLandingStats";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -218,10 +221,38 @@ const Index = () => {
     { number: "24/7", label: "Support Available" }
   ];
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Handle contact form submission
-    alert("Thank you for your message! We'll get back to you soon.");
+    const formData = new FormData(e.currentTarget);
+    const submission = {
+      first_name: formData.get("firstName") as string,
+      last_name: formData.get("lastName") as string,
+      email: formData.get("email") as string,
+      phone: (formData.get("phone") as string) || null,
+      school_name: formData.get("schoolName") as string,
+      student_count: formData.get("studentCount")
+        ? Number(formData.get("studentCount"))
+        : null,
+      message: formData.get("message") as string,
+    };
+
+    const { error } = await supabase
+      .from("contact_messages")
+      .insert(submission);
+
+    if (error) {
+      toast({
+        title: "Failed to send message",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Message sent",
+        description: "We'll get back to you soon.",
+      });
+      e.currentTarget.reset();
+    }
   };
 
   // Auto-rotate testimonials
@@ -580,41 +611,42 @@ const Index = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" placeholder="John" required />
+                      <Input id="firstName" name="firstName" placeholder="John" required />
                     </div>
                     <div>
                       <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" placeholder="Doe" required />
+                      <Input id="lastName" name="lastName" placeholder="Doe" required />
                     </div>
                   </div>
                   
                   <div>
                     <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" placeholder="john@school.edu" required />
+                    <Input id="email" name="email" type="email" placeholder="john@school.edu" required />
                   </div>
                   
                   <div>
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" placeholder="+92-300-1234567" />
+                    <Input id="phone" name="phone" type="tel" placeholder="+92-300-1234567" />
                   </div>
                   
                   <div>
                     <Label htmlFor="schoolName">School Name</Label>
-                    <Input id="schoolName" placeholder="Green Valley School" required />
+                    <Input id="schoolName" name="schoolName" placeholder="Green Valley School" required />
                   </div>
                   
                   <div>
                     <Label htmlFor="studentCount">Number of Students</Label>
-                    <Input id="studentCount" type="number" placeholder="500" />
+                    <Input id="studentCount" name="studentCount" type="number" placeholder="500" />
                   </div>
                   
                   <div>
                     <Label htmlFor="message">Message</Label>
-                    <Textarea 
-                      id="message" 
+                    <Textarea
+                      id="message"
+                      name="message"
                       placeholder="Tell us about your school's needs and how we can help..."
                       rows={4}
-                      required 
+                      required
                     />
                   </div>
                   
