@@ -102,6 +102,7 @@ const handler = async (req: Request): Promise<Response> => {
       (email) => !foundProfileEmails.has(email),
     );
 
+
     healthReport.checks.push({
       name: 'Demo profiles existence',
       status: missingProfiles.length === 0 ? 'passed' : 'failed',

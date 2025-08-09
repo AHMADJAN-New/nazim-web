@@ -15,7 +15,26 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Authenticate caller and authorize super_admin only
+    const authHeader = req.headers.get('authorization') || '';
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user: caller } } = await supabaseAuth.auth.getUser();
+    if (!caller) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', caller.id)
+      .single();
+    if (!callerProfile || callerProfile.role !== 'super_admin') {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
 
     // Demo account emails with their details
     const demoAccounts = [
@@ -56,13 +75,15 @@ const handler = async (req: Request): Promise<Response> => {
       }
     ];
 
+    const { data: existingUsersData } = await supabase.auth.admin.listUsers();
+    const existingUsers = new Map(existingUsersData.users.map(u => [u.email, u]));
+
     const results = [];
 
     for (const account of demoAccounts) {
       try {
-        // First check if user exists
-        const { data: users } = await supabase.auth.admin.listUsers();
-        let user = users.users.find(u => u.email === account.email);
+        // First check if user exists using pre-fetched data
+        let user = existingUsers.get(account.email);
         
         if (!user) {
           // Create the user if they don't exist
@@ -85,12 +106,13 @@ const handler = async (req: Request): Promise<Response> => {
           }
           
           user = newUser.user;
+          existingUsers.set(account.email, user);
           console.log(`Successfully created user: ${account.email}`);
         } else {
           // Update existing user's password and metadata
           const { error: updateError } = await supabase.auth.admin.updateUserById(
             user.id,
-            { 
+            {
               password: 'admin123',
               user_metadata: {
                 full_name: account.fullName,
@@ -105,14 +127,15 @@ const handler = async (req: Request): Promise<Response> => {
             results.push({ email: account.email, success: false, error: updateError.message });
             continue;
           }
-          
+
           console.log(`Successfully updated password for: ${account.email}`);
         }
 
         results.push({ email: account.email, success: true });
-      } catch (error: any) {
+      } catch (error) {
         console.error(`Error processing ${account.email}:`, error);
-        results.push({ email: account.email, success: false, error: error.message });
+        const message = error instanceof Error ? error.message : String(error);
+        results.push({ email: account.email, success: false, error: message });
       }
     }
 
@@ -121,8 +144,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(JSON.stringify({ 
       message: `Updated passwords for ${successCount}/${demoAccounts.length} demo accounts`,
-      results,
-      password: 'admin123'
+      results
     }), {
       status: 200,
       headers: {
@@ -130,10 +152,11 @@ const handler = async (req: Request): Promise<Response> => {
         ...corsHeaders,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in update-demo-passwords function:', error);
+    const message = error instanceof Error ? error.message : String(error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
