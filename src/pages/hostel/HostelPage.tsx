@@ -10,131 +10,77 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  Building2, 
-  Bed, 
-  Users, 
-  UserPlus, 
-  Search, 
-  Filter, 
+import {
+  Building2,
+  Users,
+  UserPlus,
+  Search,
+  Filter,
   MoreHorizontal,
-  MapPin,
-  Calendar,
-  Phone,
-  Mail,
-  AlertCircle,
   CheckCircle
 } from "lucide-react";
+import { useHostelRooms, useHostelAllocations, useCreateHostelAllocation, useUpdateHostelAllocation } from "@/hooks/useHostel";
 import { useLanguage } from "@/hooks/useLanguage";
-
-// Mock data for hostel management
-const hostelStats = {
-  totalRooms: 120,
-  occupiedRooms: 98,
-  totalBeds: 480,
-  occupiedBeds: 392,
-  totalStudents: 392,
-  pendingApplications: 15
-};
-
-const rooms = [
-  {
-    id: "R001",
-    number: "101",
-    floor: 1,
-    building: "Block A",
-    type: "4-bed",
-    capacity: 4,
-    occupied: 4,
-    status: "full",
-    students: ["Ahmad Ali", "Hassan Khan", "Omar Sheikh", "Bilal Ahmed"]
-  },
-  {
-    id: "R002", 
-    number: "102",
-    floor: 1,
-    building: "Block A", 
-    type: "4-bed",
-    capacity: 4,
-    occupied: 3,
-    status: "available",
-    students: ["Tariq Shah", "Imran Malik", "Saeed Khan"]
-  },
-  {
-    id: "R003",
-    number: "103", 
-    floor: 1,
-    building: "Block A",
-    type: "2-bed",
-    capacity: 2,
-    occupied: 0,
-    status: "maintenance",
-    students: []
-  }
-];
-
-const students = [
-  {
-    id: "S001",
-    name: "Ahmad Ali",
-    fatherName: "Muhammad Ali",
-    class: "Grade 10-A",
-    room: "101",
-    bed: "1",
-    joinDate: "2024-01-15",
-    phone: "+92-300-1234567",
-    guardian: "Muhammad Ali",
-    guardianPhone: "+92-321-7654321",
-    status: "active",
-    fees: "paid"
-  },
-  {
-    id: "S002", 
-    name: "Hassan Khan",
-    fatherName: "Ibrahim Khan",
-    class: "Grade 11-B", 
-    room: "101",
-    bed: "2",
-    joinDate: "2024-01-20",
-    phone: "+92-301-2345678",
-    guardian: "Ibrahim Khan", 
-    guardianPhone: "+92-322-8765432",
-    status: "active",
-    fees: "pending"
-  }
-];
-
-const applications = [
-  {
-    id: "A001",
-    studentName: "Zubair Ahmad",
-    class: "Grade 9-A",
-    fatherName: "Iqbal Ahmad",
-    phone: "+92-302-3456789",
-    applicationDate: "2024-03-01",
-    preferredRoom: "Any",
-    status: "pending",
-    priority: "normal"
-  },
-  {
-    id: "A002",
-    studentName: "Yasir Malik", 
-    class: "Grade 12-A",
-    fatherName: "Asif Malik",
-    phone: "+92-303-4567890", 
-    applicationDate: "2024-03-02",
-    preferredRoom: "Block A",
-    status: "approved", 
-    priority: "high"
-  }
-];
 
 export default function HostelPage() {
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterBuilding, setFilterBuilding] = useState("all");
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
+  const { data: rooms = [] } = useHostelRooms();
+  const { data: allocations = [] } = useHostelAllocations();
+  const createAllocation = useCreateHostelAllocation();
+  const updateAllocation = useUpdateHostelAllocation();
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
+  const [assignmentData, setAssignmentData] = useState({ studentId: "", roomId: "", allocatedDate: "" });
+  const [applicationData, setApplicationData] = useState({ studentId: "", roomId: "", applicationDate: "" });
+
+  const totalRooms = rooms.length;
+  const occupiedRooms = rooms.filter(r => r.occupied_count === r.capacity).length;
+  const totalBeds = rooms.reduce((sum, r) => sum + (r.capacity || 0), 0);
+  const occupiedBeds = rooms.reduce((sum, r) => sum + (r.occupied_count || 0), 0);
+  const totalStudents = allocations.filter(a => a.status === "active").length;
+  const pendingApplications = allocations.filter(a => a.status === "pending").length;
+
+  const filteredRooms = rooms.filter(room => {
+    const matchesSearch = room.room_number.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesBuilding = filterBuilding === "all" || room.branch_id === filterBuilding;
+    return matchesSearch && matchesBuilding;
+  });
+
+  const activeAllocations = allocations.filter(a => a.status === "active");
+  const pendingAllocations = allocations.filter(a => a.status === "pending");
+
+  const handleAssignStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    createAllocation.mutate({
+      student_id: assignmentData.studentId,
+      room_id: assignmentData.roomId,
+      allocated_date: assignmentData.allocatedDate,
+      status: "active",
+      allocated_by: "system",
+    });
+    setIsAssignDialogOpen(false);
+    setAssignmentData({ studentId: "", roomId: "", allocatedDate: "" });
+  };
+
+  const handleCreateApplication = (e: React.FormEvent) => {
+    e.preventDefault();
+    createAllocation.mutate({
+      student_id: applicationData.studentId,
+      room_id: applicationData.roomId,
+      allocated_date: applicationData.applicationDate,
+      status: "pending",
+      allocated_by: "system",
+    });
+    setIsApplicationDialogOpen(false);
+    setApplicationData({ studentId: "", roomId: "", applicationDate: "" });
+  };
+
+  const handleApproveApplication = (id: string) => {
+    updateAllocation.mutate({ id, status: "active" });
+  };
 
   const getRoomStatusBadge = (status: string) => {
     switch (status) {
@@ -153,23 +99,12 @@ export default function HostelPage() {
     switch (status) {
       case 'active':
         return <Badge variant="default">Active</Badge>;
-      case 'inactive':
-        return <Badge variant="secondary">Inactive</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-
-  const getFeeStatusBadge = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return <Badge variant="default" className="bg-success text-success-foreground">Paid</Badge>;
       case 'pending':
-        return <Badge variant="destructive">Pending</Badge>;
-      case 'overdue':
-        return <Badge variant="destructive">Overdue</Badge>;
+        return <Badge variant="secondary">Pending</Badge>;
+      case 'checkout':
+        return <Badge variant="destructive">Checkout</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
@@ -189,9 +124,9 @@ export default function HostelPage() {
               <CardTitle className="text-sm font-medium">Total Rooms</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{hostelStats.totalRooms}</div>
+              <div className="text-2xl font-bold">{totalRooms}</div>
               <div className="text-xs text-muted-foreground">
-                {hostelStats.occupiedRooms} occupied
+                {occupiedRooms} occupied
               </div>
             </CardContent>
           </Card>
@@ -201,9 +136,9 @@ export default function HostelPage() {
               <CardTitle className="text-sm font-medium">Total Beds</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{hostelStats.totalBeds}</div>
+              <div className="text-2xl font-bold">{totalBeds}</div>
               <div className="text-xs text-muted-foreground">
-                {hostelStats.occupiedBeds} occupied
+                {occupiedBeds} occupied
               </div>
             </CardContent>
           </Card>
@@ -213,7 +148,7 @@ export default function HostelPage() {
               <CardTitle className="text-sm font-medium">Hostel Students</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{hostelStats.totalStudents}</div>
+              <div className="text-2xl font-bold">{totalStudents}</div>
               <div className="text-xs text-muted-foreground">
                 Currently residing
               </div>
@@ -226,7 +161,7 @@ export default function HostelPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {Math.round((hostelStats.occupiedBeds / hostelStats.totalBeds) * 100)}%
+                {totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0}%
               </div>
               <div className="text-xs text-muted-foreground">
                 Current occupancy
@@ -239,7 +174,7 @@ export default function HostelPage() {
               <CardTitle className="text-sm font-medium">Applications</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{hostelStats.pendingApplications}</div>
+              <div className="text-2xl font-bold">{pendingApplications}</div>
               <div className="text-xs text-muted-foreground">
                 Pending review
               </div>
@@ -252,7 +187,7 @@ export default function HostelPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-success">
-                {hostelStats.totalBeds - hostelStats.occupiedBeds}
+                {totalBeds - occupiedBeds}
               </div>
               <div className="text-xs text-muted-foreground">
                 Ready to assign
@@ -335,14 +270,14 @@ export default function HostelPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rooms.map((room) => (
+                    {filteredRooms.map((room) => (
                       <TableRow key={room.id}>
-                        <TableCell className="font-medium">{room.number}</TableCell>
-                        <TableCell>{room.building}</TableCell>
+                        <TableCell className="font-medium">{room.room_number}</TableCell>
+                        <TableCell>{room.branch_id}</TableCell>
                         <TableCell>Floor {room.floor}</TableCell>
-                        <TableCell>{room.type}</TableCell>
-                        <TableCell>{room.occupied}/{room.capacity}</TableCell>
-                        <TableCell>{getRoomStatusBadge(room.status)}</TableCell>
+                        <TableCell>{room.room_type}</TableCell>
+                        <TableCell>{room.occupied_count}/{room.capacity}</TableCell>
+                        <TableCell>{getRoomStatusBadge(room.occupied_count === room.capacity ? 'full' : 'available')}</TableCell>
                         <TableCell>
                           <Dialog>
                             <DialogTrigger asChild>
@@ -356,7 +291,7 @@ export default function HostelPage() {
                             </DialogTrigger>
                             <DialogContent className="max-w-2xl">
                               <DialogHeader>
-                                <DialogTitle>Room {selectedRoom?.number} Details</DialogTitle>
+                                <DialogTitle>Room {selectedRoom?.room_number} Details</DialogTitle>
                                 <DialogDescription>
                                   Room information and student assignments
                                 </DialogDescription>
@@ -367,7 +302,7 @@ export default function HostelPage() {
                                     <div>
                                       <Label>Building</Label>
                                       <p className="text-sm text-muted-foreground">
-                                        {selectedRoom.building}
+                                        {selectedRoom.branch_id}
                                       </p>
                                     </div>
                                     <div>
@@ -385,22 +320,21 @@ export default function HostelPage() {
                                     <div>
                                       <Label>Occupied</Label>
                                       <p className="text-sm text-muted-foreground">
-                                        {selectedRoom.occupied} students
+                                        {selectedRoom.occupied_count} students
                                       </p>
                                     </div>
                                   </div>
-                                  
+
                                   <div>
                                     <Label>Current Students</Label>
                                     <div className="mt-2 space-y-2">
-                                      {selectedRoom.students.length > 0 ? (
-                                        selectedRoom.students.map((student: string, index: number) => (
-                                          <div key={index} className="flex items-center justify-between p-2 border rounded">
-                                            <span className="text-sm">{student}</span>
-                                            <Badge variant="outline">Bed {index + 1}</Badge>
-                                          </div>
-                                        ))
-                                      ) : (
+                                      {allocations.filter(a => a.room_id === selectedRoom.id && a.status === 'active').map((alloc, index) => (
+                                        <div key={alloc.id} className="flex items-center justify-between p-2 border rounded">
+                                          <span className="text-sm">{alloc.student?.profiles?.full_name || alloc.student_id}</span>
+                                          <Badge variant="outline">Bed {index + 1}</Badge>
+                                        </div>
+                                      ))}
+                                      {allocations.filter(a => a.room_id === selectedRoom.id && a.status === 'active').length === 0 && (
                                         <p className="text-sm text-muted-foreground">No students assigned</p>
                                       )}
                                     </div>
@@ -430,7 +364,7 @@ export default function HostelPage() {
                   />
                 </div>
               </div>
-              <Button>
+              <Button onClick={() => setIsAssignDialogOpen(true)}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Assign Student
               </Button>
@@ -448,25 +382,19 @@ export default function HostelPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Student Name</TableHead>
-                      <TableHead>Father's Name</TableHead>
-                      <TableHead>Class</TableHead>
                       <TableHead>Room</TableHead>
-                      <TableHead>Join Date</TableHead>
-                      <TableHead>Fee Status</TableHead>
+                      <TableHead>Allocated Date</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {students.map((student) => (
-                      <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.name}</TableCell>
-                        <TableCell>{student.fatherName}</TableCell>
-                        <TableCell>{student.class}</TableCell>
-                        <TableCell>{student.room}</TableCell>
-                        <TableCell>{student.joinDate}</TableCell>
-                        <TableCell>{getFeeStatusBadge(student.fees)}</TableCell>
-                        <TableCell>{getStudentStatusBadge(student.status)}</TableCell>
+                    {activeAllocations.map((alloc) => (
+                      <TableRow key={alloc.id}>
+                        <TableCell className="font-medium">{alloc.student?.profiles?.full_name || alloc.student_id}</TableCell>
+                        <TableCell>{alloc.room?.room_number}</TableCell>
+                        <TableCell>{alloc.allocated_date}</TableCell>
+                        <TableCell>{getStudentStatusBadge(alloc.status)}</TableCell>
                         <TableCell>
                           <Button variant="outline" size="sm">
                             View Profile
@@ -478,38 +406,73 @@ export default function HostelPage() {
                 </Table>
               </CardContent>
             </Card>
+            <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Assign Student</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAssignStudent} className="space-y-4">
+                  <div>
+                    <Label>Student ID</Label>
+                    <Input value={assignmentData.studentId} onChange={(e) => setAssignmentData({ ...assignmentData, studentId: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Room</Label>
+                    <Select value={assignmentData.roomId} onValueChange={(value) => setAssignmentData({ ...assignmentData, roomId: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select room" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {rooms.map((room) => (
+                          <SelectItem key={room.id} value={room.id}>{room.room_number}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Allocated Date</Label>
+                    <Input type="date" value={assignmentData.allocatedDate} onChange={(e) => setAssignmentData({ ...assignmentData, allocatedDate: e.target.value })} />
+                  </div>
+                  <Button type="submit">Assign</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* Applications Tab */}
           <TabsContent value="applications" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Hostel Applications</CardTitle>
-                <CardDescription>
-                  Review and process new hostel applications
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Hostel Applications</CardTitle>
+                    <CardDescription>
+                      Review and process new hostel applications
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => setIsApplicationDialogOpen(true)}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    New Application
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Student Name</TableHead>
-                      <TableHead>Father's Name</TableHead>
-                      <TableHead>Class</TableHead>
+                      <TableHead>Room</TableHead>
                       <TableHead>Application Date</TableHead>
-                      <TableHead>Preferred Room</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {applications.map((app) => (
+                    {pendingAllocations.map((app) => (
                       <TableRow key={app.id}>
-                        <TableCell className="font-medium">{app.studentName}</TableCell>
-                        <TableCell>{app.fatherName}</TableCell>
-                        <TableCell>{app.class}</TableCell>
-                        <TableCell>{app.applicationDate}</TableCell>
-                        <TableCell>{app.preferredRoom}</TableCell>
+                        <TableCell className="font-medium">{app.student?.profiles?.full_name || app.student_id}</TableCell>
+                        <TableCell>{app.room?.room_number}</TableCell>
+                        <TableCell>{app.allocated_date}</TableCell>
                         <TableCell>
                           <Badge variant={app.status === 'approved' ? 'default' : 'secondary'}>
                             {app.status}
@@ -517,12 +480,9 @@ export default function HostelPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleApproveApplication(app.id)}>
                               <CheckCircle className="h-4 w-4 mr-1" />
                               Approve
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              View
                             </Button>
                           </div>
                         </TableCell>
@@ -532,6 +492,37 @@ export default function HostelPage() {
                 </Table>
               </CardContent>
             </Card>
+            <Dialog open={isApplicationDialogOpen} onOpenChange={setIsApplicationDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>New Application</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCreateApplication} className="space-y-4">
+                  <div>
+                    <Label>Student ID</Label>
+                    <Input value={applicationData.studentId} onChange={(e) => setApplicationData({ ...applicationData, studentId: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Preferred Room</Label>
+                    <Select value={applicationData.roomId} onValueChange={(value) => setApplicationData({ ...applicationData, roomId: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select room" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {rooms.map((room) => (
+                          <SelectItem key={room.id} value={room.id}>{room.room_number}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Application Date</Label>
+                    <Input type="date" value={applicationData.applicationDate} onChange={(e) => setApplicationData({ ...applicationData, applicationDate: e.target.value })} />
+                  </div>
+                  <Button type="submit">Submit</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* Reports Tab */}
@@ -549,13 +540,13 @@ export default function HostelPage() {
                     <div className="flex justify-between">
                       <span>Current Occupancy</span>
                       <span className="font-semibold">
-                        {Math.round((hostelStats.occupiedBeds / hostelStats.totalBeds) * 100)}%
+                        {totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0}%
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Available Beds</span>
                       <span className="font-semibold">
-                        {hostelStats.totalBeds - hostelStats.occupiedBeds}
+                        {totalBeds - occupiedBeds}
                       </span>
                     </div>
                     <Button className="w-full" variant="outline">
