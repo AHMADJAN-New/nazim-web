@@ -3,8 +3,35 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 };
+
+interface HealthCheck {
+  name: string;
+  status: 'passed' | 'failed' | 'warning';
+  details: string;
+  critical: boolean;
+}
+
+interface HealthIssue {
+  type: string;
+  severity: 'critical' | 'warning';
+  message: string;
+  recommendation: string;
+}
+
+interface HealthReport {
+  timestamp: string;
+  checks: HealthCheck[];
+  issues: HealthIssue[];
+  summary: {
+    total_checks: number;
+    passed: number;
+    failed: number;
+    critical_issues: number;
+  };
+}
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
@@ -18,16 +45,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Starting authentication health check...');
 
-    const healthReport = {
+    const healthReport: HealthReport = {
       timestamp: new Date().toISOString(),
-      checks: [] as any[],
-      issues: [] as any[],
+      checks: [],
+      issues: [],
       summary: {
         total_checks: 0,
         passed: 0,
         failed: 0,
-        critical_issues: 0
-      }
+        critical_issues: 0,
+      },
     };
 
     // Check 1: Verify all demo accounts exist in auth.users
@@ -70,8 +97,10 @@ const handler = async (req: Request): Promise<Response> => {
       .select('email')
       .in('email', demoEmails);
     
-    const foundProfileEmails = new Set(profiles?.map(p => p.email) || []);
-    const missingProfiles = demoEmails.filter(email => !missingProfileEmails.has(email));
+    const foundProfileEmails = new Set(profiles?.map((p) => p.email) || []);
+    const missingProfiles = demoEmails.filter(
+      (email) => !foundProfileEmails.has(email),
+    );
 
     healthReport.checks.push({
       name: 'Demo profiles existence',
@@ -176,20 +205,25 @@ const handler = async (req: Request): Promise<Response> => {
         ...corsHeaders,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in auth health monitor:', error);
-    
-    return new Response(JSON.stringify({
-      status: 'error',
-      error: error.message,
-      message: 'Health check failed'
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders,
+
+    const message = error instanceof Error ? error.message : String(error);
+
+    return new Response(
+      JSON.stringify({
+        status: 'error',
+        error: message,
+        message: 'Health check failed',
+      }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders,
+        },
       },
-    });
+    );
   }
 };
 
