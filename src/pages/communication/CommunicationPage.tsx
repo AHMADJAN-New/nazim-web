@@ -28,7 +28,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { 
+import {
   MessageSquare,
   Send,
   Bell,
@@ -42,6 +42,7 @@ import {
   Trash2
 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useSmsCredits } from "@/hooks/useSmsCredits";
 
 export default function CommunicationPage() {
   const { t } = useLanguage();
@@ -54,6 +55,7 @@ export default function CommunicationPage() {
   const { data: announcements = [] } = useCommunications();
   const { data: messages = [] } = useMessages();
   const { data: events = [] } = useEvents();
+  const { data: smsCreditsData } = useSmsCredits();
 
   const createCommunication = useCreateCommunication();
   const updateCommunication = useUpdateCommunication();
@@ -77,7 +79,7 @@ export default function CommunicationPage() {
     pendingApproval: announcements.filter((a) => !a.published_date).length,
     totalAnnouncements: announcements.length,
     activeEvents: events.filter((e) => e.status === "upcoming" || e.status === "ongoing").length,
-    smsCredits: 0,
+    smsCredits: smsCreditsData?.credits ?? 0,
   };
 
   const handleCreateAnnouncement = () => {

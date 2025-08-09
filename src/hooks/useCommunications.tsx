@@ -162,10 +162,17 @@ export const useCreateMessage = () => {
         throw new Error(error.message);
       }
 
+      const amount = messageData.recipients?.length || 1;
+      const { error: creditError } = await supabase.rpc('decrement_sms_credit', { amount });
+      if (creditError) {
+        throw new Error(creditError.message);
+      }
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ queryKey: ['smsCredits'] });
       toast.success('Message created successfully');
     },
     onError: (error: Error) => {
