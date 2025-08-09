@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,42 +37,56 @@ export function TeacherFeedback() {
     improvements: [],
     strengths: []
   });
+  const queryClient = useQueryClient();
 
-  // Mock data
-  const teacherComments: TeacherComment[] = [
-    {
-      id: '1',
-      teacherName: 'الشيخ أحمد محمد',
-      date: new Date('2024-01-15'),
-      surah: 'البقرة',
-      ayahRange: '1-20',
-      rating: 4,
-      comment: 'Excellent memorization progress. Your tajwīd has improved significantly this week.',
-      improvements: ['Focus on ghunnah duration', 'Practice makharij exercises'],
-      strengths: ['Strong memorization', 'Good pronunciation', 'Consistent effort'],
-      nextGoals: 'Complete next 20 ayahs of Al-Baqarah with proper tajwīd'
-    },
-    {
-      id: '2',
-      teacherName: 'الأستاذة فاطمة علي',
-      date: new Date('2024-01-14'),
-      surah: 'آل عمران',
-      ayahRange: '1-15',
-      rating: 5,
-      comment: 'Mashallah! Perfect recitation today. You have mastered this section completely.',
-      improvements: [],
-      strengths: ['Flawless tajwīd', 'Beautiful voice', 'Emotional connection'],
-      nextGoals: 'Begin memorizing the next section with the same level of excellence'
+  const { data: teacherComments = [] } = useQuery({
+    queryKey: ['teacher-feedback'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hifz_teacher_feedback')
+        .select('*')
+        .order('date', { ascending: false });
+      if (error) throw error;
+      return data as TeacherComment[];
     }
-  ];
+  });
 
-  const teachers = ['الشيخ أحمد محمد', 'الأستاذة فاطمة علي', 'الشيخ عبدالرحمن سالم'];
+  const { data: teachers = [] } = useQuery({
+    queryKey: ['teachers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('teachers')
+        .select('full_name');
+      if (error) throw error;
+      return (data || []).map((t: any) => t.full_name);
+    }
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('hifz_teacher_feedback')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hifz_teacher_feedback' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['teacher-feedback'] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  const { mutate: addFeedback } = useMutation({
+    mutationFn: async (comment: Partial<TeacherComment>) => {
+      const { error } = await supabase.from('hifz_teacher_feedback').insert(comment);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacher-feedback'] });
+      toast({ title: t('Feedback Added'), description: t('Teacher feedback has been recorded successfully') });
+    }
+  });
 
   const handleAddComment = () => {
-    toast({
-      title: t('Feedback Added'),
-      description: t('Teacher feedback has been recorded successfully'),
-    });
+    addFeedback({ ...newComment, date: new Date() });
     setNewCommentOpen(false);
     setNewComment({ rating: 5, improvements: [], strengths: [] });
   };
@@ -91,7 +107,7 @@ export function TeacherFeedback() {
     );
   };
 
-  const filteredComments = teacherComments.filter(comment => 
+  const filteredComments = teacherComments.filter(comment =>
     filterTeacher === 'all' || comment.teacherName === filterTeacher
   );
 

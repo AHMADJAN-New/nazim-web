@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +42,7 @@ interface ExportOptions {
 export function ExportReports() {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     format: 'pdf',
     dateRange: undefined,
@@ -50,14 +53,28 @@ export function ExportReports() {
     studentScope: 'individual',
     selectedStudents: []
   });
+  const { data: students = [] } = useQuery({
+    queryKey: ['students'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, name, class');
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
-  // Mock data
-  const students = [
-    { id: '1', name: 'Ahmed Hassan', class: 'Grade 5A' },
-    { id: '2', name: 'Fatima Ali', class: 'Grade 5A' },
-    { id: '3', name: 'Omar Ibrahim', class: 'Grade 6B' },
-    { id: '4', name: 'Aisha Mohammed', class: 'Grade 6B' }
-  ];
+  useEffect(() => {
+    const channel = supabase
+      .channel('students')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['students'] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const reportTemplates = [
     {
@@ -90,21 +107,20 @@ export function ExportReports() {
     }
   ];
 
-  const handleExport = (templateId?: string) => {
-    // Mock export functionality
-    toast({
-      title: t('Export Started'),
-      description: t('Your report is being generated and will be downloaded shortly'),
-    });
-    
-    // Simulate export process
-    setTimeout(() => {
-      toast({
-        title: t('Export Complete'),
-        description: t('Report has been downloaded successfully'),
+  const { mutate: handleExport } = useMutation({
+    mutationFn: async (templateId?: string) => {
+      const { error } = await supabase.functions.invoke('export-hifz-report', {
+        body: { ...exportOptions, templateId }
       });
-    }, 2000);
-  };
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: t('Export Started'),
+        description: t('Your report is being generated and will be downloaded shortly'),
+      });
+    }
+  });
 
   const updateOption = (key: keyof ExportOptions, value: any) => {
     setExportOptions(prev => ({ ...prev, [key]: value }));

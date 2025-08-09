@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +43,7 @@ interface Mistake {
 
 export function MistakeLog() {
   const { t, isRTL } = useLanguage();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -49,47 +53,32 @@ export function MistakeLog() {
     resolved: false,
     tags: []
   });
+  const queryClient = useQueryClient();
 
-  // Mock data
-  const mistakes: Mistake[] = [
-    {
-      id: '1',
-      date: new Date('2024-01-15'),
-      surah: 'البقرة',
-      ayah: 15,
-      mistakeType: 'tajwid',
-      description: 'Incorrect ghunnah duration on letter نون',
-      correction: 'Hold ghunnah for 2 counts, practice with teacher',
-      resolved: false,
-      recurrenceCount: 3,
-      teacherNotes: 'Common mistake, needs focused practice',
-      tags: ['ghunnah', 'noon-sakinah']
-    },
-    {
-      id: '2',
-      date: new Date('2024-01-14'),
-      surah: 'آل عمران',
-      ayah: 8,
-      mistakeType: 'pronunciation',
-      description: 'Mispronouncing ض as ظ',
-      correction: 'Practice makharij exercises for these letters',
-      resolved: true,
-      recurrenceCount: 1,
-      tags: ['makharij', 'dad', 'dha']
-    },
-    {
-      id: '3',
-      date: new Date('2024-01-13'),
-      surah: 'البقرة',
-      ayah: 22,
-      mistakeType: 'memorization',
-      description: 'Skipping word "الذين" in middle of ayah',
-      correction: 'Break ayah into smaller segments for memorization',
-      resolved: false,
-      recurrenceCount: 2,
-      tags: ['memory', 'word-skipping']
+  const { data: mistakes = [] } = useQuery({
+    queryKey: ['mistakes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hifz_mistakes')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      return data as Mistake[];
     }
-  ];
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('hifz_mistakes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hifz_mistakes' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['mistakes'] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const mistakeTypes = [
     { value: 'tajwid', label: t('Tajwid Rules'), color: 'bg-red-100 text-red-800', icon: '📖' },
@@ -113,9 +102,22 @@ export function MistakeLog() {
     return matchesSearch && matchesType && matchesStatus;
   });
 
+  const { mutate: addMistake } = useMutation({
+    mutationFn: async (mistake: Partial<Mistake>) => {
+      const { error } = await supabase.from('hifz_mistakes').insert({
+        ...mistake,
+        date: mistake.date || new Date()
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mistakes'] });
+      toast({ title: t('Mistake Added'), description: t('Mistake logged successfully') });
+    }
+  });
+
   const handleAddMistake = () => {
-    // Here you would save to Supabase
-    console.log('Adding new mistake:', newMistake);
+    addMistake(newMistake);
     setNewMistakeOpen(false);
     setNewMistake({ mistakeType: 'tajwid', resolved: false, tags: [] });
   };

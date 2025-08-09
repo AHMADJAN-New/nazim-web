@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,14 +44,33 @@ export function DailyProgressEntry() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingType, setRecordingType] = useState<'audio' | 'video' | null>(null);
 
-  // Mock data for surahs
-  const surahs = [
-    { id: '001', name: 'الفاتحة', arabic: 'Al-Fatihah', ayahs: 7 },
-    { id: '002', name: 'البقرة', arabic: 'Al-Baqarah', ayahs: 286 },
-    { id: '003', name: 'آل عمران', arabic: 'Ali \'Imran', ayahs: 200 },
-    { id: '004', name: 'النساء', arabic: 'An-Nisa', ayahs: 176 },
-    { id: '005', name: 'المائدة', arabic: 'Al-Maidah', ayahs: 120 }
-  ];
+  const queryClient = useQueryClient();
+
+  const { data: surahs = [] } = useQuery({
+    queryKey: ['surahs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('surahs')
+        .select('*')
+        .order('id');
+
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('surahs')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'surahs' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['surahs'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const sessionTypes = [
     { value: 'memorization', label: t('New Memorization'), icon: '📖' },
@@ -63,12 +84,36 @@ export function DailyProgressEntry() {
     { value: 'needs_work', label: t('Needs Work'), icon: AlertCircle, color: 'text-red-500' }
   ];
 
+  const { mutate: saveProgress } = useMutation({
+    mutationFn: async (entry: ProgressEntry) => {
+      const [from, to] = (entry.ayahRange || '').split('-').map(Number);
+      const { error } = await supabase.from('hifz_progress').insert({
+        date: entry.date,
+        surah_name: entry.surah,
+        ayah_from: from,
+        ayah_to: to,
+        session_type: entry.sessionType,
+        status: entry.status,
+        notes: entry.notes,
+        mistakes_count: entry.mistakes?.length || 0,
+        duration: entry.duration
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hifz-progress'] });
+      toast({
+        title: t('Progress Saved'),
+        description: t('Your Hifz session has been recorded successfully'),
+      });
+    }
+  });
+
   const handleSave = () => {
-    // Here you would save to Supabase
-    toast({
-      title: t('Progress Saved'),
-      description: t('Your Hifz session has been recorded successfully'),
-    });
+    if (currentEntry.surah && currentEntry.ayahRange) {
+      saveProgress(currentEntry as ProgressEntry);
+    }
   };
 
   const toggleRecording = (type: 'audio' | 'video') => {
