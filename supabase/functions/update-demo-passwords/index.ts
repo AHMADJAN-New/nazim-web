@@ -1,12 +1,24 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') ?? '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+const getCorsHeaders = (origin: string) => ({
+  'Access-Control-Allow-Origin': origin,
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
+});
 
 const handler = async (req: Request): Promise<Response> => {
+  const origin = req.headers.get('origin') || '';
+  if (!allowedOrigins.includes(origin)) {
+    return new Response('Origin not allowed', { status: 403 });
+  }
+
+  const corsHeaders = getCorsHeaders(origin);
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
