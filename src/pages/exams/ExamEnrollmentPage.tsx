@@ -58,7 +58,8 @@ export default function ExamEnrollmentPage() {
     },
   });
 
-  const { data: students = [] } = useStudents();
+  const { data } = useStudents({ page: 1, pageSize: 1000 });
+  const students = data?.students ?? [];
 
   const handleEnrollStudent = () => {
     enrollMutation.mutate();

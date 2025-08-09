@@ -33,13 +33,32 @@ interface Student {
   };
 }
 
-export const useStudents = () => {
+interface UseStudentsParams {
+  page: number;
+  pageSize: number;
+  search?: string;
+  classId?: string;
+  section?: string;
+  status?: string;
+}
+
+export const useStudents = ({
+  page,
+  pageSize,
+  search,
+  classId,
+  section,
+  status,
+}: UseStudentsParams) => {
   return useQuery({
-    queryKey: ['students'],
+    queryKey: ['students', page, pageSize, search, classId, section, status],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const classJoin = section ? 'classes!inner' : 'classes';
+
+      let query = supabase
         .from('students')
-        .select(`
+        .select(
+          `
           *,
           profiles:user_id (
             full_name,
@@ -48,19 +67,44 @@ export const useStudents = () => {
             address,
             avatar_url
           ),
-          classes (
+          ${classJoin} (
             name,
             grade_level,
             section
           )
-        `)
+        `,
+          { count: 'exact' }
+        )
         .order('created_at', { ascending: false });
+
+      if (classId) {
+        query = query.eq('class_id', classId);
+      }
+
+      if (section) {
+        query = query.eq('classes.section', section);
+      }
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      if (search) {
+        query = query.or(
+          `student_id.ilike.%${search}%,guardian_name.ilike.%${search}%,profiles.full_name.ilike.%${search}%`
+        );
+      }
+
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error, count } = await query.range(from, to);
 
       if (error) {
         throw new Error(error.message);
       }
 
-      return data as Student[];
+      return { students: data as Student[], count: count || 0 };
     },
   });
 };

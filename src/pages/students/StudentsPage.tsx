@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Users, 
   Plus, 
-  Search, 
-  Filter, 
-  Download, 
+  Search,
+  Download,
   Upload,
   Eye,
   Edit,
@@ -17,7 +16,6 @@ import {
 } from "lucide-react";
 import { useStudents, useUpdateStudent, useDeleteStudent } from "@/hooks/useStudents";
 import { useClasses } from "@/hooks/useClasses";
-import { toast } from "sonner";
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -46,6 +44,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+} from "@/components/ui/pagination";
+
 // Database integration
 
 const statusColors = {
@@ -67,27 +74,30 @@ export default function StudentsPage() {
   const [selectedClass, setSelectedClass] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedSection, setSelectedSection] = useState("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
-  const { data: students = [], isLoading } = useStudents();
+  const { data, isLoading } = useStudents({
+    page,
+    pageSize,
+    search: searchQuery || undefined,
+    classId: selectedClass !== "all" ? selectedClass : undefined,
+    section: selectedSection !== "all" ? selectedSection : undefined,
+    status: selectedStatus !== "all" ? selectedStatus : undefined,
+  });
+  const students = data?.students ?? [];
+  const totalStudents = data?.count ?? 0;
+  const totalPages = Math.ceil(totalStudents / pageSize);
+
   const { data: classes = [] } = useClasses();
   const updateStudent = useUpdateStudent();
   const deleteStudent = useDeleteStudent();
 
-  const filteredStudents = students.filter(student => {
-    const fullName = student.profiles?.full_name || '';
-    const matchesSearch = 
-      fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.student_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.guardian_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesClass = selectedClass === "all" || student.class_id === selectedClass;
-    const matchesStatus = selectedStatus === "all" || student.status === selectedStatus;
-    
-    return matchesSearch && matchesClass && matchesStatus;
-  });
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, selectedClass, selectedStatus, selectedSection]);
 
-  // Calculate stats from real data
-  const totalStudents = students.length;
+  // Calculate stats from current page
   const activeStudents = students.filter(s => s.status === 'active').length;
   const onLeaveStudents = students.filter(s => s.status === 'inactive').length;
   const hostelStudents = students.filter(s => s.status === 'active').length; // Adjust based on hostel data
@@ -261,7 +271,7 @@ export default function StudentsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Students List ({filteredStudents.length} results)
+              Students List ({totalStudents} results)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -281,7 +291,7 @@ export default function StudentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredStudents.map((student) => (
+                  {students.map((student) => (
                     <TableRow key={student.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -371,7 +381,7 @@ export default function StudentsPage() {
               </Table>
             </div>
 
-            {filteredStudents.length === 0 && (
+            {students.length === 0 && (
               <div className="text-center py-8">
                 <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-muted-foreground mb-2">
@@ -381,6 +391,38 @@ export default function StudentsPage() {
                   Try adjusting your search criteria or add a new student.
                 </p>
               </div>
+            )}
+
+            {totalPages > 1 && (
+              <Pagination className="mt-4">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                      className={page === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        href="#"
+                        isActive={page === i + 1}
+                        onClick={() => setPage(i + 1)}
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                      className={page === totalPages ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             )}
           </CardContent>
         </Card>
