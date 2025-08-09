@@ -69,9 +69,9 @@ const handler = async (req: Request): Promise<Response> => {
       .from('profiles')
       .select('email')
       .in('email', demoEmails);
-    
+
     const foundProfileEmails = new Set(profiles?.map(p => p.email) || []);
-    const missingProfiles = demoEmails.filter(email => !missingProfileEmails.has(email));
+    const missingProfiles = demoEmails.filter(email => !foundProfileEmails.has(email));
 
     healthReport.checks.push({
       name: 'Demo profiles existence',
