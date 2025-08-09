@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { format } from 'date-fns';
 import { CalendarIcon, Search, Filter, CheckCircle, AlertTriangle, Clock, Play, Eye, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { DateRange } from 'react-day-picker';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RevisionSession {
   id: string;
@@ -31,44 +33,40 @@ export function RevisionHistory() {
   const [filterSurah, setFilterSurah] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const queryClient = useQueryClient();
 
-  // Mock data
-  const revisionSessions: RevisionSession[] = [
-    {
-      id: '1',
-      date: new Date('2024-01-15'),
-      surah: 'الفاتحة',
-      ayahRange: '1-7',
-      status: 'passed',
-      duration: 15,
-      notes: 'Perfect recitation with proper tajwid',
-      mistakes: 0,
-      teacherFeedback: 'Excellent progress! Keep it up.',
-    },
-    {
-      id: '2', 
-      date: new Date('2024-01-14'),
-      surah: 'البقرة',
-      ayahRange: '1-20',
-      status: 'needs_work',
-      duration: 45,
-      notes: 'Struggling with pronunciation in ayah 15-18',
-      mistakes: 5,
-      teacherFeedback: 'Focus on makharij practice for better pronunciation',
-    },
-    {
-      id: '3',
-      date: new Date('2024-01-13'),
-      surah: 'آل عمران',
-      ayahRange: '1-10',
-      status: 'partial',
-      duration: 30,
-      notes: 'Good memorization but need to work on flow',
-      mistakes: 2,
+  const { data: revisionSessions = [] } = useQuery({
+    queryKey: ['revision-sessions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hifz_revisions')
+        .select('*')
+        .order('date', { ascending: false });
+      if (error) throw error;
+      return data as RevisionSession[];
     }
-  ];
+  });
 
-  const surahs = ['الفاتحة', 'البقرة', 'آل عمران', 'النساء', 'المائدة'];
+  const { data: surahs = [] } = useQuery({
+    queryKey: ['surahs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('surahs').select('name');
+      if (error) throw error;
+      return (data || []).map((s: any) => s.name);
+    }
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('hifz_revisions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hifz_revisions' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['revision-sessions'] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
   const statusOptions = [
     { value: 'passed', label: t('Passed'), color: 'bg-green-100 text-green-800', icon: CheckCircle },
     { value: 'partial', label: t('Partial'), color: 'bg-yellow-100 text-yellow-800', icon: Clock },
@@ -80,7 +78,7 @@ export function RevisionHistory() {
   };
 
   const filteredSessions = revisionSessions.filter(session => {
-    const matchesSearch = session.surah.includes(searchQuery) || 
+    const matchesSearch = session.surah.includes(searchQuery) ||
                          session.ayahRange.includes(searchQuery) ||
                          session.notes.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSurah = filterSurah === 'all' || session.surah === filterSurah;

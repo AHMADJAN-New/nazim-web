@@ -1,5 +1,5 @@
 // Nazim School Management System - Asset Management
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Asset } from "@/types/asset";
 import { useAssets, useCreateAsset, useUpdateAsset, useDeleteAsset } from "@/hooks/useAssets";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -18,165 +18,40 @@ import {
   Search, 
   Filter, 
   Plus,
-  Monitor,
   Wrench,
-  AlertTriangle,
   Calendar,
   MapPin,
   User,
   MoreHorizontal,
   Eye,
   Edit,
-  Trash2,
-  CheckCircle,
-  Clock
+  CheckCircle
 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 
-// Mock data for asset management
-const assetStats = {
-  totalAssets: 1580,
-  activeAssets: 1420,
-  inMaintenance: 35,
-  disposed: 125,
-  totalValue: 2850000,
-  depreciation: 450000
-};
+interface MaintenanceRecord {
+  id: string;
+  assetName?: string;
+  type?: string;
+  description?: string;
+  requestDate?: string;
+  scheduledDate?: string;
+  completedDate?: string | null;
+  cost?: number;
+  vendor?: string;
+  status?: string;
+  priority?: string;
+}
 
-const assets = [
-  {
-    id: "A001",
-    name: "Dell OptiPlex Computer",
-    category: "Electronics",
-    type: "Computer",
-    serialNumber: "DL2024001",
-    barcode: "1234567890123",
-    purchaseDate: "2023-08-15",
-    purchasePrice: 85000,
-    currentValue: 70000,
-    location: "Computer Lab 1",
-    assignedTo: "Computer Lab",
-    assignedPerson: "Mr. Ahmad Ali",
-    condition: "Good",
-    status: "active",
-    warranty: "2025-08-15",
-    vendor: "Tech Solutions Ltd"
-  },
-  {
-    id: "A002",
-    name: "HP LaserJet Printer",
-    category: "Electronics", 
-    type: "Printer",
-    serialNumber: "HP2024002",
-    barcode: "2345678901234",
-    purchaseDate: "2023-06-20",
-    purchasePrice: 45000,
-    currentValue: 38000,
-    location: "Main Office",
-    assignedTo: "Administration",
-    assignedPerson: "Ms. Fatima Shah",
-    condition: "Excellent",
-    status: "active",
-    warranty: "2024-06-20",
-    vendor: "Office Equipment Co"
-  },
-  {
-    id: "A003",
-    name: "Wooden Desk Set",
-    category: "Furniture",
-    type: "Desk",
-    serialNumber: "FUR2024001",
-    barcode: "3456789012345",
-    purchaseDate: "2024-01-10",
-    purchasePrice: 25000,
-    currentValue: 23000,
-    location: "Classroom 5A",
-    assignedTo: "Grade 5",
-    assignedPerson: "Mr. Hassan Khan",
-    condition: "Good",
-    status: "active",
-    warranty: "2026-01-10",
-    vendor: "Furniture World"
-  },
-  {
-    id: "A004",
-    name: "Air Conditioner Unit",
-    category: "Electronics",
-    type: "Air Conditioner", 
-    serialNumber: "AC2024001",
-    barcode: "4567890123456",
-    purchaseDate: "2023-04-15",
-    purchasePrice: 120000,
-    currentValue: 95000,
-    location: "Principal's Office",
-    assignedTo: "Administration",
-    assignedPerson: "Principal",
-    condition: "Fair",
-    status: "maintenance",
-    warranty: "2025-04-15",
-    vendor: "Cool Air Systems"
-  }
-];
-
-const maintenanceRecords = [
-  {
-    id: "M001",
-    assetId: "A004",
-    assetName: "Air Conditioner Unit",
-    type: "Repair",
-    description: "Compressor not working properly",
-    requestDate: "2024-03-01",
-    scheduledDate: "2024-03-05",
-    completedDate: null,
-    cost: 8500,
-    vendor: "Cool Air Systems",
-    status: "in-progress",
-    priority: "high"
-  },
-  {
-    id: "M002",
-    assetId: "A001",
-    assetName: "Dell OptiPlex Computer",
-    type: "Preventive",
-    description: "Regular maintenance and cleaning",
-    requestDate: "2024-02-15",
-    scheduledDate: "2024-02-20",
-    completedDate: "2024-02-20",
-    cost: 2000,
-    vendor: "Tech Solutions Ltd",
-    status: "completed",
-    priority: "medium"
-  }
-];
-
-const assignments = [
-  {
-    id: "AS001",
-    assetId: "A001",
-    assetName: "Dell OptiPlex Computer",
-    employeeName: "Mr. Ahmad Ali",
-    employeeId: "E001",
-    department: "Computer Lab",
-    assignDate: "2023-08-20",
-    returnDate: null,
-    condition: "Good",
-    status: "active",
-    remarks: "For daily computer lab sessions"
-  },
-  {
-    id: "AS002",
-    assetId: "A002", 
-    assetName: "HP LaserJet Printer",
-    employeeName: "Ms. Fatima Shah",
-    employeeId: "E002",
-    department: "Administration",
-    assignDate: "2023-06-25",
-    returnDate: null,
-    condition: "Excellent",
-    status: "active",
-    remarks: "Office printing requirements"
-  }
-];
+interface AssetAssignment {
+  id: string;
+  assetName?: string;
+  employeeName?: string;
+  department?: string;
+  assignDate?: string;
+  condition?: string;
+  status?: string;
+}
 
 export default function AssetsPage() {
   const { t } = useLanguage();
@@ -184,11 +59,29 @@ export default function AssetsPage() {
   const createAsset = useCreateAsset();
   const updateAsset = useUpdateAsset();
   const deleteAsset = useDeleteAsset();
+
+  const maintenanceRecords: MaintenanceRecord[] = [];
+  const assignments: AssetAssignment[] = [];
   
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+
+  const assetStats = useMemo(() => {
+    const totalAssets = dbAssets.length;
+    const inMaintenance = dbAssets.filter(a => a.condition === 'maintenance').length;
+    const disposed = dbAssets.filter(a => a.condition === 'disposed').length;
+    const activeAssets = totalAssets - inMaintenance - disposed;
+    const totalValue = dbAssets.reduce((sum, a) => sum + (a.current_value || 0), 0);
+    const depreciation = dbAssets.reduce((sum, a) => {
+      if (a.purchase_cost && a.current_value) {
+        return sum + (a.purchase_cost - a.current_value);
+      }
+      return sum;
+    }, 0);
+    return { totalAssets, activeAssets, inMaintenance, disposed, totalValue, depreciation };
+  }, [dbAssets]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -434,7 +327,7 @@ export default function AssetsPage() {
                         </TableCell>
                         <TableCell>{asset.assigned_to || 'Unassigned'}</TableCell>
                         <TableCell>{getConditionBadge(asset.condition)}</TableCell>
-                        <TableCell>{getConditionBadge(asset.condition || 'Unknown')}</TableCell>
+                        <TableCell>{getStatusBadge(asset.condition || 'active')}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Dialog>

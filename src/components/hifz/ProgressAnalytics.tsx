@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,42 +24,31 @@ import {
 
 export function ProgressAnalytics() {
   const { t, isRTL } = useLanguage();
+  const { toast } = useToast();
   const [timeRange, setTimeRange] = useState('week');
   const [selectedMetric, setSelectedMetric] = useState('all');
+  const queryClient = useQueryClient();
 
-  // Mock analytics data
-  const analyticsData = {
-    overview: {
-      totalAyahs: 245,
-      masteredAyahs: 198,
-      currentStreak: 12,
-      averageAccuracy: 94.5,
-      totalHours: 48.5,
-      sessionsThisWeek: 6
-    },
-    weeklyProgress: [
-      { day: 'Mon', ayahs: 8, accuracy: 95, duration: 45 },
-      { day: 'Tue', ayahs: 12, accuracy: 92, duration: 60 },
-      { day: 'Wed', ayahs: 6, accuracy: 98, duration: 30 },
-      { day: 'Thu', ayahs: 10, accuracy: 90, duration: 50 },
-      { day: 'Fri', ayahs: 15, accuracy: 96, duration: 70 },
-      { day: 'Sat', ayahs: 9, accuracy: 94, duration: 40 },
-      { day: 'Sun', ayahs: 11, accuracy: 93, duration: 55 }
-    ],
-    surahProgress: [
-      { name: 'الفاتحة', arabic: 'Al-Fatihah', progress: 100, totalAyahs: 7, mastered: 7 },
-      { name: 'البقرة', arabic: 'Al-Baqarah', progress: 65, totalAyahs: 286, mastered: 186 },
-      { name: 'آل عمران', arabic: 'Ali Imran', progress: 25, totalAyahs: 200, mastered: 50 },
-      { name: 'النساء', arabic: 'An-Nisa', progress: 10, totalAyahs: 176, mastered: 18 },
-      { name: 'المائدة', arabic: 'Al-Maidah', progress: 5, totalAyahs: 120, mastered: 6 }
-    ],
-    commonMistakes: [
-      { type: 'Tajwid Rules', count: 15, trend: -2 },
-      { type: 'Pronunciation', count: 8, trend: -1 },
-      { type: 'Flow & Rhythm', count: 12, trend: 1 },
-      { type: 'Memorization', count: 5, trend: -3 }
-    ]
-  };
+  const { data: analyticsData } = useQuery({
+    queryKey: ['hifz-analytics', timeRange],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_hifz_analytics', { range: timeRange });
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('hifz_progress')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hifz_progress' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['hifz-analytics'] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const timeRanges = [
     { value: 'week', label: t('This Week') },
@@ -65,10 +57,17 @@ export function ProgressAnalytics() {
     { value: 'year', label: t('This Year') }
   ];
 
-  const exportData = () => {
-    // Mock export functionality
-    console.log('Exporting analytics data...');
-  };
+  const { mutate: exportData } = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.functions.invoke('export-hifz-analytics', {
+        body: { range: timeRange }
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: t('Export Started'), description: t('Your analytics report will download shortly') });
+    }
+  });
 
   return (
     <div className="space-y-6">
@@ -93,7 +92,7 @@ export function ProgressAnalytics() {
             </SelectContent>
           </Select>
           
-          <Button variant="outline" onClick={exportData}>
+          <Button variant="outline" onClick={() => exportData()}>
             <Download className="h-4 w-4 mr-2" />
             {t('Export PDF')}
           </Button>

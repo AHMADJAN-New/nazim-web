@@ -34,6 +34,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLandingStats } from "@/hooks/useLandingStats";
 
 const Index = () => {
   const { user } = useAuth();
@@ -209,9 +210,10 @@ const Index = () => {
     }
   ];
 
+  const { data: landingStats } = useLandingStats();
   const stats = [
-    { number: "10,000+", label: "Students Managed" },
-    { number: "500+", label: "Schools Trust Us" },
+    { number: landingStats?.students?.toLocaleString() || "0", label: "Students Managed" },
+    { number: landingStats?.staff?.toLocaleString() || "0", label: "Staff Members" },
     { number: "99.9%", label: "Uptime Guarantee" },
     { number: "24/7", label: "Support Available" }
   ];

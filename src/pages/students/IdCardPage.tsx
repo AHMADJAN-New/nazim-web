@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Search, Download, Printer, CreditCard, QrCode, User, Calendar, MapPin } from 'lucide-react';
 import { useStudents } from '@/hooks/useStudents';
+import { useClasses } from '@/hooks/useClasses';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function IdCardPage() {
@@ -36,7 +37,9 @@ export default function IdCardPage() {
   const [selectedStudent, setSelectedStudent] = useState<StudentCard | null>(null);
 
   const { data: studentsData = [], isLoading } = useStudents();
-  const students: StudentCard[] = studentsData.map((student) => {
+  const { data: classesData = [] } = useClasses();
+
+  const students: StudentCard[] = useMemo(() => studentsData.map((student) => {
     const admission = new Date(student.admission_date);
     admission.setFullYear(admission.getFullYear() + 1);
     return {
@@ -45,7 +48,7 @@ export default function IdCardPage() {
       studentId: student.student_id,
       class: student.classes?.name || '',
       section: student.classes?.section || '',
-      photo: '/placeholder.svg',
+      photo: student.profiles?.avatar_url || '/placeholder.svg',
       dob: student.date_of_birth || '',
       fatherName: student.guardian_name || '',
       address: student.profiles?.address || '',
@@ -54,16 +57,23 @@ export default function IdCardPage() {
       admissionDate: student.admission_date,
       validUntil: admission.toISOString().split('T')[0],
     };
-  });
+  }), [studentsData]);
 
-  const classes = ['الصف الأول', 'الصف الثاني', 'الصف الثالث', 'الصف الرابع'];
+  const classOptions = useMemo(
+    () => Array.from(new Set(classesData.map((c) => c.name))),
+    [classesData]
+  );
 
-  const filteredStudents = students.filter((student) => {
-    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         student.studentId.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesClass = !selectedClass || selectedClass === 'all' || student.class === selectedClass;
-    return matchesSearch && matchesClass;
-  });
+  const filteredStudents = useMemo(() => {
+    return students.filter((student) => {
+      const matchesSearch =
+        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.studentId.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesClass =
+        !selectedClass || selectedClass === 'all' || student.class === selectedClass;
+      return matchesSearch && matchesClass;
+    });
+  }, [students, searchQuery, selectedClass]);
 
   const handlePreview = (student: StudentCard) => {
     setSelectedStudent(student);
@@ -143,7 +153,7 @@ export default function IdCardPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('All Classes')}</SelectItem>
-              {classes.map((cls) => (
+              {classOptions.map((cls) => (
                 <SelectItem key={cls} value={cls}>{cls}</SelectItem>
               ))}
             </SelectContent>
@@ -160,8 +170,12 @@ export default function IdCardPage() {
             <Card key={student.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                    <User className="h-6 w-6 text-muted-foreground" />
+                  <div className="w-12 h-12 bg-muted rounded-full overflow-hidden flex items-center justify-center">
+                    {student.photo ? (
+                      <img src={student.photo} alt={student.name} className="object-cover w-full h-full" />
+                    ) : (
+                      <User className="h-6 w-6 text-muted-foreground" />
+                    )}
                   </div>
                   <div className="flex-1">
                     <CardTitle className="text-lg">{student.name}</CardTitle>
@@ -239,8 +253,16 @@ export default function IdCardPage() {
 
                 {/* Student Info */}
                 <div className={`flex gap-4 relative z-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <div className="w-20 h-24 bg-white rounded-lg flex items-center justify-center">
-                    <User className="h-12 w-12 text-muted-foreground" />
+                  <div className="w-20 h-24 bg-white rounded-lg overflow-hidden flex items-center justify-center">
+                    {selectedStudent.photo ? (
+                      <img
+                        src={selectedStudent.photo}
+                        alt={selectedStudent.name}
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <User className="h-12 w-12 text-muted-foreground" />
+                    )}
                   </div>
                   <div className="flex-1 space-y-1">
                     <h4 className="font-bold text-lg">{selectedStudent.name}</h4>
