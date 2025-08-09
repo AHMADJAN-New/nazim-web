@@ -63,6 +63,17 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Demo accounts
+
+Run the Supabase development database with demo users by applying migrations and the provided seed data:
+
+```sh
+supabase db reset
+```
+
+This seeds accounts for `super.admin@greenvalley.edu`, `admin@greenvalley.edu`, `teacher@greenvalley.edu`, `student@greenvalley.edu`, `parent@greenvalley.edu`, `staff@greenvalley.edu`, and `pending@greenvalley.edu`.
+All demo users share the password `admin123`.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/6344710d-8349-4e7d-b0ec-5dbf7c44af33) and click on Share -> Publish.
