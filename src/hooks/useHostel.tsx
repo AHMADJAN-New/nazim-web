@@ -166,3 +166,78 @@ export const useUpdateHostelAllocation = () => {
     },
   });
 };
+
+export interface HostelAttendanceRecord {
+  id: string;
+  student_id: string;
+  date: string;
+  status: 'present' | 'absent' | 'late';
+  remarks?: string;
+  marked_by: string;
+  created_at: string;
+  student?: {
+    student_id: string;
+    profiles?: {
+      full_name: string;
+    };
+  };
+}
+
+export const useHostelAttendance = (filters?: { date?: string }) => {
+  return useQuery({
+    queryKey: ['hostel-attendance', filters],
+    queryFn: async () => {
+      let query = supabase
+        .from('hostel_attendance')
+        .select(`
+          *,
+          student:students!student_id (
+            student_id,
+            profiles:user_id (
+              full_name
+            )
+          )
+        `)
+        .order('date', { ascending: false });
+
+      if (filters?.date) {
+        query = query.eq('date', filters.date);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data as HostelAttendanceRecord[];
+    },
+  });
+};
+
+export const useRecordHostelAttendance = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (attendanceData: Omit<HostelAttendanceRecord, 'id' | 'created_at'>) => {
+      const { data, error } = await supabase
+        .from('hostel_attendance')
+        .insert(attendanceData)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hostel-attendance'] });
+      toast.success('Attendance recorded successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to record attendance');
+    },
+  });
+};
