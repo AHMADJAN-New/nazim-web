@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
 import { Download, Eye, Trash2, FileText } from 'lucide-react';
-import type { OMRScanResult, AnswerKey } from '@/pages/exams/OMRScanningPage';
+import type { OMRScanResult, AnswerKey } from '@/types/omr';
 
 interface OMRResultsProps {
   results: OMRScanResult[];

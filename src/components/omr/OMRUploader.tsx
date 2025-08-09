@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Upload, X, FileImage, FileText, Loader2, Scan } from 'lucide-react';
-import type { OMRScanResult, AnswerKey } from '@/pages/exams/OMRScanningPage';
+import type { OMRScanResult, AnswerKey } from '@/types/omr';
 
 interface OMRUploaderProps {
   onScanComplete: (results: OMRScanResult[]) => void;
