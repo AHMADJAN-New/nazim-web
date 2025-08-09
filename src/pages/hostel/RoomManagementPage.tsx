@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useHostelRooms, useCreateHostelRoom } from "@/hooks/useHostel";
+import { useHostelRooms, useCreateHostelRoom, useUpdateHostelRoom } from "@/hooks/useHostel";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,8 +27,9 @@ const statusVariants = {
 
 export default function RoomManagementPage() {
   const { toast } = useToast();
-  const { data: rooms = [], isLoading } = useHostelRooms();
+  const { data: rooms = [], isLoading, refetch } = useHostelRooms();
   const createRoom = useCreateHostelRoom();
+  const updateRoom = useUpdateHostelRoom();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -73,12 +74,63 @@ export default function RoomManagementPage() {
     setIsAddRoomOpen(false);
   };
 
-  const handleEditRoom = () => {
-    // For now, we'll just close the dialog since we don't have update hook
-    // This can be implemented later when needed
-    setIsEditRoomOpen(false);
-    setEditingRoom(null);
-    toast({ title: "Edit functionality coming soon" });
+  const handleEditRoom = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingRoom) return;
+
+    const formData = new FormData(e.currentTarget);
+    const facilities = Array.from(formData.getAll('facilities')) as string[];
+    const capacity = Number(formData.get('capacity'));
+    const monthlyFee = Number(formData.get('monthlyFee'));
+
+    if (
+      !formData.get('roomNumber') ||
+      !formData.get('roomType') ||
+      Number.isNaN(capacity) ||
+      Number.isNaN(monthlyFee)
+    ) {
+      toast({
+        title: 'Invalid input',
+        description: 'Please provide valid room details.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (capacity < (editingRoom.occupied_count || 0)) {
+      toast({
+        title: 'Invalid capacity',
+        description: `Capacity cannot be less than current occupancy (${editingRoom.occupied_count || 0}).`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateRoom.mutate(
+      {
+        id: editingRoom.id,
+        room_number: formData.get('roomNumber') as string,
+        floor: Number(formData.get('floor')),
+        room_type: formData.get('roomType') as string,
+        capacity,
+        monthly_fee: monthlyFee,
+        facilities,
+      },
+      {
+        onSuccess: () => {
+          setIsEditRoomOpen(false);
+          setEditingRoom(null);
+          refetch();
+        },
+        onError: (error: any) => {
+          toast({
+            title: 'Failed to update room',
+            description: error.message,
+            variant: 'destructive',
+          });
+        },
+      }
+    );
   };
 
   const viewRoomDetails = (room: any) => {
@@ -338,7 +390,7 @@ export default function RoomManagementPage() {
               </DialogDescription>
             </DialogHeader>
             {editingRoom && (
-              <div>
+              <form onSubmit={handleEditRoom}>
                 <div className="grid gap-4 py-4 max-h-96 overflow-y-auto">
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="editRoomNumber" className="text-right">Room Number</Label>
@@ -374,10 +426,10 @@ export default function RoomManagementPage() {
                     <div className="col-span-3 grid grid-cols-2 gap-2">
                       {facilityOptions.map(facility => (
                         <div key={facility} className="flex items-center space-x-2">
-                          <input 
-                            type="checkbox" 
-                            id={`edit-${facility}`} 
-                            name="facilities" 
+                          <input
+                            type="checkbox"
+                            id={`edit-${facility}`}
+                            name="facilities"
                             value={facility}
                             defaultChecked={editingRoom.facilities?.includes(facility)}
                             className="rounded border-gray-300"
@@ -389,11 +441,11 @@ export default function RoomManagementPage() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" onClick={handleEditRoom}>
-                    Update Room
+                  <Button type="submit" disabled={updateRoom.isPending}>
+                    {updateRoom.isPending ? 'Updating...' : 'Update Room'}
                   </Button>
                 </DialogFooter>
-              </div>
+              </form>
             )}
           </DialogContent>
         </Dialog>
