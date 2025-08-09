@@ -110,6 +110,34 @@ export const useCreateHostelRoom = () => {
   });
 };
 
+export const useUpdateHostelRoom = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<HostelRoom> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('hostel_rooms')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hostel-rooms'] });
+      toast.success('Hostel room updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update hostel room');
+    },
+  });
+};
+
 export const useCreateHostelAllocation = () => {
   const queryClient = useQueryClient();
 
