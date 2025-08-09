@@ -89,8 +89,7 @@ export const useRoleRequests = () => {
     try {
       const { data, error } = await supabase
         .rpc('approve_role_change', {
-          request_id: requestId,
-          approver_id: user.id
+          request_id: requestId
         });
 
       if (error) throw error;
@@ -115,7 +114,6 @@ export const useRoleRequests = () => {
       const { data, error } = await supabase
         .rpc('reject_role_change', {
           request_id: requestId,
-          approver_id: user.id,
           reason
         });
 

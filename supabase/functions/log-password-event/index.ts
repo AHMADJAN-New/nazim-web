@@ -45,13 +45,12 @@ const handler = async (req: Request): Promise<Response> => {
                      'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    let user_id = null;
+    let user_id: string | null = null;
 
     // If we have an email, try to find the user
     if (email) {
-      const { data: authData } = await supabase.auth.admin.listUsers();
-      const user = authData.users?.find(u => u.email === email);
-      user_id = user?.id || null;
+      const { data: { user } } = await supabase.auth.admin.getUserByEmail(email);
+      user_id = user?.id ?? null;
     } else {
       // If no email provided, try to get from auth header
       const authHeader = req.headers.get('authorization');
@@ -59,8 +58,18 @@ const handler = async (req: Request): Promise<Response> => {
         const { data: { user } } = await supabase.auth.getUser(
           authHeader.replace('Bearer ', '')
         );
-        user_id = user?.id || null;
+        user_id = user?.id ?? null;
       }
+    }
+
+    if (!user_id && !email) {
+      return new Response(
+        JSON.stringify({ error: 'Unable to determine user' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        },
+      );
     }
 
     // Insert audit log
@@ -86,10 +95,12 @@ const handler = async (req: Request): Promise<Response> => {
         ...corsHeaders,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in log-password-event function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({
+        error: error instanceof Error ? error.message : String(error),
+      }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
