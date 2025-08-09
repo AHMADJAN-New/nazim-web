@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { type LucideIcon } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import type { UserRole } from "@/types/auth";
 import {
   Users,
@@ -29,7 +31,6 @@ import {
   Bell,
   Star,
   Clock,
-  TrendingUp,
   Target
 } from "lucide-react";
 
@@ -81,6 +82,15 @@ interface NavigationContext {
     icon: LucideIcon;
     priority: number;
   }>;
+}
+
+interface DbRecentTask {
+  title: string;
+  url: string;
+  icon: string;
+  timestamp: string;
+  role?: UserRole;
+  context?: string;
 }
 
 export function SmartSidebar() {
@@ -242,43 +252,66 @@ export function SmartSidebar() {
       });
   };
 
-  // Update navigation context based on current path
+  // Update navigation context based on current path and user activity
   useEffect(() => {
-    const updateContext = () => {
-      let module = 'dashboard';
-      if (currentPath.includes('/attendance')) module = 'attendance';
-      else if (currentPath.includes('/exams')) module = 'exams';
-      else if (currentPath.includes('/students')) module = 'students';
-      else if (currentPath.includes('/parent')) module = 'parent';
-      else if (currentPath.includes('/teacher')) module = 'teacher';
+    let module = 'dashboard';
+    if (currentPath.includes('/attendance')) module = 'attendance';
+    else if (currentPath.includes('/exams')) module = 'exams';
+    else if (currentPath.includes('/students')) module = 'students';
+    else if (currentPath.includes('/parent')) module = 'parent';
+    else if (currentPath.includes('/teacher')) module = 'teacher';
 
-      // Mock recent tasks based on role and context
-      const getRecentTasks = () => {
-        switch (role) {
-          case 'teacher':
-            return [
-              { title: "Mark Grade 5-A Attendance", url: "/attendance?class=5a", icon: UserCheck, timestamp: "2 min ago" },
-              { title: "Grade Math Tests", url: "/teacher/grading", icon: Trophy, timestamp: "1 hour ago" }
-            ];
-          case 'parent':
-            return [
-              { title: "View Ahmed's Results", url: "/parent/results/ahmed", icon: Trophy, timestamp: "10 min ago" },
-              { title: "Pay School Fees", url: "/parent/fees", icon: CreditCard, timestamp: "Yesterday" }
-            ];
-          default:
-            return [];
-        }
-      };
+    if (!user) {
+      setNavigationContext({ currentModule: module, recentTasks: [], quickActions: [] });
+      return;
+    }
+
+    const fetchContext = async () => {
+      const { data, error } = await supabase
+        .from('user_navigation_context')
+        .select('recent_tasks')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching recent tasks', error);
+      }
+
+      const tasks: DbRecentTask[] = (data?.recent_tasks as DbRecentTask[]) || [];
+
+      const filteredTasks = tasks.filter(
+        task => (!task.role || task.role === role) && (!task.context || task.context === module)
+      );
+
+      const mappedTasks = filteredTasks.map(task => ({
+        title: task.title,
+        url: task.url,
+        icon: (LucideIcons as Record<string, LucideIcon>)[task.icon] || FileText,
+        timestamp: task.timestamp
+      }));
 
       setNavigationContext({
         currentModule: module,
-        recentTasks: getRecentTasks(),
+        recentTasks: mappedTasks,
         quickActions: []
       });
     };
 
-    updateContext();
-  }, [currentPath, role]);
+    fetchContext();
+
+    const channel = supabase
+      .channel('user_navigation_context')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_navigation_context', filter: `user_id=eq.${user.id}` },
+        () => fetchContext()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentPath, role, user?.id]);
 
   const filteredItems = role ? getNavigationItems(role as UserRole, navigationContext) : [];
 
