@@ -71,6 +71,18 @@ export const BulkImportPage = lazy(() => import('@/pages/students/BulkImportPage
 export const IdCardPage = lazy(() => import('@/pages/students/IdCardPage'));
 export const StudentsPage = lazy(() => import('@/pages/students/StudentsPage'));
 
+// Parent portal pages
+export const ParentChildrenPage = lazy(() => import('@/pages/parent/ChildrenPage'));
+export const ParentAttendancePage = lazy(() => import('@/pages/parent/AttendancePage'));
+export const ParentResultsPage = lazy(() => import('@/pages/parent/ResultsPage'));
+export const ParentFeesPage = lazy(() => import('@/pages/parent/FeesPage'));
+export const ParentMessagesPage = lazy(() => import('@/pages/parent/MessagesPage'));
+export const ParentAnnouncementsPage = lazy(() => import('@/pages/parent/AnnouncementsPage'));
+export const ParentEventsPage = lazy(() => import('@/pages/parent/EventsPage'));
+
+// Teacher portal pages
+export const TeacherClassesPortalPage = lazy(() => import('@/pages/teacher/ClassesPage'));
+
 // Loading fallback components
 export const PageSkeleton = () => (
   <div className="container mx-auto p-6 space-y-6">

@@ -47,11 +47,12 @@ export function useParentPortal() {
         .eq('parent_id', user.id);
       if (spErr) throw spErr;
 
-      const children = (sp || []).map((r) => ({
+      const children: ParentChildSummary[] = (sp || []).map((r) => ({
         id: r.students?.id as string,
         name: r.students?.profiles?.full_name || r.students?.profiles?.email || 'Student',
         class: r.students?.classes?.name || 'N/A',
         rollNumber: r.students?.student_id || undefined,
+        attendancePercentage: undefined,
         pendingFees: 0,
         recentGrade: undefined,
         profilePhoto: (r.students?.profiles as any)?.avatar_url || undefined,
