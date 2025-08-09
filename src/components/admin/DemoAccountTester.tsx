@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,19 +6,34 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { TestTube, CheckCircle, XCircle, Play } from 'lucide-react';
 
+interface DemoAccount {
+  id: string;
+  email: string;
+  role: string;
+}
+
 export function DemoAccountTester() {
   const [testing, setTesting] = useState(false);
   const [results, setResults] = useState<Array<{email: string, success: boolean, error?: string}>>([]);
+  const [demoAccounts, setDemoAccounts] = useState<DemoAccount[]>([]);
 
-  const demoAccounts = [
-    { email: 'super.admin@greenvalley.edu', role: 'Super Admin' },
-    { email: 'admin@greenvalley.edu', role: 'School Admin' },
-    { email: 'teacher@greenvalley.edu', role: 'Teacher' },
-    { email: 'student@greenvalley.edu', role: 'Student' },
-    { email: 'parent@greenvalley.edu', role: 'Parent' },
-    { email: 'staff@greenvalley.edu', role: 'Staff' },
-    { email: 'pending@greenvalley.edu', role: 'Pending' }
-  ];
+  useEffect(() => {
+    fetchDemoAccounts();
+  }, []);
+
+  const fetchDemoAccounts = async () => {
+    const { data, error } = await supabase
+      .from('demo_accounts')
+      .select('id, email, role')
+      .order('role', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching demo accounts:', error);
+      toast.error('Failed to load demo accounts');
+    } else {
+      setDemoAccounts(data || []);
+    }
+  };
 
   const testDemoLogin = async () => {
     setTesting(true);
@@ -105,7 +120,7 @@ export function DemoAccountTester() {
               {demoAccounts.map((account) => {
                 const result = results.find(r => r.email === account.email);
                 return (
-                  <div key={account.email} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div key={account.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{account.email}</span>
                       <Badge variant="secondary">{account.role}</Badge>

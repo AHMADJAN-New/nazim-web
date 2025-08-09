@@ -48,44 +48,18 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
 
-    // Demo account emails with their details
-    const demoAccounts = [
-      { 
-        email: 'super.admin@greenvalley.edu', 
-        fullName: 'Super Administrator', 
-        role: 'super_admin' 
-      },
-      { 
-        email: 'admin@greenvalley.edu', 
-        fullName: 'School Administrator', 
-        role: 'admin' 
-      },
-      { 
-        email: 'teacher@greenvalley.edu', 
-        fullName: 'John Teacher', 
-        role: 'teacher' 
-      },
-      { 
-        email: 'student@greenvalley.edu', 
-        fullName: 'Sarah Student', 
-        role: 'student' 
-      },
-      { 
-        email: 'parent@greenvalley.edu', 
-        fullName: 'Parent User', 
-        role: 'parent' 
-      },
-      { 
-        email: 'staff@greenvalley.edu', 
-        fullName: 'Staff Member', 
-        role: 'staff' 
-      },
-      { 
-        email: 'pending@greenvalley.edu', 
-        fullName: 'Pending User', 
-        role: 'student' 
-      }
-    ];
+    // Fetch demo accounts from database
+    const { data: demoAccounts, error: demoError } = await supabase
+      .from('demo_accounts')
+      .select('email, full_name, role');
+
+    if (demoError || !demoAccounts) {
+      console.error('Error fetching demo accounts:', demoError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch demo accounts' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
 
     const { data: existingUsersData } = await supabase.auth.admin.listUsers();
     const existingUsers = new Map(existingUsersData.users.map(u => [u.email, u]));
@@ -105,7 +79,7 @@ const handler = async (req: Request): Promise<Response> => {
             password: 'admin123',
             email_confirm: true,
             user_metadata: {
-              full_name: account.fullName,
+              full_name: account.full_name,
               role: account.role,
               school_id: account.role !== 'super_admin' ? '348b0c64-f47f-4ac0-844f-99438c0c5f51' : undefined
             }
@@ -127,7 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
             {
               password: 'admin123',
               user_metadata: {
-                full_name: account.fullName,
+                full_name: account.full_name,
                 role: account.role,
                 school_id: account.role !== 'super_admin' ? '348b0c64-f47f-4ac0-844f-99438c0c5f51' : undefined
               }

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Shield, Users, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
+import { Shield, Users, RefreshCw, CheckCircle, XCircle, Plus, Trash2 } from 'lucide-react';
 
 interface UpdateResult {
   email: string;
@@ -12,9 +13,43 @@ interface UpdateResult {
   error?: string;
 }
 
+interface DemoAccount {
+  id: string;
+  email: string;
+  role: string;
+  full_name: string | null;
+  description: string | null;
+}
+
 export function PasswordManagement() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<UpdateResult[]>([]);
+  const [demoAccounts, setDemoAccounts] = useState<DemoAccount[]>([]);
+  const [newAccount, setNewAccount] = useState({
+    email: '',
+    role: '',
+    full_name: '',
+    description: '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchDemoAccounts();
+  }, []);
+
+  const fetchDemoAccounts = async () => {
+    const { data, error } = await supabase
+      .from('demo_accounts')
+      .select('*')
+      .order('role', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching demo accounts:', error);
+      toast.error('Failed to load demo accounts');
+    } else {
+      setDemoAccounts(data || []);
+    }
+  };
 
   const updateDemoPasswords = async () => {
     setLoading(true);
@@ -35,15 +70,34 @@ export function PasswordManagement() {
     }
   };
 
-  const demoAccounts = [
-    { email: 'super.admin@greenvalley.edu', role: 'Super Admin', description: 'System administrator with full access' },
-    { email: 'admin@greenvalley.edu', role: 'School Admin', description: 'School administration access' },
-    { email: 'teacher@greenvalley.edu', role: 'Teacher', description: 'Teaching and class management' },
-    { email: 'student@greenvalley.edu', role: 'Student', description: 'Student portal access' },
-    { email: 'parent@greenvalley.edu', role: 'Parent', description: 'Parent/guardian access' },
-    { email: 'staff@greenvalley.edu', role: 'Staff', description: 'General staff access' },
-    { email: 'pending@greenvalley.edu', role: 'Pending', description: 'Pending approval account' }
-  ];
+  const addDemoAccount = async () => {
+    if (!newAccount.email || !newAccount.role) {
+      toast.error('Email and role are required');
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.from('demo_accounts').insert(newAccount);
+    if (error) {
+      console.error('Error adding demo account:', error);
+      toast.error('Failed to add demo account');
+    } else {
+      toast.success('Demo account added');
+      setNewAccount({ email: '', role: '', full_name: '', description: '' });
+      fetchDemoAccounts();
+    }
+    setSaving(false);
+  };
+
+  const removeDemoAccount = async (id: string) => {
+    const { error } = await supabase.from('demo_accounts').delete().eq('id', id);
+    if (error) {
+      console.error('Error removing demo account:', error);
+      toast.error('Failed to remove demo account');
+    } else {
+      toast.success('Demo account removed');
+      setDemoAccounts(demoAccounts.filter(a => a.id !== id));
+    }
+  };
 
   return (
     <Card className="w-full">
@@ -83,7 +137,7 @@ export function PasswordManagement() {
             {demoAccounts.map((account) => {
               const result = results.find(r => r.email === account.email);
               return (
-                <div key={account.email} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={account.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium">{account.email}</span>
@@ -91,25 +145,64 @@ export function PasswordManagement() {
                     </div>
                     <p className="text-sm text-muted-foreground">{account.description}</p>
                   </div>
-                  {result && (
-                    <div className="flex items-center gap-2">
-                      {result.success ? (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <CheckCircle className="h-4 w-4" />
-                          <span className="text-sm">Updated</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-red-600">
-                          <XCircle className="h-4 w-4" />
-                          <span className="text-sm">Failed</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {result && (
+                      <>
+                        {result.success ? (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="text-sm">Updated</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-600">
+                            <XCircle className="h-4 w-4" />
+                            <span className="text-sm">Failed</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeDemoAccount(account.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               );
             })}
           </div>
+        </div>
+
+        <div className="space-y-3">
+          <h4 className="font-medium">Add Demo Account</h4>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Input
+              placeholder="Email"
+              value={newAccount.email}
+              onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
+            />
+            <Input
+              placeholder="Role"
+              value={newAccount.role}
+              onChange={(e) => setNewAccount({ ...newAccount, role: e.target.value })}
+            />
+            <Input
+              placeholder="Full name"
+              value={newAccount.full_name}
+              onChange={(e) => setNewAccount({ ...newAccount, full_name: e.target.value })}
+            />
+            <Input
+              placeholder="Description"
+              value={newAccount.description}
+              onChange={(e) => setNewAccount({ ...newAccount, description: e.target.value })}
+            />
+          </div>
+          <Button onClick={addDemoAccount} disabled={saving} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            {saving ? 'Adding...' : 'Add Account'}
+          </Button>
         </div>
 
         {results.length > 0 && (
