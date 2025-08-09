@@ -11,65 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { Heart, Users, DollarSign, Download, Eye, Plus, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Donation {
-  id: string;
-  donorName: string;
-  donorEmail: string;
-  donorPhone: string;
-  amount: number;
-  purpose: string;
-  donationType: 'individual' | 'corporate' | 'anonymous';
-  paymentMethod: string;
-  transactionId: string;
-  donationDate: string;
-  receiptGenerated: boolean;
-  notes?: string;
-}
-
-const mockDonations: Donation[] = [
-  {
-    id: "1",
-    donorName: "Ahmed Industries",
-    donorEmail: "contact@ahmedindustries.com",
-    donorPhone: "+92-300-1234567",
-    amount: 50000,
-    purpose: "Library Development",
-    donationType: "corporate",
-    paymentMethod: "Bank Transfer",
-    transactionId: "DON001234",
-    donationDate: "2024-01-15",
-    receiptGenerated: true,
-    notes: "Annual corporate donation for library books and equipment"
-  },
-  {
-    id: "2",
-    donorName: "Fatima Khan",
-    donorEmail: "fatima.khan@email.com",
-    donorPhone: "+92-301-9876543",
-    amount: 10000,
-    purpose: "Student Scholarships",
-    donationType: "individual",
-    paymentMethod: "Cash",
-    transactionId: "DON001235",
-    donationDate: "2024-01-16",
-    receiptGenerated: true,
-    notes: "In memory of her late father"
-  },
-  {
-    id: "3",
-    donorName: "Anonymous Donor",
-    donorEmail: "",
-    donorPhone: "",
-    amount: 25000,
-    purpose: "School Infrastructure",
-    donationType: "anonymous",
-    paymentMethod: "Online Transfer",
-    transactionId: "DON001236",
-    donationDate: "2024-01-14",
-    receiptGenerated: false
-  }
-];
+import { useDonationStats, Donation } from "@/hooks/useDonations";
+import { supabase } from "@/integrations/supabase/client";
 
 const donationPurposes = [
   "General Fund",
@@ -86,7 +29,12 @@ const donationPurposes = [
 
 export default function DonationsPage() {
   const { toast } = useToast();
-  const [donations, setDonations] = useState<Donation[]>(mockDonations);
+  const { data: donationData, isLoading } = useDonationStats();
+  const donations = donationData?.donations ?? [];
+  const totalDonations = donationData?.totalAmount ?? 0;
+  const monthlyDonations = donationData?.monthlyAmount ?? 0;
+  const totalDonors = donationData?.count ?? 0;
+  const averageDonation = totalDonors ? Math.round(totalDonations / totalDonors) : 0;
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
@@ -101,43 +49,45 @@ export default function DonationsPage() {
     return matchesSearch && matchesType;
   });
 
-  const totalDonations = donations.reduce((sum, donation) => sum + donation.amount, 0);
-  const monthlyDonations = donations
-    .filter(d => new Date(d.donationDate).getMonth() === new Date().getMonth())
-    .reduce((sum, donation) => sum + donation.amount, 0);
-
-  const handleAddDonation = (newDonation: Partial<Donation>) => {
-    const donation: Donation = {
-      id: `${donations.length + 1}`,
-      donorName: newDonation.donorName || "",
-      donorEmail: newDonation.donorEmail || "",
-      donorPhone: newDonation.donorPhone || "",
+  const handleAddDonation = async (newDonation: Partial<Donation>) => {
+    const { error } = await supabase.from('donations').insert({
+      donor_name: newDonation.donorName || '',
+      donor_email: newDonation.donorEmail || '',
+      donor_phone: newDonation.donorPhone || '',
       amount: newDonation.amount || 0,
-      purpose: newDonation.purpose || "",
-      donationType: newDonation.donationType || "individual",
-      paymentMethod: newDonation.paymentMethod || "",
-      transactionId: `DON${String(Date.now()).slice(-6)}`,
-      donationDate: new Date().toISOString().split('T')[0],
-      receiptGenerated: false,
-      notes: newDonation.notes || ""
-    };
-
-    setDonations([donation, ...donations]);
-    setIsAddDonationOpen(false);
-    toast({
-      title: "Donation Added",
-      description: "Donation record has been successfully created."
+      purpose: newDonation.purpose || '',
+      donation_type: newDonation.donationType || 'individual',
+      payment_method: newDonation.paymentMethod || '',
+      transaction_id: `DON${String(Date.now()).slice(-6)}`,
+      donation_date: new Date().toISOString().split('T')[0],
+      receipt_generated: false,
+      notes: newDonation.notes || '',
+      branch_id: donationData?.donations[0]?.branchId || '00000000-0000-0000-0000-000000000000',
     });
+
+    if (error) {
+      toast({ title: 'Error adding donation', description: error.message });
+    } else {
+      setIsAddDonationOpen(false);
+      toast({
+        title: 'Donation Added',
+        description: 'Donation record has been successfully created.',
+      });
+    }
   };
 
-  const generateReceipt = (donation: Donation) => {
+  const generateReceipt = async (donation: Donation) => {
     setSelectedDonation(donation);
     setIsReceiptDialogOpen(true);
-    
-    // Update receipt status
-    setDonations(prev => prev.map(d => 
-      d.id === donation.id ? { ...d, receiptGenerated: true } : d
-    ));
+
+    const { error } = await supabase
+      .from('donations')
+      .update({ receipt_generated: true })
+      .eq('id', donation.id);
+
+    if (error) {
+      toast({ title: 'Error updating receipt', description: error.message });
+    }
   };
 
   const downloadReceipt = (donation: Donation) => {
@@ -147,9 +97,17 @@ export default function DonationsPage() {
     });
   };
 
+  if (isLoading) {
+    return (
+      <MainLayout title="Donations Management">
+        <div className="flex items-center justify-center h-64">Loading donations...</div>
+      </MainLayout>
+    );
+  }
+
   return (
-    <MainLayout 
-      title="Donations Management" 
+    <MainLayout
+      title="Donations Management"
       showBreadcrumb={true}
       breadcrumbItems={[
         { label: "Finance", href: "/finance" },
@@ -187,7 +145,7 @@ export default function DonationsPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{donations.length}</div>
+              <div className="text-2xl font-bold">{totalDonors}</div>
               <p className="text-xs text-muted-foreground">Registered donors</p>
             </CardContent>
           </Card>
@@ -198,7 +156,7 @@ export default function DonationsPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹{Math.round(totalDonations / donations.length).toLocaleString()}</div>
+              <div className="text-2xl font-bold">₹{averageDonation.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">Per donation</p>
             </CardContent>
           </Card>
