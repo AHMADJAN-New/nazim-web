@@ -21,52 +21,6 @@ interface StudentEnrollment {
   status: 'enrolled' | 'completed' | 'absent';
 }
 
-const mockEnrollments: StudentEnrollment[] = [
-  {
-    id: "1",
-    studentName: "Ahmed Hassan",
-    studentId: "STU001",
-    class: "Class 10-A",
-    rollNumber: "MT001",
-    enrolledSubjects: ["Mathematics", "Physics", "Chemistry", "English", "Urdu"],
-    totalSubjects: 5,
-    examDate: "2024-02-15",
-    status: "enrolled"
-  },
-  {
-    id: "2",
-    studentName: "Fatima Ali",
-    studentId: "STU002",
-    class: "Class 10-A",
-    rollNumber: "MT002",
-    enrolledSubjects: ["Mathematics", "Biology", "Chemistry", "English", "Urdu"],
-    totalSubjects: 5,
-    examDate: "2024-02-15",
-    status: "enrolled"
-  },
-  {
-    id: "3",
-    studentName: "Omar Khan",
-    studentId: "STU003",
-    class: "Class 10-B",
-    rollNumber: "MT003",
-    enrolledSubjects: ["Mathematics", "Physics", "Computer Science", "English"],
-    totalSubjects: 4,
-    examDate: "2024-02-15",
-    status: "completed"
-  },
-  {
-    id: "4",
-    studentName: "Ayesha Malik",
-    studentId: "STU004",
-    class: "Class 9-A",
-    rollNumber: "MT004",
-    enrolledSubjects: ["Mathematics", "Biology", "Chemistry", "English", "Urdu", "Islamic Studies"],
-    totalSubjects: 6,
-    examDate: "2024-02-16",
-    status: "enrolled"
-  }
-];
 
 const statusVariants = {
   enrolled: "default",
@@ -76,8 +30,18 @@ const statusVariants = {
 
 export default function ExamEnrolledStudentsReportsPage() {
   const { toast } = useToast();
-  const [enrollments, setEnrollments] = useState<StudentEnrollment[]>(mockEnrollments);
   const [selectedExam, setSelectedExam] = useState<string>("mid-term");
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ["exam-enrollments-report", selectedExam],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("exam_enrollments")
+        .select("*")
+        .eq("exam_id", selectedExam);
+      if (error) throw error;
+      return data as any as StudentEnrollment[];
+    },
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");

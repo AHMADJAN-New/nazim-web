@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,39 +29,30 @@ interface Exam {
   status: string;
 }
 
-const mockExams: Exam[] = [
-  {
-    id: "1",
-    name: "Mid-Term Mathematics",
-    type: "Mid-Term",
-    subject: "Mathematics",
-    class: "Grade 5A",
-    date: "2024-02-15",
-    duration: 120,
-    totalMarks: 100,
-    passMarks: 40,
-    instructions: "Use of calculator is not allowed",
-    status: "scheduled"
-  },
-  {
-    id: "2",
-    name: "Final English Exam",
-    type: "Final",
-    subject: "English",
-    class: "Grade 5A",
-    date: "2024-03-20",
-    duration: 180,
-    totalMarks: 100,
-    passMarks: 50,
-    instructions: "Answer all questions in the answer sheet provided",
-    status: "draft"
-  }
-];
-
 export default function ExamSetupPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [exams, setExams] = useState<Exam[]>(mockExams);
+  const queryClient = useQueryClient();
+  const { data: exams = [] } = useQuery({
+    queryKey: ["exams"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("exams").select("*");
+      if (error) throw error;
+      return (data || []).map((exam: any) => ({
+        id: exam.id,
+        name: exam.name,
+        type: exam.type,
+        subject: exam.subject_id,
+        class: exam.class_id,
+        date: exam.exam_date,
+        duration: exam.duration_minutes || 0,
+        totalMarks: exam.total_marks,
+        passMarks: exam.pass_marks || 0,
+        instructions: exam.instructions || "",
+        status: exam.status || "scheduled",
+      })) as Exam[];
+    },
+  });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
 
@@ -79,30 +72,59 @@ export default function ExamSetupPage() {
   const subjects = ["Mathematics", "English", "Science", "History", "Geography"];
   const classes = ["Grade 1A", "Grade 2A", "Grade 3A", "Grade 4A", "Grade 5A", "Grade 6A"];
 
+  const createMutation = useMutation({
+    mutationFn: async (exam: Omit<Exam, "id">) => {
+      const { error } = await supabase.from("exams").insert({
+        name: exam.name,
+        type: exam.type,
+        subject_id: exam.subject,
+        class_id: exam.class,
+        exam_date: exam.date,
+        duration_minutes: exam.duration,
+        total_marks: exam.totalMarks,
+        pass_marks: exam.passMarks,
+        instructions: exam.instructions,
+      } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["exams"] });
+      toast({ title: "Exam Created", description: "New exam has been created successfully" });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...exam }: Partial<Exam> & { id: string }) => {
+      const { error } = await supabase
+        .from("exams")
+        .update({
+          name: exam.name,
+          type: exam.type,
+          subject_id: exam.subject,
+          class_id: exam.class,
+          exam_date: exam.date,
+          duration_minutes: exam.duration,
+          total_marks: exam.totalMarks,
+          pass_marks: exam.passMarks,
+          instructions: exam.instructions,
+          status: "draft",
+        } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["exams"] });
+      toast({ title: "Exam Updated", description: "Exam has been updated successfully" });
+    }
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (editingExam) {
-      setExams(prev => prev.map(exam =>
-        exam.id === editingExam.id
-          ? { ...exam, ...formData, status: "draft" }
-          : exam
-      ));
-      toast({
-        title: "Exam Updated",
-        description: "Exam has been updated successfully"
-      });
+      updateMutation.mutate({ id: editingExam.id, ...formData });
     } else {
-      const newExam: Exam = {
-        id: Date.now().toString(),
-        ...formData,
-        status: "draft"
-      };
-      setExams(prev => [...prev, newExam]);
-      toast({
-        title: "Exam Created",
-        description: "New exam has been created successfully"
-      });
+      createMutation.mutate(formData);
     }
 
     setFormData({
@@ -129,23 +151,34 @@ export default function ExamSetupPage() {
     setIsAddDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setExams(prev => prev.filter(exam => exam.id !== id));
-    toast({
-      title: "Exam Deleted",
-      description: "Exam has been deleted successfully"
-    });
-  };
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("exams").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["exams"] });
+      toast({ title: "Exam Deleted", description: "Exam has been deleted successfully" });
+    }
+  });
 
-  const handlePublish = (id: string) => {
-    setExams(prev => prev.map(exam =>
-      exam.id === id ? { ...exam, status: "scheduled" } : exam
-    ));
-    toast({
-      title: "Exam Published",
-      description: "Exam has been published and scheduled"
-    });
-  };
+  const publishMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("exams")
+        .update({ status: "scheduled" } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["exams"] });
+      toast({ title: "Exam Published", description: "Exam has been published and scheduled" });
+    }
+  });
+
+  const handleDelete = (id: string) => deleteMutation.mutate(id);
+
+  const handlePublish = (id: string) => publishMutation.mutate(id);
 
   const getStatusColor = (status: string) => {
     switch (status) {
