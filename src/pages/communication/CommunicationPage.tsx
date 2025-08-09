@@ -1,7 +1,23 @@
 // Nazim School Management System - Communication Management
 import { useState } from "react";
-import type { Announcement } from "@/types/announcement";
-import { useCommunications, useCreateCommunication, useUpdateCommunication, useDeleteCommunication } from "@/hooks/useCommunications";
+import {
+  useCommunications,
+  useCreateCommunication,
+  useUpdateCommunication,
+  useDeleteCommunication,
+  useMessages,
+  useCreateMessage,
+  useUpdateMessage,
+  useDeleteMessage,
+  useEvents,
+  useCreateEvent,
+  useUpdateEvent,
+  useDeleteEvent,
+  type Communication,
+  type Message,
+  type CommunicationEvent,
+} from "@/hooks/useCommunications";
+import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,198 +28,137 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  MessageSquare, 
-  Send, 
-  Mail, 
-  Phone,
+  MessageSquare,
+  Send,
   Bell,
   Calendar,
   FileText,
-  Users,
-  Search, 
-  Filter, 
+  Search,
+  Filter,
   Plus,
-  MoreHorizontal,
   Eye,
   Edit,
-  Trash2,
-  CheckCircle,
-  Clock,
-  AlertCircle
+  Trash2
 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 
-// Mock data for communication management
-const communicationStats = {
-  totalMessages: 1580,
-  sentToday: 45,
-  pendingApproval: 8,
-  totalAnnouncements: 125,
-  activeEvents: 12,
-  smsCredits: 2500
-};
-
-const announcements = [
-  {
-    id: "A001",
-    title: "Mid-Term Examination Schedule",
-    content: "Mid-term examinations will commence from March 15th, 2024. Students are advised to prepare accordingly.",
-    type: "Academic",
-    priority: "high",
-    targetAudience: ["Students", "Parents"],
-    createdBy: "Principal",
-    createdDate: "2024-03-01",
-    publishDate: "2024-03-01",
-    expiryDate: "2024-03-20",
-    status: "published",
-    views: 1250,
-    sendVia: ["Website", "SMS", "Email"]
-  },
-  {
-    id: "A002",
-    title: "Parent-Teacher Meeting",
-    content: "Parent-teacher meeting is scheduled for March 25th, 2024. Parents are requested to attend with their children.",
-    type: "Event",
-    priority: "medium", 
-    targetAudience: ["Parents"],
-    createdBy: "Academic Coordinator",
-    createdDate: "2024-02-28",
-    publishDate: "2024-03-01",
-    expiryDate: "2024-03-25",
-    status: "published",
-    views: 856,
-    sendVia: ["Website", "Email"]
-  },
-  {
-    id: "A003",
-    title: "Fee Payment Reminder",
-    content: "Monthly fee payment is due by March 10th, 2024. Please ensure timely payment to avoid late charges.",
-    type: "Finance",
-    priority: "high",
-    targetAudience: ["Parents"],
-    createdBy: "Accounts Manager",
-    createdDate: "2024-02-25",
-    publishDate: "2024-03-01",
-    expiryDate: "2024-03-10",
-    status: "draft",
-    views: 0,
-    sendVia: ["SMS", "Email"]
-  }
-];
-
-const messages = [
-  {
-    id: "M001",
-    subject: "Attendance Alert",
-    content: "Your child Ahmad Ali was absent today. Please ensure regular attendance.",
-    recipient: "Mr. Muhammad Ali",
-    recipientType: "Parent",
-    studentClass: "Grade 10-A",
-    sentDate: "2024-03-01",
-    sentTime: "14:30",
-    type: "SMS",
-    status: "delivered",
-    cost: 5,
-    template: "Attendance Alert"
-  },
-  {
-    id: "M002",
-    subject: "Fee Payment Confirmation",
-    content: "Thank you for the fee payment of Rs. 5000 for Ahmad Ali. Payment ID: PAY001.",
-    recipient: "Mr. Muhammad Ali",
-    recipientType: "Parent", 
-    studentClass: "Grade 10-A",
-    sentDate: "2024-02-28",
-    sentTime: "16:45",
-    type: "Email",
-    status: "delivered",
-    cost: 0,
-    template: "Payment Confirmation"
-  },
-  {
-    id: "M003",
-    subject: "Exam Result Available",
-    content: "Mid-term exam results for Hassan Khan are now available. Please check the student portal.",
-    recipient: "Mr. Ibrahim Khan",
-    recipientType: "Parent",
-    studentClass: "Grade 11-B", 
-    sentDate: "2024-02-27",
-    sentTime: "11:20",
-    type: "Email",
-    status: "failed",
-    cost: 0,
-    template: "Result Notification"
-  }
-];
-
-const events = [
-  {
-    id: "E001",
-    title: "Annual Sports Day",
-    description: "Annual sports competition for all grades with various athletic events and prizes.",
-    date: "2024-03-20",
-    time: "09:00 AM",
-    location: "Main Playground",
-    organizer: "Sports Department",
-    category: "Sports",
-    audience: ["Students", "Parents", "Staff"],
-    registrationRequired: true,
-    maxParticipants: 500,
-    currentRegistrations: 287,
-    status: "upcoming",
-    reminder: true,
-    reminderDays: 3
-  },
-  {
-    id: "E002",
-    title: "Science Fair",
-    description: "Students will showcase their science projects and innovations.",
-    date: "2024-04-05",
-    time: "10:00 AM",
-    location: "Science Laboratory",
-    organizer: "Science Department",
-    category: "Academic",
-    audience: ["Students", "Parents"],
-    registrationRequired: true,
-    maxParticipants: 100,
-    currentRegistrations: 45,
-    status: "upcoming",
-    reminder: true,
-    reminderDays: 7
-  },
-  {
-    id: "E003",
-    title: "Quran Recitation Competition",
-    description: "Islamic competition for beautiful Quran recitation with cash prizes.",
-    date: "2024-03-15",
-    time: "02:00 PM",
-    location: "Main Hall",
-    organizer: "Islamic Studies Department",
-    category: "Religious",
-    audience: ["Students"],
-    registrationRequired: true,
-    maxParticipants: 50,
-    currentRegistrations: 38,
-    status: "completed",
-    reminder: false,
-    reminderDays: 0
-  }
-];
-
 export default function CommunicationPage() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
-  
-  const { data: communications = [], isLoading } = useCommunications();
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Communication | null>(null);
+
+  const { data: announcements = [] } = useCommunications();
+  const { data: messages = [] } = useMessages();
+  const { data: events = [] } = useEvents();
+
   const createCommunication = useCreateCommunication();
   const updateCommunication = useUpdateCommunication();
   const deleteCommunication = useDeleteCommunication();
+  const createMessage = useCreateMessage();
+  const updateMessage = useUpdateMessage();
+  const deleteMessage = useDeleteMessage();
+  const createEvent = useCreateEvent();
+  const updateEvent = useUpdateEvent();
+  const deleteEvent = useDeleteEvent();
+
+  const defaultBranchId = "00000000-0000-0000-0000-000000000000";
+
+  const communicationStats = {
+    totalMessages: messages.length,
+    sentToday: messages.filter((m) => {
+      if (!m.sent_at) return false;
+      const today = new Date().toISOString().split("T")[0];
+      return m.sent_at.startsWith(today);
+    }).length,
+    pendingApproval: announcements.filter((a) => !a.published_date).length,
+    totalAnnouncements: announcements.length,
+    activeEvents: events.filter((e) => e.status === "upcoming" || e.status === "ongoing").length,
+    smsCredits: 0,
+  };
+
+  const handleCreateAnnouncement = () => {
+    const title = prompt("Announcement title");
+    const content = prompt("Announcement content");
+    if (title && content && user) {
+      createCommunication.mutate({
+        title,
+        content,
+        type: "announcement",
+        priority: "normal",
+        target_audience: [],
+        branch_id: defaultBranchId,
+        created_by: user.id,
+      });
+    }
+  };
+
+  const handleUpdateMessage = (message: Message) => {
+    const subject = prompt("Edit subject", message.subject);
+    if (subject) {
+      updateMessage.mutate({ id: message.id, subject });
+    }
+  };
+
+  const handleDeleteMessage = (id: string) => {
+    deleteMessage.mutate(id);
+  };
+
+  const handleSendMessage = () => {
+    const subject = prompt("Message subject");
+    const content = prompt("Message content");
+    if (subject && content && user) {
+      createMessage.mutate({
+        subject,
+        content,
+        sender_id: user.id,
+        recipients: [],
+        message_type: "notification",
+        priority: "normal",
+        status: "draft",
+        branch_id: defaultBranchId,
+      });
+    }
+  };
+
+  const handleCreateEvent = () => {
+    const title = prompt("Event title");
+    const description = prompt("Event description");
+    const date = prompt("Event date (YYYY-MM-DD)");
+    if (title && description && date && user) {
+      createEvent.mutate({
+        title,
+        description,
+        event_date: date,
+        start_time: "09:00",
+        end_time: "10:00",
+        location: "TBD",
+        category: "academic",
+        priority: "normal",
+        organizer: user.id,
+        participants: [],
+        registration_required: false,
+        status: "upcoming",
+        notification_sent: false,
+        branch_id: defaultBranchId,
+        created_by: user.id,
+      });
+    }
+  };
+
+  const handleUpdateEvent = (event: CommunicationEvent) => {
+    const title = prompt("Edit event title", event.title);
+    if (title) {
+      updateEvent.mutate({ id: event.id, title });
+    }
+  };
+
+  const handleDeleteEvent = (id: string) => {
+    deleteEvent.mutate(id);
+  };
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
@@ -404,7 +359,7 @@ export default function CommunicationPage() {
                   <SelectItem value="scheduled">Scheduled</SelectItem>
                 </SelectContent>
               </Select>
-              <Button>
+              <Button onClick={handleCreateAnnouncement}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Announcement
               </Button>
@@ -432,7 +387,7 @@ export default function CommunicationPage() {
                     </TableRow>
                   </TableHeader>
                    <TableBody>
-                     {communications.map((communication) => (
+                     {announcements.map((communication) => (
                      <TableRow key={communication.id}>
                          <TableCell className="font-medium">{communication.title}</TableCell>
                          <TableCell>
@@ -462,23 +417,7 @@ export default function CommunicationPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => setSelectedAnnouncement({
-                                    id: communication.id,
-                                    title: communication.title,
-                                    content: communication.content,
-                                    type: communication.type,
-                                    priority: communication.priority as 'high' | 'low' | 'normal' | 'urgent' || 'normal',
-                                    targetAudience: communication.target_audience || [],
-                                    publishDate: communication.published_date || '',
-                                    expiryDate: communication.expires_at || '',
-                                    status: communication.published_date ? 'published' : 'draft' as 'draft' | 'published' | 'expired',
-                                    notificationSent: false,
-                                    author: 'Unknown',
-                                    createdBy: 'Unknown',
-                                    createdDate: new Date(communication.created_at).toLocaleDateString(),
-                                    views: 0,
-                                    sendVia: []
-                                  })}
+                                  onClick={() => setSelectedAnnouncement(communication)}
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
@@ -508,25 +447,25 @@ export default function CommunicationPage() {
                                       <div>
                                         <Label>Created By</Label>
                                         <p className="text-sm text-muted-foreground">
-                                          {selectedAnnouncement.createdBy}
+                                          {selectedAnnouncement.created_by}
                                         </p>
                                       </div>
                                       <div>
                                         <Label>Created Date</Label>
                                         <p className="text-sm text-muted-foreground">
-                                          {selectedAnnouncement.createdDate}
+                                          {new Date(selectedAnnouncement.created_at).toLocaleDateString()}
                                         </p>
                                       </div>
                                       <div>
                                         <Label>Publish Date</Label>
                                         <p className="text-sm text-muted-foreground">
-                                          {selectedAnnouncement.publishDate}
+                                          {selectedAnnouncement.published_date}
                                         </p>
                                       </div>
                                       <div>
                                         <Label>Expiry Date</Label>
                                         <p className="text-sm text-muted-foreground">
-                                          {selectedAnnouncement.expiryDate}
+                                          {selectedAnnouncement.expires_at}
                                         </p>
                                       </div>
                                     </div>
@@ -541,20 +480,9 @@ export default function CommunicationPage() {
                                     <div>
                                       <Label>Target Audience</Label>
                                       <div className="flex flex-wrap gap-1 mt-1">
-                                        {selectedAnnouncement.targetAudience.map((audience: string, index: number) => (
+                                        {selectedAnnouncement.target_audience?.map((audience: string, index: number) => (
                                           <Badge key={index} variant="secondary">
                                             {audience}
-                                          </Badge>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    
-                                    <div>
-                                      <Label>Send Via</Label>
-                                      <div className="flex flex-wrap gap-1 mt-1">
-                                        {selectedAnnouncement.sendVia.map((channel: string, index: number) => (
-                                          <Badge key={index} variant="outline">
-                                            {channel}
                                           </Badge>
                                         ))}
                                       </div>
@@ -564,7 +492,7 @@ export default function CommunicationPage() {
                                       <Button>Edit</Button>
                                       <Button variant="outline">Duplicate</Button>
                                       <Button variant="outline">Send Now</Button>
-                                      {selectedAnnouncement.status === 'published' && (
+                                      {selectedAnnouncement.published_date && (
                                         <Button variant="destructive">Archive</Button>
                                       )}
                                     </div>
@@ -572,8 +500,24 @@ export default function CommunicationPage() {
                                 )}
                               </DialogContent>
                             </Dialog>
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const title = prompt("Edit title", communication.title);
+                                if (title) {
+                                  updateCommunication.mutate({ id: communication.id, title });
+                                }
+                              }}
+                            >
                               <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => deleteCommunication.mutate(communication.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -597,7 +541,7 @@ export default function CommunicationPage() {
                   />
                 </div>
               </div>
-              <Button>
+              <Button onClick={handleSendMessage}>
                 <Send className="h-4 w-4 mr-2" />
                 Send Message
               </Button>
@@ -615,12 +559,10 @@ export default function CommunicationPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Subject</TableHead>
-                      <TableHead>Recipient</TableHead>
+                      <TableHead>Recipients</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Class</TableHead>
-                      <TableHead>Sent Date</TableHead>
+                      <TableHead>Sent At</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Cost</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -628,22 +570,34 @@ export default function CommunicationPage() {
                     {messages.map((message) => (
                       <TableRow key={message.id}>
                         <TableCell className="font-medium">{message.subject}</TableCell>
-                        <TableCell>{message.recipient}</TableCell>
+                        <TableCell>{message.recipients.join(", ")}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{message.type}</Badge>
+                          <Badge variant="outline">{message.message_type}</Badge>
                         </TableCell>
-                        <TableCell>{message.studentClass}</TableCell>
                         <TableCell>
-                          {message.sentDate} {message.sentTime}
+                          {message.sent_at ? new Date(message.sent_at).toLocaleString() : "-"}
                         </TableCell>
                         <TableCell>{getMessageStatusBadge(message.status)}</TableCell>
                         <TableCell>
-                          {message.cost > 0 ? `Rs. ${message.cost}` : 'Free'}
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUpdateMessage(message)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteMessage(message.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -665,7 +619,7 @@ export default function CommunicationPage() {
                   />
                 </div>
               </div>
-              <Button>
+              <Button onClick={handleCreateEvent}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Create Event
               </Button>
@@ -697,8 +651,8 @@ export default function CommunicationPage() {
                         <TableCell className="font-medium">{event.title}</TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div>{event.date}</div>
-                            <div className="text-muted-foreground">{event.time}</div>
+                            <div>{event.event_date}</div>
+                            <div className="text-muted-foreground">{event.start_time}</div>
                           </div>
                         </TableCell>
                         <TableCell>{event.location}</TableCell>
@@ -706,8 +660,8 @@ export default function CommunicationPage() {
                           <Badge variant="outline">{event.category}</Badge>
                         </TableCell>
                         <TableCell>
-                          {event.registrationRequired ? (
-                            <span>{event.currentRegistrations}/{event.maxParticipants}</span>
+                          {event.registration_required ? (
+                            <span>{event.participants.length}/{event.max_participants || 0}</span>
                           ) : (
                             <span className="text-muted-foreground">No registration</span>
                           )}
@@ -718,8 +672,19 @@ export default function CommunicationPage() {
                             <Button variant="outline" size="sm">
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUpdateEvent(event)}
+                            >
                               <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteEvent(event.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>

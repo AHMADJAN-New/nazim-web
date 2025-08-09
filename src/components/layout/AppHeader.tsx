@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, Menu } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,20 +12,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
-// Mock data - in real app, this would come from context/API
-const notifications = [
-  { id: 1, title: "New student admission", time: "2 min ago", unread: true },
-  { id: 2, title: "Fee payment received", time: "1 hour ago", unread: true },
-  { id: 3, title: "Exam results published", time: "3 hours ago", unread: false },
-];
+interface Notification {
+  id: string;
+  title: string;
+  created_at: string;
+  is_read: boolean;
+}
 
-const currentUser = {
-  name: "Ahmed Khan",
-  email: "ahmed.khan@nazimschool.edu",
-  role: "Admin",
-  profilePhoto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
-};
+interface UserProfile {
+  full_name: string;
+  email: string;
+  role: string;
+  avatar_url: string | null;
+}
 
 interface AppHeaderProps {
   title?: string;
@@ -34,11 +36,39 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] }: AppHeaderProps) {
+  const { user, signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
-  const unreadNotifications = notifications.filter(n => n.unread).length;
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, email, role, avatar_url')
+        .eq('id', user.id)
+        .single();
+      setProfile(data as UserProfile | null);
+    };
+
+    const fetchNotifications = async () => {
+      const { data } = await supabase
+        .from('notifications')
+        .select('id, title, created_at, is_read')
+        .eq('recipient_id', user.id)
+        .order('created_at', { ascending: false });
+      setNotifications((data as Notification[]) || []);
+    };
+
+    fetchProfile();
+    fetchNotifications();
+  }, [user]);
+
+  const unreadNotifications = notifications.filter(n => !n.is_read).length;
 
   const languages = [
     { code: "en", name: "English", flag: "🇺🇸" },
@@ -55,11 +85,6 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const changeLanguage = (langCode: string) => {
     setCurrentLanguage(langCode);
     // In real app, this would update i18n context
-  };
-
-  const handleLogout = () => {
-    // In real app, this would call auth service
-    console.log("Logging out...");
   };
 
   return (
@@ -166,11 +191,13 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                   <DropdownMenuItem key={notification.id} className="flex-col items-start p-3">
                     <div className="flex items-center justify-between w-full">
                       <span className="font-medium text-sm">{notification.title}</span>
-                      {notification.unread && (
+                      {!notification.is_read && (
                         <Badge variant="secondary" className="text-xs">New</Badge>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground">{notification.time}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(notification.created_at).toLocaleString()}
+                    </span>
                   </DropdownMenuItem>
                 ))
               ) : (
@@ -190,8 +217,8 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <img
-                  src={currentUser.profilePhoto}
-                  alt={currentUser.name}
+                  src={profile?.avatar_url || ''}
+                  alt={profile?.full_name || 'User'}
                   className="h-8 w-8 rounded-full object-cover"
                 />
               </Button>
@@ -199,12 +226,12 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{currentUser.name}</p>
+                  <p className="text-sm font-medium leading-none">{profile?.full_name}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {currentUser.email}
+                    {profile?.email}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {currentUser.role}
+                    {profile?.role}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -218,7 +245,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+              <DropdownMenuItem onClick={signOut} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

@@ -20,129 +20,88 @@ import {
   Plus,
   Users,
   BookMarked,
-  AlertTriangle,
-  Calendar,
-  Bookmark,
   MoreHorizontal,
   Eye,
-  Edit,
-  Trash2
+  Edit
 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
-
-// Mock data for library management
-const libraryStats = {
-  totalBooks: 5420,
-  availableBooks: 4580,
-  issuedBooks: 840,
-  overdue: 23,
-  totalMembers: 1250,
-  activeMembers: 980
-};
-
-const books = [
-  {
-    id: "B001",
-    title: "Introduction to Islamic Studies",
-    author: "Dr. Ahmad Hassan",
-    isbn: "978-1234567890",
-    category: "Islamic Studies",
-    language: "English",
-    publisher: "Islamic Publications",
-    publishYear: 2020,
-    copies: 5,
-    available: 3,
-    issued: 2,
-    rack: "A-101",
-    status: "available"
-  },
-  {
-    id: "B002",
-    title: "Advanced Mathematics Grade 12",
-    author: "Prof. Muhammad Ali",
-    isbn: "978-0987654321", 
-    category: "Mathematics",
-    language: "English",
-    publisher: "Education Press",
-    publishYear: 2021,
-    copies: 8,
-    available: 5,
-    issued: 3,
-    rack: "B-205",
-    status: "available"
-  },
-  {
-    id: "B003",
-    title: "Seerah-un-Nabi",
-    author: "Allama Shibli Nomani",
-    isbn: "978-5432167890",
-    category: "Islamic History",
-    language: "Urdu",
-    publisher: "Dar-ul-Uloom",
-    publishYear: 2018,
-    copies: 3,
-    available: 0,
-    issued: 3,
-    rack: "C-150",
-    status: "unavailable"
-  }
-];
-
-const issuedBooks = [
-  {
-    id: "I001",
-    bookTitle: "Introduction to Islamic Studies",
-    studentName: "Ahmad Ali",
-    studentId: "S001",
-    class: "Grade 10-A",
-    issueDate: "2024-02-15",
-    dueDate: "2024-03-15",
-    status: "active",
-    fine: 0
-  },
-  {
-    id: "I002", 
-    bookTitle: "Advanced Mathematics Grade 12",
-    studentName: "Hassan Khan",
-    studentId: "S002",
-    class: "Grade 12-B",
-    issueDate: "2024-01-20",
-    dueDate: "2024-02-20",
-    status: "overdue",
-    fine: 50
-  }
-];
-
-const members = [
-  {
-    id: "M001",
-    name: "Ahmad Ali",
-    type: "Student",
-    class: "Grade 10-A",
-    membershipDate: "2024-01-15",
-    booksIssued: 2,
-    maxAllowed: 3,
-    fine: 0,
-    status: "active"
-  },
-  {
-    id: "M002",
-    name: "Dr. Fatima Sheikh", 
-    type: "Staff",
-    department: "Islamic Studies",
-    membershipDate: "2023-08-01",
-    booksIssued: 5,
-    maxAllowed: 10,
-    fine: 0,
-    status: "active"
-  }
-];
 
 export default function LibraryPage() {
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+
+  const { data: libraryBooks = [] } = useLibraryBooks();
+  const { data: libraryTransactions = [] } = useLibraryTransactions();
+  const { mutate: createLibraryBook } = useCreateLibraryBook();
+  const { mutate: issueBook } = useIssueBook();
+  const { mutate: returnBook } = useReturnBook();
+
+  const books: Book[] = libraryBooks.map((b) => ({
+    id: b.id,
+    title: b.title,
+    author: b.author,
+    isbn: b.isbn || "",
+    category: b.category || "",
+    language: "",
+    publisher: b.publisher || "",
+    publishYear: b.publication_year || 0,
+    copies: b.total_copies,
+    available: b.available_copies,
+    issued: b.total_copies - b.available_copies,
+    rack: b.location || "",
+    status: b.available_copies > 0 ? "available" : "unavailable",
+  }));
+
+  const issuedBooks = libraryTransactions.map((tx) => ({
+    id: tx.id,
+    bookTitle: tx.book?.title || "",
+    studentName: tx.student?.profiles?.full_name || "",
+    studentId: tx.student_id,
+    class: "",
+    issueDate: tx.issue_date,
+    dueDate: tx.due_date,
+    status: tx.status,
+    fine: tx.fine_amount || 0,
+  }));
+
+  const memberMap = new Map<string, any>();
+  libraryTransactions.forEach((tx) => {
+    const sid = tx.student_id;
+    const name = tx.student?.profiles?.full_name || "";
+    const existing = memberMap.get(sid) || {
+      id: sid,
+      name,
+      type: "Student",
+      class: "",
+      department: "",
+      membershipDate: tx.issue_date,
+      booksIssued: 0,
+      maxAllowed: 0,
+      fine: 0,
+      status: "inactive",
+    };
+    if (tx.status === "active") {
+      existing.booksIssued += 1;
+      existing.status = "active";
+    }
+    existing.fine += tx.fine_amount || 0;
+    if (new Date(tx.issue_date) < new Date(existing.membershipDate)) {
+      existing.membershipDate = tx.issue_date;
+    }
+    memberMap.set(sid, existing);
+  });
+  const members = Array.from(memberMap.values());
+
+  const libraryStats = {
+    totalBooks: books.reduce((sum, b) => sum + b.copies, 0),
+    availableBooks: books.reduce((sum, b) => sum + b.available, 0),
+    issuedBooks: libraryTransactions.filter((tx) => ["active", "overdue"].includes(tx.status)).length,
+    overdue: libraryTransactions.filter((tx) => tx.status === "overdue").length,
+    totalMembers: members.length,
+    activeMembers: members.filter((m) => m.status === "active").length,
+  };
 
   const getBookStatusBadge = (status: string) => {
     switch (status) {
@@ -315,7 +274,17 @@ export default function LibraryPage() {
                   <SelectItem value="literature">Literature</SelectItem>
                 </SelectContent>
               </Select>
-              <Button>
+              <Button
+                onClick={() =>
+                  createLibraryBook({
+                    title: "New Book",
+                    author: "Unknown",
+                    total_copies: 1,
+                    available_copies: 1,
+                    branch_id: "",
+                  } as any)
+                }
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Book
               </Button>
@@ -425,7 +394,20 @@ export default function LibraryPage() {
                                     </div>
                                     
                                     <div className="flex gap-2 pt-4">
-                                      <Button>Issue Book</Button>
+                                      <Button
+                                        onClick={() =>
+                                          issueBook({
+                                            book_id: selectedBook?.id || "",
+                                            student_id: "",
+                                            issue_date: new Date().toISOString(),
+                                            due_date: new Date().toISOString(),
+                                            status: "active",
+                                            issued_by: "",
+                                          } as any)
+                                        }
+                                      >
+                                        Issue Book
+                                      </Button>
                                       <Button variant="outline">Edit Details</Button>
                                       <Button variant="outline">View History</Button>
                                     </div>
@@ -458,7 +440,18 @@ export default function LibraryPage() {
                   />
                 </div>
               </div>
-              <Button>
+              <Button
+                onClick={() =>
+                  issueBook({
+                    book_id: "",
+                    student_id: "",
+                    issue_date: new Date().toISOString(),
+                    due_date: new Date().toISOString(),
+                    status: "active",
+                    issued_by: "",
+                  } as any)
+                }
+              >
                 <BookMarked className="h-4 w-4 mr-2" />
                 Issue Book
               </Button>
@@ -503,7 +496,17 @@ export default function LibraryPage() {
                         <TableCell>{getIssueStatusBadge(issue.status)}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                returnBook({
+                                  id: issue.id,
+                                  status: "returned",
+                                  return_date: new Date().toISOString(),
+                                })
+                              }
+                            >
                               Return
                             </Button>
                             <Button variant="outline" size="sm">

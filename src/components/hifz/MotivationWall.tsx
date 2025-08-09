@@ -1,23 +1,51 @@
+import { useEffect } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Trophy, Star, Target, Calendar, Award, Flame, BookOpen, CheckCircle } from 'lucide-react';
+import { Trophy, Star, Target, Award, Flame, BookOpen, CheckCircle } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export function MotivationWall() {
   const { t, isRTL } = useLanguage();
+  const queryClient = useQueryClient();
 
-  const achievements = [
-    { id: 1, title: 'First Surah Complete', icon: Trophy, earned: true, date: '2024-01-10' },
-    { id: 2, title: '7-Day Streak', icon: Flame, earned: true, date: '2024-01-15' },
-    { id: 3, title: '100 Ayahs Memorized', icon: BookOpen, earned: true, date: '2024-01-20' },
-    { id: 4, title: 'Perfect Week', icon: Star, earned: false, progress: 85 },
-    { id: 5, title: 'Tajwid Master', icon: Award, earned: false, progress: 60 }
-  ];
+  const iconMap = { trophy: Trophy, star: Star, target: Target, award: Award, flame: Flame, book: BookOpen } as Record<string, any>;
 
-  const currentStreak = 12;
-  const totalAyahs = 245;
-  const monthlyGoal = 300;
+  const { data: achievements = [] } = useQuery({
+    queryKey: ['hifz-achievements'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('hifz_achievements').select('*');
+      if (error) throw error;
+      return (data || []).map((a: any) => ({ ...a, icon: iconMap[a.icon] || Trophy }));
+    }
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ['hifz-stats'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_hifz_stats');
+      if (error) throw error;
+      return data as { currentStreak: number; totalAyahs: number; monthlyGoal: number };
+    }
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('hifz_achievements')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hifz_achievements' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['hifz-achievements'] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  const currentStreak = stats?.currentStreak || 0;
+  const totalAyahs = stats?.totalAyahs || 0;
+  const monthlyGoal = stats?.monthlyGoal || 0;
 
   return (
     <div className="space-y-6">

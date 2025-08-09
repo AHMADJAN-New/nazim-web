@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 
 export interface DashboardStats {
   totalStudents: number;
@@ -40,6 +41,7 @@ export const useDashboardStats = () => {
         attendanceData,
         feeData,
         donationData,
+
         roomsCount,
         allocationsCount
       ] = await Promise.all([
@@ -85,6 +87,7 @@ export const useDashboardStats = () => {
       const feeCollectionAmount = feeData.data?.reduce((sum, fee) => sum + Number(fee.amount), 0) || 0;
       const donationsAmount = donationData.data?.reduce((sum, donation) => sum + Number(donation.amount), 0) || 0;
 
+
       const totalRooms = roomsCount.count || 0;
       const occupiedRooms = allocationsCount.count || 0;
       const hostelOccupancyPercentage = totalRooms > 0 ? (occupiedRooms / totalRooms) * 100 : 0;
@@ -115,6 +118,23 @@ export const useDashboardStats = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('dashboard-stats')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fees' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'donations' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hostel_rooms' }, () => query.refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hostel_allocations' }, () => query.refetch())
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [query.refetch]);
 };
 
 export const useStudentsByClass = () => {
