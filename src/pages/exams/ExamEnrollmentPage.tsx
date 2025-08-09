@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useStudents } from "@/hooks/useStudents";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,53 +20,58 @@ interface ExamEnrollment {
   examName: string;
   enrolledSubjects: string[];
   rollNumber: string;
-  status: 'enrolled' | 'pending' | 'cancelled';
+  status: "enrolled" | "pending" | "cancelled";
 }
-
-const mockEnrollments: ExamEnrollment[] = [
-  {
-    id: "1",
-    studentName: "Ahmed Hassan",
-    studentId: "STU001",
-    class: "Class 10-A",
-    examName: "Mid Term Exam",
-    enrolledSubjects: ["Mathematics", "Physics", "Chemistry", "English"],
-    rollNumber: "MT001",
-    status: "enrolled"
-  },
-  {
-    id: "2",
-    studentName: "Fatima Ali",
-    studentId: "STU002",
-    class: "Class 10-A", 
-    examName: "Mid Term Exam",
-    enrolledSubjects: ["Mathematics", "Biology", "Chemistry", "English"],
-    rollNumber: "MT002",
-    status: "enrolled"
-  }
-];
 
 export default function ExamEnrollmentPage() {
   const { toast } = useToast();
-  const [enrollments, setEnrollments] = useState<ExamEnrollment[]>(mockEnrollments);
+  const queryClient = useQueryClient();
   const [selectedExam, setSelectedExam] = useState<string>("mid-term");
   const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<string>("");
+
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ["exam-enrollments", selectedExam],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("exam_enrollments")
+        .select("*")
+        .eq("exam_id", selectedExam);
+      if (error) throw error;
+      return data as any as ExamEnrollment[];
+    },
+  });
+
+  const enrollMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("exam_enrollments")
+        .insert({ exam_id: selectedExam, student_id: selectedStudent });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["exam-enrollments", selectedExam] });
+      toast({
+        title: "Student Enrolled",
+        description: "Student has been successfully enrolled in the exam.",
+      });
+    },
+  });
+
+  const { data: students = [] } = useStudents();
 
   const handleEnrollStudent = () => {
-    toast({
-      title: "Student Enrolled",
-      description: "Student has been successfully enrolled in the exam."
-    });
+    enrollMutation.mutate();
     setIsEnrollDialogOpen(false);
   };
 
   return (
-    <MainLayout 
+    <MainLayout
       title="Exam Enrollment"
       showBreadcrumb={true}
       breadcrumbItems={[
         { label: "Examinations", href: "/exams" },
-        { label: "Student Enrollment" }
+        { label: "Student Enrollment" },
       ]}
     >
       <div className="space-y-6">
@@ -97,7 +105,7 @@ export default function ExamEnrollmentPage() {
               <div className="text-2xl font-bold">{enrollments.length}</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Enrollments</CardTitle>
@@ -105,11 +113,11 @@ export default function ExamEnrollmentPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {enrollments.filter(e => e.status === 'pending').length}
+                {enrollments.filter((e) => e.status === "pending").length}
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Subjects Enrolled</CardTitle>
@@ -117,7 +125,9 @@ export default function ExamEnrollmentPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {Array.from(new Set(enrollments.flatMap(e => e.enrolledSubjects))).length}
+                {Array.from(
+                  new Set(enrollments.flatMap((e) => e.enrolledSubjects))
+                ).length}
               </div>
             </CardContent>
           </Card>
@@ -144,14 +154,18 @@ export default function ExamEnrollmentPage() {
                     <TableCell>
                       <div>
                         <div className="font-medium">{enrollment.studentName}</div>
-                        <div className="text-sm text-muted-foreground">{enrollment.studentId}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {enrollment.studentId}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>{enrollment.class}</TableCell>
-                    <TableCell className="font-mono">{enrollment.rollNumber}</TableCell>
+                    <TableCell className="font-mono">
+                      {enrollment.rollNumber}
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {enrollment.enrolledSubjects.map(subject => (
+                        {enrollment.enrolledSubjects.map((subject) => (
                           <Badge key={subject} variant="secondary" className="text-xs">
                             {subject}
                           </Badge>
@@ -159,7 +173,11 @@ export default function ExamEnrollmentPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={enrollment.status === 'enrolled' ? 'default' : 'secondary'}>
+                      <Badge
+                        variant={
+                          enrollment.status === "enrolled" ? "default" : "secondary"
+                        }
+                      >
                         {enrollment.status}
                       </Badge>
                     </TableCell>
@@ -176,13 +194,16 @@ export default function ExamEnrollmentPage() {
               <DialogTitle>Enroll Student in Exam</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <Select>
+              <Select value={selectedStudent} onValueChange={setSelectedStudent}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select student" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="stu1">Ahmed Hassan (STU001)</SelectItem>
-                  <SelectItem value="stu2">Fatima Ali (STU002)</SelectItem>
+                  {students.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.profiles?.full_name} ({s.student_id})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -195,3 +216,4 @@ export default function ExamEnrollmentPage() {
     </MainLayout>
   );
 }
+
