@@ -1,10 +1,20 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,33 +33,53 @@ export default function StaffPage() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [showNewStaffDialog, setShowNewStaffDialog] = useState(false);
   const { toast } = useToast();
-  const [newStaff, setNewStaff] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    role: "",
-    department: "",
-    salary: "",
-    qualification: "",
-    address: "",
-  });
   const createStaffMutation = useCreateStaff();
   const queryClient = useQueryClient();
+
+  const staffSchema = z.object({
+    fullName: z.string().min(1, "Full name is required"),
+    email: z.string().email("Invalid email"),
+    phone: z.string().min(1, "Phone is required"),
+    role: z.string().min(1, "Role is required"),
+    department: z.string().optional(),
+    salary: z
+      .coerce.number()
+      .min(0, "Salary must be at least 0")
+      .max(1000000, "Salary must be less than 1,000,000")
+      .optional(),
+    qualification: z.string().optional(),
+    address: z.string().optional(),
+  });
+
+  type StaffFormValues = z.infer<typeof staffSchema>;
+
+  const form = useForm<StaffFormValues>({
+    resolver: zodResolver(staffSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      phone: "",
+      role: "",
+      department: "",
+      salary: undefined,
+      qualification: "",
+      address: "",
+    },
+  });
 
   const handleDeleteStaff = (id: string) => {
     deleteStaffMutation.mutate(id);
   };
 
-  const handleAddStaff = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSubmit = (data: StaffFormValues) => {
     const staffData = {
       user_id: "",
       employee_id: "",
       branch_id: "",
-      department: newStaff.department,
-      designation: newStaff.role,
-      qualification: newStaff.qualification,
-      salary: newStaff.salary ? Number(newStaff.salary) : undefined,
+      department: data.department,
+      designation: data.role,
+      qualification: data.qualification,
+      salary: data.salary,
     };
 
     createStaffMutation.mutate(staffData, {
@@ -57,16 +87,7 @@ export default function StaffPage() {
         toast({ title: "Staff member added successfully" });
         queryClient.invalidateQueries({ queryKey: ["staff"] });
         setShowNewStaffDialog(false);
-        setNewStaff({
-          fullName: "",
-          email: "",
-          phone: "",
-          role: "",
-          department: "",
-          salary: "",
-          qualification: "",
-          address: "",
-        });
+        form.reset();
       },
       onError: (error: Error) => {
         toast({
@@ -166,104 +187,158 @@ export default function StaffPage() {
                   Enter the details for the new staff member
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleAddStaff} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="staff-name">Full Name *</Label>
-                  <Input
-                    id="staff-name"
-                    placeholder="Enter full name"
-                    value={newStaff.fullName}
-                    onChange={(e) => setNewStaff({ ...newStaff, fullName: e.target.value })}
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel htmlFor="staff-name">Full Name *</FormLabel>
+                        <FormControl>
+                          <Input id="staff-name" placeholder="Enter full name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="staff-email">Email *</Label>
-                  <Input
-                    id="staff-email"
-                    type="email"
-                    placeholder="Enter email"
-                    value={newStaff.email}
-                    onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel htmlFor="staff-email">Email *</FormLabel>
+                        <FormControl>
+                          <Input id="staff-email" type="email" placeholder="Enter email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="staff-phone">Phone *</Label>
-                  <Input
-                    id="staff-phone"
-                    placeholder="+92-300-0000000"
-                    value={newStaff.phone}
-                    onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel htmlFor="staff-phone">Phone *</FormLabel>
+                        <FormControl>
+                          <Input id="staff-phone" placeholder="+92-300-0000000" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="staff-role">Role *</Label>
-                  <Select
-                    value={newStaff.role}
-                    onValueChange={(value) => setNewStaff({ ...newStaff, role: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                      <SelectItem value="admin">Administrator</SelectItem>
-                      <SelectItem value="accountant">Accountant</SelectItem>
-                      <SelectItem value="librarian">Librarian</SelectItem>
-                      <SelectItem value="security">Security</SelectItem>
-                      <SelectItem value="support">Support Staff</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="staff-department">Department</Label>
-                  <Input
-                    id="staff-department"
-                    placeholder="Enter department"
-                    value={newStaff.department}
-                    onChange={(e) => setNewStaff({ ...newStaff, department: e.target.value })}
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel htmlFor="staff-role">Role *</FormLabel>
+                        <FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="teacher">Teacher</SelectItem>
+                              <SelectItem value="admin">Administrator</SelectItem>
+                              <SelectItem value="accountant">Accountant</SelectItem>
+                              <SelectItem value="librarian">Librarian</SelectItem>
+                              <SelectItem value="security">Security</SelectItem>
+                              <SelectItem value="support">Support Staff</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="staff-salary">Salary (PKR)</Label>
-                  <Input
-                    id="staff-salary"
-                    type="number"
-                    placeholder="45000"
-                    value={newStaff.salary}
-                    onChange={(e) => setNewStaff({ ...newStaff, salary: e.target.value })}
+                  <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel htmlFor="staff-department">Department</FormLabel>
+                        <FormControl>
+                          <Input id="staff-department" placeholder="Enter department" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="staff-qualification">Qualification</Label>
-                  <Input
-                    id="staff-qualification"
-                    placeholder="e.g., M.Sc Mathematics"
-                    value={newStaff.qualification}
-                    onChange={(e) => setNewStaff({ ...newStaff, qualification: e.target.value })}
+                  <FormField
+                    control={form.control}
+                    name="salary"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel htmlFor="staff-salary">Salary (PKR)</FormLabel>
+                        <FormControl>
+                          <Input
+                            id="staff-salary"
+                            type="number"
+                            placeholder="45000"
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="staff-address">Address</Label>
-                  <Textarea
-                    id="staff-address"
-                    placeholder="Enter complete address"
-                    value={newStaff.address}
-                    onChange={(e) => setNewStaff({ ...newStaff, address: e.target.value })}
+                  <FormField
+                    control={form.control}
+                    name="qualification"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel htmlFor="staff-qualification">Qualification</FormLabel>
+                        <FormControl>
+                          <Input
+                            id="staff-qualification"
+                            placeholder="e.g., M.Sc Mathematics"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="flex gap-2 pt-4 md:col-span-2">
-                  <Button type="submit" className="flex-1" disabled={createStaffMutation.isPending}>
-                    Add Staff Member
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowNewStaffDialog(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel htmlFor="staff-address">Address</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            id="staff-address"
+                            placeholder="Enter complete address"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex gap-2 pt-4 md:col-span-2">
+                    <Button type="submit" className="flex-1" disabled={createStaffMutation.isPending}>
+                      Add Staff Member
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowNewStaffDialog(false);
+                        form.reset();
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>
