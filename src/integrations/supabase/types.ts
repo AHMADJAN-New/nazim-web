@@ -660,42 +660,6 @@ export type Database = {
           },
         ]
       }
-      contact_messages: {
-        Row: {
-          id: string
-          first_name: string
-          last_name: string
-          email: string
-          phone: string | null
-          school_name: string
-          student_count: number | null
-          message: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          first_name: string
-          last_name: string
-          email: string
-          phone?: string | null
-          school_name: string
-          student_count?: number | null
-          message: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          first_name?: string
-          last_name?: string
-          email?: string
-          phone?: string | null
-          school_name?: string
-          student_count?: number | null
-          message?: string
-          created_at?: string
-        }
-        Relationships: []
-      }
       donations: {
         Row: {
           amount: number
