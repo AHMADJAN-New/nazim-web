@@ -21,22 +21,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initializeAuth = async () => {
       try {
-        // Set up auth state listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            if (!mounted) return;
-            
-            setSession(session);
-            setUser(session?.user ?? null);
-          }
-        );
-
-        // Check for existing session
+        // Check for existing session first
         const { data: { session } } = await supabase.auth.getSession();
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
         }
+
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (!mounted) return;
+            
+            console.log('Auth state change:', event, session?.user?.email);
+            
+            setSession(session);
+            setUser(session?.user ?? null);
+            
+            // Log successful authentication events
+            if (event === 'SIGNED_IN' && session?.user) {
+              try {
+                await supabase.rpc('log_auth_event', {
+                  event_type: 'user_signin_success',
+                  event_data: { user_id: session.user.id, email: session.user.email },
+                  error_message: null,
+                  user_email: session.user.email
+                });
+              } catch (logError) {
+                console.warn('Failed to log auth event:', logError);
+              }
+            }
+          }
+        );
 
         if (mounted) {
           setLoading(false);

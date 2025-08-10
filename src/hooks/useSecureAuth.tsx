@@ -15,6 +15,8 @@ export const useSecureAuth = () => {
   const secureSignIn = async (email: string, password: string) => {
     setLoading(true);
     try {
+      console.log('Secure sign in attempt for:', email);
+      
       // Attempt sign in
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -22,6 +24,8 @@ export const useSecureAuth = () => {
       });
 
       if (error) {
+        console.error('Supabase auth error:', error);
+        
         // Handle failed login attempt
         try {
           const { data: failureData } = await supabase.rpc('handle_failed_login', {
@@ -34,7 +38,7 @@ export const useSecureAuth = () => {
             toast.error(`Invalid credentials. ${failureData.remaining} attempts remaining.`);
           }
         } catch (failureError) {
-          // Silently handle failure to avoid blocking auth
+          console.warn('Failed to handle login failure:', failureError);
         }
 
         // Log authentication event
@@ -46,7 +50,7 @@ export const useSecureAuth = () => {
             }
           });
         } catch (logError) {
-          // Silently handle logging failure
+          console.warn('Failed to log password event:', logError);
         }
 
         return { error };
@@ -54,6 +58,8 @@ export const useSecureAuth = () => {
 
       // Log successful login
       if (data.user) {
+        console.log('Login successful for:', data.user.email);
+        
         try {
           await supabase.functions.invoke('log-password-event', {
             body: {
@@ -62,12 +68,13 @@ export const useSecureAuth = () => {
             }
           });
         } catch (logError) {
-          // Silently handle logging failure
+          console.warn('Failed to log password event:', logError);
         }
       }
 
       return { data, error: null };
     } catch (error: any) {
+      console.error('Unexpected error during sign in:', error);
       return { error };
     } finally {
       setLoading(false);

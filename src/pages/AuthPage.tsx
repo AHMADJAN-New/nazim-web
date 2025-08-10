@@ -62,9 +62,12 @@ export default function AuthPage() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Attempting sign in for:', formData.email);
+    
     const { data, error } = await secureSignIn(formData.email, formData.password);
     
     if (error) {
+      console.error('Sign in error:', error);
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Invalid email or password. Please check your credentials and try again.');
       } else if (error.message !== 'Account locked') {
@@ -74,6 +77,7 @@ export default function AuthPage() {
     }
     
     if (data) {
+      console.log('Sign in successful:', data.user?.email);
       toast.success('Logged in successfully!');
       navigate('/redirect');
     }

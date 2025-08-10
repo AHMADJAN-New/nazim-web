@@ -82,36 +82,21 @@ export function DemoAccountsTab() {
   const handleDemoLogin = async (account: DemoAccount) => {
     setLoggingIn(account.id);
     try {
-      // In development mode, completely bypass authentication
-      if (import.meta.env.DEV) {
-        // Store development mode user data
-        const devUserData = {
-          id: account.id,
-          email: account.email,
-          role: account.role,
-          full_name: account.full_name
-        };
-
-        localStorage.setItem('dev_mode_user', JSON.stringify(devUserData));
-
-        // Force a page reload to reinitialize auth state
-        toast.success(`Logging in as ${account.full_name} (${account.role})`);
-        
-        // Small delay to show the toast
-        setTimeout(() => {
-          window.location.href = '/redirect';
-        }, 500);
-        
-        return;
-      }
-
-      // Fallback for production (shouldn't happen)
+      // Use actual Supabase authentication for demo accounts
       const { error } = await supabase.auth.signInWithPassword({
         email: account.email,
         password: 'admin123',
       });
 
       if (error) {
+        console.error('Demo login error:', error);
+        
+        // If login fails, try to update the demo account password first
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error(`Demo account may need password reset. Please contact administrator.`);
+        } else {
+          toast.error(`Login failed: ${error.message}`);
+        }
         throw error;
       }
 
@@ -119,7 +104,7 @@ export function DemoAccountsTab() {
       navigate('/redirect');
     } catch (error: any) {
       console.error('Demo login error:', error);
-      toast.error(`Failed to login as ${account.full_name}: ${error.message}`);
+      toast.error(`Failed to login as ${account.full_name}. Please try again or contact support.`);
     } finally {
       setLoggingIn(null);
     }
