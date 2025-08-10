@@ -22,8 +22,9 @@ export function DemoAccountTester() {
   }, []);
 
   const fetchDemoAccounts = async () => {
+    // @ts-ignore - demo_accounts table not in generated types
     const { data, error } = await supabase
-      .from('demo_accounts')
+      .from('demo_accounts' as any)
       .select('id, email, role')
       .order('role', { ascending: true });
 
@@ -31,7 +32,7 @@ export function DemoAccountTester() {
       console.error('Error fetching demo accounts:', error);
       toast.error('Failed to load demo accounts');
     } else {
-      setDemoAccounts(data || []);
+      setDemoAccounts((data as any) || []);
     }
   };
 

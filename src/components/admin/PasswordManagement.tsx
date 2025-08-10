@@ -38,8 +38,9 @@ export function PasswordManagement() {
   }, []);
 
   const fetchDemoAccounts = async () => {
+    // @ts-ignore - demo_accounts table not in generated types
     const { data, error } = await supabase
-      .from('demo_accounts')
+      .from('demo_accounts' as any)
       .select('*')
       .order('role', { ascending: true });
 
@@ -47,7 +48,7 @@ export function PasswordManagement() {
       console.error('Error fetching demo accounts:', error);
       toast.error('Failed to load demo accounts');
     } else {
-      setDemoAccounts(data || []);
+      setDemoAccounts((data as any) || []);
     }
   };
 
@@ -76,7 +77,7 @@ export function PasswordManagement() {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from('demo_accounts').insert(newAccount);
+    const { error } = await supabase.from('demo_accounts' as any).insert(newAccount as any);
     if (error) {
       console.error('Error adding demo account:', error);
       toast.error('Failed to add demo account');
@@ -89,7 +90,7 @@ export function PasswordManagement() {
   };
 
   const removeDemoAccount = async (id: string) => {
-    const { error } = await supabase.from('demo_accounts').delete().eq('id', id);
+    const { error } = await supabase.from('demo_accounts' as any).delete().eq('id', id);
     if (error) {
       console.error('Error removing demo account:', error);
       toast.error('Failed to remove demo account');

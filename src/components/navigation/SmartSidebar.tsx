@@ -286,7 +286,7 @@ export function SmartSidebar() {
       const mappedTasks = filteredTasks.map(task => ({
         title: task.title,
         url: task.url,
-        icon: (LucideIcons as Record<string, LucideIcon>)[task.icon] || FileText,
+        icon: (LucideIcons as unknown as Record<string, LucideIcon>)[task.icon] || FileText,
         timestamp: task.timestamp
       }));
 
