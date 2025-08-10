@@ -59,7 +59,7 @@ export const useUpcomingEvents = () => {
       exams?.forEach(exam => {
         eventList.push({
           id: `exam-${exam.id}`,
-          title: `${exam.subjects?.name} Exam`,
+          title: `${(Array.isArray(exam.subjects) ? exam.subjects[0]?.name : exam.subjects?.name) || exam.name} Exam`,
           date: exam.exam_date,
           time: '10:00 AM', // Default exam time
           type: 'exam',

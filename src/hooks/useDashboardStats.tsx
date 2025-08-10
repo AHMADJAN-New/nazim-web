@@ -26,7 +26,7 @@ export interface DashboardStats {
 }
 
 export const useDashboardStats = () => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async (): Promise<DashboardStats> => {
       const today = new Date().toISOString().split('T')[0];
@@ -41,7 +41,6 @@ export const useDashboardStats = () => {
         attendanceData,
         feeData,
         donationData,
-
         roomsCount,
         allocationsCount
       ] = await Promise.all([
@@ -86,7 +85,6 @@ export const useDashboardStats = () => {
 
       const feeCollectionAmount = feeData.data?.reduce((sum, fee) => sum + Number(fee.amount), 0) || 0;
       const donationsAmount = donationData.data?.reduce((sum, donation) => sum + Number(donation.amount), 0) || 0;
-
 
       const totalRooms = roomsCount.count || 0;
       const occupiedRooms = allocationsCount.count || 0;
@@ -135,6 +133,8 @@ export const useDashboardStats = () => {
       channel.unsubscribe();
     };
   }, [query.refetch]);
+
+  return query;
 };
 
 export const useStudentsByClass = () => {
@@ -152,7 +152,8 @@ export const useStudentsByClass = () => {
 
       // Group by class efficiently
       const classGroups = data?.reduce((acc, student) => {
-        const className = student.classes?.name || 'Unknown';
+      const classRel = Array.isArray(student.classes) ? student.classes[0] : student.classes;
+      const className = classRel?.name || 'Unknown';
         if (!acc[className]) {
           acc[className] = { class: className, students: 0 };
         }
@@ -259,11 +260,14 @@ export const useUpcomingExams = () => {
         .order('exam_date', { ascending: true })
         .limit(4);
 
-      return data?.map(exam => ({
-        subject: exam.subjects?.name || exam.name,
-        date: exam.exam_date,
-        enrolled: 0 // Would need student-exam enrollment table
-      })) || [];
+      return data?.map((exam: any) => {
+        const subjName = (Array.isArray(exam.subjects) ? exam.subjects[0]?.name : exam.subjects?.name) || exam.name;
+        return {
+          subject: subjName,
+          date: exam.exam_date,
+          enrolled: 0 // Would need student-exam enrollment table
+        };
+      }) || [];
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
     gcTime: 60 * 60 * 1000, // 1 hour

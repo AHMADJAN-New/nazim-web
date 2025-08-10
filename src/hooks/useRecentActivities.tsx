@@ -35,11 +35,13 @@ export const useRecentActivities = () => {
 
       // Add student admissions to activities
       recentStudents?.forEach(student => {
+        const profile = Array.isArray(student.profiles) ? student.profiles[0] : student.profiles;
+        const cls = Array.isArray(student.classes) ? student.classes[0] : student.classes;
         const timeAgo = getTimeAgo(new Date(student.created_at));
         activities.push({
           id: `student-${student.id}`,
           title: 'New student admission',
-          description: `${student.profiles?.full_name} has been admitted to ${student.classes?.name}`,
+          description: `${profile?.full_name} has been admitted to ${cls?.name}`,
           time: timeAgo,
           type: 'admission',
           icon: Users
@@ -65,11 +67,13 @@ export const useRecentActivities = () => {
 
       // Add fee payments to activities
       recentPayments?.forEach(payment => {
+        const pProfile = Array.isArray(payment.students?.profiles) ? payment.students?.profiles[0] : payment.students?.profiles;
+        const pClass = Array.isArray(payment.students?.classes) ? payment.students?.classes[0] : payment.students?.classes;
         const timeAgo = getTimeAgo(new Date(payment.paid_date));
         activities.push({
           id: `payment-${payment.id}`,
           title: 'Fee payment received',
-          description: `₹${Number(payment.amount).toLocaleString()} received from ${payment.students?.profiles?.full_name} (${payment.students?.classes?.name})`,
+          description: `₹${Number(payment.amount).toLocaleString()} received from ${pProfile?.full_name} (${pClass?.name})`,
           time: timeAgo,
           type: 'payment',
           icon: CreditCard

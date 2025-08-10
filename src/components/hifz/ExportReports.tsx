@@ -320,7 +320,7 @@ export function ExportReports() {
 
           {/* Export Actions */}
           <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <Button onClick={() => handleExport()} className="flex-1">
+            <Button onClick={() => handleExport(undefined)} className="flex-1">
               <Download className="h-4 w-4 mr-2" />
               {t('Generate Custom Report')}
             </Button>

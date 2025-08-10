@@ -132,7 +132,11 @@ export default function ReportsPage() {
       type: 'Standard',
       created_by: 'system',
       access_level: 'Staff',
-      query_template: 'SELECT 1'
+      query_template: 'SELECT 1',
+      description: '',
+      format_options: [],
+      is_active: true,
+      parameters: []
     });
   };
 
@@ -158,7 +162,8 @@ export default function ReportsPage() {
       is_public: false,
       parameters: null,
       file_size: 0,
-      expires_at: null
+      expires_at: null,
+      file_path: ''
     });
   };
 

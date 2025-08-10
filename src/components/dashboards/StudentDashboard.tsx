@@ -126,11 +126,11 @@ export function StudentDashboard() {
         setProfileError(error.message);
       } else if (data) {
         setStudentId(data.id);
+        const profile = Array.isArray(data.profiles) ? data.profiles[0] : data.profiles;
+        const cls = Array.isArray(data.classes) ? data.classes[0] : data.classes;
         setStudentInfo({
-          name: data.profiles?.full_name || "",
-          class: `${data.classes?.name || ""}${
-            data.classes?.section ? `-${data.classes.section}` : ""
-          }`,
+          name: profile?.full_name || "",
+          class: `${cls?.name || ""}${cls?.section ? `-${cls.section}` : ""}`,
           rollNumber: data.student_id,
         });
       }

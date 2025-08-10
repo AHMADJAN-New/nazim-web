@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, BookOpen, Calendar, Download, Search, Filter, Eye, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface StudentEnrollment {
   id: string;

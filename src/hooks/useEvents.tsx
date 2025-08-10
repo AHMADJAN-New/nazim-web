@@ -38,7 +38,7 @@ const mapFromDb = (e: any): SchoolEvent => ({
   notificationSent: e.notification_sent,
 });
 
-const mapToDb = (e: Partial<SchoolEvent>) => ({
+const mapToDb = (e: any) => ({
   title: e.title,
   description: e.description,
   event_date: e.date,

@@ -73,7 +73,7 @@ export default function ExamSetupPage() {
   const classes = ["Grade 1A", "Grade 2A", "Grade 3A", "Grade 4A", "Grade 5A", "Grade 6A"];
 
   const createMutation = useMutation({
-    mutationFn: async (exam: Omit<Exam, "id">) => {
+    mutationFn: async (exam: Omit<Exam, "id" | "status">) => {
       const { error } = await supabase.from("exams").insert({
         name: exam.name,
         type: exam.type,

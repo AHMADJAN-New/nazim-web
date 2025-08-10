@@ -23,7 +23,7 @@ export default function StudentAssignmentPage() {
   const { toast } = useToast();
   const { data: allocations = [] } = useHostelAllocations();
   const { data: rooms = [] } = useHostelRooms();
-  const { data: students = [] } = useStudents();
+  const { data: students = [] } = useStudents({ page: 1, pageSize: 50 });
   const createAllocation = useCreateHostelAllocation();
   const updateAllocation = useUpdateHostelAllocation();
 

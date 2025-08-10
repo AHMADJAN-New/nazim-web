@@ -45,7 +45,17 @@ export default function StudentTimetablePage() {
         .eq("day_of_week", selectedDay)
         .order("start_time");
 
-      return (data as ScheduleEntry[]) || [];
+      const mapped = (data || []).map((d: any) => ({
+        id: d.id,
+        day_of_week: d.day_of_week,
+        start_time: d.start_time,
+        end_time: d.end_time,
+        subject: d.subject,
+        room: d.room,
+        teacher: Array.isArray(d.teacher) ? { full_name: d.teacher[0]?.full_name || '' } : d.teacher,
+      }));
+
+      return (mapped as ScheduleEntry[]) || [];
     }
   });
 
