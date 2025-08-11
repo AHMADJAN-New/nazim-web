@@ -67,8 +67,9 @@ export const useRecentActivities = () => {
 
       // Add fee payments to activities
       recentPayments?.forEach(payment => {
-        const pProfile = Array.isArray(payment.students?.profiles) ? payment.students?.profiles[0] : payment.students?.profiles;
-        const pClass = Array.isArray(payment.students?.classes) ? payment.students?.classes[0] : payment.students?.classes;
+        const studentRel = Array.isArray((payment as any).students) ? (payment as any).students[0] : (payment as any).students;
+        const pProfile = Array.isArray(studentRel?.profiles) ? studentRel?.profiles[0] : studentRel?.profiles;
+        const pClass = Array.isArray(studentRel?.classes) ? studentRel?.classes[0] : studentRel?.classes;
         const timeAgo = getTimeAgo(new Date(payment.paid_date));
         activities.push({
           id: `payment-${payment.id}`,
@@ -96,10 +97,11 @@ export const useRecentActivities = () => {
       // Add exam activities
       recentExams?.forEach(exam => {
         const timeAgo = getTimeAgo(new Date(exam.created_at));
+        const clsName = Array.isArray((exam as any).classes) ? (exam as any).classes[0]?.name : (exam as any).classes?.name;
         activities.push({
           id: `exam-${exam.id}`,
           title: 'Exam scheduled',
-          description: `${exam.name} scheduled for ${exam.classes?.name}`,
+          description: `${exam.name} scheduled for ${clsName}`,
           time: timeAgo,
           type: 'exam',
           icon: Trophy

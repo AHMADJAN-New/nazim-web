@@ -57,11 +57,13 @@ export const useUpcomingEvents = () => {
 
       // Add exam events
       exams?.forEach(exam => {
+        const subjRel = (exam as any).subjects;
+        const subjectName = Array.isArray(subjRel) ? subjRel[0]?.name : subjRel?.name;
         eventList.push({
           id: `exam-${exam.id}`,
-          title: `${(Array.isArray(exam.subjects) ? exam.subjects[0]?.name : exam.subjects?.name) || exam.name} Exam`,
+          title: `${subjectName || exam.name} Exam`,
           date: exam.exam_date,
-          time: '10:00 AM', // Default exam time
+          time: '10:00 AM',
           type: 'exam',
           status: 'confirmed'
         });

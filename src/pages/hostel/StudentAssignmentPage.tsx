@@ -34,6 +34,7 @@ export default function StudentAssignmentPage() {
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
 
   const assignments = allocations;
+  const studentList = Array.isArray(students) ? students : (students as any)?.students ?? [];
 
   const filteredAssignments = assignments.filter(assignment => {
     const studentName = assignment.student?.profiles?.full_name || "";
@@ -50,7 +51,7 @@ export default function StudentAssignmentPage() {
   const totalCheckouts = assignments.filter(a => a.status === "checkout").length;
   const availableRooms = rooms.filter(r => (r.occupied_count || 0) < r.capacity);
 
-  const unassignedStudents = students.filter(s =>
+  const unassignedStudents = studentList.filter((s: any) =>
     !assignments.some(a => a.student_id === s.student_id && a.status === "active")
   );
 
