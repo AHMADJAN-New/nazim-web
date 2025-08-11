@@ -82,29 +82,33 @@ export function DemoAccountsTab() {
   const handleDemoLogin = async (account: DemoAccount) => {
     setLoggingIn(account.id);
     try {
-      // Use actual Supabase authentication for demo accounts
+      console.log('Attempting demo login for:', account.email);
+      
+      // Use actual Supabase authentication with the standard demo password
       const { error } = await supabase.auth.signInWithPassword({
         email: account.email,
         password: 'admin123',
       });
 
       if (error) {
-        console.error('Demo login error:', error);
+        console.error('Demo login error for', account.email, ':', error);
         
-        // If login fails, try to update the demo account password first
         if (error.message.includes('Invalid login credentials')) {
-          toast.error(`Demo account may need password reset. Please contact administrator.`);
+          toast.error(`Invalid credentials for ${account.email}. The demo account may need to be reset.`);
+        } else if (error.message.includes('Email not confirmed')) {
+          toast.error(`Email not confirmed for ${account.email}. Please check the database setup.`);
         } else {
-          toast.error(`Login failed: ${error.message}`);
+          toast.error(`Login failed for ${account.email}: ${error.message}`);
         }
-        throw error;
+        return;
       }
 
+      console.log('Demo login successful for:', account.email);
       toast.success(`Logged in as ${account.full_name} (${account.role})`);
       navigate('/redirect');
     } catch (error: any) {
       console.error('Demo login error:', error);
-      toast.error(`Failed to login as ${account.full_name}. Please try again or contact support.`);
+      toast.error(`Unexpected error logging in as ${account.full_name}: ${error.message}`);
     } finally {
       setLoggingIn(null);
     }
