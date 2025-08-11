@@ -140,7 +140,13 @@ export const useSecureAuth = () => {
         } catch (logError) {
           console.warn('Failed to log password event:', logError);
         }
-        return { error };
+        // Normalize duplicate email errors to a friendly message
+        const raw = String((error as any)?.message || '');
+        let message = raw || 'Failed to create account';
+        if (/users_email_partial_key|already registered|email.*exists|Database error saving new user/i.test(raw)) {
+          message = 'This email is already registered. Please sign in or reset your password.';
+        }
+        return { error: { message } };
       }
 
       // Log successful registration
