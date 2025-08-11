@@ -52,6 +52,7 @@ function parseCsv(text: string) {
   });
 }
 
+serve(async (req: Request): Promise<Response> => {
   const origin = req.headers.get('origin') || '';
   if (!allowedOrigins.includes(origin)) {
     return new Response('Origin not allowed', { status: 403 });
@@ -64,10 +65,10 @@ function parseCsv(text: string) {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Verify authenticated caller has required role (admin or staff)
+    // Verify authenticated caller has required role (admin/staff/super_admin)
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: req.headers.get('authorization') || '' } },
