@@ -52,7 +52,6 @@ function parseCsv(text: string) {
   });
 }
 
-serve(async (req: Request): Promise<Response> => {
   const origin = req.headers.get('origin') || '';
   if (!allowedOrigins.includes(origin)) {
     return new Response('Origin not allowed', { status: 403 });
@@ -68,12 +67,49 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Verify authenticated caller has required role (admin or staff)
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: req.headers.get('authorization') || '' } },
+    });
+    const { data: authData } = await userClient.auth.getUser();
+    if (!authData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', authData.user.id)
+      .single();
+
+    const allowedRoles = new Set(['super_admin', 'admin', 'staff']);
+    if (!profile || !allowedRoles.has((profile as any).role)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
     if (req.method === 'POST') {
       const formData = await req.formData();
       const file = formData.get('file');
       if (!(file instanceof File)) {
         return new Response(
           JSON.stringify({ error: 'File is required' }),
+          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+
+      // Basic file size guard (5MB)
+      // @ts-ignore - Deno File has size
+      const fileSize = (file as any).size ?? 0;
+      if (fileSize > 5 * 1024 * 1024) {
+        return new Response(
+          JSON.stringify({ error: 'File too large (max 5MB)' }),
           { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
         );
       }
@@ -91,6 +127,16 @@ serve(async (req: Request): Promise<Response> => {
       };
       jobs.set(jobId, job);
 
+      // Audit start
+      await supabase.from('audit_logs').insert({
+        user_id: authData.user.id,
+        action: 'import_students_start',
+        entity_type: 'students',
+        ip_address: req.headers.get('x-forwarded-for'),
+        user_agent: req.headers.get('user-agent'),
+        new_values: { file_name: file.name }
+      } as any);
+
       (async () => {
         let rows: any[] = [];
         try {
@@ -105,6 +151,16 @@ serve(async (req: Request): Promise<Response> => {
         } catch (e) {
           job.status = 'completed';
           job.errors.push('Failed to parse file');
+          jobs.set(jobId, job);
+          return;
+        }
+
+        // Limit rows
+        const MAX_ROWS = 2000;
+        if (rows.length > MAX_ROWS) {
+          job.status = 'completed';
+          job.total = rows.length;
+          job.errors.push(`Too many rows: ${rows.length} (max ${MAX_ROWS})`);
           jobs.set(jobId, job);
           return;
         }
@@ -143,6 +199,16 @@ serve(async (req: Request): Promise<Response> => {
         }
         job.status = 'completed';
         jobs.set(jobId, job);
+
+        // Audit end
+        await supabase.from('audit_logs').insert({
+          user_id: authData.user.id,
+          action: 'import_students_complete',
+          entity_type: 'students',
+          ip_address: req.headers.get('x-forwarded-for'),
+          user_agent: req.headers.get('user-agent'),
+          new_values: { jobId, successful: job.successful, failed: job.failed }
+        } as any);
       })();
 
       return new Response(

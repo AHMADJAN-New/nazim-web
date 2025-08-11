@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           async (event, session) => {
             if (!mounted) return;
             
-            console.log('Auth state change:', event, session?.user?.email);
+            console.log('Auth state change:', event);
             
             setSession(session);
             setUser(session?.user ?? null);

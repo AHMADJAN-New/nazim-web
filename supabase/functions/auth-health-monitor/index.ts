@@ -41,11 +41,11 @@ interface HealthReport {
 
 const handler = async (req: Request): Promise<Response> => {
   const origin = req.headers.get('origin') || '';
-  if (!allowedOrigins.includes(origin)) {
+  if (allowedOrigins.length && !allowedOrigins.includes(origin)) {
     return new Response('Origin not allowed', { status: 403 });
   }
 
-  const corsHeaders = getCorsHeaders(origin);
+  const corsHeaders = getCorsHeaders(origin || '*');
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -54,6 +54,18 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify caller role (admin or super_admin)
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: req.headers.get('authorization') || '' } } });
+    const { data: authData } = await userClient.auth.getUser();
+    if (!authData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', authData.user.id).single();
+    if (!profile || !['super_admin','admin'].includes((profile as any).role)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
 
     console.log('Starting authentication health check...');
 

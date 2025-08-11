@@ -26,7 +26,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth" replace />;
   }
 
-  console.log('User authenticated:', user.email);
+  console.log('User authenticated');
   return <>{children}</>;
 };
 

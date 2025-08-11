@@ -10,5 +10,13 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.generate-id-cards-bulk]
+verify_jwt = true
+
 [functions.import-students]
+verify_jwt = true
+
+[functions.fetch-device-logs]
+verify_jwt = true
+
+[functions.auth-health-monitor]
 verify_jwt = true
