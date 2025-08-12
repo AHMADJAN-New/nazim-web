@@ -85,7 +85,7 @@ export class PerformanceMonitor {
         component: 'Performance',
         metadata: { 
           type: 'LCP',
-          element: lastEntry.element?.tagName,
+          element: (lastEntry as any).element?.tagName,
           good: lastEntry.startTime <= 2500,
         },
       });
@@ -95,11 +95,11 @@ export class PerformanceMonitor {
     const fidObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       entries.forEach((entry) => {
-        logger.performance('FID', entry.processingStart - entry.startTime, {
+        logger.performance('FID', (entry as any).processingStart - (entry as any).startTime, {
           component: 'Performance',
           metadata: { 
             type: 'FID',
-            good: (entry.processingStart - entry.startTime) <= 100,
+            good: ((entry as any).processingStart - (entry as any).startTime) <= 100,
           },
         });
       });
@@ -362,13 +362,13 @@ export function useThrottle<T extends (...args: any[]) => any>(
         throttledCallback.current?.(...args);
         lastRun.current = Date.now();
       } else {
-        clearTimeout(lastRun.current);
-        lastRun.current = setTimeout(() => {
+        window.clearTimeout(lastRun.current as number);
+        lastRun.current = window.setTimeout(() => {
           if (Date.now() - lastRun.current! >= delay) {
             throttledCallback.current?.(...args);
             lastRun.current = Date.now();
           }
-        }, delay - (Date.now() - lastRun.current));
+        }, delay - (Date.now() - lastRun.current)) as unknown as number;
       }
     }) as T,
     [delay]

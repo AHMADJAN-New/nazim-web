@@ -218,7 +218,7 @@ class PWAManager {
         actions: options.actions,
         vibrate: [100, 50, 100],
         requireInteraction: false,
-      });
+      } as any);
 
       logger.info('Notification shown', {
         component: 'PWA',
@@ -268,7 +268,7 @@ class PWAManager {
     }
 
     try {
-      await this.swRegistration.sync.register(tag);
+      await (this.swRegistration as any).sync.register(tag);
       logger.info('Background sync scheduled', {
         component: 'PWA',
         metadata: { tag },

@@ -378,7 +378,7 @@ export function withAccessibility<T extends object>(
             ))}
           </div>
         )}
-        <Component {...props} ref={ref} />
+        <Component {...(props as T)} />
       </div>
     );
   });
