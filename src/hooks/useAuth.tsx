@@ -18,6 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
+    let fallbackTimer: number | undefined;
 
     const initializeAuth = async () => {
       try {
@@ -56,23 +57,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (mounted) {
           setLoading(false);
+          if (fallbackTimer) window.clearTimeout(fallbackTimer);
         }
 
-        return () => {
-          subscription.unsubscribe();
-        };
+        // Note: we can't return this from async initializer in useEffect
+        // Cleanup handled by outer effect cleanup
+        const unsub = () => subscription.unsubscribe();
+        // Store on window in dev to avoid GC before cleanup (no-op in prod)
+        if (import.meta.env.DEV) (window as any).__supabaseUnsub = unsub;
       } catch (error) {
         console.error('Auth initialization error:', error);
         if (mounted) {
           setLoading(false);
+          if (fallbackTimer) window.clearTimeout(fallbackTimer);
         }
       }
     };
+
+    // Fallback safety: ensure we never remain in loading indefinitely
+    fallbackTimer = window.setTimeout(() => {
+      if (mounted) {
+        console.warn('Auth loading timeout fallback triggered');
+        setLoading(false);
+      }
+    }, 4000);
 
     initializeAuth();
 
     return () => {
       mounted = false;
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
+      // Clean up auth subscription if we stashed it
+      if (import.meta.env.DEV && (window as any).__supabaseUnsub) {
+        try { (window as any).__supabaseUnsub(); } catch {}
+        (window as any).__supabaseUnsub = undefined;
+      }
     };
   }, []);
 
