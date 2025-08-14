@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -2468,11 +2468,11 @@ export type Database = {
     }
     Functions: {
       approve_registration: {
-        Args: { registration_id: string; approver_id: string }
+        Args: { approver_id: string; registration_id: string }
         Returns: boolean
       }
       approve_role_change: {
-        Args: { request_id: string; approver_id: string }
+        Args: { approver_id: string; request_id: string }
         Returns: boolean
       }
       cleanup_expired_reset_tokens: {
@@ -2493,19 +2493,19 @@ export type Database = {
       }
       log_auth_event: {
         Args: {
-          event_type: string
-          event_data?: Json
           error_message?: string
+          event_data?: Json
+          event_type: string
           user_email?: string
         }
         Returns: undefined
       }
       reject_registration: {
-        Args: { registration_id: string; approver_id: string; reason: string }
+        Args: { approver_id: string; reason: string; registration_id: string }
         Returns: boolean
       }
       reject_role_change: {
-        Args: { request_id: string; approver_id: string; reason: string }
+        Args: { approver_id: string; reason: string; request_id: string }
         Returns: boolean
       }
       reset_failed_login_attempts: {
