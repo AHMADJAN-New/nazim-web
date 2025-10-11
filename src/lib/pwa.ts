@@ -184,7 +184,7 @@ class PWAManager {
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array(
           process.env.VITE_VAPID_PUBLIC_KEY || ''
-        ) as BufferSource,
+        ).buffer as ArrayBuffer,
       });
 
       logger.info('Push subscription created', {
