@@ -1,38 +1,26 @@
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useCreateStudent } from "@/hooks/useStudents";
-import { useClasses } from "@/hooks/useClasses";
 import { useAdmissions, useUpdateAdmissionStatus, type AdmissionApplication } from "@/hooks/useAdmissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserPlus, Search, Filter, Download, Upload, Eye, Edit, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { UserPlus, Search, Filter, Download, Upload, Eye, CheckCircle, XCircle, Clock, TrendingUp } from "lucide-react";
+import { AdmissionFormWizard } from "@/components/admissions/AdmissionFormWizard";
+import { ApplicationDetailDialog } from "@/components/admissions/ApplicationDetailDialog";
 
 export default function AdmissionsPage() {
   const { data: applications = [], refetch } = useAdmissions();
   const updateStatus = useUpdateAdmissionStatus();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [, setShowNewForm] = useState(false);
-  const [newStudentData, setNewStudentData] = useState({
-    email: '',
-    full_name: '',
-    student_id: '',
-    admission_date: '',
-    class_id: '',
-    guardian_name: '',
-    guardian_phone: '',
-    branch_id: 'branch-1' // Default branch
-  });
-  
-  const createStudent = useCreateStudent();
-  const { data: classes = [] } = useClasses();
+  const [showNewFormDialog, setShowNewFormDialog] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<AdmissionApplication | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   const handleStatusChange = (id: string, newStatus: AdmissionApplication['status']) => {
     updateStatus.mutate({ id, status: newStatus });
@@ -74,6 +62,13 @@ export default function AdmissionsPage() {
     return matchesSearch && matchesStatus;
   });
 
+  const stats = {
+    total: applications.length,
+    pending: applications.filter(a => a.status === 'pending').length,
+    approved: applications.filter(a => a.status === 'approved').length,
+    interview: applications.filter(a => a.status === 'interview').length,
+  };
+
   return (
     <MainLayout 
       title="Admissions Management"
@@ -84,6 +79,54 @@ export default function AdmissionsPage() {
       ]}
     >
       <div className="space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Applications</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Pending Review</p>
+                  <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                </div>
+                <Clock className="w-8 h-8 text-yellow-600" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Approved</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Interviews</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.interview}</p>
+                </div>
+                <Eye className="w-8 h-8 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Header Actions */}
         <div className="flex flex-col md:flex-row gap-4 justify-between">
           <div className="flex flex-col md:flex-row gap-4 flex-1">
@@ -121,19 +164,33 @@ export default function AdmissionsPage() {
               <Download className="w-4 h-4 mr-2" />
               Export
             </Button>
-            <Button onClick={() => setShowNewForm(true)}>
-              <UserPlus className="w-4 h-4 mr-2" />
-              New Application
-            </Button>
+            <Dialog open={showNewFormDialog} onOpenChange={setShowNewFormDialog}>
+              <DialogTrigger asChild>
+                <Button>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  New Application
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>New Admission Application</DialogTitle>
+                </DialogHeader>
+                <AdmissionFormWizard 
+                  onSuccess={() => {
+                    setShowNewFormDialog(false);
+                    refetch();
+                  }}
+                  onCancel={() => setShowNewFormDialog(false)}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="admission-form" className="w-full">
+        <Tabs defaultValue="applications" className="w-full">
           <TabsList>
             <TabsTrigger value="applications">Applications</TabsTrigger>
-            <TabsTrigger value="admission-form">New Student Form</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="applications" className="space-y-4">
@@ -170,15 +227,19 @@ export default function AdmissionsPage() {
                         <TableCell>{getStatusBadge(app.status)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedApplication(app);
+                                setShowDetailDialog(true);
+                              }}
+                            >
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button variant="outline" size="sm">
-                              <Edit className="w-4 h-4" />
-                            </Button>
                             <Select onValueChange={(value) => handleStatusChange(app.id, value as AdmissionApplication['status'])}>
-                              <SelectTrigger className="w-24 h-8">
-                                <SelectValue placeholder="Status" />
+                              <SelectTrigger className="w-32 h-8">
+                                <SelectValue placeholder="Change Status" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="pending">Pending</SelectItem>
@@ -197,172 +258,14 @@ export default function AdmissionsPage() {
               </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="admission-form" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Online Admission Form</CardTitle>
-                <CardDescription>
-                  Create and manage the online admission form for prospective students
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  createStudent.mutate(
-                    {
-                      ...newStudentData,
-                      admission_date: newStudentData.admission_date || new Date().toISOString().split('T')[0],
-                    },
-                    {
-                      onSuccess: () => {
-                        refetch();
-                      },
-                    },
-                  );
-                }}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="student-name">Student Name *</Label>
-                      <Input 
-                        id="student-name" 
-                        placeholder="Enter student name"
-                        value={newStudentData.full_name}
-                        onChange={(e) => setNewStudentData(prev => ({ ...prev, full_name: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="student-id">Student ID *</Label>
-                      <Input 
-                        id="student-id" 
-                        placeholder="Enter student ID"
-                        value={newStudentData.student_id}
-                        onChange={(e) => setNewStudentData(prev => ({ ...prev, student_id: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input 
-                        id="email" 
-                        type="email"
-                        placeholder="student@example.com"
-                        value={newStudentData.email}
-                        onChange={(e) => setNewStudentData(prev => ({ ...prev, email: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="guardian-name">Guardian Name</Label>
-                      <Input 
-                        id="guardian-name" 
-                        placeholder="Enter guardian name"
-                        value={newStudentData.guardian_name}
-                        onChange={(e) => setNewStudentData(prev => ({ ...prev, guardian_name: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="guardian-phone">Guardian Phone</Label>
-                      <Input 
-                        id="guardian-phone" 
-                        placeholder="+92-300-0000000"
-                        value={newStudentData.guardian_phone}
-                        onChange={(e) => setNewStudentData(prev => ({ ...prev, guardian_phone: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="class-applying">Class Applying For *</Label>
-                      <Select value={newStudentData.class_id} onValueChange={(value) => setNewStudentData(prev => ({ ...prev, class_id: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select class" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {classes.map((cls) => (
-                            <SelectItem key={cls.id} value={cls.id}>
-                              {cls.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="admission-date">Admission Date</Label>
-                      <Input 
-                        id="admission-date" 
-                        type="date"
-                        value={newStudentData.admission_date}
-                        onChange={(e) => setNewStudentData(prev => ({ ...prev, admission_date: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-4 mt-6">
-                    <Button type="submit" className="flex-1" disabled={createStudent.isPending}>
-                      {createStudent.isPending ? 'Creating...' : 'Create Student'}
-                    </Button>
-                    <Button type="button" variant="outline" className="flex-1" onClick={() => {
-                      setNewStudentData({
-                        email: '',
-                        full_name: '',
-                        student_id: '',
-                        admission_date: '',
-                        class_id: '',
-                        guardian_name: '',
-                        guardian_phone: '',
-                        branch_id: 'branch-1'
-                      });
-                    }}>
-                      Clear Form
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Admission Settings</CardTitle>
-                <CardDescription>
-                  Configure admission process settings and requirements
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="admission-fee">Admission Fee (PKR)</Label>
-                    <Input id="admission-fee" type="number" placeholder="15000" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="session">Academic Session</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select session" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="2024-25">2024-25</SelectItem>
-                        <SelectItem value="2025-26">2025-26</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="required-docs">Required Documents (one per line)</Label>
-                  <Textarea 
-                    id="required-docs" 
-                    placeholder="Birth Certificate&#10;Previous School Certificate&#10;Medical Certificate&#10;Photos (2x2)"
-                    rows={6}
-                  />
-                </div>
-                
-                <Button>Save Settings</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
+
+        {/* Application Detail Dialog */}
+        <ApplicationDetailDialog 
+          application={selectedApplication}
+          open={showDetailDialog}
+          onOpenChange={setShowDetailDialog}
+        />
       </div>
     </MainLayout>
   );
