@@ -4,8 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableHead, TableHeader } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
@@ -16,18 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useHostelAllocations, useHostelAttendance, useRecordHostelAttendance } from "@/hooks/useHostel";
+import { AttendanceRow } from "@/components/hostel/AttendanceRow";
 
-const statusVariants = {
-  present: "default",
-  absent: "destructive",
-  late: "secondary",
-} as const;
-
-const statusIcons = {
-  present: CheckCircle,
-  absent: XCircle,
-  late: AlertCircle,
-};
 
 export default function HostelAttendancePage() {
   const { toast } = useToast();
@@ -268,46 +257,36 @@ export default function HostelAttendancePage() {
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <tr className="border-b bg-muted/50">
                     <TableHead>Student</TableHead>
                     <TableHead>Room</TableHead>
                     <TableHead>Building</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Remarks</TableHead>
-                  </TableRow>
+                  </tr>
                 </TableHeader>
                 <TableBody>
                   {filteredRecords.map((record) => {
                     const student = hostelStudents.find(s => s.id === record.student_id);
-                    const StatusIcon = statusIcons[record.status];
                     return (
-                      <TableRow key={record.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{student?.name}</div>
-                            <div className="text-sm text-muted-foreground">{student?.studentId}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{student?.roomNumber}</TableCell>
-                        <TableCell>{student?.building}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <StatusIcon
-                              className={cn("h-4 w-4", {
-                                "text-green-600": record.status === "present",
-                                "text-red-600": record.status === "absent",
-                                "text-orange-600": record.status === "late",
-                              })}
-                            />
-                            <Badge variant={statusVariants[record.status]}>
-                              {record.status}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>{record.remarks || "—"}</TableCell>
-                      </TableRow>
+                      <AttendanceRow
+                        key={record.id}
+                        record={record}
+                        studentName={student?.name}
+                        studentId={student?.studentId}
+                        roomNumber={student?.roomNumber}
+                        building={student?.building}
+                      />
                     );
                   })}
+                  {filteredRecords.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="text-center py-12 text-muted-foreground">
+                        <Users className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                        <p>No attendance records found</p>
+                      </td>
+                    </tr>
+                  )}
                 </TableBody>
               </Table>
             </div>

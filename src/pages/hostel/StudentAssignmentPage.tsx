@@ -4,20 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Users, UserPlus, UserMinus, Building, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useHostelAllocations, useHostelRooms, useCreateHostelAllocation, useUpdateHostelAllocation } from "@/hooks/useHostel";
 import { useStudents } from "@/hooks/useStudents";
+import { StudentAllocationCard } from "@/components/hostel/StudentAllocationCard";
 
-const statusVariants = {
-  active: "default",
-  checkout: "secondary",
-  pending: "outline",
-} as const;
 
 export default function StudentAssignmentPage() {
   const { toast } = useToast();
@@ -134,7 +128,7 @@ export default function StudentAssignmentPage() {
           </Card>
         </div>
 
-        {/* Assignments Table */}
+        {/* Assignments Section */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -149,8 +143,8 @@ export default function StudentAssignmentPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center space-x-4 mb-6">
-              <div className="flex-1 relative">
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
+              <div className="flex-1 w-full relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground transform -translate-y-1/2" />
                 <Input
                   placeholder="Search by student name, ID, or room..."
@@ -160,7 +154,7 @@ export default function StudentAssignmentPage() {
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -172,42 +166,23 @@ export default function StudentAssignmentPage() {
               </Select>
             </div>
 
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Room</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAssignments.map(assignment => (
-                    <TableRow key={assignment.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{assignment.student?.profiles?.full_name}</div>
-                          <div className="text-sm text-muted-foreground">{assignment.student?.student_id}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{assignment.room?.room_number}</TableCell>
-                      <TableCell>
-                        <Badge variant={statusVariants[assignment.status as keyof typeof statusVariants] || "default"}>
-                          {assignment.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {assignment.status === "active" && (
-                          <Button size="sm" variant="outline" onClick={() => { setSelectedAssignment(assignment); setIsCheckoutDialogOpen(true); }}>
-                            <UserMinus className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="grid gap-4 md:grid-cols-2">
+              {filteredAssignments.map(assignment => (
+                <StudentAllocationCard
+                  key={assignment.id}
+                  allocation={assignment}
+                  onCheckout={(alloc) => {
+                    setSelectedAssignment(alloc);
+                    setIsCheckoutDialogOpen(true);
+                  }}
+                />
+              ))}
+              {filteredAssignments.length === 0 && (
+                <div className="col-span-full text-center py-12 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                  <p>No assignments found</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Building, Bed, Users, Plus, Search, Filter, Edit, Trash2, Eye, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Building, Bed, Users, Plus, Search, Filter, Loader2, LayoutGrid, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { RoomCard } from "@/components/hostel/RoomCard";
 
 const roomTypes = ["single", "double", "triple", "dormitory"];
 const statusOptions = ["available", "occupied", "maintenance", "reserved"];
@@ -33,6 +34,7 @@ export default function RoomManagementPage() {
   
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
@@ -210,23 +212,35 @@ export default function RoomManagementPage() {
           </Card>
         </div>
 
-        {/* Rooms Table */}
+        {/* Rooms Section */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle>Room Inventory</CardTitle>
                 <CardDescription>Manage hostel rooms and their occupancy</CardDescription>
               </div>
-              <Button onClick={() => setIsAddRoomOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Room
-              </Button>
+              <div className="flex items-center gap-2">
+                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "grid" | "list")}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="grid">
+                      <LayoutGrid className="h-4 w-4" />
+                    </TabsTrigger>
+                    <TabsTrigger value="list">
+                      <List className="h-4 w-4" />
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <Button onClick={() => setIsAddRoomOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Room
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center space-x-4 mb-6">
-              <div className="flex-1 relative">
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
+              <div className="flex-1 w-full relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground transform -translate-y-1/2" />
                 <Input
                   placeholder="Search by room number..."
@@ -236,7 +250,7 @@ export default function RoomManagementPage() {
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -244,72 +258,74 @@ export default function RoomManagementPage() {
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="available">Available</SelectItem>
                   <SelectItem value="occupied">Occupied</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="reserved">Reserved</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Room Number</TableHead>
-                    <TableHead>Floor</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Occupancy</TableHead>
-                    <TableHead>Monthly Fee</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRooms.map((room) => (
-                    <TableRow key={room.id}>
-                      <TableCell className="font-medium">{room.room_number}</TableCell>
-                      <TableCell>{room.floor}</TableCell>
-                      <TableCell className="capitalize">{room.room_type}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {room.occupied_count || 0}/{room.capacity}
-                          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                            <div 
-                              className="bg-primary h-1.5 rounded-full" 
-                              style={{ width: `${((room.occupied_count || 0) / room.capacity) * 100}%` }}
-                            ></div>
+            {viewMode === "grid" ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredRooms.map((room) => (
+                  <RoomCard
+                    key={room.id}
+                    room={room}
+                    onViewDetails={viewRoomDetails}
+                    onEdit={editRoom}
+                  />
+                ))}
+                {filteredRooms.length === 0 && (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                    <Building className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p>No rooms found</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Room</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Type</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Occupancy</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Fee</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRooms.map((room) => (
+                      <tr key={room.id} className="border-b">
+                        <td className="p-4">
+                          <div>
+                            <div className="font-medium">Room {room.room_number}</div>
+                            <div className="text-sm text-muted-foreground">Floor {room.floor}</div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>₹{room.monthly_fee}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => viewRoomDetails(room)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => editRoom(room)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredRooms.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                        No rooms found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                        </td>
+                        <td className="p-4 capitalize">{room.room_type}</td>
+                        <td className="p-4">{room.occupied_count}/{room.capacity}</td>
+                        <td className="p-4">₹{room.monthly_fee}</td>
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => viewRoomDetails(room)}>
+                              Details
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => editRoom(room)}>
+                              Edit
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredRooms.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="text-center py-12 text-muted-foreground">
+                          No rooms found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
