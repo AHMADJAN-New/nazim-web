@@ -73,7 +73,7 @@ const { data, isLoading, error } = useQuery({
 - Use shadcn/ui components consistently
 - Follow Islamic-inspired design principles
 - Implement responsive design (mobile-first)
-- Support RTL languages (Arabic, Urdu)
+- Support RTL languages (Arabic, Pashto, Farsi)
 - Use semantic color tokens
 
 ### Component Structure
@@ -99,6 +99,95 @@ export function ComponentName({ prop1, prop2 }: ComponentProps) {
 - Use consistent spacing and typography
 - Follow accessibility guidelines
 
+## Internationalization (i18n)
+
+### Language Support
+- **Supported Languages**: English (en), Pashto (ps), Farsi (fa), Arabic (ar)
+- **RTL Languages**: Arabic, Pashto, Farsi
+- **LTR Languages**: English
+
+### Translation System
+- All translations are stored in `/src/lib/i18n.ts`
+- Use the `useLanguage` hook to access translations
+- Translation keys follow a hierarchical structure: `category.key` (e.g., `students.title`, `nav.dashboard`)
+
+### Using Translations
+```typescript
+import { useLanguage } from '@/hooks/useLanguage';
+
+function MyComponent() {
+  const { t, isRTL, language } = useLanguage();
+  
+  return (
+    <div>
+      <h1>{t('students.title')}</h1>
+      <p>{t('students.searchPlaceholder')}</p>
+    </div>
+  );
+}
+```
+
+### Translation Key Structure
+- **Common**: `common.loading`, `common.save`, `common.cancel`, etc.
+- **Navigation**: `nav.dashboard`, `nav.students`, `nav.allStudents`, etc.
+- **Students**: `students.title`, `students.management`, `students.addStudent`, etc.
+- **Dashboard**: `dashboard.title`, `dashboard.totalStudents`, etc.
+- **Forms**: `forms.required`, `forms.invalidEmail`, etc.
+
+### Adding New Translations
+1. Add the key to the `TranslationKeys` interface in `/src/lib/i18n.ts`
+2. Add translations for all languages (en, ps, fa, ar)
+3. Use the key in components with `t('category.key')`
+
+### RTL (Right-to-Left) Support
+
+#### Implementation
+- RTL is automatically applied when an RTL language is selected
+- The `useLanguage` hook sets `document.documentElement.dir` to `'rtl'` or `'ltr'`
+- Sidebar position changes based on RTL: `side={isRTL ? "right" : "left"}`
+- Layout direction is set via `dir` attribute on main containers
+
+#### RTL CSS Rules
+- RTL-specific CSS is in `/src/index.css` under `[dir="rtl"]` selectors
+- Text alignment automatically reverses: `.text-left` becomes right-aligned in RTL
+- Auto margins reverse: `.ml-auto` becomes `margin-right: auto` in RTL
+- Borders adjust: `.border-l` becomes right border in RTL
+
+#### Component RTL Handling
+```typescript
+// In components, use isRTL from useLanguage hook
+const { isRTL } = useLanguage();
+
+// Apply conditional classes
+<div className={isRTL ? 'mr-4 border-r' : 'ml-4 border-l'}>
+  {/* Content */}
+</div>
+
+// Sidebar component
+<Sidebar side={isRTL ? "right" : "left"} dir={isRTL ? 'rtl' : 'ltr'}>
+  {/* Sidebar content */}
+</Sidebar>
+```
+
+#### Navigation Items with Translations
+- Navigation items should use `titleKey` for translation keys
+- Children items should have `titleKey` property for translations
+- Example:
+```typescript
+{
+  title: "All Students", // Fallback
+  titleKey: "allStudents", // Translation key
+  url: "/students",
+  icon: Users
+}
+```
+
+### Language Provider
+- `LanguageProvider` wraps the entire app in `App.tsx`
+- Language preference is stored in `localStorage` with key `'nazim-language'`
+- Default language is English (`'en'`)
+- Language switcher is available in both sidebar and header
+
 ## Authentication & Security
 
 ### User Roles
@@ -116,6 +205,11 @@ export function ComponentName({ prop1, prop2 }: ComponentProps) {
 - Implement audit logging
 - Follow OWASP security guidelines
 
+### Development Mode Auth Bypass
+- In development, authentication can be bypassed using `VITE_DISABLE_AUTH` env variable
+- Mock user is created with `admin` role
+- This should NEVER be enabled in production
+
 ## Performance Optimization
 
 ### Code Splitting
@@ -126,6 +220,9 @@ export function ComponentName({ prop1, prop2 }: ComponentProps) {
 
 ### Data Fetching
 - Use TanStack Query for caching
+- Default `staleTime`: 5 minutes
+- Default `gcTime`: 10 minutes
+- Set `refetchOnWindowFocus: false` and `refetchOnMount: false` for better performance
 - Implement proper loading states
 - Use optimistic updates where appropriate
 - Implement error boundaries
@@ -135,6 +232,15 @@ export function ComponentName({ prop1, prop2 }: ComponentProps) {
 - Implement proper key props
 - Avoid unnecessary re-renders
 - Use useMemo and useCallback appropriately
+- Memoize filtered lists and calculations
+
+### Loading States
+- Use unified loading components from `/src/components/ui/loading.tsx`
+- `LoadingSpinner`: For general loading states
+- `PageSkeleton`: For page-level loading
+- `DashboardSkeleton`: For dashboard loading
+- `TableSkeleton`: For table loading
+- All loaders use consistent styling (centered spinner with border)
 
 ## Testing Strategy
 
@@ -176,20 +282,6 @@ describe('ComponentName', () => {
 - Implement retry logic where appropriate
 - Use proper HTTP status codes
 - Log errors for monitoring
-
-## Internationalization
-
-### Multi-language Support
-- Use translation keys consistently
-- Support RTL languages
-- Implement proper date/time formatting
-- Use locale-specific number formatting
-
-### RTL Support
-- Use proper CSS for RTL layouts
-- Test with Arabic/Urdu content
-- Implement proper text direction
-- Use appropriate fonts
 
 ## Code Quality
 
@@ -243,6 +335,8 @@ export const useStudents = (params: StudentParams) => {
     queryKey: ['students', params],
     queryFn: () => fetchStudents(params),
     enabled: !!params.classId,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 ```
@@ -269,6 +363,36 @@ const { data, isLoading, error } = useQuery({
   queryFn: fetchFunction,
 });
 ```
+
+### Translation Usage
+```typescript
+// Always use useLanguage hook
+const { t, isRTL, language } = useLanguage();
+
+// Use translation keys
+<h1>{t('students.title')}</h1>
+<Button>{t('common.save')}</Button>
+
+// Check RTL for conditional styling
+<div className={isRTL ? 'text-right' : 'text-left'}>
+  {t('students.searchPlaceholder')}
+</div>
+```
+
+## Layout & Navigation
+
+### Persistent Layout
+- `PersistentLayout` component provides sidebar and header for all protected routes
+- Sidebar persists across route changes (SPA behavior)
+- Layout respects RTL direction
+- Sidebar position changes based on language direction
+
+### Sidebar Navigation
+- `SmartSidebar` component handles navigation
+- Navigation items are filtered by user role
+- All navigation items use translation keys
+- Children items should have `titleKey` for translations
+- Sidebar collapses/expands with icon-only mode
 
 ## Islamic School Specific Guidelines
 
@@ -341,6 +465,8 @@ const { data, isLoading, error } = useQuery({
 - Check performance implications
 - Ensure proper error handling
 - Verify accessibility compliance
+- Verify translations are used correctly
+- Check RTL layout correctness
 
 ### Updates
 - Keep dependencies updated
@@ -355,11 +481,15 @@ const { data, isLoading, error } = useQuery({
 - Database connection issues
 - Performance problems
 - Browser compatibility
+- Translation keys not found (check key spelling and language files)
+- RTL layout issues (check `dir` attribute and CSS)
 
 ### Debugging
 - Use browser dev tools
 - Implement proper logging
 - Use React DevTools
 - Monitor network requests
+- Check translation keys in console: `t('key')` should return translated string
+- Verify RTL: Check `document.documentElement.dir` in console
 
-Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code.
+Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented.

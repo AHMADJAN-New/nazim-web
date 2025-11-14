@@ -49,9 +49,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavigationChild {
   title: string;
+  titleKey?: string; // Translation key for the title
   url: string;
   icon: LucideIcon;
   contextual?: boolean;
@@ -91,6 +98,39 @@ interface DbRecentTask {
   timestamp: string;
   role?: UserRole;
   context?: string;
+}
+
+// Language Switcher Component
+function LanguageSwitcherButton() {
+  const { language, setLanguage } = useLanguage();
+  const languages = [
+    { code: 'en' as const, name: 'English', flag: '🇺🇸' },
+    { code: 'ps' as const, name: 'پښتو', flag: '🇦🇫' },
+    { code: 'fa' as const, name: 'فارسی', flag: '🇮🇷' },
+    { code: 'ar' as const, name: 'العربية', flag: '🇸🇦' },
+  ];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="flex-1">
+          <Languages className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {languages.map((lang) => (
+          <DropdownMenuItem
+            key={lang.code}
+            onClick={() => setLanguage(lang.code)}
+            className={language === lang.code ? "bg-accent" : ""}
+          >
+            <span className="mr-2">{lang.flag}</span>
+            {lang.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export const SmartSidebar = memo(function SmartSidebar() {
@@ -200,10 +240,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
           roles: ["admin"],
           priority: 2,
           children: [
-            { title: "All Students", url: "/students", icon: Users },
-            { title: "Admissions", url: "/students/admissions", icon: UserCheck },
-            { title: "Bulk Import", url: "/students/import", icon: FileText },
-            { title: "ID Cards", url: "/students/id-cards", icon: CreditCard }
+            { title: "All Students", titleKey: "allStudents", url: "/students", icon: Users },
+            { title: "Admissions", titleKey: "admissions", url: "/students/admissions", icon: UserCheck },
+            { title: "Bulk Import", titleKey: "bulkImport", url: "/students/import", icon: FileText },
+            { title: "ID Cards", titleKey: "idCards", url: "/students/id-cards", icon: CreditCard }
           ]
         },
         {
@@ -212,11 +252,11 @@ export const SmartSidebar = memo(function SmartSidebar() {
           roles: ["admin"],
           priority: 3,
           children: [
-            { title: "Classes & Sections", url: "/academic/classes", icon: School },
-            { title: "Subjects", url: "/academic/subjects", icon: BookOpen },
-            { title: "Timetable", url: "/academic/timetable", icon: Calendar },
-            { title: "Student Timetable", url: "/academic/student-timetable", icon: Calendar },
-            { title: "Hifz Progress", url: "/academic/hifz-progress", icon: BookOpen }
+            { title: "Classes & Sections", titleKey: "classesSections", url: "/academic/classes", icon: School },
+            { title: "Subjects", titleKey: "subjects", url: "/academic/subjects", icon: BookOpen },
+            { title: "Timetable", titleKey: "timetable", url: "/academic/timetable", icon: Calendar },
+            { title: "Student Timetable", titleKey: "studentTimetable", url: "/academic/student-timetable", icon: Calendar },
+            { title: "Hifz Progress", titleKey: "hifzProgress", url: "/academic/hifz-progress", icon: BookOpen }
           ]
         },
         {
@@ -232,14 +272,14 @@ export const SmartSidebar = memo(function SmartSidebar() {
           roles: ["admin"],
           priority: 5,
           children: [
-            { title: "Exam Setup", url: "/exams/setup", icon: Settings },
-            { title: "Student Enrollment", url: "/exams/enrollment", icon: UserCheck },
-            { title: "Roll Number Assignment", url: "/exams/roll-numbers", icon: Users },
-            { title: "Enrolled Students Reports", url: "/exams/enrolled-reports", icon: BarChart3 },
-            { title: "Paper Generator", url: "/exams/paper-generator", icon: FileText },
-            { title: "Results Entry", url: "/exams/results", icon: FileText },
-            { title: "OMR Scanning", url: "/exams/omr-scanning", icon: FileText },
-            { title: "Report Cards", url: "/exams/reports", icon: Trophy }
+            { title: "Exam Setup", titleKey: "examSetup", url: "/exams/setup", icon: Settings },
+            { title: "Student Enrollment", titleKey: "studentEnrollment", url: "/exams/enrollment", icon: UserCheck },
+            { title: "Roll Number Assignment", titleKey: "rollNumberAssignment", url: "/exams/roll-numbers", icon: Users },
+            { title: "Enrolled Students Reports", titleKey: "enrolledStudentsReports", url: "/exams/enrolled-reports", icon: BarChart3 },
+            { title: "Paper Generator", titleKey: "paperGenerator", url: "/exams/paper-generator", icon: FileText },
+            { title: "Results Entry", titleKey: "resultsEntry", url: "/exams/results", icon: FileText },
+            { title: "OMR Scanning", titleKey: "omrScanning", url: "/exams/omr-scanning", icon: FileText },
+            { title: "Report Cards", titleKey: "reportCards", url: "/exams/reports", icon: Trophy }
           ]
         },
         {
@@ -248,9 +288,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
           roles: ["admin"],
           priority: 6,
           children: [
-            { title: "Fee Management", url: "/finance/fees", icon: CreditCard },
-            { title: "Payments", url: "/finance/payments", icon: FileText },
-            { title: "Donations", url: "/finance/donations", icon: Building }
+            { title: "Fee Management", titleKey: "feeManagement", url: "/finance/fees", icon: CreditCard },
+            { title: "Payments", titleKey: "payments", url: "/finance/payments", icon: FileText },
+            { title: "Donations", titleKey: "donations", url: "/finance/donations", icon: Building }
           ]
         },
         {
@@ -266,9 +306,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
           roles: ["admin"],
           priority: 8,
           children: [
-            { title: "Room Management", url: "/hostel/rooms", icon: Building },
-            { title: "Student Assignment", url: "/hostel/students", icon: Users },
-            { title: "Attendance", url: "/hostel/attendance", icon: UserCheck }
+            { title: "Room Management", titleKey: "roomManagement", url: "/hostel/rooms", icon: Building },
+            { title: "Student Assignment", titleKey: "studentAssignment", url: "/hostel/students", icon: Users },
+            { title: "Hostel Attendance", titleKey: "hostelAttendance", url: "/hostel/attendance", icon: UserCheck }
           ]
         },
         {
@@ -298,9 +338,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
           roles: ["admin"],
           priority: 11,
           children: [
-            { title: "Announcements", url: "/communication/announcements", icon: Bell },
-            { title: "Messages", url: "/communication/messages", icon: MessageSquare },
-            { title: "Events", url: "/communication/events", icon: Calendar }
+            { title: "Announcements", titleKey: "announcements", url: "/communication/announcements", icon: Bell },
+            { title: "Messages", titleKey: "messaging", url: "/communication/messages", icon: MessageSquare },
+            { title: "Events", titleKey: "events", url: "/communication/events", icon: Calendar }
           ]
         },
         {
@@ -500,23 +540,29 @@ export const SmartSidebar = memo(function SmartSidebar() {
             {!collapsed && (
               <CollapsibleContent>
                 <SidebarMenu className={`${isRTL ? 'mr-4 border-r' : 'ml-4 border-l'} border-sidebar-border`}>
-                  {item.children.map((child: NavigationChild) => (
-                    <SidebarMenuItem key={child.url}>
-                      <SidebarMenuButton asChild>
-                        <NavLink 
-                          to={child.url} 
-                          className={getNavCls({ isActive: isActive(child.url) })}
-                          end={child.url === '/'}
-                        >
-                          <child.icon className="h-4 w-4" />
-                          <span>{child.title}</span>
-                          {child.contextual && navigationContext.currentModule.includes('attendance') && (
-                            <Star className="h-3 w-3 text-warning ml-auto" />
-                          )}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {item.children.map((child: NavigationChild) => {
+                    // Use translation key if available, otherwise fallback to title
+                    const childLabel = child.titleKey 
+                      ? t(`nav.${child.titleKey}`) 
+                      : child.title;
+                    return (
+                      <SidebarMenuItem key={child.url}>
+                        <SidebarMenuButton asChild>
+                          <NavLink 
+                            to={child.url} 
+                            className={getNavCls({ isActive: isActive(child.url) })}
+                            end={child.url === '/'}
+                          >
+                            <child.icon className="h-4 w-4" />
+                            <span>{childLabel}</span>
+                            {child.contextual && navigationContext.currentModule.includes('attendance') && (
+                              <Star className="h-3 w-3 text-warning ml-auto" />
+                            )}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </SidebarMenu>
               </CollapsibleContent>
             )}
@@ -556,6 +602,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
     <Sidebar
       className={`${collapsed ? "w-14" : "w-64"} transition-all duration-300`}
       collapsible="icon"
+      side={isRTL ? "right" : "left"}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Logo Section */}
@@ -640,9 +687,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             <Button variant="ghost" size="sm" className="flex-1">
               <Sun className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="flex-1">
-              <Languages className="h-4 w-4" />
-            </Button>
+            <LanguageSwitcherButton />
             <Button variant="ghost" size="sm" className="flex-1">
               <Bell className="h-4 w-4" />
             </Button>

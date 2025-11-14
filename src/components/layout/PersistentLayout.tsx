@@ -2,9 +2,11 @@ import { SmartSidebar } from "@/components/navigation/SmartSidebar";
 import { AppHeader } from "./AppHeader";
 import { Outlet, useLocation } from "react-router-dom";
 import { useMemo } from "react";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export function PersistentLayout() {
   const location = useLocation();
+  const { isRTL } = useLanguage();
   
   // Extract page title from path (optional - can be enhanced)
   const pageTitle = useMemo(() => {
@@ -15,7 +17,7 @@ export function PersistentLayout() {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="min-h-screen flex w-full bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       <SmartSidebar />
       
       <div className="flex-1 flex flex-col">

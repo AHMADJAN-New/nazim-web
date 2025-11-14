@@ -21,12 +21,17 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   const [language, setLanguageState] = useState<Language>(() => {
     // Get from localStorage or default to English
     const saved = localStorage.getItem('nazim-language');
-    return (saved as Language) || 'en';
+    const lang = (saved as Language) || 'en';
+    // Validate language - only allow supported languages
+    return ['en', 'ps', 'fa', 'ar'].includes(lang) ? lang : 'en';
   });
 
   const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem('nazim-language', lang);
+    // Only set if it's a valid language
+    if (['en', 'ps', 'fa', 'ar'].includes(lang)) {
+      setLanguageState(lang);
+      localStorage.setItem('nazim-language', lang);
+    }
   };
 
   // Translation function bound to current language
@@ -39,9 +44,9 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     const direction = getDirection(language);
     const fontClass = getFontClass(language);
     
-    // Set direction on html element
-    document.documentElement.dir = direction;
-    document.documentElement.lang = language;
+    // Set direction on html element - this affects the entire page
+    document.documentElement.setAttribute('dir', direction);
+    document.documentElement.setAttribute('lang', language);
     
     // Update body class for font
     document.body.className = document.body.className
@@ -49,11 +54,13 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
       .trim();
     document.body.classList.add(fontClass);
     
-    // Add RTL class to body if needed
+    // Add RTL class to body for additional styling if needed
     if (direction === 'rtl') {
       document.body.classList.add('rtl');
+      document.body.classList.remove('ltr');
     } else {
       document.body.classList.remove('rtl');
+      document.body.classList.add('ltr');
     }
   }, [language]);
 

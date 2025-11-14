@@ -18,6 +18,7 @@ import { useStudents, useUpdateStudent, useDeleteStudent } from "@/hooks/useStud
 import { useClasses } from "@/hooks/useClasses";
 import { useDebounce } from "@/lib/performance";
 import { TableSkeleton } from "@/components/ui/loading";
+import { useLanguage } from "@/hooks/useLanguage";
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -66,12 +67,8 @@ const statusColors = {
   expelled: "destructive"
 } as const;
 
-const breadcrumbItems = [
-  { label: "Dashboard", href: "/" },
-  { label: "Students" }
-];
-
 export default function StudentsPage() {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClass, setSelectedClass] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -125,7 +122,7 @@ export default function StudentsPage() {
   };
 
   const handleDeleteStudent = (studentId: string) => {
-    if (confirm("Are you sure you want to delete this student?")) {
+    if (confirm(t('students.deleteConfirm'))) {
       deleteStudent.mutate(studentId);
     }
   };
@@ -135,9 +132,14 @@ export default function StudentsPage() {
     return Array.from(new Set(classes.map(cls => cls.section).filter(Boolean)));
   }, [classes]);
 
+  const breadcrumbItems = [
+    { label: t('nav.dashboard'), href: "/" },
+    { label: t('students.title') }
+  ];
+
   return (
     <MainLayout 
-      title="Students Management"
+      title={t('students.management')}
       showBreadcrumb
       breadcrumbItems={breadcrumbItems}
     >
@@ -149,7 +151,7 @@ export default function StudentsPage() {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search students..."
+                placeholder={t('students.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -160,10 +162,10 @@ export default function StudentsPage() {
             <div className="flex gap-2">
               <Select value={selectedClass} onValueChange={setSelectedClass}>
                 <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Class" />
+                  <SelectValue placeholder={t('students.class')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Classes</SelectItem>
+                  <SelectItem value="all">{t('students.allClasses')}</SelectItem>
                   {classes.map((cls) => (
                     <SelectItem key={cls.id} value={cls.id}>
                       {cls.name}
@@ -174,13 +176,13 @@ export default function StudentsPage() {
 
               <Select value={selectedSection} onValueChange={setSelectedSection}>
                 <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Section" />
+                  <SelectValue placeholder={t('students.section')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Sections</SelectItem>
+                  <SelectItem value="all">{t('students.allSections')}</SelectItem>
                   {sections.map((section) => (
                     <SelectItem key={section} value={section!}>
-                      Section {section}
+                      {t('students.section')} {section}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -188,15 +190,15 @@ export default function StudentsPage() {
 
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger className="w-[130px]">
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('students.status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="graduated">Graduated</SelectItem>
-                  <SelectItem value="transferred">Transferred</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
+                  <SelectItem value="all">{t('students.allStatus')}</SelectItem>
+                  <SelectItem value="active">{t('students.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('students.inactive')}</SelectItem>
+                  <SelectItem value="graduated">{t('students.graduated')}</SelectItem>
+                  <SelectItem value="transferred">{t('students.transferred')}</SelectItem>
+                  <SelectItem value="suspended">{t('students.suspended')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -206,16 +208,16 @@ export default function StudentsPage() {
           <div className="flex gap-2">
             <Button variant="outline" size="sm">
               <Upload className="h-4 w-4 mr-2" />
-              Import
+              {t('common.import')}
             </Button>
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
-              Export
+              {t('common.export')}
             </Button>
             <Button size="sm" asChild>
               <a href="/students/admissions">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Student
+                {t('students.addStudent')}
               </a>
             </Button>
           </div>
@@ -227,7 +229,7 @@ export default function StudentsPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Students</p>
+                  <p className="text-sm text-muted-foreground">{t('students.totalStudents')}</p>
                   <p className="text-2xl font-bold">{totalStudents}</p>
                 </div>
                 <Users className="h-8 w-8 text-primary" />
@@ -238,7 +240,7 @@ export default function StudentsPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Active</p>
+                  <p className="text-sm text-muted-foreground">{t('students.active')}</p>
                   <p className="text-2xl font-bold text-success">{activeStudents}</p>
                 </div>
                 <UserPlus className="h-8 w-8 text-success" />
@@ -249,7 +251,7 @@ export default function StudentsPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Inactive</p>
+                  <p className="text-sm text-muted-foreground">{t('students.inactive')}</p>
                   <p className="text-2xl font-bold text-warning">{onLeaveStudents}</p>
                 </div>
                 <GraduationCap className="h-8 w-8 text-warning" />
@@ -260,7 +262,7 @@ export default function StudentsPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Enrolled Students</p>
+                  <p className="text-sm text-muted-foreground">{t('students.enrolledStudents')}</p>
                   <p className="text-2xl font-bold text-accent">{hostelStudents}</p>
                 </div>
                 <Users className="h-8 w-8 text-accent" />
@@ -274,7 +276,7 @@ export default function StudentsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Students List ({totalStudents} results)
+              {t('students.studentsList')} ({totalStudents} {t('students.results')})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -285,15 +287,15 @@ export default function StudentsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Admission No.</TableHead>
-                      <TableHead>Roll No.</TableHead>
-                      <TableHead>Class/Section</TableHead>
-                      <TableHead>Father Name</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Hostel</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('students.student')}</TableHead>
+                      <TableHead>{t('students.admissionNo')}</TableHead>
+                      <TableHead>{t('students.rollNo')}</TableHead>
+                      <TableHead>{t('students.classSection')}</TableHead>
+                      <TableHead>{t('students.fatherName')}</TableHead>
+                      <TableHead>{t('students.contact')}</TableHead>
+                      <TableHead>{t('students.status')}</TableHead>
+                      <TableHead>{t('students.hostel')}</TableHead>
+                      <TableHead className="text-right">{t('students.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -309,7 +311,7 @@ export default function StudentsPage() {
                               {student.profiles?.full_name || 'Unknown'}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              Admitted: {new Date(student.admission_date).toLocaleDateString()}
+                              {t('students.admitted')}: {new Date(student.admission_date).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -322,13 +324,13 @@ export default function StudentsPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{student.classes?.name || 'No Class'}</p>
+                          <p className="font-medium">{student.classes?.name || t('students.noClass')}</p>
                           <p className="text-sm text-muted-foreground">
-                            Section {student.classes?.section || 'A'}
+                            {t('students.section')} {student.classes?.section || 'A'}
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell>{student.guardian_name || 'N/A'}</TableCell>
+                      <TableCell>{student.guardian_name || t('students.notAvailable')}</TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           {student.guardian_phone && (
@@ -352,7 +354,7 @@ export default function StudentsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          Student
+                          {t('students.student')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -365,18 +367,18 @@ export default function StudentsPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleViewStudent(student.id)}>
                               <Eye className="mr-2 h-4 w-4" />
-                              View Details
+                              {t('students.viewDetails')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEditStudent(student.id)}>
                               <Edit className="mr-2 h-4 w-4" />
-                              Edit Student
+                              {t('students.editStudent')}
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => handleDeleteStudent(student.id)}
                               className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              {t('students.deleteStudent')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -392,10 +394,10 @@ export default function StudentsPage() {
               <div className="text-center py-8">
                 <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                  No students found
+                  {t('students.noStudentsFound')}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Try adjusting your search criteria or add a new student.
+                  {t('students.noStudentsMessage')}
                 </p>
               </div>
             )}

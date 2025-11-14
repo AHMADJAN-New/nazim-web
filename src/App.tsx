@@ -10,6 +10,7 @@ import { PersistentLayout } from "@/components/layout/PersistentLayout";
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { LanguageProvider } from "@/hooks/useLanguage";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleBasedRedirect from "./components/RoleBasedRedirect";
 import Index from "./pages/Index";
@@ -63,10 +64,11 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <SidebarProvider>
-            <ErrorBoundary>
+      <LanguageProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <SidebarProvider>
+              <ErrorBoundary>
               <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
@@ -494,10 +496,11 @@ const App = () => (
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
             </Routes>
-          </ErrorBoundary>
-          </SidebarProvider>
-        </BrowserRouter>
-      </AuthProvider>
+              </ErrorBoundary>
+            </SidebarProvider>
+          </BrowserRouter>
+        </AuthProvider>
+      </LanguageProvider>
     </TooltipProvider>
     {import.meta.env.DEV && import.meta.env.VITE_ENABLE_QUERY_DEVTOOLS === 'true' && (
       <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
