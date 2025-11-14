@@ -1,6 +1,3 @@
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { SmartSidebar } from "@/components/navigation/SmartSidebar";
-import { AppHeader } from "./AppHeader";
 import { Toaster } from "@/components/ui/toaster";
 
 interface MainLayoutProps {
@@ -10,6 +7,8 @@ interface MainLayoutProps {
   breadcrumbItems?: Array<{ label: string; href?: string }>;
 }
 
+// MainLayout is now just a content wrapper
+// The sidebar and header are handled by PersistentLayout at the App level
 export function MainLayout({ 
   children, 
   title, 
@@ -17,23 +16,9 @@ export function MainLayout({
   breadcrumbItems = [] 
 }: MainLayoutProps) {
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <SmartSidebar />
-        
-        <div className="flex-1 flex flex-col">
-          <AppHeader 
-            title={title}
-            showBreadcrumb={showBreadcrumb}
-            breadcrumbItems={breadcrumbItems}
-          />
-          
-          <main className="flex-1 p-6 custom-scrollbar overflow-auto">
-            {children}
-          </main>
-        </div>
-      </div>
+    <div className="p-6">
+      {children}
       <Toaster />
-    </SidebarProvider>
+    </div>
   );
 }

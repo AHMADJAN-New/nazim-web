@@ -14,15 +14,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Development mode: Set to true to bypass authentication
 const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false';
 
-// Mock user for development
+// Mock user for development - with admin role for full access
 const createMockUser = (): User => ({
   id: 'dev-user-id',
   email: 'dev@example.com',
   created_at: new Date().toISOString(),
-  app_metadata: {},
+  app_metadata: {
+    role: 'admin' // Set role in app_metadata
+  },
   user_metadata: {
     full_name: 'Development User',
-    role: 'admin'
+    role: 'admin' // Also set in user_metadata
   },
   aud: 'authenticated',
   confirmation_sent_at: null,

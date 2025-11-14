@@ -4,6 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure right-click works everywhere */
+* {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Allow context menu on all elements */
+* {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+}
+
 /* Nazim School Management System - Islamic-inspired Design System */
 
 @layer base {

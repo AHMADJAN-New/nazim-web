@@ -1,32 +1,38 @@
-import { logger } from './logger';
+// DISABLED: Console replacer causes infinite logging loop
+// The console-replacer intercepts console methods and sends them to logger,
+// but logger itself uses console methods, creating an infinite loop of 20K+ logs
 
-// Global console override for development
-if (import.meta.env.DEV) {
-  const originalConsole = { ...console };
+// import { logger } from './logger';
 
-  // Override console methods to also send to our logger
-  console.log = (...args: any[]) => {
-    originalConsole.log(...args);
-    logger.debug(args.join(' '), { component: 'Console' });
-  };
-
-  console.info = (...args: any[]) => {
-    originalConsole.info(...args);
-    logger.info(args.join(' '), { component: 'Console' });
-  };
-
-  console.warn = (...args: any[]) => {
-    originalConsole.warn(...args);
-    logger.warn(args.join(' '), { component: 'Console' });
-  };
-
-  console.error = (...args: any[]) => {
-    originalConsole.error(...args);
-    logger.error(args.join(' '), { component: 'Console' });
-  };
-}
+// Global console override for development - DISABLED FOR PERFORMANCE
+// if (import.meta.env.DEV) {
+//   const originalConsole = { ...console };
+//
+//   // Override console methods to also send to our logger
+//   console.log = (...args: any[]) => {
+//     originalConsole.log(...args);
+//     logger.debug(args.join(' '), { component: 'Console' });
+//   };
+//
+//   console.info = (...args: any[]) => {
+//     originalConsole.info(...args);
+//     logger.info(args.join(' '), { component: 'Console' });
+//   };
+//
+//   console.warn = (...args: any[]) => {
+//     originalConsole.warn(...args);
+//     logger.warn(args.join(' '), { component: 'Console' });
+//   };
+//
+//   console.error = (...args: any[]) => {
+//     originalConsole.error(...args);
+//     logger.error(args.join(' '), { component: 'Console' });
+//   });
+// }
 
 // Helper functions for common logging patterns
+import { logger } from './logger';
+
 export const logAuthEvent = (event: string, email?: string, metadata?: any) => {
   logger.info(`Auth: ${event}`, {
     component: 'Authentication',

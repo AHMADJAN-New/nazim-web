@@ -29,6 +29,10 @@ export const useClasses = () => {
 
       return data as Class[];
     },
+    staleTime: 10 * 60 * 1000, // 10 minutes (classes don't change often)
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 };
 

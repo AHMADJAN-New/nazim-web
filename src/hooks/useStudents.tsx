@@ -106,6 +106,10 @@ export const useStudents = ({
 
       return { students: data as Student[], count: count || 0 };
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 };
 

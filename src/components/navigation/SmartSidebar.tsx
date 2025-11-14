@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { type LucideIcon } from "lucide-react";
 import * as LucideIcons from "lucide-react";
@@ -93,7 +93,7 @@ interface DbRecentTask {
   context?: string;
 }
 
-export function SmartSidebar() {
+export const SmartSidebar = memo(function SmartSidebar() {
   const { state } = useSidebar();
   const { t, isRTL } = useLanguage();
   const { role, loading } = useUserRole();
@@ -202,7 +202,8 @@ export function SmartSidebar() {
           children: [
             { title: "All Students", url: "/students", icon: Users },
             { title: "Admissions", url: "/students/admissions", icon: UserCheck },
-            { title: "Bulk Import", url: "/students/import", icon: FileText }
+            { title: "Bulk Import", url: "/students/import", icon: FileText },
+            { title: "ID Cards", url: "/students/id-cards", icon: CreditCard }
           ]
         },
         {
@@ -211,9 +212,116 @@ export function SmartSidebar() {
           roles: ["admin"],
           priority: 3,
           children: [
-            { title: "Classes", url: "/academic/classes", icon: School },
+            { title: "Classes & Sections", url: "/academic/classes", icon: School },
             { title: "Subjects", url: "/academic/subjects", icon: BookOpen },
-            { title: "Timetable", url: "/academic/timetable", icon: Calendar }
+            { title: "Timetable", url: "/academic/timetable", icon: Calendar },
+            { title: "Student Timetable", url: "/academic/student-timetable", icon: Calendar },
+            { title: "Hifz Progress", url: "/academic/hifz-progress", icon: BookOpen }
+          ]
+        },
+        {
+          titleKey: "attendance",
+          url: "/attendance",
+          icon: UserCheck,
+          roles: ["admin"],
+          priority: 4
+        },
+        {
+          titleKey: "exams",
+          icon: Trophy,
+          roles: ["admin"],
+          priority: 5,
+          children: [
+            { title: "Exam Setup", url: "/exams/setup", icon: Settings },
+            { title: "Student Enrollment", url: "/exams/enrollment", icon: UserCheck },
+            { title: "Roll Number Assignment", url: "/exams/roll-numbers", icon: Users },
+            { title: "Enrolled Students Reports", url: "/exams/enrolled-reports", icon: BarChart3 },
+            { title: "Paper Generator", url: "/exams/paper-generator", icon: FileText },
+            { title: "Results Entry", url: "/exams/results", icon: FileText },
+            { title: "OMR Scanning", url: "/exams/omr-scanning", icon: FileText },
+            { title: "Report Cards", url: "/exams/reports", icon: Trophy }
+          ]
+        },
+        {
+          titleKey: "finance",
+          icon: CreditCard,
+          roles: ["admin"],
+          priority: 6,
+          children: [
+            { title: "Fee Management", url: "/finance/fees", icon: CreditCard },
+            { title: "Payments", url: "/finance/payments", icon: FileText },
+            { title: "Donations", url: "/finance/donations", icon: Building }
+          ]
+        },
+        {
+          titleKey: "staff",
+          url: "/staff",
+          icon: Users,
+          roles: ["admin"],
+          priority: 7
+        },
+        {
+          titleKey: "hostel",
+          icon: Building,
+          roles: ["admin"],
+          priority: 8,
+          children: [
+            { title: "Room Management", url: "/hostel/rooms", icon: Building },
+            { title: "Student Assignment", url: "/hostel/students", icon: Users },
+            { title: "Attendance", url: "/hostel/attendance", icon: UserCheck }
+          ]
+        },
+        {
+          titleKey: "library",
+          url: "/library",
+          icon: BookOpen,
+          roles: ["admin"],
+          priority: 9
+        },
+        {
+          titleKey: "assets",
+          icon: Package,
+          roles: ["admin"],
+          priority: 10,
+          children: [
+            { title: "Asset Management", url: "/assets/management", icon: Package },
+            { title: "Asset Categories", url: "/assets/categories", icon: FileText },
+            { title: "Maintenance", url: "/assets/maintenance", icon: Settings },
+            { title: "Asset Reports", url: "/assets/reports", icon: BarChart3 },
+            { title: "Asset Requests", url: "/assets/requests", icon: FileText },
+            { title: "Asset Audit", url: "/assets/audit", icon: UserCheck }
+          ]
+        },
+        {
+          titleKey: "communication",
+          icon: MessageSquare,
+          roles: ["admin"],
+          priority: 11,
+          children: [
+            { title: "Announcements", url: "/communication/announcements", icon: Bell },
+            { title: "Messages", url: "/communication/messages", icon: MessageSquare },
+            { title: "Events", url: "/communication/events", icon: Calendar }
+          ]
+        },
+        {
+          titleKey: "reports",
+          url: "/reports",
+          icon: BarChart3,
+          roles: ["admin"],
+          priority: 12
+        },
+        {
+          titleKey: "settings",
+          icon: Settings,
+          roles: ["admin"],
+          priority: 13,
+          children: [
+            { title: "School Information", url: "/settings/school-info", icon: School },
+            { title: "Academic Settings", url: "/settings/academic", icon: GraduationCap },
+            { title: "System Preferences", url: "/settings/system", icon: Settings },
+            { title: "Appearance", url: "/settings/appearance", icon: Package },
+            { title: "Communication", url: "/settings/communication", icon: MessageSquare },
+            { title: "Financial", url: "/settings/financial", icon: CreditCard }
           ]
         }
       ],
@@ -252,21 +360,34 @@ export function SmartSidebar() {
       });
   };
 
-  // Update navigation context based on current path and user activity
-  useEffect(() => {
-    let module = 'dashboard';
-    if (currentPath.includes('/attendance')) module = 'attendance';
-    else if (currentPath.includes('/exams')) module = 'exams';
-    else if (currentPath.includes('/students')) module = 'students';
-    else if (currentPath.includes('/parent')) module = 'parent';
-    else if (currentPath.includes('/teacher')) module = 'teacher';
+  // Memoize current module to prevent unnecessary updates
+  const currentModule = useMemo(() => {
+    if (currentPath.includes('/attendance')) return 'attendance';
+    if (currentPath.includes('/exams')) return 'exams';
+    if (currentPath.includes('/students')) return 'students';
+    if (currentPath.includes('/parent')) return 'parent';
+    if (currentPath.includes('/teacher')) return 'teacher';
+    return 'dashboard';
+  }, [currentPath]);
 
-    if (!user) {
-      setNavigationContext({ currentModule: module, recentTasks: [], quickActions: [] });
+  // Update navigation context based on current path and user activity (non-blocking)
+  useEffect(() => {
+    // Only update if module actually changed
+    setNavigationContext(prev => {
+      if (prev.currentModule === currentModule) {
+        return prev; // No change, return same object to prevent re-render
+      }
+      return { ...prev, currentModule };
+    });
+
+    // Skip fetching if no user or in dev mode (to avoid unnecessary API calls)
+    if (!user || (import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false')) {
       return;
     }
 
+    // Fetch context asynchronously (non-blocking)
     const fetchContext = async () => {
+      try {
       const { data, error } = await supabase
         .from('user_navigation_context')
         .select('recent_tasks')
@@ -274,13 +395,14 @@ export function SmartSidebar() {
         .single();
 
       if (error) {
-        console.error('Error fetching recent tasks', error);
+          // Silently fail - don't block UI
+          return;
       }
 
-      const tasks: DbRecentTask[] = (data?.recent_tasks as DbRecentTask[]) || [];
+        const tasks: DbRecentTask[] = (data?.recent_tasks as unknown as DbRecentTask[]) || [];
 
       const filteredTasks = tasks.filter(
-        task => (!task.role || task.role === role) && (!task.context || task.context === module)
+          task => (!task.role || task.role === role) && (!task.context || task.context === currentModule)
       );
 
       const mappedTasks = filteredTasks.map(task => ({
@@ -290,15 +412,21 @@ export function SmartSidebar() {
         timestamp: task.timestamp
       }));
 
-      setNavigationContext({
-        currentModule: module,
+        setNavigationContext(prev => ({
+          ...prev,
         recentTasks: mappedTasks,
         quickActions: []
-      });
+        }));
+      } catch (error) {
+        // Silently fail - don't block UI
+      }
     };
 
+    // Fetch in background without blocking
     fetchContext();
 
+    // Only subscribe to real-time updates if not in dev mode
+    if (!(import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false')) {
     const channel = supabase
       .channel('user_navigation_context')
       .on(
@@ -311,24 +439,35 @@ export function SmartSidebar() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentPath, role, user?.id]);
+    }
+  }, [currentModule, role, user?.id]);
 
-  const filteredItems = role ? getNavigationItems(role as UserRole, navigationContext) : [];
+  // Development mode: Use admin role if role is null
+  const effectiveRole = useMemo(() => 
+    role || (import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false' ? 'admin' : null),
+    [role]
+  );
+  
+  // Memoize navigation items to prevent recalculation on every render
+  const filteredItems = useMemo(() => {
+    if (!effectiveRole) return [];
+    return getNavigationItems(effectiveRole as UserRole, navigationContext);
+  }, [effectiveRole, navigationContext]);
 
-  const isActive = (path: string) => currentPath === path;
-  const isChildActive = (children?: Array<{ url: string }>) => 
-    children?.some(child => currentPath.startsWith(child.url)) || false;
+  const isActive = useCallback((path: string) => currentPath === path, [currentPath]);
+  const isChildActive = useCallback((children?: Array<{ url: string }>) => 
+    children?.some(child => currentPath.startsWith(child.url)) || false, [currentPath]);
 
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50";
+  const getNavCls = useCallback(({ isActive }: { isActive: boolean }) =>
+    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50", []);
 
-  const toggleExpanded = (title: string) => {
+  const toggleExpanded = useCallback((title: string) => {
     setExpandedItems(prev => 
       prev.includes(title) 
         ? prev.filter(item => item !== title)
         : [...prev, title]
     );
-  };
+  }, []);
 
   const renderMenuItem = (item: NavigationItem) => {
     const label = t(`nav.${item.titleKey}`);
@@ -367,6 +506,7 @@ export function SmartSidebar() {
                         <NavLink 
                           to={child.url} 
                           className={getNavCls({ isActive: isActive(child.url) })}
+                          end={child.url === '/'}
                         >
                           <child.icon className="h-4 w-4" />
                           <span>{child.title}</span>
@@ -389,8 +529,8 @@ export function SmartSidebar() {
       <SidebarMenuItem key={item.url}>
         <SidebarMenuButton asChild>
           <NavLink 
-            to={item.url} 
-            className={getNavCls({ isActive: isActive(item.url) })}
+            to={item.url || '/'}
+            className={getNavCls({ isActive: isActive(item.url || '/') })}
           >
             <item.icon className="h-4 w-4" />
             {!collapsed && (
@@ -409,9 +549,8 @@ export function SmartSidebar() {
     );
   };
 
-  if (loading) {
-    return <div className="w-64 h-screen bg-sidebar border-r animate-pulse" />;
-  }
+  // Don't show loading state - render immediately with available data
+  // The sidebar will update when role is available
 
   return (
     <Sidebar
@@ -512,4 +651,4 @@ export function SmartSidebar() {
       )}
     </Sidebar>
   );
-}
+});

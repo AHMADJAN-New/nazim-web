@@ -84,20 +84,29 @@ class Logger {
   private consoleLog(level: LogLevel, formattedMessage: string, context?: LogContext): void {
     if (!this.shouldLog(level)) return;
 
+    // Use original console methods to avoid infinite loops with console-replacer
+    // Store reference to original console methods
+    const originalConsole = {
+      error: console.error.bind(console),
+      warn: console.warn.bind(console),
+      info: console.info.bind(console),
+      log: console.log.bind(console),
+    };
+
     const logData = context?.metadata ? [formattedMessage, context.metadata] : [formattedMessage];
 
     switch (level) {
       case 'error':
-        console.error(...logData);
+        originalConsole.error(...logData);
         break;
       case 'warn':
-        console.warn(...logData);
+        originalConsole.warn(...logData);
         break;
       case 'info':
-        console.info(...logData);
+        originalConsole.info(...logData);
         break;
       case 'debug':
-        console.log(...logData);
+        originalConsole.log(...logData);
         break;
     }
   }

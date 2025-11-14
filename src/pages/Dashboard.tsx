@@ -158,7 +158,10 @@ export default function Dashboard() {
 
   // Role-based dashboard rendering
   const renderRoleBasedDashboard = () => {
-    switch (role) {
+    // Development mode: Use admin role if role is null
+    const effectiveRole = role || (import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false' ? 'admin' : null);
+    
+    switch (effectiveRole) {
       case 'parent':
         return <ParentDashboard />;
       case 'student':

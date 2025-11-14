@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { PersistentLayout } from "@/components/layout/PersistentLayout";
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -63,98 +65,79 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <BrowserRouter>
-          <ErrorBoundary>
-            <Routes>
+          <SidebarProvider>
+            <ErrorBoundary>
+              <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/redirect" element={<ProtectedRoute><RoleBasedRedirect /></ProtectedRoute>} />
             <Route path="/pending-approval" element={<ProtectedRoute><PendingApprovalPage /></ProtectedRoute>} />
             
-            {/* Dashboard with optimized loading */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
+            {/* Protected routes with persistent layout */}
+            <Route element={<ProtectedRoute><PersistentLayout /></ProtectedRoute>}>
+              {/* Dashboard with optimized loading */}
+              <Route path="/dashboard" element={
                 <Suspense fallback={<DashboardSkeleton />}>
                   <Dashboard />
                 </Suspense>
-              </ProtectedRoute>
-            } />
+              } />
             
-            {/* Students routes */}
-            <Route path="/students" element={
-              <ProtectedRoute>
+              {/* Students routes */}
+              <Route path="/students" element={
                 <Suspense fallback={<PageSkeleton />}>
                   <StudentsPage />
                 </Suspense>
-              </ProtectedRoute>
-            } />
-            <Route path="/students/admissions" element={
-              <ProtectedRoute>
+              } />
+              <Route path="/students/admissions" element={
                 <Suspense fallback={<PageSkeleton />}>
                   <AdmissionsPage />
                 </Suspense>
-              </ProtectedRoute>
-            } />
-            <Route path="/students/import" element={
-              <ProtectedRoute>
+              } />
+              <Route path="/students/import" element={
                 <Suspense fallback={<PageSkeleton />}>
                   <BulkImportPage />
                 </Suspense>
-              </ProtectedRoute>
-            } />
-            <Route path="/students/id-cards" element={
-              <ProtectedRoute>
+              } />
+              <Route path="/students/id-cards" element={
                 <Suspense fallback={<PageSkeleton />}>
                   <IdCardPage />
                 </Suspense>
-              </ProtectedRoute>
-            } />
-            
-            {/* Academic routes */}
-            <Route path="/academic/classes" element={
-              <ProtectedRoute>
+              } />
+              
+              {/* Academic routes */}
+              <Route path="/academic/classes" element={
                 <Suspense fallback={<PageSkeleton />}>
                   <ClassesPage />
                 </Suspense>
-              </ProtectedRoute>
-            } />
-            <Route path="/academic/subjects" element={
-              <ProtectedRoute>
+              } />
+              <Route path="/academic/subjects" element={
                 <Suspense fallback={<PageSkeleton />}>
                   <SubjectsPage />
                 </Suspense>
-              </ProtectedRoute>
-            } />
-            <Route path="/academic/timetable" element={
-              <ProtectedRoute>
+              } />
+              <Route path="/academic/timetable" element={
                 <Suspense fallback={<PageSkeleton />}>
                   <TimetablePage />
                 </Suspense>
-              </ProtectedRoute>
-            } />
-            <Route path="/academic/student-timetable" element={
-              <ProtectedRoute>
+              } />
+              <Route path="/academic/student-timetable" element={
                 <Suspense fallback={<PageSkeleton />}>
                   <StudentTimetablePage />
                 </Suspense>
-              </ProtectedRoute>
-            } />
-            <Route path="/academic/hifz-progress" element={
-              <ProtectedRoute>
+              } />
+              <Route path="/academic/hifz-progress" element={
                 <Suspense fallback={<PageSkeleton />}>
                   <HifzProgressPage />
                 </Suspense>
-              </ProtectedRoute>
-            } />
-            
-            {/* Exams routes */}
-            <Route path="/exams/*" element={
-              <ProtectedRoute>
+              } />
+              
+              {/* Exams routes */}
+              <Route path="/exams/*" element={
                 <Suspense fallback={<PageSkeleton />}>
                   <ExamsPage />
                 </Suspense>
-              </ProtectedRoute>
-            } />
+              } />
             <Route path="/exams/setup" element={
               <ProtectedRoute>
                 <Suspense fallback={<PageSkeleton />}>
@@ -506,10 +489,13 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            </Route>
+            
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
             </Routes>
           </ErrorBoundary>
+          </SidebarProvider>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

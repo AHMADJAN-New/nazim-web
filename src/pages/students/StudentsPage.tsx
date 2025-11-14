@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   Users, 
   Plus, 
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useStudents, useUpdateStudent, useDeleteStudent } from "@/hooks/useStudents";
 import { useClasses } from "@/hooks/useClasses";
+import { useDebounce } from "@/lib/performance";
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -77,10 +78,13 @@ export default function StudentsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
+  // Debounce search query to avoid excessive API calls
+  const debouncedSearch = useDebounce(searchQuery, 500);
+
   const { data, isLoading } = useStudents({
     page,
     pageSize,
-    search: searchQuery || undefined,
+    search: debouncedSearch || undefined,
     classId: selectedClass !== "all" ? selectedClass : undefined,
     section: selectedSection !== "all" ? selectedSection : undefined,
     status: selectedStatus !== "all" ? selectedStatus : undefined,
@@ -95,12 +99,19 @@ export default function StudentsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, selectedClass, selectedStatus, selectedSection]);
+  }, [debouncedSearch, selectedClass, selectedStatus, selectedSection]);
 
-  // Calculate stats from current page
-  const activeStudents = students.filter(s => s.status === 'active').length;
-  const onLeaveStudents = students.filter(s => s.status === 'inactive').length;
-  const hostelStudents = students.filter(s => s.status === 'active').length; // Adjust based on hostel data
+  // Memoize stats calculations to avoid recalculation on every render
+  const stats = useMemo(() => {
+    const active = students.filter(s => s.status === 'active').length;
+    const inactive = students.filter(s => s.status === 'inactive').length;
+    const hostel = students.filter(s => s.status === 'active').length; // Adjust based on hostel data
+    return { active, inactive, hostel };
+  }, [students]);
+
+  const activeStudents = stats.active;
+  const onLeaveStudents = stats.inactive;
+  const hostelStudents = stats.hostel;
 
   const handleViewStudent = (studentId: string) => {
     // Navigate to student details page
@@ -118,19 +129,10 @@ export default function StudentsPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <MainLayout 
-        title="Students Management"
-        showBreadcrumb
-        breadcrumbItems={breadcrumbItems}
-      >
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
-      </MainLayout>
-    );
-  }
+  // Memoize sections to avoid recalculation
+  const sections = useMemo(() => {
+    return Array.from(new Set(classes.map(cls => cls.section).filter(Boolean)));
+  }, [classes]);
 
   return (
     <MainLayout 
@@ -175,7 +177,7 @@ export default function StudentsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Sections</SelectItem>
-                  {Array.from(new Set(classes.map(cls => cls.section).filter(Boolean))).map((section) => (
+                  {sections.map((section) => (
                     <SelectItem key={section} value={section!}>
                       Section {section}
                     </SelectItem>
@@ -275,23 +277,39 @@ export default function StudentsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Admission No.</TableHead>
-                    <TableHead>Roll No.</TableHead>
-                    <TableHead>Class/Section</TableHead>
-                    <TableHead>Father Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Hostel</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((student) => (
+            {isLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 animate-pulse">
+                    <div className="w-10 h-10 rounded-full bg-muted"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted rounded w-1/4"></div>
+                      <div className="h-3 bg-muted rounded w-1/3"></div>
+                    </div>
+                    <div className="h-4 bg-muted rounded w-20"></div>
+                    <div className="h-4 bg-muted rounded w-20"></div>
+                    <div className="h-4 bg-muted rounded w-24"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Admission No.</TableHead>
+                      <TableHead>Roll No.</TableHead>
+                      <TableHead>Class/Section</TableHead>
+                      <TableHead>Father Name</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Hostel</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {students.map((student) => (
                     <TableRow key={student.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -376,10 +394,11 @@ export default function StudentsPage() {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
 
             {students.length === 0 && (
               <div className="text-center py-8">
