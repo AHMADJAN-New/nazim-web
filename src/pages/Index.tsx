@@ -55,49 +55,65 @@ const Index = () => {
       icon: Users,
       title: "Student Management",
       description: "Complete student information system with admission, records, and progress tracking",
-      color: "text-blue-600"
+      color: "text-blue-600",
+      bgFrom: "from-blue-100",
+      bgTo: "to-blue-200",
     },
     {
       icon: GraduationCap,
       title: "Academic Management",
       description: "Manage classes, subjects, exams, and academic performance analytics",
-      color: "text-green-600"
+      color: "text-green-600",
+      bgFrom: "from-green-100",
+      bgTo: "to-green-200",
     },
     {
       icon: BookOpen,
       title: "Library System",
       description: "Digital library management with book tracking and student borrowing records",
-      color: "text-purple-600"
+      color: "text-purple-600",
+      bgFrom: "from-purple-100",
+      bgTo: "to-purple-200",
     },
     {
       icon: Calendar,
       title: "Attendance Tracking",
       description: "Real-time attendance management with automated reporting and notifications",
-      color: "text-orange-600"
+      color: "text-orange-600",
+      bgFrom: "from-orange-100",
+      bgTo: "to-orange-200",
     },
     {
       icon: Calculator,
       title: "Fee Management",
       description: "Comprehensive fee collection, payment tracking, and financial reporting",
-      color: "text-red-600"
+      color: "text-red-600",
+      bgFrom: "from-red-100",
+      bgTo: "to-red-200",
     },
     {
       icon: Building,
       title: "Hostel Management",
       description: "Complete hostel administration with room allocation and student management",
-      color: "text-indigo-600"
+      color: "text-indigo-600",
+      bgFrom: "from-indigo-100",
+      bgTo: "to-indigo-200",
     },
     {
       icon: Award,
       title: "Hifz Progress",
       description: "Track Quran memorization progress with detailed analytics and reports",
-      color: "text-emerald-600"
+      color: "text-emerald-600",
+      bgFrom: "from-emerald-100",
+      bgTo: "to-emerald-200",
     },
     {
       icon: MessageSquare,
       title: "Communication Hub",
       description: "Announcements, notifications, and parent-teacher communication platform",
-      color: "text-pink-600"
+      color: "text-pink-600",
+      bgFrom: "from-pink-100",
+      bgTo: "to-pink-200",
     }
   ];
 
@@ -357,7 +373,7 @@ const Index = () => {
             {features.map((feature, index) => (
               <Card key={index} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 <CardHeader>
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br from-${feature.color.split('-')[1]}-100 to-${feature.color.split('-')[1]}-200 flex items-center justify-center mb-4`}>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.bgFrom} ${feature.bgTo} flex items-center justify-center mb-4`}>
                     <feature.icon className={`h-6 w-6 ${feature.color}`} />
                   </div>
                   <CardTitle className="text-lg">{feature.title}</CardTitle>

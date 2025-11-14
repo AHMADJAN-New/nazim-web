@@ -1,0 +1,365 @@
+# Nazim School Management System - Cursor Rules
+
+## Project Overview
+This is a comprehensive Islamic school management system built with React, TypeScript, and Supabase. The application serves educational institutions with features for student management, academics, finance, communication, and more.
+
+## Tech Stack
+- **Frontend**: React 18.3.1, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Backend**: Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **State Management**: TanStack Query (React Query)
+- **Routing**: React Router DOM v6
+- **Forms**: React Hook Form + Zod validation
+- **Charts**: Recharts
+- **Testing**: Vitest, Testing Library
+
+## Code Style & Standards
+
+### TypeScript
+- Use strict TypeScript with proper type definitions
+- Define interfaces for all data structures
+- Use generic types where appropriate
+- Avoid `any` type - use proper typing
+- Export types from dedicated type files
+
+### React Patterns
+- Use functional components with hooks
+- Implement proper error boundaries
+- Use React.memo for performance optimization
+- Follow React best practices for state management
+- Use custom hooks for reusable logic
+
+### File Organization
+- Components in `/src/components/`
+- Pages in `/src/pages/`
+- Hooks in `/src/hooks/`
+- Types in `/src/types/`
+- Utils in `/src/lib/`
+- Use index files for clean imports
+
+### Naming Conventions
+- Components: PascalCase (e.g., `StudentDashboard`)
+- Files: PascalCase for components, camelCase for utilities
+- Variables: camelCase
+- Constants: UPPER_SNAKE_CASE
+- Database tables: snake_case
+
+## Database & Supabase
+
+### Database Schema
+- Use proper foreign key relationships
+- Implement Row Level Security (RLS)
+- Use enums for status fields
+- Follow naming conventions: snake_case for tables/columns
+
+### Supabase Integration
+- Use typed Supabase client
+- Implement proper error handling
+- Use real-time subscriptions where needed
+- Follow security best practices
+
+### Query Patterns
+```typescript
+// Use TanStack Query for data fetching
+const { data, isLoading, error } = useQuery({
+  queryKey: ['students', page, search],
+  queryFn: () => fetchStudents({ page, search }),
+  staleTime: 5 * 60 * 1000, // 5 minutes
+});
+```
+
+## UI/UX Guidelines
+
+### Design System
+- Use shadcn/ui components consistently
+- Follow Islamic-inspired design principles
+- Implement responsive design (mobile-first)
+- Support RTL languages (Arabic, Urdu)
+- Use semantic color tokens
+
+### Component Structure
+```typescript
+interface ComponentProps {
+  // Define all props with proper types
+}
+
+export function ComponentName({ prop1, prop2 }: ComponentProps) {
+  // Component logic
+  return (
+    <div className="proper-tailwind-classes">
+      {/* JSX content */}
+    </div>
+  );
+}
+```
+
+### Styling
+- Use Tailwind CSS utility classes
+- Create custom CSS variables for theming
+- Implement dark/light mode support
+- Use consistent spacing and typography
+- Follow accessibility guidelines
+
+## Authentication & Security
+
+### User Roles
+- `super_admin`: Full system access
+- `admin`: School-level administration
+- `teacher`: Academic management
+- `staff`: Operational tasks
+- `student`: Personal academic access
+- `parent`: Child's academic information
+
+### Security Practices
+- Implement proper role-based access control
+- Use JWT tokens for authentication
+- Validate all user inputs
+- Implement audit logging
+- Follow OWASP security guidelines
+
+## Performance Optimization
+
+### Code Splitting
+- Use lazy loading for all pages
+- Implement proper loading states
+- Use Suspense boundaries
+- Optimize bundle size
+
+### Data Fetching
+- Use TanStack Query for caching
+- Implement proper loading states
+- Use optimistic updates where appropriate
+- Implement error boundaries
+
+### Rendering
+- Use React.memo for expensive components
+- Implement proper key props
+- Avoid unnecessary re-renders
+- Use useMemo and useCallback appropriately
+
+## Testing Strategy
+
+### Unit Tests
+- Test component rendering
+- Test user interactions
+- Test custom hooks
+- Test utility functions
+
+### Integration Tests
+- Test API integrations
+- Test database operations
+- Test authentication flows
+- Test role-based access
+
+### Test Structure
+```typescript
+describe('ComponentName', () => {
+  it('should render correctly', () => {
+    // Test implementation
+  });
+  
+  it('should handle user interactions', () => {
+    // Test implementation
+  });
+});
+```
+
+## Error Handling
+
+### Client-Side
+- Use error boundaries for component errors
+- Implement proper error states
+- Show user-friendly error messages
+- Log errors for debugging
+
+### Server-Side
+- Handle Supabase errors gracefully
+- Implement retry logic where appropriate
+- Use proper HTTP status codes
+- Log errors for monitoring
+
+## Internationalization
+
+### Multi-language Support
+- Use translation keys consistently
+- Support RTL languages
+- Implement proper date/time formatting
+- Use locale-specific number formatting
+
+### RTL Support
+- Use proper CSS for RTL layouts
+- Test with Arabic/Urdu content
+- Implement proper text direction
+- Use appropriate fonts
+
+## Code Quality
+
+### Linting & Formatting
+- Use ESLint for code quality
+- Use Prettier for code formatting
+- Follow consistent code style
+- Remove unused imports and variables
+
+### Documentation
+- Write clear component documentation
+- Use JSDoc for complex functions
+- Document API endpoints
+- Keep README updated
+
+## Git Workflow
+
+### Commit Messages
+- Use conventional commit format
+- Be descriptive and clear
+- Reference issues where applicable
+- Keep commits atomic
+
+### Branch Strategy
+- Use feature branches for new features
+- Use descriptive branch names
+- Keep branches up to date
+- Use pull requests for code review
+
+## Deployment
+
+### Environment Variables
+- Use proper environment configuration
+- Never commit sensitive data
+- Use different configs for dev/prod
+- Document required environment variables
+
+### Build Process
+- Use Vite for fast builds
+- Optimize bundle size
+- Implement proper caching
+- Use CDN for static assets
+
+## Common Patterns
+
+### Data Fetching
+```typescript
+// Custom hook pattern
+export const useStudents = (params: StudentParams) => {
+  return useQuery({
+    queryKey: ['students', params],
+    queryFn: () => fetchStudents(params),
+    enabled: !!params.classId,
+  });
+};
+```
+
+### Form Handling
+```typescript
+// React Hook Form + Zod
+const form = useForm<StudentFormData>({
+  resolver: zodResolver(studentSchema),
+  defaultValues: {
+    // Default values
+  },
+});
+```
+
+### State Management
+```typescript
+// Local state
+const [isLoading, setIsLoading] = useState(false);
+
+// Server state
+const { data, isLoading, error } = useQuery({
+  queryKey: ['key'],
+  queryFn: fetchFunction,
+});
+```
+
+## Islamic School Specific Guidelines
+
+### Hifz Progress
+- Track Quran memorization progress
+- Implement proper Arabic text handling
+- Support different memorization methods
+- Provide progress analytics
+
+### Academic Calendar
+- Support Islamic calendar
+- Handle prayer times
+- Implement holiday management
+- Support different academic years
+
+### Communication
+- Support multiple languages
+- Implement proper notification systems
+- Handle parent-teacher communication
+- Support SMS and email integration
+
+## Performance Monitoring
+
+### Metrics to Track
+- Page load times
+- API response times
+- User interaction metrics
+- Error rates
+- Database query performance
+
+### Optimization
+- Use React DevTools Profiler
+- Monitor bundle size
+- Implement proper caching
+- Use performance budgets
+
+## Security Considerations
+
+### Data Protection
+- Encrypt sensitive data
+- Implement proper access controls
+- Use HTTPS everywhere
+- Regular security audits
+
+### User Privacy
+- Follow GDPR guidelines
+- Implement data retention policies
+- Provide data export functionality
+- Allow data deletion
+
+## Accessibility
+
+### WCAG Guidelines
+- Use semantic HTML
+- Implement proper ARIA labels
+- Ensure keyboard navigation
+- Provide alt text for images
+- Use proper color contrast
+
+### Testing
+- Test with screen readers
+- Test keyboard navigation
+- Test with different zoom levels
+- Test with high contrast mode
+
+## Maintenance
+
+### Code Reviews
+- Review for security issues
+- Check performance implications
+- Ensure proper error handling
+- Verify accessibility compliance
+
+### Updates
+- Keep dependencies updated
+- Monitor security advisories
+- Test updates thoroughly
+- Document breaking changes
+
+## Troubleshooting
+
+### Common Issues
+- Authentication problems
+- Database connection issues
+- Performance problems
+- Browser compatibility
+
+### Debugging
+- Use browser dev tools
+- Implement proper logging
+- Use React DevTools
+- Monitor network requests
+
+Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code.

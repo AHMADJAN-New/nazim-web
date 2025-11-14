@@ -71,8 +71,12 @@ export function OMRUploader({ onScanComplete, answerKey }: OMRUploaderProps) {
       formData.append('answerKey', JSON.stringify(answerKey));
     }
 
-    const response = await fetch('/api/omr/scan', {
+    // Call Supabase Edge Function
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omr-scan`, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
       body: formData,
     });
 
@@ -87,7 +91,7 @@ export function OMRUploader({ onScanComplete, answerKey }: OMRUploaderProps) {
       fileName: uploadedFile.file.name,
       ...result,
       scanDate: new Date()
-    };
+    } as OMRScanResult;
   };
 
   const scanAllFiles = async () => {
