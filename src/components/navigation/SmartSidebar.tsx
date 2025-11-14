@@ -561,8 +561,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
       {/* Logo Section */}
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-            <School className="h-5 w-5 text-primary-foreground" />
+          <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
+            <School className="h-5 w-5 text-sidebar-primary-foreground" />
           </div>
           {!collapsed && (
             <div>
@@ -577,8 +577,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
       {!collapsed && user && (
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center">
-              <span className="text-sm font-semibold text-primary-foreground">
+            <div className="w-10 h-10 bg-sidebar-primary rounded-full flex items-center justify-center">
+              <span className="text-sm font-semibold text-sidebar-primary-foreground">
                 {user.email?.charAt(0).toUpperCase()}
               </span>
             </div>

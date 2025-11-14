@@ -22,73 +22,73 @@
 
 @layer base {
   :root {
-    /* Islamic-inspired color palette */
-    --background: 0 0% 100%;
-    --foreground: 220 13% 9%;
+    --background: 210.0000 40.0000% 98.0392%;
+    --foreground: 217.2414 32.5843% 17.4510%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 13% 9%;
+    --card-foreground: 217.2414 32.5843% 17.4510%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 9%;
+    --popover-foreground: 217.2414 32.5843% 17.4510%;
 
-    /* Primary: Deep Islamic Green */
-    --primary: 158 58% 28%;
-    --primary-foreground: 0 0% 98%;
-    --primary-light: 158 45% 45%;
-    --primary-lighter: 158 35% 85%;
+    --primary: 238.7324 83.5294% 66.6667%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Warm Gold */
-    --secondary: 45 85% 58%;
-    --secondary-foreground: 24 45% 15%;
-    --secondary-light: 45 85% 70%;
-    --secondary-lighter: 45 85% 95%;
+    --secondary: 220 13.0435% 90.9804%;
+    --secondary-foreground: 216.9231 19.1176% 26.6667%;
 
-    /* Accent: Royal Blue */
-    --accent: 217 71% 53%;
-    --accent-foreground: 0 0% 98%;
-    --accent-light: 217 71% 65%;
-    --accent-lighter: 217 71% 95%;
+    --muted: 220.0000 14.2857% 95.8824%;
+    --muted-foreground: 220 8.9362% 46.0784%;
 
-    /* Muted tones */
-    --muted: 220 13% 96%;
-    --muted-foreground: 220 9% 46%;
+    --accent: 226.4516 100% 93.9216%;
+    --accent-foreground: 216.9231 19.1176% 26.6667%;
 
-    /* Semantic colors */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 98%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 98%;
+    --destructive: 0 84.2365% 60.1961%;
+    --destructive-foreground: 0 0% 100%;
 
-    /* UI elements */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 158 58% 28%;
-    --radius: 0.75rem;
+    --border: 216.0000 12.1951% 83.9216%;
+    --input: 216.0000 12.1951% 83.9216%;
+    --ring: 238.7324 83.5294% 66.6667%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
-    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--secondary-light)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+    --chart-1: 238.7324 83.5294% 66.6667%;
+    --chart-2: 243.3962 75.3555% 58.6275%;
+    --chart-3: 244.5205 57.9365% 50.5882%;
+    --chart-4: 243.6522 54.5024% 41.3725%;
+    --chart-5: 242.1687 47.4286% 34.3137%;
 
-    /* Shadows */
-    --shadow-sm: 0 1px 3px 0 hsl(var(--primary) / 0.1);
-    --shadow-md: 0 4px 15px -4px hsl(var(--primary) / 0.15);
-    --shadow-lg: 0 10px 40px -15px hsl(var(--primary) / 0.25);
-    --shadow-glow: 0 0 25px hsl(var(--primary) / 0.15);
+    --sidebar: 220.0000 14.2857% 95.8824%;
+    --sidebar-foreground: 217.2414 32.5843% 17.4510%;
+    --sidebar-primary: 238.7324 83.5294% 66.6667%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 226.4516 100% 93.9216%;
+    --sidebar-accent-foreground: 216.9231 19.1176% 26.6667%;
+    --sidebar-border: 216.0000 12.1951% 83.9216%;
+    --sidebar-ring: 238.7324 83.5294% 66.6667%;
 
-    /* Sidebar specific */
-    --sidebar-background: 158 58% 28%;
-    --sidebar-foreground: 158 15% 85%;
-    --sidebar-primary: 158 45% 45%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 158 35% 35%;
-    --sidebar-accent-foreground: 158 15% 85%;
-    --sidebar-border: 158 35% 25%;
-    --sidebar-ring: 158 58% 28%;
+    --font-sans: Inter, sans-serif;
+    --font-serif: Merriweather, serif;
+    --font-mono: JetBrains Mono, monospace;
+
+    --radius: 0.5rem;
+
+    --shadow-x: 0px;
+    --shadow-y: 4px;
+    --shadow-blur: 8px;
+    --shadow-spread: -1px;
+    --shadow-opacity: 0.1;
+    --shadow-color: hsl(0 0% 0%);
+
+    --shadow-2xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
+    --shadow-xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
+    --shadow-sm: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 1px 2px -2px hsl(0 0% 0% / 0.10);
+    --shadow: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 1px 2px -2px hsl(0 0% 0% / 0.10);
+    --shadow-md: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 2px 4px -2px hsl(0 0% 0% / 0.10);
+    --shadow-lg: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 4px 6px -2px hsl(0 0% 0% / 0.10);
+    --shadow-xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 8px 10px -2px hsl(0 0% 0% / 0.10);
+    --shadow-2xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.25);
+
+    --tracking-normal: 0em;
+    --spacing: 0.25rem;
 
     /* Animation variables */
     --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -96,39 +96,70 @@
   }
 
   .dark {
-    --background: 220 13% 9%;
-    --foreground: 220 13% 98%;
+    --background: 222.2222 47.3684% 11.1765%;
+    --foreground: 214.2857 31.8182% 91.3725%;
 
-    --card: 220 13% 12%;
-    --card-foreground: 220 13% 98%;
+    --card: 217.2414 32.5843% 17.4510%;
+    --card-foreground: 214.2857 31.8182% 91.3725%;
 
-    --popover: 220 13% 12%;
-    --popover-foreground: 220 13% 98%;
+    --popover: 217.2414 32.5843% 17.4510%;
+    --popover-foreground: 214.2857 31.8182% 91.3725%;
 
-    --primary: 158 45% 45%;
-    --primary-foreground: 220 13% 9%;
+    --primary: 234.4538 89.4737% 73.9216%;
+    --primary-foreground: 222.2222 47.3684% 11.1765%;
 
-    --secondary: 45 85% 70%;
-    --secondary-foreground: 24 45% 15%;
+    --secondary: 217.7778 23.0769% 22.9412%;
+    --secondary-foreground: 216.0000 12.1951% 83.9216%;
 
-    --accent: 217 71% 65%;
-    --accent-foreground: 220 13% 9%;
+    --muted: 217.2414 40.8451% 13.9216%;
+    --muted-foreground: 217.8947 10.6145% 64.9020%;
 
-    --muted: 220 13% 15%;
-    --muted-foreground: 220 9% 65%;
+    --accent: 216.9231 19.1176% 26.6667%;
+    --accent-foreground: 216.0000 12.1951% 83.9216%;
 
-    --border: 220 13% 20%;
-    --input: 220 13% 20%;
-    --ring: 158 45% 45%;
+    --destructive: 0 84.2365% 60.1961%;
+    --destructive-foreground: 222.2222 47.3684% 11.1765%;
 
-    --sidebar-background: 220 13% 12%;
-    --sidebar-foreground: 220 13% 85%;
-    --sidebar-primary: 158 45% 45%;
-    --sidebar-primary-foreground: 220 13% 9%;
-    --sidebar-accent: 220 13% 18%;
-    --sidebar-accent-foreground: 220 13% 85%;
-    --sidebar-border: 220 13% 20%;
-    --sidebar-ring: 158 45% 45%;
+    --border: 215 13.7931% 34.1176%;
+    --input: 215 13.7931% 34.1176%;
+    --ring: 234.4538 89.4737% 73.9216%;
+
+    --chart-1: 234.4538 89.4737% 73.9216%;
+    --chart-2: 238.7324 83.5294% 66.6667%;
+    --chart-3: 243.3962 75.3555% 58.6275%;
+    --chart-4: 244.5205 57.9365% 50.5882%;
+    --chart-5: 243.6522 54.5024% 41.3725%;
+
+    --sidebar: 217.2414 32.5843% 17.4510%;
+    --sidebar-foreground: 214.2857 31.8182% 91.3725%;
+    --sidebar-primary: 234.4538 89.4737% 73.9216%;
+    --sidebar-primary-foreground: 222.2222 47.3684% 11.1765%;
+    --sidebar-accent: 216.9231 19.1176% 26.6667%;
+    --sidebar-accent-foreground: 216.0000 12.1951% 83.9216%;
+    --sidebar-border: 215 13.7931% 34.1176%;
+    --sidebar-ring: 234.4538 89.4737% 73.9216%;
+
+    --font-sans: Inter, sans-serif;
+    --font-serif: Merriweather, serif;
+    --font-mono: JetBrains Mono, monospace;
+
+    --radius: 0.5rem;
+
+    --shadow-x: 0px;
+    --shadow-y: 4px;
+    --shadow-blur: 8px;
+    --shadow-spread: -1px;
+    --shadow-opacity: 0.1;
+    --shadow-color: hsl(0 0% 0%);
+
+    --shadow-2xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
+    --shadow-xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
+    --shadow-sm: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 1px 2px -2px hsl(0 0% 0% / 0.10);
+    --shadow: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 1px 2px -2px hsl(0 0% 0% / 0.10);
+    --shadow-md: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 2px 4px -2px hsl(0 0% 0% / 0.10);
+    --shadow-lg: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 4px 6px -2px hsl(0 0% 0% / 0.10);
+    --shadow-xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 8px 10px -2px hsl(0 0% 0% / 0.10);
+    --shadow-2xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.25);
   }
 
   /* RTL Support */
