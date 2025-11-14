@@ -528,8 +528,8 @@ export const initializeAccessibility = () => {
     }
   });
 
-  // Run initial audit in development
-  if (import.meta.env.DEV) {
+  // Run initial audit in development only when explicitly enabled
+  if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_A11Y_AUDIT === 'true') {
     setTimeout(() => {
       const audit = a11yAudit.runBasicAudit();
       if (audit.issues.length > 0) {

@@ -9,10 +9,25 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    // Optimize dev server performance
+    hmr: {
+      overlay: true,
+    },
+  },
+  // Optimize build performance
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@tanstack/react-query',
+    ],
+    exclude: ['lovable-tagger'],
   },
   plugins: [
     react(),
-    VitePWA({
+    // Only enable PWA in production builds
+    mode === 'production' && VitePWA({
       registerType: 'autoUpdate',
       manifest: {
         name: 'Nazim School Management System',
@@ -41,7 +56,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
     }),
-    mode === 'development' &&
+    // Only enable component tagger in development if explicitly needed
+    mode === 'development' && process.env.ENABLE_TAGGER === 'true' &&
     componentTagger(),
   ].filter(Boolean),
   resolve: {

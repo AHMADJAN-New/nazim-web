@@ -472,10 +472,18 @@ export const bundleAnalyzer = {
 
 // Initialize performance monitoring
 export const initializePerformanceMonitoring = () => {
-  performanceMonitor.setupCoreWebVitals();
-  memoryUtils.monitorMemory();
+  // Only setup Core Web Vitals in production or when explicitly enabled
+  if (import.meta.env.PROD || import.meta.env.VITE_ENABLE_CORE_WEB_VITALS === 'true') {
+    performanceMonitor.setupCoreWebVitals();
+  }
   
-  if (import.meta.env.DEV) {
+  // Memory monitoring can be expensive, only enable in production
+  if (import.meta.env.PROD) {
+    memoryUtils.monitorMemory();
+  }
+  
+  // Bundle analysis only when explicitly enabled in dev
+  if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_BUNDLE_ANALYSIS === 'true') {
     bundleAnalyzer.analyzeChunks();
     bundleAnalyzer.measureBundleLoad();
   }

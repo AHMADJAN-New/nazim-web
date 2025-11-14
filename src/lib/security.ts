@@ -471,7 +471,7 @@ export const initializeSecurity = () => {
   // Generate CSRF token
   csrf.generateToken();
   
-  // Apply CSP in development
+  // Apply CSP in development (lightweight, keep it)
   if (import.meta.env.DEV) {
     csp.apply({
       allowInlineStyles: true,
@@ -479,11 +479,11 @@ export const initializeSecurity = () => {
     });
   }
   
-  // Setup session timeout
-  sessionSecurity.setupTimeout();
-  
-  // Update activity on page load
-  sessionSecurity.updateActivity();
+  // Setup session timeout (defer to avoid blocking)
+  setTimeout(() => {
+    sessionSecurity.setupTimeout();
+    sessionSecurity.updateActivity();
+  }, 0);
   
   logger.info('Security measures initialized', {
     component: 'Security',

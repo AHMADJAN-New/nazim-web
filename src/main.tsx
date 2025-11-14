@@ -10,17 +10,23 @@ import { initializePerformanceMonitoring } from './lib/performance' // Initializ
 import { initializeAccessibility } from './lib/accessibility' // Initialize accessibility
 import { LanguageProvider } from '@/hooks/useLanguage';
 
-// Initialize security measures
+// Initialize security measures (lightweight, keep it)
 initializeSecurity();
 
-// Initialize PWA features
-initializePWA();
+// Initialize PWA features asynchronously (non-blocking)
+if (import.meta.env.PROD) {
+  initializePWA().catch(console.error);
+}
 
-// Initialize performance monitoring
-initializePerformanceMonitoring();
+// Initialize performance monitoring only in production or when explicitly enabled
+if (import.meta.env.PROD || import.meta.env.VITE_ENABLE_PERF_MONITORING === 'true') {
+  initializePerformanceMonitoring();
+}
 
-// Initialize accessibility features
-initializeAccessibility();
+// Initialize accessibility features asynchronously (non-blocking)
+setTimeout(() => {
+  initializeAccessibility();
+}, 0);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

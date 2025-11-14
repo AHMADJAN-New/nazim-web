@@ -16,6 +16,7 @@ export const useSecureAuth = () => {
     setLoading(true);
     try {
       console.log('Secure sign in attempt for:', email);
+      console.log('Supabase client initialized:', !!supabase);
       
       // Attempt sign in
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -23,8 +24,15 @@ export const useSecureAuth = () => {
         password,
       });
 
+      console.log('Sign in response:', { data: data ? { user: data.user?.email, session: !!data.session } : null, error });
+
       if (error) {
         console.error('Supabase auth error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
         
         // Handle failed login attempt
         try {
@@ -41,7 +49,7 @@ export const useSecureAuth = () => {
           console.warn('Failed to handle login failure:', failureError);
         }
 
-        // Log authentication event
+        // Log authentication event (non-blocking)
         try {
           await supabase.functions.invoke('log-password-event', {
             body: {
@@ -110,6 +118,9 @@ export const useSecureAuth = () => {
   const secureSignUp = async (email: string, password: string, userData: any) => {
     setLoading(true);
     try {
+      console.log('Secure sign up attempt for:', email);
+      console.log('Supabase client initialized:', !!supabase);
+      
       // Validate password strength
       const passwordErrors = validatePasswordStrength(password);
       if (passwordErrors.length > 0) {
@@ -118,6 +129,8 @@ export const useSecureAuth = () => {
       }
 
       const redirectUrl = `${window.location.origin}/`;
+      
+      console.log('Attempting sign up with:', { email, redirectUrl, userData });
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -128,8 +141,20 @@ export const useSecureAuth = () => {
         }
       });
 
+      console.log('Sign up response:', { 
+        data: data ? { user: data.user?.email, session: !!data.session } : null, 
+        error 
+      });
+
       if (error) {
-        // Log failed registration
+        console.error('Supabase sign up error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
+        
+        // Log failed registration (non-blocking)
         try {
           await supabase.functions.invoke('log-password-event', {
             body: {

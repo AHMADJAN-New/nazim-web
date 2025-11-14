@@ -62,24 +62,51 @@ export default function AuthPage() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Attempting sign in for:', formData.email);
-    
-    const { data, error } = await secureSignIn(formData.email, formData.password);
-    
-    if (error) {
-      console.error('Sign in error:', error);
-      if (error.message.includes('Invalid login credentials')) {
-        toast.error('Invalid email or password. Please check your credentials and try again.');
-      } else if (error.message !== 'Account locked') {
-        toast.error(error.message || 'Failed to sign in');
-      }
+    if (!formData.email || !formData.password) {
+      toast.error('Please enter both email and password');
       return;
     }
     
-    if (data) {
-      console.log('Sign in successful:', data.user?.email);
-      toast.success('Logged in successfully!');
-      navigate('/redirect');
+    console.log('Attempting sign in for:', formData.email);
+    setLoading(true);
+    
+    try {
+      const { data, error } = await secureSignIn(formData.email, formData.password);
+      
+      if (error) {
+        console.error('Sign in error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name,
+        });
+        
+        if (error.message?.includes('Invalid login credentials') || error.message?.includes('Invalid')) {
+          toast.error('Invalid email or password. Please check your credentials and try again.');
+        } else if (error.message === 'Account locked') {
+          // Error already shown by secureSignIn
+        } else {
+          toast.error(error.message || 'Failed to sign in. Please check your connection and try again.');
+        }
+        return;
+      }
+      
+      if (data?.user) {
+        console.log('Sign in successful:', data.user.email);
+        toast.success('Logged in successfully!');
+        // Small delay to ensure session is set
+        setTimeout(() => {
+          navigate('/redirect');
+        }, 100);
+      } else {
+        console.warn('Sign in returned no user data');
+        toast.error('Sign in failed. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Unexpected sign in error:', error);
+      toast.error(error.message || 'An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,6 +128,11 @@ export default function AuthPage() {
       return;
     }
 
+    if (!formData.email) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
     const userData = {
       full_name: formData.fullName,
       phone: formData.phone,
@@ -108,19 +140,50 @@ export default function AuthPage() {
       school_id: formData.schoolId
     };
 
-    const { data, error } = await secureSignUp(formData.email, formData.password, userData);
+    setLoading(true);
     
-    if (error) {
-      toast.error(error.message || 'Failed to create account');
-      return;
-    }
-    
-    if (data) {
-      if (formData.role === 'super_admin') {
-        toast.success('Super Admin account created! You can now sign in.');
-      } else {
-        toast.success('Registration submitted! Please wait for approval from your school administrator.');
+    try {
+      console.log('Attempting sign up for:', formData.email);
+      
+      const { data, error } = await secureSignUp(formData.email, formData.password, userData);
+      
+      if (error) {
+        console.error('Sign up error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name,
+        });
+        toast.error(error.message || 'Failed to create account. Please check your connection and try again.');
+        return;
       }
+      
+      if (data?.user) {
+        console.log('Sign up successful:', data.user.email);
+        if (formData.role === 'super_admin') {
+          toast.success('Super Admin account created! You can now sign in.');
+        } else {
+          toast.success('Registration submitted! Please wait for approval from your school administrator.');
+        }
+        // Clear form
+        setFormData({
+          email: '',
+          password: '',
+          confirmPassword: '',
+          fullName: '',
+          phone: '',
+          role: 'student',
+          schoolId: ''
+        });
+      } else {
+        console.warn('Sign up returned no user data');
+        toast.error('Sign up failed. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Unexpected sign up error:', error);
+      toast.error(error.message || 'An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
