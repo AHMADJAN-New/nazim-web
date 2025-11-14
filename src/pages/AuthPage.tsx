@@ -37,7 +37,16 @@ export default function AuthPage() {
   });
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
 
+  // Development mode: Set to true to bypass authentication
+  const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false';
+
   useEffect(() => {
+    // In development mode, don't redirect - allow access to auth page
+    if (DEV_AUTH_BYPASS) {
+      fetchSchools();
+      return;
+    }
+
     if (user) {
       navigate('/redirect');
     }

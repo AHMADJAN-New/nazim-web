@@ -6,8 +6,16 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
+// Development mode: Set to true to bypass authentication
+const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false';
+
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
+
+  // Development mode: Allow access without authentication
+  if (DEV_AUTH_BYPASS) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (

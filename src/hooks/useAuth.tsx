@@ -11,12 +11,66 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Development mode: Set to true to bypass authentication
+const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false';
+
+// Mock user for development
+const createMockUser = (): User => ({
+  id: 'dev-user-id',
+  email: 'dev@example.com',
+  created_at: new Date().toISOString(),
+  app_metadata: {},
+  user_metadata: {
+    full_name: 'Development User',
+    role: 'admin'
+  },
+  aud: 'authenticated',
+  confirmation_sent_at: null,
+  recovery_sent_at: null,
+  email_confirmed_at: new Date().toISOString(),
+  invited_at: null,
+  action_link: null,
+  last_sign_in_at: new Date().toISOString(),
+  phone: null,
+  confirmed_at: new Date().toISOString(),
+  email_change_sent_at: null,
+  new_email: null,
+  phone_confirmed_at: null,
+  phone_change: null,
+  phone_change_token: null,
+  email_change: null,
+  email_change_token: null,
+  is_anonymous: false,
+  factors: null,
+});
+
+const createMockSession = (user: User): Session => ({
+  access_token: 'dev-mock-token',
+  refresh_token: 'dev-mock-refresh-token',
+  expires_in: 3600,
+  expires_at: Math.floor(Date.now() / 1000) + 3600,
+  token_type: 'bearer',
+  user,
+});
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Development mode: Bypass authentication
+    if (DEV_AUTH_BYPASS) {
+      console.log('🔓 Development mode: Authentication bypassed');
+      const mockUser = createMockUser();
+      const mockSession = createMockSession(mockUser);
+      setUser(mockUser);
+      setSession(mockSession);
+      setLoading(false);
+      return;
+    }
+
+    // Production mode: Normal authentication
     let mounted = true;
     let fallbackTimer: number | undefined;
 
@@ -96,6 +150,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = async () => {
+    // Development mode: Just clear mock user
+    if (DEV_AUTH_BYPASS) {
+      console.log('🔓 Development mode: Sign out bypassed');
+      setUser(null);
+      setSession(null);
+      return;
+    }
+
+    // Production mode: Normal sign out
     try {
       await supabase.auth.signOut();
       // Log successful signout

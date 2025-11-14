@@ -4,6 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
 
+// Development mode: Set to true to bypass authentication
+const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false';
+
 export default function RoleBasedRedirect() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -11,6 +14,13 @@ export default function RoleBasedRedirect() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Development mode: Skip role check and go to dashboard
+    if (DEV_AUTH_BYPASS) {
+      console.log('🔓 Development mode: Redirecting to dashboard (auth bypassed)');
+      navigate('/dashboard');
+      return;
+    }
+
     if (!user) {
       console.log('No user in RoleBasedRedirect, staying on current page');
       setLoading(false);

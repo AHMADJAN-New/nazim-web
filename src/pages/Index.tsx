@@ -38,6 +38,17 @@ import { useLandingStats } from "@/hooks/useLandingStats";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+// Development mode: Set to true to bypass authentication
+const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false';
+
+// Debug logging
+console.log('🔍 Index Page Debug:', {
+  isDev: import.meta.env.DEV,
+  disableAuth: import.meta.env.VITE_DISABLE_AUTH,
+  DEV_AUTH_BYPASS,
+  mode: import.meta.env.MODE
+});
+
 const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -45,7 +56,8 @@ const Index = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
+    // In production, redirect authenticated users to dashboard
+    if (!DEV_AUTH_BYPASS && user) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
@@ -281,8 +293,49 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Development Mode Quick Access Banner - Always show in dev */}
+      {(DEV_AUTH_BYPASS || import.meta.env.DEV) && (
+        <div className="sticky top-0 z-50 bg-yellow-500 text-yellow-950 border-b-2 border-yellow-600 shadow-lg">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                <span className="font-semibold">🔓 Development Mode - Auth Bypassed</span>
+                <span className="text-xs opacity-75">(DEV: {String(import.meta.env.DEV)}, BYPASS: {String(DEV_AUTH_BYPASS)})</span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={() => navigate('/dashboard')}
+                  className="bg-white hover:bg-gray-100"
+                >
+                  Regular Dashboard
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={() => navigate('/school-admin')}
+                  className="bg-white hover:bg-gray-100"
+                >
+                  School Admin
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={() => navigate('/super-admin')}
+                  className="bg-white hover:bg-gray-100"
+                >
+                  Super Admin
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+      <nav className={`sticky ${(DEV_AUTH_BYPASS || import.meta.env.DEV) ? 'top-[57px]' : 'top-0'} z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b`}>
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -299,12 +352,21 @@ const Index = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" asChild>
-              <Link to="/auth">Sign In</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/auth">Get Started</Link>
-            </Button>
+            {!(DEV_AUTH_BYPASS || import.meta.env.DEV) && (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link to="/auth">Sign In</Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/auth">Get Started</Link>
+                </Button>
+              </>
+            )}
+            {(DEV_AUTH_BYPASS || import.meta.env.DEV) && (
+              <Button variant="outline" onClick={() => navigate('/dashboard')}>
+                Go to Dashboard
+              </Button>
+            )}
           </div>
         </div>
       </nav>
@@ -331,15 +393,34 @@ const Index = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Button size="lg" className="text-lg px-8 py-6" asChild>
-                <Link to="/auth">
-                  Start Free Trial
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6">
-                Watch Demo
-              </Button>
+              {(DEV_AUTH_BYPASS || import.meta.env.DEV) ? (
+                <>
+                  <Button size="lg" className="text-lg px-8 py-6" onClick={() => navigate('/dashboard')}>
+                    Regular Dashboard
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                  <Button size="lg" variant="secondary" className="text-lg px-8 py-6" onClick={() => navigate('/school-admin')}>
+                    School Admin
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                  <Button size="lg" variant="outline" className="text-lg px-8 py-6" onClick={() => navigate('/super-admin')}>
+                    Super Admin
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button size="lg" className="text-lg px-8 py-6" asChild>
+                    <Link to="/auth">
+                      Start Free Trial
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                  </Button>
+                  <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+                    Watch Demo
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Stats */}
