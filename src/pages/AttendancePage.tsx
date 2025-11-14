@@ -19,6 +19,7 @@ import { useAttendance, useUpdateAttendance } from "@/hooks/useAttendance";
 import { useClasses } from "@/hooks/useClasses";
 import { useAttendanceDevices, useCreateAttendanceDevice, useCreateAttendanceLog, useSyncDeviceData } from "@/hooks/useAttendanceDevices";
 import { supabase } from "@/integrations/supabase/client";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 export default function AttendancePage() {
   const { data: attendanceData = [], isLoading } = useAttendance();
@@ -194,9 +195,7 @@ export default function AttendancePage() {
   if (isLoading) {
     return (
       <MainLayout title="Attendance Management">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">Loading attendance data...</div>
-        </div>
+        <LoadingSpinner />
       </MainLayout>
     );
   }

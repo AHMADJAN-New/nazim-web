@@ -9,9 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building, Bed, Users, Plus, Search, Filter, Loader2, LayoutGrid, List } from "lucide-react";
+import { Building, Bed, Users, Plus, Search, Filter, LayoutGrid, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/hostel/RoomCard";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 const roomTypes = ["single", "double", "triple", "dormitory"];
 const statusOptions = ["available", "occupied", "maintenance", "reserved"];
@@ -148,9 +149,7 @@ export default function RoomManagementPage() {
   if (isLoading) {
     return (
       <MainLayout title="Room Management">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
+        <LoadingSpinner />
       </MainLayout>
     );
   }

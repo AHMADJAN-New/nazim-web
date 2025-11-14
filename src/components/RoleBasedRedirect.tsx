@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
+import { LoadingSpinner } from '@/components/ui/loading';
 
 // Development mode: Set to true to bypass authentication
 const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false';
@@ -96,14 +97,7 @@ export default function RoleBasedRedirect() {
   }, [userRole, loading, navigate]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Determining user role...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner size="lg" text="Determining user role..." fullScreen />;
   }
 
   return null;

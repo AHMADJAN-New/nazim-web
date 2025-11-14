@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { CheckCircle, XCircle, Users, Clock, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { LoadingSpinner } from '@/components/ui/loading';
 
 interface PendingRegistration {
   id: string;
@@ -145,7 +146,7 @@ export default function SchoolAdminPage() {
   };
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return <LoadingSpinner />;
   }
 
   return (

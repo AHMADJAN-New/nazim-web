@@ -13,6 +13,7 @@ import { Heart, Users, DollarSign, Download, Eye, Plus, Search, Filter } from "l
 import { useToast } from "@/hooks/use-toast";
 import { useDonationStats, Donation } from "@/hooks/useDonations";
 import { supabase } from "@/integrations/supabase/client";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 const donationPurposes = [
   "General Fund",
@@ -100,7 +101,7 @@ export default function DonationsPage() {
   if (isLoading) {
     return (
       <MainLayout title="Donations Management">
-        <div className="flex items-center justify-center h-64">Loading donations...</div>
+        <LoadingSpinner />
       </MainLayout>
     );
   }

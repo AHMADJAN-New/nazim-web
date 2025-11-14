@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
 
 // Lazy load all pages for better code splitting
 export const Dashboard = lazy(() => import('@/pages/Dashboard'));
@@ -83,67 +82,8 @@ export const ParentEventsPage = lazy(() => import('@/pages/parent/EventsPage'));
 // Teacher portal pages
 export const TeacherClassesPortalPage = lazy(() => import('@/pages/teacher/ClassesPage'));
 
-// Loading fallback components
-export const PageSkeleton = () => (
-  <div className="container mx-auto p-6 space-y-6">
-    <div className="flex justify-between items-center">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="h-10 w-32" />
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <Card key={i}>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-8 w-full" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  </div>
-);
-
-export const DashboardSkeleton = () => (
-  <div className="container mx-auto p-6 space-y-6">
-    <Skeleton className="h-8 w-48" />
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-4" />
-            </div>
-            <Skeleton className="h-8 w-16" />
-            <Skeleton className="h-3 w-20" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-32" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-32" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
-      </Card>
-    </div>
-  </div>
-);
+// Re-export loading components for backward compatibility
+export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
 
 // Higher-order component for lazy loading with custom skeleton
 export const withLazyLoading = <T extends object>(

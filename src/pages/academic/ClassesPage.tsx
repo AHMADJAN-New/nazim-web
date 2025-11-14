@@ -13,6 +13,7 @@ import { Plus, Search, Edit, Trash2, Users, Calendar, Clock, MapPin, BookOpen } 
 import { useToast } from "@/hooks/use-toast";
 import { useClasses, useCreateClass } from "@/hooks/useClasses";
 import { useSubjects } from "@/hooks/useSubjects";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 const timeSlots = [
   "8:00-8:40", "8:40-9:20", "9:20-10:00", "10:20-11:00", 
@@ -46,9 +47,7 @@ export default function ClassesPage() {
   if (isLoading) {
     return (
       <MainLayout title="Classes Management">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">Loading classes data...</div>
-        </div>
+        <LoadingSpinner />
       </MainLayout>
     );
   }

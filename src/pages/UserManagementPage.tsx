@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { LoadingSpinner } from '@/components/ui/loading';
 
 interface User {
   id: string;
@@ -126,7 +127,7 @@ export default function UserManagementPage() {
   };
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return <LoadingSpinner />;
   }
 
   return (

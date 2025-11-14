@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, School, Users, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { LoadingSpinner } from '@/components/ui/loading';
 
 interface School {
   id: string;
@@ -163,7 +164,7 @@ export default function SuperAdminPage() {
   };
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return <LoadingSpinner />;
   }
 
   return (

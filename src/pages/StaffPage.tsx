@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserPlus, Search, Edit, Trash2, Eye, Users, GraduationCap, Shield, Calculator, BookOpen, Coffee } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useStaff, useDeleteStaff, useCreateStaff, useStaffStats } from "@/hooks/useStaff";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 export default function StaffPage() {
   const { data: staff = [], isLoading } = useStaff();
@@ -129,9 +130,7 @@ export default function StaffPage() {
   if (isLoading) {
     return (
       <MainLayout title="Staff Management">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">Loading staff data...</div>
-        </div>
+        <LoadingSpinner />
       </MainLayout>
     );
   }

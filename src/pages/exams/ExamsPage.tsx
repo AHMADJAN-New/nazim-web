@@ -19,6 +19,7 @@ import { useExams } from "@/hooks/useExams";
 import { useExamResults, useCreateExamResult, useBulkCreateExamResults } from "@/hooks/useExamResults";
 import { useClasses } from "@/hooks/useClasses";
 import { useSubjects } from "@/hooks/useSubjects";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 interface Exam {
   id: string;
@@ -198,9 +199,7 @@ export default function ExamsPage() {
   if (examsLoading || resultsLoading) {
     return (
       <MainLayout title="Examinations">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">Loading exams data...</div>
-        </div>
+        <LoadingSpinner />
       </MainLayout>
     );
   }

@@ -59,6 +59,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { ParentDashboard } from "@/components/dashboards/ParentDashboard";
 import { StudentDashboard } from "@/components/dashboards/StudentDashboard";
 import { TeacherDashboard } from "@/components/dashboards/TeacherDashboard";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -149,9 +150,7 @@ export default function Dashboard() {
   if (statsLoading || roleLoading) {
     return (
       <MainLayout title="Dashboard">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
+        <LoadingSpinner />
       </MainLayout>
     );
   }

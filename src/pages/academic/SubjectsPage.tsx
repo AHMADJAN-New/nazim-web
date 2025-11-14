@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, BookOpen, Search, Loader2 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 export default function SubjectsPage() {
   const { t } = useLanguage();
@@ -75,9 +76,7 @@ export default function SubjectsPage() {
   if (isLoading) {
     return (
       <MainLayout title="Subjects Management">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
+        <LoadingSpinner />
       </MainLayout>
     );
   }
