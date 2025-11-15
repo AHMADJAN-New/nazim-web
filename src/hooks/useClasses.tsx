@@ -6,6 +6,7 @@ export interface Class {
   id: string;
   name: string;
   academic_year_id: string;
+  admission_year_id?: string;
   branch_id: string;
   section?: string;
   grade_level?: number;
