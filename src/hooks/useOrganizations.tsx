@@ -1,0 +1,249 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useAuth } from './useAuth';
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  settings: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export const useOrganizations = () => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['organizations'],
+    queryFn: async () => {
+      // Check if user is super admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id, role')
+        .eq('id', user?.id || '')
+        .single();
+
+      if (!profile || (profile.organization_id !== null && profile.role !== 'super_admin')) {
+        throw new Error('Only super admins can view all organizations');
+      }
+
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data as Organization[];
+    },
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+};
+
+export const useOrganization = (id: string) => {
+  return useQuery({
+    queryKey: ['organizations', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data as Organization;
+    },
+    enabled: !!id,
+  });
+};
+
+export const useCreateOrganization = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (orgData: { name: string; slug: string; settings?: Record<string, any> }) => {
+      // Check if user is super admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id, role')
+        .eq('id', user?.id || '')
+        .single();
+
+      if (!profile || (profile.organization_id !== null && profile.role !== 'super_admin')) {
+        throw new Error('Only super admins can create organizations');
+      }
+
+      // Validate slug format (alphanumeric and hyphens only)
+      const slugRegex = /^[a-z0-9-]+$/;
+      if (!slugRegex.test(orgData.slug)) {
+        throw new Error('Slug must contain only lowercase letters, numbers, and hyphens');
+      }
+
+      const { data, error } = await supabase
+        .from('organizations')
+        .insert({
+          name: orgData.name.trim(),
+          slug: orgData.slug.trim().toLowerCase(),
+          settings: orgData.settings || {},
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      toast.success('Organization created successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to create organization');
+    },
+  });
+};
+
+export const useUpdateOrganization = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Organization> & { id: string }) => {
+      // Check if user is super admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id, role')
+        .eq('id', user?.id || '')
+        .single();
+
+      if (!profile || (profile.organization_id !== null && profile.role !== 'super_admin')) {
+        throw new Error('Only super admins can update organizations');
+      }
+
+      const updateData: any = {};
+      if (updates.name) updateData.name = updates.name.trim();
+      if (updates.slug) {
+        const slugRegex = /^[a-z0-9-]+$/;
+        if (!slugRegex.test(updates.slug)) {
+          throw new Error('Slug must contain only lowercase letters, numbers, and hyphens');
+        }
+        updateData.slug = updates.slug.trim().toLowerCase();
+      }
+      if (updates.settings !== undefined) updateData.settings = updates.settings;
+
+      const { data, error } = await supabase
+        .from('organizations')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      toast.success('Organization updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update organization');
+    },
+  });
+};
+
+export const useDeleteOrganization = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // Check if user is super admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id, role')
+        .eq('id', user?.id || '')
+        .single();
+
+      if (!profile || (profile.organization_id !== null && profile.role !== 'super_admin')) {
+        throw new Error('Only super admins can delete organizations');
+      }
+
+      // Check if organization has profiles
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('organization_id', id)
+        .limit(1);
+
+      if (profiles && profiles.length > 0) {
+        throw new Error('Cannot delete organization with existing users');
+      }
+
+      const { error } = await supabase
+        .from('organizations')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      toast.success('Organization deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to delete organization');
+    },
+  });
+};
+
+export const useCurrentOrganization = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['current-organization'],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile || !profile.organization_id) {
+        return null; // Super admin or no organization
+      }
+
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', profile.organization_id)
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data as Organization;
+    },
+    enabled: !!user,
+  });
+};
+

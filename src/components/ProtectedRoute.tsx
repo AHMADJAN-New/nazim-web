@@ -1,24 +1,31 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfiles';
 import { LoadingSpinner } from '@/components/ui/loading';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireOrganization?: boolean;
 }
 
 // Development mode: Set to true to bypass authentication
-const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false';
+// Can be controlled via VITE_DISABLE_AUTH env var (set to 'true' to enable bypass)
+const DEV_AUTH_BYPASS = import.meta.env.VITE_DISABLE_AUTH === 'true';
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  requireOrganization = false 
+}) => {
+  const { user, loading, profile, profileLoading } = useAuth();
+  const { data: profileData } = useProfile();
 
   // Development mode: Allow access without authentication
   if (DEV_AUTH_BYPASS) {
     return <>{children}</>;
   }
 
-  if (loading) {
+  if (loading || profileLoading) {
     return <LoadingSpinner size="lg" text="Loading..." fullScreen />;
   }
 
@@ -28,7 +35,34 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth" replace />;
   }
 
-  console.log('User authenticated');
+  // Check if profile is loaded
+  const currentProfile = profile || profileData;
+  
+  // If organization is required and user doesn't have one (and isn't super admin)
+  if (requireOrganization && currentProfile) {
+    const isSuperAdmin = currentProfile.organization_id === null && currentProfile.role === 'super_admin';
+    if (!isSuperAdmin && !currentProfile.organization_id) {
+      console.log('User does not have an organization assigned');
+      return (
+        <div className="container mx-auto p-6">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Organization Required</h2>
+            <p className="text-muted-foreground">
+              Your account must be assigned to an organization to access this resource.
+              Please contact an administrator.
+            </p>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  console.log('User authenticated', { 
+    userId: user.id, 
+    role: currentProfile?.role,
+    organizationId: currentProfile?.organization_id 
+  });
+  
   return <>{children}</>;
 };
 

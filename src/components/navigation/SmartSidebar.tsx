@@ -5,6 +5,9 @@ import * as LucideIcons from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile, useIsSuperAdmin } from "@/hooks/useProfiles";
+import { useCurrentOrganization } from "@/hooks/useOrganizations";
+import { useHasPermission } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
 import type { UserRole } from "@/types/auth";
 import {
@@ -19,7 +22,11 @@ import {
   UserCheck,
   Trophy,
   Building,
+  Building2,
+  DoorOpen,
   Package,
+  Users,
+  Shield,
   MessageSquare,
   BarChart3,
   School,
@@ -97,7 +104,14 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const { state } = useSidebar();
   const { t, isRTL } = useLanguage();
   const { role, loading } = useUserRole();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { data: currentProfile } = useProfile();
+  const isSuperAdmin = useIsSuperAdmin();
+  const { data: currentOrg } = useCurrentOrganization();
+  const hasBuildingsPermission = useHasPermission('buildings.read');
+  const hasRoomsPermission = useHasPermission('rooms.read');
+  const hasOrganizationsPermission = useHasPermission('organizations.read');
+  const hasProfilesPermission = useHasPermission('profiles.read');
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [navigationContext, setNavigationContext] = useState<NavigationContext>({
@@ -111,7 +125,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   // Context-aware navigation items
   const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {
-    // Only return dashboard for clean startup app
     return [
       {
         titleKey: "dashboard",
@@ -120,6 +133,35 @@ export const SmartSidebar = memo(function SmartSidebar() {
         badge: null,
         roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"],
         priority: 1
+      },
+      {
+        titleKey: "settings",
+        icon: Settings,
+        badge: null,
+        roles: ["super_admin", "admin"],
+        priority: 10,
+        children: [
+          ...(hasOrganizationsPermission && isSuperAdmin ? [{
+            title: "Organizations Management",
+            url: "/settings/organizations",
+            icon: Shield,
+          }] : []),
+          ...(hasBuildingsPermission ? [{
+            title: "Buildings Management",
+            url: "/settings/buildings",
+            icon: Building2,
+          }] : []),
+          ...(hasRoomsPermission ? [{
+            title: "Rooms Management",
+            url: "/settings/rooms",
+            icon: DoorOpen,
+          }] : []),
+          ...(hasProfilesPermission ? [{
+            title: "Profile Management",
+            url: "/settings/profile",
+            icon: Users,
+          }] : []),
+        ],
       }
     ];
   };
@@ -343,13 +385,34 @@ export const SmartSidebar = memo(function SmartSidebar() {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-medium text-sidebar-foreground truncate">
-                {user.email?.split('@')[0]}
+                {currentProfile?.full_name || user.email?.split('@')[0]}
               </h3>
               <p className="text-xs text-sidebar-foreground/70 capitalize">
-                {role?.replace('_', ' ')}
+                {currentProfile?.role || role?.replace('_', ' ')}
               </p>
             </div>
           </div>
+          {/* Organization Context */}
+          {currentOrg && (
+            <div className="mt-2 pt-2 border-t border-sidebar-border">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-3 w-3 text-sidebar-foreground/70" />
+                <p className="text-xs text-sidebar-foreground/70 truncate">
+                  {currentOrg.name}
+                </p>
+              </div>
+            </div>
+          )}
+          {isSuperAdmin && !currentOrg && (
+            <div className="mt-2 pt-2 border-t border-sidebar-border">
+              <div className="flex items-center gap-2">
+                <Shield className="h-3 w-3 text-sidebar-foreground/70" />
+                <p className="text-xs text-sidebar-foreground/70">
+                  Super Admin
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

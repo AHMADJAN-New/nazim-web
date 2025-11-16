@@ -99,6 +99,28 @@ export interface TranslationKeys {
     minLength: string;
     maxLength: string;
   };
+  
+  // Settings
+  settings: {
+    buildingsManagement: string;
+    roomsManagement: string;
+    buildingName: string;
+    roomNumber: string;
+    building: string;
+    staff: string;
+    warden: string;
+    noStaffAssigned: string;
+    addBuilding: string;
+    editBuilding: string;
+    addRoom: string;
+    editRoom: string;
+    buildingCreated: string;
+    buildingUpdated: string;
+    buildingDeleted: string;
+    roomCreated: string;
+    roomUpdated: string;
+    roomDeleted: string;
+  };
 }
 
 // English translations
@@ -188,6 +210,26 @@ const en: TranslationKeys = {
     passwordMismatch: 'Passwords do not match',
     minLength: 'Minimum length is {min} characters',
     maxLength: 'Maximum length is {max} characters',
+  },
+  settings: {
+    buildingsManagement: 'Buildings Management',
+    roomsManagement: 'Rooms Management',
+    buildingName: 'Building Name',
+    roomNumber: 'Room Number',
+    building: 'Building',
+    staff: 'Staff',
+    warden: 'Warden',
+    noStaffAssigned: 'No staff assigned',
+    addBuilding: 'Add Building',
+    editBuilding: 'Edit Building',
+    addRoom: 'Add Room',
+    editRoom: 'Edit Room',
+    buildingCreated: 'Building created successfully',
+    buildingUpdated: 'Building updated successfully',
+    buildingDeleted: 'Building deleted successfully',
+    roomCreated: 'Room created successfully',
+    roomUpdated: 'Room updated successfully',
+    roomDeleted: 'Room deleted successfully',
   },
 };
 
@@ -279,6 +321,26 @@ const ps: TranslationKeys = {
     minLength: 'لږترلږه اوږدوالی {min} حروف دی',
     maxLength: 'ډیرترډیره اوږدوالی {max} حروف دی',
   },
+  settings: {
+    buildingsManagement: 'د تعمیرونو مدیریت',
+    roomsManagement: 'د اطاقونو مدیریت',
+    buildingName: 'د تعمیر نوم',
+    roomNumber: 'د اطاق شمیره',
+    building: 'تعمیر',
+    staff: 'کارکوونکی',
+    warden: 'مسؤل نګران',
+    noStaffAssigned: 'هیڅ کارکوونکی وټاکل شوی نه دی',
+    addBuilding: 'تعمیر اضافه کړئ',
+    editBuilding: 'تعمیر تغیر کړئ',
+    addRoom: 'اطاق اضافه کړئ',
+    editRoom: 'اطاق تغیر کړئ',
+    buildingCreated: 'تعمیر په بریالیتوب سره اضافه شو',
+    buildingUpdated: 'تعمیر په بریالیتوب سره تغیر شو',
+    buildingDeleted: 'تعمیر په بریالیتوب سره پاک شو',
+    roomCreated: 'اطاق په بریالیتوب سره اضافه شو',
+    roomUpdated: 'اطاق په بریالیتوب سره تغیر شو',
+    roomDeleted: 'اطاق په بریالیتوب سره پاک شو',
+  },
 };
 
 // Dari (Farsi) translations
@@ -369,6 +431,26 @@ const fa: TranslationKeys = {
     minLength: 'حداقل طول {min} کاراکتر است',
     maxLength: 'حداکثر طول {max} کاراکتر است',
   },
+  settings: {
+    buildingsManagement: 'مدیریت ساختمان‌ها',
+    roomsManagement: 'مدیریت اتاق‌ها',
+    buildingName: 'نام ساختمان',
+    roomNumber: 'شماره اتاق',
+    building: 'ساختمان',
+    staff: 'کارکنان',
+    warden: 'مسئول نگهبان',
+    noStaffAssigned: 'هیچ کارکنی اختصاص داده نشده',
+    addBuilding: 'افزودن ساختمان',
+    editBuilding: 'ویرایش ساختمان',
+    addRoom: 'افزودن اتاق',
+    editRoom: 'ویرایش اتاق',
+    buildingCreated: 'ساختمان با موفقیت ایجاد شد',
+    buildingUpdated: 'ساختمان با موفقیت به‌روزرسانی شد',
+    buildingDeleted: 'ساختمان با موفقیت حذف شد',
+    roomCreated: 'اتاق با موفقیت ایجاد شد',
+    roomUpdated: 'اتاق با موفقیت به‌روزرسانی شد',
+    roomDeleted: 'اتاق با موفقیت حذف شد',
+  },
 };
 
 // Arabic translations  
@@ -458,6 +540,26 @@ const ar: TranslationKeys = {
     passwordMismatch: 'كلمات المرور غير متطابقة',
     minLength: 'الحد الأدنى للطول هو {min} أحرف',
     maxLength: 'الحد الأقصى للطول هو {max} أحرف',
+  },
+  settings: {
+    buildingsManagement: 'إدارة المباني',
+    roomsManagement: 'إدارة الغرف',
+    buildingName: 'اسم المبنى',
+    roomNumber: 'رقم الغرفة',
+    building: 'المبنى',
+    staff: 'الموظفون',
+    warden: 'المسؤول',
+    noStaffAssigned: 'لم يتم تعيين موظف',
+    addBuilding: 'إضافة مبنى',
+    editBuilding: 'تعديل المبنى',
+    addRoom: 'إضافة غرفة',
+    editRoom: 'تعديل الغرفة',
+    buildingCreated: 'تم إنشاء المبنى بنجاح',
+    buildingUpdated: 'تم تحديث المبنى بنجاح',
+    buildingDeleted: 'تم حذف المبنى بنجاح',
+    roomCreated: 'تم إنشاء الغرفة بنجاح',
+    roomUpdated: 'تم تحديث الغرفة بنجاح',
+    roomDeleted: 'تم حذف الغرفة بنجاح',
   },
 };
 

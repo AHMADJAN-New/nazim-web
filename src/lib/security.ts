@@ -204,13 +204,40 @@ export const csp = {
       additionalDomains = [],
     } = options;
 
+    // Get Supabase URL from environment
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    let supabaseDomains: string[] = [];
+    
+    if (supabaseUrl) {
+      try {
+        const url = new URL(supabaseUrl);
+        const origin = url.origin;
+        // Add REST API domain (HTTPS)
+        supabaseDomains.push(origin);
+        // Add Realtime WebSocket domain (WSS)
+        const wsOrigin = origin.replace('https://', 'wss://').replace('http://', 'ws://');
+        supabaseDomains.push(wsOrigin);
+      } catch (e) {
+        // Invalid URL, skip
+        console.warn('Invalid Supabase URL in CSP:', supabaseUrl);
+      }
+    }
+    
+    // Build connect-src with Supabase URLs
+    // Note: CSP meta tags don't support wildcards, so we use exact domains
+    const connectSrc = [
+      "'self'",
+      ...supabaseDomains,
+      ...additionalDomains
+    ].filter(Boolean).join(' ');
+
     const policies = [
       "default-src 'self'",
       `script-src 'self' ${allowInlineScripts ? "'unsafe-inline'" : ''} ${additionalDomains.join(' ')}`,
       `style-src 'self' ${allowInlineStyles ? "'unsafe-inline'" : ''} https://fonts.googleapis.com`,
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https:",
-      "connect-src 'self' https://api.supabase.co wss://realtime.supabase.co",
+      `connect-src ${connectSrc}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -221,11 +248,22 @@ export const csp = {
 
   // Apply CSP via meta tag (for development)
   apply: (options?: Parameters<typeof csp.generate>[0]) => {
+    // Remove any existing CSP meta tags
+    const existingMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+    if (existingMeta) {
+      existingMeta.remove();
+    }
+    
     const policy = csp.generate(options);
     const meta = document.createElement('meta');
     meta.httpEquiv = 'Content-Security-Policy';
     meta.content = policy;
     document.head.appendChild(meta);
+    
+    // Log the policy in development for debugging
+    if (import.meta.env.DEV) {
+      console.log('🔒 CSP Applied:', policy);
+    }
   },
 };
 
@@ -472,11 +510,33 @@ export const initializeSecurity = () => {
   csrf.generateToken();
   
   // Apply CSP in development (lightweight, keep it)
+  // Make it permissive in dev to allow Supabase connections
   if (import.meta.env.DEV) {
-    csp.apply({
-      allowInlineStyles: true,
-      allowInlineScripts: true,
-    });
+    // In development, allow all HTTPS/WSS connections to avoid CSP blocking Supabase
+    const policy = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: https:",
+      "connect-src 'self' https: wss: ws:",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ');
+    
+    // Remove any existing CSP meta tags
+    const existingMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+    if (existingMeta) {
+      existingMeta.remove();
+    }
+    
+    const meta = document.createElement('meta');
+    meta.httpEquiv = 'Content-Security-Policy';
+    meta.content = policy;
+    document.head.appendChild(meta);
+    
+    console.log('🔒 CSP Applied (Development Mode - Permissive):', policy);
   }
   
   // Setup session timeout (defer to avoid blocking)

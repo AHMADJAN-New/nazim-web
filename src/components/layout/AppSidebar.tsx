@@ -15,6 +15,8 @@ import {
   UserCheck,
   Trophy,
   Building,
+  Building2,
+  DoorOpen,
   Package,
   MessageSquare,
   BarChart3,
@@ -72,6 +74,24 @@ const navigationItems: NavigationItem[] = [
     icon: Home,
     badge: null,
     roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"]
+  },
+  {
+    titleKey: "settings",
+    icon: Settings,
+    badge: null,
+    roles: ["super_admin", "admin"],
+    children: [
+      {
+        title: "Buildings Management",
+        url: "/settings/buildings",
+        icon: Building2,
+      },
+      {
+        title: "Rooms Management",
+        url: "/settings/rooms",
+        icon: DoorOpen,
+      },
+    ],
   }
 ];
 

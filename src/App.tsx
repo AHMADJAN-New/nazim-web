@@ -22,8 +22,13 @@ import {
   PendingApprovalPage, 
   ResetPasswordPage, 
   DashboardSkeleton, 
-  PageSkeleton
+  PageSkeleton,
+  BuildingsManagement,
+  RoomsManagement,
+  OrganizationsManagement,
+  ProfileManagement
 } from "@/components/LazyComponents";
+import { PermissionGuard } from "@/components/PermissionGuard";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -70,6 +75,35 @@ const App = () => (
               <Route path="/dashboard" element={
                 <Suspense fallback={<DashboardSkeleton />}>
                   <Dashboard />
+                </Suspense>
+              } />
+              {/* Settings routes */}
+              <Route path="/settings/organizations" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <PermissionGuard permission="organizations.read">
+                    <OrganizationsManagement />
+                  </PermissionGuard>
+                </Suspense>
+              } />
+              <Route path="/settings/buildings" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <PermissionGuard permission="buildings.read">
+                    <BuildingsManagement />
+                  </PermissionGuard>
+                </Suspense>
+              } />
+              <Route path="/settings/rooms" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <PermissionGuard permission="rooms.read">
+                    <RoomsManagement />
+                  </PermissionGuard>
+                </Suspense>
+              } />
+              <Route path="/settings/profile" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <PermissionGuard permission="profiles.read">
+                    <ProfileManagement />
+                  </PermissionGuard>
                 </Suspense>
               } />
             </Route>
