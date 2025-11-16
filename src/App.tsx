@@ -26,7 +26,9 @@ import {
   BuildingsManagement,
   RoomsManagement,
   OrganizationsManagement,
-  ProfileManagement
+  ProfileManagement,
+  PermissionsManagement,
+  UserManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 
@@ -103,6 +105,19 @@ const App = () => (
                 <Suspense fallback={<PageSkeleton />}>
                   <PermissionGuard permission="profiles.read">
                     <ProfileManagement />
+                  </PermissionGuard>
+                </Suspense>
+              } />
+              <Route path="/settings/permissions" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <PermissionsManagement />
+                </Suspense>
+              } />
+              {/* Admin routes */}
+              <Route path="/admin/users" element={
+                <Suspense fallback={<PageSkeleton />}>
+                  <PermissionGuard permission="users.read">
+                    <UserManagement />
                   </PermissionGuard>
                 </Suspense>
               } />

@@ -3,6 +3,8 @@
 ## Project Overview
 This is a comprehensive Islamic school management system built with React, TypeScript, and Supabase. The application serves educational institutions with features for student management, academics, finance, communication, and more.
 
+**⚠️ CRITICAL: This is a MULTI-TENANT SaaS application. ALL code must enforce organization isolation. See "Multi-Tenancy Architecture" section below.**
+
 ## Tech Stack
 - **Frontend**: React 18.3.1, TypeScript, Vite, Tailwind CSS, shadcn/ui
 - **Backend**: Supabase (PostgreSQL, Auth, Storage, Edge Functions)
@@ -47,9 +49,11 @@ This is a comprehensive Islamic school management system built with React, TypeS
 
 ### Database Schema
 - Use proper foreign key relationships
-- Implement Row Level Security (RLS)
+- **ALWAYS add `organization_id` to tenant tables** (see Multi-Tenancy section)
+- **ALWAYS implement Row Level Security (RLS)** with organization isolation policies
 - Use enums for status fields
 - Follow naming conventions: snake_case for tables/columns
+- **ALWAYS create index on `organization_id`** for performance
 
 ### Supabase Integration
 - Use typed Supabase client
@@ -66,6 +70,459 @@ const { data, isLoading, error } = useQuery({
   staleTime: 5 * 60 * 1000, // 5 minutes
 });
 ```
+
+## Multi-Tenancy Architecture
+
+**CRITICAL: This is a multi-tenant SaaS application. ALL code must follow organization isolation patterns.**
+
+### Core Principles
+- **Every tenant table MUST have `organization_id` column**
+- **RLS policies MUST enforce organization isolation**
+- **Frontend hooks MUST filter by organization_id**
+- **Storage paths MUST include organization_id**
+- **Super admin (organization_id = NULL) can access all organizations**
+
+### Database Schema - Multi-Tenancy
+
+#### Required Pattern for Tenant Tables
+```sql
+-- ALWAYS add organization_id to tenant tables
+CREATE TABLE IF NOT EXISTS public.your_table (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    -- other columns...
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- ALWAYS create index on organization_id
+CREATE INDEX IF NOT EXISTS idx_your_table_organization_id ON public.your_table(organization_id);
+
+-- ALWAYS enable RLS
+ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
+
+-- ALWAYS create RLS policies (5 standard policies)
+-- 1. Service role full access
+CREATE POLICY "Service role full access to your_table"
+    ON public.your_table FOR ALL TO service_role
+    USING (true) WITH CHECK (true);
+
+-- 2. Users can read their organization's data
+CREATE POLICY "Users can read their organization's your_table"
+    ON public.your_table FOR SELECT TO authenticated
+    USING (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
+
+-- 3. Users can insert in their organization
+CREATE POLICY "Users can insert your_table in their organization"
+    ON public.your_table FOR INSERT TO authenticated
+    WITH CHECK (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
+
+-- 4. Users can update their organization's data
+CREATE POLICY "Users can update their organization's your_table"
+    ON public.your_table FOR UPDATE TO authenticated
+    USING (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    )
+    WITH CHECK (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
+
+-- 5. Users can delete their organization's data
+CREATE POLICY "Users can delete their organization's your_table"
+    ON public.your_table FOR DELETE TO authenticated
+    USING (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
+```
+
+#### Tables with Organization Isolation (Current)
+- ✅ `organizations` - Root tenant table
+- ✅ `profiles` - User profiles (organization_id can be NULL for super_admin)
+- ✅ `buildings` - Organization-scoped
+- ✅ `rooms` - Organization-scoped (inherits from building)
+- ✅ `staff` - Organization-scoped
+
+#### Future Tables That Need Organization Isolation
+When creating new tables, ALWAYS add organization_id:
+- `students` - Student records
+- `classes` - Class management
+- `subjects` - Subject management
+- `exams` - Examination records
+- `attendance` - Attendance tracking
+- `fees` - Fee management
+- `library_books` - Library management
+- `assets` - Asset management
+- Any other tenant-specific data
+
+### Frontend Hooks - Multi-Tenancy Pattern
+
+#### Standard Hook Pattern with Organization Filtering
+```typescript
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useProfile } from './useProfiles';
+import { useAuth } from './useAuth';
+
+export interface YourResource {
+  id: string;
+  organization_id: string;
+  // other fields...
+}
+
+// ALWAYS accept optional organizationId parameter
+export const useYourResources = (organizationId?: string) => {
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+
+  return useQuery({
+    queryKey: ['your-resources', organizationId || profile?.organization_id],
+    queryFn: async () => {
+      if (!user || !profile) return [];
+
+      let query = supabase.from('your_table').select('*');
+
+      // Super admin can see all or filter by org
+      const isSuperAdmin = profile.organization_id === null && profile.role === 'super_admin';
+      if (isSuperAdmin) {
+        if (organizationId) {
+          query = query.eq('organization_id', organizationId);
+        }
+        // Otherwise show all
+      } else {
+        // Regular users see only their organization's data
+        const userOrgId = profile.organization_id;
+        if (userOrgId) {
+          query = query.eq('organization_id', userOrgId);
+        } else {
+          return []; // No organization assigned
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data as YourResource[];
+    },
+    enabled: !!user && !!profile,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+};
+
+// ALWAYS validate organization_id in mutations
+export const useCreateYourResource = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+
+  return useMutation({
+    mutationFn: async (resourceData: { /* fields */; organization_id?: string }) => {
+      if (!user || !profile) {
+        throw new Error('User not authenticated');
+      }
+
+      // Get organization_id - use provided or user's org
+      let organizationId = resourceData.organization_id;
+      if (!organizationId) {
+        if (profile.organization_id) {
+          organizationId = profile.organization_id;
+        } else if (profile.role === 'super_admin') {
+          throw new Error('Organization ID is required for super admin');
+        } else {
+          throw new Error('User must be assigned to an organization');
+        }
+      }
+
+      // Validate organization access (unless super admin)
+      if (profile.role !== 'super_admin' && organizationId !== profile.organization_id) {
+        throw new Error('Cannot create resource for different organization');
+      }
+
+      const { data, error } = await supabase
+        .from('your_table')
+        .insert({
+          ...resourceData,
+          organization_id: organizationId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['your-resources'] });
+    },
+  });
+};
+
+// ALWAYS check organization_id in update mutations
+export const useUpdateYourResource = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<YourResource> & { id: string }) => {
+      if (!user || !profile) {
+        throw new Error('User not authenticated');
+      }
+
+      // Get current resource to check organization
+      const { data: currentResource } = await supabase
+        .from('your_table')
+        .select('organization_id')
+        .eq('id', id)
+        .single();
+
+      if (!currentResource) {
+        throw new Error('Resource not found');
+      }
+
+      // Validate organization access (unless super admin)
+      if (profile.role !== 'super_admin' && currentResource.organization_id !== profile.organization_id) {
+        throw new Error('Cannot update resource from different organization');
+      }
+
+      // Prevent organization_id changes (unless super admin)
+      if (updates.organization_id && profile.role !== 'super_admin') {
+        throw new Error('Cannot change organization_id');
+      }
+
+      const { data, error } = await supabase
+        .from('your_table')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['your-resources'] });
+    },
+  });
+};
+```
+
+### Storage - Multi-Tenancy Pattern
+
+#### Storage Path Structure
+```typescript
+// ALWAYS include organization_id in storage paths
+// Path format: {organization_id}/{resource_id}/{file_type}/{file_name}
+
+export const useUploadFile = () => {
+  return useMutation({
+    mutationFn: async ({ 
+      resourceId, 
+      organizationId, 
+      file, 
+      fileType 
+    }: { 
+      resourceId: string; 
+      organizationId: string; 
+      file: File; 
+      fileType: string;
+    }) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${resourceId}/${fileType}/${Date.now()}.${fileExt}`;
+      const filePath = `${organizationId}/${fileName}`; // ALWAYS prefix with organization_id
+
+      const { error: uploadError } = await supabase.storage
+        .from('your-bucket')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      return filePath;
+    },
+  });
+};
+```
+
+#### Storage RLS Policies Pattern
+```sql
+-- ALWAYS create storage policies with organization isolation
+-- Path format: {organization_id}/...
+
+-- Policy: Users can upload files to their organization's folder
+CREATE POLICY "Users can upload files in their organization"
+    ON storage.objects FOR INSERT TO authenticated
+    WITH CHECK (
+        bucket_id = 'your-bucket'
+        AND (storage.foldername(name))[1] = (
+            SELECT organization_id::text FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
+
+-- Similar policies for SELECT, UPDATE, DELETE
+```
+
+### Helper Functions - Multi-Tenancy
+
+#### Use Database Helper Functions
+```typescript
+// ALWAYS use these helper functions when available
+// They're defined in the database and enforce security
+
+// Get user's organization_id
+const { data: orgId } = await supabase.rpc('get_user_organization_id');
+
+// Check if user is super admin
+const { data: isSuperAdmin } = await supabase.rpc('is_super_admin');
+
+// Check if user can access organization
+const { data: canAccess } = await supabase.rpc('can_access_organization', {
+  org_id: organizationId
+});
+```
+
+### Components - Multi-Tenancy Pattern
+
+#### Component Organization Context
+```typescript
+import { useProfile } from '@/hooks/useProfiles';
+import { useCurrentOrganization } from '@/hooks/useOrganizations';
+
+export function YourComponent() {
+  const { data: profile } = useProfile();
+  const { data: organization } = useCurrentOrganization();
+  
+  // ALWAYS check organization context
+  if (!profile?.organization_id && profile?.role !== 'super_admin') {
+    return <div>No organization assigned</div>;
+  }
+
+  // Use organization context in data fetching
+  const { data: resources } = useYourResources(profile?.organization_id);
+
+  return (
+    <div>
+      {organization && <h1>{organization.name}</h1>}
+      {/* Component content */}
+    </div>
+  );
+}
+```
+
+### Migration Files - Multi-Tenancy
+
+#### Migration Pattern
+```sql
+-- Migration: YYYYMMDDHHMMSS_add_organization_to_your_table.sql
+
+-- Step 1: Add organization_id column
+ALTER TABLE public.your_table 
+    ADD COLUMN IF NOT EXISTS organization_id UUID NULL 
+    REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+-- Step 2: Create index
+CREATE INDEX IF NOT EXISTS idx_your_table_organization_id 
+    ON public.your_table(organization_id);
+
+-- Step 3: Update existing data (if any)
+-- For new tables, this step is not needed
+UPDATE public.your_table 
+SET organization_id = (SELECT id FROM public.organizations LIMIT 1)
+WHERE organization_id IS NULL;
+
+-- Step 4: Make NOT NULL (after data migration)
+ALTER TABLE public.your_table 
+    ALTER COLUMN organization_id SET NOT NULL;
+
+-- Step 5: Enable RLS
+ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
+
+-- Step 6: Create RLS policies (use the 5-policy pattern above)
+```
+
+### Testing - Multi-Tenancy
+
+#### Test Organization Isolation
+```typescript
+describe('useYourResources', () => {
+  it('should filter by organization_id for regular users', async () => {
+    // Test that regular users only see their organization's data
+  });
+
+  it('should allow super admin to see all organizations', async () => {
+    // Test that super admin can see all data
+  });
+
+  it('should prevent cross-organization access', async () => {
+    // Test that users cannot access other organizations' data
+  });
+});
+```
+
+### Security Checklist - Multi-Tenancy
+
+**ALWAYS verify:**
+- [ ] Table has `organization_id` column
+- [ ] `organization_id` has foreign key to `organizations` table
+- [ ] Index created on `organization_id`
+- [ ] RLS enabled on table
+- [ ] 5 RLS policies created (service role, select, insert, update, delete)
+- [ ] Frontend hook filters by `organization_id`
+- [ ] Mutations validate `organization_id`
+- [ ] Storage paths include `organization_id`
+- [ ] Storage RLS policies enforce organization isolation
+- [ ] Super admin can access all organizations
+- [ ] Regular users can only access their organization
+
+### Common Mistakes to Avoid
+
+❌ **DON'T:**
+- Create tables without `organization_id`
+- Skip RLS policies
+- Query without organization filtering
+- Allow organization_id changes without super admin check
+- Store files without organization_id in path
+- Trust client-side organization_id validation only
+
+✅ **DO:**
+- Always add `organization_id` to tenant tables
+- Always create RLS policies
+- Always filter queries by organization_id
+- Always validate organization_id in mutations
+- Always include organization_id in storage paths
+- Always test organization isolation
 
 ## UI/UX Guidelines
 
@@ -115,6 +572,10 @@ export function ComponentName({ prop1, prop2 }: ComponentProps) {
 - Validate all user inputs
 - Implement audit logging
 - Follow OWASP security guidelines
+- **ALWAYS enforce multi-tenancy isolation** (organization_id filtering)
+- **ALWAYS use RLS policies** for database-level security
+- **ALWAYS validate organization_id** in all mutations
+- **NEVER trust client-side organization_id** - validate server-side
 
 ## Performance Optimization
 
@@ -235,14 +696,41 @@ describe('ComponentName', () => {
 
 ## Common Patterns
 
-### Data Fetching
+### Data Fetching with Multi-Tenancy
 ```typescript
-// Custom hook pattern
-export const useStudents = (params: StudentParams) => {
+// ALWAYS use this pattern for tenant-scoped resources
+export const useStudents = (params: StudentParams, organizationId?: string) => {
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+
   return useQuery({
-    queryKey: ['students', params],
-    queryFn: () => fetchStudents(params),
-    enabled: !!params.classId,
+    queryKey: ['students', organizationId || profile?.organization_id, params],
+    queryFn: async () => {
+      if (!user || !profile) return [];
+
+      let query = supabase.from('students').select('*');
+
+      // Multi-tenancy: Filter by organization
+      const isSuperAdmin = profile.organization_id === null && profile.role === 'super_admin';
+      if (isSuperAdmin) {
+        if (organizationId) query = query.eq('organization_id', organizationId);
+      } else {
+        const userOrgId = profile.organization_id;
+        if (userOrgId) {
+          query = query.eq('organization_id', userOrgId);
+        } else {
+          return [];
+        }
+      }
+
+      // Apply other filters
+      if (params.classId) query = query.eq('class_id', params.classId);
+
+      const { data, error } = await query;
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    enabled: !!user && !!profile && !!params.classId,
   });
 };
 ```

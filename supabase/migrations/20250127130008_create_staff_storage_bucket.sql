@@ -127,6 +127,6 @@ CREATE POLICY "Service role full access to staff files"
     USING (bucket_id = 'staff-files')
     WITH CHECK (bucket_id = 'staff-files');
 
--- Add comment
-COMMENT ON TABLE storage.buckets IS 'Storage bucket for staff files (pictures, documents) with organization isolation';
+-- Note: Cannot add comment to storage.buckets table as it's a system table
+-- The bucket 'staff-files' should be created via Supabase Storage API or Dashboard
 

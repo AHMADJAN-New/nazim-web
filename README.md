@@ -23,6 +23,120 @@ This repository contains a **clean startup application** with:
 
 - Node.js 18+ and npm - [Install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 - Git
+- Docker Desktop - [Download Docker Desktop](https://www.docker.com/get-started/) (Required for local Supabase)
+- Supabase CLI - See installation instructions below
+
+### Local Supabase Setup
+
+This project uses Supabase for backend services. To run Supabase locally:
+
+#### 1. Install Supabase CLI
+
+**Windows (using Scoop - Recommended):**
+```powershell
+# Install Scoop if not already installed
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+
+# Add Supabase bucket and install CLI
+scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+scoop install supabase
+```
+
+**Alternative methods:**
+- Download from [Supabase CLI Releases](https://github.com/supabase/cli/releases)
+- Use `npx supabase` for one-time commands (slower)
+
+#### 2. Start Docker Desktop
+
+Ensure Docker Desktop is running before starting Supabase services.
+
+#### 3. Start Local Supabase
+
+```bash
+# Navigate to project directory
+cd nazim-school-manager-pro
+
+# Start Supabase services (this will start all containers)
+supabase start
+```
+
+This command will:
+- Start PostgreSQL database
+- Start Supabase Studio (dashboard)
+- Start Auth service
+- Start Storage service
+- Apply all migrations from `supabase/migrations/`
+
+#### 4. Get Local Credentials
+
+After starting Supabase, you'll see output with local credentials. Save these to your `.env` file:
+
+```bash
+# Get the local credentials
+supabase status
+```
+
+The output will include:
+- `API URL`: `http://localhost:54321`
+- `anon key`: Your anonymous key
+- `service_role key`: Your service role key
+- `DB URL`: PostgreSQL connection string
+
+#### 5. Configure Environment Variables
+
+Create or update your `.env` file in the project root:
+
+```env
+VITE_SUPABASE_URL=http://localhost:54321
+VITE_SUPABASE_ANON_KEY=your_anon_key_here
+```
+
+#### 6. Access Supabase Studio
+
+Once Supabase is running, access the local dashboard at:
+- **Studio URL**: http://localhost:54323
+
+#### 7. Seed Super Admin User
+
+For local development, you need a super admin user to access the application:
+
+```bash
+# Method 1: Using SQL migration (Recommended)
+Get-Content supabase\migrations\20250128000000_seed_super_admin.sql | docker exec -i supabase_db_wkrzoelctjwpiwdswmdj psql -U postgres -d postgres
+
+# Method 2: Using npm script (requires tsx)
+npm run seed:admin
+```
+
+**Default Admin Credentials:**
+- **Email:** `admin@nazim.local`
+- **Password:** `Admin123!@#`
+- **Role:** `super_admin`
+
+> ⚠️ **Warning:** This seed script is for development only. Never run it in production!
+
+#### Useful Supabase Commands
+
+```bash
+# Start Supabase services
+supabase start
+
+# Stop Supabase services
+supabase stop
+
+# Check status and get credentials
+supabase status
+
+# Reset database (applies all migrations and seed data)
+supabase db reset
+
+# View logs
+supabase logs
+
+# Stop and remove all containers (clean slate)
+supabase stop --no-backup
+```
 
 ### Installation
 

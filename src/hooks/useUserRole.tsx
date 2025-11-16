@@ -6,15 +6,21 @@ import { supabase } from '@/integrations/supabase/client';
 const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false';
 
 export const useUserRole = () => {
-  const { user } = useAuth();
-  // In dev mode, start with admin role and no loading
-  const [role, setRole] = useState<string | null>(DEV_AUTH_BYPASS ? 'admin' : null);
-  const [loading, setLoading] = useState(!DEV_AUTH_BYPASS);
+  const { user, profile } = useAuth();
+  const [role, setRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Development mode: Return admin role immediately
-    if (DEV_AUTH_BYPASS) {
-      setRole('admin'); // Default to admin role for full access
+    // If we have a profile from useAuth, use it directly (faster and more reliable)
+    if (profile?.role) {
+      setRole(profile.role);
+      setLoading(false);
+      return;
+    }
+
+    // Development mode: Only use admin as fallback if no user
+    if (DEV_AUTH_BYPASS && !user) {
+      setRole('admin');
       setLoading(false);
       return;
     }
@@ -25,6 +31,7 @@ export const useUserRole = () => {
       return;
     }
 
+    // Fetch role from database if profile not available
     const fetchUserRole = async () => {
       try {
         const { data, error } = await supabase
@@ -48,7 +55,7 @@ export const useUserRole = () => {
     };
 
     fetchUserRole();
-  }, [user]);
+  }, [user, profile]);
 
   return { role, loading };
 };

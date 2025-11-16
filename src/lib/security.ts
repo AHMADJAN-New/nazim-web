@@ -512,14 +512,52 @@ export const initializeSecurity = () => {
   // Apply CSP in development (lightweight, keep it)
   // Make it permissive in dev to allow Supabase connections
   if (import.meta.env.DEV) {
-    // In development, allow all HTTPS/WSS connections to avoid CSP blocking Supabase
+    // Get Supabase URL to add to CSP
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    let supabaseConnectSrc = '';
+    
+    if (supabaseUrl) {
+      try {
+        const url = new URL(supabaseUrl);
+        // Add the exact Supabase URL to connect-src
+        supabaseConnectSrc = ` ${url.origin}`;
+        // Also add WebSocket version
+        const wsOrigin = url.origin.replace('https://', 'wss://').replace('http://', 'ws://');
+        supabaseConnectSrc += ` ${wsOrigin}`;
+      } catch (e) {
+        console.warn('Invalid Supabase URL for CSP:', supabaseUrl);
+      }
+    }
+    
+    // In development, allow HTTP connections to localhost/127.0.0.1 for local Supabase
+    // Note: CSP meta tags don't support port wildcards, so we use the exact Supabase URL
+    const connectSrcParts = [
+      "'self'",
+      "https:",
+      "wss:",
+      "ws:",
+    ];
+    
+    // Add Supabase URL if available
+    if (supabaseConnectSrc) {
+      connectSrcParts.push(supabaseConnectSrc.trim());
+    } else {
+      // Fallback: allow common localhost ports for Supabase
+      connectSrcParts.push(
+        "http://127.0.0.1:54321",
+        "http://localhost:54321",
+        "ws://127.0.0.1:54321",
+        "ws://localhost:54321"
+      );
+    }
+    
     const policy = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https:",
-      "connect-src 'self' https: wss: ws:",
+      `connect-src ${connectSrcParts.join(' ')}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

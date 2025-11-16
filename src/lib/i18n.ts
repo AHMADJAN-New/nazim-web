@@ -44,6 +44,7 @@ export interface TranslationKeys {
     communication: string;
     reports: string;
     settings: string;
+    authentication: string;
   };
   
   // Dashboard
@@ -162,6 +163,7 @@ const en: TranslationKeys = {
     communication: 'Communication',
     reports: 'Reports',
     settings: 'Settings',
+    authentication: 'Authentication',
   },
   dashboard: {
     title: 'Dashboard',
@@ -272,6 +274,7 @@ const ps: TranslationKeys = {
     communication: 'اړیکې',
     reports: 'راپورونه',
     settings: 'ترتیبات',
+    authentication: 'د تصدیق مدیریت',
   },
   dashboard: {
     title: 'کنټرول پینل',
@@ -382,6 +385,7 @@ const fa: TranslationKeys = {
     communication: 'ارتباطات',
     reports: 'گزارش‌ها',
     settings: 'تنظیمات',
+    authentication: 'مدیریت احراز هویت',
   },
   dashboard: {
     title: 'داشبورد',
@@ -492,6 +496,7 @@ const ar: TranslationKeys = {
     communication: 'التواصل',
     reports: 'التقارير',
     settings: 'الإعدادات',
+    authentication: 'إدارة المصادقة',
   },
   dashboard: {
     title: 'لوحة التحكم',

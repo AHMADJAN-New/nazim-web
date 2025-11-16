@@ -25,7 +25,6 @@ import {
   Building2,
   DoorOpen,
   Package,
-  Users,
   Shield,
   MessageSquare,
   BarChart3,
@@ -38,7 +37,12 @@ import {
   Bell,
   Star,
   Clock,
-  Target
+  Target,
+  UserCog,
+  Lock,
+  AlertTriangle,
+  KeyRound,
+  UserPlus
 } from "lucide-react";
 
 import {
@@ -103,15 +107,23 @@ interface DbRecentTask {
 export const SmartSidebar = memo(function SmartSidebar() {
   const { state } = useSidebar();
   const { t, isRTL } = useLanguage();
-  const { role, loading } = useUserRole();
   const { user, profile } = useAuth();
   const { data: currentProfile } = useProfile();
   const isSuperAdmin = useIsSuperAdmin();
+  // Use profile role directly from useAuth (most reliable) instead of useUserRole
+  const roleFromAuth = profile?.role || currentProfile?.role || null;
+  const { role: roleFromHook, loading } = useUserRole();
+  // Prefer role from auth/profile over hook (hook might have dev mode fallback)
+  const role = roleFromAuth || roleFromHook;
   const { data: currentOrg } = useCurrentOrganization();
   const hasBuildingsPermission = useHasPermission('buildings.read');
   const hasRoomsPermission = useHasPermission('rooms.read');
   const hasOrganizationsPermission = useHasPermission('organizations.read');
   const hasProfilesPermission = useHasPermission('profiles.read');
+  const hasUsersPermission = useHasPermission('users.read');
+  const hasAuthMonitoringPermission = useHasPermission('auth_monitoring.read');
+  const hasSecurityMonitoringPermission = useHasPermission('security_monitoring.read');
+  
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [navigationContext, setNavigationContext] = useState<NavigationContext>({
@@ -125,7 +137,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   // Context-aware navigation items
   const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {
-    return [
+    const allItems: NavigationItem[] = [
       {
         titleKey: "dashboard",
         url: "/dashboard",
@@ -146,24 +158,73 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/settings/organizations",
             icon: Shield,
           }] : []),
-          ...(hasBuildingsPermission ? [{
+          ...(hasBuildingsPermission || isSuperAdmin ? [{
             title: "Buildings Management",
             url: "/settings/buildings",
             icon: Building2,
           }] : []),
-          ...(hasRoomsPermission ? [{
+          ...(hasRoomsPermission || isSuperAdmin ? [{
             title: "Rooms Management",
             url: "/settings/rooms",
             icon: DoorOpen,
           }] : []),
-          ...(hasProfilesPermission ? [{
+          ...(hasProfilesPermission || isSuperAdmin ? [{
             title: "Profile Management",
             url: "/settings/profile",
             icon: Users,
           }] : []),
+          ...(isSuperAdmin ? [{
+            title: "Permissions Management",
+            url: "/settings/permissions",
+            icon: Shield,
+          }] : []),
+        ],
+      },
+      {
+        titleKey: "authentication",
+        icon: Lock,
+        badge: null,
+        roles: ["super_admin", "admin"],
+        priority: 9,
+        children: [
+          ...(hasUsersPermission || isSuperAdmin ? [{
+            title: "User Management",
+            url: "/admin/users",
+            icon: UserCog,
+          }] : []),
+          ...(hasProfilesPermission || isSuperAdmin ? [{
+            title: "Role Requests",
+            url: "/admin/role-requests",
+            icon: UserPlus,
+          }] : []),
+          ...(hasAuthMonitoringPermission || isSuperAdmin ? [{
+            title: "Auth Monitoring",
+            url: "/admin/auth-monitoring",
+            icon: AlertTriangle,
+          }] : []),
+          ...(hasSecurityMonitoringPermission || isSuperAdmin ? [{
+            title: "Security Monitoring",
+            url: "/admin/security-monitoring",
+            icon: Shield,
+          }] : []),
+          ...(hasUsersPermission || isSuperAdmin ? [{
+            title: "Password Management",
+            url: "/admin/password-management",
+            icon: KeyRound,
+          }] : []),
         ],
       }
     ];
+    
+    // Filter items by user role - only show items that match the user's role
+    const filtered = allItems.filter(item => {
+      const hasRole = item.roles.includes(userRole);
+      console.log(`🔍 Filtering item "${item.titleKey}":`, { hasRole, userRole, allowedRoles: item.roles });
+      return hasRole;
+    });
+    
+    // Sort by priority (lower number = higher priority)
+    return filtered.sort((a, b) => (a.priority || 999) - (b.priority || 999));
   };
 
   // Memoize current module to prevent unnecessary updates
@@ -243,17 +304,49 @@ export const SmartSidebar = memo(function SmartSidebar() {
     }
   }, [currentModule, role, user?.id]);
 
-  // Development mode: Use admin role if role is null
-  const effectiveRole = useMemo(() => 
-    role || (import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false' ? 'admin' : null),
-    [role]
-  );
+  // Use the role from useUserRole, or fallback to profile role, or use super_admin if isSuperAdmin
+  const effectiveRole = useMemo(() => {
+    // Priority: 1. role from useUserRole, 2. profile role, 3. super_admin if isSuperAdmin, 4. null
+    if (role) return role;
+    if (currentProfile?.role) return currentProfile.role as UserRole;
+    if (isSuperAdmin) return 'super_admin' as UserRole;
+    // Only use admin fallback in dev mode if no user at all
+    if (import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false' && !user) {
+      return 'admin' as UserRole;
+    }
+    return null;
+  }, [role, currentProfile?.role, isSuperAdmin, user]);
+  
+  // Debug logging for permissions (after effectiveRole is defined)
+  useEffect(() => {
+    console.log('🔍 Permissions Debug:', {
+      role,
+      effectiveRole,
+      isSuperAdmin,
+      hasBuildingsPermission,
+      hasRoomsPermission,
+      hasOrganizationsPermission,
+      hasProfilesPermission,
+      hasUsersPermission,
+      hasAuthMonitoringPermission,
+      hasSecurityMonitoringPermission,
+    });
+  }, [role, effectiveRole, isSuperAdmin, hasBuildingsPermission, hasRoomsPermission, hasOrganizationsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission]);
   
   // Memoize navigation items to prevent recalculation on every render
   const filteredItems = useMemo(() => {
-    if (!effectiveRole) return [];
-    return getNavigationItems(effectiveRole as UserRole, navigationContext);
-  }, [effectiveRole, navigationContext]);
+    if (!effectiveRole) {
+      console.log('🔍 Navigation: No effective role, returning empty items');
+      return [];
+    }
+    const items = getNavigationItems(effectiveRole as UserRole, navigationContext);
+    console.log('🔍 Navigation items:', {
+      role: effectiveRole,
+      itemsCount: items.length,
+      items: items.map(i => ({ title: i.titleKey, hasChildren: !!i.children, childrenCount: i.children?.length || 0 }))
+    });
+    return items;
+  }, [effectiveRole, navigationContext, hasBuildingsPermission, hasRoomsPermission, hasOrganizationsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, isSuperAdmin]);
 
   const isActive = useCallback((path: string) => currentPath === path, [currentPath]);
   const isChildActive = useCallback((children?: Array<{ url: string }>) => 
@@ -272,6 +365,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   const renderMenuItem = (item: NavigationItem) => {
     const label = t(`nav.${item.titleKey}`);
+    // Always show parent items even if they have no children (they might have children that load later)
     if (item.children) {
       const isExpanded = expandedItems.includes(item.titleKey) || isChildActive(item.children);
       

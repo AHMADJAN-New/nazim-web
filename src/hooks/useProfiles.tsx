@@ -191,6 +191,8 @@ export const useUserOrganization = () => {
 
 export const useIsSuperAdmin = () => {
   const { data: profile } = useProfile();
-  return profile?.organization_id === null && profile?.role === 'super_admin';
+  // Super admin is identified by role, not by organization_id
+  // (organization_id can be null or set to an organization)
+  return profile?.role === 'super_admin';
 };
 

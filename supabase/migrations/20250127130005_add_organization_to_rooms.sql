@@ -34,16 +34,9 @@ FROM public.buildings b
 WHERE r.building_id = b.id
 AND r.organization_id IS NULL;
 
--- Add constraint to ensure organization_id matches building's organization
--- This will be enforced by the trigger, but we add a check constraint for safety
-ALTER TABLE public.rooms
-    ADD CONSTRAINT rooms_organization_matches_building CHECK (
-        organization_id = (
-            SELECT organization_id 
-            FROM public.buildings 
-            WHERE id = building_id
-        )
-    );
+-- Note: We don't add a CHECK constraint here because PostgreSQL doesn't allow
+-- subqueries in CHECK constraints. The trigger ensures organization_id matches
+-- the building's organization_id automatically.
 
 -- Drop all existing RLS policies
 DROP POLICY IF EXISTS "Allow authenticated users to read rooms" ON public.rooms;

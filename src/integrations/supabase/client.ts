@@ -36,5 +36,34 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     headers: {
       'x-client-info': 'nazim-school-manager@1.0.0',
     },
+    fetch: (url, options = {}) => {
+      // Add better error handling for network issues
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      return fetch(url, {
+        ...options,
+        signal: controller.signal,
+      })
+      .finally(() => clearTimeout(timeoutId))
+      .catch((error) => {
+        // Log detailed error information
+        console.error('❌ Supabase fetch error:', {
+          url: typeof url === 'string' ? url : url.toString(),
+          method: options.method || 'GET',
+          error: error.message,
+          name: error.name,
+          supabaseUrl: SUPABASE_URL,
+        });
+        
+        // Provide more helpful error messages
+        if (error.name === 'AbortError' || error.message?.includes('timeout') || error.message?.includes('aborted')) {
+          throw new Error('Request timeout: Supabase server is not responding. Please check if Supabase is running (run "supabase start").');
+        } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError') || error.message?.includes('ERR_')) {
+          throw new Error(`Network error: Unable to connect to Supabase at ${SUPABASE_URL}. Please ensure Supabase is running (run "supabase start").`);
+        }
+        throw error;
+      });
+    },
   },
 });

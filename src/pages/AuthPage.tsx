@@ -14,10 +14,10 @@ import { toast } from 'sonner';
 import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 import { DemoAccountsTab } from '@/components/auth/DemoAccountsTab';
 
-interface School {
+interface Organization {
   id: string;
   name: string;
-  code: string;
+  slug: string;
 }
 
 export default function AuthPage() {
@@ -25,7 +25,7 @@ export default function AuthPage() {
   const { user } = useAuth();
   const { secureSignIn, secureSignUp, validatePasswordStrength, loading: authLoading } = useSecureAuth();
   const [loading, setLoading] = useState(false);
-  const [schools, setSchools] = useState<School[]>([]);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -33,7 +33,7 @@ export default function AuthPage() {
     fullName: '',
     phone: '',
     role: 'student',
-    schoolId: ''
+    organizationId: ''
   });
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
 
@@ -43,28 +43,68 @@ export default function AuthPage() {
   useEffect(() => {
     // In development mode, don't redirect - allow access to auth page
     if (DEV_AUTH_BYPASS) {
-      fetchSchools();
+      fetchOrganizations();
       return;
     }
 
     if (user) {
       navigate('/redirect');
     }
-    fetchSchools();
+    fetchOrganizations();
   }, [user, navigate]);
 
-  const fetchSchools = async () => {
+  const fetchOrganizations = async () => {
     try {
+      // Check if Supabase is accessible first
       const { data, error } = await supabase
-        .from('schools')
-        .select('id, name, code')
-        .eq('is_active', true)
-        .order('name');
+        .from('organizations')
+        .select('id, name, slug')
+        .order('name')
+        .limit(100); // Limit to prevent large queries
 
-      if (error) throw error;
-      setSchools(data || []);
-    } catch (error) {
-      logger.error('Error fetching schools', error);
+      if (error) {
+        console.error('Error fetching organizations:', error);
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        
+        // Don't throw - just log and continue with empty list
+        // This allows signup to proceed even if organizations can't be fetched
+        setOrganizations([]);
+        
+        // Only show error toast if it's a network error, not permission errors
+        if (error.message?.includes('Failed to fetch') || 
+            error.message?.includes('Network') ||
+            error.message?.includes('fetch')) {
+          toast.error('Unable to connect to server. Please ensure Supabase is running and check your connection.');
+        } else if (error.code === 'PGRST301' || error.message?.includes('permission') || error.message?.includes('RLS')) {
+          // Permission errors are expected for non-admin users - don't show error
+          console.debug('Permission denied for organizations (this is normal for non-admin users)');
+        } else {
+          // Other errors - show a generic message
+          console.warn('Could not fetch organizations:', error.message);
+        }
+        return;
+      }
+      
+      setOrganizations(data || []);
+      if (data && data.length === 0) {
+        console.warn('No organizations found in database');
+      }
+    } catch (error: any) {
+      console.error('Unexpected error fetching organizations:', error);
+      logger.error('Error fetching organizations', error);
+      setOrganizations([]);
+      
+      // Only show error for network issues
+      if (error?.message?.includes('Failed to fetch') || 
+          error?.message?.includes('Network') ||
+          error?.message?.includes('fetch')) {
+        toast.error('Network error: Unable to fetch organizations. Please check your connection and ensure Supabase is running.');
+      }
     }
   };
 
@@ -127,8 +167,8 @@ export default function AuthPage() {
       return;
     }
 
-    if (!formData.schoolId && formData.role !== 'super_admin') {
-      toast.error('Please select a school');
+    if (!formData.organizationId && formData.role !== 'super_admin') {
+      toast.error('Please select an organization');
       return;
     }
 
@@ -146,7 +186,7 @@ export default function AuthPage() {
       full_name: formData.fullName,
       phone: formData.phone,
       role: formData.role,
-      school_id: formData.schoolId
+      organization_id: formData.organizationId || null
     };
 
     setLoading(true);
@@ -163,7 +203,20 @@ export default function AuthPage() {
           status: error.status,
           name: error.name,
         });
-        toast.error(error.message || 'Failed to create account. Please check your connection and try again.');
+        
+        // Provide more specific error messages
+        let errorMessage = error.message || 'Failed to create account';
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('Network')) {
+          errorMessage = 'Network error: Unable to connect to server. Please check your internet connection and try again.';
+        } else if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
+          errorMessage = 'This email is already registered. Please sign in or reset your password.';
+        } else if (error.message?.includes('Invalid email')) {
+          errorMessage = 'Please enter a valid email address.';
+        } else if (error.message?.includes('Password')) {
+          errorMessage = error.message; // Password validation errors are already user-friendly
+        }
+        
+        toast.error(errorMessage);
         return;
       }
       
@@ -182,7 +235,7 @@ export default function AuthPage() {
           fullName: '',
           phone: '',
           role: 'student',
-          schoolId: ''
+          organizationId: ''
         });
       } else {
         console.warn('Sign up returned no user data');
@@ -300,19 +353,30 @@ export default function AuthPage() {
                 </div>
                 {formData.role !== 'super_admin' && (
                   <div>
-                    <Label htmlFor="school">School</Label>
-                    <Select value={formData.schoolId} onValueChange={(value) => setFormData({ ...formData, schoolId: value })}>
+                    <Label htmlFor="organization">Organization</Label>
+                    <Select value={formData.organizationId} onValueChange={(value) => setFormData({ ...formData, organizationId: value })}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select your school" />
+                        <SelectValue placeholder="Select your organization" />
                       </SelectTrigger>
                       <SelectContent>
-                        {schools.map((school) => (
-                          <SelectItem key={school.id} value={school.id}>
-                            {school.name} ({school.code})
-                          </SelectItem>
-                        ))}
+                        {organizations.length === 0 ? (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                            No organizations available
+                          </div>
+                        ) : (
+                          organizations.map((org) => (
+                            <SelectItem key={org.id} value={org.id}>
+                              {org.name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
+                    {organizations.length === 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        No organizations found. Please contact an administrator.
+                      </p>
+                    )}
                   </div>
                 )}
                 <div>

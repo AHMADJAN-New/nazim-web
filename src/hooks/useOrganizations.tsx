@@ -247,3 +247,112 @@ export const useCurrentOrganization = () => {
   });
 };
 
+export const useOrganizationStatistics = (organizationId: string) => {
+  return useQuery({
+    queryKey: ['organization-statistics', organizationId],
+    queryFn: async () => {
+      const [usersResult, buildingsResult, roomsResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', organizationId),
+        supabase
+          .from('buildings')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', organizationId),
+        supabase
+          .from('rooms')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', organizationId),
+      ]);
+
+      return {
+        userCount: usersResult.count || 0,
+        buildingCount: buildingsResult.count || 0,
+        roomCount: roomsResult.count || 0,
+      };
+    },
+    enabled: !!organizationId,
+  });
+};
+
+export const useSuperAdminOrganizations = (superAdminId?: string) => {
+  return useQuery({
+    queryKey: ['super-admin-organizations', superAdminId],
+    queryFn: async () => {
+      if (!superAdminId) return [];
+
+      const { data, error } = await supabase
+        .from('super_admin_organizations')
+        .select(`
+          *,
+          organization:organizations(*)
+        `)
+        .eq('super_admin_id', superAdminId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data || [];
+    },
+    enabled: !!superAdminId,
+  });
+};
+
+export const useAssignSuperAdminToOrganization = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ superAdminId, organizationId, isPrimary = false }: { superAdminId: string; organizationId: string; isPrimary?: boolean }) => {
+      const { data, error } = await supabase
+        .from('super_admin_organizations')
+        .insert({
+          super_admin_id: superAdminId,
+          organization_id: organizationId,
+          is_primary: isPrimary,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['super-admin-organizations'] });
+      toast.success('Super admin assigned to organization');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to assign super admin');
+    },
+  });
+};
+
+export const useRemoveSuperAdminFromOrganization = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ superAdminId, organizationId }: { superAdminId: string; organizationId: string }) => {
+      const { error } = await supabase
+        .from('super_admin_organizations')
+        .delete()
+        .eq('super_admin_id', superAdminId)
+        .eq('organization_id', organizationId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['super-admin-organizations'] });
+      toast.success('Super admin removed from organization');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to remove super admin');
+    },
+  });
+};
+
