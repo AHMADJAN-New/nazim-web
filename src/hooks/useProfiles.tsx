@@ -186,7 +186,7 @@ export const useUserRole = () => {
 
 export const useUserOrganization = () => {
   const { data: profile } = useProfile();
-  return profile?.organization_id || null;
+  return { data: profile?.organization_id || null };
 };
 
 export const useIsSuperAdmin = () => {

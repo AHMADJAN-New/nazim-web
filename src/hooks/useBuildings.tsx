@@ -58,7 +58,6 @@ export const useCreateBuilding = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { data: profile } = useProfile();
-  const userOrgId = useUserOrganization();
 
   return useMutation({
     mutationFn: async (buildingData: { building_name: string; organization_id?: string }) => {
