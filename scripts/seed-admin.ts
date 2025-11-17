@@ -137,3 +137,4 @@ async function seedSuperAdmin() {
 // Run the seed function
 seedSuperAdmin();
 
+

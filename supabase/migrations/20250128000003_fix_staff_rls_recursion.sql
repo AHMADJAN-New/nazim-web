@@ -58,3 +58,4 @@ CREATE POLICY "Users can delete their organization's staff"
         OR public.get_current_user_organization_id() IS NULL
     );
 
+

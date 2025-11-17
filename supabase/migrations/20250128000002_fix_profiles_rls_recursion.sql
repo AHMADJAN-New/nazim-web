@@ -92,3 +92,4 @@ CREATE POLICY "Admins can update profiles in their organization"
 COMMENT ON FUNCTION public.get_current_user_organization_id() IS 'Gets the current user''s organization_id without triggering RLS recursion';
 COMMENT ON FUNCTION public.get_current_user_role() IS 'Gets the current user''s role without triggering RLS recursion';
 
+

@@ -118,3 +118,4 @@ The enhanced error handling will show detailed error messages. Look for:
 3. Verify firewall isn't blocking localhost connections
 4. Try accessing Supabase Studio: http://127.0.0.1:54323
 
+

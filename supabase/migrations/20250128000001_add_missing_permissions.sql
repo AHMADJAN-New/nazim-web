@@ -29,3 +29,4 @@ FROM public.permissions p
 WHERE p.name IN ('users.read', 'auth_monitoring.read', 'security_monitoring.read')
 ON CONFLICT DO NOTHING;
 
+

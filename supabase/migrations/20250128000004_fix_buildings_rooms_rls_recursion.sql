@@ -94,3 +94,4 @@ CREATE POLICY "Users can delete their organization's rooms"
         OR public.get_current_user_organization_id() IS NULL
     );
 
+
