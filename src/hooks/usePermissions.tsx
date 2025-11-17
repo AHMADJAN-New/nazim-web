@@ -114,26 +114,38 @@ export const useUserPermissions = () => {
       return permNames;
     },
     enabled: !!profile?.role,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 30 * 60 * 1000, // 30 minutes - permissions don't change often
+    gcTime: 60 * 60 * 1000, // 1 hour
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Don't refetch on mount if data is fresh
+    refetchOnReconnect: false, // Don't refetch on reconnect
   });
 };
 
 export const useHasPermission = (permissionName: string) => {
   const { data: profile } = useProfile();
   const { data: permissions, isLoading } = useUserPermissions();
-  
+
   // Super admin always has all permissions (immediate return, no query needed)
   if (profile?.role === 'super_admin') {
     return true;
   }
-  
-  // While loading, return false to prevent showing items prematurely
-  if (isLoading || !permissions) {
+
+  // Only return false on initial load when we have no cached data
+  // Use cached data if available during background refetch to prevent UI flicker
+  if (isLoading && !permissions) {
+    // Initial load - no cached data yet
     return false;
   }
-  
-  return permissions.includes(permissionName);
+
+  // If we have permissions (cached or fresh), use them
+  // This ensures sidebar doesn't disappear during background refetches
+  if (permissions && permissions.length > 0) {
+    return permissions.includes(permissionName);
+  }
+
+  // No permissions found
+  return false;
 };
 
 export const useAssignPermissionToRole = () => {

@@ -112,7 +112,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const isSuperAdmin = useIsSuperAdmin();
   // Use profile role directly from useAuth (most reliable) instead of useUserRole
   const roleFromAuth = profile?.role || currentProfile?.role || null;
-  const { role: roleFromHook, loading } = useUserRole();
+  const { role: roleFromHook } = useUserRole();
   // Prefer role from auth/profile over hook (hook might have dev mode fallback)
   const role = roleFromAuth || roleFromHook;
   const { data: currentOrg } = useCurrentOrganization();
@@ -123,7 +123,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasUsersPermission = useHasPermission('users.read');
   const hasAuthMonitoringPermission = useHasPermission('auth_monitoring.read');
   const hasSecurityMonitoringPermission = useHasPermission('security_monitoring.read');
-  
+  const hasBrandingPermission = useHasPermission('branding.read');
+  const hasReportsPermission = useHasPermission('reports.read');
+
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [navigationContext, setNavigationContext] = useState<NavigationContext>({
@@ -131,12 +133,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
     recentTasks: [],
     quickActions: []
   });
-  
+
   const collapsed = state === "collapsed";
   const currentPath = location.pathname;
 
-  // Context-aware navigation items
-  const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {
+  // Context-aware navigation items - computed with useMemo to avoid hook order issues
+  const allNavigationItems = useMemo((): NavigationItem[] => {
     const allItems: NavigationItem[] = [
       {
         titleKey: "dashboard",
@@ -178,6 +180,16 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/settings/permissions",
             icon: Shield,
           }] : []),
+          ...(hasBrandingPermission || isSuperAdmin ? [{
+            title: "Schools Management",
+            url: "/settings/schools",
+            icon: School,
+          }] : []),
+          ...(hasReportsPermission || isSuperAdmin ? [{
+            title: "Report Templates",
+            url: "/settings/report-templates",
+            icon: FileText,
+          }] : []),
         ],
       },
       {
@@ -215,14 +227,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
         ],
       }
     ];
-    
+
+    return allItems;
+  }, [hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, isSuperAdmin]);
+
+  // Helper function to filter navigation items by role
+  const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {
     // Filter items by user role - only show items that match the user's role
-    const filtered = allItems.filter(item => {
+    const filtered = allNavigationItems.filter(item => {
       const hasRole = item.roles.includes(userRole);
       console.log(`🔍 Filtering item "${item.titleKey}":`, { hasRole, userRole, allowedRoles: item.roles });
       return hasRole;
     });
-    
+
     // Sort by priority (lower number = higher priority)
     return filtered.sort((a, b) => (a.priority || 999) - (b.priority || 999));
   };
@@ -250,34 +267,35 @@ export const SmartSidebar = memo(function SmartSidebar() {
     // Fetch context asynchronously (non-blocking)
     const fetchContext = async () => {
       try {
-      const { data, error } = await supabase
-        .from('user_navigation_context')
-        .select('recent_tasks')
-        .eq('user_id', user.id)
-        .single();
+        // Use type assertion since user_navigation_context table may not exist in types
+        const { data, error } = await (supabase as any)
+          .from('user_navigation_context')
+          .select('recent_tasks')
+          .eq('user_id', user.id)
+          .single();
 
-      if (error) {
-          // Silently fail - don't block UI
+        if (error) {
+          // Silently fail - don't block UI (table might not exist)
           return;
-      }
+        }
 
         const tasks: DbRecentTask[] = (data?.recent_tasks as unknown as DbRecentTask[]) || [];
 
-      const filteredTasks = tasks.filter(
+        const filteredTasks = tasks.filter(
           task => (!task.role || task.role === role) && (!task.context || task.context === currentModule)
-      );
+        );
 
-      const mappedTasks = filteredTasks.map(task => ({
-        title: task.title,
-        url: task.url,
-        icon: (LucideIcons as unknown as Record<string, LucideIcon>)[task.icon] || FileText,
-        timestamp: task.timestamp
-      }));
+        const mappedTasks = filteredTasks.map(task => ({
+          title: task.title,
+          url: task.url,
+          icon: (LucideIcons as unknown as Record<string, LucideIcon>)[task.icon] || FileText,
+          timestamp: task.timestamp
+        }));
 
         setNavigationContext(prev => ({
           ...prev,
-        recentTasks: mappedTasks,
-        quickActions: []
+          recentTasks: mappedTasks,
+          quickActions: []
         }));
       } catch (error) {
         // Silently fail - don't block UI
@@ -288,19 +306,25 @@ export const SmartSidebar = memo(function SmartSidebar() {
     fetchContext();
 
     // Only subscribe to real-time updates if not in dev mode
+    // Note: user_navigation_context table may not exist, so wrap in try-catch
     if (!(import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false')) {
-    const channel = supabase
-      .channel('user_navigation_context')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'user_navigation_context', filter: `user_id=eq.${user.id}` },
-        () => fetchContext()
-      )
-      .subscribe();
+      try {
+        const channel = supabase
+          .channel('user_navigation_context')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'user_navigation_context', filter: `user_id=eq.${user.id}` },
+            () => fetchContext()
+          )
+          .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      } catch (error) {
+        // Silently fail if table doesn't exist
+        return;
+      }
     }
   }, [currentModule, role, user?.id]);
 
@@ -316,7 +340,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
     }
     return null;
   }, [role, currentProfile?.role, isSuperAdmin, user]);
-  
+
   // Debug logging for permissions (after effectiveRole is defined)
   useEffect(() => {
     console.log('🔍 Permissions Debug:', {
@@ -330,10 +354,14 @@ export const SmartSidebar = memo(function SmartSidebar() {
       hasUsersPermission,
       hasAuthMonitoringPermission,
       hasSecurityMonitoringPermission,
+      hasBrandingPermission,
+      hasReportsPermission,
     });
-  }, [role, effectiveRole, isSuperAdmin, hasBuildingsPermission, hasRoomsPermission, hasOrganizationsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission]);
-  
+  }, [role, effectiveRole, isSuperAdmin, hasBuildingsPermission, hasRoomsPermission, hasOrganizationsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission]);
+
   // Memoize navigation items to prevent recalculation on every render
+  // Always render items if we have a role, even if permissions are still loading
+  // This prevents the sidebar from disappearing during background refetches
   const filteredItems = useMemo(() => {
     if (!effectiveRole) {
       console.log('🔍 Navigation: No effective role, returning empty items');
@@ -346,18 +374,21 @@ export const SmartSidebar = memo(function SmartSidebar() {
       items: items.map(i => ({ title: i.titleKey, hasChildren: !!i.children, childrenCount: i.children?.length || 0 }))
     });
     return items;
-  }, [effectiveRole, navigationContext, hasBuildingsPermission, hasRoomsPermission, hasOrganizationsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, isSuperAdmin]);
+  }, [effectiveRole, navigationContext, allNavigationItems]);
+
+  // Don't show loading state - always render with available data
+  // The sidebar will update when permissions are available, but won't disappear
 
   const isActive = useCallback((path: string) => currentPath === path, [currentPath]);
-  const isChildActive = useCallback((children?: Array<{ url: string }>) => 
+  const isChildActive = useCallback((children?: Array<{ url: string }>) =>
     children?.some(child => currentPath.startsWith(child.url)) || false, [currentPath]);
 
   const getNavCls = useCallback(({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50", []);
 
   const toggleExpanded = useCallback((title: string) => {
-    setExpandedItems(prev => 
-      prev.includes(title) 
+    setExpandedItems(prev =>
+      prev.includes(title)
         ? prev.filter(item => item !== title)
         : [...prev, title]
     );
@@ -368,7 +399,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
     // Always show parent items even if they have no children (they might have children that load later)
     if (item.children) {
       const isExpanded = expandedItems.includes(item.titleKey) || isChildActive(item.children);
-      
+
       return (
         <Collapsible key={item.titleKey} open={isExpanded} onOpenChange={() => toggleExpanded(item.titleKey)}>
           <SidebarMenuItem>
@@ -398,8 +429,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
                   {item.children.map((child: NavigationChild) => (
                     <SidebarMenuItem key={child.url}>
                       <SidebarMenuButton asChild>
-                        <NavLink 
-                          to={child.url} 
+                        <NavLink
+                          to={child.url}
                           className={getNavCls({ isActive: isActive(child.url) })}
                           end={child.url === '/'}
                         >
@@ -423,7 +454,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
     return (
       <SidebarMenuItem key={item.url}>
         <SidebarMenuButton asChild>
-          <NavLink 
+          <NavLink
             to={item.url || '/'}
             className={getNavCls({ isActive: isActive(item.url || '/') })}
           >

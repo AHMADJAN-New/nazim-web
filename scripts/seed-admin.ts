@@ -11,15 +11,14 @@
 
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
-import { readFileSync } from 'fs';
 import { join } from 'path';
 
 // Load environment variables
 dotenv.config({ path: join(process.cwd(), '.env') });
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 
-  process.env.SUPABASE_SERVICE_ROLE_KEY || 
+const SUPABASE_SERVICE_ROLE_KEY = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
   'sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz'; // Default local dev key
 
 const ADMIN_EMAIL = 'admin@nazim.local';
@@ -29,7 +28,7 @@ const ADMIN_NAME = 'Super Admin';
 async function seedSuperAdmin() {
   console.log('🌱 Seeding super admin user...');
   console.log(`   Supabase URL: ${SUPABASE_URL}`);
-  
+
   // Create admin client with service role key
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
@@ -41,17 +40,17 @@ async function seedSuperAdmin() {
   try {
     // Check if user already exists
     const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    
+
     if (listError) {
       console.error('❌ Error listing users:', listError);
       throw listError;
     }
 
-    const existingUser = existingUsers?.users?.find(u => u.email === ADMIN_EMAIL);
+    const existingUser = existingUsers?.users?.find((u: any) => u.email === ADMIN_EMAIL);
 
     if (existingUser) {
       console.log(`✅ User ${ADMIN_EMAIL} already exists`);
-      
+
       // Update the user's profile to ensure it's super_admin
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
@@ -79,7 +78,7 @@ async function seedSuperAdmin() {
 
     // Create new user
     console.log(`📝 Creating new user: ${ADMIN_EMAIL}`);
-    
+
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: ADMIN_EMAIL,
       password: ADMIN_PASSWORD,

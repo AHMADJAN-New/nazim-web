@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetUserPassword, type UserProfile, type CreateUserData, type UpdateUserData } from '@/hooks/useUsers';
 import { useOrganizations } from '@/hooks/useOrganizations';
+import { useSchools } from '@/hooks/useSchools';
 import { useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,6 +68,7 @@ const userSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').optional(),
   role: z.enum(['admin', 'teacher', 'accountant', 'librarian', 'parent', 'student', 'hostel_manager', 'asset_manager', 'staff']),
   organization_id: z.string().uuid().nullable().optional(),
+  default_school_id: z.string().uuid().nullable().optional(),
   phone: z.string().optional(),
 });
 
@@ -76,7 +79,9 @@ export function UserManagement() {
   const hasCreatePermission = useHasPermission('users.create');
   const hasUpdatePermission = useHasPermission('users.update');
   const hasDeletePermission = useHasPermission('users.delete');
+  const hasSchoolCreatePermission = useHasPermission('school_branding.create');
   const { data: organizations } = useOrganizations();
+  const { user } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -87,19 +92,6 @@ export function UserManagement() {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [newPassword, setNewPassword] = useState('');
-
-  const filters = useMemo(() => ({
-    search: searchQuery || undefined,
-    role: roleFilter !== 'all' ? roleFilter : undefined,
-    is_active: statusFilter !== 'all' ? statusFilter === 'active' : undefined,
-    organization_id: organizationFilter !== 'all' ? (organizationFilter === 'none' ? null : organizationFilter) : undefined,
-  }), [searchQuery, roleFilter, statusFilter, organizationFilter]);
-
-  const { data: users, isLoading } = useUsers(filters);
-  const createUser = useCreateUser();
-  const updateUser = useUpdateUser();
-  const deleteUser = useDeleteUser();
-  const resetPassword = useResetUserPassword();
 
   const {
     register,
@@ -113,11 +105,39 @@ export function UserManagement() {
     defaultValues: {
       role: 'student',
       organization_id: null,
+      default_school_id: null,
     },
   });
+  
+  // Watch organization_id to update schools list (must be after useForm)
+  const watchedOrgId = watch('organization_id');
+  const watchedSchoolId = watch('default_school_id');
+  
+  // Get schools for the selected organization
+  const { data: schools } = useSchools(undefined, watchedOrgId || undefined);
+
+  const filters = useMemo(() => ({
+    search: searchQuery || undefined,
+    role: roleFilter !== 'all' ? roleFilter : undefined,
+    is_active: statusFilter !== 'all' ? statusFilter === 'active' : undefined,
+    organization_id: organizationFilter !== 'all' ? (organizationFilter === 'none' ? null : organizationFilter) : undefined,
+  }), [searchQuery, roleFilter, statusFilter, organizationFilter]);
+
+  const { data: users, isLoading } = useUsers(filters);
+  const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+  const deleteUser = useDeleteUser();
+  const resetPassword = useResetUserPassword();
+  
+  // Auto-select first school if only one exists and no school is selected
+  useEffect(() => {
+    if (watchedOrgId && schools && schools.length === 1 && !watchedSchoolId) {
+      setValue('default_school_id', schools[0].id);
+    }
+  }, [watchedOrgId, schools, watchedSchoolId, setValue]);
 
   const isEditMode = !!selectedUser;
-  const watchedRole = watch('role');
+  const watchedRole = watch('role') || 'student';
 
   const handleOpenDialog = (user?: UserProfile) => {
     if (user) {
@@ -126,6 +146,7 @@ export function UserManagement() {
       setValue('email', user.email);
       setValue('role', user.role as any);
       setValue('organization_id', user.organization_id || null);
+      setValue('default_school_id', (user as any).default_school_id || null);
       setValue('phone', user.phone || '');
     } else {
       setSelectedUser(null);
@@ -135,6 +156,7 @@ export function UserManagement() {
         password: '',
         role: 'student',
         organization_id: null,
+        default_school_id: null,
         phone: '',
       });
     }
@@ -156,6 +178,7 @@ export function UserManagement() {
           email: data.email,
           role: data.role,
           organization_id: data.organization_id || null,
+          default_school_id: data.default_school_id || null,
           phone: data.phone || undefined,
         };
         await updateUser.mutateAsync(updateData);
@@ -170,6 +193,7 @@ export function UserManagement() {
           full_name: data.full_name,
           role: data.role,
           organization_id: data.organization_id || null,
+          default_school_id: data.default_school_id || null,
           phone: data.phone || undefined,
         };
         await createUser.mutateAsync(createData);
@@ -562,7 +586,11 @@ export function UserManagement() {
                 <Label htmlFor="organization_id">Organization</Label>
                 <Select
                   value={watch('organization_id') || 'none'}
-                  onValueChange={(value) => setValue('organization_id', value === 'none' ? null : value)}
+                  onValueChange={(value) => {
+                    setValue('organization_id', value === 'none' ? null : value);
+                    // Reset school when organization changes
+                    setValue('default_school_id', null);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select organization" />
@@ -576,6 +604,43 @@ export function UserManagement() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+            {/* School Selection - Show if organization is selected and user can create schools or has multiple schools */}
+            {watchedOrgId && schools && schools.length > 0 && (
+              <div>
+                <Label htmlFor="default_school_id">
+                  Default School
+                  {schools.length > 1 ? ' (Select one)' : ' (Auto-selected)'}
+                </Label>
+                <Select
+                  value={watch('default_school_id') || 'none'}
+                  onValueChange={(value) => setValue('default_school_id', value === 'none' ? null : value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={schools.length === 1 ? schools[0].school_name : "Select school"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {schools.length > 1 && (
+                      <SelectItem value="none">No Default School</SelectItem>
+                    )}
+                    {schools.map(school => (
+                      <SelectItem key={school.id} value={school.id}>
+                        {school.school_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {schools.length > 1 && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    User will be assigned to the selected school. When they create buildings/rooms, this school will be used automatically.
+                  </p>
+                )}
+                {schools.length === 1 && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Only one school available. User will be automatically assigned to this school.
+                  </p>
+                )}
               </div>
             )}
             <DialogFooter>

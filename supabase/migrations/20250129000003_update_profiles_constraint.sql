@@ -8,7 +8,8 @@ DROP CONSTRAINT IF EXISTS check_organization_required;
 
 -- Create a new constraint that allows super_admin to have organization_id
 -- Regular users (non-super-admin) should have organization_id, but it can be NULL temporarily during signup
-CREATE CONSTRAINT check_organization_required_new ON public.profiles CHECK (
+ALTER TABLE public.profiles
+ADD CONSTRAINT check_organization_required_new CHECK (
     -- Super admin can have organization_id or NULL (both are valid)
     (role = 'super_admin')
     OR

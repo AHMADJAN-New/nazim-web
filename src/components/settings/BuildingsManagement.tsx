@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBuildings, useCreateBuilding, useUpdateBuilding, useDeleteBuilding } from '@/hooks/useBuildings';
 import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useOrganizations } from '@/hooks/useOrganizations';
+import { useSchools } from '@/hooks/useSchools';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,6 +34,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Pencil, Trash2, Search, Building2 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useForm } from 'react-hook-form';
@@ -41,6 +43,7 @@ import * as z from 'zod';
 
 const buildingSchema = z.object({
   building_name: z.string().min(1, 'Building name is required').max(100, 'Building name must be 100 characters or less'),
+  school_id: z.string().min(1, 'School is required'),
 });
 
 type BuildingFormData = z.infer<typeof buildingSchema>;
@@ -52,25 +55,60 @@ export function BuildingsManagement() {
   const hasCreatePermission = useHasPermission('buildings.create');
   const hasUpdatePermission = useHasPermission('buildings.update');
   const hasDeletePermission = useHasPermission('buildings.delete');
+  
+  // State declarations must come before hooks that use them
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>(profile?.organization_id);
+  
+  // Now hooks can use selectedOrganizationId
   const { data: organizations } = useOrganizations();
+  const { data: schools } = useSchools(selectedOrganizationId);
   const { data: buildings, isLoading } = useBuildings();
   const createBuilding = useCreateBuilding();
   const updateBuilding = useUpdateBuilding();
   const deleteBuilding = useDeleteBuilding();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<BuildingFormData>({
     resolver: zodResolver(buildingSchema),
+    defaultValues: {
+      school_id: profile?.default_school_id || '',
+    },
   });
+
+  const selectedSchoolId = watch('school_id');
+  
+  // Update selectedOrganizationId when profile loads
+  useEffect(() => {
+    if (profile?.organization_id && !selectedOrganizationId) {
+      setSelectedOrganizationId(profile.organization_id);
+    }
+  }, [profile?.organization_id, selectedOrganizationId]);
+  
+  // Auto-set school_id when schools load and user has default_school_id
+  useEffect(() => {
+    if (!selectedBuilding && profile?.default_school_id && schools && schools.length > 0) {
+      const defaultSchool = schools.find(s => s.id === profile.default_school_id);
+      if (defaultSchool) {
+        setValue('school_id', profile.default_school_id);
+      } else if (schools.length === 1) {
+        // If default school not found but only one school exists, use it
+        setValue('school_id', schools[0].id);
+      }
+    }
+  }, [profile?.default_school_id, schools, selectedBuilding, setValue]);
+  
+  // Schools are already filtered by useSchools hook based on selectedOrganizationId
+  const filteredSchools = schools || [];
 
   const filteredBuildings = buildings?.filter((building) =>
     building.building_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -80,11 +118,31 @@ export function BuildingsManagement() {
     if (buildingId) {
       const building = buildings?.find((b) => b.id === buildingId);
       if (building) {
-        reset({ building_name: building.building_name });
+        reset({ 
+          building_name: building.building_name,
+          school_id: building.school_id,
+        });
+        // Set organization based on building's school
+        const buildingSchool = schools?.find(s => s.id === building.school_id);
+        if (buildingSchool) {
+          setSelectedOrganizationId(buildingSchool.organization_id);
+        }
         setSelectedBuilding(buildingId);
       }
     } else {
-      reset({ building_name: '' });
+      // For new building, auto-set school from user's profile
+      let defaultSchoolId = profile?.default_school_id || '';
+      
+      // If no default school but user has organization, get first school
+      if (!defaultSchoolId && profile?.organization_id && schools && schools.length > 0) {
+        defaultSchoolId = schools[0].id;
+      }
+      
+      reset({ 
+        building_name: '',
+        school_id: defaultSchoolId,
+      });
+      setSelectedOrganizationId(profile?.organization_id);
       setSelectedBuilding(null);
     }
     setIsDialogOpen(true);
@@ -93,7 +151,18 @@ export function BuildingsManagement() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setSelectedBuilding(null);
-    reset();
+    setSelectedOrganizationId(profile?.organization_id);
+    
+    // Reset to user's default school or first available school
+    let defaultSchoolId = profile?.default_school_id || '';
+    if (!defaultSchoolId && profile?.organization_id && schools && schools.length > 0) {
+      defaultSchoolId = schools[0].id;
+    }
+    
+    reset({
+      building_name: '',
+      school_id: defaultSchoolId,
+    });
   };
 
   const onSubmit = (data: BuildingFormData) => {
@@ -253,6 +322,95 @@ export function BuildingsManagement() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
+              {isSuperAdmin && (
+                <div className="grid gap-2">
+                  <Label htmlFor="organization_id">Organization</Label>
+                  <Select
+                    value={selectedOrganizationId || ''}
+                    onValueChange={(value) => {
+                      setSelectedOrganizationId(value);
+                      setValue('school_id', ''); // Reset school when org changes
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select organization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {organizations?.map((org) => (
+                        <SelectItem key={org.id} value={org.id}>
+                          {org.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {!isSuperAdmin && profile?.organization_id && (
+                <div className="grid gap-2">
+                  <Label htmlFor="organization_id">Organization</Label>
+                  <Input
+                    id="organization_id"
+                    value={organizations?.find(o => o.id === profile.organization_id)?.name || 'Your Organization'}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+              )}
+              {filteredSchools.length > 1 ? (
+                <div className="grid gap-2">
+                  <Label htmlFor="school_id">School</Label>
+                  <Select
+                    value={selectedSchoolId || ''}
+                    onValueChange={(value) => setValue('school_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select school" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredSchools.map((school) => (
+                        <SelectItem key={school.id} value={school.id}>
+                          {school.school_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.school_id && (
+                    <p className="text-sm text-destructive">{errors.school_id.message}</p>
+                  )}
+                </div>
+              ) : filteredSchools.length === 1 ? (
+                <div className="grid gap-2">
+                  <Label htmlFor="school_id">School</Label>
+                  <Input
+                    id="school_id"
+                    value={filteredSchools[0].school_name}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+              ) : (
+                <div className="grid gap-2">
+                  <Label htmlFor="school_id">School *</Label>
+                  <Select
+                    value={selectedSchoolId || ''}
+                    onValueChange={(value) => setValue('school_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select school" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredSchools.map((school) => (
+                        <SelectItem key={school.id} value={school.id}>
+                          {school.school_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.school_id && (
+                    <p className="text-sm text-destructive">{errors.school_id.message}</p>
+                  )}
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="building_name">Building Name</Label>
                 <Input

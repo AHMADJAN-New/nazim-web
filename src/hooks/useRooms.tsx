@@ -9,14 +9,15 @@ export interface Room {
   room_number: string;
   building_id: string;
   staff_id: string | null;
-  organization_id: string;
+  school_id: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string | null;
   // Extended with relationship data
   building?: {
     id: string;
     building_name: string;
-    organization_id: string;
+    school_id: string;
   };
   staff?: {
     id: string;
@@ -30,6 +31,7 @@ export interface RoomWithRelations extends Room {
   building: {
     id: string;
     building_name: string;
+    school_id: string;
   };
   staff: {
     id: string;
@@ -39,36 +41,63 @@ export interface RoomWithRelations extends Room {
   } | null;
 }
 
-export const useRooms = (organizationId?: string) => {
+export const useRooms = (schoolId?: string, organizationId?: string) => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
 
   return useQuery({
-    queryKey: ['rooms', organizationId || profile?.organization_id],
+    queryKey: ['rooms', schoolId, organizationId || profile?.organization_id],
     queryFn: async () => {
       if (!user || !profile) return [];
 
-      // Determine organization filter
+      // Super admin can see all or filter by school/org
       const isSuperAdmin = profile.organization_id === null && profile.role === 'super_admin';
-      const filterOrgId = organizationId || (isSuperAdmin ? undefined : profile.organization_id);
-
-      if (!isSuperAdmin && !filterOrgId) {
-        return []; // No organization assigned
-      }
 
       // Optimized query: fetch rooms first, then fetch related data in parallel
-      let roomsQuery = supabase
+      let roomsQuery = (supabase as any)
         .from('rooms')
-        .select('id, room_number, building_id, staff_id, organization_id, created_at, updated_at');
+        .select('id, room_number, building_id, staff_id, school_id, created_at, updated_at');
 
-      if (filterOrgId) {
-        roomsQuery = roomsQuery.eq('organization_id', filterOrgId);
+      if (schoolId) {
+        // Filter by specific school
+        roomsQuery = roomsQuery.eq('school_id', schoolId);
+      } else if (organizationId || (!isSuperAdmin && profile.organization_id)) {
+        // Filter by organization through schools
+        const filterOrgId = organizationId || profile.organization_id;
+
+        // Get schools for this organization
+        const { data: schools } = await (supabase as any)
+          .from('school_branding')
+          .select('id')
+          .eq('organization_id', filterOrgId)
+          .is('deleted_at', null);
+
+        if (schools && schools.length > 0) {
+          const schoolIds = schools.map(s => s.id);
+          roomsQuery = roomsQuery.in('school_id', schoolIds);
+        } else {
+          return []; // No schools for this organization
+        }
+      } else if (!isSuperAdmin) {
+        return []; // No organization assigned
       }
+      // If super admin and no filters, show all
 
-      const { data: rooms, error: roomsError } = await roomsQuery.order('room_number', { ascending: true });
+      // Try with deleted_at filter, fallback if column doesn't exist
+      let rooms;
+      const { data: roomsData, error: roomsError } = await roomsQuery.is('deleted_at', null).order('room_number', { ascending: true });
 
-      if (roomsError) {
+      // If error is about missing column, retry without the filter
+      if (roomsError && (roomsError.code === '42703' || roomsError.message?.includes('column') || roomsError.message?.includes('does not exist'))) {
+        const { data: retryData, error: retryError } = await roomsQuery.order('room_number', { ascending: true });
+        if (retryError) {
+          throw new Error(retryError.message);
+        }
+        rooms = retryData || [];
+      } else if (roomsError) {
         throw new Error(roomsError.message);
+      } else {
+        rooms = roomsData || [];
       }
 
       if (!rooms || rooms.length === 0) {
@@ -76,28 +105,30 @@ export const useRooms = (organizationId?: string) => {
       }
 
       // Get unique building IDs and staff IDs
-      const buildingIds = [...new Set(rooms.map(r => r.building_id).filter(Boolean))];
-      const staffIds = [...new Set(rooms.map(r => r.staff_id).filter(Boolean))];
+      const buildingIds = [...new Set(rooms.map((r: any) => r.building_id).filter(Boolean))] as string[];
+      const staffIds = [...new Set(rooms.map((r: any) => r.staff_id).filter(Boolean))] as string[];
 
-      // Fetch related data in parallel
+      // Fetch related data in parallel (excluding soft-deleted)
       const [buildingsResult, staffResult] = await Promise.all([
         buildingIds.length > 0
           ? supabase
-              .from('buildings')
-              .select('id, building_name, organization_id')
-              .in('id', buildingIds)
+            .from('buildings')
+            .select('id, building_name, school_id')
+            .in('id', buildingIds)
+            .is('deleted_at', null)
           : Promise.resolve({ data: [], error: null }),
         staffIds.length > 0
           ? supabase
-              .from('staff')
-              .select(`
+            .from('staff')
+            .select(`
                 id,
                 profile_id,
                 profile:profiles(
                   full_name
                 )
               `)
-              .in('id', staffIds)
+            .in('id', staffIds)
+            .is('deleted_at', null)
           : Promise.resolve({ data: [], error: null }),
       ]);
 
@@ -128,7 +159,7 @@ export const useRooms = (organizationId?: string) => {
         building: buildingsMap.get(room.building_id) || {
           id: room.building_id,
           building_name: 'Unknown',
-          organization_id: room.organization_id,
+          school_id: room.school_id,
         },
         staff: room.staff_id ? (staffMap.get(room.staff_id) || null) : null,
       }));
@@ -152,20 +183,30 @@ export const useCreateRoom = () => {
         throw new Error('User not authenticated');
       }
 
-      // Get building to verify organization
+      // Get building to verify school
       const { data: building, error: buildingError } = await supabase
         .from('buildings')
-        .select('organization_id')
+        .select('school_id')
         .eq('id', roomData.building_id)
+        .is('deleted_at', null)
         .single();
 
       if (buildingError || !building) {
         throw new Error('Building not found');
       }
 
-      // Verify building belongs to user's organization (unless super admin)
-      if (profile.role !== 'super_admin' && building.organization_id !== profile.organization_id) {
-        throw new Error('Building does not belong to your organization');
+      // Verify building belongs to user's organization's schools (unless super admin)
+      if (profile.role !== 'super_admin' && profile.organization_id) {
+        const { data: school } = await (supabase as any)
+          .from('school_branding')
+          .select('organization_id')
+          .eq('id', (building as any).school_id)
+          .is('deleted_at', null)
+          .single();
+
+        if (!school || (school as any).organization_id !== profile.organization_id) {
+          throw new Error('Building does not belong to your organization');
+        }
       }
 
       // Validation: max 100 characters
@@ -191,15 +232,15 @@ export const useCreateRoom = () => {
         throw new Error('This room number already exists in the selected building');
       }
 
-      // Organization_id will be set automatically by trigger, but we can set it explicitly
+      // School_id will be set automatically by trigger from building
       const { data, error } = await supabase
         .from('rooms')
         .insert({
           room_number: trimmedNumber,
           building_id: roomData.building_id,
           staff_id: roomData.staff_id || null,
-          organization_id: building.organization_id, // Inherit from building
-        })
+          school_id: (building as any).school_id, // Inherit from building
+        } as any)
         .select()
         .single();
 
@@ -248,28 +289,32 @@ export const useUpdateRoom = () => {
         }
       }
 
-      // Get current room to check organization
+      // Get current room to check school
       const { data: currentRoom } = await supabase
         .from('rooms')
-        .select('organization_id, building_id')
+        .select('school_id, building_id')
         .eq('id', id)
-        .single();
+        .is('deleted_at', null)
+        .single() as { data: any; error: any };
 
       if (!currentRoom) {
         throw new Error('Room not found');
       }
 
-      // If building_id is being changed, verify new building belongs to same org
+      // If building_id is being changed, verify new building belongs to same school (or update school_id)
       if (building_id && building_id !== currentRoom.building_id) {
         const { data: newBuilding } = await supabase
           .from('buildings')
-          .select('organization_id')
+          .select('school_id')
           .eq('id', building_id)
+          .is('deleted_at', null)
           .single();
 
-        if (!newBuilding || newBuilding.organization_id !== currentRoom.organization_id) {
-          throw new Error('Building must belong to the same organization');
+        if (!newBuilding) {
+          throw new Error('Building not found');
         }
+
+        // Room's school_id will be updated by trigger to match building's school_id
       }
 
       // Check for duplicates (excluding current record)
@@ -324,7 +369,11 @@ export const useDeleteRoom = () => {
       // This should be done in the application layer
       // For now, we'll just attempt deletion and handle FK errors
 
-      const { error } = await supabase.from('rooms').delete().eq('id', id);
+      // Soft delete: set deleted_at timestamp
+      const { error } = await supabase
+        .from('rooms')
+        .update({ deleted_at: new Date().toISOString() } as any)
+        .eq('id', id);
 
       if (error) {
         // Check if it's a foreign key constraint error

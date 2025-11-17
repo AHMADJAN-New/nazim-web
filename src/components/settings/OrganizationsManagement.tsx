@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useOrganizations, useCreateOrganization, useUpdateOrganization, useDeleteOrganization } from '@/hooks/useOrganizations';
+import { useOrganizations, useCreateOrganization, useUpdateOrganization, useDeleteOrganization, useOrganizationStatistics } from '@/hooks/useOrganizations';
 import { useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Pencil, Trash2, Search, Building2, Shield } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Pencil, Trash2, Search, Building2, Shield, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -60,6 +62,7 @@ export function OrganizationsManagement() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedOrganization, setSelectedOrganization] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -149,12 +152,22 @@ export function OrganizationsManagement() {
     }
   };
 
+  const selectedOrg = selectedOrganization ? organizations?.find(o => o.id === selectedOrganization) : null;
+  const { data: orgStats } = useOrganizationStatistics(selectedOrganization || '');
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
         <Card>
-          <CardContent className="p-6">
-            <div className="text-center">Loading organizations...</div>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Organizations Management
+            </CardTitle>
+            <CardDescription>Manage organizations for multi-tenant SaaS</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LoadingSpinner size="lg" text="Loading organizations..." />
           </CardContent>
         </Card>
       </div>
@@ -201,49 +214,86 @@ export function OrganizationsManagement() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Slug</TableHead>
+                  <TableHead>Settings</TableHead>
                   <TableHead>Created At</TableHead>
+                  <TableHead>Updated At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredOrganizations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
                       {searchQuery ? 'No organizations found matching your search' : 'No organizations found. Add your first organization.'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredOrganizations.map((org) => (
-                    <TableRow key={org.id}>
-                      <TableCell className="font-medium">{org.name}</TableCell>
-                      <TableCell>
-                        <code className="text-sm bg-muted px-2 py-1 rounded">{org.slug}</code>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(org.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenDialog(org.id)}
-                            disabled={!hasUpdatePermission}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(org.id)}
-                            disabled={!hasDeletePermission}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredOrganizations.map((org) => {
+                    const hasSettings = org.settings && Object.keys(org.settings).length > 0;
+                    return (
+                      <TableRow key={org.id}>
+                        <TableCell className="font-medium">{org.name}</TableCell>
+                        <TableCell>
+                          <code className="text-sm bg-muted px-2 py-1 rounded">{org.slug}</code>
+                        </TableCell>
+                        <TableCell>
+                          {hasSettings ? (
+                            <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                              <SettingsIcon className="h-3 w-3" />
+                              {Object.keys(org.settings).length} setting{Object.keys(org.settings).length !== 1 ? 's' : ''}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">No settings</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            {new Date(org.created_at).toLocaleDateString()}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            {new Date(org.updated_at).toLocaleDateString()}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedOrganization(org.id);
+                                setIsDetailsDialogOpen(true);
+                              }}
+                              title="View Details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenDialog(org.id)}
+                              disabled={!hasUpdatePermission}
+                              title="Edit"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(org.id)}
+                              disabled={!hasDeletePermission}
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -301,6 +351,121 @@ export function OrganizationsManagement() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Organization Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Organization Details
+            </DialogTitle>
+            <DialogDescription>
+              View complete information about {selectedOrg?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedOrg && (
+            <div className="space-y-6 py-4">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Basic Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground">Name</Label>
+                    <p className="font-medium">{selectedOrg.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Slug</Label>
+                    <p>
+                      <code className="text-sm bg-muted px-2 py-1 rounded">{selectedOrg.slug}</code>
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">ID</Label>
+                    <p className="text-sm font-mono text-muted-foreground break-all">{selectedOrg.id}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Created At</Label>
+                    <p className="text-sm">{new Date(selectedOrg.created_at).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Updated At</Label>
+                    <p className="text-sm">{new Date(selectedOrg.updated_at).toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Statistics */}
+              {orgStats && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Statistics</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="text-2xl font-bold">{orgStats.userCount}</p>
+                            <p className="text-sm text-muted-foreground">Users</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2">
+                          <Building className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="text-2xl font-bold">{orgStats.buildingCount}</p>
+                            <p className="text-sm text-muted-foreground">Buildings</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2">
+                          <DoorOpen className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="text-2xl font-bold">{orgStats.roomCount}</p>
+                            <p className="text-sm text-muted-foreground">Rooms</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              )}
+
+              {/* Settings */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Settings</h3>
+                {selectedOrg.settings && Object.keys(selectedOrg.settings).length > 0 ? (
+                  <div className="rounded-md border p-4 bg-muted/50">
+                    <pre className="text-sm overflow-x-auto">
+                      {JSON.stringify(selectedOrg.settings, null, 2)}
+                    </pre>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No settings configured</p>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              setIsDetailsDialogOpen(false);
+              handleOpenDialog(selectedOrganization || undefined);
+            }}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit Organization
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

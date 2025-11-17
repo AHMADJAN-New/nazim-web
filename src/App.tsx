@@ -17,17 +17,19 @@ import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
 // Lazy-loaded components with optimized loading
-import { 
-  Dashboard, 
-  PendingApprovalPage, 
-  ResetPasswordPage, 
-  DashboardSkeleton, 
+import {
+  Dashboard,
+  PendingApprovalPage,
+  ResetPasswordPage,
+  DashboardSkeleton,
   PageSkeleton,
   BuildingsManagement,
   RoomsManagement,
   OrganizationsManagement,
   ProfileManagement,
   PermissionsManagement,
+  SchoolsManagement,
+  ReportTemplatesManagement,
   UserManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -36,8 +38,8 @@ import { PermissionGuard } from "@/components/PermissionGuard";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      staleTime: 30 * 60 * 1000, // 30 minutes - data doesn't change often
+      gcTime: 60 * 60 * 1000, // 1 hour (formerly cacheTime)
       retry: (failureCount, error: any) => {
         // Don't retry on 4xx errors
         if (error?.status >= 400 && error?.status < 500) {
@@ -45,9 +47,9 @@ const queryClient = new QueryClient({
         }
         return failureCount < 3;
       },
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: true,
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      refetchOnMount: false, // Don't refetch on mount if data is fresh
+      refetchOnReconnect: false, // Don't refetch on reconnect (prevents sidebar disappearing)
     },
     mutations: {
       retry: 2,
@@ -65,68 +67,82 @@ const App = () => (
           <SidebarProvider>
             <ErrorBoundary>
               <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/redirect" element={<ProtectedRoute><RoleBasedRedirect /></ProtectedRoute>} />
-            <Route path="/pending-approval" element={<ProtectedRoute><PendingApprovalPage /></ProtectedRoute>} />
-            
-            {/* Protected routes with persistent layout */}
-            <Route element={<ProtectedRoute><PersistentLayout /></ProtectedRoute>}>
-              {/* Dashboard with optimized loading */}
-              <Route path="/dashboard" element={
-                <Suspense fallback={<DashboardSkeleton />}>
-                  <Dashboard />
-                </Suspense>
-              } />
-              {/* Settings routes */}
-              <Route path="/settings/organizations" element={
-                <Suspense fallback={<PageSkeleton />}>
-                  <PermissionGuard permission="organizations.read">
-                    <OrganizationsManagement />
-                  </PermissionGuard>
-                </Suspense>
-              } />
-              <Route path="/settings/buildings" element={
-                <Suspense fallback={<PageSkeleton />}>
-                  <PermissionGuard permission="buildings.read">
-                    <BuildingsManagement />
-                  </PermissionGuard>
-                </Suspense>
-              } />
-              <Route path="/settings/rooms" element={
-                <Suspense fallback={<PageSkeleton />}>
-                  <PermissionGuard permission="rooms.read">
-                    <RoomsManagement />
-                  </PermissionGuard>
-                </Suspense>
-              } />
-              <Route path="/settings/profile" element={
-                <Suspense fallback={<PageSkeleton />}>
-                  <PermissionGuard permission="profiles.read">
-                    <ProfileManagement />
-                  </PermissionGuard>
-                </Suspense>
-              } />
-              <Route path="/settings/permissions" element={
-                <Suspense fallback={<PageSkeleton />}>
-                  <PermissionsManagement />
-                </Suspense>
-              } />
-              {/* Admin routes */}
-              <Route path="/admin/users" element={
-                <Suspense fallback={<PageSkeleton />}>
-                  <PermissionGuard permission="users.read">
-                    <UserManagement />
-                  </PermissionGuard>
-                </Suspense>
-              } />
-            </Route>
-            
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ErrorBoundary>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/redirect" element={<ProtectedRoute><RoleBasedRedirect /></ProtectedRoute>} />
+                <Route path="/pending-approval" element={<ProtectedRoute><PendingApprovalPage /></ProtectedRoute>} />
+
+                {/* Protected routes with persistent layout */}
+                <Route element={<ProtectedRoute><PersistentLayout /></ProtectedRoute>}>
+                  {/* Dashboard with optimized loading */}
+                  <Route path="/dashboard" element={
+                    <Suspense fallback={<DashboardSkeleton />}>
+                      <Dashboard />
+                    </Suspense>
+                  } />
+                  {/* Settings routes */}
+                  <Route path="/settings/organizations" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="organizations.read">
+                        <OrganizationsManagement />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/buildings" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="buildings.read">
+                        <BuildingsManagement />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/rooms" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="rooms.read">
+                        <RoomsManagement />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/profile" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="profiles.read">
+                        <ProfileManagement />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/permissions" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionsManagement />
+                    </Suspense>
+                  } />
+                  <Route path="/settings/schools" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="branding.read">
+                        <SchoolsManagement />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/report-templates" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="reports.read">
+                        <ReportTemplatesManagement />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  {/* Admin routes */}
+                  <Route path="/admin/users" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="users.read">
+                        <UserManagement />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                </Route>
+
+                {/* Catch-all route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ErrorBoundary>
           </SidebarProvider>
         </BrowserRouter>
       </AuthProvider>

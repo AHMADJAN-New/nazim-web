@@ -29,10 +29,27 @@ export const useOrganizations = () => {
         throw new Error('Only super admins can view all organizations');
       }
 
-      const { data, error } = await supabase
+      // Try with deleted_at filter first, fallback to without if column doesn't exist
+      let query = supabase
         .from('organizations')
         .select('*')
         .order('name', { ascending: true });
+      
+      // Try with deleted_at filter, but handle case where column might not exist yet
+      const { data, error } = await query.is('deleted_at', null);
+      
+      // If error is about missing column, retry without the filter
+      if (error && (error.code === '42703' || error.message?.includes('column') || error.message?.includes('does not exist'))) {
+        const { data: retryData, error: retryError } = await supabase
+          .from('organizations')
+          .select('*')
+          .order('name', { ascending: true });
+        
+        if (retryError) {
+          throw new Error(retryError.message);
+        }
+        return retryData as Organization[];
+      }
 
       if (error) {
         throw new Error(error.message);
@@ -50,11 +67,27 @@ export const useOrganization = (id: string) => {
   return useQuery({
     queryKey: ['organizations', id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Try with deleted_at filter first, fallback to without if column doesn't exist
+      let query = supabase
         .from('organizations')
         .select('*')
-        .eq('id', id)
-        .single();
+        .eq('id', id);
+      
+      const { data, error } = await query.is('deleted_at', null).single();
+      
+      // If error is about missing column, retry without the filter
+      if (error && (error.code === '42703' || error.message?.includes('column') || error.message?.includes('does not exist'))) {
+        const { data: retryData, error: retryError } = await supabase
+          .from('organizations')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (retryError) {
+          throw new Error(retryError.message);
+        }
+        return retryData as Organization;
+      }
 
       if (error) {
         throw new Error(error.message);
@@ -196,7 +229,7 @@ export const useDeleteOrganization = () => {
 
       const { error } = await supabase
         .from('organizations')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) {
@@ -338,7 +371,7 @@ export const useRemoveSuperAdminFromOrganization = () => {
     mutationFn: async ({ superAdminId, organizationId }: { superAdminId: string; organizationId: string }) => {
       const { error } = await supabase
         .from('super_admin_organizations')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('super_admin_id', superAdminId)
         .eq('organization_id', organizationId);
 

@@ -56,12 +56,40 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
     };
 
     const fetchNotifications = async () => {
-      const { data } = await supabase
-        .from('notifications')
-        .select('id, title, created_at, is_read')
-        .eq('recipient_id', user.id)
-        .order('created_at', { ascending: false });
-      setNotifications((data as Notification[]) || []);
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('id, title, created_at, is_read')
+          .eq('recipient_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        // Handle table not found gracefully (expected when table doesn't exist yet)
+        if (error) {
+          // Table doesn't exist yet (migrations not run) - this is expected, don't log as error
+          if (
+            error.code === 'PGRST116' || 
+            error.code === 'PGRST205' || 
+            error.message?.includes('does not exist') || 
+            error.message?.includes('relation') || 
+            error.message?.includes('schema cache') ||
+            (error as any).status === 404
+          ) {
+            // Table doesn't exist, return empty array silently
+            setNotifications([]);
+            return;
+          }
+          // Only log unexpected errors
+          console.error('Error fetching notifications:', error);
+          setNotifications([]);
+          return;
+        }
+        
+        setNotifications((data as Notification[]) || []);
+      } catch (err) {
+        // Handle any unexpected errors
+        console.error('Unexpected error fetching notifications:', err);
+        setNotifications([]);
+      }
     };
 
     fetchProfile();

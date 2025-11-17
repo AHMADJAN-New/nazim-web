@@ -9,6 +9,7 @@ export interface UserProfile {
   email: string;
   role: string;
   organization_id: string | null;
+  default_school_id?: string | null;
   phone: string | null;
   avatar?: string | null;
   is_active: boolean;
@@ -22,6 +23,7 @@ export interface CreateUserData {
   full_name: string;
   role: string;
   organization_id?: string | null;
+  default_school_id?: string | null;
   phone?: string;
 }
 
@@ -31,6 +33,7 @@ export interface UpdateUserData {
   email?: string;
   role?: string;
   organization_id?: string | null;
+  default_school_id?: string | null;
   phone?: string;
   is_active?: boolean;
 }
@@ -60,7 +63,7 @@ export const useUsers = (filters?: {
 
       let query = supabase
         .from('profiles')
-        .select('id, full_name, email, role, organization_id, phone, avatar_url, is_active, created_at, updated_at');
+        .select('id, full_name, email, role, organization_id, default_school_id, phone, avatar_url, is_active, created_at, updated_at');
 
       // Apply organization filter for admins
       if (isAdmin && !isSuperAdmin) {
@@ -94,6 +97,7 @@ export const useUsers = (filters?: {
         email: u.email || '',
         role: u.role || '',
         organization_id: u.organization_id,
+        default_school_id: (u as any).default_school_id || null,
         phone: u.phone,
         avatar: (u as any).avatar_url || null,
         is_active: u.is_active ?? true,
@@ -135,6 +139,82 @@ export const useCreateUser = () => {
         throw new Error('Insufficient permissions to create users');
       }
 
+      // Determine organization_id and default_school_id
+      let organizationId: string | null = null;
+      let defaultSchoolId: string | null = null;
+
+      if (isSuperAdmin) {
+        // For super admin: use provided organization_id or get from their organizations
+        if (userData.organization_id) {
+          organizationId = userData.organization_id;
+        } else {
+          // Get primary organization or first organization
+          const { data: primaryOrg } = await supabase
+            .from('super_admin_organizations')
+            .select('organization_id')
+            .eq('super_admin_id', currentProfile.id)
+            .eq('is_primary', true)
+            .is('deleted_at', null)
+            .single();
+          
+          if (primaryOrg) {
+            organizationId = primaryOrg.organization_id;
+          } else {
+            const { data: anyOrg } = await supabase
+              .from('super_admin_organizations')
+              .select('organization_id')
+              .eq('super_admin_id', currentProfile.id)
+              .is('deleted_at', null)
+              .order('created_at', { ascending: true })
+              .limit(1)
+              .single();
+            
+            if (anyOrg) {
+              organizationId = anyOrg.organization_id;
+            } else if (currentProfile.organization_id) {
+              organizationId = currentProfile.organization_id;
+            }
+          }
+        }
+
+        // Get default_school_id: use provided or get first school from organization
+        if (userData.default_school_id) {
+          defaultSchoolId = userData.default_school_id;
+        } else if (organizationId) {
+          const { data: schools } = await supabase
+            .from('school_branding')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: true })
+            .limit(1);
+          
+          if (schools && schools.length > 0) {
+            defaultSchoolId = schools[0].id;
+          }
+        }
+      } else if (isAdmin) {
+        // For admin: use their organization_id
+        organizationId = currentProfile.organization_id || null;
+        
+        // Get default_school_id: use provided or get first school from their organization
+        if (userData.default_school_id) {
+          defaultSchoolId = userData.default_school_id;
+        } else if (organizationId) {
+          const { data: schools } = await supabase
+            .from('school_branding')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: true })
+            .limit(1);
+          
+          if (schools && schools.length > 0) {
+            defaultSchoolId = schools[0].id;
+          }
+        }
+      }
+
       // Create user in auth.users
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: userData.email,
@@ -143,7 +223,8 @@ export const useCreateUser = () => {
         user_metadata: {
           full_name: userData.full_name,
           role: userData.role,
-          organization_id: userData.organization_id || (isAdmin ? currentProfile.organization_id : null),
+          organization_id: organizationId,
+          default_school_id: defaultSchoolId,
         },
       });
 
@@ -161,7 +242,8 @@ export const useCreateUser = () => {
         .update({
           full_name: userData.full_name,
           role: userData.role,
-          organization_id: userData.organization_id || (isAdmin ? currentProfile.organization_id : null),
+          organization_id: organizationId,
+          default_school_id: defaultSchoolId,
           phone: userData.phone || null,
         })
         .eq('id', authData.user.id);
@@ -229,6 +311,9 @@ export const useUpdateUser = () => {
       if (userData.is_active !== undefined) updateData.is_active = userData.is_active;
       if (userData.organization_id !== undefined && isSuperAdmin) {
         updateData.organization_id = userData.organization_id;
+      }
+      if (userData.default_school_id !== undefined && (isSuperAdmin || isAdmin)) {
+        updateData.default_school_id = userData.default_school_id;
       }
 
       const { error } = await supabase

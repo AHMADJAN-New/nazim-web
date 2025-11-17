@@ -6,6 +6,7 @@ import { useAuth } from './useAuth';
 export interface Profile {
   id: string;
   organization_id: string | null;
+  default_school_id: string | null;
   role: string;
   full_name: string | null;
   email: string | null;
@@ -37,8 +38,11 @@ export const useProfile = () => {
       return data as Profile;
     },
     enabled: !!user,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 30 * 60 * 1000, // 30 minutes - profile doesn't change often
+    gcTime: 60 * 60 * 1000, // 1 hour
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Don't refetch on mount if data is fresh
+    refetchOnReconnect: false, // Don't refetch on reconnect
   });
 };
 

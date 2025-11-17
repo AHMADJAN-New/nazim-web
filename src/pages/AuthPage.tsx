@@ -70,15 +70,15 @@ export default function AuthPage() {
           details: error.details,
           hint: error.hint
         });
-        
+
         // Don't throw - just log and continue with empty list
         // This allows signup to proceed even if organizations can't be fetched
         setOrganizations([]);
-        
+
         // Only show error toast if it's a network error, not permission errors
-        if (error.message?.includes('Failed to fetch') || 
-            error.message?.includes('Network') ||
-            error.message?.includes('fetch')) {
+        if (error.message?.includes('Failed to fetch') ||
+          error.message?.includes('Network') ||
+          error.message?.includes('fetch')) {
           toast.error('Unable to connect to server. Please ensure Supabase is running and check your connection.');
         } else if (error.code === 'PGRST301' || error.message?.includes('permission') || error.message?.includes('RLS')) {
           // Permission errors are expected for non-admin users - don't show error
@@ -89,7 +89,7 @@ export default function AuthPage() {
         }
         return;
       }
-      
+
       setOrganizations(data || []);
       if (data && data.length === 0) {
         console.warn('No organizations found in database');
@@ -98,11 +98,11 @@ export default function AuthPage() {
       console.error('Unexpected error fetching organizations:', error);
       logger.error('Error fetching organizations', error);
       setOrganizations([]);
-      
+
       // Only show error for network issues
-      if (error?.message?.includes('Failed to fetch') || 
-          error?.message?.includes('Network') ||
-          error?.message?.includes('fetch')) {
+      if (error?.message?.includes('Failed to fetch') ||
+        error?.message?.includes('Network') ||
+        error?.message?.includes('fetch')) {
         toast.error('Network error: Unable to fetch organizations. Please check your connection and ensure Supabase is running.');
       }
     }
@@ -110,18 +110,18 @@ export default function AuthPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.email || !formData.password) {
       toast.error('Please enter both email and password');
       return;
     }
-    
+
     console.log('Attempting sign in for:', formData.email);
     setLoading(true);
-    
+
     try {
       const { data, error } = await secureSignIn(formData.email, formData.password);
-      
+
       if (error) {
         console.error('Sign in error:', error);
         console.error('Error details:', {
@@ -129,7 +129,7 @@ export default function AuthPage() {
           status: error.status,
           name: error.name,
         });
-        
+
         if (error.message?.includes('Invalid login credentials') || error.message?.includes('Invalid')) {
           toast.error('Invalid email or password. Please check your credentials and try again.');
         } else if (error.message === 'Account locked') {
@@ -139,7 +139,7 @@ export default function AuthPage() {
         }
         return;
       }
-      
+
       if (data?.user) {
         console.log('Sign in successful:', data.user.email);
         toast.success('Logged in successfully!');
@@ -161,7 +161,7 @@ export default function AuthPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -190,12 +190,12 @@ export default function AuthPage() {
     };
 
     setLoading(true);
-    
+
     try {
       console.log('Attempting sign up for:', formData.email);
-      
+
       const { data, error } = await secureSignUp(formData.email, formData.password, userData);
-      
+
       if (error) {
         console.error('Sign up error:', error);
         console.error('Error details:', {
@@ -203,7 +203,7 @@ export default function AuthPage() {
           status: error.status,
           name: error.name,
         });
-        
+
         // Provide more specific error messages
         let errorMessage = error.message || 'Failed to create account';
         if (error.message?.includes('Failed to fetch') || error.message?.includes('Network')) {
@@ -215,11 +215,11 @@ export default function AuthPage() {
         } else if (error.message?.includes('Password')) {
           errorMessage = error.message; // Password validation errors are already user-friendly
         }
-        
+
         toast.error(errorMessage);
         return;
       }
-      
+
       if (data?.user) {
         console.log('Sign up successful:', data.user.email);
         if (formData.role === 'super_admin') {
@@ -269,7 +269,7 @@ export default function AuthPage() {
                 <TabsTrigger value="demo">Demo Accounts</TabsTrigger>
               )}
             </TabsList>
-            
+
             <TabsContent value="login">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div>

@@ -3,6 +3,7 @@
 -- Users still need to be assigned to an organization by an admin
 
 -- Create policy: Anonymous users can read all organizations (for signup)
+DROP POLICY IF EXISTS "Anonymous users can read organizations for signup" ON public.organizations;
 CREATE POLICY "Anonymous users can read organizations for signup"
     ON public.organizations
     FOR SELECT

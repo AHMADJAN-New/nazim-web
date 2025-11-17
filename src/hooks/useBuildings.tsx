@@ -7,40 +7,64 @@ import { useAuth } from './useAuth';
 export interface Building {
   id: string;
   building_name: string;
-  organization_id: string;
+  school_id: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string | null;
 }
 
-export const useBuildings = (organizationId?: string) => {
+export const useBuildings = (schoolId?: string, organizationId?: string) => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
 
   return useQuery({
-    queryKey: ['buildings', organizationId || profile?.organization_id],
+    queryKey: ['buildings', schoolId, organizationId || profile?.organization_id],
     queryFn: async () => {
       if (!user || !profile) return [];
 
-      let query = supabase.from('buildings').select('*');
+      let query = supabase
+        .from('buildings')
+        .select('*');
 
-      // Super admin can see all or filter by org
+      // Super admin can see all or filter by school/org
       const isSuperAdmin = profile.organization_id === null && profile.role === 'super_admin';
-      if (isSuperAdmin) {
-        if (organizationId) {
-          query = query.eq('organization_id', organizationId);
-        }
-        // Otherwise show all
-      } else {
-        // Regular users see only their organization's buildings
-        const userOrgId = profile.organization_id;
-        if (userOrgId) {
-          query = query.eq('organization_id', userOrgId);
+      
+      if (schoolId) {
+        // Filter by specific school
+        query = query.eq('school_id', schoolId);
+      } else if (organizationId || (!isSuperAdmin && profile.organization_id)) {
+        // Filter by organization through schools
+        const filterOrgId = organizationId || profile.organization_id;
+        
+        // Get schools for this organization
+        const { data: schools } = await supabase
+          .from('school_branding')
+          .select('id')
+          .eq('organization_id', filterOrgId)
+          .is('deleted_at', null);
+        
+        if (schools && schools.length > 0) {
+          const schoolIds = schools.map(s => s.id);
+          query = query.in('school_id', schoolIds);
         } else {
-          return []; // No organization assigned
+          return []; // No schools for this organization
         }
+      } else if (!isSuperAdmin) {
+        return []; // No organization assigned
       }
+      // If super admin and no filters, show all
 
-      const { data, error } = await query.order('building_name', { ascending: true });
+      // Try with deleted_at filter, fallback if column doesn't exist
+      const { data, error } = await query.is('deleted_at', null).order('building_name', { ascending: true });
+      
+      // If error is about missing column, retry without the filter
+      if (error && (error.code === '42703' || error.message?.includes('column') || error.message?.includes('does not exist'))) {
+        const { data: retryData, error: retryError } = await query.order('building_name', { ascending: true });
+        if (retryError) {
+          throw new Error(retryError.message);
+        }
+        return retryData as Building[];
+      }
 
       if (error) {
         throw new Error(error.message);
@@ -60,18 +84,91 @@ export const useCreateBuilding = () => {
   const { data: profile } = useProfile();
 
   return useMutation({
-    mutationFn: async (buildingData: { building_name: string; organization_id?: string }) => {
+    mutationFn: async (buildingData: { building_name: string; school_id?: string }) => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
       }
 
-      // Get organization_id - use provided or user's org
-      let organizationId = buildingData.organization_id;
-      if (!organizationId) {
-        if (profile.organization_id) {
-          organizationId = profile.organization_id;
+      // Get school_id - use provided, user's default_school_id, or get first school for user's org
+      let schoolId = buildingData.school_id;
+      if (!schoolId) {
+        // First, try to use user's default_school_id
+        if (profile.default_school_id) {
+          schoolId = profile.default_school_id;
         } else if (profile.role === 'super_admin') {
-          throw new Error('Organization ID is required for super admin');
+          // For super admin: get schools from their organizations
+          // First, try to get primary organization (with error handling)
+          let orgId: string | null = null;
+          
+          try {
+            const { data: primaryOrg, error: primaryError } = await (supabase as any)
+              .from('super_admin_organizations')
+              .select('organization_id')
+              .eq('super_admin_id', user.id)
+              .eq('is_primary', true)
+              .is('deleted_at', null)
+              .single();
+            
+            if (!primaryError && primaryOrg) {
+              orgId = primaryOrg.organization_id;
+            } else {
+              // If no primary, get any organization
+              const { data: anyOrg, error: anyError } = await (supabase as any)
+                .from('super_admin_organizations')
+                .select('organization_id')
+                .eq('super_admin_id', user.id)
+                .is('deleted_at', null)
+                .order('created_at', { ascending: true })
+                .limit(1)
+                .single();
+              
+              if (!anyError && anyOrg) {
+                orgId = anyOrg.organization_id;
+              } else if (profile.organization_id) {
+                // Fallback to profile's organization_id
+                orgId = profile.organization_id;
+              }
+            }
+          } catch (error) {
+            // If super_admin_organizations table doesn't exist, fallback to profile
+            if (profile.organization_id) {
+              orgId = profile.organization_id;
+            }
+          }
+          
+          if (orgId) {
+            // Get first active school from the organization
+            const { data: schools } = await supabase
+              .from('school_branding')
+              .select('id')
+              .eq('organization_id', orgId)
+              .is('deleted_at', null)
+              .order('created_at', { ascending: true })
+              .limit(1);
+            
+            if (schools && schools.length > 0) {
+              schoolId = schools[0].id;
+            } else {
+              throw new Error('No schools found in your organization. Please create a school first.');
+            }
+          } else {
+            throw new Error('No organization assigned. Please assign an organization first.');
+          }
+        } else if (profile.organization_id) {
+          // Get first active school for user's organization (if default_school_id not set)
+          const { data: schools } = await supabase
+            .from('school_branding')
+            .select('id')
+            .eq('organization_id', profile.organization_id)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: true })
+            .limit(1);
+          
+          if (schools && schools.length > 0) {
+            schoolId = schools[0].id;
+          } else {
+            throw new Error('No schools found for your organization. Please create a school first.');
+          }
         } else {
           throw new Error('User must be assigned to an organization');
         }
@@ -88,23 +185,24 @@ export const useCreateBuilding = () => {
         throw new Error('Building name cannot be empty');
       }
 
-      // Check for duplicates within the same organization
+      // Check for duplicates within the same school (excluding soft-deleted)
       const { data: existing } = await supabase
         .from('buildings')
         .select('id')
         .eq('building_name', trimmedName)
-        .eq('organization_id', organizationId)
+        .eq('school_id', schoolId)
+        .is('deleted_at', null)
         .single();
 
       if (existing) {
-        throw new Error('This building name already exists in your organization');
+        throw new Error('This building name already exists in this school');
       }
 
       const { data, error } = await supabase
         .from('buildings')
         .insert({ 
           building_name: trimmedName,
-          organization_id: organizationId
+          school_id: schoolId
         })
         .select()
         .single();
@@ -145,29 +243,34 @@ export const useUpdateBuilding = () => {
         updateData.building_name = trimmedName;
       }
 
-      // Get current building to check organization
+      // Get current building to check school (excluding soft-deleted)
       const { data: currentBuilding } = await supabase
         .from('buildings')
-        .select('organization_id')
+        .select('school_id')
         .eq('id', id)
+        .is('deleted_at', null)
         .single();
 
       if (!currentBuilding) {
         throw new Error('Building not found');
       }
 
-      // Check for duplicates within the same organization (excluding current record)
+      // Use provided school_id or keep current
+      const schoolId = updateData.school_id || currentBuilding.school_id;
+
+      // Check for duplicates within the same school (excluding current record and soft-deleted)
       if (updateData.building_name) {
         const { data: existing } = await supabase
           .from('buildings')
           .select('id')
           .eq('building_name', updateData.building_name)
-          .eq('organization_id', currentBuilding.organization_id)
+          .eq('school_id', schoolId)
           .neq('id', id)
+          .is('deleted_at', null)
           .single();
 
         if (existing) {
-          throw new Error('This building name already exists in your organization');
+          throw new Error('This building name already exists in this school');
         }
       }
 
@@ -199,20 +302,22 @@ export const useDeleteBuilding = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // Check if building has rooms
+      // Check if building has rooms (excluding soft-deleted)
       const { data: rooms } = await supabase
         .from('rooms')
         .select('id')
         .eq('building_id', id)
+        .is('deleted_at', null)
         .limit(1);
 
       if (rooms && rooms.length > 0) {
         throw new Error('This building has rooms assigned and cannot be deleted');
       }
 
+      // Soft delete: set deleted_at timestamp
       const { error } = await supabase
         .from('buildings')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) {
