@@ -48,47 +48,92 @@ export const useRooms = (organizationId?: string) => {
     queryFn: async () => {
       if (!user || !profile) return [];
 
-      let query = supabase
-        .from('rooms')
-        .select(`
-          *,
-          building:buildings(
-            id,
-            building_name,
-            organization_id
-          ),
-          staff:staff(
-            id,
-            profile:profiles(
-              full_name
-            )
-          )
-        `);
-
-      // Super admin can see all or filter by org
+      // Determine organization filter
       const isSuperAdmin = profile.organization_id === null && profile.role === 'super_admin';
-      if (isSuperAdmin) {
-        if (organizationId) {
-          query = query.eq('organization_id', organizationId);
-        }
-        // Otherwise show all
-      } else {
-        // Regular users see only their organization's rooms
-        const userOrgId = profile.organization_id;
-        if (userOrgId) {
-          query = query.eq('organization_id', userOrgId);
-        } else {
-          return []; // No organization assigned
-        }
+      const filterOrgId = organizationId || (isSuperAdmin ? undefined : profile.organization_id);
+
+      if (!isSuperAdmin && !filterOrgId) {
+        return []; // No organization assigned
       }
 
-      const { data, error } = await query.order('room_number', { ascending: true });
+      // Optimized query: fetch rooms first, then fetch related data in parallel
+      let roomsQuery = supabase
+        .from('rooms')
+        .select('id, room_number, building_id, staff_id, organization_id, created_at, updated_at');
 
-      if (error) {
-        throw new Error(error.message);
+      if (filterOrgId) {
+        roomsQuery = roomsQuery.eq('organization_id', filterOrgId);
       }
 
-      return data as RoomWithRelations[];
+      const { data: rooms, error: roomsError } = await roomsQuery.order('room_number', { ascending: true });
+
+      if (roomsError) {
+        throw new Error(roomsError.message);
+      }
+
+      if (!rooms || rooms.length === 0) {
+        return [];
+      }
+
+      // Get unique building IDs and staff IDs
+      const buildingIds = [...new Set(rooms.map(r => r.building_id).filter(Boolean))];
+      const staffIds = [...new Set(rooms.map(r => r.staff_id).filter(Boolean))];
+
+      // Fetch related data in parallel
+      const [buildingsResult, staffResult] = await Promise.all([
+        buildingIds.length > 0
+          ? supabase
+              .from('buildings')
+              .select('id, building_name, organization_id')
+              .in('id', buildingIds)
+          : Promise.resolve({ data: [], error: null }),
+        staffIds.length > 0
+          ? supabase
+              .from('staff')
+              .select(`
+                id,
+                profile_id,
+                profile:profiles(
+                  full_name
+                )
+              `)
+              .in('id', staffIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (buildingsResult.error) {
+        console.error('Error fetching buildings:', buildingsResult.error);
+      }
+      if (staffResult.error) {
+        console.error('Error fetching staff:', staffResult.error);
+      }
+
+      // Create lookup maps for efficient joining
+      const buildingsMap = new Map(
+        (buildingsResult.data || []).map(b => [b.id, b])
+      );
+      const staffMap = new Map(
+        (staffResult.data || []).map(s => [
+          s.id,
+          {
+            id: s.id,
+            profile: s.profile || null,
+          },
+        ])
+      );
+
+      // Combine data
+      const roomsWithRelations: RoomWithRelations[] = rooms.map(room => ({
+        ...room,
+        building: buildingsMap.get(room.building_id) || {
+          id: room.building_id,
+          building_name: 'Unknown',
+          organization_id: room.organization_id,
+        },
+        staff: room.staff_id ? (staffMap.get(room.staff_id) || null) : null,
+      }));
+
+      return roomsWithRelations;
     },
     enabled: !!user && !!profile,
     staleTime: 10 * 60 * 1000,
