@@ -47,6 +47,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { LoadingSpinner } from '@/components/ui/loading';
 
 const roomSchema = z.object({
   room_number: z.string().min(1, 'Room number is required').max(100, 'Room number must be 100 characters or less'),
@@ -178,8 +179,15 @@ export function RoomsManagement() {
     return (
       <div className="container mx-auto p-6">
         <Card>
-          <CardContent className="p-6">
-            <div className="text-center">Loading rooms...</div>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DoorOpen className="h-5 w-5" />
+              Rooms Management
+            </CardTitle>
+            <CardDescription>Manage rooms, assign buildings and staff</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LoadingSpinner size="lg" text="Loading rooms..." />
           </CardContent>
         </Card>
       </div>
