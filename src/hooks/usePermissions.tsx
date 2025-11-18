@@ -73,15 +73,11 @@ export const useUserPermissions = () => {
     queryKey: ['user-permissions', profile?.role, profile?.id, profile?.organization_id],
     queryFn: async () => {
       if (!profile?.role) {
-        console.log('🔍 useUserPermissions: No profile role, returning empty');
         return [];
       }
 
-      console.log('🔍 useUserPermissions: Fetching permissions for role:', profile.role, 'organization_id:', profile.organization_id);
-
       // Super admin has all global permissions (organization_id IS NULL)
       if (profile.role === 'super_admin') {
-        console.log('🔍 useUserPermissions: Super admin detected, fetching all global permissions');
         const { data: allPermissions, error } = await supabase
           .from('permissions')
           .select('name')
@@ -89,23 +85,18 @@ export const useUserPermissions = () => {
           .order('name', { ascending: true });
 
         if (error) {
-          console.error('🔍 useUserPermissions: Error fetching all permissions:', error);
           throw new Error(error.message);
         }
 
         const permNames = allPermissions?.map(p => p.name) || [];
-        console.log('🔍 useUserPermissions: Super admin permissions (global):', permNames);
         return permNames;
       }
 
       // Regular users: Get global permissions (organization_id IS NULL) + their organization's permissions
       if (!profile.organization_id) {
-        console.warn('🔍 useUserPermissions: User has no organization_id, returning empty');
         return [];
       }
 
-      console.log('🔍 useUserPermissions: Fetching role permissions for:', profile.role, 'organization:', profile.organization_id);
-      
       // Query role_permissions filtered by:
       // 1. User's role
       // 2. User's organization_id OR organization_id IS NULL (global permissions)
@@ -118,7 +109,6 @@ export const useUserPermissions = () => {
         .or(`organization_id.is.null,organization_id.eq.${profile.organization_id}`);
 
       if (error) {
-        console.error('🔍 useUserPermissions: Error fetching role permissions:', error);
         throw new Error(error.message);
       }
 
@@ -139,20 +129,6 @@ export const useUserPermissions = () => {
       // Remove duplicates (in case same permission exists as both global and org-specific)
       const uniquePermNames = Array.from(new Set(permNames));
 
-      console.log('🔍 useUserPermissions: Role permissions fetched:', {
-        role: profile.role,
-        organization_id: profile.organization_id,
-        permissionsCount: uniquePermNames.length,
-        permissions: uniquePermNames,
-        rawData: data
-      });
-      
-      // If no permissions found, log a warning
-      if (uniquePermNames.length === 0) {
-        console.warn('🔍 useUserPermissions: No permissions found for role:', profile.role, 'organization:', profile.organization_id);
-        console.warn('🔍 useUserPermissions: Check if role_permissions table has entries for this role and organization');
-      }
-      
       return uniquePermNames;
     },
     enabled: !!profile?.role,
@@ -170,7 +146,6 @@ export const useHasPermission = (permissionName: string) => {
 
   // Super admin always has all permissions (immediate return, no query needed)
   if (profile?.role === 'super_admin') {
-    console.log(`🔍 useHasPermission: Super admin has permission "${permissionName}"`);
     return true;
   }
 
@@ -178,29 +153,16 @@ export const useHasPermission = (permissionName: string) => {
   // Use cached data if available during background refetch to prevent UI flicker
   if (isLoading && !permissions) {
     // Initial load - no cached data yet
-    console.log(`🔍 useHasPermission: Loading permissions for "${permissionName}" (no cache)`);
     return false;
   }
 
   // If we have permissions (cached or fresh), use them
   // This ensures sidebar doesn't disappear during background refetches
   if (permissions && permissions.length > 0) {
-    const hasPermission = permissions.includes(permissionName);
-    console.log(`🔍 useHasPermission: "${permissionName}" = ${hasPermission}`, {
-      role: profile?.role,
-      permissionsCount: permissions.length,
-      hasPermission,
-      allPermissions: permissions
-    });
-    return hasPermission;
+    return permissions.includes(permissionName);
   }
 
   // No permissions found
-  console.log(`🔍 useHasPermission: No permissions found for "${permissionName}"`, {
-    role: profile?.role,
-    permissions: permissions,
-    isLoading
-  });
   return false;
 };
 
@@ -215,9 +177,9 @@ export const useAssignPermissionToRole = () => {
       }
 
       // Check if user has permission to assign permissions
-      const hasPermission = profile.role === 'super_admin' || 
+      const hasPermission = profile.role === 'super_admin' ||
         (profile.role === 'admin' && profile.organization_id);
-      
+
       if (!hasPermission) {
         throw new Error('You do not have permission to assign permissions');
       }
@@ -245,7 +207,7 @@ export const useAssignPermissionToRole = () => {
       // Determine organization_id for role_permissions
       // Super admin can assign global (NULL) or org-specific
       // Regular admin assigns to their organization
-      const organizationId = profile.role === 'super_admin' 
+      const organizationId = profile.role === 'super_admin'
         ? permission.organization_id // Use permission's organization_id (can be NULL for global)
         : profile.organization_id; // Regular admin always uses their org
 
@@ -291,9 +253,9 @@ export const useRemovePermissionFromRole = () => {
       }
 
       // Check if user has permission to remove permissions
-      const hasPermission = profile.role === 'super_admin' || 
+      const hasPermission = profile.role === 'super_admin' ||
         (profile.role === 'admin' && profile.organization_id);
-      
+
       if (!hasPermission) {
         throw new Error('You do not have permission to remove permissions');
       }
@@ -334,10 +296,10 @@ export const useCreatePermission = () => {
   const { data: profile } = useProfile();
 
   return useMutation({
-    mutationFn: async (permissionData: { 
-      name: string; 
-      resource: string; 
-      action: string; 
+    mutationFn: async (permissionData: {
+      name: string;
+      resource: string;
+      action: string;
       description?: string | null;
     }) => {
       if (!profile) {
@@ -345,16 +307,16 @@ export const useCreatePermission = () => {
       }
 
       // Check if user has permission to create permissions
-      const hasPermission = profile.role === 'super_admin' || 
+      const hasPermission = profile.role === 'super_admin' ||
         (profile.role === 'admin' && profile.organization_id);
-      
+
       if (!hasPermission) {
         throw new Error('You do not have permission to create permissions');
       }
 
       // Regular admin can only create permissions for their organization
       // Super admin can create global permissions (organization_id = NULL) or org-specific
-      const organizationId = profile.role === 'super_admin' 
+      const organizationId = profile.role === 'super_admin'
         ? null // Super admin can create global permissions
         : profile.organization_id; // Regular admin creates for their org
 
@@ -393,14 +355,14 @@ export const useUpdatePermission = () => {
   const { data: profile } = useProfile();
 
   return useMutation({
-    mutationFn: async ({ 
-      id, 
-      ...updates 
-    }: { 
-      id: string; 
-      name?: string; 
-      resource?: string; 
-      action?: string; 
+    mutationFn: async ({
+      id,
+      ...updates
+    }: {
+      id: string;
+      name?: string;
+      resource?: string;
+      action?: string;
       description?: string | null;
     }) => {
       if (!profile) {
@@ -408,9 +370,9 @@ export const useUpdatePermission = () => {
       }
 
       // Check if user has permission to update permissions
-      const hasPermission = profile.role === 'super_admin' || 
+      const hasPermission = profile.role === 'super_admin' ||
         (profile.role === 'admin' && profile.organization_id);
-      
+
       if (!hasPermission) {
         throw new Error('You do not have permission to update permissions');
       }
@@ -472,9 +434,9 @@ export const useDeletePermission = () => {
       }
 
       // Check if user has permission to delete permissions
-      const hasPermission = profile.role === 'super_admin' || 
+      const hasPermission = profile.role === 'super_admin' ||
         (profile.role === 'admin' && profile.organization_id);
-      
+
       if (!hasPermission) {
         throw new Error('You do not have permission to delete permissions');
       }
@@ -519,4 +481,3 @@ export const useDeletePermission = () => {
     },
   });
 };
-

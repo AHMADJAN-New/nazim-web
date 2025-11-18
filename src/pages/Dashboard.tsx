@@ -56,9 +56,6 @@ import { useRecentActivities } from "@/hooks/useRecentActivities";
 import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { ParentDashboard } from "@/components/dashboards/ParentDashboard";
-import { StudentDashboard } from "@/components/dashboards/StudentDashboard";
-import { TeacherDashboard } from "@/components/dashboards/TeacherDashboard";
 import { LoadingSpinner } from "@/components/ui/loading";
 
 export default function Dashboard() {
@@ -155,22 +152,9 @@ export default function Dashboard() {
     );
   }
 
-  // Role-based dashboard rendering
-  const renderRoleBasedDashboard = () => {
-    // Development mode: Use admin role if role is null
-    const effectiveRole = role || (import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false' ? 'admin' : null);
-    
-    switch (effectiveRole) {
-      case 'parent':
-        return <ParentDashboard />;
-      case 'student':
-        return <StudentDashboard />;
-      case 'teacher':
-        return <TeacherDashboard />;
-      default:
-        // Default admin/staff dashboard (existing implementation)
-        return renderDefaultDashboard();
-    }
+  // Render default admin/staff dashboard
+  const renderDashboard = () => {
+    return renderDefaultDashboard();
   };
 
   const renderDefaultDashboard = () => (
@@ -308,7 +292,7 @@ export default function Dashboard() {
   return (
     <MainLayout title="Dashboard">
       <div className="space-y-6">
-        {renderRoleBasedDashboard()}
+        {renderDashboard()}
       </div>
     </MainLayout>
   );

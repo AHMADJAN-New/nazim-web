@@ -30,7 +30,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       if (loading || (profileLoading && !profile && !profileData)) {
-        console.warn('ProtectedRoute: Loading timeout - showing content anyway');
         setLoadingTimeout(true);
       }
     }, 5000); // 5 second timeout
@@ -51,7 +50,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Only allow authenticated users
   if (!user) {
-    console.log('No user found, redirecting to auth');
     return <Navigate to="/auth" replace />;
   }
   
@@ -59,7 +57,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (requireOrganization && currentProfile) {
     const isSuperAdmin = currentProfile.organization_id === null && currentProfile.role === 'super_admin';
     if (!isSuperAdmin && !currentProfile.organization_id) {
-      console.log('User does not have an organization assigned');
       return (
         <div className="container mx-auto p-6">
           <div className="text-center">
@@ -73,12 +70,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       );
     }
   }
-
-  console.log('User authenticated', { 
-    userId: user.id, 
-    role: currentProfile?.role,
-    organizationId: currentProfile?.organization_id 
-  });
   
   return <>{children}</>;
 };
