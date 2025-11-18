@@ -1,7 +1,37 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useProfile } from './useProfiles';
+import { useAuth } from './useAuth';
+
+interface UserProfileRow {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: string;
+  organization_id: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  default_school_id: string | null;
+}
+
+interface SuperAdminOrganization {
+  organization_id: string;
+  super_admin_id: string;
+  is_primary: boolean;
+  created_at: string;
+  deleted_at: string | null;
+}
+
+interface SchoolBrandingRow {
+  id: string;
+  organization_id: string;
+  school_name: string;
+  created_at: string;
+  deleted_at: string | null;
+}
 
 export interface UserProfile {
   id: string;
@@ -44,7 +74,7 @@ export const useUsers = (filters?: {
   is_active?: boolean;
   search?: string;
 }) => {
-  const { data: currentProfile } = useProfile();
+  const { profile: currentProfile } = useAuth();
 
   return useQuery({
     queryKey: ['users', filters],
@@ -61,7 +91,7 @@ export const useUsers = (filters?: {
         throw new Error('Insufficient permissions to view users');
       }
 
-      let query = supabase
+      let query = (supabase as any)
         .from('profiles')
         .select('id, full_name, email, role, organization_id, default_school_id, phone, avatar_url, is_active, created_at, updated_at');
 
@@ -91,15 +121,17 @@ export const useUsers = (filters?: {
         throw new Error(error.message);
       }
 
-      let users = (data || []).map((u) => ({
+      const rows = (data || []) as UserProfileRow[];
+
+      let users = rows.map((u) => ({
         id: u.id,
         name: u.full_name || u.email || '',
         email: u.email || '',
         role: u.role || '',
         organization_id: u.organization_id,
-        default_school_id: (u as any).default_school_id || null,
+        default_school_id: u.default_school_id || null,
         phone: u.phone,
-        avatar: (u as any).avatar_url || null,
+        avatar: u.avatar_url || null,
         is_active: u.is_active ?? true,
         created_at: u.created_at,
         updated_at: u.updated_at,
@@ -124,7 +156,7 @@ export const useUsers = (filters?: {
 
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
-  const { data: currentProfile } = useProfile();
+  const { profile: currentProfile } = useAuth();
 
   return useMutation({
     mutationFn: async (userData: CreateUserData) => {
@@ -149,7 +181,7 @@ export const useCreateUser = () => {
           organizationId = userData.organization_id;
         } else {
           // Get primary organization or first organization
-          const { data: primaryOrg } = await supabase
+          const { data: primaryOrg } = await (supabase as any)
             .from('super_admin_organizations')
             .select('organization_id')
             .eq('super_admin_id', currentProfile.id)
@@ -158,9 +190,10 @@ export const useCreateUser = () => {
             .single();
           
           if (primaryOrg) {
-            organizationId = primaryOrg.organization_id;
+            const org = primaryOrg as SuperAdminOrganization;
+            organizationId = org.organization_id;
           } else {
-            const { data: anyOrg } = await supabase
+            const { data: anyOrg } = await (supabase as any)
               .from('super_admin_organizations')
               .select('organization_id')
               .eq('super_admin_id', currentProfile.id)
@@ -170,7 +203,8 @@ export const useCreateUser = () => {
               .single();
             
             if (anyOrg) {
-              organizationId = anyOrg.organization_id;
+              const org = anyOrg as SuperAdminOrganization;
+              organizationId = org.organization_id;
             } else if (currentProfile.organization_id) {
               organizationId = currentProfile.organization_id;
             }
@@ -181,7 +215,7 @@ export const useCreateUser = () => {
         if (userData.default_school_id) {
           defaultSchoolId = userData.default_school_id;
         } else if (organizationId) {
-          const { data: schools } = await supabase
+          const { data: schools } = await (supabase as any)
             .from('school_branding')
             .select('id')
             .eq('organization_id', organizationId)
@@ -189,8 +223,9 @@ export const useCreateUser = () => {
             .order('created_at', { ascending: true })
             .limit(1);
           
-          if (schools && schools.length > 0) {
-            defaultSchoolId = schools[0].id;
+          const schoolRows = (schools || []) as SchoolBrandingRow[];
+          if (schoolRows.length > 0) {
+            defaultSchoolId = schoolRows[0].id;
           }
         }
       } else if (isAdmin) {
@@ -201,7 +236,7 @@ export const useCreateUser = () => {
         if (userData.default_school_id) {
           defaultSchoolId = userData.default_school_id;
         } else if (organizationId) {
-          const { data: schools } = await supabase
+          const { data: schools } = await (supabase as any)
             .from('school_branding')
             .select('id')
             .eq('organization_id', organizationId)
@@ -209,8 +244,9 @@ export const useCreateUser = () => {
             .order('created_at', { ascending: true })
             .limit(1);
           
-          if (schools && schools.length > 0) {
-            defaultSchoolId = schools[0].id;
+          const schoolRows = (schools || []) as SchoolBrandingRow[];
+          if (schoolRows.length > 0) {
+            defaultSchoolId = schoolRows[0].id;
           }
         }
       }
@@ -237,7 +273,7 @@ export const useCreateUser = () => {
       }
 
       // Update profile with additional data
-      const { error: profileError } = await supabase
+      const { error: profileError } = await (supabase as any)
         .from('profiles')
         .update({
           full_name: userData.full_name,
@@ -269,7 +305,7 @@ export const useCreateUser = () => {
 
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
-  const { data: currentProfile } = useProfile();
+  const { profile: currentProfile } = useAuth();
 
   return useMutation({
     mutationFn: async (userData: UpdateUserData) => {
@@ -285,7 +321,7 @@ export const useUpdateUser = () => {
       }
 
       // Get target user's profile
-      const { data: targetProfile } = await supabase
+      const { data: targetProfile } = await (supabase as any)
         .from('profiles')
         .select('organization_id')
         .eq('id', userData.id)
@@ -295,9 +331,11 @@ export const useUpdateUser = () => {
         throw new Error('User not found');
       }
 
+      const target = targetProfile as { organization_id: string | null };
+
       // Check organization access for admins
       if (isAdmin && !isSuperAdmin) {
-        if (targetProfile.organization_id !== currentProfile.organization_id) {
+        if (target.organization_id !== currentProfile.organization_id) {
           throw new Error('Cannot update user from different organization');
         }
       }
@@ -316,7 +354,7 @@ export const useUpdateUser = () => {
         updateData.default_school_id = userData.default_school_id;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('profiles')
         .update(updateData)
         .eq('id', userData.id);
@@ -352,7 +390,7 @@ export const useUpdateUser = () => {
 
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
-  const { data: currentProfile } = useProfile();
+  const { profile: currentProfile } = useAuth();
 
   return useMutation({
     mutationFn: async (userId: string) => {
@@ -368,7 +406,7 @@ export const useDeleteUser = () => {
       }
 
       // Get target user's profile
-      const { data: targetProfile } = await supabase
+      const { data: targetProfile } = await (supabase as any)
         .from('profiles')
         .select('organization_id, role')
         .eq('id', userId)
@@ -378,14 +416,16 @@ export const useDeleteUser = () => {
         throw new Error('User not found');
       }
 
+      const target = targetProfile as { organization_id: string | null; role: string };
+
       // Prevent deleting super admin
-      if (targetProfile.role === 'super_admin') {
+      if (target.role === 'super_admin') {
         throw new Error('Cannot delete super admin user');
       }
 
       // Check organization access for admins
       if (isAdmin && !isSuperAdmin) {
-        if (targetProfile.organization_id !== currentProfile.organization_id) {
+        if (target.organization_id !== currentProfile.organization_id) {
           throw new Error('Cannot delete user from different organization');
         }
       }
@@ -411,7 +451,7 @@ export const useDeleteUser = () => {
 };
 
 export const useResetUserPassword = () => {
-  const { data: currentProfile } = useProfile();
+  const { profile: currentProfile } = useAuth();
 
   return useMutation({
     mutationFn: async ({ userId, newPassword }: { userId: string; newPassword: string }) => {

@@ -17,53 +17,26 @@ export interface Profile {
   updated_at: string;
 }
 
+// DEPRECATED: Use useAuth() instead
+// This hook is kept for backward compatibility but now uses AuthContext
 export const useProfile = () => {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data as Profile;
-    },
-    enabled: !!user,
-    staleTime: 30 * 60 * 1000, // 30 minutes - profile doesn't change often
-    gcTime: 60 * 60 * 1000, // 1 hour
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: false, // Don't refetch on mount if data is fresh
-    refetchOnReconnect: false, // Don't refetch on reconnect
-  });
+  const { profile } = useAuth();
+  
+  // Return in the same format as before for compatibility
+  return {
+    data: profile,
+    isLoading: false,
+    error: null,
+  };
 };
 
 export const useProfiles = (organizationId?: string) => {
-  const { user } = useAuth();
+  const { user, profile: currentProfile } = useAuth();
 
   return useQuery({
     queryKey: ['profiles', organizationId],
     queryFn: async () => {
-      if (!user) return [];
-
-      // Get current user's profile to check permissions
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('organization_id, role')
-        .eq('id', user.id)
-        .single();
-
-      if (!currentProfile) {
-        throw new Error('Profile not found');
-      }
+      if (!user || !currentProfile) return [];
 
       // Super admin can see all profiles
       // Admin can see profiles in their organization
@@ -90,29 +63,18 @@ export const useProfiles = (organizationId?: string) => {
 
       return data as Profile[];
     },
-    enabled: !!user,
+    enabled: !!user && !!currentProfile,
   });
 };
 
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, profile: currentProfile } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Profile> & { id: string }) => {
-      if (!user) {
+      if (!user || !currentProfile) {
         throw new Error('User not authenticated');
-      }
-
-      // Get current user's profile to check permissions
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('organization_id, role')
-        .eq('id', user.id)
-        .single();
-
-      if (!currentProfile) {
-        throw new Error('Profile not found');
       }
 
       // Users can update their own profile (limited fields)
@@ -184,17 +146,21 @@ export const useUpdateProfile = () => {
 };
 
 export const useUserRole = () => {
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
   return profile?.role || null;
 };
 
 export const useUserOrganization = () => {
-  const { data: profile } = useProfile();
-  return { data: profile?.organization_id || null };
+  const { profile } = useAuth();
+  return {
+    data: profile?.organization_id ?? null,
+    isLoading: false,
+    error: null,
+  };
 };
 
 export const useIsSuperAdmin = () => {
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
   // Super admin is identified by role, not by organization_id
   // (organization_id can be null or set to an organization)
   return profile?.role === 'super_admin';

@@ -86,8 +86,7 @@ export interface UpdateSchoolData extends Partial<CreateSchoolData> {
 }
 
 export const useSchools = (organizationId?: string) => {
-  const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { user, profile } = useAuth();
 
   return useQuery({
     queryKey: ['schools', organizationId || profile?.organization_id],
@@ -206,8 +205,7 @@ export const useSchool = (schoolId: string) => {
 
 export const useCreateSchool = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { user, profile } = useAuth();
 
   return useMutation({
     mutationFn: async (schoolData: CreateSchoolData) => {
@@ -283,8 +281,7 @@ export const useCreateSchool = () => {
 
 export const useUpdateSchool = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { user, profile } = useAuth();
 
   return useMutation({
     mutationFn: async (schoolData: UpdateSchoolData) => {
@@ -394,8 +391,7 @@ export const useUpdateSchool = () => {
 
 export const useDeleteSchool = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { user, profile } = useAuth();
 
   return useMutation({
     mutationFn: async (schoolId: string) => {

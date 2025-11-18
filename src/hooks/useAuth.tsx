@@ -11,6 +11,7 @@ interface Profile {
   phone: string | null;
   avatar_url: string | null;
   is_active: boolean;
+  default_school_id: string | null;
 }
 
 interface AuthContextType {
@@ -32,36 +33,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const DEV_AUTH_BYPASS = import.meta.env.VITE_DISABLE_AUTH === 'true';
 
 // Mock user for development - with admin role for full access
-const createMockUser = (): User => ({
-  id: 'dev-user-id',
-  email: 'dev@example.com',
-  created_at: new Date().toISOString(),
-  app_metadata: {
-    role: 'admin' // Set role in app_metadata
-  },
-  user_metadata: {
-    full_name: 'Development User',
-    role: 'admin' // Also set in user_metadata
-  },
-  aud: 'authenticated',
-  confirmation_sent_at: null,
-  recovery_sent_at: null,
-  email_confirmed_at: new Date().toISOString(),
-  invited_at: null,
-  action_link: null,
-  last_sign_in_at: new Date().toISOString(),
-  phone: null,
-  confirmed_at: new Date().toISOString(),
-  email_change_sent_at: null,
-  new_email: null,
-  phone_confirmed_at: null,
-  phone_change: null,
-  phone_change_token: null,
-  email_change: null,
-  email_change_token: null,
-  is_anonymous: false,
-  factors: null,
-});
+const createMockUser = (): User => {
+  const mock: any = {
+    id: 'dev-user-id',
+    email: 'dev@example.com',
+    created_at: new Date().toISOString(),
+    app_metadata: {
+      role: 'admin',
+    },
+    user_metadata: {
+      full_name: 'Development User',
+      role: 'admin',
+    },
+    aud: 'authenticated',
+  };
+  return mock as User;
+};
 
 const createMockSession = (user: User): Session => ({
   access_token: 'dev-mock-token',
@@ -72,7 +59,9 @@ const createMockSession = (user: User): Session => ({
   user,
 });
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -85,7 +74,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, organization_id, role, full_name, email, phone, avatar_url, is_active')
+        .select(
+          'id, organization_id, role, full_name, email, phone, avatar_url, is_active, default_school_id'
+        )
         .eq('id', userId)
         .single();
 
@@ -93,8 +84,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Failed to load profile:', error);
         // Profile might not exist yet - it will be created by trigger
         setProfile(null);
+      } else if (data) {
+        setProfile(data as unknown as Profile);
       } else {
-        setProfile(data as Profile);
+        setProfile(null);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -122,6 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         phone: null,
         avatar_url: null,
         is_active: true,
+        default_school_id: null,
       });
       setLoading(false);
       setProfileLoading(false);
@@ -131,71 +125,90 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Production mode: Normal authentication
     let mounted = true;
     let fallbackTimer: number | undefined;
+    let profileLoaded = false; // guard to avoid repeated profile fetches
+
+    const safeLoadUserProfile = async (userId: string) => {
+      if (!mounted) return;
+      if (profileLoaded) return;
+      profileLoaded = true;
+      await loadUserProfile(userId);
+    };
 
     const initializeAuth = async () => {
       try {
-        // Check for existing session first
-        const { data: { session } } = await supabase.auth.getSession();
+        // 1) Check for existing session first
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
         }
 
-        // Load profile for existing session
+        // Load profile for existing session (once)
         if (session?.user) {
-          await loadUserProfile(session.user.id);
+          await safeLoadUserProfile(session.user.id);
         }
 
-        // Set up auth state listener
-        // Only reload profile on meaningful auth events to prevent unnecessary loading states
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
+        // 2) Set up auth state listener
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange(
+          async (event, sessionEvent) => {
             if (!mounted) return;
-            
+
             console.log('Auth state change:', event);
-            
-            // Only handle events that require profile reload or state update
-            if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-              setSession(session);
-              setUser(session?.user ?? null);
-              
-              if (event === 'SIGNED_IN' && session?.user) {
-                await loadUserProfile(session.user.id);
-                
-                try {
-                  await supabase.rpc('log_auth_event', {
-                    event_type: 'user_signin_success',
-                    event_data: { user_id: session.user.id, email: session.user.email },
-                    error_message: null,
-                    user_email: session.user.email
-                  });
-                } catch (logError) {
-                  console.warn('Failed to log auth event:', logError);
+
+            if (
+              event === 'SIGNED_IN' ||
+              event === 'SIGNED_OUT' ||
+              event === 'TOKEN_REFRESHED'
+            ) {
+              setSession(sessionEvent || null);
+              setUser(sessionEvent?.user ?? null);
+
+              if (
+                sessionEvent?.user &&
+                (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')
+              ) {
+                await safeLoadUserProfile(sessionEvent.user.id);
+
+                if (event === 'SIGNED_IN') {
+                  // Log auth event
+                  try {
+                    await (supabase as any).rpc('log_auth_event', {
+                      event_type: 'user_signin_success',
+                      event_data: {
+                        user_id: sessionEvent.user.id,
+                        email: sessionEvent.user.email,
+                      },
+                      error_message: null,
+                      user_email: sessionEvent.user.email,
+                    });
+                  } catch (logError) {
+                    console.warn('Failed to log auth event:', logError);
+                  }
                 }
               } else if (event === 'SIGNED_OUT') {
+                profileLoaded = false;
                 setProfile(null);
-              } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-                // Token refreshed - only reload profile if we don't have one
-                // This prevents unnecessary reloads when switching tabs
-                if (!profile) {
-                  await loadUserProfile(session.user.id);
-                }
               }
             } else if (event === 'INITIAL_SESSION') {
-              // For INITIAL_SESSION, only update state if we don't have profile yet
-              // This prevents unnecessary state updates when switching tabs
-              if (session?.user && !profile) {
-                setSession(session);
-                setUser(session.user);
-                await loadUserProfile(session.user.id);
-              } else if (session) {
-                // Update session/user but don't reload profile if we already have it
-                setSession(session);
-                setUser(session.user ?? null);
+              // INITIAL_SESSION is fired on page load/refresh
+              if (sessionEvent?.user) {
+                setSession(sessionEvent);
+                setUser(sessionEvent.user);
+                await safeLoadUserProfile(sessionEvent.user.id);
+              } else {
+                setSession(null);
+                setUser(null);
+                setProfile(null);
+                profileLoaded = false;
               }
             }
-            // Ignore other events like USER_UPDATED, PASSWORD_RECOVERY, etc.
-            // These don't require profile reload and cause unnecessary loading states
+            // Other events (USER_UPDATED, PASSWORD_RECOVERY, etc.) are ignored
+            // to avoid unnecessary profile reloads.
           }
         );
 
@@ -204,10 +217,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (fallbackTimer) window.clearTimeout(fallbackTimer);
         }
 
-        // Note: we can't return this from async initializer in useEffect
-        // Cleanup handled by outer effect cleanup
+        // store unsubscribe in dev (optional)
         const unsub = () => subscription.unsubscribe();
-        // Store on window in dev to avoid GC before cleanup (no-op in prod)
         if (import.meta.env.DEV) (window as any).__supabaseUnsub = unsub;
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -218,7 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Fallback safety: ensure we never remain in loading indefinitely
+    // Fallback safety: never remain in loading forever
     fallbackTimer = window.setTimeout(() => {
       if (mounted) {
         console.warn('Auth loading timeout fallback triggered');
@@ -228,15 +239,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initializeAuth();
 
-    // Handle visibility changes to prevent unnecessary auth checks when tab is hidden
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Tab is hidden - don't trigger any auth checks
-        // This prevents unnecessary loading states when switching tabs
-      } else {
-        // Tab is visible - auth state listener will handle any needed updates
-        // No need to manually check here as onAuthStateChange handles it
-      }
+      // We intentionally do nothing here now.
+      // Auth state listener will handle everything; we avoid extra checks.
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -245,13 +250,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       if (fallbackTimer) window.clearTimeout(fallbackTimer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      // Clean up auth subscription if we stashed it
+
       if (import.meta.env.DEV && (window as any).__supabaseUnsub) {
-        try { (window as any).__supabaseUnsub(); } catch {}
+        try {
+          (window as any).__supabaseUnsub();
+        } catch {
+          // ignore
+        }
         (window as any).__supabaseUnsub = undefined;
       }
     };
-  }, [profile]); // Add profile to dependencies to check if we have cached profile
+  }, []); // 🔴 IMPORTANT: run once, do NOT depend on profile
 
   const signOut = async () => {
     // Development mode: Just clear mock user
@@ -268,11 +277,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await supabase.auth.signOut();
       // Log successful signout
       try {
-        await supabase.rpc('log_auth_event', {
+        await (supabase as any).rpc('log_auth_event', {
           event_type: 'user_signout',
           event_data: { user_id: user?.id, email: user?.email },
           error_message: null,
-          user_email: user?.email || null
+          user_email: user?.email || null,
         });
       } catch {
         // Silent fail for logging to prevent blocking signout
@@ -280,11 +289,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       // Log signout error
       try {
-        await supabase.rpc('log_auth_event', {
+        await (supabase as any).rpc('log_auth_event', {
           event_type: 'signout_error',
           event_data: { user_id: user?.id },
           error_message: error.message,
-          user_email: user?.email || null
+          user_email: user?.email || null,
         });
       } catch {
         // Silent fail for logging
@@ -307,17 +316,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      profile,
-      loading, 
-      profileLoading,
-      signOut,
-      isSuperAdmin,
-      getOrganizationId,
-      getRole,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        profile,
+        loading,
+        profileLoading,
+        signOut,
+        isSuperAdmin,
+        getOrganizationId,
+        getRole,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
-import { useUserOrganization } from './useProfiles';
+import { useAuth } from './useAuth';
 
 // Staff interface matching the new comprehensive schema
 export interface Staff {
@@ -117,29 +117,16 @@ export interface StaffStats {
 
 // Hook to fetch all staff with organization filtering
 export const useStaff = (organizationId?: string) => {
-  const { data: userOrgId } = useUserOrganization();
-  const orgId = organizationId || userOrgId;
+  const { profile } = useAuth();
+  const orgId = organizationId || profile?.organization_id || null;
 
   return useQuery({
     queryKey: ['staff', orgId],
     queryFn: async () => {
+      // First, fetch staff without nested queries to avoid N+1 problem
       let query = supabase
         .from('staff')
-        .select(`
-          *,
-          profile:profiles(
-            id,
-            full_name,
-            email,
-            phone,
-            avatar_url,
-            role
-          ),
-          organization:organizations(
-            id,
-            name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       // Filter by organization if not super admin
@@ -147,13 +134,52 @@ export const useStaff = (organizationId?: string) => {
         query = query.eq('organization_id', orgId);
       }
 
-      const { data, error } = await query;
+      const { data: staffData, error: staffError } = await query;
 
-      if (error) {
-        throw new Error(error.message);
+      if (staffError) {
+        throw new Error(staffError.message);
       }
 
-      return (data || []) as Staff[];
+      if (!staffData || staffData.length === 0) {
+        return [] as Staff[];
+      }
+
+      // Get unique profile IDs and organization IDs
+      const profileIds = [...new Set(staffData.map((s: any) => s.profile_id).filter(Boolean))] as string[];
+      const orgIds = [...new Set(staffData.map((s: any) => s.organization_id).filter(Boolean))] as string[];
+
+      // Fetch profiles and organizations in parallel (batch queries)
+      const [profilesResult, orgsResult] = await Promise.all([
+        profileIds.length > 0
+          ? supabase
+              .from('profiles')
+              .select('id, full_name, email, phone, avatar_url, role')
+              .in('id', profileIds)
+          : Promise.resolve({ data: [], error: null }),
+        orgIds.length > 0
+          ? supabase
+              .from('organizations')
+              .select('id, name')
+              .in('id', orgIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      // Create lookup maps for efficient joining
+      const profilesMap = new Map(
+        (profilesResult.data || []).map((p: any) => [p.id, p])
+      );
+      const orgsMap = new Map(
+        (orgsResult.data || []).map((o: any) => [o.id, o])
+      );
+
+      // Combine data
+      const staffWithRelations: Staff[] = staffData.map((staff: any) => ({
+        ...staff,
+        profile: staff.profile_id ? (profilesMap.get(staff.profile_id) || null) : null,
+        organization: staff.organization_id ? (orgsMap.get(staff.organization_id) || null) : null,
+      }));
+
+      return staffWithRelations;
     },
     enabled: !!orgId || organizationId === undefined, // Allow super admin to see all
   });
@@ -195,25 +221,16 @@ export const useStaffMember = (staffId: string) => {
 
 // Hook to fetch staff by type
 export const useStaffByType = (staffType: Staff['staff_type'], organizationId?: string) => {
-  const { data: userOrgId } = useUserOrganization();
-  const orgId = organizationId || userOrgId;
+  const { profile } = useAuth();
+  const orgId = organizationId || profile?.organization_id || null;
 
   return useQuery({
     queryKey: ['staff', 'type', staffType, orgId],
     queryFn: async () => {
+      // Fetch staff without nested queries
       let query = supabase
         .from('staff')
-        .select(`
-          *,
-          profile:profiles(
-            id,
-            full_name,
-            email,
-            phone,
-            avatar_url,
-            role
-          )
-        `)
+        .select('*')
         .eq('staff_type', staffType)
         .eq('status', 'active')
         .order('full_name', { ascending: true });
@@ -222,13 +239,41 @@ export const useStaffByType = (staffType: Staff['staff_type'], organizationId?: 
         query = query.eq('organization_id', orgId);
       }
 
-      const { data, error } = await query;
+      const { data: staffData, error: staffError } = await query;
 
-      if (error) {
-        throw new Error(error.message);
+      if (staffError) {
+        throw new Error(staffError.message);
       }
 
-      return (data || []) as Staff[];
+      if (!staffData || staffData.length === 0) {
+        return [] as Staff[];
+      }
+
+      // Get unique profile IDs
+      const profileIds = [...new Set(staffData.map((s: any) => s.profile_id).filter(Boolean))] as string[];
+
+      // Fetch profiles in batch
+      let profilesMap = new Map();
+      if (profileIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, phone, avatar_url, role')
+          .in('id', profileIds);
+
+        if (profilesData) {
+          profilesData.forEach((p: any) => {
+            profilesMap.set(p.id, p);
+          });
+        }
+      }
+
+      // Combine data
+      const staffWithRelations: Staff[] = staffData.map((staff: any) => ({
+        ...staff,
+        profile: staff.profile_id ? (profilesMap.get(staff.profile_id) || null) : null,
+      }));
+
+      return staffWithRelations;
     },
     enabled: !!orgId || organizationId === undefined,
   });
@@ -236,8 +281,8 @@ export const useStaffByType = (staffType: Staff['staff_type'], organizationId?: 
 
 // Hook to get staff statistics
 export const useStaffStats = (organizationId?: string) => {
-  const { data: userOrgId } = useUserOrganization();
-  const orgId = organizationId || userOrgId;
+  const { profile } = useAuth();
+  const orgId = organizationId || profile?.organization_id || null;
 
   return useQuery({
     queryKey: ['staff-stats', orgId],
@@ -280,14 +325,14 @@ export const useStaffStats = (organizationId?: string) => {
 // Hook to create a new staff member
 export const useCreateStaff = () => {
   const queryClient = useQueryClient();
-  const { data: userOrgId } = useUserOrganization();
+  const { profile } = useAuth();
 
   return useMutation({
     mutationFn: async (staffData: StaffInsert) => {
       // Auto-set organization_id if not provided
       const finalData = {
         ...staffData,
-        organization_id: staffData.organization_id || userOrgId || '',
+        organization_id: staffData.organization_id || profile?.organization_id || '',
       };
 
       // Validate employee_id uniqueness within organization

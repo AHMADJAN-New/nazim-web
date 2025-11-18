@@ -1,21 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useProfile } from './useProfiles';
 import { useAuth } from './useAuth';
 
 export interface Building {
   id: string;
   building_name: string;
-  school_id: string;
+  school_id?: string | null;
+  organization_id?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
 }
 
 export const useBuildings = (schoolId?: string, organizationId?: string) => {
-  const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { user, profile } = useAuth();
 
   return useQuery({
     queryKey: ['buildings', schoolId, organizationId || profile?.organization_id],
@@ -31,13 +30,14 @@ export const useBuildings = (schoolId?: string, organizationId?: string) => {
       
       if (schoolId) {
         // Filter by specific school
+        // @ts-expect-error TS2589: Type instantiation is excessively deep and possibly infinite
         query = query.eq('school_id', schoolId);
       } else if (organizationId || (!isSuperAdmin && profile.organization_id)) {
         // Filter by organization through schools
         const filterOrgId = organizationId || profile.organization_id;
         
         // Get schools for this organization
-        const { data: schools } = await supabase
+        const { data: schools } = await (supabase as any)
           .from('school_branding')
           .select('id')
           .eq('organization_id', filterOrgId)
@@ -63,14 +63,14 @@ export const useBuildings = (schoolId?: string, organizationId?: string) => {
         if (retryError) {
           throw new Error(retryError.message);
         }
-        return retryData as Building[];
+        return (retryData || []) as unknown as Building[];
       }
 
       if (error) {
         throw new Error(error.message);
       }
 
-      return data as Building[];
+      return (data || []) as unknown as Building[];
     },
     enabled: !!user && !!profile,
     staleTime: 10 * 60 * 1000,
@@ -80,8 +80,7 @@ export const useBuildings = (schoolId?: string, organizationId?: string) => {
 
 export const useCreateBuilding = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { user, profile } = useAuth();
 
   return useMutation({
     mutationFn: async (buildingData: { building_name: string; school_id?: string }) => {
@@ -138,7 +137,7 @@ export const useCreateBuilding = () => {
           
           if (orgId) {
             // Get first active school from the organization
-            const { data: schools } = await supabase
+            const { data: schools } = await (supabase as any)
               .from('school_branding')
               .select('id')
               .eq('organization_id', orgId)
@@ -156,7 +155,7 @@ export const useCreateBuilding = () => {
           }
         } else if (profile.organization_id) {
           // Get first active school for user's organization (if default_school_id not set)
-          const { data: schools } = await supabase
+          const { data: schools } = await (supabase as any)
             .from('school_branding')
             .select('id')
             .eq('organization_id', profile.organization_id)
@@ -198,7 +197,7 @@ export const useCreateBuilding = () => {
         throw new Error('This building name already exists in this school');
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('buildings')
         .insert({ 
           building_name: trimmedName,
@@ -244,7 +243,7 @@ export const useUpdateBuilding = () => {
       }
 
       // Get current building to check school (excluding soft-deleted)
-      const { data: currentBuilding } = await supabase
+      const { data: currentBuilding } = await (supabase as any)
         .from('buildings')
         .select('school_id')
         .eq('id', id)
@@ -274,7 +273,7 @@ export const useUpdateBuilding = () => {
         }
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('buildings')
         .update(updateData)
         .eq('id', id)
@@ -315,7 +314,7 @@ export const useDeleteBuilding = () => {
       }
 
       // Soft delete: set deleted_at timestamp
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('buildings')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);

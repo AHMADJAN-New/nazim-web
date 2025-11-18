@@ -247,19 +247,11 @@ export const useDeleteOrganization = () => {
 };
 
 export const useCurrentOrganization = () => {
-  const { user } = useAuth();
+  const { profile } = useAuth();
 
   return useQuery({
-    queryKey: ['current-organization'],
+    queryKey: ['current-organization', profile?.organization_id],
     queryFn: async () => {
-      if (!user) return null;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .single();
-
       if (!profile || !profile.organization_id) {
         return null; // Super admin or no organization
       }
@@ -276,7 +268,7 @@ export const useCurrentOrganization = () => {
 
       return data as Organization;
     },
-    enabled: !!user,
+    enabled: !!profile && !!profile.organization_id,
   });
 };
 

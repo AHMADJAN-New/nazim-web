@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useProfile } from './useProfiles';
+import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
 export interface Permission {
@@ -25,7 +25,7 @@ export const usePermissions = () => {
   return useQuery({
     queryKey: ['permissions'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('permissions')
         .select('*')
         .order('resource', { ascending: true })
@@ -35,7 +35,7 @@ export const usePermissions = () => {
         throw new Error(error.message);
       }
 
-      return data as Permission[];
+      return (data ?? []) as Permission[];
     },
     staleTime: 30 * 60 * 1000, // 30 minutes - permissions don't change often
     gcTime: 60 * 60 * 1000, // 1 hour
@@ -67,7 +67,7 @@ export const useRolePermissions = (role: string) => {
 };
 
 export const useUserPermissions = () => {
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
 
   return useQuery({
     queryKey: ['user-permissions', profile?.role, profile?.id, profile?.organization_id],
@@ -78,7 +78,7 @@ export const useUserPermissions = () => {
 
       // Super admin has all global permissions (organization_id IS NULL)
       if (profile.role === 'super_admin') {
-        const { data: allPermissions, error } = await supabase
+        const { data: allPermissions, error } = await (supabase as any)
           .from('permissions')
           .select('name')
           .is('organization_id', null) // Only global permissions
@@ -88,7 +88,7 @@ export const useUserPermissions = () => {
           throw new Error(error.message);
         }
 
-        const permNames = allPermissions?.map(p => p.name) || [];
+        const permNames = (allPermissions ?? []).map((p: { name: string }) => p.name);
         return permNames;
       }
 
@@ -100,7 +100,7 @@ export const useUserPermissions = () => {
       // Query role_permissions filtered by:
       // 1. User's role
       // 2. User's organization_id OR organization_id IS NULL (global permissions)
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('role_permissions')
         .select(`
           permission:permissions(name, organization_id)
@@ -113,8 +113,8 @@ export const useUserPermissions = () => {
       }
 
       // Extract permission names, ensuring we only get global permissions or org-specific permissions
-      const permNames = data
-        ?.map(rp => {
+      const permNames = (data ?? [])
+        .map((rp: { permission: { name: string; organization_id: string | null } | null }) => {
           const perm = rp.permission;
           if (!perm) return null;
           // Only include if it's a global permission (organization_id IS NULL) 
@@ -124,7 +124,7 @@ export const useUserPermissions = () => {
           }
           return null;
         })
-        .filter(Boolean) || [];
+        .filter(Boolean) as string[];
 
       // Remove duplicates (in case same permission exists as both global and org-specific)
       const uniquePermNames = Array.from(new Set(permNames));
@@ -141,7 +141,7 @@ export const useUserPermissions = () => {
 };
 
 export const useHasPermission = (permissionName: string) => {
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
   const { data: permissions, isLoading } = useUserPermissions();
 
   // Super admin always has all permissions (immediate return, no query needed)
@@ -168,7 +168,7 @@ export const useHasPermission = (permissionName: string) => {
 
 export const useAssignPermissionToRole = () => {
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
 
   return useMutation({
     mutationFn: async ({ role, permissionId }: { role: string; permissionId: string }) => {
@@ -185,7 +185,7 @@ export const useAssignPermissionToRole = () => {
       }
 
       // Get the permission to validate organization scope
-      const { data: permission, error: permError } = await supabase
+      const { data: permission, error: permError } = await (supabase as any)
         .from('permissions')
         .select('id, organization_id')
         .eq('id', permissionId)
@@ -195,11 +195,13 @@ export const useAssignPermissionToRole = () => {
         throw new Error('Permission not found');
       }
 
+      const perm = permission as { id: string; organization_id: string | null };
+
       // Validate organization scope (unless super admin)
       if (profile.role !== 'super_admin') {
         // Regular admin can only assign permissions for their organization
         // Permission must be global (organization_id IS NULL) or belong to user's org
-        if (permission.organization_id !== null && permission.organization_id !== profile.organization_id) {
+        if (perm.organization_id !== null && perm.organization_id !== profile.organization_id) {
           throw new Error('Cannot assign permission from different organization');
         }
       }
@@ -208,7 +210,7 @@ export const useAssignPermissionToRole = () => {
       // Super admin can assign global (NULL) or org-specific
       // Regular admin assigns to their organization
       const organizationId = profile.role === 'super_admin'
-        ? permission.organization_id // Use permission's organization_id (can be NULL for global)
+        ? perm.organization_id // Use permission's organization_id (can be NULL for global)
         : profile.organization_id; // Regular admin always uses their org
 
       const { data, error } = await supabase
@@ -244,7 +246,7 @@ export const useAssignPermissionToRole = () => {
 
 export const useRemovePermissionFromRole = () => {
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
 
   return useMutation({
     mutationFn: async ({ role, permissionId }: { role: string; permissionId: string }) => {
@@ -261,7 +263,7 @@ export const useRemovePermissionFromRole = () => {
       }
 
       // Build delete query with organization filter
-      let deleteQuery = supabase
+      let deleteQuery: any = (supabase as any)
         .from('role_permissions')
         .delete()
         .eq('role', role)
@@ -293,7 +295,7 @@ export const useRemovePermissionFromRole = () => {
 
 export const useCreatePermission = () => {
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
 
   return useMutation({
     mutationFn: async (permissionData: {
@@ -324,7 +326,7 @@ export const useCreatePermission = () => {
         throw new Error('User must be assigned to an organization');
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('permissions')
         .insert({
           ...permissionData,
@@ -337,7 +339,7 @@ export const useCreatePermission = () => {
         throw new Error(error.message);
       }
 
-      return data;
+      return data as Permission;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
@@ -352,7 +354,7 @@ export const useCreatePermission = () => {
 
 export const useUpdatePermission = () => {
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -378,7 +380,7 @@ export const useUpdatePermission = () => {
       }
 
       // Get current permission to validate organization scope
-      const { data: currentPermission, error: fetchError } = await supabase
+      const { data: currentPermission, error: fetchError } = await (supabase as any)
         .from('permissions')
         .select('id, organization_id')
         .eq('id', id)
@@ -388,18 +390,21 @@ export const useUpdatePermission = () => {
         throw new Error('Permission not found');
       }
 
+      const currentPerm = currentPermission as { id: string; organization_id: string | null };
+
       // Validate organization scope (unless super admin)
       if (profile.role !== 'super_admin') {
-        if (currentPermission.organization_id !== profile.organization_id) {
+        if (currentPerm.organization_id !== profile.organization_id) {
           throw new Error('Cannot update permission from different organization');
         }
         // Regular admin cannot change organization_id
-        if (updates.organization_id !== undefined) {
+        const updatesWithOrg = updates as { organization_id?: string | null };
+        if (updatesWithOrg.organization_id !== undefined) {
           throw new Error('Cannot change organization_id');
         }
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('permissions')
         .update(updates)
         .eq('id', id)
@@ -425,7 +430,7 @@ export const useUpdatePermission = () => {
 
 export const useDeletePermission = () => {
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
 
   return useMutation({
     mutationFn: async (permissionId: string) => {
@@ -442,7 +447,7 @@ export const useDeletePermission = () => {
       }
 
       // Get current permission to validate organization scope
-      const { data: currentPermission, error: fetchError } = await supabase
+      const { data: currentPermission, error: fetchError } = await (supabase as any)
         .from('permissions')
         .select('id, organization_id')
         .eq('id', permissionId)
@@ -452,14 +457,16 @@ export const useDeletePermission = () => {
         throw new Error('Permission not found');
       }
 
+      const currentPerm = currentPermission as { id: string; organization_id: string | null };
+
       // Validate organization scope (unless super admin)
       if (profile.role !== 'super_admin') {
-        if (currentPermission.organization_id !== profile.organization_id) {
+        if (currentPerm.organization_id !== profile.organization_id) {
           throw new Error('Cannot delete permission from different organization');
         }
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('permissions')
         .delete()
         .eq('id', permissionId);

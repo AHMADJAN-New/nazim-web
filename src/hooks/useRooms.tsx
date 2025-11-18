@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useProfile } from './useProfiles';
 import { useAuth } from './useAuth';
 
 export interface Room {
@@ -42,8 +41,7 @@ export interface RoomWithRelations extends Room {
 }
 
 export const useRooms = (schoolId?: string, organizationId?: string) => {
-  const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { user, profile } = useAuth();
 
   return useQuery({
     queryKey: ['rooms', schoolId, organizationId || profile?.organization_id],
@@ -109,6 +107,7 @@ export const useRooms = (schoolId?: string, organizationId?: string) => {
       const staffIds = [...new Set(rooms.map((r: any) => r.staff_id).filter(Boolean))] as string[];
 
       // Fetch related data in parallel (excluding soft-deleted)
+      // Optimized: Use single queries with proper filtering instead of nested queries
       const [buildingsResult, staffResult] = await Promise.all([
         buildingIds.length > 0
           ? supabase
@@ -122,15 +121,30 @@ export const useRooms = (schoolId?: string, organizationId?: string) => {
             .from('staff')
             .select(`
                 id,
-                profile_id,
-                profile:profiles(
-                  full_name
-                )
+                profile_id
               `)
             .in('id', staffIds)
             .is('deleted_at', null)
           : Promise.resolve({ data: [], error: null }),
       ]);
+
+      // Fetch staff profiles in a separate optimized query (avoid N+1)
+      let staffProfilesMap = new Map<string, { full_name: string }>();
+      if (staffResult.data && staffResult.data.length > 0) {
+        const profileIds = [...new Set(staffResult.data.map((s: any) => s.profile_id).filter(Boolean))] as string[];
+        if (profileIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', profileIds);
+          
+          if (profilesData) {
+            profilesData.forEach((p: any) => {
+              staffProfilesMap.set(p.id, { full_name: p.full_name });
+            });
+          }
+        }
+      }
 
       if (buildingsResult.error) {
         console.error('Error fetching buildings:', buildingsResult.error);
@@ -148,7 +162,7 @@ export const useRooms = (schoolId?: string, organizationId?: string) => {
           s.id,
           {
             id: s.id,
-            profile: s.profile || null,
+            profile: s.profile_id ? (staffProfilesMap.get(s.profile_id) || null) : null,
           },
         ])
       );
@@ -174,8 +188,7 @@ export const useRooms = (schoolId?: string, organizationId?: string) => {
 
 export const useCreateRoom = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { user, profile } = useAuth();
 
   return useMutation({
     mutationFn: async (roomData: { room_number: string; building_id: string; staff_id?: string | null }) => {
