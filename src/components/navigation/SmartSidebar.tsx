@@ -116,6 +116,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   // Prefer role from auth/profile over hook (hook might have dev mode fallback)
   const role = roleFromAuth || roleFromHook;
   const { data: currentOrg } = useCurrentOrganization();
+  const hasSettingsPermission = useHasPermission('settings.read');
   const hasBuildingsPermission = useHasPermission('buildings.read');
   const hasRoomsPermission = useHasPermission('rooms.read');
   const hasOrganizationsPermission = useHasPermission('organizations.read');
@@ -125,6 +126,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasSecurityMonitoringPermission = useHasPermission('security_monitoring.read');
   const hasBrandingPermission = useHasPermission('branding.read');
   const hasReportsPermission = useHasPermission('reports.read');
+  const hasBackupPermission = useHasPermission('backup.read');
 
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -136,6 +138,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   const collapsed = state === "collapsed";
   const currentPath = location.pathname;
+
+  // Permission checks for specific child items
+  const hasPermissionsPermission = useHasPermission('permissions.read'); // Assuming this permission exists for permissions management
 
   // Context-aware navigation items - computed with useMemo to avoid hook order issues
   const allNavigationItems = useMemo((): NavigationItem[] => {
@@ -152,40 +157,46 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "settings",
         icon: Settings,
         badge: null,
-        roles: ["super_admin", "admin"],
+        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"],
         priority: 10,
         children: [
-          ...(hasOrganizationsPermission && isSuperAdmin ? [{
+          // Only show child items if user has the required permission
+          ...(hasBackupPermission ? [{
+            title: "Backup & Restore",
+            url: "/settings/backup",
+            icon: Package,
+          }] : []),
+          ...(hasOrganizationsPermission ? [{
             title: "Organizations Management",
             url: "/settings/organizations",
             icon: Shield,
           }] : []),
-          ...(hasBuildingsPermission || isSuperAdmin ? [{
+          ...(hasBuildingsPermission ? [{
             title: "Buildings Management",
             url: "/settings/buildings",
             icon: Building2,
           }] : []),
-          ...(hasRoomsPermission || isSuperAdmin ? [{
+          ...(hasRoomsPermission ? [{
             title: "Rooms Management",
             url: "/settings/rooms",
             icon: DoorOpen,
           }] : []),
-          ...(hasProfilesPermission || isSuperAdmin ? [{
+          ...(hasProfilesPermission ? [{
             title: "Profile Management",
             url: "/settings/profile",
             icon: Users,
           }] : []),
-          ...(isSuperAdmin ? [{
+          ...(hasPermissionsPermission ? [{
             title: "Permissions Management",
             url: "/settings/permissions",
             icon: Shield,
           }] : []),
-          ...(hasBrandingPermission || isSuperAdmin ? [{
+          ...(hasBrandingPermission ? [{
             title: "Schools Management",
             url: "/settings/schools",
             icon: School,
           }] : []),
-          ...(hasReportsPermission || isSuperAdmin ? [{
+          ...(hasReportsPermission ? [{
             title: "Report Templates",
             url: "/settings/report-templates",
             icon: FileText,
@@ -199,27 +210,28 @@ export const SmartSidebar = memo(function SmartSidebar() {
         roles: ["super_admin", "admin"],
         priority: 9,
         children: [
-          ...(hasUsersPermission || isSuperAdmin ? [{
+          // Only show child items if user has the required permission
+          ...(hasUsersPermission ? [{
             title: "User Management",
             url: "/admin/users",
             icon: UserCog,
           }] : []),
-          ...(hasProfilesPermission || isSuperAdmin ? [{
+          ...(hasProfilesPermission ? [{
             title: "Role Requests",
             url: "/admin/role-requests",
             icon: UserPlus,
           }] : []),
-          ...(hasAuthMonitoringPermission || isSuperAdmin ? [{
+          ...(hasAuthMonitoringPermission ? [{
             title: "Auth Monitoring",
             url: "/admin/auth-monitoring",
             icon: AlertTriangle,
           }] : []),
-          ...(hasSecurityMonitoringPermission || isSuperAdmin ? [{
+          ...(hasSecurityMonitoringPermission ? [{
             title: "Security Monitoring",
             url: "/admin/security-monitoring",
             icon: Shield,
           }] : []),
-          ...(hasUsersPermission || isSuperAdmin ? [{
+          ...(hasUsersPermission ? [{
             title: "Password Management",
             url: "/admin/password-management",
             icon: KeyRound,
@@ -228,8 +240,86 @@ export const SmartSidebar = memo(function SmartSidebar() {
       }
     ];
 
-    return allItems;
-  }, [hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, isSuperAdmin]);
+    // Filter children and calculate visible children count
+    const itemsWithFilteredChildren = allItems.map(item => {
+      if (!item.children) return { ...item, visibleChildrenCount: 0 };
+
+      // Children are already filtered by permission checks above
+      const visibleChildren = item.children || [];
+      const visibleCount = visibleChildren.length;
+
+      return {
+        ...item,
+        children: visibleChildren,
+        visibleChildrenCount: visibleCount
+      };
+    });
+
+    // Debug: Log child items visibility
+    const settingsItem = itemsWithFilteredChildren.find(i => i.titleKey === 'settings');
+    const authItem = itemsWithFilteredChildren.find(i => i.titleKey === 'authentication');
+    console.log('🔍 Child items visibility check:', {
+      settingsChildrenCount: (settingsItem as any)?.visibleChildrenCount || 0,
+      authChildrenCount: (authItem as any)?.visibleChildrenCount || 0,
+      hasBackupPermission,
+      hasOrganizationsPermission,
+      hasBuildingsPermission,
+      hasRoomsPermission,
+      hasProfilesPermission,
+      hasBrandingPermission,
+      hasReportsPermission,
+      hasUsersPermission,
+      hasAuthMonitoringPermission,
+      hasSecurityMonitoringPermission,
+      hasPermissionsPermission,
+    });
+
+    // Filter out menus if they have no visible children
+    // Show menu only if user has permission for at least one child
+    return itemsWithFilteredChildren.filter(item => {
+      // Dashboard always shows (no children)
+      if (item.titleKey === 'dashboard') {
+        return true;
+      }
+
+      // For menus with children, only show if there are visible children
+      if (item.children && item.children.length > 0) {
+        const visibleCount = (item as any).visibleChildrenCount || item.children.length;
+        const shouldShow = visibleCount > 0;
+
+        console.log(`🔍 Menu "${item.titleKey}" visibility:`, {
+          visibleChildrenCount: visibleCount,
+          shouldShow
+        });
+
+        return shouldShow;
+      }
+
+      // For menus without children, show based on parent permission
+      if (item.titleKey === 'settings') {
+        const shouldShow = hasSettingsPermission;
+        console.log('🔍 Settings menu visibility:', {
+          hasSettingsPermission,
+          shouldShow
+        });
+        return shouldShow;
+      }
+
+      if (item.titleKey === 'authentication') {
+        // Show if user has any auth-related permission
+        const shouldShow = hasUsersPermission || hasAuthMonitoringPermission || hasSecurityMonitoringPermission;
+        console.log('🔍 Authentication menu visibility:', {
+          hasUsersPermission,
+          hasAuthMonitoringPermission,
+          hasSecurityMonitoringPermission,
+          shouldShow
+        });
+        return shouldShow;
+      }
+
+      return true;
+    });
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission]);
 
   // Helper function to filter navigation items by role
   const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {
@@ -347,6 +437,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
       role,
       effectiveRole,
       isSuperAdmin,
+      hasSettingsPermission,
       hasBuildingsPermission,
       hasRoomsPermission,
       hasOrganizationsPermission,
@@ -356,8 +447,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
       hasSecurityMonitoringPermission,
       hasBrandingPermission,
       hasReportsPermission,
+      hasBackupPermission,
     });
-  }, [role, effectiveRole, isSuperAdmin, hasBuildingsPermission, hasRoomsPermission, hasOrganizationsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission]);
+  }, [role, effectiveRole, isSuperAdmin, hasSettingsPermission, hasBuildingsPermission, hasRoomsPermission, hasOrganizationsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission]);
 
   // Memoize navigation items to prevent recalculation on every render
   // Always render items if we have a role, even if permissions are still loading

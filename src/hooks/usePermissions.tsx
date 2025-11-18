@@ -9,6 +9,7 @@ export interface Permission {
   resource: string;
   action: string;
   description: string | null;
+  organization_id: string | null;
   created_at: string;
 }
 
@@ -16,6 +17,7 @@ export interface RolePermission {
   id: string;
   role: string;
   permission_id: string;
+  organization_id: string | null;
   created_at: string;
 }
 
@@ -68,21 +70,22 @@ export const useUserPermissions = () => {
   const { data: profile } = useProfile();
 
   return useQuery({
-    queryKey: ['user-permissions', profile?.role, profile?.id],
+    queryKey: ['user-permissions', profile?.role, profile?.id, profile?.organization_id],
     queryFn: async () => {
       if (!profile?.role) {
         console.log('🔍 useUserPermissions: No profile role, returning empty');
         return [];
       }
 
-      console.log('🔍 useUserPermissions: Fetching permissions for role:', profile.role);
+      console.log('🔍 useUserPermissions: Fetching permissions for role:', profile.role, 'organization_id:', profile.organization_id);
 
-      // Super admin has all permissions
+      // Super admin has all global permissions (organization_id IS NULL)
       if (profile.role === 'super_admin') {
-        console.log('🔍 useUserPermissions: Super admin detected, fetching all permissions');
+        console.log('🔍 useUserPermissions: Super admin detected, fetching all global permissions');
         const { data: allPermissions, error } = await supabase
           .from('permissions')
           .select('name')
+          .is('organization_id', null) // Only global permissions
           .order('name', { ascending: true });
 
         if (error) {
@@ -91,27 +94,66 @@ export const useUserPermissions = () => {
         }
 
         const permNames = allPermissions?.map(p => p.name) || [];
-        console.log('🔍 useUserPermissions: Super admin permissions:', permNames);
+        console.log('🔍 useUserPermissions: Super admin permissions (global):', permNames);
         return permNames;
       }
 
-      // Get permissions for the user's role
-      console.log('🔍 useUserPermissions: Fetching role permissions for:', profile.role);
+      // Regular users: Get global permissions (organization_id IS NULL) + their organization's permissions
+      if (!profile.organization_id) {
+        console.warn('🔍 useUserPermissions: User has no organization_id, returning empty');
+        return [];
+      }
+
+      console.log('🔍 useUserPermissions: Fetching role permissions for:', profile.role, 'organization:', profile.organization_id);
+      
+      // Query role_permissions filtered by:
+      // 1. User's role
+      // 2. User's organization_id OR organization_id IS NULL (global permissions)
       const { data, error } = await supabase
         .from('role_permissions')
         .select(`
-          permission:permissions(name)
+          permission:permissions(name, organization_id)
         `)
-        .eq('role', profile.role);
+        .eq('role', profile.role)
+        .or(`organization_id.is.null,organization_id.eq.${profile.organization_id}`);
 
       if (error) {
         console.error('🔍 useUserPermissions: Error fetching role permissions:', error);
         throw new Error(error.message);
       }
 
-      const permNames = data?.map(rp => rp.permission.name) || [];
-      console.log('🔍 useUserPermissions: Role permissions:', permNames);
-      return permNames;
+      // Extract permission names, ensuring we only get global permissions or org-specific permissions
+      const permNames = data
+        ?.map(rp => {
+          const perm = rp.permission;
+          if (!perm) return null;
+          // Only include if it's a global permission (organization_id IS NULL) 
+          // OR it's for the user's organization
+          if (perm.organization_id === null || perm.organization_id === profile.organization_id) {
+            return perm.name;
+          }
+          return null;
+        })
+        .filter(Boolean) || [];
+
+      // Remove duplicates (in case same permission exists as both global and org-specific)
+      const uniquePermNames = Array.from(new Set(permNames));
+
+      console.log('🔍 useUserPermissions: Role permissions fetched:', {
+        role: profile.role,
+        organization_id: profile.organization_id,
+        permissionsCount: uniquePermNames.length,
+        permissions: uniquePermNames,
+        rawData: data
+      });
+      
+      // If no permissions found, log a warning
+      if (uniquePermNames.length === 0) {
+        console.warn('🔍 useUserPermissions: No permissions found for role:', profile.role, 'organization:', profile.organization_id);
+        console.warn('🔍 useUserPermissions: Check if role_permissions table has entries for this role and organization');
+      }
+      
+      return uniquePermNames;
     },
     enabled: !!profile?.role,
     staleTime: 30 * 60 * 1000, // 30 minutes - permissions don't change often
@@ -128,6 +170,7 @@ export const useHasPermission = (permissionName: string) => {
 
   // Super admin always has all permissions (immediate return, no query needed)
   if (profile?.role === 'super_admin') {
+    console.log(`🔍 useHasPermission: Super admin has permission "${permissionName}"`);
     return true;
   }
 
@@ -135,16 +178,29 @@ export const useHasPermission = (permissionName: string) => {
   // Use cached data if available during background refetch to prevent UI flicker
   if (isLoading && !permissions) {
     // Initial load - no cached data yet
+    console.log(`🔍 useHasPermission: Loading permissions for "${permissionName}" (no cache)`);
     return false;
   }
 
   // If we have permissions (cached or fresh), use them
   // This ensures sidebar doesn't disappear during background refetches
   if (permissions && permissions.length > 0) {
-    return permissions.includes(permissionName);
+    const hasPermission = permissions.includes(permissionName);
+    console.log(`🔍 useHasPermission: "${permissionName}" = ${hasPermission}`, {
+      role: profile?.role,
+      permissionsCount: permissions.length,
+      hasPermission,
+      allPermissions: permissions
+    });
+    return hasPermission;
   }
 
   // No permissions found
+  console.log(`🔍 useHasPermission: No permissions found for "${permissionName}"`, {
+    role: profile?.role,
+    permissions: permissions,
+    isLoading
+  });
   return false;
 };
 
@@ -154,15 +210,51 @@ export const useAssignPermissionToRole = () => {
 
   return useMutation({
     mutationFn: async ({ role, permissionId }: { role: string; permissionId: string }) => {
-      if (profile?.role !== 'super_admin') {
-        throw new Error('Only super administrators can assign permissions');
+      if (!profile) {
+        throw new Error('User not authenticated');
       }
+
+      // Check if user has permission to assign permissions
+      const hasPermission = profile.role === 'super_admin' || 
+        (profile.role === 'admin' && profile.organization_id);
+      
+      if (!hasPermission) {
+        throw new Error('You do not have permission to assign permissions');
+      }
+
+      // Get the permission to validate organization scope
+      const { data: permission, error: permError } = await supabase
+        .from('permissions')
+        .select('id, organization_id')
+        .eq('id', permissionId)
+        .single();
+
+      if (permError || !permission) {
+        throw new Error('Permission not found');
+      }
+
+      // Validate organization scope (unless super admin)
+      if (profile.role !== 'super_admin') {
+        // Regular admin can only assign permissions for their organization
+        // Permission must be global (organization_id IS NULL) or belong to user's org
+        if (permission.organization_id !== null && permission.organization_id !== profile.organization_id) {
+          throw new Error('Cannot assign permission from different organization');
+        }
+      }
+
+      // Determine organization_id for role_permissions
+      // Super admin can assign global (NULL) or org-specific
+      // Regular admin assigns to their organization
+      const organizationId = profile.role === 'super_admin' 
+        ? permission.organization_id // Use permission's organization_id (can be NULL for global)
+        : profile.organization_id; // Regular admin always uses their org
 
       const { data, error } = await supabase
         .from('role_permissions')
         .insert({
           role,
           permission_id: permissionId,
+          organization_id: organizationId,
         })
         .select()
         .single();
@@ -170,7 +262,7 @@ export const useAssignPermissionToRole = () => {
       if (error) {
         // If it's a unique constraint violation, the permission is already assigned
         if (error.code === '23505') {
-          return { role, permission_id: permissionId }; // Return existing assignment
+          return { role, permission_id: permissionId, organization_id: organizationId }; // Return existing assignment
         }
         throw new Error(error.message);
       }
@@ -194,15 +286,31 @@ export const useRemovePermissionFromRole = () => {
 
   return useMutation({
     mutationFn: async ({ role, permissionId }: { role: string; permissionId: string }) => {
-      if (profile?.role !== 'super_admin') {
-        throw new Error('Only super administrators can remove permissions');
+      if (!profile) {
+        throw new Error('User not authenticated');
       }
 
-      const { error } = await supabase
+      // Check if user has permission to remove permissions
+      const hasPermission = profile.role === 'super_admin' || 
+        (profile.role === 'admin' && profile.organization_id);
+      
+      if (!hasPermission) {
+        throw new Error('You do not have permission to remove permissions');
+      }
+
+      // Build delete query with organization filter
+      let deleteQuery = supabase
         .from('role_permissions')
         .delete()
         .eq('role', role)
         .eq('permission_id', permissionId);
+
+      // Regular admin can only remove permissions for their organization
+      if (profile.role !== 'super_admin' && profile.organization_id) {
+        deleteQuery = deleteQuery.eq('organization_id', profile.organization_id);
+      }
+
+      const { error } = await deleteQuery;
 
       if (error) {
         throw new Error(error.message);
@@ -217,6 +325,197 @@ export const useRemovePermissionFromRole = () => {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to remove permission');
+    },
+  });
+};
+
+export const useCreatePermission = () => {
+  const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+
+  return useMutation({
+    mutationFn: async (permissionData: { 
+      name: string; 
+      resource: string; 
+      action: string; 
+      description?: string | null;
+    }) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      // Check if user has permission to create permissions
+      const hasPermission = profile.role === 'super_admin' || 
+        (profile.role === 'admin' && profile.organization_id);
+      
+      if (!hasPermission) {
+        throw new Error('You do not have permission to create permissions');
+      }
+
+      // Regular admin can only create permissions for their organization
+      // Super admin can create global permissions (organization_id = NULL) or org-specific
+      const organizationId = profile.role === 'super_admin' 
+        ? null // Super admin can create global permissions
+        : profile.organization_id; // Regular admin creates for their org
+
+      if (!organizationId && profile.role !== 'super_admin') {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      const { data, error } = await supabase
+        .from('permissions')
+        .insert({
+          ...permissionData,
+          organization_id: organizationId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+      toast.success('Permission created successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to create permission');
+    },
+  });
+};
+
+export const useUpdatePermission = () => {
+  const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+
+  return useMutation({
+    mutationFn: async ({ 
+      id, 
+      ...updates 
+    }: { 
+      id: string; 
+      name?: string; 
+      resource?: string; 
+      action?: string; 
+      description?: string | null;
+    }) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      // Check if user has permission to update permissions
+      const hasPermission = profile.role === 'super_admin' || 
+        (profile.role === 'admin' && profile.organization_id);
+      
+      if (!hasPermission) {
+        throw new Error('You do not have permission to update permissions');
+      }
+
+      // Get current permission to validate organization scope
+      const { data: currentPermission, error: fetchError } = await supabase
+        .from('permissions')
+        .select('id, organization_id')
+        .eq('id', id)
+        .single();
+
+      if (fetchError || !currentPermission) {
+        throw new Error('Permission not found');
+      }
+
+      // Validate organization scope (unless super admin)
+      if (profile.role !== 'super_admin') {
+        if (currentPermission.organization_id !== profile.organization_id) {
+          throw new Error('Cannot update permission from different organization');
+        }
+        // Regular admin cannot change organization_id
+        if (updates.organization_id !== undefined) {
+          throw new Error('Cannot change organization_id');
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('permissions')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+      toast.success('Permission updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update permission');
+    },
+  });
+};
+
+export const useDeletePermission = () => {
+  const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+
+  return useMutation({
+    mutationFn: async (permissionId: string) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      // Check if user has permission to delete permissions
+      const hasPermission = profile.role === 'super_admin' || 
+        (profile.role === 'admin' && profile.organization_id);
+      
+      if (!hasPermission) {
+        throw new Error('You do not have permission to delete permissions');
+      }
+
+      // Get current permission to validate organization scope
+      const { data: currentPermission, error: fetchError } = await supabase
+        .from('permissions')
+        .select('id, organization_id')
+        .eq('id', permissionId)
+        .single();
+
+      if (fetchError || !currentPermission) {
+        throw new Error('Permission not found');
+      }
+
+      // Validate organization scope (unless super admin)
+      if (profile.role !== 'super_admin') {
+        if (currentPermission.organization_id !== profile.organization_id) {
+          throw new Error('Cannot delete permission from different organization');
+        }
+      }
+
+      const { error } = await supabase
+        .from('permissions')
+        .delete()
+        .eq('id', permissionId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { id: permissionId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
+      toast.success('Permission deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to delete permission');
     },
   });
 };

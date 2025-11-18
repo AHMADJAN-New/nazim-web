@@ -129,6 +129,16 @@ const App = () => (
                       </PermissionGuard>
                     </Suspense>
                   } />
+                  <Route path="/settings/backup" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="backup.read">
+                        <div className="p-6">
+                          <h1 className="text-2xl font-bold mb-4">Backup & Restore</h1>
+                          <p className="text-muted-foreground">Backup and restore functionality will be implemented here.</p>
+                        </div>
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
                   {/* Admin routes */}
                   <Route path="/admin/users" element={
                     <Suspense fallback={<PageSkeleton />}>

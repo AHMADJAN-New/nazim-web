@@ -334,6 +334,343 @@ export const useUpdateYourResource = () => {
 };
 ```
 
+## Multi-Tenant Permission Pattern
+
+**CRITICAL: Permissions system supports true multi-tenancy with organization-scoped permissions.**
+
+### Permission Table Structure
+
+#### Permissions Table
+- **`organization_id`**: `UUID | NULL`
+  - `NULL` = Global/system permissions (available to all organizations)
+  - `UUID` = Organization-specific permissions
+- **Unique constraint**: `(name, organization_id)` - allows same permission name for different orgs
+- **Index**: Always create index on `organization_id` for performance
+
+#### Role Permissions Table
+- **`organization_id`**: `UUID | NULL`
+  - `NULL` = Global role permissions (for super_admin)
+  - `UUID` = Organization-specific role permission assignments
+- **Unique constraint**: `(role, permission_id, organization_id)` - each org can assign different permissions to roles
+- **Index**: Always create index on `organization_id` for performance
+
+### RLS Policies for Permissions
+
+#### Permissions Table RLS
+```sql
+-- Authenticated users can read:
+-- 1. Global permissions (organization_id IS NULL)
+-- 2. Permissions for their organization
+-- 3. Super admin can read all permissions
+CREATE POLICY "Authenticated users can read permissions"
+    ON public.permissions
+    FOR SELECT
+    TO authenticated
+    USING (
+        organization_id IS NULL
+        OR
+        organization_id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
+        OR
+        ((SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+         AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'super_admin')
+    );
+```
+
+#### Role Permissions Table RLS
+```sql
+-- Authenticated users can read:
+-- 1. Role permissions for their organization
+-- 2. Global role permissions (organization_id IS NULL)
+-- 3. Super admin can read all role_permissions
+CREATE POLICY "Authenticated users can read role_permissions"
+    ON public.role_permissions
+    FOR SELECT
+    TO authenticated
+    USING (
+        organization_id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
+        OR
+        organization_id IS NULL
+        OR
+        ((SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+         AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'super_admin')
+    );
+```
+
+### Permission Query Pattern
+
+#### Frontend Hook Pattern
+```typescript
+// ALWAYS query permissions with organization context
+export const useUserPermissions = () => {
+  const { data: profile } = useProfile();
+
+  return useQuery({
+    queryKey: ['user-permissions', profile?.role, profile?.id, profile?.organization_id],
+    queryFn: async () => {
+      if (!profile?.role) return [];
+
+      // Super admin: Get all global permissions
+      if (profile.role === 'super_admin') {
+        const { data } = await supabase
+          .from('permissions')
+          .select('name')
+          .is('organization_id', null); // Only global permissions
+        return data?.map(p => p.name) || [];
+      }
+
+      // Regular users: Get global + org-specific permissions
+      if (!profile.organization_id) return [];
+
+      const { data } = await supabase
+        .from('role_permissions')
+        .select('permission:permissions(name, organization_id)')
+        .eq('role', profile.role)
+        .or(`organization_id.is.null,organization_id.eq.${profile.organization_id}`);
+
+      // Extract permission names, filter by organization
+      const permNames = data
+        ?.map(rp => {
+          const perm = rp.permission;
+          if (!perm) return null;
+          // Include if global OR for user's organization
+          if (perm.organization_id === null || perm.organization_id === profile.organization_id) {
+            return perm.name;
+          }
+          return null;
+        })
+        .filter(Boolean) || [];
+
+      // Remove duplicates
+      return Array.from(new Set(permNames));
+    },
+    enabled: !!profile?.role,
+  });
+};
+```
+
+### Navigation Visibility Pattern
+
+#### Menu Visibility Logic
+```typescript
+// ALWAYS use permission checks, NOT role checks
+const allNavigationItems = useMemo((): NavigationItem[] => {
+  const items: NavigationItem[] = [
+    {
+      titleKey: "settings",
+      children: [
+        // Only show if user has permission
+        ...(hasBackupPermission ? [{
+          title: "Backup & Restore",
+          url: "/settings/backup",
+          icon: Package,
+        }] : []),
+        ...(hasBuildingsPermission ? [{
+          title: "Buildings Management",
+          url: "/settings/buildings",
+          icon: Building2,
+        }] : []),
+        // ... other children
+      ],
+    },
+  ];
+
+  // Filter menus: Show only if they have visible children
+  return items.filter(item => {
+    if (item.children && item.children.length > 0) {
+      // Show menu only if at least one child is visible
+      return item.children.length > 0;
+    }
+    // For menus without children, check parent permission
+    if (item.titleKey === 'settings') {
+      return hasSettingsPermission;
+    }
+    return true;
+  });
+}, [hasSettingsPermission, hasBackupPermission, hasBuildingsPermission, /* ... */]);
+```
+
+#### Key Rules
+1. **NO role-based fallbacks**: Remove all `isSuperAdmin || role === 'admin'` checks
+2. **Permission-only checks**: Use `useHasPermission('permission.name')` for all visibility
+3. **Hide empty menus**: Hide parent menu if no children are visible
+4. **Show if any child visible**: Show parent menu if at least one child has permission
+
+### Permission Assignment Pattern
+
+#### Migration Pattern
+```sql
+-- 1. Create global permissions (organization_id = NULL)
+INSERT INTO public.permissions (name, resource, action, description, organization_id) VALUES
+    ('settings.read', 'settings', 'read', 'Access to Settings', NULL),
+    ('backup.read', 'backup', 'read', 'Access to Backup', NULL)
+ON CONFLICT (name, organization_id) DO NOTHING;
+
+-- 2. Assign permissions to roles per organization
+-- For each organization, assign permissions to roles
+INSERT INTO public.role_permissions (role, permission_id, organization_id)
+SELECT 'admin', p.id, o.id
+FROM public.permissions p
+CROSS JOIN public.organizations o
+WHERE p.organization_id IS NULL -- Only global permissions
+  AND p.resource != 'organizations' -- Exclude org management
+ON CONFLICT (role, permission_id, organization_id) DO NOTHING;
+
+-- 3. Super admin gets all global permissions (organization_id = NULL in role_permissions)
+INSERT INTO public.role_permissions (role, permission_id, organization_id)
+SELECT 'super_admin', id, NULL
+FROM public.permissions
+WHERE organization_id IS NULL
+ON CONFLICT (role, permission_id, organization_id) DO NOTHING;
+```
+
+### Organization-Scoped Permissions Management
+
+**CRITICAL: Permissions management is organization-scoped. Each organization can create and manage their own permissions.**
+
+#### RLS Policies for Write Operations
+
+```sql
+-- Permissions table: Users can modify their organization's permissions
+CREATE POLICY "Authenticated users can insert their organization's permissions"
+    ON public.permissions
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        organization_id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
+        OR
+        ((SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+         AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'super_admin')
+    );
+
+-- Similar policies for UPDATE and DELETE on permissions and role_permissions
+```
+
+#### Permission Management Hooks Pattern
+
+```typescript
+// ALWAYS use organization context in permission management hooks
+export const useCreatePermission = () => {
+  const { data: profile } = useProfile();
+  
+  return useMutation({
+    mutationFn: async (permissionData: { name: string; resource: string; action: string; description?: string }) => {
+      if (!profile?.organization_id && profile?.role !== 'super_admin') {
+        throw new Error('User must be assigned to an organization');
+      }
+      
+      // Regular admin creates for their org, super admin can create global
+      const organizationId = profile.role === 'super_admin' 
+        ? null 
+        : profile.organization_id;
+      
+      const { data, error } = await supabase
+        .from('permissions')
+        .insert({
+          ...permissionData,
+          organization_id: organizationId,
+        })
+        .select()
+        .single();
+      
+      if (error) throw new Error(error.message);
+      return data;
+    },
+  });
+};
+
+// ALWAYS validate organization scope when assigning permissions
+export const useAssignPermissionToRole = () => {
+  const { data: profile } = useProfile();
+  
+  return useMutation({
+    mutationFn: async ({ role, permissionId }: { role: string; permissionId: string }) => {
+      // Get permission to validate organization scope
+      const { data: permission } = await supabase
+        .from('permissions')
+        .select('id, organization_id')
+        .eq('id', permissionId)
+        .single();
+      
+      // Regular admin can only assign permissions for their organization
+      if (profile.role !== 'super_admin') {
+        if (permission.organization_id !== null && permission.organization_id !== profile.organization_id) {
+          throw new Error('Cannot assign permission from different organization');
+        }
+      }
+      
+      // Set organization_id for role_permissions
+      const organizationId = profile.role === 'super_admin' 
+        ? permission.organization_id 
+        : profile.organization_id;
+      
+      const { data, error } = await supabase
+        .from('role_permissions')
+        .insert({
+          role,
+          permission_id: permissionId,
+          organization_id: organizationId,
+        })
+        .select()
+        .single();
+      
+      if (error) throw new Error(error.message);
+      return data;
+    },
+  });
+};
+```
+
+#### UI Pattern for Permissions Management
+
+```typescript
+// ALWAYS filter permissions by organization
+const permissions = useMemo(() => {
+  if (!allPermissions || !profile) return [];
+  
+  if (isSuperAdmin) {
+    return allPermissions; // Super admin sees all
+  }
+  
+  // Regular users see: global + their organization's permissions
+  return allPermissions.filter(p => 
+    p.organization_id === null || p.organization_id === profile.organization_id
+  );
+}, [allPermissions, profile, isSuperAdmin]);
+
+// ALWAYS show organization context
+{currentOrg && (
+  <Card className="bg-blue-50">
+    <CardContent>
+      <p>Managing permissions for: <strong>{currentOrg.name}</strong></p>
+      <p className="text-xs">You can view global permissions and manage permissions for your organization</p>
+    </CardContent>
+  </Card>
+)}
+
+// ALWAYS validate edit/delete permissions
+const isPermissionEditable = (permission: Permission): boolean => {
+  if (isSuperAdmin) return true;
+  return permission.organization_id === profile?.organization_id;
+};
+
+const isPermissionDeletable = (permission: Permission): boolean => {
+  if (isSuperAdmin) return true;
+  // Regular admin can only delete org-specific permissions (not global)
+  return permission.organization_id === profile?.organization_id && permission.organization_id !== null;
+};
+```
+
+#### Key Rules for Organization-Scoped Permissions
+
+1. **Create Permissions**: Regular admin creates for their organization, super admin can create global
+2. **Edit Permissions**: Regular admin can only edit their organization's permissions
+3. **Delete Permissions**: Regular admin can only delete their organization's permissions (not global)
+4. **Assign to Roles**: Regular admin can only assign permissions to roles within their organization
+5. **View Permissions**: Regular users see global + their organization's permissions
+6. **RLS Enforcement**: All write operations are enforced by RLS policies with organization filtering
+7. **UI Context**: Always show organization context banner in permissions management UI
+8. **Permission Badges**: Show "Global" vs "Org-Specific" badges in permission lists
+
 ### Storage - Multi-Tenancy Pattern
 
 #### Storage Path Structure

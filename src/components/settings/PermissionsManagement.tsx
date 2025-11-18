@@ -1,6 +1,17 @@
 import { useState, useMemo } from 'react';
-import { usePermissions, useRolePermissions } from '@/hooks/usePermissions';
-import { useIsSuperAdmin } from '@/hooks/useProfiles';
+import { 
+  usePermissions, 
+  useRolePermissions,
+  useAssignPermissionToRole, 
+  useRemovePermissionFromRole,
+  useCreatePermission,
+  useUpdatePermission,
+  useDeletePermission,
+  type Permission
+} from '@/hooks/usePermissions';
+import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useCurrentOrganization } from '@/hooks/useOrganizations';
+import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,8 +34,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Shield, Edit, Save, X } from 'lucide-react';
-import { useAssignPermissionToRole, useRemovePermissionFromRole } from '@/hooks/usePermissions';
+import { Plus, Search, Shield, Edit, Save, X, Trash2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AVAILABLE_ROLES = [
@@ -43,13 +53,41 @@ const AVAILABLE_ROLES = [
 type Role = typeof AVAILABLE_ROLES[number];
 
 export function PermissionsManagement() {
+  const { data: profile } = useProfile();
   const isSuperAdmin = useIsSuperAdmin();
-  const { data: permissions, isLoading: permissionsLoading } = usePermissions();
+  const { data: currentOrg } = useCurrentOrganization();
+  const hasPermissionsPermission = useHasPermission('permissions.read');
+  const hasPermissionsUpdatePermission = useHasPermission('permissions.update');
+  
+  const { data: allPermissions, isLoading: permissionsLoading } = usePermissions();
+  
+  // Filter permissions by organization: show global (organization_id = NULL) + user's org permissions
+  const permissions = useMemo(() => {
+    if (!allPermissions || !profile) return [];
+    
+    if (isSuperAdmin) {
+      // Super admin sees all permissions
+      return allPermissions;
+    }
+    
+    // Regular users see: global permissions + their organization's permissions
+    return allPermissions.filter(p => 
+      p.organization_id === null || p.organization_id === profile.organization_id
+    );
+  }, [allPermissions, profile, isSuperAdmin]);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedResource, setSelectedResource] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingPermission, setEditingPermission] = useState<string | null>(null);
   const [selectedRoles, setSelectedRoles] = useState<Record<string, Role[]>>({});
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newPermission, setNewPermission] = useState({
+    name: '',
+    resource: '',
+    action: '',
+    description: '',
+  });
 
   // Fetch role permissions for all roles
   const rolePermissionsQueries = AVAILABLE_ROLES.map(role => ({
@@ -59,6 +97,9 @@ export function PermissionsManagement() {
 
   const assignPermission = useAssignPermissionToRole();
   const removePermission = useRemovePermissionFromRole();
+  const createPermission = useCreatePermission();
+  const updatePermission = useUpdatePermission();
+  const deletePermission = useDeletePermission();
 
   // Group permissions by resource
   const groupedPermissions = useMemo(() => {
@@ -172,7 +213,8 @@ export function PermissionsManagement() {
     });
   };
 
-  if (!isSuperAdmin) {
+  // Check if user has permission to view permissions management
+  if (!hasPermissionsPermission && !isSuperAdmin) {
     return (
       <div className="container mx-auto p-6">
         <Card>
@@ -180,7 +222,7 @@ export function PermissionsManagement() {
             <div className="text-center text-destructive">
               <Shield className="h-12 w-12 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
-              <p>Only super administrators can manage permissions.</p>
+              <p>You do not have permission to manage permissions.</p>
             </div>
           </CardContent>
         </Card>
@@ -200,8 +242,62 @@ export function PermissionsManagement() {
     );
   }
 
+  const handleCreatePermission = async () => {
+    try {
+      await createPermission.mutateAsync(newPermission);
+      setShowCreateDialog(false);
+      setNewPermission({ name: '', resource: '', action: '', description: '' });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create permission');
+    }
+  };
+
+  const handleDeletePermission = async (permissionId: string) => {
+    if (!confirm('Are you sure you want to delete this permission? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      await deletePermission.mutateAsync(permissionId);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete permission');
+    }
+  };
+
+  const isPermissionEditable = (permission: Permission): boolean => {
+    if (isSuperAdmin) return true;
+    if (!hasPermissionsUpdatePermission) return false;
+    // Regular admin can only edit permissions for their organization
+    return permission.organization_id === profile?.organization_id;
+  };
+
+  const isPermissionDeletable = (permission: Permission): boolean => {
+    if (isSuperAdmin) return true;
+    if (!hasPermissionsUpdatePermission) return false;
+    // Regular admin can only delete permissions for their organization (not global)
+    return permission.organization_id === profile?.organization_id && permission.organization_id !== null;
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Organization Context Banner */}
+      {currentOrg && (
+        <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div>
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Managing permissions for: <span className="font-semibold">{currentOrg.name}</span>
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  You can view global permissions and manage permissions for your organization
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -211,9 +307,22 @@ export function PermissionsManagement() {
                 Permissions Management
               </CardTitle>
               <CardDescription>
-                View and manage role permissions. Only super administrators can edit permissions.
+                {isSuperAdmin 
+                  ? 'View and manage all permissions across all organizations.'
+                  : `View and manage permissions for ${currentOrg?.name || 'your organization'}. You can create organization-specific permissions.`
+                }
               </CardDescription>
             </div>
+            <div className="flex gap-2">
+              {hasPermissionsUpdatePermission && (
+                <Button
+                  variant="default"
+                  onClick={() => setShowCreateDialog(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Permission
+                </Button>
+              )}
             {!isEditMode && (
               <Button
                 variant="outline"
@@ -295,7 +404,16 @@ export function PermissionsManagement() {
 
                     return (
                       <TableRow key={permission.id}>
-                        <TableCell className="font-medium">{permission.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {permission.name}
+                            {permission.organization_id === null ? (
+                              <Badge variant="outline" className="text-xs">Global</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">Org-Specific</Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline">{permission.resource}</Badge>
                         </TableCell>
@@ -356,14 +474,29 @@ export function PermissionsManagement() {
                                 </Button>
                               </div>
                             ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEditPermission(permission.id)}
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </Button>
+                              <div className="flex justify-end gap-2">
+                                {isPermissionEditable(permission) && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleEditPermission(permission.id)}
+                                  >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Roles
+                                  </Button>
+                                )}
+                                {isPermissionDeletable(permission) && (
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleDeletePermission(permission.id)}
+                                    disabled={deletePermission.isPending}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </Button>
+                                )}
+                              </div>
                             )}
                           </TableCell>
                         )}
@@ -404,6 +537,70 @@ export function PermissionsManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Create Permission Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Permission</DialogTitle>
+            <DialogDescription>
+              Create a new organization-specific permission. This permission will only be available for your organization.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="permission-name">Permission Name</Label>
+              <Input
+                id="permission-name"
+                placeholder="e.g., custom_feature.read"
+                value={newPermission.name}
+                onChange={(e) => setNewPermission({ ...newPermission, name: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Format: resource.action (e.g., custom_feature.read)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="permission-resource">Resource</Label>
+              <Input
+                id="permission-resource"
+                placeholder="e.g., custom_feature"
+                value={newPermission.resource}
+                onChange={(e) => setNewPermission({ ...newPermission, resource: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="permission-action">Action</Label>
+              <Input
+                id="permission-action"
+                placeholder="e.g., read, create, update, delete"
+                value={newPermission.action}
+                onChange={(e) => setNewPermission({ ...newPermission, action: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="permission-description">Description</Label>
+              <Input
+                id="permission-description"
+                placeholder="Describe what this permission allows"
+                value={newPermission.description}
+                onChange={(e) => setNewPermission({ ...newPermission, description: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreatePermission}
+              disabled={!newPermission.name || !newPermission.resource || !newPermission.action || createPermission.isPending}
+            >
+              {createPermission.isPending ? 'Creating...' : 'Create Permission'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

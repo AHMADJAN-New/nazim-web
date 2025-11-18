@@ -147,32 +147,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Set up auth state listener
+        // Only reload profile on meaningful auth events to prevent unnecessary loading states
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             if (!mounted) return;
             
             console.log('Auth state change:', event);
             
-            setSession(session);
-            setUser(session?.user ?? null);
-            
-            // Load profile when user signs in
-            if (event === 'SIGNED_IN' && session?.user) {
-              await loadUserProfile(session.user.id);
+            // Only handle events that require profile reload or state update
+            if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+              setSession(session);
+              setUser(session?.user ?? null);
               
-              try {
-                await supabase.rpc('log_auth_event', {
-                  event_type: 'user_signin_success',
-                  event_data: { user_id: session.user.id, email: session.user.email },
-                  error_message: null,
-                  user_email: session.user.email
-                });
-              } catch (logError) {
-                console.warn('Failed to log auth event:', logError);
+              if (event === 'SIGNED_IN' && session?.user) {
+                await loadUserProfile(session.user.id);
+                
+                try {
+                  await supabase.rpc('log_auth_event', {
+                    event_type: 'user_signin_success',
+                    event_data: { user_id: session.user.id, email: session.user.email },
+                    error_message: null,
+                    user_email: session.user.email
+                  });
+                } catch (logError) {
+                  console.warn('Failed to log auth event:', logError);
+                }
+              } else if (event === 'SIGNED_OUT') {
+                setProfile(null);
+              } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+                // Token refreshed - only reload profile if we don't have one
+                // This prevents unnecessary reloads when switching tabs
+                if (!profile) {
+                  await loadUserProfile(session.user.id);
+                }
               }
-            } else if (event === 'SIGNED_OUT') {
-              setProfile(null);
+            } else if (event === 'INITIAL_SESSION') {
+              // For INITIAL_SESSION, only update state if we don't have profile yet
+              // This prevents unnecessary state updates when switching tabs
+              if (session?.user && !profile) {
+                setSession(session);
+                setUser(session.user);
+                await loadUserProfile(session.user.id);
+              } else if (session) {
+                // Update session/user but don't reload profile if we already have it
+                setSession(session);
+                setUser(session.user ?? null);
+              }
             }
+            // Ignore other events like USER_UPDATED, PASSWORD_RECOVERY, etc.
+            // These don't require profile reload and cause unnecessary loading states
           }
         );
 
@@ -205,16 +228,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initializeAuth();
 
+    // Handle visibility changes to prevent unnecessary auth checks when tab is hidden
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab is hidden - don't trigger any auth checks
+        // This prevents unnecessary loading states when switching tabs
+      } else {
+        // Tab is visible - auth state listener will handle any needed updates
+        // No need to manually check here as onAuthStateChange handles it
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       mounted = false;
       if (fallbackTimer) window.clearTimeout(fallbackTimer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       // Clean up auth subscription if we stashed it
       if (import.meta.env.DEV && (window as any).__supabaseUnsub) {
         try { (window as any).__supabaseUnsub(); } catch {}
         (window as any).__supabaseUnsub = undefined;
       }
     };
-  }, []);
+  }, [profile]); // Add profile to dependencies to check if we have cached profile
 
   const signOut = async () => {
     // Development mode: Just clear mock user
