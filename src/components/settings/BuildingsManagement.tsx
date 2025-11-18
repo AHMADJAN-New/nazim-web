@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useBuildings, useCreateBuilding, useUpdateBuilding, useDeleteBuilding } from '@/hooks/useBuildings';
+import { useState, useEffect, useMemo } from 'react';
+import { useBuildings, useCreateBuilding, useUpdateBuilding, useDeleteBuilding, type Building } from '@/hooks/useBuildings';
 import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useOrganizations } from '@/hooks/useOrganizations';
-import { useSchools } from '@/hooks/useSchools';
+import { useSchools, useSchool } from '@/hooks/useSchools';
+import { useReportTemplates } from '@/hooks/useReportTemplates';
+import { exportReport, type ReportDefinition } from '@/lib/reporting';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,11 +37,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Search, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Building2, FileDown, FileSpreadsheet } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { toast } from 'sonner';
 
 const buildingSchema = z.object({
   building_name: z.string().min(1, 'Building name is required').max(100, 'Building name must be 100 characters or less'),
@@ -47,6 +50,59 @@ const buildingSchema = z.object({
 });
 
 type BuildingFormData = z.infer<typeof buildingSchema>;
+
+// Building report row type with resolved names
+interface BuildingReportRow {
+  building_name: string;
+  school_name: string;
+  organization_name?: string;
+  created_at: string;
+}
+
+// Building report definition
+const buildingReportDefinition: ReportDefinition<BuildingReportRow> = {
+  id: 'buildings',
+  title: 'Buildings Report',
+  fileName: 'buildings_report',
+  pageSize: 'A4',
+  orientation: 'portrait',
+  columns: [
+    {
+      key: 'building_name',
+      label: 'Building Name',
+      width: 30,
+      pdfWidth: '*',
+      align: 'left',
+    },
+    {
+      key: 'school_name',
+      label: 'School Name',
+      width: 25,
+      pdfWidth: '*',
+      align: 'left',
+    },
+    {
+      key: 'organization_name',
+      label: 'Organization',
+      width: 25,
+      pdfWidth: '*',
+      align: 'left',
+    },
+    {
+      key: 'created_at',
+      label: 'Created At',
+      width: 20,
+      pdfWidth: 'auto',
+      align: 'left',
+    },
+  ],
+  tableStyle: {
+    headerFillColor: '#00004d',
+    headerTextColor: '#ffffff',
+    alternateRowColor: '#f9fafb',
+    useAlternateRowColors: true,
+  },
+};
 
 export function BuildingsManagement() {
   const { t } = useLanguage();
@@ -86,6 +142,14 @@ export function BuildingsManagement() {
   });
 
   const selectedSchoolId = watch('school_id');
+
+  // Get school for export (use selected school or default school)
+  const effectiveSchoolId = useMemo(() => {
+    return selectedSchoolId || profile?.default_school_id || (schools && schools.length > 0 ? schools[0].id : undefined);
+  }, [selectedSchoolId, profile?.default_school_id, schools]);
+  
+  const { data: school } = useSchool(effectiveSchoolId || '');
+  const { data: templates } = useReportTemplates(effectiveSchoolId);
   
   // Update selectedOrganizationId when profile loads
   useEffect(() => {
@@ -113,6 +177,117 @@ export function BuildingsManagement() {
   const filteredBuildings = buildings?.filter((building) =>
     building.building_name.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
+
+  // Find default template for buildings
+  const defaultTemplate = useMemo(() => {
+    if (!templates) return null;
+    return templates.find(
+      (t) => t.is_default && t.template_type === 'buildings' && t.is_active
+    ) || templates.find((t) => t.template_type === 'buildings' && t.is_active) || null;
+  }, [templates]);
+
+  // Transform buildings data for export
+  const transformBuildingsForExport = (buildingsToTransform: Building[]): BuildingReportRow[] => {
+    return buildingsToTransform.map((building) => {
+      const buildingSchool = schools?.find((s) => s.id === building.school_id);
+      const buildingOrg = organizations?.find((o) => o.id === building.organization_id);
+
+      return {
+        building_name: building.building_name,
+        school_name: buildingSchool?.school_name || 'Unknown School',
+        organization_name: isSuperAdmin ? (buildingOrg?.name || 'Unknown Organization') : undefined,
+        created_at: new Date(building.created_at).toLocaleDateString(),
+      };
+    });
+  };
+
+  // Build filters summary string
+  const buildFiltersSummary = (): string => {
+    const parts: string[] = [];
+    
+    if (searchQuery) {
+      parts.push(`Search: ${searchQuery}`);
+    }
+    
+    if (isSuperAdmin && selectedOrganizationId) {
+      const org = organizations?.find((o) => o.id === selectedOrganizationId);
+      if (org) {
+        parts.push(`Organization: ${org.name}`);
+      }
+    }
+    
+    if (selectedSchoolId && schools && schools.length > 1) {
+      const school = schools.find((s) => s.id === selectedSchoolId);
+      if (school) {
+        parts.push(`School: ${school.school_name}`);
+      }
+    }
+    
+    return parts.length > 0 ? parts.join(' | ') : '';
+  };
+
+  // Export handlers
+  const handleExportPdf = async () => {
+    if (!school) {
+      toast.error('Please configure school branding first to export reports.');
+      return;
+    }
+
+    if (!filteredBuildings || filteredBuildings.length === 0) {
+      toast.error('No buildings to export.');
+      return;
+    }
+
+    try {
+      const reportData = transformBuildingsForExport(filteredBuildings);
+      const filtersSummary = buildFiltersSummary();
+
+      await exportReport({
+        format: 'pdf',
+        definition: buildingReportDefinition,
+        rows: reportData,
+        school,
+        template: defaultTemplate,
+        filtersSummary,
+      });
+
+      toast.success('PDF export started');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to export PDF');
+    }
+  };
+
+  const handleExportExcel = async () => {
+    if (!school) {
+      toast.error('Please configure school branding first to export reports.');
+      return;
+    }
+
+    if (!filteredBuildings || filteredBuildings.length === 0) {
+      toast.error('No buildings to export.');
+      return;
+    }
+
+    try {
+      const reportData = transformBuildingsForExport(filteredBuildings);
+      const filtersSummary = buildFiltersSummary();
+
+      await exportReport({
+        format: 'excel',
+        definition: buildingReportDefinition,
+        rows: reportData,
+        school,
+        template: defaultTemplate,
+        filtersSummary,
+      });
+
+      toast.success('Excel export started');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to export Excel');
+    }
+  };
 
   const handleOpenDialog = (buildingId?: string) => {
     if (buildingId) {
@@ -176,7 +351,11 @@ export function BuildingsManagement() {
         }
       );
     } else {
-      createBuilding.mutate(data, {
+      // Ensure building_name is provided (zod schema validates it, but TypeScript needs explicit assertion)
+      createBuilding.mutate({
+        building_name: data.building_name,
+        school_id: data.school_id,
+      }, {
         onSuccess: () => {
           handleCloseDialog();
         },
@@ -224,13 +403,33 @@ export function BuildingsManagement() {
               </CardTitle>
               <CardDescription>Manage building names and information</CardDescription>
             </div>
-            <Button 
-              onClick={() => handleOpenDialog()}
-              disabled={!hasCreatePermission}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Building
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportExcel}
+                disabled={!filteredBuildings || filteredBuildings.length === 0 || !school}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Export Excel
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportPdf}
+                disabled={!filteredBuildings || filteredBuildings.length === 0 || !school}
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                Export PDF
+              </Button>
+              <Button 
+                onClick={() => handleOpenDialog()}
+                disabled={!hasCreatePermission}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Building
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
