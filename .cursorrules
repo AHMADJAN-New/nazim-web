@@ -20,8 +20,34 @@ This is a comprehensive Islamic school management system built with React, TypeS
 - Use strict TypeScript with proper type definitions
 - Define interfaces for all data structures
 - Use generic types where appropriate
-- Avoid `any` type - use proper typing
+- Avoid `any` type – use proper typing **except at the Supabase query boundary as described in "Supabase TypeScript & Generated Types"**.
 - Export types from dedicated type files
+- When React Query generics cause `TS2589: Type instantiation is excessively deep and possibly infinite` (usually with complex `useQuery` return types + Supabase types):
+
+  1. **First**, simplify types:
+     - Give `useQuery` an explicit data type: `useQuery<Permission[]>({...})`
+     - Make the `queryFn` return `Promise<Permission[]>` directly
+     - Avoid deeply nested inferred types in `queryKey` and `select` callbacks
+
+  2. If the error still persists and only at the **call site**, it is acceptable to:
+
+     ```ts
+     // @ts-expect-error TS2589 – React Query + Supabase type depth workaround
+     return useQuery<Permission[]>({
+       queryKey: ['permissions', profile?.organization_id],
+       queryFn: fetchPermissions,
+       enabled: !!profile,
+     });
+     ```
+
+     - Only use `// @ts-expect-error` **above the minimal line** that triggers TS2589
+     - Add a clear comment explaining it is a React Query type depth workaround
+     - Do **not** use `@ts-ignore` for this; prefer `@ts-expect-error` so the compiler verifies it
+
+  3. Do **not** refactor working logic just to appease TS depth if the runtime code is correct and the types are already explicit at the hook boundary.
+
+- **Never use `// @ts-ignore` in this project.**
+  - If a suppression is truly needed, use `// @ts-expect-error <short_reason>` and keep it as close as possible to the line causing the error (primarily for TS2589 React Query depth issues).
 
 ### React Patterns
 - Use functional components with hooks
@@ -60,6 +86,205 @@ This is a comprehensive Islamic school management system built with React, TypeS
 - Implement proper error handling
 - Use real-time subscriptions where needed
 - Follow security best practices
+- All Supabase calls in hooks must:
+  - Check `error` and throw `new Error(error.message)` on failure.
+  - Return **parsed, typed data** (never raw Supabase response objects) to components.
+
+### Supabase TypeScript & Generated Types (Cursor Rules)
+
+Supabase's generated `Database` types are the **source of truth when they are correct** – but they can lag behind the real schema. Cursor must follow these rules:
+
+#### 1. When to trust the typed client
+
+Use the typed client:
+
+```ts
+import { supabase } from '@/integrations/supabase/client';
+
+const { data, error } = await supabase
+  .from('organizations')
+  .select('*');
+```
+
+**Only** when:
+
+* The table exists in `Database['public']['Tables']`
+* All used columns exist in the generated types
+* TypeScript does **not** show any of these errors:
+  * `No overload matches this call. Argument of type '"some_table"' is not assignable...`
+  * `Property 'column_x' does not exist on type 'SelectQueryError<"...">'`
+  * `Type instantiation is excessively deep and possibly infinite` coming from Supabase query types
+
+#### 2. When types are out-of-sync → use `(supabase as any)` + interfaces
+
+If any of the above errors appear – especially for:
+
+* `permissions`
+* `role_permissions`
+* `profiles` (custom columns like `default_school_id`)
+* `report_templates`
+* `school_branding`
+* `super_admin_organizations`
+* any new table not yet in the generated `Database` type
+
+then **do not fight the generated types**. Instead:
+
+1. **Define a row interface** (either local or in `/src/types`):
+
+   ```ts
+   export interface ReportTemplateRow {
+     id: string;
+     organization_id: string | null;
+     name: string;
+     code: string;
+     description: string | null;
+     created_at: string;
+     updated_at: string;
+     // add any other used columns explicitly
+   }
+   ```
+
+2. **Use an untyped Supabase client at the query boundary**:
+
+   ```ts
+   const { data, error } = await (supabase as any)
+     .from('report_templates')
+     .select('*')
+     .eq('organization_id', organizationId);
+
+   if (error) {
+     throw new Error(error.message);
+   }
+
+   return (data || []) as ReportTemplateRow[];
+   ```
+
+3. **Never leak `any` beyond hooks**
+
+   * All hooks must return **typed data** (`ReportTemplateRow[]`, `Permission[]`, `UserProfileRow[]`, etc.).
+   * `any` is allowed **only** at the Supabase call boundary; cast to the interface before returning.
+
+#### 3. Handling `SelectQueryError<"...">` unions
+
+If TS infers something like:
+
+```ts
+SelectQueryError<"column 'organization_id' does not exist on 'permissions'.">
+```
+
+for `data`, **do not**:
+
+* Cast that error union everywhere
+* Access `.organization_id` on that union type
+* Add random non-null assertions to silence it
+
+Instead, immediately switch the query to this pattern:
+
+```ts
+interface Permission {
+  id: string;
+  name: string;
+  resource: string | null;
+  action: string | null;
+  description: string | null;
+  organization_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+const { data, error } = await (supabase as any)
+  .from('permissions')
+  .select('*');
+
+if (error) {
+  throw new Error(error.message);
+}
+
+const permissions = (data || []) as Permission[];
+```
+
+#### 4. "Table not assignable to parameter of type … | never"
+
+For errors like:
+
+> `Argument of type '"report_templates"' is not assignable to parameter of type '"buildings" | "organizations" | ...'`
+> or
+> `Argument of type '"school_branding"' is not assignable to parameter of type 'never'.`
+
+Assume the table is **real in the database** but missing from the generated types. Fix by:
+
+* Using `(supabase as any).from('report_templates')`
+* Defining a proper interface for the row
+* Casting the result to that interface
+
+Do **not** try to "force" the table into the existing union via hacks.
+
+#### 5. Profiles / Users / Permissions standard pattern
+
+For **profiles-like** tables with custom fields (e.g. `default_school_id`, `phone`, `is_active`):
+
+```ts
+export interface UserProfileRow {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: string | null;
+  organization_id: string | null;
+  default_school_id: string | null;
+  phone: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+const { data, error } = await (supabase as any)
+  .from('profiles')
+  .select('*')
+  .order('created_at', { ascending: false });
+
+if (error) {
+  throw new Error(error.message);
+}
+
+return (data || []) as UserProfileRow[];
+```
+
+Use the same pattern for:
+
+* `permissions` → `Permission` interface
+* `role_permissions` → `RolePermission` interface
+* `super_admin_organizations` → `SuperAdminOrganization` interface
+* `school_branding` → `SchoolBrandingRow` interface
+
+#### 6. React Query + Supabase types
+
+When using `useQuery` with these untyped Supabase calls:
+
+* Always specify the **return type** clearly:
+
+  ```ts
+  return useQuery<UserProfileRow[]>({
+    queryKey: ['users', profile?.organization_id],
+    queryFn: fetchUsers,
+    enabled: !!profile,
+  });
+  ```
+
+* Ensure `fetchUsers` returns `Promise<UserProfileRow[]>`.
+
+This keeps the rest of the app strongly typed even if Supabase is untyped at the boundary.
+
+### Local Consistency Rule
+
+When modifying existing files:
+
+- **Preserve the existing pattern in that file**:
+  - If the file already uses `(supabase as any)` + interfaces, continue using that pattern.
+  - If the file already uses the typed Supabase client cleanly (no TS errors), keep that style.
+
+- Do **not** partially convert a file: avoid mixing typed and untyped Supabase calls for the same table in one file.
+
+- Prefer **minimal, local changes** that fix type errors without refactoring working runtime logic.
 
 ### Query Patterns
 ```typescript
@@ -230,6 +455,9 @@ export const useYourResources = (organizationId?: string) => {
     gcTime: 30 * 60 * 1000,
   });
 };
+```
+
+> **Note:** If the table used in this pattern is missing or broken in the generated Supabase types, follow the "Supabase TypeScript & Generated Types" section and use `(supabase as any)` at the query boundary.
 
 // ALWAYS validate organization_id in mutations
 export const useCreateYourResource = () => {
@@ -447,6 +675,9 @@ export const useUserPermissions = () => {
   });
 };
 ```
+
+> **Note:** The `useUserPermissions` example assumes `permissions` and `role_permissions` exist correctly in the generated Supabase `Database` types.  
+> If TypeScript shows `SelectQueryError<"...">`, `"permissions"` is not assignable, or similar errors, **apply the "Supabase TypeScript & Generated Types" rules instead** and switch to `(supabase as any)` + interfaces.
 
 ### Navigation Visibility Pattern
 
@@ -860,6 +1091,9 @@ describe('useYourResources', () => {
 - Always validate organization_id in mutations
 - Always include organization_id in storage paths
 - Always test organization isolation
+- Trusting broken Supabase generated types:
+  - ❌ Don't keep using the typed client if TS shows `SelectQueryError<"...">` unions or `never` table names.
+  - ✅ Do switch to `(supabase as any)` + well-defined interfaces at the query boundary, and return fully typed results from hooks.
 
 ## UI/UX Guidelines
 
