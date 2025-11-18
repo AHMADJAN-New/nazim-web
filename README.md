@@ -265,7 +265,7 @@ This creates demo accounts:
 - **Beautiful Components** - shadcn-ui component library
 
 ## 📦 Development Workflow
-
+    
 ### Adding New Features
 
 1. Create new page components in `src/pages/`

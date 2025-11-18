@@ -11,12 +11,17 @@ export function exportReportToExcel<T extends AnyRow>(
   school: School,
   filtersSummary?: string,
 ) {
-  const { columns, title, fileName } = definition;
+  const { columns, title, fileName, showRowNumber = true, rowNumberLabel = '#' } = definition;
 
-  const headerRow = columns.map(col => col.label);
-  const dataRows = rows.map(row =>
-    columns.map(col => (row[col.key] != null ? row[col.key] : '')),
-  );
+  // Build header row
+  const dataHeaderRow = columns.map(col => col.label);
+  const headerRow = showRowNumber ? [rowNumberLabel, ...dataHeaderRow] : dataHeaderRow;
+
+  // Build data rows
+  const dataRows = rows.map((row, index) => {
+    const dataCells = columns.map(col => (row[col.key] != null ? row[col.key] : ''));
+    return showRowNumber ? [index + 1, ...dataCells] : dataCells;
+  });
 
   const sheetRows: any[][] = [];
 
@@ -41,9 +46,10 @@ export function exportReportToExcel<T extends AnyRow>(
   const ws = XLSX.utils.aoa_to_sheet(sheetRows);
 
   // Column widths
-  ws['!cols'] = columns.map(col => ({
+  const dataWidths = columns.map(col => ({
     wch: col.width ?? 20,
   }));
+  ws['!cols'] = showRowNumber ? [{ wch: 8 }, ...dataWidths] : dataWidths;
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, title || 'Report');

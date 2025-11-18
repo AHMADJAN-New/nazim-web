@@ -1,14 +1,35 @@
 // src/lib/reporting/pdfExport.ts
-
-// pdfmake imports - use side-effect fonts import so vfs is initialized correctly
-
-// @ts-expect-error – pdfmake build has no proper ESM types
+// pdfmake imports - types are handled via type assertions below
 import pdfMake from 'pdfmake/build/pdfmake';
-// @ts-expect-error – side-effect import that registers vfs on the pdfMake instance
-import 'pdfmake/build/vfs_fonts';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
 
 import type { ReportDefinition, ResolvedReportBranding, PageSize } from './types';
 import type { School } from '@/hooks/useSchools';
+
+// Initialize vfs fonts
+// Try multiple patterns to handle different pdfmake build configurations
+try {
+  // Pattern 1: pdfmake 0.2.15+ - vfs_fonts exports vfs directly as default
+  if (pdfFonts && typeof pdfFonts === 'object') {
+    (pdfMake as any).vfs = pdfFonts;
+  }
+  // Pattern 2: Older versions - vfs might be in pdfMake property
+  else if (pdfFonts && (pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
+    (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
+  }
+  // Pattern 3: Check if already initialized
+  else if ((pdfMake as any).vfs) {
+    // Already initialized, do nothing
+  } else {
+    console.warn('[pdfmake] Could not initialize vfs. pdfFonts structure:', {
+      hasPdfFonts: !!pdfFonts,
+      pdfFontsType: typeof pdfFonts,
+      pdfFontsKeys: pdfFonts ? Object.keys(pdfFonts as any) : [],
+    });
+  }
+} catch (error) {
+  console.error('[pdfmake] Failed to initialize vfs fonts:', error);
+}
 
 type AnyRow = Record<string, any>;
 
@@ -39,6 +60,8 @@ export function buildPdfDocDefinition<T extends AnyRow>({
     orientation = 'portrait',
     pageSize,
     tableStyle,
+    showRowNumber = true,
+    rowNumberLabel = '#',
   } = definition;
 
   const effectiveTableStyle = {
@@ -49,7 +72,8 @@ export function buildPdfDocDefinition<T extends AnyRow>({
       tableStyle?.useAlternateRowColors ?? branding.tableAlternatingColors,
   };
 
-  const tableHeader = columns.map(col => ({
+  // --- header cells ---
+  const dataHeaderCells = columns.map(col => ({
     text: col.label,
     bold: true,
     fillColor: effectiveTableStyle.headerFillColor,
@@ -58,15 +82,43 @@ export function buildPdfDocDefinition<T extends AnyRow>({
     alignment: col.align ?? 'left',
   }));
 
-  const body = rows.map(row =>
-    columns.map(col => ({
+  const tableHeader = showRowNumber
+    ? [
+        {
+          text: rowNumberLabel,
+          bold: true,
+          fillColor: effectiveTableStyle.headerFillColor,
+          color: effectiveTableStyle.headerTextColor,
+          fontSize: branding.fontSize,
+          alignment: 'center',
+        },
+        ...dataHeaderCells,
+      ]
+    : dataHeaderCells;
+
+  // --- body rows ---
+  const body = rows.map((row, index) => {
+    const dataCells = columns.map(col => ({
       text: row[col.key] != null ? String(row[col.key]) : '',
       fontSize: branding.fontSize,
       alignment: col.align ?? 'left',
-    })),
-  );
+    }));
 
-  const widths = columns.map(col => col.pdfWidth ?? '*');
+    if (!showRowNumber) return dataCells;
+
+    return [
+      {
+        text: String(index + 1),
+        fontSize: branding.fontSize,
+        alignment: 'center',
+      },
+      ...dataCells,
+    ];
+  });
+
+  // --- widths ---
+  const dataWidths = columns.map(col => col.pdfWidth ?? '*');
+  const widths = showRowNumber ? ['auto', ...dataWidths] : dataWidths;
 
   const content: any[] = [];
 
@@ -262,6 +314,10 @@ export function buildPdfDocDefinition<T extends AnyRow>({
 export async function exportReportToPdf<T extends AnyRow>(
   options: BuildPdfOptions<T>,
 ) {
+  if (!(pdfMake as any).vfs) {
+    throw new Error('PDF fonts (vfs) not initialized. Please check pdfmake configuration.');
+  }
+
   const docDefinition = buildPdfDocDefinition(options);
   (pdfMake as any)
     .createPdf(docDefinition)

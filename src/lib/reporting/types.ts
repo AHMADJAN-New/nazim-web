@@ -39,6 +39,9 @@ export interface ReportDefinition<T> {
   orientation?: PageOrientation;
   columns: ReportColumn<T>[];
   tableStyle?: TableStyle;
+  // Automatic row-number column
+  showRowNumber?: boolean;   // default: true
+  rowNumberLabel?: string;   // default: "#"
 }
 
 export interface ResolvedReportBranding {

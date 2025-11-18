@@ -45,35 +45,43 @@ export const useReportTemplates = (schoolId?: string) => {
   return useQuery({
     queryKey: ['report-templates', schoolId],
     queryFn: async (): Promise<ReportTemplate[]> => {
-      try {
-        // Build query conditionally to avoid type inference issues
-        const baseQuery = (supabase as any)
-          .from('report_templates')
-          .select('*')
-          .is('deleted_at', null)
-          .order('created_at', { ascending: false });
+      // Build query conditionally to avoid type inference issues
+      const baseQuery = (supabase as any)
+        .from('report_templates')
+        .select('*')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
 
-        const { data, error } = schoolId
-          ? await baseQuery.eq('school_id', schoolId)
-          : await baseQuery;
+      const { data, error } = schoolId
+        ? await baseQuery.eq('school_id', schoolId)
+        : await baseQuery;
 
-        if (error) {
-          // If table doesn't exist, return empty array instead of throwing
-          if (error.code === '42P01' || error.message.includes('does not exist')) {
-            console.warn('report_templates table does not exist yet');
-            return [];
+      if (error) {
+        const msg = error.message || '';
+        const isMissingTable =
+          error.code === '42P01' || // postgres: undefined table
+          error.code === 'PGRST116' || // postgrest: relation not found
+          (error as any).status === 404 ||
+          msg.includes('does not exist') ||
+          msg.includes('schema cache') ||
+          msg.includes("Could not find the table 'public.report_templates'");
+
+        if (isMissingTable) {
+          if (import.meta.env.DEV) {
+            console.warn(
+              '[Nazim] report_templates table does not exist yet (local dev). Returning empty templates array.',
+            );
           }
-          throw new Error(error.message);
+          return [];
         }
+        // real error
+        throw new Error(error.message);
+      }
 
       // Type assertion through unknown to avoid deep instantiation error
       return ((data || []) as unknown) as ReportTemplate[];
-      } catch (error) {
-        console.error('Error fetching report templates:', error);
-        return [];
-      }
     },
-    enabled: true, // Always enabled, will return empty array if table doesn't exist
+    enabled: true,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
