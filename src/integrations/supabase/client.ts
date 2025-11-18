@@ -36,7 +36,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     headers: {
       'x-client-info': 'nazim-school-manager@1.0.0',
     },
-    fetch: (url, options = {}) => {
+    fetch: (url: string | Request, options: RequestInit = {}) => {
       // Add better error handling for network issues
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
