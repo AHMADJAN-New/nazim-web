@@ -341,6 +341,7 @@ export function PermissionsManagement() {
                 Cancel Edit
               </Button>
             )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

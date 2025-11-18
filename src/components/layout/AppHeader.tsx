@@ -14,13 +14,7 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-
-interface Notification {
-  id: string;
-  title: string;
-  created_at: string;
-  is_read: boolean;
-}
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface UserProfile {
   full_name: string;
@@ -40,61 +34,19 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const [searchQuery, setSearchQuery] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchProfile = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, email, role, avatar_url')
-        .eq('id', user.id)
-        .single();
-      setProfile(data as UserProfile | null);
-    };
-
-    const fetchNotifications = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('id, title, created_at, is_read')
-          .eq('recipient_id', user.id)
-          .order('created_at', { ascending: false });
-        
-        // Handle table not found gracefully (expected when table doesn't exist yet)
-        if (error) {
-          // Table doesn't exist yet (migrations not run) - this is expected, don't log as error
-          if (
-            error.code === 'PGRST116' || 
-            error.code === 'PGRST205' || 
-            error.message?.includes('does not exist') || 
-            error.message?.includes('relation') || 
-            error.message?.includes('schema cache') ||
-            (error as any).status === 404
-          ) {
-            // Table doesn't exist, return empty array silently
-            setNotifications([]);
-            return;
-          }
-          // Only log unexpected errors
-          console.error('Error fetching notifications:', error);
-          setNotifications([]);
-          return;
-        }
-        
-        setNotifications((data as Notification[]) || []);
-      } catch (err) {
-        // Handle any unexpected errors
-        console.error('Unexpected error fetching notifications:', err);
-        setNotifications([]);
-      }
-    };
-
-    fetchProfile();
-    fetchNotifications();
-  }, [user]);
+  // Use React Query hook for notifications (properly cached)
+  const { data: notifications = [] } = useNotifications();
+  
+  // Get profile from AuthContext (no Supabase query needed)
+  const { profile: authProfile } = useAuth();
+  
+  // Map auth profile to UserProfile format
+  const profile: UserProfile | null = authProfile ? {
+    full_name: authProfile.full_name,
+    email: authProfile.email,
+    role: authProfile.role,
+    avatar_url: authProfile.avatar_url,
+  } : null;
 
   const unreadNotifications = notifications.filter(n => !n.is_read).length;
 

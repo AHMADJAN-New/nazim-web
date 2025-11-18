@@ -4,7 +4,6 @@ import { useBuildings } from '@/hooks/useBuildings';
 import { useStaff } from '@/hooks/useStaff';
 import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { useOrganizations } from '@/hooks/useOrganizations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,7 +63,6 @@ export function RoomsManagement() {
   const hasCreatePermission = useHasPermission('rooms.create');
   const hasUpdatePermission = useHasPermission('rooms.update');
   const hasDeletePermission = useHasPermission('rooms.delete');
-  const { data: organizations } = useOrganizations();
   const { data: rooms, isLoading: roomsLoading } = useRooms();
   const { data: buildings, isLoading: buildingsLoading } = useBuildings();
   const { data: staff, isLoading: staffLoading } = useStaff();
@@ -234,7 +232,6 @@ export function RoomsManagement() {
                 <TableRow>
                   <TableHead>Room Number</TableHead>
                   <TableHead>Building</TableHead>
-                  {isSuperAdmin && <TableHead>Organization</TableHead>}
                   <TableHead>Staff/Warden</TableHead>
                   <TableHead>Created At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -243,53 +240,45 @@ export function RoomsManagement() {
               <TableBody>
                 {filteredRooms.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isSuperAdmin ? 6 : 5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       {searchQuery ? 'No rooms found matching your search' : 'No rooms found. Add your first room.'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRooms.map((room) => {
-                    const org = isSuperAdmin && organizations?.find(o => o.id === room.organization_id);
-                    return (
-                      <TableRow key={room.id}>
-                        <TableCell className="font-medium">{room.room_number}</TableCell>
-                        <TableCell>{room.building?.building_name || 'N/A'}</TableCell>
-                        {isSuperAdmin && (
-                          <TableCell>
-                            {org?.name || 'Unknown'}
-                          </TableCell>
+                  filteredRooms.map((room) => (
+                    <TableRow key={room.id}>
+                      <TableCell className="font-medium">{room.room_number}</TableCell>
+                      <TableCell>{room.building?.building_name || 'N/A'}</TableCell>
+                      <TableCell>
+                        {room.staff?.profile?.full_name || (
+                          <span className="text-muted-foreground">No staff assigned</span>
                         )}
-                        <TableCell>
-                          {room.staff?.profile?.full_name || (
-                            <span className="text-muted-foreground">No staff assigned</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(room.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenDialog(room.id)}
-                              disabled={!hasUpdatePermission}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(room.id)}
-                              disabled={!hasDeletePermission}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                      </TableCell>
+                      <TableCell>
+                        {new Date(room.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenDialog(room.id)}
+                            disabled={!hasUpdatePermission}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(room.id)}
+                            disabled={!hasDeletePermission}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
