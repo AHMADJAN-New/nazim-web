@@ -27,7 +27,7 @@ export interface TranslationKeys {
     submit: string;
     reset: string;
   };
-  
+
   // Navigation
   nav: {
     dashboard: string;
@@ -47,7 +47,7 @@ export interface TranslationKeys {
     authentication: string;
     academicSettings: string;
   };
-  
+
   // Dashboard
   dashboard: {
     title: string;
@@ -64,7 +64,7 @@ export interface TranslationKeys {
     viewReports: string;
     manageClasses: string;
   };
-  
+
   // Students
   students: {
     title: string;
@@ -117,7 +117,7 @@ export interface TranslationKeys {
     noStudentsFound: string;
     noStudentsMessage: string;
   };
-  
+
   // Forms and validation
   forms: {
     required: string;
@@ -128,7 +128,7 @@ export interface TranslationKeys {
     minLength: string;
     maxLength: string;
   };
-  
+
   // Settings
   settings: {
     buildingsManagement: string;
@@ -150,7 +150,7 @@ export interface TranslationKeys {
     roomUpdated: string;
     roomDeleted: string;
   };
-  
+
   // Academic Settings
   academic: {
     residencyTypes: {
@@ -422,6 +422,72 @@ const en: TranslationKeys = {
       organizationType: 'Organization',
       cannotDeleteGlobal: 'Cannot delete global academic years',
     },
+    classes: {
+      title: 'Classes',
+      management: 'Classes Management',
+      addClass: 'Add Class',
+      editClass: 'Edit Class',
+      deleteClass: 'Delete Class',
+      assignToYear: 'Assign to Academic Year',
+      copyBetweenYears: 'Copy Classes Between Years',
+      name: 'Name',
+      code: 'Code',
+      gradeLevel: 'Grade Level',
+      description: 'Description',
+      defaultCapacity: 'Default Capacity',
+      capacity: 'Capacity',
+      isActive: 'Active Status',
+      active: 'Active',
+      inactive: 'Inactive',
+      section: 'Section',
+      sectionName: 'Section Name',
+      teacher: 'Teacher',
+      room: 'Room',
+      studentCount: 'Student Count',
+      notes: 'Notes',
+      searchPlaceholder: 'Search classes...',
+      noClassesFound: 'No classes found',
+      noClassesMessage: 'Try adjusting your search criteria or add a new class.',
+      classCreated: 'Class created successfully',
+      classUpdated: 'Class updated successfully',
+      classDeleted: 'Class deleted successfully',
+      classAssigned: 'Class assigned to academic year successfully',
+      classInstanceUpdated: 'Class instance updated successfully',
+      classRemoved: 'Class removed from academic year successfully',
+      classesCopied: 'Classes copied successfully',
+      deleteConfirm: 'Are you sure you want to delete this class?',
+      removeConfirm: 'Are you sure you want to remove this class from the academic year?',
+      nameRequired: 'Name is required',
+      codeRequired: 'Code is required',
+      nameMaxLength: 'Name must be 100 characters or less',
+      codeMaxLength: 'Code must be 50 characters or less',
+      codeExists: 'A class with this code already exists for this organization',
+      cannotDeleteInUse: 'Cannot delete class that is assigned to academic years',
+      cannotRemoveWithStudents: 'Cannot remove class instance that has enrolled students',
+      selectAcademicYear: 'Select Academic Year',
+      selectClass: 'Select Class',
+      selectTeacher: 'Select Teacher',
+      selectRoom: 'Select Room',
+      fromYear: 'From Academic Year',
+      toYear: 'To Academic Year',
+      selectClasses: 'Select Classes to Copy',
+      copyAssignments: 'Copy Assignments (Teachers & Rooms)',
+      allSections: 'All Sections',
+      baseClasses: 'Base Classes',
+      yearClasses: 'Classes by Academic Year',
+      copyClasses: 'Copy Classes',
+      history: 'History',
+      viewHistory: 'View History',
+      bulkCreateSections: 'Bulk Create Sections',
+      createSections: 'Create Sections',
+      defaultTeacher: 'Default Teacher',
+      defaultRoom: 'Default Room',
+      sectionsInput: 'Sections (comma-separated)',
+      noSections: 'No sections',
+      globalType: 'Global',
+      organizationType: 'Organization',
+      cannotDeleteGlobal: 'Cannot delete global classes',
+    },
   },
 };
 
@@ -626,6 +692,72 @@ const ps: TranslationKeys = {
       globalType: 'نړیوال',
       organizationType: 'سازمان',
       cannotDeleteGlobal: 'نړیوال علمي کلونه پاک کیدی نشي',
+    },
+    classes: {
+      title: 'ټولګۍ',
+      management: 'د ټولګیو مدیریت',
+      addClass: 'ټولګۍ اضافه کول',
+      editClass: 'ټولګۍ تغیر کول',
+      deleteClass: 'ټولګۍ پاک کول',
+      assignToYear: 'د علمي کال ته ټولګۍ ټاکل',
+      copyBetweenYears: 'د ټولګیو د کلونو ترمنځ کاپي کول',
+      name: 'نوم',
+      code: 'کوډ',
+      gradeLevel: 'د درجې کچه',
+      description: 'تفصیل',
+      defaultCapacity: 'د ظرفیت حد',
+      capacity: 'ظرفیت',
+      isActive: 'فعال حالت',
+      active: 'فعال',
+      inactive: 'غیر فعال',
+      section: 'برخه',
+      sectionName: 'د برخې نوم',
+      teacher: 'استاد',
+      room: 'خونه',
+      studentCount: 'د زده کوونکو شمیر',
+      notes: 'یادښتونه',
+      searchPlaceholder: 'د ټولګیو لټون...',
+      noClassesFound: 'ټولګۍ ونه موندل شول',
+      noClassesMessage: 'خپل لټون معیارونه تنظیم کړئ یا نوی ټولګۍ اضافه کړئ.',
+      classCreated: 'ټولګۍ په بریالیتوب سره اضافه شوه',
+      classUpdated: 'ټولګۍ په بریالیتوب سره تغیر شوه',
+      classDeleted: 'ټولګۍ په بریالیتوب سره پاک شوه',
+      classAssigned: 'ټولګۍ په بریالیتوب سره د علمي کال ته ټاکل شوه',
+      classInstanceUpdated: 'د ټولګۍ نمونه په بریالیتوب سره تغیر شوه',
+      classRemoved: 'ټولګۍ په بریالیتوب سره د علمي کال څخه لرې شوه',
+      classesCopied: 'ټولګۍ په بریالیتوب سره کاپي شول',
+      deleteConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ دا ټولګۍ پاک کړئ؟',
+      removeConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ دا ټولګۍ د علمي کال څخه لرې کړئ؟',
+      nameRequired: 'نوم اړینه دی',
+      codeRequired: 'کوډ اړینه دی',
+      nameMaxLength: 'نوم باید 100 حروف یا لږ وي',
+      codeMaxLength: 'کوډ باید 50 حروف یا لږ وي',
+      codeExists: 'دا کوډ د دې سازمان لپاره شتون لري',
+      cannotDeleteInUse: 'د علمي کلونو ته ټاکل شوې ټولګۍ پاک کیدی نشي',
+      cannotRemoveWithStudents: 'د نوم لیکل شویو زده کوونکو سره د ټولګۍ نمونه لرې کیدی نشي',
+      selectAcademicYear: 'د علمي کال غوره کول',
+      selectClass: 'د ټولګۍ غوره کول',
+      selectTeacher: 'د استاد غوره کول',
+      selectRoom: 'د خونې غوره کول',
+      fromYear: 'د علمي کال څخه',
+      toYear: 'د علمي کال ته',
+      selectClasses: 'د کاپي کولو لپاره ټولګۍ غوره کړئ',
+      copyAssignments: 'د دندو کاپي کول (استادان او خونې)',
+      allSections: 'ټولې برخې',
+      baseClasses: 'اساسي ټولګۍ',
+      yearClasses: 'د علمي کال له مخې ټولګۍ',
+      copyClasses: 'د ټولګیو کاپي کول',
+      history: 'تاریخ',
+      viewHistory: 'د تاریخ لیدل',
+      noSections: 'برخې نشته',
+      bulkCreateSections: 'د برخو د جوړولو ډله',
+      createSections: 'برخې جوړول',
+      defaultTeacher: 'د استاد حد',
+      defaultRoom: 'د خونې حد',
+      sectionsInput: 'برخې (د کاما سره جلا شوي)',
+      globalType: 'نړیوال',
+      organizationType: 'سازمان',
+      cannotDeleteGlobal: 'نړیوال ټولګۍ پاک کیدی نشي',
     },
   },
 };
@@ -1037,6 +1169,72 @@ const ar: TranslationKeys = {
       organizationType: 'المنظمة',
       cannotDeleteGlobal: 'لا يمكن حذف السنوات الأكاديمية العالمية',
     },
+    classes: {
+      title: 'الفصول',
+      management: 'إدارة الفصول',
+      addClass: 'إضافة فصل',
+      editClass: 'تعديل الفصل',
+      deleteClass: 'حذف الفصل',
+      assignToYear: 'تعيين إلى السنة الأكاديمية',
+      copyBetweenYears: 'نسخ الفصول بين السنوات',
+      name: 'الاسم',
+      code: 'الكود',
+      gradeLevel: 'مستوى الصف',
+      description: 'الوصف',
+      defaultCapacity: 'السعة الافتراضية',
+      capacity: 'السعة',
+      isActive: 'حالة النشاط',
+      active: 'نشط',
+      inactive: 'غير نشط',
+      section: 'القسم',
+      sectionName: 'اسم القسم',
+      teacher: 'المعلم',
+      room: 'الغرفة',
+      studentCount: 'عدد الطلاب',
+      notes: 'ملاحظات',
+      searchPlaceholder: 'البحث عن الفصول...',
+      noClassesFound: 'لم يتم العثور على فصول',
+      noClassesMessage: 'حاول تعديل معايير البحث أو إضافة فصل جديد.',
+      classCreated: 'تم إنشاء الفصل بنجاح',
+      classUpdated: 'تم تحديث الفصل بنجاح',
+      classDeleted: 'تم حذف الفصل بنجاح',
+      classAssigned: 'تم تعيين الفصل إلى السنة الأكاديمية بنجاح',
+      classInstanceUpdated: 'تم تحديث مثيل الفصل بنجاح',
+      classRemoved: 'تم إزالة الفصل من السنة الأكاديمية بنجاح',
+      classesCopied: 'تم نسخ الفصول بنجاح',
+      deleteConfirm: 'هل أنت متأكد أنك تريد حذف هذا الفصل؟',
+      removeConfirm: 'هل أنت متأكد أنك تريد إزالة هذا الفصل من السنة الأكاديمية؟',
+      nameRequired: 'الاسم مطلوب',
+      codeRequired: 'الكود مطلوب',
+      nameMaxLength: 'يجب أن يكون الاسم 100 حرف أو أقل',
+      codeMaxLength: 'يجب أن يكون الكود 50 حرف أو أقل',
+      codeExists: 'فصل بهذا الكود موجود بالفعل لهذه المنظمة',
+      cannotDeleteInUse: 'لا يمكن حذف فصل مخصص لسنوات أكاديمية',
+      cannotRemoveWithStudents: 'لا يمكن إزالة مثيل فصل به طلاب مسجلين',
+      selectAcademicYear: 'اختر السنة الأكاديمية',
+      selectClass: 'اختر الفصل',
+      selectTeacher: 'اختر المعلم',
+      selectRoom: 'اختر الغرفة',
+      fromYear: 'من السنة الأكاديمية',
+      toYear: 'إلى السنة الأكاديمية',
+      selectClasses: 'اختر الفصول للنسخ',
+      copyAssignments: 'نسخ التعيينات (المعلمون والغرف)',
+      allSections: 'جميع الأقسام',
+      baseClasses: 'الفصول الأساسية',
+      yearClasses: 'الفصول حسب السنة الأكاديمية',
+      copyClasses: 'نسخ الفصول',
+      history: 'التاريخ',
+      viewHistory: 'عرض التاريخ',
+      noSections: 'لا توجد أقسام',
+      bulkCreateSections: 'إنشاء أقسام متعددة',
+      createSections: 'إنشاء الأقسام',
+      defaultTeacher: 'المعلم الافتراضي',
+      defaultRoom: 'الغرفة الافتراضية',
+      sectionsInput: 'الأقسام (مفصولة بفواصل)',
+      globalType: 'عالمي',
+      organizationType: 'المنظمة',
+      cannotDeleteGlobal: 'لا يمكن حذف الفصول العالمية',
+    },
   },
 };
 
@@ -1052,7 +1250,7 @@ export function t(key: string, lang: Language = 'en', params?: Record<string, st
   const safeLang = lang && translations[lang] ? lang : 'en';
   const keys = key.split('.');
   let value: unknown = translations[safeLang];
-  
+
   // Try to get translation from requested language
   for (const k of keys) {
     if (typeof value === 'object' && value !== null && k in (value as Record<string, unknown>)) {
@@ -1062,7 +1260,7 @@ export function t(key: string, lang: Language = 'en', params?: Record<string, st
       break;
     }
   }
-  
+
   // If translation not found, try English fallback
   if (typeof value !== 'string' && safeLang !== 'en') {
     value = translations.en;
@@ -1075,21 +1273,21 @@ export function t(key: string, lang: Language = 'en', params?: Record<string, st
       }
     }
   }
-  
+
   // If still not found, return a readable version of the key
   if (typeof value !== 'string') {
     // Return last part of key as fallback (e.g., "nav.dashboard" -> "Dashboard")
     const lastKey = keys[keys.length - 1];
     return lastKey.charAt(0).toUpperCase() + lastKey.slice(1).replace(/([A-Z])/g, ' $1').trim();
   }
-  
+
   // Replace parameters
   if (params) {
     return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
       return params[paramKey]?.toString() || match;
     });
   }
-  
+
   return value;
 }
 
