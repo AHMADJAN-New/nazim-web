@@ -60,9 +60,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavigationChild {
   title: string;
+  titleKey?: string; // Translation key for the title
   url: string;
   icon: LucideIcon;
   contextual?: boolean;
@@ -102,6 +109,39 @@ interface DbRecentTask {
   timestamp: string;
   role?: UserRole;
   context?: string;
+}
+
+// Language Switcher Component
+function LanguageSwitcherButton() {
+  const { language, setLanguage } = useLanguage();
+  const languages = [
+    { code: 'en' as const, name: 'English', flag: '🇺🇸' },
+    { code: 'ps' as const, name: 'پښتو', flag: '🇦🇫' },
+    { code: 'fa' as const, name: 'فارسی', flag: '🇮🇷' },
+    { code: 'ar' as const, name: 'العربية', flag: '🇸🇦' },
+  ];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="flex-1">
+          <Languages className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {languages.map((lang) => (
+          <DropdownMenuItem
+            key={lang.code}
+            onClick={() => setLanguage(lang.code)}
+            className={language === lang.code ? "bg-accent" : ""}
+          >
+            <span className="mr-2">{lang.flag}</span>
+            {lang.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export const SmartSidebar = memo(function SmartSidebar() {
@@ -508,6 +548,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
     <Sidebar
       className={`${collapsed ? "w-14" : "w-64"} transition-all duration-300`}
       collapsible="icon"
+      side={isRTL ? "right" : "left"}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Logo Section */}
@@ -613,9 +654,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             <Button variant="ghost" size="sm" className="flex-1">
               <Sun className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="flex-1">
-              <Languages className="h-4 w-4" />
-            </Button>
+            <LanguageSwitcherButton />
             <Button variant="ghost" size="sm" className="flex-1">
               <Bell className="h-4 w-4" />
             </Button>

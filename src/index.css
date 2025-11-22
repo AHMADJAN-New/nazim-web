@@ -170,6 +170,26 @@
   [dir="rtl"] .rotate-180 {
     transform: scaleX(-1);
   }
+
+  /* RTL Text Alignment */
+  [dir="rtl"] .text-left {
+    text-align: right;
+  }
+
+  [dir="rtl"] .text-right {
+    text-align: left;
+  }
+
+  /* RTL Spacing - Auto margins */
+  [dir="rtl"] .ml-auto {
+    margin-left: 0 !important;
+    margin-right: auto !important;
+  }
+
+  [dir="rtl"] .mr-auto {
+    margin-right: 0 !important;
+    margin-left: auto !important;
+  }
 }
 
 @layer base {

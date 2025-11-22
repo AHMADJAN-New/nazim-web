@@ -67,6 +67,7 @@ export interface TranslationKeys {
   // Students
   students: {
     title: string;
+    management: string;
     addStudent: string;
     studentProfile: string;
     personalInfo: string;
@@ -88,6 +89,32 @@ export interface TranslationKeys {
     active: string;
     inactive: string;
     graduated: string;
+    transferred: string;
+    suspended: string;
+    searchPlaceholder: string;
+    allClasses: string;
+    allSections: string;
+    allStatus: string;
+    totalStudents: string;
+    enrolledStudents: string;
+    studentsList: string;
+    results: string;
+    student: string;
+    admissionNo: string;
+    rollNo: string;
+    classSection: string;
+    contact: string;
+    hostel: string;
+    actions: string;
+    admitted: string;
+    noClass: string;
+    notAvailable: string;
+    viewDetails: string;
+    editStudent: string;
+    deleteStudent: string;
+    deleteConfirm: string;
+    noStudentsFound: string;
+    noStudentsMessage: string;
   };
   
   // Forms and validation
@@ -182,6 +209,7 @@ const en: TranslationKeys = {
   },
   students: {
     title: 'Students',
+    management: 'Students Management',
     addStudent: 'Add Student',
     studentProfile: 'Student Profile',
     personalInfo: 'Personal Information',
@@ -203,6 +231,32 @@ const en: TranslationKeys = {
     active: 'Active',
     inactive: 'Inactive',
     graduated: 'Graduated',
+    transferred: 'Transferred',
+    suspended: 'Suspended',
+    searchPlaceholder: 'Search students...',
+    allClasses: 'All Classes',
+    allSections: 'All Sections',
+    allStatus: 'All Status',
+    totalStudents: 'Total Students',
+    enrolledStudents: 'Enrolled Students',
+    studentsList: 'Students List',
+    results: 'results',
+    student: 'Student',
+    admissionNo: 'Admission No.',
+    rollNo: 'Roll No.',
+    classSection: 'Class/Section',
+    contact: 'Contact',
+    hostel: 'Hostel',
+    actions: 'Actions',
+    admitted: 'Admitted',
+    noClass: 'No Class',
+    notAvailable: 'N/A',
+    viewDetails: 'View Details',
+    editStudent: 'Edit Student',
+    deleteStudent: 'Delete',
+    deleteConfirm: 'Are you sure you want to delete this student?',
+    noStudentsFound: 'No students found',
+    noStudentsMessage: 'Try adjusting your search criteria or add a new student.',
   },
   forms: {
     required: 'This field is required',
@@ -293,6 +347,7 @@ const ps: TranslationKeys = {
   },
   students: {
     title: 'زده کوونکي',
+    management: 'د زده کوونکو مدیریت',
     addStudent: 'زده کوونکی اضافه کول',
     studentProfile: 'د زده کوونکي پروفایل',
     personalInfo: 'شخصي معلومات',
@@ -314,6 +369,32 @@ const ps: TranslationKeys = {
     active: 'فعال',
     inactive: 'غیر فعال',
     graduated: 'فارغ',
+    transferred: 'لېږدول شوی',
+    suspended: 'تعلیق شوی',
+    searchPlaceholder: 'زده کوونکي لټون...',
+    allClasses: 'ټول ټولګۍ',
+    allSections: 'ټول برخې',
+    allStatus: 'ټول حالتونه',
+    totalStudents: 'ټول زده کوونکي',
+    enrolledStudents: 'داخل شوي زده کوونکي',
+    studentsList: 'د زده کوونکو لیست',
+    results: 'پایلې',
+    student: 'زده کوونکی',
+    admissionNo: 'د داخلې شمیره',
+    rollNo: 'د رول شمیره',
+    classSection: 'ټولګی/برخه',
+    contact: 'اړیکه',
+    hostel: 'خوابګاه',
+    actions: 'کړنې',
+    admitted: 'داخل شوی',
+    noClass: 'ټولګی نشته',
+    notAvailable: 'نشته',
+    viewDetails: 'تفصیلات وګورئ',
+    editStudent: 'زده کوونکی تغیر کړئ',
+    deleteStudent: 'پاک کول',
+    deleteConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ دا زده کوونکی پاک کړئ؟',
+    noStudentsFound: 'زده کوونکي ونه موندل شول',
+    noStudentsMessage: 'خپل لټون معیارونه تنظیم کړئ یا نوی زده کوونکی اضافه کړئ.',
   },
   forms: {
     required: 'دا برخه اړینه دی',
@@ -404,6 +485,7 @@ const fa: TranslationKeys = {
   },
   students: {
     title: 'دانش‌آموزان',
+    management: 'مدیریت دانش‌آموزان',
     addStudent: 'اضافه کردن دانش‌آموز',
     studentProfile: 'پروفایل دانش‌آموز',
     personalInfo: 'اطلاعات شخصی',
@@ -425,6 +507,32 @@ const fa: TranslationKeys = {
     active: 'فعال',
     inactive: 'غیرفعال',
     graduated: 'فارغ‌التحصیل',
+    transferred: 'منتقل شده',
+    suspended: 'تعلیق شده',
+    searchPlaceholder: 'جستجوی دانش‌آموزان...',
+    allClasses: 'همه کلاس‌ها',
+    allSections: 'همه بخش‌ها',
+    allStatus: 'همه وضعیت‌ها',
+    totalStudents: 'تعداد کل دانش‌آموزان',
+    enrolledStudents: 'دانش‌آموزان ثبت‌نام شده',
+    studentsList: 'فهرست دانش‌آموزان',
+    results: 'نتیجه',
+    student: 'دانش‌آموز',
+    admissionNo: 'شماره پذیرش',
+    rollNo: 'شماره ثبت',
+    classSection: 'کلاس/بخش',
+    contact: 'تماس',
+    hostel: 'خوابگاه',
+    actions: 'اقدامات',
+    admitted: 'پذیرش شده',
+    noClass: 'بدون کلاس',
+    notAvailable: 'موجود نیست',
+    viewDetails: 'مشاهده جزئیات',
+    editStudent: 'ویرایش دانش‌آموز',
+    deleteStudent: 'حذف',
+    deleteConfirm: 'آیا مطمئن هستید که می‌خواهید این دانش‌آموز را حذف کنید؟',
+    noStudentsFound: 'دانش‌آموزی یافت نشد',
+    noStudentsMessage: 'معیارهای جستجوی خود را تنظیم کنید یا دانش‌آموز جدیدی اضافه کنید.',
   },
   forms: {
     required: 'پر کردن این فیلد الزامی است',
@@ -515,6 +623,7 @@ const ar: TranslationKeys = {
   },
   students: {
     title: 'الطلاب',
+    management: 'إدارة الطلاب',
     addStudent: 'إضافة طالب',
     studentProfile: 'ملف الطالب',
     personalInfo: 'المعلومات الشخصية',
@@ -536,6 +645,32 @@ const ar: TranslationKeys = {
     active: 'نشط',
     inactive: 'غير نشط',
     graduated: 'متخرج',
+    transferred: 'منقول',
+    suspended: 'معلق',
+    searchPlaceholder: 'البحث عن الطلاب...',
+    allClasses: 'جميع الفصول',
+    allSections: 'جميع الشعب',
+    allStatus: 'جميع الحالات',
+    totalStudents: 'إجمالي الطلاب',
+    enrolledStudents: 'الطلاب المسجلين',
+    studentsList: 'قائمة الطلاب',
+    results: 'نتائج',
+    student: 'طالب',
+    admissionNo: 'رقم القبول',
+    rollNo: 'رقم القيد',
+    classSection: 'الفصل/الشعبة',
+    contact: 'اتصال',
+    hostel: 'السكن الداخلي',
+    actions: 'الإجراءات',
+    admitted: 'مقبول',
+    noClass: 'لا يوجد فصل',
+    notAvailable: 'غير متاح',
+    viewDetails: 'عرض التفاصيل',
+    editStudent: 'تعديل الطالب',
+    deleteStudent: 'حذف',
+    deleteConfirm: 'هل أنت متأكد أنك تريد حذف هذا الطالب؟',
+    noStudentsFound: 'لم يتم العثور على طلاب',
+    noStudentsMessage: 'حاول تعديل معايير البحث أو إضافة طالب جديد.',
   },
   forms: {
     required: 'هذا الحقل مطلوب',
@@ -576,9 +711,12 @@ export const RTL_LANGUAGES: Language[] = ['ar', 'ps', 'fa'];
 
 // Get translation function
 export function t(key: string, lang: Language = 'en', params?: Record<string, string | number>): string {
+  // Always default to English if language is not available
+  const safeLang = lang && translations[lang] ? lang : 'en';
   const keys = key.split('.');
-  let value: unknown = translations[lang];
+  let value: unknown = translations[safeLang];
   
+  // Try to get translation from requested language
   for (const k of keys) {
     if (typeof value === 'object' && value !== null && k in (value as Record<string, unknown>)) {
       value = (value as Record<string, unknown>)[k];
@@ -588,16 +726,24 @@ export function t(key: string, lang: Language = 'en', params?: Record<string, st
     }
   }
   
-  if (typeof value !== 'string') {
-    // Fallback to English if translation not found
+  // If translation not found, try English fallback
+  if (typeof value !== 'string' && safeLang !== 'en') {
     value = translations.en;
     for (const k of keys) {
-      value = value?.[k];
+      if (typeof value === 'object' && value !== null && k in (value as Record<string, unknown>)) {
+        value = (value as Record<string, unknown>)[k];
+      } else {
+        value = undefined;
+        break;
+      }
     }
   }
   
+  // If still not found, return a readable version of the key
   if (typeof value !== 'string') {
-    return key; // Return key if no translation found
+    // Return last part of key as fallback (e.g., "nav.dashboard" -> "Dashboard")
+    const lastKey = keys[keys.length - 1];
+    return lastKey.charAt(0).toUpperCase() + lastKey.slice(1).replace(/([A-Z])/g, ' $1').trim();
   }
   
   // Replace parameters

@@ -31,6 +31,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] }: AppHeaderProps) {
   const { user, signOut } = useAuth();
+  const { language, setLanguage } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
@@ -51,20 +52,16 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const unreadNotifications = notifications.filter(n => !n.is_read).length;
 
   const languages = [
-    { code: "en", name: "English", flag: "🇺🇸" },
-    { code: "ps", name: "پښتو", flag: "🇦🇫" },
-    { code: "ar", name: "العربية", flag: "🇸🇦" }
+    { code: "en" as const, name: "English", flag: "🇺🇸" },
+    { code: "ps" as const, name: "پښتو", flag: "🇦🇫" },
+    { code: "fa" as const, name: "فارسی", flag: "🇮🇷" },
+    { code: "ar" as const, name: "العربية", flag: "🇸🇦" }
   ];
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
     // In real app, this would update theme context
     document.documentElement.classList.toggle('dark');
-  };
-
-  const changeLanguage = (langCode: string) => {
-    setCurrentLanguage(langCode);
-    // In real app, this would update i18n context
   };
 
   return (
@@ -118,7 +115,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               <Button variant="ghost" size="sm" className="hidden sm:flex">
                 <Languages className="h-4 w-4" />
                 <span className="ml-2 text-sm">
-                  {languages.find(l => l.code === currentLanguage)?.flag}
+                  {languages.find(l => l.code === language)?.flag}
                 </span>
               </Button>
             </DropdownMenuTrigger>
@@ -128,8 +125,8 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               {languages.map((lang) => (
                 <DropdownMenuItem
                   key={lang.code}
-                  onClick={() => changeLanguage(lang.code)}
-                  className={currentLanguage === lang.code ? "bg-accent" : ""}
+                  onClick={() => setLanguage(lang.code)}
+                  className={language === lang.code ? "bg-accent" : ""}
                 >
                   <span className="mr-2">{lang.flag}</span>
                   {lang.name}
