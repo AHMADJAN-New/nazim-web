@@ -158,6 +158,7 @@ const App = () => (
           </SidebarProvider>
         </BrowserRouter>
       </AuthProvider>
+    </LanguageProvider>
     </TooltipProvider>
     {import.meta.env.DEV && import.meta.env.VITE_ENABLE_QUERY_DEVTOOLS === 'true' && (
       <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
