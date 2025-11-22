@@ -1040,6 +1040,176 @@ ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
 -- Step 6: Create RLS policies (use the 5-policy pattern above)
 ```
 
+#### Migration Security & Performance Best Practices
+
+**CRITICAL: All migrations must follow these security and performance guidelines.**
+
+##### Function Security - SET search_path
+
+**ALWAYS** set `search_path = public` on all functions to prevent search_path injection attacks:
+
+```sql
+-- ✅ CORRECT: Function with secure search_path
+CREATE OR REPLACE FUNCTION public.your_function()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public  -- REQUIRED for security
+AS $$
+BEGIN
+    -- function body
+    RETURN NEW;
+END;
+$$;
+
+-- ❌ WRONG: Function without search_path (security vulnerability)
+CREATE OR REPLACE FUNCTION public.your_function()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- function body
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Required for:**
+- All trigger functions
+- All helper functions
+- All SECURITY DEFINER functions (especially critical)
+- All stored procedures
+
+##### Policy Naming - Character Limit
+
+**ALWAYS** keep policy names under 63 characters to avoid PostgreSQL truncation warnings:
+
+```sql
+-- ✅ CORRECT: Short, descriptive policy name (35 chars)
+CREATE POLICY "Users can insert org role_permissions" ON public.role_permissions
+    FOR INSERT TO authenticated
+    WITH CHECK (...);
+
+-- ❌ WRONG: Policy name too long (will be truncated, causes warnings)
+CREATE POLICY "Authenticated users can insert their organization's role_permissions" ON public.role_permissions
+    FOR INSERT TO authenticated
+    WITH CHECK (...);
+```
+
+**Guidelines:**
+- Use abbreviations where clear: "org" instead of "organization", "role_perms" instead of "role_permissions"
+- Prioritize clarity but stay under 63 characters
+- Test policy names before committing
+
+##### Policy Consolidation - Avoid Multiple Permissive Policies
+
+**ALWAYS** consolidate multiple permissive policies for the same action into a single policy:
+
+```sql
+-- ✅ CORRECT: Single consolidated policy
+CREATE POLICY "Users can read profiles" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (
+        deleted_at IS NULL
+        AND (
+            id = (SELECT auth.uid())
+            OR organization_id = public.get_current_user_organization_id()
+            OR public.get_current_user_organization_id() IS NULL
+        )
+    );
+
+-- ❌ WRONG: Multiple permissive policies (causes security warnings)
+CREATE POLICY "Users can read their own profile" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (id = (SELECT auth.uid()));
+
+CREATE POLICY "Users can read profiles in their organization" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (organization_id = public.get_current_user_organization_id());
+```
+
+**Benefits:**
+- Eliminates "multiple permissive policies" security warnings
+- Better performance (single policy evaluation)
+- Easier to maintain and understand
+- Cleaner migration output
+
+##### DROP Statements - Fresh Database Migrations
+
+**For fresh database migrations** (initial schema, new projects), **DO NOT** include `DROP IF EXISTS` statements:
+
+```sql
+-- ✅ CORRECT: Clean migration for fresh database
+CREATE TRIGGER update_your_table_updated_at
+    BEFORE UPDATE ON public.your_table
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE POLICY "Users can read your_table" ON public.your_table
+    FOR SELECT TO authenticated
+    USING (...);
+
+-- ❌ WRONG: Unnecessary DROP statements (causes NOTICE noise)
+DROP TRIGGER IF EXISTS update_your_table_updated_at ON public.your_table;
+CREATE TRIGGER update_your_table_updated_at
+    BEFORE UPDATE ON public.your_table
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP POLICY IF EXISTS "Users can read your_table" ON public.your_table;
+CREATE POLICY "Users can read your_table" ON public.your_table
+    FOR SELECT TO authenticated
+    USING (...);
+```
+
+**When to use DROP IF EXISTS:**
+- **Only** for migrations that modify existing objects (ALTER migrations)
+- **Only** when migrating from an older schema version
+- **Never** for initial schema migrations on fresh databases
+
+**Benefits of omitting DROP statements:**
+- Cleaner migration output (no NOTICE messages)
+- Faster execution (no unnecessary DROP operations)
+- Simpler, more readable migrations
+- Clearer intent (creating new objects, not modifying existing)
+
+##### Function Format Standard
+
+**ALWAYS** use this standard format for all functions:
+
+```sql
+CREATE OR REPLACE FUNCTION public.function_name()
+RETURNS TYPE
+LANGUAGE plpgsql
+SECURITY DEFINER  -- Only if needed
+SET search_path = public  -- REQUIRED
+STABLE  -- If function is STABLE or IMMUTABLE
+AS $$
+DECLARE
+    -- variables
+BEGIN
+    -- function body
+END;
+$$;
+```
+
+**Key points:**
+- Always specify `LANGUAGE plpgsql` explicitly
+- Always include `SET search_path = public`
+- Use `SECURITY DEFINER` only when necessary
+- Add `STABLE` or `IMMUTABLE` when applicable for performance
+- Use `AS $$` syntax (not `$$ LANGUAGE plpgsql`)
+
+##### Migration Checklist
+
+Before committing a migration, verify:
+
+- [ ] All functions have `SET search_path = public`
+- [ ] All policy names are under 63 characters
+- [ ] No multiple permissive policies for same action (consolidated)
+- [ ] No unnecessary `DROP IF EXISTS` statements (for fresh migrations)
+- [ ] All functions use standard format
+- [ ] All policies follow organization isolation patterns
+- [ ] All triggers are properly defined
+- [ ] Migration runs cleanly without NOTICE warnings (except extension notices)
+
 ### Testing - Multi-Tenancy
 
 #### Test Organization Isolation

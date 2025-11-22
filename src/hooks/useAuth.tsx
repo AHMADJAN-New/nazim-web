@@ -69,31 +69,106 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [profileLoading, setProfileLoading] = useState(false);
 
   // Helper function to load user profile
-  const loadUserProfile = async (userId: string) => {
+  // Uses RPC function to bypass PostgREST schema validation issues
+  const loadUserProfile = async (userId: string, retryCount = 0) => {
     setProfileLoading(true);
     try {
-      const { data, error } = await supabase
+      // Try RPC function first (bypasses schema validation)
+      const { data: rpcData, error: rpcError } = await (supabase as any).rpc('get_user_profile', {
+        user_id: userId
+      });
+
+      if (!rpcError && rpcData && rpcData.length > 0) {
+        const profileData = rpcData[0];
+        setProfile({
+          id: profileData.id,
+          organization_id: profileData.organization_id,
+          role: profileData.role,
+          full_name: profileData.full_name,
+          email: profileData.email,
+          phone: profileData.phone,
+          avatar_url: profileData.avatar_url,
+          is_active: profileData.is_active,
+          default_school_id: profileData.default_school_id,
+        });
+        return;
+      }
+
+      // Fallback to direct query if RPC fails or returns no data
+      const { data, error } = await (supabase as any)
         .from('profiles')
         .select(
           'id, organization_id, role, full_name, email, phone, avatar_url, is_active, default_school_id'
         )
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        console.error('Failed to load profile:', error);
+        // Check for schema-related errors
+        const isSchemaError = 
+          error.message?.toLowerCase().includes('schema') ||
+          error.message?.toLowerCase().includes('querying schema') ||
+          error.message?.toLowerCase().includes('database error') ||
+          error.code === 'PGRST116' ||
+          error.code === '42P01';
+
+        if (isSchemaError && retryCount < 3) {
+          console.log(`Schema error detected, retrying with RPC... (attempt ${retryCount + 1}/3)`);
+          // Retry with longer delays
+          setTimeout(async () => {
+            await loadUserProfile(userId, retryCount + 1);
+          }, (retryCount + 1) * 2000);
+          return;
+        }
+
         // Profile might not exist yet - it will be created by trigger
+        if (retryCount < 2 && (
+          error.message?.includes('No rows') || 
+          error.message?.includes('not found') ||
+          error.code === 'PGRST116'
+        )) {
+          console.log(`Profile not found, retrying... (attempt ${retryCount + 1}/2)`);
+          setTimeout(async () => {
+            await loadUserProfile(userId, retryCount + 1);
+          }, (retryCount + 1) * 1000);
+          return;
+        }
+        
+        console.error('Failed to load profile:', error);
         setProfile(null);
       } else if (data) {
-        setProfile(data as unknown as Profile);
+        setProfile(data as Profile);
       } else {
+        // No data returned - retry if first attempt
+        if (retryCount < 2) {
+          console.log('No profile data, retrying...');
+          setTimeout(async () => {
+            await loadUserProfile(userId, retryCount + 1);
+          }, (retryCount + 1) * 1000);
+          return;
+        }
         setProfile(null);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading profile:', error);
+      // Handle schema query errors gracefully with retry
+      if (retryCount < 3 && (
+        error?.message?.toLowerCase().includes('schema') || 
+        error?.message?.toLowerCase().includes('querying') ||
+        error?.message?.toLowerCase().includes('database error') ||
+        error?.message?.includes('NetworkError')
+      )) {
+        console.warn('Schema query error - retrying...');
+        setTimeout(async () => {
+          await loadUserProfile(userId, retryCount + 1);
+        }, (retryCount + 1) * 2000);
+        return;
+      }
       setProfile(null);
     } finally {
-      setProfileLoading(false);
+      if (retryCount === 0) {
+        setProfileLoading(false);
+      }
     }
   };
 

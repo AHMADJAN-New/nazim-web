@@ -45,7 +45,8 @@ export const useProfiles = (organizationId?: string) => {
         throw new Error('Insufficient permissions to view profiles');
       }
 
-      let query = supabase.from('profiles').select('*');
+      // Use untyped client for profiles table (has custom columns)
+      let query = (supabase as any).from('profiles').select('*');
 
       if (currentProfile.role === 'admin') {
         // Admin can only see profiles in their organization
@@ -90,7 +91,7 @@ export const useUpdateProfile = () => {
 
       // If updating another user's profile, check organization access
       if (!isOwnProfile && !isSuperAdmin) {
-        const { data: targetProfile } = await supabase
+        const { data: targetProfile } = await (supabase as any)
           .from('profiles')
           .select('organization_id')
           .eq('id', id)
@@ -121,7 +122,7 @@ export const useUpdateProfile = () => {
         }
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('profiles')
         .update(updateData)
         .eq('id', id)
