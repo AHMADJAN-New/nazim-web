@@ -15,6 +15,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface UserProfile {
   full_name: string;
