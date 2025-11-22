@@ -21,7 +21,7 @@ export const useBuildings = (schoolId?: string, organizationId?: string) => {
     queryFn: async () => {
       if (!user || !profile) return [];
 
-      let query = supabase
+      let query = (supabase as any)
         .from('buildings')
         .select('*');
 
@@ -70,7 +70,38 @@ export const useBuildings = (schoolId?: string, organizationId?: string) => {
         throw new Error(error.message);
       }
 
-      return (data || []) as unknown as Building[];
+      // Enrich buildings with organization_id from schools
+      const buildings = (data || []) as any[];
+      if (buildings.length === 0) {
+        return [] as Building[];
+      }
+
+      // Get unique school IDs
+      const schoolIds = [...new Set(buildings.map(b => b.school_id).filter(Boolean))];
+      
+      // Fetch organization_id for each school
+      let schoolsMap: Record<string, string | null> = {};
+      if (schoolIds.length > 0) {
+        const { data: schools } = await (supabase as any)
+          .from('school_branding')
+          .select('id, organization_id')
+          .in('id', schoolIds);
+        
+        if (schools) {
+          schoolsMap = schools.reduce((acc: Record<string, string | null>, school: any) => {
+            acc[school.id] = school.organization_id || null;
+            return acc;
+          }, {});
+        }
+      }
+
+      // Transform data to include organization_id
+      const transformedData = buildings.map((building: any) => ({
+        ...building,
+        organization_id: schoolsMap[building.school_id] || null,
+      }));
+
+      return transformedData as unknown as Building[];
     },
     enabled: !!user && !!profile,
     staleTime: 10 * 60 * 1000,
@@ -191,7 +222,7 @@ export const useCreateBuilding = () => {
         .eq('building_name', trimmedName)
         .eq('school_id', schoolId)
         .is('deleted_at', null)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         throw new Error('This building name already exists in this school');
@@ -266,7 +297,7 @@ export const useUpdateBuilding = () => {
           .eq('school_id', schoolId)
           .neq('id', id)
           .is('deleted_at', null)
-          .single();
+          .maybeSingle();
 
         if (existing) {
           throw new Error('This building name already exists in this school');

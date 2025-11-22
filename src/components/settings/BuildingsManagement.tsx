@@ -160,12 +160,17 @@ export function BuildingsManagement() {
   
   // Auto-set school_id when schools load and user has default_school_id
   useEffect(() => {
-    if (!selectedBuilding && profile?.default_school_id && schools && schools.length > 0) {
-      const defaultSchool = schools.find(s => s.id === profile.default_school_id);
-      if (defaultSchool) {
-        setValue('school_id', profile.default_school_id);
+    if (!selectedBuilding && schools && schools.length > 0) {
+      if (profile?.default_school_id) {
+        const defaultSchool = schools.find(s => s.id === profile.default_school_id);
+        if (defaultSchool) {
+          setValue('school_id', profile.default_school_id);
+        } else if (schools.length === 1) {
+          // If default school not found but only one school exists, use it
+          setValue('school_id', schools[0].id);
+        }
       } else if (schools.length === 1) {
-        // If default school not found but only one school exists, use it
+        // If only one school exists, always set it
         setValue('school_id', schools[0].id);
       }
     }
@@ -173,6 +178,16 @@ export function BuildingsManagement() {
   
   // Schools are already filtered by useSchools hook based on selectedOrganizationId
   const filteredSchools = schools || [];
+
+  // Ensure school_id is set when dialog opens and there's only one school
+  useEffect(() => {
+    if (isDialogOpen && !selectedBuilding && filteredSchools.length === 1) {
+      const currentSchoolId = watch('school_id');
+      if (!currentSchoolId || currentSchoolId !== filteredSchools[0].id) {
+        setValue('school_id', filteredSchools[0].id, { shouldValidate: true });
+      }
+    }
+  }, [isDialogOpen, selectedBuilding, filteredSchools, watch, setValue]);
 
   const filteredBuildings = buildings?.filter((building) =>
     building.building_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -295,7 +310,7 @@ export function BuildingsManagement() {
       if (building) {
         reset({ 
           building_name: building.building_name,
-          school_id: building.school_id,
+          school_id: building.school_id || '',
         });
         // Set organization based on building's school
         const buildingSchool = schools?.find(s => s.id === building.school_id);
@@ -310,6 +325,11 @@ export function BuildingsManagement() {
       
       // If no default school but user has organization, get first school
       if (!defaultSchoolId && profile?.organization_id && schools && schools.length > 0) {
+        defaultSchoolId = schools[0].id;
+      }
+      
+      // If still no school_id and only one school exists, use it
+      if (!defaultSchoolId && schools && schools.length === 1) {
         defaultSchoolId = schools[0].id;
       }
       
@@ -341,9 +361,20 @@ export function BuildingsManagement() {
   };
 
   const onSubmit = (data: BuildingFormData) => {
+    // Ensure school_id is set - if only one school exists, use it
+    let schoolId = data.school_id;
+    if (!schoolId && filteredSchools.length === 1) {
+      schoolId = filteredSchools[0].id;
+    }
+    
+    if (!schoolId) {
+      toast.error('Please select a school');
+      return;
+    }
+    
     if (selectedBuilding) {
       updateBuilding.mutate(
-        { id: selectedBuilding, ...data },
+        { id: selectedBuilding, ...data, school_id: schoolId },
         {
           onSuccess: () => {
             handleCloseDialog();
@@ -354,7 +385,7 @@ export function BuildingsManagement() {
       // Ensure building_name is provided (zod schema validates it, but TypeScript needs explicit assertion)
       createBuilding.mutate({
         building_name: data.building_name,
-        school_id: data.school_id,
+        school_id: schoolId,
       }, {
         onSuccess: () => {
           handleCloseDialog();
