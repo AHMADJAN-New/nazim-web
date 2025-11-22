@@ -35,6 +35,8 @@ import {
   AcademicYearsManagement,
   ClassesManagement,
   SubjectsManagement,
+  StaffTypesManagement,
+  StaffList,
   UserManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -160,6 +162,20 @@ const App = () => (
                       <Suspense fallback={<PageSkeleton />}>
                         <PermissionGuard permission="academic.subjects.read">
                           <SubjectsManagement />
+                        </PermissionGuard>
+                      </Suspense>
+                    } />
+                    <Route path="/settings/staff-types" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PermissionGuard permission="staff.types.read">
+                          <StaffTypesManagement />
+                        </PermissionGuard>
+                      </Suspense>
+                    } />
+                    <Route path="/staff" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PermissionGuard permission="staff.read">
+                          <StaffList />
                         </PermissionGuard>
                       </Suspense>
                     } />

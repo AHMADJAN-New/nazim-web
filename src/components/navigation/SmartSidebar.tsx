@@ -171,6 +171,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasAcademicYearsPermission = useHasPermission('academic.academic_years.read');
   const hasClassesPermission = useHasPermission('academic.classes.read');
   const hasSubjectsPermission = useHasPermission('academic.subjects.read');
+  const hasStaffPermission = useHasPermission('staff.read');
+  const hasStaffTypesPermission = useHasPermission('staff.types.read');
 
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -197,6 +199,14 @@ export const SmartSidebar = memo(function SmartSidebar() {
         roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"],
         priority: 1
       },
+      ...(hasStaffPermission ? [{
+        titleKey: "staff",
+        url: "/staff",
+        icon: Users,
+        badge: null,
+        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"],
+        priority: 3
+      }] : []),
       {
         titleKey: "settings",
         icon: Settings,
@@ -278,6 +288,11 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "academic.subjects.title",
             url: "/settings/subjects",
             icon: BookOpen,
+          }] : []),
+          ...(hasStaffTypesPermission ? [{
+            title: "Staff Types",
+            url: "/settings/staff-types",
+            icon: Users,
           }] : []),
         ],
       },
