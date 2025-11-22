@@ -26,6 +26,11 @@ import {
   DoorOpen,
   Package,
   Shield,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Heart,
+  AlertCircle,
   MessageSquare,
   BarChart3,
   School,
@@ -169,6 +174,22 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasBackupPermission = useHasPermission('backup.read');
   const hasResidencyTypesPermission = useHasPermission('academic.residency_types.read');
 
+  // Financial permissions
+  const hasCurrenciesPermission = useHasPermission('finance.currencies.read');
+  const hasFiscalYearsPermission = useHasPermission('finance.fiscal_years.read');
+  const hasCostCentersPermission = useHasPermission('finance.cost_centers.read');
+  const hasIncomeCategoriesPermission = useHasPermission('finance.income_categories.read');
+  const hasExpenseCategoriesPermission = useHasPermission('finance.expense_categories.read');
+  const hasPaymentMethodsPermission = useHasPermission('finance.payment_methods.read');
+  const hasAssetCategoriesPermission = useHasPermission('finance.asset_categories.read');
+  const hasFundTypesPermission = useHasPermission('finance.fund_types.read');
+  const hasDebtCategoriesPermission = useHasPermission('finance.debt_categories.read');
+  const hasFinancialAccountsPermission = useHasPermission('finance.accounts.read');
+  const hasAnyFinancialPermission = hasCurrenciesPermission || hasFiscalYearsPermission || 
+    hasCostCentersPermission || hasIncomeCategoriesPermission || hasExpenseCategoriesPermission ||
+    hasPaymentMethodsPermission || hasAssetCategoriesPermission || hasFundTypesPermission ||
+    hasDebtCategoriesPermission || hasFinancialAccountsPermission;
+
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [navigationContext, setNavigationContext] = useState<NavigationContext>({
@@ -240,6 +261,66 @@ export const SmartSidebar = memo(function SmartSidebar() {
           ...(hasReportsPermission ? [{
             title: "Report Templates",
             url: "/settings/report-templates",
+            icon: FileText,
+          }] : []),
+        ],
+      },
+      {
+        titleKey: "financialSettings",
+        icon: DollarSign,
+        badge: null,
+        roles: ["super_admin", "admin", "accountant", "asset_manager"],
+        priority: 7,
+        children: [
+          // Only show child items if user has the required permission
+          ...(hasCurrenciesPermission ? [{
+            title: "Currencies",
+            url: "/settings/finance/currencies",
+            icon: DollarSign,
+          }] : []),
+          ...(hasFiscalYearsPermission ? [{
+            title: "Fiscal Years",
+            url: "/settings/finance/fiscal-years",
+            icon: Calendar,
+          }] : []),
+          ...(hasCostCentersPermission ? [{
+            title: "Cost Centers",
+            url: "/settings/finance/cost-centers",
+            icon: Building2,
+          }] : []),
+          ...(hasIncomeCategoriesPermission ? [{
+            title: "Income Categories",
+            url: "/settings/finance/income-categories",
+            icon: TrendingUp,
+          }] : []),
+          ...(hasExpenseCategoriesPermission ? [{
+            title: "Expense Categories",
+            url: "/settings/finance/expense-categories",
+            icon: TrendingDown,
+          }] : []),
+          ...(hasPaymentMethodsPermission ? [{
+            title: "Payment Methods",
+            url: "/settings/finance/payment-methods",
+            icon: CreditCard,
+          }] : []),
+          ...(hasAssetCategoriesPermission ? [{
+            title: "Asset Categories",
+            url: "/settings/finance/asset-categories",
+            icon: Package,
+          }] : []),
+          ...(hasFundTypesPermission ? [{
+            title: "Fund Types",
+            url: "/settings/finance/fund-types",
+            icon: Heart,
+          }] : []),
+          ...(hasDebtCategoriesPermission ? [{
+            title: "Debt Categories",
+            url: "/settings/finance/debt-categories",
+            icon: AlertCircle,
+          }] : []),
+          ...(hasFinancialAccountsPermission ? [{
+            title: "Chart of Accounts",
+            url: "/settings/finance/accounts",
             icon: FileText,
           }] : []),
         ],

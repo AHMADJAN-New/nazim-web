@@ -46,6 +46,7 @@ export interface TranslationKeys {
     settings: string;
     authentication: string;
     academicSettings: string;
+    financialSettings: string;
   };
   
   // Dashboard
@@ -225,6 +226,7 @@ const en: TranslationKeys = {
     settings: 'Settings',
     authentication: 'Authentication',
     academicSettings: 'Academic Settings',
+    financialSettings: 'Financial Settings',
   },
   dashboard: {
     title: 'Dashboard',
@@ -394,6 +396,7 @@ const ps: TranslationKeys = {
     settings: 'ترتیبات',
     authentication: 'د تصدیق مدیریت',
     academicSettings: 'د علمي ترتیباتو',
+    financialSettings: 'د مالي ترتیباتو',
   },
   dashboard: {
     title: 'کنټرول پینل',
@@ -563,6 +566,7 @@ const fa: TranslationKeys = {
     settings: 'تنظیمات',
     authentication: 'مدیریت احراز هویت',
     academicSettings: 'تنظیمات آکادمیک',
+    financialSettings: 'تنظیمات مالی',
   },
   dashboard: {
     title: 'داشبورد',
@@ -732,6 +736,7 @@ const ar: TranslationKeys = {
     settings: 'الإعدادات',
     authentication: 'إدارة المصادقة',
     academicSettings: 'الإعدادات الأكاديمية',
+    financialSettings: 'الإعدادات المالية',
   },
   dashboard: {
     title: 'لوحة التحكم',
