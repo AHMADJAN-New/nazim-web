@@ -132,8 +132,16 @@ END;
 $$;
 
 -- Normalize auth token columns to non-null strings for GoTrue
--- Some Supabase GoTrue versions expect confirmation_token to be a non-null string.
+-- Some Supabase GoTrue versions expect certain VARCHAR columns to be empty strings, not NULL.
 -- Ensure any NULL values are converted to empty strings to avoid scan errors.
 UPDATE auth.users
 SET
-  confirmation_token = COALESCE(confirmation_token, '');
+  email_change = COALESCE(email_change, ''),
+  email_change_token_new = COALESCE(email_change_token_new, ''),
+  recovery_token = COALESCE(recovery_token, ''),
+  confirmation_token = COALESCE(confirmation_token, '')
+WHERE
+  email_change IS NULL
+  OR email_change_token_new IS NULL
+  OR recovery_token IS NULL
+  OR confirmation_token IS NULL;

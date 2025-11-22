@@ -32,6 +32,7 @@ import {
   SchoolsManagement,
   ReportTemplatesManagement,
   ResidencyTypesManagement,
+  AcademicYearsManagement,
   UserManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -136,6 +137,13 @@ const App = () => (
                     <Suspense fallback={<PageSkeleton />}>
                       <PermissionGuard permission="academic.residency_types.read">
                         <ResidencyTypesManagement />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/academic-years" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="academic.academic_years.read">
+                        <AcademicYearsManagement />
                       </PermissionGuard>
                     </Suspense>
                   } />

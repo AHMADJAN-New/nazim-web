@@ -181,6 +181,42 @@ export interface TranslationKeys {
       organizationType: string;
       cannotDeleteGlobal: string;
     };
+    academicYears: {
+      title: string;
+      management: string;
+      addAcademicYear: string;
+      editAcademicYear: string;
+      deleteAcademicYear: string;
+      name: string;
+      startDate: string;
+      endDate: string;
+      description: string;
+      status: string;
+      isCurrent: string;
+      current: string;
+      setAsCurrent: string;
+      active: string;
+      archived: string;
+      planned: string;
+      searchPlaceholder: string;
+      noAcademicYearsFound: string;
+      noAcademicYearsMessage: string;
+      academicYearCreated: string;
+      academicYearUpdated: string;
+      academicYearDeleted: string;
+      academicYearSetAsCurrent: string;
+      deleteConfirm: string;
+      nameRequired: string;
+      startDateRequired: string;
+      endDateRequired: string;
+      nameMaxLength: string;
+      dateRangeError: string;
+      nameExists: string;
+      cannotDeleteCurrent: string;
+      globalType: string;
+      organizationType: string;
+      cannotDeleteGlobal: string;
+    };
   };
 }
 
@@ -349,6 +385,42 @@ const en: TranslationKeys = {
       globalType: 'Global',
       organizationType: 'Organization',
       cannotDeleteGlobal: 'Cannot delete global residency types',
+    },
+    academicYears: {
+      title: 'Academic Years',
+      management: 'Academic Years Management',
+      addAcademicYear: 'Add Academic Year',
+      editAcademicYear: 'Edit Academic Year',
+      deleteAcademicYear: 'Delete Academic Year',
+      name: 'Name',
+      startDate: 'Start Date',
+      endDate: 'End Date',
+      description: 'Description',
+      status: 'Status',
+      isCurrent: 'Current Year',
+      current: 'Current',
+      setAsCurrent: 'Set as Current',
+      active: 'Active',
+      archived: 'Archived',
+      planned: 'Planned',
+      searchPlaceholder: 'Search academic years...',
+      noAcademicYearsFound: 'No academic years found',
+      noAcademicYearsMessage: 'Try adjusting your search criteria or add a new academic year.',
+      academicYearCreated: 'Academic year created successfully',
+      academicYearUpdated: 'Academic year updated successfully',
+      academicYearDeleted: 'Academic year deleted successfully',
+      academicYearSetAsCurrent: 'Academic year set as current successfully',
+      deleteConfirm: 'Are you sure you want to delete this academic year?',
+      nameRequired: 'Name is required',
+      startDateRequired: 'Start date is required',
+      endDateRequired: 'End date is required',
+      nameMaxLength: 'Name must be 100 characters or less',
+      dateRangeError: 'End date must be after start date',
+      nameExists: 'This academic year name already exists for this organization',
+      cannotDeleteCurrent: 'Cannot delete the current academic year. Please set another year as current first.',
+      globalType: 'Global',
+      organizationType: 'Organization',
+      cannotDeleteGlobal: 'Cannot delete global academic years',
     },
   },
 };
@@ -519,6 +591,42 @@ const ps: TranslationKeys = {
       organizationType: 'سازمان',
       cannotDeleteGlobal: 'نړیوال د اوسیدو ډولونه پاک کیدی نشي',
     },
+    academicYears: {
+      title: 'د علمي کلونو',
+      management: 'د علمي کلونو مدیریت',
+      addAcademicYear: 'علمی کال اضافه کول',
+      editAcademicYear: 'علمی کال تغیر کول',
+      deleteAcademicYear: 'علمی کال پاک کول',
+      name: 'نوم',
+      startDate: 'د پیل نیټه',
+      endDate: 'د پای نیټه',
+      description: 'تفصیل',
+      status: 'حالت',
+      isCurrent: 'اوسنی کال',
+      current: 'اوسنی',
+      setAsCurrent: 'اوسنی کال ټاکل',
+      active: 'فعال',
+      archived: 'آرشیف شوی',
+      planned: 'پلان شوی',
+      searchPlaceholder: 'د علمي کلونو لټون...',
+      noAcademicYearsFound: 'علمي کلونه ونه موندل شول',
+      noAcademicYearsMessage: 'خپل لټون معیارونه تنظیم کړئ یا نوی علمی کال اضافه کړئ.',
+      academicYearCreated: 'علمی کال په بریالیتوب سره اضافه شو',
+      academicYearUpdated: 'علمی کال په بریالیتوب سره تغیر شو',
+      academicYearDeleted: 'علمی کال په بریالیتوب سره پاک شو',
+      academicYearSetAsCurrent: 'علمی کال په بریالیتوب سره اوسنی کال ټاکل شو',
+      deleteConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ دا علمی کال پاک کړئ؟',
+      nameRequired: 'نوم اړینه دی',
+      startDateRequired: 'د پیل نیټه اړینه ده',
+      endDateRequired: 'د پای نیټه اړینه ده',
+      nameMaxLength: 'نوم باید 100 حروف یا لږ وي',
+      dateRangeError: 'د پای نیټه باید د پیل نیټې وروسته وي',
+      nameExists: 'دا د علمي کال نوم د دې سازمان لپاره شتون لري',
+      cannotDeleteCurrent: 'اوسنی علمی کال پاک کیدی نشي. لطفاً لومړی بل کال اوسنی کال ټاکئ.',
+      globalType: 'نړیوال',
+      organizationType: 'سازمان',
+      cannotDeleteGlobal: 'نړیوال علمي کلونه پاک کیدی نشي',
+    },
   },
 };
 
@@ -688,6 +796,42 @@ const fa: TranslationKeys = {
       organizationType: 'سازمان',
       cannotDeleteGlobal: 'نمی‌توان انواع اقامت جهانی را حذف کرد',
     },
+    academicYears: {
+      title: 'سال‌های تحصیلی',
+      management: 'مدیریت سال‌های تحصیلی',
+      addAcademicYear: 'افزودن سال تحصیلی',
+      editAcademicYear: 'ویرایش سال تحصیلی',
+      deleteAcademicYear: 'حذف سال تحصیلی',
+      name: 'نام',
+      startDate: 'تاریخ شروع',
+      endDate: 'تاریخ پایان',
+      description: 'توضیحات',
+      status: 'وضعیت',
+      isCurrent: 'سال جاری',
+      current: 'جاری',
+      setAsCurrent: 'تنظیم به عنوان جاری',
+      active: 'فعال',
+      archived: 'بایگانی شده',
+      planned: 'برنامه‌ریزی شده',
+      searchPlaceholder: 'جستجوی سال‌های تحصیلی...',
+      noAcademicYearsFound: 'سال تحصیلی یافت نشد',
+      noAcademicYearsMessage: 'معیارهای جستجوی خود را تنظیم کنید یا سال تحصیلی جدیدی اضافه کنید.',
+      academicYearCreated: 'سال تحصیلی با موفقیت ایجاد شد',
+      academicYearUpdated: 'سال تحصیلی با موفقیت به‌روزرسانی شد',
+      academicYearDeleted: 'سال تحصیلی با موفقیت حذف شد',
+      academicYearSetAsCurrent: 'سال تحصیلی با موفقیت به عنوان جاری تنظیم شد',
+      deleteConfirm: 'آیا مطمئن هستید که می‌خواهید این سال تحصیلی را حذف کنید؟',
+      nameRequired: 'نام الزامی است',
+      startDateRequired: 'تاریخ شروع الزامی است',
+      endDateRequired: 'تاریخ پایان الزامی است',
+      nameMaxLength: 'نام باید حداکثر 100 کاراکتر باشد',
+      dateRangeError: 'تاریخ پایان باید بعد از تاریخ شروع باشد',
+      nameExists: 'این نام سال تحصیلی برای این سازمان قبلاً وجود دارد',
+      cannotDeleteCurrent: 'نمی‌توان سال تحصیلی جاری را حذف کرد. لطفاً ابتدا سال دیگری را به عنوان جاری تنظیم کنید.',
+      globalType: 'جهانی',
+      organizationType: 'سازمان',
+      cannotDeleteGlobal: 'نمی‌توان سال‌های تحصیلی جهانی را حذف کرد',
+    },
   },
 };
 
@@ -856,6 +1000,42 @@ const ar: TranslationKeys = {
       globalType: 'عالمي',
       organizationType: 'المنظمة',
       cannotDeleteGlobal: 'لا يمكن حذف أنواع الإقامة العالمية',
+    },
+    academicYears: {
+      title: 'السنوات الأكاديمية',
+      management: 'إدارة السنوات الأكاديمية',
+      addAcademicYear: 'إضافة سنة أكاديمية',
+      editAcademicYear: 'تعديل السنة الأكاديمية',
+      deleteAcademicYear: 'حذف السنة الأكاديمية',
+      name: 'الاسم',
+      startDate: 'تاريخ البدء',
+      endDate: 'تاريخ الانتهاء',
+      description: 'الوصف',
+      status: 'الحالة',
+      isCurrent: 'السنة الحالية',
+      current: 'حالي',
+      setAsCurrent: 'تعيين كحالي',
+      active: 'نشط',
+      archived: 'مؤرشف',
+      planned: 'مخطط',
+      searchPlaceholder: 'البحث عن السنوات الأكاديمية...',
+      noAcademicYearsFound: 'لم يتم العثور على سنوات أكاديمية',
+      noAcademicYearsMessage: 'حاول تعديل معايير البحث أو إضافة سنة أكاديمية جديدة.',
+      academicYearCreated: 'تم إنشاء السنة الأكاديمية بنجاح',
+      academicYearUpdated: 'تم تحديث السنة الأكاديمية بنجاح',
+      academicYearDeleted: 'تم حذف السنة الأكاديمية بنجاح',
+      academicYearSetAsCurrent: 'تم تعيين السنة الأكاديمية كحالية بنجاح',
+      deleteConfirm: 'هل أنت متأكد أنك تريد حذف هذه السنة الأكاديمية؟',
+      nameRequired: 'الاسم مطلوب',
+      startDateRequired: 'تاريخ البدء مطلوب',
+      endDateRequired: 'تاريخ الانتهاء مطلوب',
+      nameMaxLength: 'يجب أن يكون الاسم 100 حرف أو أقل',
+      dateRangeError: 'يجب أن يكون تاريخ الانتهاء بعد تاريخ البدء',
+      nameExists: 'اسم السنة الأكاديمية هذا موجود بالفعل لهذه المنظمة',
+      cannotDeleteCurrent: 'لا يمكن حذف السنة الأكاديمية الحالية. يرجى تعيين سنة أخرى كحالية أولاً.',
+      globalType: 'عالمي',
+      organizationType: 'المنظمة',
+      cannotDeleteGlobal: 'لا يمكن حذف السنوات الأكاديمية العالمية',
     },
   },
 };
