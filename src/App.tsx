@@ -34,6 +34,7 @@ import {
   ResidencyTypesManagement,
   AcademicYearsManagement,
   ClassesManagement,
+  SubjectsManagement,
   UserManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -152,6 +153,13 @@ const App = () => (
                       <Suspense fallback={<PageSkeleton />}>
                         <PermissionGuard permission="academic.classes.read">
                           <ClassesManagement />
+                        </PermissionGuard>
+                      </Suspense>
+                    } />
+                    <Route path="/settings/subjects" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PermissionGuard permission="academic.subjects.read">
+                          <SubjectsManagement />
                         </PermissionGuard>
                       </Suspense>
                     } />

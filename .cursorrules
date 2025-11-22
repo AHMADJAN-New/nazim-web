@@ -1710,6 +1710,76 @@ const { t, isRTL, language } = useLanguage();
 - Browser compatibility
 - Translation keys not found (check key spelling and language files)
 - RTL layout issues (check `dir` attribute and CSS)
+- **Table not found (404 errors)**: Migrations not run - run `supabase migration up` or apply migrations via Supabase dashboard
+- **Bad Request (400 errors) on queries**: Check query syntax, especially nested relations and ordering
+
+### Database Migration Errors
+
+#### Table Not Found (404 Errors)
+**Symptom**: `GET /rest/v1/table_name 404 (Not Found)`
+
+**Causes**:
+1. **Migrations not applied**: New tables created in migration files but not run against database
+2. **Table name typo**: Check spelling matches migration file exactly
+3. **Schema mismatch**: Table exists in different schema (check `public` schema)
+
+**Solutions**:
+1. **Run migrations**: 
+   ```bash
+   # Local development
+   supabase migration up
+   
+   # Or apply via Supabase Dashboard: Database > Migrations > Run migration
+   ```
+2. **Verify table exists**: Check Supabase dashboard > Database > Tables
+3. **Check migration order**: Ensure migrations are numbered sequentially and dependencies are met
+4. **Reset database** (development only): `supabase db reset`
+
+#### Bad Request (400 Errors) on Queries
+**Symptom**: `GET /rest/v1/table_name 400 (Bad Request)`
+
+**Common Causes**:
+1. **Invalid nested relation syntax**: Can't order by nested relation fields
+   ```typescript
+   // ❌ WRONG: Can't order by nested relation
+   .order('subject:subjects(name)', { ascending: true })
+   
+   // ✅ CORRECT: Sort in JavaScript after fetching
+   const sorted = data.sort((a, b) => a.subject?.name.localeCompare(b.subject?.name));
+   ```
+2. **Invalid select syntax**: Check nested relation syntax matches Supabase format
+3. **RLS policy blocking**: User doesn't have permission (check RLS policies)
+4. **Missing foreign key**: Referenced table/column doesn't exist
+
+**Solutions**:
+1. **Fix query syntax**: Use proper Supabase PostgREST syntax
+2. **Sort in JavaScript**: For nested relations, fetch then sort client-side
+3. **Check RLS policies**: Verify user has SELECT permission
+4. **Verify foreign keys**: Ensure all referenced tables/columns exist
+
+#### Query Pattern for Nested Relations
+```typescript
+// ✅ CORRECT: Fetch with nested relations, then sort in JavaScript
+const { data, error } = await (supabase as any)
+  .from('class_subjects')
+  .select(`
+    *,
+    subject:subjects(*),
+    class_academic_year:class_academic_years(*)
+  `)
+  .is('deleted_at', null);
+
+if (error) throw new Error(error.message);
+
+// Sort by nested relation field in JavaScript
+const sorted = (data || []).sort((a, b) => {
+  const nameA = a.subject?.name || '';
+  const nameB = b.subject?.name || '';
+  return nameA.localeCompare(nameB);
+});
+
+return sorted;
+```
 
 ### Debugging
 - Use browser dev tools
@@ -1718,5 +1788,8 @@ const { t, isRTL, language } = useLanguage();
 - Monitor network requests
 - Check translation keys in console: `t('key')` should return translated string
 - Verify RTL: Check `document.documentElement.dir` in console
+- **Check Supabase logs**: Dashboard > Logs > API Logs for detailed error messages
+- **Verify migrations**: Dashboard > Database > Migrations to see applied migrations
+- **Test queries**: Use Supabase SQL Editor to test queries directly
 
 Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented.

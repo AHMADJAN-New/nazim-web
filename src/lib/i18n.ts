@@ -217,6 +217,127 @@ export interface TranslationKeys {
       organizationType: string;
       cannotDeleteGlobal: string;
     };
+    classes: {
+      title: string;
+      management: string;
+      addClass: string;
+      editClass: string;
+      deleteClass: string;
+      assignToYear: string;
+      copyBetweenYears: string;
+      name: string;
+      code: string;
+      gradeLevel: string;
+      description: string;
+      defaultCapacity: string;
+      capacity: string;
+      isActive: string;
+      active: string;
+      inactive: string;
+      section: string;
+      sectionName: string;
+      teacher: string;
+      room: string;
+      studentCount: string;
+      notes: string;
+      searchPlaceholder: string;
+      noClassesFound: string;
+      noClassesMessage: string;
+      classCreated: string;
+      classUpdated: string;
+      classDeleted: string;
+      classAssigned: string;
+      classInstanceUpdated: string;
+      classRemoved: string;
+      classesCopied: string;
+      deleteConfirm: string;
+      removeConfirm: string;
+      nameRequired: string;
+      codeRequired: string;
+      nameMaxLength: string;
+      codeMaxLength: string;
+      codeExists: string;
+      cannotDeleteInUse: string;
+      cannotRemoveWithStudents: string;
+      selectAcademicYear: string;
+      selectClass: string;
+      selectTeacher: string;
+      selectRoom: string;
+      fromYear: string;
+      toYear: string;
+      selectClasses: string;
+      copyAssignments: string;
+      allSections: string;
+      baseClasses: string;
+      yearClasses: string;
+      copyClasses: string;
+      history: string;
+      viewHistory: string;
+      bulkCreateSections: string;
+      createSections: string;
+      defaultTeacher: string;
+      defaultRoom: string;
+      sectionsInput: string;
+      noSections: string;
+      globalType: string;
+      organizationType: string;
+      cannotDeleteGlobal: string;
+    };
+    subjects: {
+      title: string;
+      management: string;
+      addSubject: string;
+      editSubject: string;
+      deleteSubject: string;
+      assignToClass: string;
+      copyBetweenYears: string;
+      name: string;
+      code: string;
+      gradeLevel: string;
+      description: string;
+      isActive: string;
+      active: string;
+      inactive: string;
+      teacher: string;
+      room: string;
+      weeklyHours: string;
+      notes: string;
+      searchPlaceholder: string;
+      noSubjectsFound: string;
+      noSubjectsMessage: string;
+      subjectCreated: string;
+      subjectUpdated: string;
+      subjectDeleted: string;
+      subjectAssigned: string;
+      subjectAssignmentUpdated: string;
+      subjectRemoved: string;
+      subjectsCopied: string;
+      deleteConfirm: string;
+      removeConfirm: string;
+      nameRequired: string;
+      codeRequired: string;
+      nameMaxLength: string;
+      codeMaxLength: string;
+      codeExists: string;
+      cannotDeleteInUse: string;
+      selectAcademicYear: string;
+      selectClass: string;
+      selectSubject: string;
+      selectSubjects: string;
+      fromYear: string;
+      toYear: string;
+      copyAssignments: string;
+      baseSubjects: string;
+      classSubjects: string;
+      assignSubjects: string;
+      bulkAssignSubjects: string;
+      weeklyHoursPlaceholder: string;
+      noClassSelected: string;
+      noSubjectsAssigned: string;
+      globalType: string;
+      organizationType: string;
+      cannotDeleteGlobal: string;
+    };
   };
 }
 
@@ -487,6 +608,61 @@ const en: TranslationKeys = {
       globalType: 'Global',
       organizationType: 'Organization',
       cannotDeleteGlobal: 'Cannot delete global classes',
+    },
+    subjects: {
+      title: 'Subjects',
+      management: 'Subjects Management',
+      addSubject: 'Add Subject',
+      editSubject: 'Edit Subject',
+      deleteSubject: 'Delete Subject',
+      assignToClass: 'Assign to Class',
+      copyBetweenYears: 'Copy Subjects Between Years',
+      name: 'Name',
+      code: 'Code',
+      gradeLevel: 'Grade Level',
+      description: 'Description',
+      isActive: 'Active Status',
+      active: 'Active',
+      inactive: 'Inactive',
+      teacher: 'Teacher',
+      room: 'Room',
+      weeklyHours: 'Weekly Hours',
+      notes: 'Notes',
+      searchPlaceholder: 'Search subjects...',
+      noSubjectsFound: 'No subjects found',
+      noSubjectsMessage: 'Try adjusting your search criteria or add a new subject.',
+      subjectCreated: 'Subject created successfully',
+      subjectUpdated: 'Subject updated successfully',
+      subjectDeleted: 'Subject deleted successfully',
+      subjectAssigned: 'Subject assigned to class successfully',
+      subjectAssignmentUpdated: 'Subject assignment updated successfully',
+      subjectRemoved: 'Subject removed from class successfully',
+      subjectsCopied: 'Subjects copied successfully',
+      deleteConfirm: 'Are you sure you want to delete this subject?',
+      removeConfirm: 'Are you sure you want to remove this subject from the class?',
+      nameRequired: 'Name is required',
+      codeRequired: 'Code is required',
+      nameMaxLength: 'Name must be 100 characters or less',
+      codeMaxLength: 'Code must be 50 characters or less',
+      codeExists: 'A subject with this code already exists for this organization',
+      cannotDeleteInUse: 'Cannot delete subject that is assigned to classes',
+      selectAcademicYear: 'Select Academic Year',
+      selectClass: 'Select Class',
+      selectSubject: 'Select Subject',
+      selectSubjects: 'Select Subjects',
+      fromYear: 'From Academic Year',
+      toYear: 'To Academic Year',
+      copyAssignments: 'Copy Assignments (Teachers & Rooms)',
+      baseSubjects: 'Base Subjects',
+      classSubjects: 'Class Subjects',
+      assignSubjects: 'Assign Subjects',
+      bulkAssignSubjects: 'Bulk Assign Subjects',
+      weeklyHoursPlaceholder: 'Hours per week',
+      noClassSelected: 'Please select a class to view subjects',
+      noSubjectsAssigned: 'No subjects assigned to this class',
+      globalType: 'Global',
+      organizationType: 'Organization',
+      cannotDeleteGlobal: 'Cannot delete global subjects',
     },
   },
 };
@@ -759,6 +935,61 @@ const ps: TranslationKeys = {
       organizationType: 'سازمان',
       cannotDeleteGlobal: 'نړیوال ټولګۍ پاک کیدی نشي',
     },
+    subjects: {
+      title: 'مضامین',
+      management: 'د مضامینو مدیریت',
+      addSubject: 'مضمون اضافه کول',
+      editSubject: 'مضمون تغیر کول',
+      deleteSubject: 'مضمون پاک کول',
+      assignToClass: 'د ټولګۍ ته مضمون ټاکل',
+      copyBetweenYears: 'د مضامینو د کلونو ترمنځ کاپي کول',
+      name: 'نوم',
+      code: 'کوډ',
+      gradeLevel: 'د درجې کچه',
+      description: 'تفصیل',
+      isActive: 'فعال حالت',
+      active: 'فعال',
+      inactive: 'غیر فعال',
+      teacher: 'استاد',
+      room: 'خونه',
+      weeklyHours: 'د اونۍ ساعات',
+      notes: 'یادښتونه',
+      searchPlaceholder: 'د مضامینو لټون...',
+      noSubjectsFound: 'مضامین ونه موندل شول',
+      noSubjectsMessage: 'خپل لټون معیارونه تنظیم کړئ یا نوی مضمون اضافه کړئ.',
+      subjectCreated: 'مضمون په بریالیتوب سره اضافه شو',
+      subjectUpdated: 'مضمون په بریالیتوب سره تغیر شو',
+      subjectDeleted: 'مضمون په بریالیتوب سره پاک شو',
+      subjectAssigned: 'مضمون په بریالیتوب سره د ټولګۍ ته ټاکل شو',
+      subjectAssignmentUpdated: 'د مضمون دنده په بریالیتوب سره تغیر شوه',
+      subjectRemoved: 'مضمون په بریالیتوب سره د ټولګۍ څخه لرې شو',
+      subjectsCopied: 'مضامین په بریالیتوب سره کاپي شول',
+      deleteConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ دا مضمون پاک کړئ؟',
+      removeConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ دا مضمون د ټولګۍ څخه لرې کړئ؟',
+      nameRequired: 'نوم اړینه دی',
+      codeRequired: 'کوډ اړینه دی',
+      nameMaxLength: 'نوم باید 100 حروف یا لږ وي',
+      codeMaxLength: 'کوډ باید 50 حروف یا لږ وي',
+      codeExists: 'دا کوډ د دې سازمان لپاره شتون لري',
+      cannotDeleteInUse: 'د ټولګیو ته ټاکل شوي مضامین پاک کیدی نشي',
+      selectAcademicYear: 'د علمي کال غوره کول',
+      selectClass: 'د ټولګۍ غوره کول',
+      selectSubject: 'د مضمون غوره کول',
+      selectSubjects: 'د مضامینو غوره کول',
+      fromYear: 'د علمي کال څخه',
+      toYear: 'د علمي کال ته',
+      copyAssignments: 'د دندو کاپي کول (استادان او خونې)',
+      baseSubjects: 'اساسي مضامین',
+      classSubjects: 'د ټولګۍ مضامین',
+      assignSubjects: 'مضامین ټاکل',
+      bulkAssignSubjects: 'د مضامینو د ټاکلو ډله',
+      weeklyHoursPlaceholder: 'د اونۍ ساعات',
+      noClassSelected: 'د مضامینو د لیدو لپاره لطفاً ټولګۍ غوره کړئ',
+      noSubjectsAssigned: 'د دې ټولګۍ ته هیڅ مضمون ټاکل شوی نه دی',
+      globalType: 'نړیوال',
+      organizationType: 'سازمان',
+      cannotDeleteGlobal: 'نړیوال مضامین پاک کیدی نشي',
+    },
   },
 };
 
@@ -963,6 +1194,127 @@ const fa: TranslationKeys = {
       globalType: 'جهانی',
       organizationType: 'سازمان',
       cannotDeleteGlobal: 'نمی‌توان سال‌های تحصیلی جهانی را حذف کرد',
+    },
+    classes: {
+      title: 'کلاس‌ها',
+      management: 'مدیریت کلاس‌ها',
+      addClass: 'افزودن کلاس',
+      editClass: 'ویرایش کلاس',
+      deleteClass: 'حذف کلاس',
+      assignToYear: 'اختصاص به سال تحصیلی',
+      copyBetweenYears: 'کپی کلاس‌ها بین سال‌ها',
+      name: 'نام',
+      code: 'کد',
+      gradeLevel: 'سطح پایه',
+      description: 'توضیحات',
+      defaultCapacity: 'ظرفیت پیش‌فرض',
+      capacity: 'ظرفیت',
+      isActive: 'وضعیت فعال',
+      active: 'فعال',
+      inactive: 'غیرفعال',
+      section: 'بخش',
+      sectionName: 'نام بخش',
+      teacher: 'معلم',
+      room: 'اتاق',
+      studentCount: 'تعداد دانش‌آموز',
+      notes: 'یادداشت‌ها',
+      searchPlaceholder: 'جستجوی کلاس‌ها...',
+      noClassesFound: 'کلاسی یافت نشد',
+      noClassesMessage: 'معیارهای جستجوی خود را تنظیم کنید یا کلاس جدیدی اضافه کنید.',
+      classCreated: 'کلاس با موفقیت ایجاد شد',
+      classUpdated: 'کلاس با موفقیت به‌روزرسانی شد',
+      classDeleted: 'کلاس با موفقیت حذف شد',
+      classAssigned: 'کلاس با موفقیت به سال تحصیلی اختصاص داده شد',
+      classInstanceUpdated: 'نمونه کلاس با موفقیت به‌روزرسانی شد',
+      classRemoved: 'کلاس با موفقیت از سال تحصیلی حذف شد',
+      classesCopied: 'کلاس‌ها با موفقیت کپی شدند',
+      deleteConfirm: 'آیا مطمئن هستید که می‌خواهید این کلاس را حذف کنید؟',
+      removeConfirm: 'آیا مطمئن هستید که می‌خواهید این کلاس را از سال تحصیلی حذف کنید؟',
+      nameRequired: 'نام الزامی است',
+      codeRequired: 'کد الزامی است',
+      nameMaxLength: 'نام باید حداکثر 100 کاراکتر باشد',
+      codeMaxLength: 'کد باید حداکثر 50 کاراکتر باشد',
+      codeExists: 'کلاسی با این کد برای این سازمان قبلاً وجود دارد',
+      cannotDeleteInUse: 'نمی‌توان کلاسی که به سال‌های تحصیلی اختصاص داده شده را حذف کرد',
+      cannotRemoveWithStudents: 'نمی‌توان نمونه کلاسی که دانش‌آموز دارد را حذف کرد',
+      selectAcademicYear: 'انتخاب سال تحصیلی',
+      selectClass: 'انتخاب کلاس',
+      selectTeacher: 'انتخاب معلم',
+      selectRoom: 'انتخاب اتاق',
+      fromYear: 'از سال تحصیلی',
+      toYear: 'به سال تحصیلی',
+      selectClasses: 'انتخاب کلاس‌ها برای کپی',
+      copyAssignments: 'کپی اختصاصات (معلمان و اتاق‌ها)',
+      allSections: 'همه بخش‌ها',
+      baseClasses: 'کلاس‌های پایه',
+      yearClasses: 'کلاس‌ها بر اساس سال تحصیلی',
+      copyClasses: 'کپی کلاس‌ها',
+      history: 'تاریخچه',
+      viewHistory: 'مشاهده تاریخچه',
+      bulkCreateSections: 'ایجاد دسته‌ای بخش‌ها',
+      createSections: 'ایجاد بخش‌ها',
+      defaultTeacher: 'معلم پیش‌فرض',
+      defaultRoom: 'اتاق پیش‌فرض',
+      sectionsInput: 'بخش‌ها (جدا شده با کاما)',
+      noSections: 'بخشی وجود ندارد',
+      globalType: 'جهانی',
+      organizationType: 'سازمان',
+      cannotDeleteGlobal: 'نمی‌توان کلاس‌های جهانی را حذف کرد',
+    },
+    subjects: {
+      title: 'موضوعات',
+      management: 'مدیریت موضوعات',
+      addSubject: 'افزودن موضوع',
+      editSubject: 'ویرایش موضوع',
+      deleteSubject: 'حذف موضوع',
+      assignToClass: 'اختصاص به کلاس',
+      copyBetweenYears: 'کپی موضوعات بین سال‌ها',
+      name: 'نام',
+      code: 'کد',
+      gradeLevel: 'سطح پایه',
+      description: 'توضیحات',
+      isActive: 'وضعیت فعال',
+      active: 'فعال',
+      inactive: 'غیرفعال',
+      teacher: 'معلم',
+      room: 'اتاق',
+      weeklyHours: 'ساعات هفتگی',
+      notes: 'یادداشت‌ها',
+      searchPlaceholder: 'جستجوی موضوعات...',
+      noSubjectsFound: 'موضوعی یافت نشد',
+      noSubjectsMessage: 'معیارهای جستجوی خود را تنظیم کنید یا موضوع جدیدی اضافه کنید.',
+      subjectCreated: 'موضوع با موفقیت ایجاد شد',
+      subjectUpdated: 'موضوع با موفقیت به‌روزرسانی شد',
+      subjectDeleted: 'موضوع با موفقیت حذف شد',
+      subjectAssigned: 'موضوع با موفقیت به کلاس اختصاص داده شد',
+      subjectAssignmentUpdated: 'اختصاص موضوع با موفقیت به‌روزرسانی شد',
+      subjectRemoved: 'موضوع با موفقیت از کلاس حذف شد',
+      subjectsCopied: 'موضوعات با موفقیت کپی شدند',
+      deleteConfirm: 'آیا مطمئن هستید که می‌خواهید این موضوع را حذف کنید؟',
+      removeConfirm: 'آیا مطمئن هستید که می‌خواهید این موضوع را از کلاس حذف کنید؟',
+      nameRequired: 'نام الزامی است',
+      codeRequired: 'کد الزامی است',
+      nameMaxLength: 'نام باید حداکثر 100 کاراکتر باشد',
+      codeMaxLength: 'کد باید حداکثر 50 کاراکتر باشد',
+      codeExists: 'موضوعی با این کد برای این سازمان قبلاً وجود دارد',
+      cannotDeleteInUse: 'نمی‌توان موضوعی که به کلاس‌ها اختصاص داده شده را حذف کرد',
+      selectAcademicYear: 'انتخاب سال تحصیلی',
+      selectClass: 'انتخاب کلاس',
+      selectSubject: 'انتخاب موضوع',
+      selectSubjects: 'انتخاب موضوعات',
+      fromYear: 'از سال تحصیلی',
+      toYear: 'به سال تحصیلی',
+      copyAssignments: 'کپی اختصاصات (معلمان و اتاق‌ها)',
+      baseSubjects: 'موضوعات پایه',
+      classSubjects: 'موضوعات کلاس',
+      assignSubjects: 'اختصاص موضوعات',
+      bulkAssignSubjects: 'اختصاص دسته‌ای موضوعات',
+      weeklyHoursPlaceholder: 'ساعات در هفته',
+      noClassSelected: 'لطفاً کلاسی را برای مشاهده موضوعات انتخاب کنید',
+      noSubjectsAssigned: 'هیچ موضوعی به این کلاس اختصاص داده نشده است',
+      globalType: 'جهانی',
+      organizationType: 'سازمان',
+      cannotDeleteGlobal: 'نمی‌توان موضوعات جهانی را حذف کرد',
     },
   },
 };
@@ -1234,6 +1586,61 @@ const ar: TranslationKeys = {
       globalType: 'عالمي',
       organizationType: 'المنظمة',
       cannotDeleteGlobal: 'لا يمكن حذف الفصول العالمية',
+    },
+    subjects: {
+      title: 'المواد الدراسية',
+      management: 'إدارة المواد الدراسية',
+      addSubject: 'إضافة مادة',
+      editSubject: 'تعديل المادة',
+      deleteSubject: 'حذف المادة',
+      assignToClass: 'تعيين إلى الفصل',
+      copyBetweenYears: 'نسخ المواد بين السنوات',
+      name: 'الاسم',
+      code: 'الكود',
+      gradeLevel: 'مستوى الصف',
+      description: 'الوصف',
+      isActive: 'حالة النشاط',
+      active: 'نشط',
+      inactive: 'غير نشط',
+      teacher: 'المعلم',
+      room: 'الغرفة',
+      weeklyHours: 'الساعات الأسبوعية',
+      notes: 'ملاحظات',
+      searchPlaceholder: 'البحث عن المواد...',
+      noSubjectsFound: 'لم يتم العثور على مواد',
+      noSubjectsMessage: 'حاول تعديل معايير البحث أو إضافة مادة جديدة.',
+      subjectCreated: 'تم إنشاء المادة بنجاح',
+      subjectUpdated: 'تم تحديث المادة بنجاح',
+      subjectDeleted: 'تم حذف المادة بنجاح',
+      subjectAssigned: 'تم تعيين المادة إلى الفصل بنجاح',
+      subjectAssignmentUpdated: 'تم تحديث تعيين المادة بنجاح',
+      subjectRemoved: 'تم إزالة المادة من الفصل بنجاح',
+      subjectsCopied: 'تم نسخ المواد بنجاح',
+      deleteConfirm: 'هل أنت متأكد أنك تريد حذف هذه المادة؟',
+      removeConfirm: 'هل أنت متأكد أنك تريد إزالة هذه المادة من الفصل؟',
+      nameRequired: 'الاسم مطلوب',
+      codeRequired: 'الكود مطلوب',
+      nameMaxLength: 'يجب أن يكون الاسم 100 حرف أو أقل',
+      codeMaxLength: 'يجب أن يكون الكود 50 حرفًا أو أقل',
+      codeExists: 'مادة بهذا الكود موجودة بالفعل لهذه المنظمة',
+      cannotDeleteInUse: 'لا يمكن حذف مادة مخصصة للفصول',
+      selectAcademicYear: 'اختر السنة الأكاديمية',
+      selectClass: 'اختر الفصل',
+      selectSubject: 'اختر المادة',
+      selectSubjects: 'اختر المواد',
+      fromYear: 'من السنة الأكاديمية',
+      toYear: 'إلى السنة الأكاديمية',
+      copyAssignments: 'نسخ التعيينات (المعلمون والغرف)',
+      baseSubjects: 'المواد الأساسية',
+      classSubjects: 'مواد الفصل',
+      assignSubjects: 'تعيين المواد',
+      bulkAssignSubjects: 'تعيين المواد بالجملة',
+      weeklyHoursPlaceholder: 'ساعات في الأسبوع',
+      noClassSelected: 'يرجى اختيار فصل لعرض المواد',
+      noSubjectsAssigned: 'لم يتم تعيين أي مواد لهذا الفصل',
+      globalType: 'عالمي',
+      organizationType: 'المنظمة',
+      cannotDeleteGlobal: 'لا يمكن حذف المواد العالمية',
     },
   },
 };
