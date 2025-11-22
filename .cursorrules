@@ -3,6 +3,8 @@
 ## Project Overview
 This is a comprehensive Islamic school management system built with React, TypeScript, and Supabase. The application serves educational institutions with features for student management, academics, finance, communication, and more.
 
+**⚠️ CRITICAL: This is a MULTI-TENANT SaaS application. ALL code must enforce organization isolation. See "Multi-Tenancy Architecture" section below.**
+
 ## Tech Stack
 - **Frontend**: React 18.3.1, TypeScript, Vite, Tailwind CSS, shadcn/ui
 - **Backend**: Supabase (PostgreSQL, Auth, Storage, Edge Functions)
@@ -18,8 +20,34 @@ This is a comprehensive Islamic school management system built with React, TypeS
 - Use strict TypeScript with proper type definitions
 - Define interfaces for all data structures
 - Use generic types where appropriate
-- Avoid `any` type - use proper typing
+- Avoid `any` type – use proper typing **except at the Supabase query boundary as described in "Supabase TypeScript & Generated Types"**.
 - Export types from dedicated type files
+- When React Query generics cause `TS2589: Type instantiation is excessively deep and possibly infinite` (usually with complex `useQuery` return types + Supabase types):
+
+  1. **First**, simplify types:
+     - Give `useQuery` an explicit data type: `useQuery<Permission[]>({...})`
+     - Make the `queryFn` return `Promise<Permission[]>` directly
+     - Avoid deeply nested inferred types in `queryKey` and `select` callbacks
+
+  2. If the error still persists and only at the **call site**, it is acceptable to:
+
+     ```ts
+     // @ts-expect-error TS2589 – React Query + Supabase type depth workaround
+     return useQuery<Permission[]>({
+       queryKey: ['permissions', profile?.organization_id],
+       queryFn: fetchPermissions,
+       enabled: !!profile,
+     });
+     ```
+
+     - Only use `// @ts-expect-error` **above the minimal line** that triggers TS2589
+     - Add a clear comment explaining it is a React Query type depth workaround
+     - Do **not** use `@ts-ignore` for this; prefer `@ts-expect-error` so the compiler verifies it
+
+  3. Do **not** refactor working logic just to appease TS depth if the runtime code is correct and the types are already explicit at the hook boundary.
+
+- **Never use `// @ts-ignore` in this project.**
+  - If a suppression is truly needed, use `// @ts-expect-error <short_reason>` and keep it as close as possible to the line causing the error (primarily for TS2589 React Query depth issues).
 
 ### React Patterns
 - Use functional components with hooks
@@ -47,15 +75,216 @@ This is a comprehensive Islamic school management system built with React, TypeS
 
 ### Database Schema
 - Use proper foreign key relationships
-- Implement Row Level Security (RLS)
+- **ALWAYS add `organization_id` to tenant tables** (see Multi-Tenancy section)
+- **ALWAYS implement Row Level Security (RLS)** with organization isolation policies
 - Use enums for status fields
 - Follow naming conventions: snake_case for tables/columns
+- **ALWAYS create index on `organization_id`** for performance
 
 ### Supabase Integration
 - Use typed Supabase client
 - Implement proper error handling
 - Use real-time subscriptions where needed
 - Follow security best practices
+- All Supabase calls in hooks must:
+  - Check `error` and throw `new Error(error.message)` on failure.
+  - Return **parsed, typed data** (never raw Supabase response objects) to components.
+
+### Supabase TypeScript & Generated Types (Cursor Rules)
+
+Supabase's generated `Database` types are the **source of truth when they are correct** – but they can lag behind the real schema. Cursor must follow these rules:
+
+#### 1. When to trust the typed client
+
+Use the typed client:
+
+```ts
+import { supabase } from '@/integrations/supabase/client';
+
+const { data, error } = await supabase
+  .from('organizations')
+  .select('*');
+```
+
+**Only** when:
+
+* The table exists in `Database['public']['Tables']`
+* All used columns exist in the generated types
+* TypeScript does **not** show any of these errors:
+  * `No overload matches this call. Argument of type '"some_table"' is not assignable...`
+  * `Property 'column_x' does not exist on type 'SelectQueryError<"...">'`
+  * `Type instantiation is excessively deep and possibly infinite` coming from Supabase query types
+
+#### 2. When types are out-of-sync → use `(supabase as any)` + interfaces
+
+If any of the above errors appear – especially for:
+
+* `permissions`
+* `role_permissions`
+* `profiles` (custom columns like `default_school_id`)
+* `report_templates`
+* `school_branding`
+* `super_admin_organizations`
+* any new table not yet in the generated `Database` type
+
+then **do not fight the generated types**. Instead:
+
+1. **Define a row interface** (either local or in `/src/types`):
+
+   ```ts
+   export interface ReportTemplateRow {
+     id: string;
+     organization_id: string | null;
+     name: string;
+     code: string;
+     description: string | null;
+     created_at: string;
+     updated_at: string;
+     // add any other used columns explicitly
+   }
+   ```
+
+2. **Use an untyped Supabase client at the query boundary**:
+
+   ```ts
+   const { data, error } = await (supabase as any)
+     .from('report_templates')
+     .select('*')
+     .eq('organization_id', organizationId);
+
+   if (error) {
+     throw new Error(error.message);
+   }
+
+   return (data || []) as ReportTemplateRow[];
+   ```
+
+3. **Never leak `any` beyond hooks**
+
+   * All hooks must return **typed data** (`ReportTemplateRow[]`, `Permission[]`, `UserProfileRow[]`, etc.).
+   * `any` is allowed **only** at the Supabase call boundary; cast to the interface before returning.
+
+#### 3. Handling `SelectQueryError<"...">` unions
+
+If TS infers something like:
+
+```ts
+SelectQueryError<"column 'organization_id' does not exist on 'permissions'.">
+```
+
+for `data`, **do not**:
+
+* Cast that error union everywhere
+* Access `.organization_id` on that union type
+* Add random non-null assertions to silence it
+
+Instead, immediately switch the query to this pattern:
+
+```ts
+interface Permission {
+  id: string;
+  name: string;
+  resource: string | null;
+  action: string | null;
+  description: string | null;
+  organization_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+const { data, error } = await (supabase as any)
+  .from('permissions')
+  .select('*');
+
+if (error) {
+  throw new Error(error.message);
+}
+
+const permissions = (data || []) as Permission[];
+```
+
+#### 4. "Table not assignable to parameter of type … | never"
+
+For errors like:
+
+> `Argument of type '"report_templates"' is not assignable to parameter of type '"buildings" | "organizations" | ...'`
+> or
+> `Argument of type '"school_branding"' is not assignable to parameter of type 'never'.`
+
+Assume the table is **real in the database** but missing from the generated types. Fix by:
+
+* Using `(supabase as any).from('report_templates')`
+* Defining a proper interface for the row
+* Casting the result to that interface
+
+Do **not** try to "force" the table into the existing union via hacks.
+
+#### 5. Profiles / Users / Permissions standard pattern
+
+For **profiles-like** tables with custom fields (e.g. `default_school_id`, `phone`, `is_active`):
+
+```ts
+export interface UserProfileRow {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: string | null;
+  organization_id: string | null;
+  default_school_id: string | null;
+  phone: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+const { data, error } = await (supabase as any)
+  .from('profiles')
+  .select('*')
+  .order('created_at', { ascending: false });
+
+if (error) {
+  throw new Error(error.message);
+}
+
+return (data || []) as UserProfileRow[];
+```
+
+Use the same pattern for:
+
+* `permissions` → `Permission` interface
+* `role_permissions` → `RolePermission` interface
+* `super_admin_organizations` → `SuperAdminOrganization` interface
+* `school_branding` → `SchoolBrandingRow` interface
+
+#### 6. React Query + Supabase types
+
+When using `useQuery` with these untyped Supabase calls:
+
+* Always specify the **return type** clearly:
+
+  ```ts
+  return useQuery<UserProfileRow[]>({
+    queryKey: ['users', profile?.organization_id],
+    queryFn: fetchUsers,
+    enabled: !!profile,
+  });
+  ```
+
+* Ensure `fetchUsers` returns `Promise<UserProfileRow[]>`.
+
+This keeps the rest of the app strongly typed even if Supabase is untyped at the boundary.
+
+### Local Consistency Rule
+
+When modifying existing files:
+
+- **Preserve the existing pattern in that file**:
+  - If the file already uses `(supabase as any)` + interfaces, continue using that pattern.
+  - If the file already uses the typed Supabase client cleanly (no TS errors), keep that style.
+
+- Do **not** partially convert a file: avoid mixing typed and untyped Supabase calls for the same table in one file.
+
+- Prefer **minimal, local changes** that fix type errors without refactoring working runtime logic.
 
 ### Query Patterns
 ```typescript
@@ -66,6 +295,975 @@ const { data, isLoading, error } = useQuery({
   staleTime: 5 * 60 * 1000, // 5 minutes
 });
 ```
+
+## Multi-Tenancy Architecture
+
+**CRITICAL: This is a multi-tenant SaaS application. ALL code must follow organization isolation patterns.**
+
+### Core Principles
+- **Every tenant table MUST have `organization_id` column**
+- **RLS policies MUST enforce organization isolation**
+- **Frontend hooks MUST filter by organization_id**
+- **Storage paths MUST include organization_id**
+- **Super admin (organization_id = NULL) can access all organizations**
+
+### Database Schema - Multi-Tenancy
+
+#### Required Pattern for Tenant Tables
+```sql
+-- ALWAYS add organization_id to tenant tables
+CREATE TABLE IF NOT EXISTS public.your_table (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    -- other columns...
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- ALWAYS create index on organization_id
+CREATE INDEX IF NOT EXISTS idx_your_table_organization_id ON public.your_table(organization_id);
+
+-- ALWAYS enable RLS
+ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
+
+-- ALWAYS create RLS policies (5 standard policies)
+-- 1. Service role full access
+CREATE POLICY "Service role full access to your_table"
+    ON public.your_table FOR ALL TO service_role
+    USING (true) WITH CHECK (true);
+
+-- 2. Users can read their organization's data
+CREATE POLICY "Users can read their organization's your_table"
+    ON public.your_table FOR SELECT TO authenticated
+    USING (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
+
+-- 3. Users can insert in their organization
+CREATE POLICY "Users can insert your_table in their organization"
+    ON public.your_table FOR INSERT TO authenticated
+    WITH CHECK (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
+
+-- 4. Users can update their organization's data
+CREATE POLICY "Users can update their organization's your_table"
+    ON public.your_table FOR UPDATE TO authenticated
+    USING (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    )
+    WITH CHECK (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
+
+-- 5. Users can delete their organization's data
+CREATE POLICY "Users can delete their organization's your_table"
+    ON public.your_table FOR DELETE TO authenticated
+    USING (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
+```
+
+#### Tables with Organization Isolation (Current)
+- ✅ `organizations` - Root tenant table
+- ✅ `profiles` - User profiles (organization_id can be NULL for super_admin)
+- ✅ `buildings` - Organization-scoped
+- ✅ `rooms` - Organization-scoped (inherits from building)
+- ✅ `staff` - Organization-scoped
+
+#### Future Tables That Need Organization Isolation
+When creating new tables, ALWAYS add organization_id:
+- `students` - Student records
+- `classes` - Class management
+- `subjects` - Subject management
+- `exams` - Examination records
+- `attendance` - Attendance tracking
+- `fees` - Fee management
+- `library_books` - Library management
+- `assets` - Asset management
+- Any other tenant-specific data
+
+### Frontend Hooks - Multi-Tenancy Pattern
+
+#### Standard Hook Pattern with Organization Filtering
+```typescript
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useProfile } from './useProfiles';
+import { useAuth } from './useAuth';
+
+export interface YourResource {
+  id: string;
+  organization_id: string;
+  // other fields...
+}
+
+// ALWAYS accept optional organizationId parameter
+export const useYourResources = (organizationId?: string) => {
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+
+  return useQuery({
+    queryKey: ['your-resources', organizationId || profile?.organization_id],
+    queryFn: async () => {
+      if (!user || !profile) return [];
+
+      let query = supabase.from('your_table').select('*');
+
+      // Super admin can see all or filter by org
+      const isSuperAdmin = profile.organization_id === null && profile.role === 'super_admin';
+      if (isSuperAdmin) {
+        if (organizationId) {
+          query = query.eq('organization_id', organizationId);
+        }
+        // Otherwise show all
+      } else {
+        // Regular users see only their organization's data
+        const userOrgId = profile.organization_id;
+        if (userOrgId) {
+          query = query.eq('organization_id', userOrgId);
+        } else {
+          return []; // No organization assigned
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data as YourResource[];
+    },
+    enabled: !!user && !!profile,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+};
+```
+
+> **Note:** If the table used in this pattern is missing or broken in the generated Supabase types, follow the "Supabase TypeScript & Generated Types" section and use `(supabase as any)` at the query boundary.
+
+// ALWAYS validate organization_id in mutations
+export const useCreateYourResource = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+
+  return useMutation({
+    mutationFn: async (resourceData: { /* fields */; organization_id?: string }) => {
+      if (!user || !profile) {
+        throw new Error('User not authenticated');
+      }
+
+      // Get organization_id - use provided or user's org
+      let organizationId = resourceData.organization_id;
+      if (!organizationId) {
+        if (profile.organization_id) {
+          organizationId = profile.organization_id;
+        } else if (profile.role === 'super_admin') {
+          throw new Error('Organization ID is required for super admin');
+        } else {
+          throw new Error('User must be assigned to an organization');
+        }
+      }
+
+      // Validate organization access (unless super admin)
+      if (profile.role !== 'super_admin' && organizationId !== profile.organization_id) {
+        throw new Error('Cannot create resource for different organization');
+      }
+
+      const { data, error } = await supabase
+        .from('your_table')
+        .insert({
+          ...resourceData,
+          organization_id: organizationId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['your-resources'] });
+    },
+  });
+};
+
+// ALWAYS check organization_id in update mutations
+export const useUpdateYourResource = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<YourResource> & { id: string }) => {
+      if (!user || !profile) {
+        throw new Error('User not authenticated');
+      }
+
+      // Get current resource to check organization
+      const { data: currentResource } = await supabase
+        .from('your_table')
+        .select('organization_id')
+        .eq('id', id)
+        .single();
+
+      if (!currentResource) {
+        throw new Error('Resource not found');
+      }
+
+      // Validate organization access (unless super admin)
+      if (profile.role !== 'super_admin' && currentResource.organization_id !== profile.organization_id) {
+        throw new Error('Cannot update resource from different organization');
+      }
+
+      // Prevent organization_id changes (unless super admin)
+      if (updates.organization_id && profile.role !== 'super_admin') {
+        throw new Error('Cannot change organization_id');
+      }
+
+      const { data, error } = await supabase
+        .from('your_table')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['your-resources'] });
+    },
+  });
+};
+```
+
+## Multi-Tenant Permission Pattern
+
+**CRITICAL: Permissions system supports true multi-tenancy with organization-scoped permissions.**
+
+### Permission Table Structure
+
+#### Permissions Table
+- **`organization_id`**: `UUID | NULL`
+  - `NULL` = Global/system permissions (available to all organizations)
+  - `UUID` = Organization-specific permissions
+- **Unique constraint**: `(name, organization_id)` - allows same permission name for different orgs
+- **Index**: Always create index on `organization_id` for performance
+
+#### Role Permissions Table
+- **`organization_id`**: `UUID | NULL`
+  - `NULL` = Global role permissions (for super_admin)
+  - `UUID` = Organization-specific role permission assignments
+- **Unique constraint**: `(role, permission_id, organization_id)` - each org can assign different permissions to roles
+- **Index**: Always create index on `organization_id` for performance
+
+### RLS Policies for Permissions
+
+#### Permissions Table RLS
+```sql
+-- Authenticated users can read:
+-- 1. Global permissions (organization_id IS NULL)
+-- 2. Permissions for their organization
+-- 3. Super admin can read all permissions
+CREATE POLICY "Authenticated users can read permissions"
+    ON public.permissions
+    FOR SELECT
+    TO authenticated
+    USING (
+        organization_id IS NULL
+        OR
+        organization_id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
+        OR
+        ((SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+         AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'super_admin')
+    );
+```
+
+#### Role Permissions Table RLS
+```sql
+-- Authenticated users can read:
+-- 1. Role permissions for their organization
+-- 2. Global role permissions (organization_id IS NULL)
+-- 3. Super admin can read all role_permissions
+CREATE POLICY "Authenticated users can read role_permissions"
+    ON public.role_permissions
+    FOR SELECT
+    TO authenticated
+    USING (
+        organization_id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
+        OR
+        organization_id IS NULL
+        OR
+        ((SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+         AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'super_admin')
+    );
+```
+
+### Permission Query Pattern
+
+#### Frontend Hook Pattern
+```typescript
+// ALWAYS query permissions with organization context
+export const useUserPermissions = () => {
+  const { data: profile } = useProfile();
+
+  return useQuery({
+    queryKey: ['user-permissions', profile?.role, profile?.id, profile?.organization_id],
+    queryFn: async () => {
+      if (!profile?.role) return [];
+
+      // Super admin: Get all global permissions
+      if (profile.role === 'super_admin') {
+        const { data } = await supabase
+          .from('permissions')
+          .select('name')
+          .is('organization_id', null); // Only global permissions
+        return data?.map(p => p.name) || [];
+      }
+
+      // Regular users: Get global + org-specific permissions
+      if (!profile.organization_id) return [];
+
+      const { data } = await supabase
+        .from('role_permissions')
+        .select('permission:permissions(name, organization_id)')
+        .eq('role', profile.role)
+        .or(`organization_id.is.null,organization_id.eq.${profile.organization_id}`);
+
+      // Extract permission names, filter by organization
+      const permNames = data
+        ?.map(rp => {
+          const perm = rp.permission;
+          if (!perm) return null;
+          // Include if global OR for user's organization
+          if (perm.organization_id === null || perm.organization_id === profile.organization_id) {
+            return perm.name;
+          }
+          return null;
+        })
+        .filter(Boolean) || [];
+
+      // Remove duplicates
+      return Array.from(new Set(permNames));
+    },
+    enabled: !!profile?.role,
+  });
+};
+```
+
+> **Note:** The `useUserPermissions` example assumes `permissions` and `role_permissions` exist correctly in the generated Supabase `Database` types.  
+> If TypeScript shows `SelectQueryError<"...">`, `"permissions"` is not assignable, or similar errors, **apply the "Supabase TypeScript & Generated Types" rules instead** and switch to `(supabase as any)` + interfaces.
+
+### Navigation Visibility Pattern
+
+#### Menu Visibility Logic
+```typescript
+// ALWAYS use permission checks, NOT role checks
+const allNavigationItems = useMemo((): NavigationItem[] => {
+  const items: NavigationItem[] = [
+    {
+      titleKey: "settings",
+      children: [
+        // Only show if user has permission
+        ...(hasBackupPermission ? [{
+          title: "Backup & Restore",
+          url: "/settings/backup",
+          icon: Package,
+        }] : []),
+        ...(hasBuildingsPermission ? [{
+          title: "Buildings Management",
+          url: "/settings/buildings",
+          icon: Building2,
+        }] : []),
+        // ... other children
+      ],
+    },
+  ];
+
+  // Filter menus: Show only if they have visible children
+  return items.filter(item => {
+    if (item.children && item.children.length > 0) {
+      // Show menu only if at least one child is visible
+      return item.children.length > 0;
+    }
+    // For menus without children, check parent permission
+    if (item.titleKey === 'settings') {
+      return hasSettingsPermission;
+    }
+    return true;
+  });
+}, [hasSettingsPermission, hasBackupPermission, hasBuildingsPermission, /* ... */]);
+```
+
+#### Key Rules
+1. **NO role-based fallbacks**: Remove all `isSuperAdmin || role === 'admin'` checks
+2. **Permission-only checks**: Use `useHasPermission('permission.name')` for all visibility
+3. **Hide empty menus**: Hide parent menu if no children are visible
+4. **Show if any child visible**: Show parent menu if at least one child has permission
+
+### Permission Assignment Pattern
+
+#### Migration Pattern
+```sql
+-- 1. Create global permissions (organization_id = NULL)
+INSERT INTO public.permissions (name, resource, action, description, organization_id) VALUES
+    ('settings.read', 'settings', 'read', 'Access to Settings', NULL),
+    ('backup.read', 'backup', 'read', 'Access to Backup', NULL)
+ON CONFLICT (name, organization_id) DO NOTHING;
+
+-- 2. Assign permissions to roles per organization
+-- For each organization, assign permissions to roles
+INSERT INTO public.role_permissions (role, permission_id, organization_id)
+SELECT 'admin', p.id, o.id
+FROM public.permissions p
+CROSS JOIN public.organizations o
+WHERE p.organization_id IS NULL -- Only global permissions
+  AND p.resource != 'organizations' -- Exclude org management
+ON CONFLICT (role, permission_id, organization_id) DO NOTHING;
+
+-- 3. Super admin gets all global permissions (organization_id = NULL in role_permissions)
+INSERT INTO public.role_permissions (role, permission_id, organization_id)
+SELECT 'super_admin', id, NULL
+FROM public.permissions
+WHERE organization_id IS NULL
+ON CONFLICT (role, permission_id, organization_id) DO NOTHING;
+```
+
+### Organization-Scoped Permissions Management
+
+**CRITICAL: Permissions management is organization-scoped. Each organization can create and manage their own permissions.**
+
+#### RLS Policies for Write Operations
+
+```sql
+-- Permissions table: Users can modify their organization's permissions
+CREATE POLICY "Authenticated users can insert their organization's permissions"
+    ON public.permissions
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        organization_id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
+        OR
+        ((SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+         AND (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'super_admin')
+    );
+
+-- Similar policies for UPDATE and DELETE on permissions and role_permissions
+```
+
+#### Permission Management Hooks Pattern
+
+```typescript
+// ALWAYS use organization context in permission management hooks
+export const useCreatePermission = () => {
+  const { data: profile } = useProfile();
+  
+  return useMutation({
+    mutationFn: async (permissionData: { name: string; resource: string; action: string; description?: string }) => {
+      if (!profile?.organization_id && profile?.role !== 'super_admin') {
+        throw new Error('User must be assigned to an organization');
+      }
+      
+      // Regular admin creates for their org, super admin can create global
+      const organizationId = profile.role === 'super_admin' 
+        ? null 
+        : profile.organization_id;
+      
+      const { data, error } = await supabase
+        .from('permissions')
+        .insert({
+          ...permissionData,
+          organization_id: organizationId,
+        })
+        .select()
+        .single();
+      
+      if (error) throw new Error(error.message);
+      return data;
+    },
+  });
+};
+
+// ALWAYS validate organization scope when assigning permissions
+export const useAssignPermissionToRole = () => {
+  const { data: profile } = useProfile();
+  
+  return useMutation({
+    mutationFn: async ({ role, permissionId }: { role: string; permissionId: string }) => {
+      // Get permission to validate organization scope
+      const { data: permission } = await supabase
+        .from('permissions')
+        .select('id, organization_id')
+        .eq('id', permissionId)
+        .single();
+      
+      // Regular admin can only assign permissions for their organization
+      if (profile.role !== 'super_admin') {
+        if (permission.organization_id !== null && permission.organization_id !== profile.organization_id) {
+          throw new Error('Cannot assign permission from different organization');
+        }
+      }
+      
+      // Set organization_id for role_permissions
+      const organizationId = profile.role === 'super_admin' 
+        ? permission.organization_id 
+        : profile.organization_id;
+      
+      const { data, error } = await supabase
+        .from('role_permissions')
+        .insert({
+          role,
+          permission_id: permissionId,
+          organization_id: organizationId,
+        })
+        .select()
+        .single();
+      
+      if (error) throw new Error(error.message);
+      return data;
+    },
+  });
+};
+```
+
+#### UI Pattern for Permissions Management
+
+```typescript
+// ALWAYS filter permissions by organization
+const permissions = useMemo(() => {
+  if (!allPermissions || !profile) return [];
+  
+  if (isSuperAdmin) {
+    return allPermissions; // Super admin sees all
+  }
+  
+  // Regular users see: global + their organization's permissions
+  return allPermissions.filter(p => 
+    p.organization_id === null || p.organization_id === profile.organization_id
+  );
+}, [allPermissions, profile, isSuperAdmin]);
+
+// ALWAYS show organization context
+{currentOrg && (
+  <Card className="bg-blue-50">
+    <CardContent>
+      <p>Managing permissions for: <strong>{currentOrg.name}</strong></p>
+      <p className="text-xs">You can view global permissions and manage permissions for your organization</p>
+    </CardContent>
+  </Card>
+)}
+
+// ALWAYS validate edit/delete permissions
+const isPermissionEditable = (permission: Permission): boolean => {
+  if (isSuperAdmin) return true;
+  return permission.organization_id === profile?.organization_id;
+};
+
+const isPermissionDeletable = (permission: Permission): boolean => {
+  if (isSuperAdmin) return true;
+  // Regular admin can only delete org-specific permissions (not global)
+  return permission.organization_id === profile?.organization_id && permission.organization_id !== null;
+};
+```
+
+#### Key Rules for Organization-Scoped Permissions
+
+1. **Create Permissions**: Regular admin creates for their organization, super admin can create global
+2. **Edit Permissions**: Regular admin can only edit their organization's permissions
+3. **Delete Permissions**: Regular admin can only delete their organization's permissions (not global)
+4. **Assign to Roles**: Regular admin can only assign permissions to roles within their organization
+5. **View Permissions**: Regular users see global + their organization's permissions
+6. **RLS Enforcement**: All write operations are enforced by RLS policies with organization filtering
+7. **UI Context**: Always show organization context banner in permissions management UI
+8. **Permission Badges**: Show "Global" vs "Org-Specific" badges in permission lists
+
+### Storage - Multi-Tenancy Pattern
+
+#### Storage Path Structure
+```typescript
+// ALWAYS include organization_id in storage paths
+// Path format: {organization_id}/{resource_id}/{file_type}/{file_name}
+
+export const useUploadFile = () => {
+  return useMutation({
+    mutationFn: async ({ 
+      resourceId, 
+      organizationId, 
+      file, 
+      fileType 
+    }: { 
+      resourceId: string; 
+      organizationId: string; 
+      file: File; 
+      fileType: string;
+    }) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${resourceId}/${fileType}/${Date.now()}.${fileExt}`;
+      const filePath = `${organizationId}/${fileName}`; // ALWAYS prefix with organization_id
+
+      const { error: uploadError } = await supabase.storage
+        .from('your-bucket')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      return filePath;
+    },
+  });
+};
+```
+
+#### Storage RLS Policies Pattern
+```sql
+-- ALWAYS create storage policies with organization isolation
+-- Path format: {organization_id}/...
+
+-- Policy: Users can upload files to their organization's folder
+CREATE POLICY "Users can upload files in their organization"
+    ON storage.objects FOR INSERT TO authenticated
+    WITH CHECK (
+        bucket_id = 'your-bucket'
+        AND (storage.foldername(name))[1] = (
+            SELECT organization_id::text FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
+
+-- Similar policies for SELECT, UPDATE, DELETE
+```
+
+### Helper Functions - Multi-Tenancy
+
+#### Use Database Helper Functions
+```typescript
+// ALWAYS use these helper functions when available
+// They're defined in the database and enforce security
+
+// Get user's organization_id
+const { data: orgId } = await supabase.rpc('get_user_organization_id');
+
+// Check if user is super admin
+const { data: isSuperAdmin } = await supabase.rpc('is_super_admin');
+
+// Check if user can access organization
+const { data: canAccess } = await supabase.rpc('can_access_organization', {
+  org_id: organizationId
+});
+```
+
+### Components - Multi-Tenancy Pattern
+
+#### Component Organization Context
+```typescript
+import { useProfile } from '@/hooks/useProfiles';
+import { useCurrentOrganization } from '@/hooks/useOrganizations';
+
+export function YourComponent() {
+  const { data: profile } = useProfile();
+  const { data: organization } = useCurrentOrganization();
+  
+  // ALWAYS check organization context
+  if (!profile?.organization_id && profile?.role !== 'super_admin') {
+    return <div>No organization assigned</div>;
+  }
+
+  // Use organization context in data fetching
+  const { data: resources } = useYourResources(profile?.organization_id);
+
+  return (
+    <div>
+      {organization && <h1>{organization.name}</h1>}
+      {/* Component content */}
+    </div>
+  );
+}
+```
+
+### Migration Files - Multi-Tenancy
+
+#### Migration Pattern
+```sql
+-- Migration: YYYYMMDDHHMMSS_add_organization_to_your_table.sql
+
+-- Step 1: Add organization_id column
+ALTER TABLE public.your_table 
+    ADD COLUMN IF NOT EXISTS organization_id UUID NULL 
+    REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+-- Step 2: Create index
+CREATE INDEX IF NOT EXISTS idx_your_table_organization_id 
+    ON public.your_table(organization_id);
+
+-- Step 3: Update existing data (if any)
+-- For new tables, this step is not needed
+UPDATE public.your_table 
+SET organization_id = (SELECT id FROM public.organizations LIMIT 1)
+WHERE organization_id IS NULL;
+
+-- Step 4: Make NOT NULL (after data migration)
+ALTER TABLE public.your_table 
+    ALTER COLUMN organization_id SET NOT NULL;
+
+-- Step 5: Enable RLS
+ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
+
+-- Step 6: Create RLS policies (use the 5-policy pattern above)
+```
+
+#### Migration Security & Performance Best Practices
+
+**CRITICAL: All migrations must follow these security and performance guidelines.**
+
+##### Function Security - SET search_path
+
+**ALWAYS** set `search_path = public` on all functions to prevent search_path injection attacks:
+
+```sql
+-- ✅ CORRECT: Function with secure search_path
+CREATE OR REPLACE FUNCTION public.your_function()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public  -- REQUIRED for security
+AS $$
+BEGIN
+    -- function body
+    RETURN NEW;
+END;
+$$;
+
+-- ❌ WRONG: Function without search_path (security vulnerability)
+CREATE OR REPLACE FUNCTION public.your_function()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- function body
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Required for:**
+- All trigger functions
+- All helper functions
+- All SECURITY DEFINER functions (especially critical)
+- All stored procedures
+
+##### Policy Naming - Character Limit
+
+**ALWAYS** keep policy names under 63 characters to avoid PostgreSQL truncation warnings:
+
+```sql
+-- ✅ CORRECT: Short, descriptive policy name (35 chars)
+CREATE POLICY "Users can insert org role_permissions" ON public.role_permissions
+    FOR INSERT TO authenticated
+    WITH CHECK (...);
+
+-- ❌ WRONG: Policy name too long (will be truncated, causes warnings)
+CREATE POLICY "Authenticated users can insert their organization's role_permissions" ON public.role_permissions
+    FOR INSERT TO authenticated
+    WITH CHECK (...);
+```
+
+**Guidelines:**
+- Use abbreviations where clear: "org" instead of "organization", "role_perms" instead of "role_permissions"
+- Prioritize clarity but stay under 63 characters
+- Test policy names before committing
+
+##### Policy Consolidation - Avoid Multiple Permissive Policies
+
+**ALWAYS** consolidate multiple permissive policies for the same action into a single policy:
+
+```sql
+-- ✅ CORRECT: Single consolidated policy
+CREATE POLICY "Users can read profiles" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (
+        deleted_at IS NULL
+        AND (
+            id = (SELECT auth.uid())
+            OR organization_id = public.get_current_user_organization_id()
+            OR public.get_current_user_organization_id() IS NULL
+        )
+    );
+
+-- ❌ WRONG: Multiple permissive policies (causes security warnings)
+CREATE POLICY "Users can read their own profile" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (id = (SELECT auth.uid()));
+
+CREATE POLICY "Users can read profiles in their organization" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (organization_id = public.get_current_user_organization_id());
+```
+
+**Benefits:**
+- Eliminates "multiple permissive policies" security warnings
+- Better performance (single policy evaluation)
+- Easier to maintain and understand
+- Cleaner migration output
+
+##### DROP Statements - Fresh Database Migrations
+
+**For fresh database migrations** (initial schema, new projects), **DO NOT** include `DROP IF EXISTS` statements:
+
+```sql
+-- ✅ CORRECT: Clean migration for fresh database
+CREATE TRIGGER update_your_table_updated_at
+    BEFORE UPDATE ON public.your_table
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE POLICY "Users can read your_table" ON public.your_table
+    FOR SELECT TO authenticated
+    USING (...);
+
+-- ❌ WRONG: Unnecessary DROP statements (causes NOTICE noise)
+DROP TRIGGER IF EXISTS update_your_table_updated_at ON public.your_table;
+CREATE TRIGGER update_your_table_updated_at
+    BEFORE UPDATE ON public.your_table
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP POLICY IF EXISTS "Users can read your_table" ON public.your_table;
+CREATE POLICY "Users can read your_table" ON public.your_table
+    FOR SELECT TO authenticated
+    USING (...);
+```
+
+**When to use DROP IF EXISTS:**
+- **Only** for migrations that modify existing objects (ALTER migrations)
+- **Only** when migrating from an older schema version
+- **Never** for initial schema migrations on fresh databases
+
+**Benefits of omitting DROP statements:**
+- Cleaner migration output (no NOTICE messages)
+- Faster execution (no unnecessary DROP operations)
+- Simpler, more readable migrations
+- Clearer intent (creating new objects, not modifying existing)
+
+##### Function Format Standard
+
+**ALWAYS** use this standard format for all functions:
+
+```sql
+CREATE OR REPLACE FUNCTION public.function_name()
+RETURNS TYPE
+LANGUAGE plpgsql
+SECURITY DEFINER  -- Only if needed
+SET search_path = public  -- REQUIRED
+STABLE  -- If function is STABLE or IMMUTABLE
+AS $$
+DECLARE
+    -- variables
+BEGIN
+    -- function body
+END;
+$$;
+```
+
+**Key points:**
+- Always specify `LANGUAGE plpgsql` explicitly
+- Always include `SET search_path = public`
+- Use `SECURITY DEFINER` only when necessary
+- Add `STABLE` or `IMMUTABLE` when applicable for performance
+- Use `AS $$` syntax (not `$$ LANGUAGE plpgsql`)
+
+##### Migration Checklist
+
+Before committing a migration, verify:
+
+- [ ] All functions have `SET search_path = public`
+- [ ] All policy names are under 63 characters
+- [ ] No multiple permissive policies for same action (consolidated)
+- [ ] No unnecessary `DROP IF EXISTS` statements (for fresh migrations)
+- [ ] All functions use standard format
+- [ ] All policies follow organization isolation patterns
+- [ ] All triggers are properly defined
+- [ ] Migration runs cleanly without NOTICE warnings (except extension notices)
+
+### Testing - Multi-Tenancy
+
+#### Test Organization Isolation
+```typescript
+describe('useYourResources', () => {
+  it('should filter by organization_id for regular users', async () => {
+    // Test that regular users only see their organization's data
+  });
+
+  it('should allow super admin to see all organizations', async () => {
+    // Test that super admin can see all data
+  });
+
+  it('should prevent cross-organization access', async () => {
+    // Test that users cannot access other organizations' data
+  });
+});
+```
+
+### Security Checklist - Multi-Tenancy
+
+**ALWAYS verify:**
+- [ ] Table has `organization_id` column
+- [ ] `organization_id` has foreign key to `organizations` table
+- [ ] Index created on `organization_id`
+- [ ] RLS enabled on table
+- [ ] 5 RLS policies created (service role, select, insert, update, delete)
+- [ ] Frontend hook filters by `organization_id`
+- [ ] Mutations validate `organization_id`
+- [ ] Storage paths include `organization_id`
+- [ ] Storage RLS policies enforce organization isolation
+- [ ] Super admin can access all organizations
+- [ ] Regular users can only access their organization
+
+### Common Mistakes to Avoid
+
+❌ **DON'T:**
+- Create tables without `organization_id`
+- Skip RLS policies
+- Query without organization filtering
+- Allow organization_id changes without super admin check
+- Store files without organization_id in path
+- Trust client-side organization_id validation only
+
+✅ **DO:**
+- Always add `organization_id` to tenant tables
+- Always create RLS policies
+- Always filter queries by organization_id
+- Always validate organization_id in mutations
+- Always include organization_id in storage paths
+- Always test organization isolation
+- Trusting broken Supabase generated types:
+  - ❌ Don't keep using the typed client if TS shows `SelectQueryError<"...">` unions or `never` table names.
+  - ✅ Do switch to `(supabase as any)` + well-defined interfaces at the query boundary, and return fully typed results from hooks.
 
 ## UI/UX Guidelines
 
@@ -204,6 +1402,10 @@ const { isRTL } = useLanguage();
 - Validate all user inputs
 - Implement audit logging
 - Follow OWASP security guidelines
+- **ALWAYS enforce multi-tenancy isolation** (organization_id filtering)
+- **ALWAYS use RLS policies** for database-level security
+- **ALWAYS validate organization_id** in all mutations
+- **NEVER trust client-side organization_id** - validate server-side
 
 ### Development Mode Auth Bypass
 - In development, authentication can be bypassed using `VITE_DISABLE_AUTH` env variable
@@ -327,16 +1529,41 @@ describe('ComponentName', () => {
 
 ## Common Patterns
 
-### Data Fetching
+### Data Fetching with Multi-Tenancy
 ```typescript
-// Custom hook pattern
-export const useStudents = (params: StudentParams) => {
+// ALWAYS use this pattern for tenant-scoped resources
+export const useStudents = (params: StudentParams, organizationId?: string) => {
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+
   return useQuery({
-    queryKey: ['students', params],
-    queryFn: () => fetchStudents(params),
-    enabled: !!params.classId,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    queryKey: ['students', organizationId || profile?.organization_id, params],
+    queryFn: async () => {
+      if (!user || !profile) return [];
+
+      let query = supabase.from('students').select('*');
+
+      // Multi-tenancy: Filter by organization
+      const isSuperAdmin = profile.organization_id === null && profile.role === 'super_admin';
+      if (isSuperAdmin) {
+        if (organizationId) query = query.eq('organization_id', organizationId);
+      } else {
+        const userOrgId = profile.organization_id;
+        if (userOrgId) {
+          query = query.eq('organization_id', userOrgId);
+        } else {
+          return [];
+        }
+      }
+
+      // Apply other filters
+      if (params.classId) query = query.eq('class_id', params.classId);
+
+      const { data, error } = await query;
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    enabled: !!user && !!profile && !!params.classId,
   });
 };
 ```

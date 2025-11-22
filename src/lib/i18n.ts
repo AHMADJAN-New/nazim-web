@@ -44,32 +44,7 @@ export interface TranslationKeys {
     communication: string;
     reports: string;
     settings: string;
-    // Navigation children
-    allStudents: string;
-    bulkImport: string;
-    idCards: string;
-    classesSections: string;
-    subjects: string;
-    timetable: string;
-    studentTimetable: string;
-    hifzProgress: string;
-    examSetup: string;
-    studentEnrollment: string;
-    rollNumberAssignment: string;
-    enrolledStudentsReports: string;
-    paperGenerator: string;
-    resultsEntry: string;
-    omrScanning: string;
-    reportCards: string;
-    feeManagement: string;
-    payments: string;
-    donations: string;
-    roomManagement: string;
-    hostelAttendance: string;
-    studentAssignment: string;
-    announcements: string;
-    messaging: string;
-    events: string;
+    authentication: string;
   };
   
   // Dashboard
@@ -152,6 +127,28 @@ export interface TranslationKeys {
     minLength: string;
     maxLength: string;
   };
+  
+  // Settings
+  settings: {
+    buildingsManagement: string;
+    roomsManagement: string;
+    buildingName: string;
+    roomNumber: string;
+    building: string;
+    staff: string;
+    warden: string;
+    noStaffAssigned: string;
+    addBuilding: string;
+    editBuilding: string;
+    addRoom: string;
+    editRoom: string;
+    buildingCreated: string;
+    buildingUpdated: string;
+    buildingDeleted: string;
+    roomCreated: string;
+    roomUpdated: string;
+    roomDeleted: string;
+  };
 }
 
 // English translations
@@ -193,32 +190,7 @@ const en: TranslationKeys = {
     communication: 'Communication',
     reports: 'Reports',
     settings: 'Settings',
-    // Navigation children
-    allStudents: 'All Students',
-    bulkImport: 'Bulk Import',
-    idCards: 'ID Cards',
-    classesSections: 'Classes & Sections',
-    subjects: 'Subjects',
-    timetable: 'Timetable',
-    studentTimetable: 'Student Timetable',
-    hifzProgress: 'Hifz Progress',
-    examSetup: 'Exam Setup',
-    studentEnrollment: 'Student Enrollment',
-    rollNumberAssignment: 'Roll Number Assignment',
-    enrolledStudentsReports: 'Enrolled Students Reports',
-    paperGenerator: 'Paper Generator',
-    resultsEntry: 'Results Entry',
-    omrScanning: 'OMR Scanning',
-    reportCards: 'Report Cards',
-    feeManagement: 'Fee Management',
-    payments: 'Payments',
-    donations: 'Donations',
-    roomManagement: 'Room Management',
-    hostelAttendance: 'Hostel Attendance',
-    studentAssignment: 'Student Assignment',
-    announcements: 'Announcements',
-    messaging: 'Messaging',
-    events: 'Events',
+    authentication: 'Authentication',
   },
   dashboard: {
     title: 'Dashboard',
@@ -295,6 +267,26 @@ const en: TranslationKeys = {
     minLength: 'Minimum length is {min} characters',
     maxLength: 'Maximum length is {max} characters',
   },
+  settings: {
+    buildingsManagement: 'Buildings Management',
+    roomsManagement: 'Rooms Management',
+    buildingName: 'Building Name',
+    roomNumber: 'Room Number',
+    building: 'Building',
+    staff: 'Staff',
+    warden: 'Warden',
+    noStaffAssigned: 'No staff assigned',
+    addBuilding: 'Add Building',
+    editBuilding: 'Edit Building',
+    addRoom: 'Add Room',
+    editRoom: 'Edit Room',
+    buildingCreated: 'Building created successfully',
+    buildingUpdated: 'Building updated successfully',
+    buildingDeleted: 'Building deleted successfully',
+    roomCreated: 'Room created successfully',
+    roomUpdated: 'Room updated successfully',
+    roomDeleted: 'Room deleted successfully',
+  },
 };
 
 // Pashto translations
@@ -336,32 +328,7 @@ const ps: TranslationKeys = {
     communication: 'اړیکې',
     reports: 'راپورونه',
     settings: 'ترتیبات',
-    // Navigation children
-    allStudents: 'ټول زده کوونکي',
-    bulkImport: 'د لوی واردات',
-    idCards: 'د پېژند کارتونه',
-    classesSections: 'ټولګۍ او برخې',
-    subjects: 'مضامین',
-    timetable: 'د وخت جدول',
-    studentTimetable: 'د زده کوونکي وخت جدول',
-    hifzProgress: 'د حفظ پرمختګ',
-    examSetup: 'د امتحان تنظیمات',
-    studentEnrollment: 'د زده کوونکي نوم لیکنه',
-    rollNumberAssignment: 'د رول شمیرو تخصیص',
-    enrolledStudentsReports: 'د نوم لیکل شویو زده کوونکو راپورونه',
-    paperGenerator: 'د کاغذ تولیدونکی',
-    resultsEntry: 'د پایلو داخلول',
-    omrScanning: 'OMR سکین',
-    reportCards: 'د راپور کارتونه',
-    feeManagement: 'د فیس مدیریت',
-    payments: 'تادیات',
-    donations: 'خیرات',
-    roomManagement: 'د خونه مدیریت',
-    hostelAttendance: 'د خوابګاه حاضري',
-    studentAssignment: 'د زده کوونکي دنده',
-    announcements: 'اعلانات',
-    messaging: 'پیغامونه',
-    events: 'پیښې',
+    authentication: 'د تصدیق مدیریت',
   },
   dashboard: {
     title: 'کنټرول پینل',
@@ -438,6 +405,26 @@ const ps: TranslationKeys = {
     minLength: 'لږترلږه اوږدوالی {min} حروف دی',
     maxLength: 'ډیرترډیره اوږدوالی {max} حروف دی',
   },
+  settings: {
+    buildingsManagement: 'د تعمیرونو مدیریت',
+    roomsManagement: 'د اطاقونو مدیریت',
+    buildingName: 'د تعمیر نوم',
+    roomNumber: 'د اطاق شمیره',
+    building: 'تعمیر',
+    staff: 'کارکوونکی',
+    warden: 'مسؤل نګران',
+    noStaffAssigned: 'هیڅ کارکوونکی وټاکل شوی نه دی',
+    addBuilding: 'تعمیر اضافه کړئ',
+    editBuilding: 'تعمیر تغیر کړئ',
+    addRoom: 'اطاق اضافه کړئ',
+    editRoom: 'اطاق تغیر کړئ',
+    buildingCreated: 'تعمیر په بریالیتوب سره اضافه شو',
+    buildingUpdated: 'تعمیر په بریالیتوب سره تغیر شو',
+    buildingDeleted: 'تعمیر په بریالیتوب سره پاک شو',
+    roomCreated: 'اطاق په بریالیتوب سره اضافه شو',
+    roomUpdated: 'اطاق په بریالیتوب سره تغیر شو',
+    roomDeleted: 'اطاق په بریالیتوب سره پاک شو',
+  },
 };
 
 // Dari (Farsi) translations
@@ -479,32 +466,7 @@ const fa: TranslationKeys = {
     communication: 'ارتباطات',
     reports: 'گزارش‌ها',
     settings: 'تنظیمات',
-    // Navigation children
-    allStudents: 'همه دانش‌آموزان',
-    bulkImport: 'واردات انبوه',
-    idCards: 'کارت‌های شناسایی',
-    classesSections: 'کلاس‌ها و بخش‌ها',
-    subjects: 'موضوعات',
-    timetable: 'برنامه زمانی',
-    studentTimetable: 'برنامه زمانی دانش‌آموز',
-    hifzProgress: 'پیشرفت حفظ',
-    examSetup: 'تنظیمات امتحان',
-    studentEnrollment: 'ثبت‌نام دانش‌آموز',
-    rollNumberAssignment: 'تخصیص شماره رول',
-    enrolledStudentsReports: 'گزارش‌های دانش‌آموزان ثبت‌نام شده',
-    paperGenerator: 'تولیدکننده کاغذ',
-    resultsEntry: 'ورود نتایج',
-    omrScanning: 'اسکن OMR',
-    reportCards: 'کارت‌های گزارش',
-    feeManagement: 'مدیریت هزینه',
-    payments: 'پرداخت‌ها',
-    donations: 'کمک‌های مالی',
-    roomManagement: 'مدیریت اتاق',
-    hostelAttendance: 'حضور خوابگاه',
-    studentAssignment: 'تکلیف دانش‌آموز',
-    announcements: 'اعلانات',
-    messaging: 'پیام‌رسانی',
-    events: 'رویدادها',
+    authentication: 'مدیریت احراز هویت',
   },
   dashboard: {
     title: 'داشبورد',
@@ -581,6 +543,26 @@ const fa: TranslationKeys = {
     minLength: 'حداقل طول {min} کاراکتر است',
     maxLength: 'حداکثر طول {max} کاراکتر است',
   },
+  settings: {
+    buildingsManagement: 'مدیریت ساختمان‌ها',
+    roomsManagement: 'مدیریت اتاق‌ها',
+    buildingName: 'نام ساختمان',
+    roomNumber: 'شماره اتاق',
+    building: 'ساختمان',
+    staff: 'کارکنان',
+    warden: 'مسئول نگهبان',
+    noStaffAssigned: 'هیچ کارکنی اختصاص داده نشده',
+    addBuilding: 'افزودن ساختمان',
+    editBuilding: 'ویرایش ساختمان',
+    addRoom: 'افزودن اتاق',
+    editRoom: 'ویرایش اتاق',
+    buildingCreated: 'ساختمان با موفقیت ایجاد شد',
+    buildingUpdated: 'ساختمان با موفقیت به‌روزرسانی شد',
+    buildingDeleted: 'ساختمان با موفقیت حذف شد',
+    roomCreated: 'اتاق با موفقیت ایجاد شد',
+    roomUpdated: 'اتاق با موفقیت به‌روزرسانی شد',
+    roomDeleted: 'اتاق با موفقیت حذف شد',
+  },
 };
 
 // Arabic translations  
@@ -622,32 +604,7 @@ const ar: TranslationKeys = {
     communication: 'التواصل',
     reports: 'التقارير',
     settings: 'الإعدادات',
-    // Navigation children
-    allStudents: 'جميع الطلاب',
-    bulkImport: 'الاستيراد الجماعي',
-    idCards: 'بطاقات الهوية',
-    classesSections: 'الفصول والشعب',
-    subjects: 'المواد',
-    timetable: 'الجدول الزمني',
-    studentTimetable: 'الجدول الزمني للطالب',
-    hifzProgress: 'تقدم الحفظ',
-    examSetup: 'إعداد الامتحان',
-    studentEnrollment: 'تسجيل الطالب',
-    rollNumberAssignment: 'تعيين رقم القيد',
-    enrolledStudentsReports: 'تقارير الطلاب المسجلين',
-    paperGenerator: 'مولد الأوراق',
-    resultsEntry: 'إدخال النتائج',
-    omrScanning: 'مسح OMR',
-    reportCards: 'بطاقات التقرير',
-    feeManagement: 'إدارة الرسوم',
-    payments: 'المدفوعات',
-    donations: 'التبرعات',
-    roomManagement: 'إدارة الغرف',
-    hostelAttendance: 'حضور السكن الداخلي',
-    studentAssignment: 'مهمة الطالب',
-    announcements: 'الإعلانات',
-    messaging: 'الرسائل',
-    events: 'الأحداث',
+    authentication: 'إدارة المصادقة',
   },
   dashboard: {
     title: 'لوحة التحكم',
@@ -723,6 +680,26 @@ const ar: TranslationKeys = {
     passwordMismatch: 'كلمات المرور غير متطابقة',
     minLength: 'الحد الأدنى للطول هو {min} أحرف',
     maxLength: 'الحد الأقصى للطول هو {max} أحرف',
+  },
+  settings: {
+    buildingsManagement: 'إدارة المباني',
+    roomsManagement: 'إدارة الغرف',
+    buildingName: 'اسم المبنى',
+    roomNumber: 'رقم الغرفة',
+    building: 'المبنى',
+    staff: 'الموظفون',
+    warden: 'المسؤول',
+    noStaffAssigned: 'لم يتم تعيين موظف',
+    addBuilding: 'إضافة مبنى',
+    editBuilding: 'تعديل المبنى',
+    addRoom: 'إضافة غرفة',
+    editRoom: 'تعديل الغرفة',
+    buildingCreated: 'تم إنشاء المبنى بنجاح',
+    buildingUpdated: 'تم تحديث المبنى بنجاح',
+    buildingDeleted: 'تم حذف المبنى بنجاح',
+    roomCreated: 'تم إنشاء الغرفة بنجاح',
+    roomUpdated: 'تم تحديث الغرفة بنجاح',
+    roomDeleted: 'تم حذف الغرفة بنجاح',
   },
 };
 

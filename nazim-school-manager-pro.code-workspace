@@ -1,0 +1,28 @@
+{
+  "folders": [
+    {
+      "name": "nazim-school-manager-pro",
+      "path": "."
+    },
+    {
+      "name": "nazim-project",
+      "path": "../nazim-project"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.git": false
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true
+    },
+    "files.watcherExclude": {
+      "**/node_modules/**": true,
+      "**/dist/**": true
+    }
+  }
+}
+

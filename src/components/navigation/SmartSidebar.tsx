@@ -5,6 +5,9 @@ import * as LucideIcons from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile, useIsSuperAdmin } from "@/hooks/useProfiles";
+import { useCurrentOrganization } from "@/hooks/useOrganizations";
+import { useHasPermission } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
 import type { UserRole } from "@/types/auth";
 import {
@@ -19,7 +22,10 @@ import {
   UserCheck,
   Trophy,
   Building,
+  Building2,
+  DoorOpen,
   Package,
+  Shield,
   MessageSquare,
   BarChart3,
   School,
@@ -31,7 +37,12 @@ import {
   Bell,
   Star,
   Clock,
-  Target
+  Target,
+  UserCog,
+  Lock,
+  AlertTriangle,
+  KeyRound,
+  UserPlus
 } from "lucide-react";
 
 import {
@@ -136,8 +147,27 @@ function LanguageSwitcherButton() {
 export const SmartSidebar = memo(function SmartSidebar() {
   const { state } = useSidebar();
   const { t, isRTL } = useLanguage();
-  const { role, loading } = useUserRole();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { data: currentProfile } = useProfile();
+  const isSuperAdmin = useIsSuperAdmin();
+  // Use profile role directly from useAuth (most reliable) instead of useUserRole
+  const roleFromAuth = profile?.role || currentProfile?.role || null;
+  const { role: roleFromHook } = useUserRole();
+  // Prefer role from auth/profile over hook (hook might have dev mode fallback)
+  const role = roleFromAuth || roleFromHook;
+  const { data: currentOrg } = useCurrentOrganization();
+  const hasSettingsPermission = useHasPermission('settings.read');
+  const hasBuildingsPermission = useHasPermission('buildings.read');
+  const hasRoomsPermission = useHasPermission('rooms.read');
+  const hasOrganizationsPermission = useHasPermission('organizations.read');
+  const hasProfilesPermission = useHasPermission('profiles.read');
+  const hasUsersPermission = useHasPermission('users.read');
+  const hasAuthMonitoringPermission = useHasPermission('auth_monitoring.read');
+  const hasSecurityMonitoringPermission = useHasPermission('security_monitoring.read');
+  const hasBrandingPermission = useHasPermission('branding.read');
+  const hasReportsPermission = useHasPermission('reports.read');
+  const hasBackupPermission = useHasPermission('backup.read');
+
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [navigationContext, setNavigationContext] = useState<NavigationContext>({
@@ -145,268 +175,167 @@ export const SmartSidebar = memo(function SmartSidebar() {
     recentTasks: [],
     quickActions: []
   });
-  
+
   const collapsed = state === "collapsed";
   const currentPath = location.pathname;
 
-  // Context-aware navigation items
-  const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {
-    const baseItems: NavigationItem[] = [
+  // Permission checks for specific child items
+  const hasPermissionsPermission = useHasPermission('permissions.read'); // Assuming this permission exists for permissions management
+
+  // Context-aware navigation items - computed with useMemo to avoid hook order issues
+  const allNavigationItems = useMemo((): NavigationItem[] => {
+    const allItems: NavigationItem[] = [
       {
         titleKey: "dashboard",
-        url: "/",
+        url: "/dashboard",
         icon: Home,
         badge: null,
         roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"],
         priority: 1
+      },
+      {
+        titleKey: "settings",
+        icon: Settings,
+        badge: null,
+        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"],
+        priority: 10,
+        children: [
+          // Only show child items if user has the required permission
+          ...(hasBackupPermission ? [{
+            title: "Backup & Restore",
+            url: "/settings/backup",
+            icon: Package,
+          }] : []),
+          ...(hasOrganizationsPermission ? [{
+            title: "Organizations Management",
+            url: "/settings/organizations",
+            icon: Shield,
+          }] : []),
+          ...(hasBuildingsPermission ? [{
+            title: "Buildings Management",
+            url: "/settings/buildings",
+            icon: Building2,
+          }] : []),
+          ...(hasRoomsPermission ? [{
+            title: "Rooms Management",
+            url: "/settings/rooms",
+            icon: DoorOpen,
+          }] : []),
+          ...(hasProfilesPermission ? [{
+            title: "Profile Management",
+            url: "/settings/profile",
+            icon: Users,
+          }] : []),
+          ...(hasPermissionsPermission ? [{
+            title: "Permissions Management",
+            url: "/settings/permissions",
+            icon: Shield,
+          }] : []),
+          ...(hasBrandingPermission ? [{
+            title: "Schools Management",
+            url: "/settings/schools",
+            icon: School,
+          }] : []),
+          ...(hasReportsPermission ? [{
+            title: "Report Templates",
+            url: "/settings/report-templates",
+            icon: FileText,
+          }] : []),
+        ],
+      },
+      {
+        titleKey: "authentication",
+        icon: Lock,
+        badge: null,
+        roles: ["super_admin", "admin"],
+        priority: 9,
+        children: [
+          // Only show child items if user has the required permission
+          ...(hasUsersPermission ? [{
+            title: "User Management",
+            url: "/admin/users",
+            icon: UserCog,
+          }] : []),
+          ...(hasProfilesPermission ? [{
+            title: "Role Requests",
+            url: "/admin/role-requests",
+            icon: UserPlus,
+          }] : []),
+          ...(hasAuthMonitoringPermission ? [{
+            title: "Auth Monitoring",
+            url: "/admin/auth-monitoring",
+            icon: AlertTriangle,
+          }] : []),
+          ...(hasSecurityMonitoringPermission ? [{
+            title: "Security Monitoring",
+            url: "/admin/security-monitoring",
+            icon: Shield,
+          }] : []),
+          ...(hasUsersPermission ? [{
+            title: "Password Management",
+            url: "/admin/password-management",
+            icon: KeyRound,
+          }] : []),
+        ],
       }
     ];
 
-    // Role-specific navigation
-    const roleSpecificItems: Record<UserRole, NavigationItem[]> = {
-      parent: [
-        {
-          titleKey: "children",
-          icon: Users,
-          roles: ["parent"],
-          priority: 2,
-          children: [
-            { title: "My Children", url: "/parent/children", icon: Users },
-            { title: "Attendance", url: "/parent/attendance", icon: UserCheck },
-            { title: "Results", url: "/parent/results", icon: Trophy },
-            { title: "Fee Payment", url: "/parent/fees", icon: CreditCard }
-          ]
-        },
-        {
-          titleKey: "communication",
-          icon: MessageSquare,
-          roles: ["parent"],
-          priority: 3,
-          children: [
-            { title: "Messages", url: "/parent/messages", icon: MessageSquare },
-            { title: "Announcements", url: "/parent/announcements", icon: Bell },
-            { title: "Events", url: "/parent/events", icon: Calendar }
-          ]
-        }
-      ],
-      student: [
-        {
-          titleKey: "academics",
-          icon: BookOpen,
-          roles: ["student"],
-          priority: 2,
-          children: [
-            { title: "Timetable", url: "/student/timetable", icon: Calendar },
-            { title: "Results", url: "/student/results", icon: Trophy },
-            { title: "Assignments", url: "/student/assignments", icon: Clock },
-            { title: "Attendance", url: "/student/attendance", icon: UserCheck }
-          ]
-        },
-        {
-          titleKey: "library",
-          url: "/library",
-          icon: BookOpen,
-          roles: ["student"],
-          priority: 3
-        }
-      ],
-      teacher: [
-        {
-          titleKey: "classes",
-          icon: GraduationCap,
-          roles: ["teacher"],
-          priority: 2,
-          children: [
-            { title: "My Classes", url: "/teacher/classes", icon: School },
-            { title: "Attendance", url: "/attendance", icon: UserCheck, contextual: true },
-            { title: "Timetable", url: "/academic/timetable", icon: Calendar }
-          ]
-        },
-        {
-          titleKey: "exams",
-          icon: Trophy,
-          roles: ["teacher"],
-          priority: 3,
-          children: [
-            { title: "Results Entry", url: "/exams/results", icon: FileText, contextual: true },
-            { title: "Exam Setup", url: "/exams/setup", icon: Settings }
-          ]
-        }
-      ],
-      admin: [
-        {
-          titleKey: "students",
-          icon: Users,
-          roles: ["admin"],
-          priority: 2,
-          children: [
-            { title: "All Students", titleKey: "allStudents", url: "/students", icon: Users },
-            { title: "Admissions", titleKey: "admissions", url: "/students/admissions", icon: UserCheck },
-            { title: "Bulk Import", titleKey: "bulkImport", url: "/students/import", icon: FileText },
-            { title: "ID Cards", titleKey: "idCards", url: "/students/id-cards", icon: CreditCard }
-          ]
-        },
-        {
-          titleKey: "academic",
-          icon: GraduationCap,
-          roles: ["admin"],
-          priority: 3,
-          children: [
-            { title: "Classes & Sections", titleKey: "classesSections", url: "/academic/classes", icon: School },
-            { title: "Subjects", titleKey: "subjects", url: "/academic/subjects", icon: BookOpen },
-            { title: "Timetable", titleKey: "timetable", url: "/academic/timetable", icon: Calendar },
-            { title: "Student Timetable", titleKey: "studentTimetable", url: "/academic/student-timetable", icon: Calendar },
-            { title: "Hifz Progress", titleKey: "hifzProgress", url: "/academic/hifz-progress", icon: BookOpen }
-          ]
-        },
-        {
-          titleKey: "attendance",
-          url: "/attendance",
-          icon: UserCheck,
-          roles: ["admin"],
-          priority: 4
-        },
-        {
-          titleKey: "exams",
-          icon: Trophy,
-          roles: ["admin"],
-          priority: 5,
-          children: [
-            { title: "Exam Setup", titleKey: "examSetup", url: "/exams/setup", icon: Settings },
-            { title: "Student Enrollment", titleKey: "studentEnrollment", url: "/exams/enrollment", icon: UserCheck },
-            { title: "Roll Number Assignment", titleKey: "rollNumberAssignment", url: "/exams/roll-numbers", icon: Users },
-            { title: "Enrolled Students Reports", titleKey: "enrolledStudentsReports", url: "/exams/enrolled-reports", icon: BarChart3 },
-            { title: "Paper Generator", titleKey: "paperGenerator", url: "/exams/paper-generator", icon: FileText },
-            { title: "Results Entry", titleKey: "resultsEntry", url: "/exams/results", icon: FileText },
-            { title: "OMR Scanning", titleKey: "omrScanning", url: "/exams/omr-scanning", icon: FileText },
-            { title: "Report Cards", titleKey: "reportCards", url: "/exams/reports", icon: Trophy }
-          ]
-        },
-        {
-          titleKey: "finance",
-          icon: CreditCard,
-          roles: ["admin"],
-          priority: 6,
-          children: [
-            { title: "Fee Management", titleKey: "feeManagement", url: "/finance/fees", icon: CreditCard },
-            { title: "Payments", titleKey: "payments", url: "/finance/payments", icon: FileText },
-            { title: "Donations", titleKey: "donations", url: "/finance/donations", icon: Building }
-          ]
-        },
-        {
-          titleKey: "staff",
-          url: "/staff",
-          icon: Users,
-          roles: ["admin"],
-          priority: 7
-        },
-        {
-          titleKey: "hostel",
-          icon: Building,
-          roles: ["admin"],
-          priority: 8,
-          children: [
-            { title: "Room Management", titleKey: "roomManagement", url: "/hostel/rooms", icon: Building },
-            { title: "Student Assignment", titleKey: "studentAssignment", url: "/hostel/students", icon: Users },
-            { title: "Hostel Attendance", titleKey: "hostelAttendance", url: "/hostel/attendance", icon: UserCheck }
-          ]
-        },
-        {
-          titleKey: "library",
-          url: "/library",
-          icon: BookOpen,
-          roles: ["admin"],
-          priority: 9
-        },
-        {
-          titleKey: "assets",
-          icon: Package,
-          roles: ["admin"],
-          priority: 10,
-          children: [
-            { title: "Asset Management", url: "/assets/management", icon: Package },
-            { title: "Asset Categories", url: "/assets/categories", icon: FileText },
-            { title: "Maintenance", url: "/assets/maintenance", icon: Settings },
-            { title: "Asset Reports", url: "/assets/reports", icon: BarChart3 },
-            { title: "Asset Requests", url: "/assets/requests", icon: FileText },
-            { title: "Asset Audit", url: "/assets/audit", icon: UserCheck }
-          ]
-        },
-        {
-          titleKey: "communication",
-          icon: MessageSquare,
-          roles: ["admin"],
-          priority: 11,
-          children: [
-            { title: "Announcements", titleKey: "announcements", url: "/communication/announcements", icon: Bell },
-            { title: "Messages", titleKey: "messaging", url: "/communication/messages", icon: MessageSquare },
-            { title: "Events", titleKey: "events", url: "/communication/events", icon: Calendar }
-          ]
-        },
-        {
-          titleKey: "reports",
-          url: "/reports",
-          icon: BarChart3,
-          roles: ["admin"],
-          priority: 12
-        },
-        {
-          titleKey: "settings",
-          icon: Settings,
-          roles: ["admin"],
-          priority: 13,
-          children: [
-            { title: "School Information", url: "/settings/school-info", icon: School },
-            { title: "Academic Settings", url: "/settings/academic", icon: GraduationCap },
-            { title: "System Preferences", url: "/settings/system", icon: Settings },
-            { title: "Appearance", url: "/settings/appearance", icon: Package },
-            { title: "Communication", url: "/settings/communication", icon: MessageSquare },
-            { title: "Financial", url: "/settings/financial", icon: CreditCard }
-          ]
-        }
-      ],
-      super_admin: [
-        {
-          titleKey: "administration",
-          icon: Settings,
-          roles: ["super_admin"],
-          priority: 2,
-          children: [
-            { title: "User Management", url: "/super-admin/users", icon: Users },
-            { title: "System Settings", url: "/settings/system", icon: Settings },
-            { title: "Security Monitoring", url: "/super-admin/security", icon: Target }
-          ]
-        }
-      ],
-      // Add other roles as needed
-      accountant: [],
-      librarian: [],
-      hostel_manager: [],
-      asset_manager: []
-    };
+    // Filter children and calculate visible children count
+    const itemsWithFilteredChildren = allItems.map(item => {
+      if (!item.children) return { ...item, visibleChildrenCount: 0 };
 
-    // Combine base items with role-specific items
-    const items = [...baseItems, ...(roleSpecificItems[userRole] || [])];
-    
-    // Sort by priority and add contextual badges
-    return items
-      .sort((a, b) => (a.priority || 99) - (b.priority || 99))
-      .map(item => {
-        // Add contextual badges based on current context
-        if (context.currentModule === 'attendance' && item.titleKey === 'classes') {
-          return { ...item, badge: { text: "Active", variant: 'default' as const } };
-        }
-        return item;
-      });
+      // Children are already filtered by permission checks above
+      const visibleChildren = item.children || [];
+      const visibleCount = visibleChildren.length;
+
+      return {
+        ...item,
+        children: visibleChildren,
+        visibleChildrenCount: visibleCount
+      };
+    });
+
+    // Filter out menus if they have no visible children
+    // Show menu only if user has permission for at least one child
+    return itemsWithFilteredChildren.filter(item => {
+      // Dashboard always shows (no children)
+      if (item.titleKey === 'dashboard') {
+        return true;
+      }
+
+      // For menus with children, only show if there are visible children
+      if (item.children && item.children.length > 0) {
+        const visibleCount = (item as any).visibleChildrenCount || item.children.length;
+        return visibleCount > 0;
+      }
+
+      // For menus without children, show based on parent permission
+      if (item.titleKey === 'settings') {
+        return hasSettingsPermission;
+      }
+
+      if (item.titleKey === 'authentication') {
+        // Show if user has any auth-related permission
+        return hasUsersPermission || hasAuthMonitoringPermission || hasSecurityMonitoringPermission;
+      }
+
+      return true;
+    });
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission]);
+
+  // Helper function to filter navigation items by role
+  const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {
+    // Filter items by user role - only show items that match the user's role
+    const filtered = allNavigationItems.filter(item => {
+      return item.roles.includes(userRole);
+    });
+
+    // Sort by priority (lower number = higher priority)
+    return filtered.sort((a, b) => (a.priority || 999) - (b.priority || 999));
   };
 
   // Memoize current module to prevent unnecessary updates
   const currentModule = useMemo(() => {
-    if (currentPath.includes('/attendance')) return 'attendance';
-    if (currentPath.includes('/exams')) return 'exams';
-    if (currentPath.includes('/students')) return 'students';
-    if (currentPath.includes('/parent')) return 'parent';
-    if (currentPath.includes('/teacher')) return 'teacher';
     return 'dashboard';
   }, [currentPath]);
 
@@ -428,34 +357,35 @@ export const SmartSidebar = memo(function SmartSidebar() {
     // Fetch context asynchronously (non-blocking)
     const fetchContext = async () => {
       try {
-      const { data, error } = await supabase
-        .from('user_navigation_context')
-        .select('recent_tasks')
-        .eq('user_id', user.id)
-        .single();
+        // Use type assertion since user_navigation_context table may not exist in types
+        const { data, error } = await (supabase as any)
+          .from('user_navigation_context')
+          .select('recent_tasks')
+          .eq('user_id', user.id)
+          .single();
 
-      if (error) {
-          // Silently fail - don't block UI
+        if (error) {
+          // Silently fail - don't block UI (table might not exist)
           return;
-      }
+        }
 
         const tasks: DbRecentTask[] = (data?.recent_tasks as unknown as DbRecentTask[]) || [];
 
-      const filteredTasks = tasks.filter(
+        const filteredTasks = tasks.filter(
           task => (!task.role || task.role === role) && (!task.context || task.context === currentModule)
-      );
+        );
 
-      const mappedTasks = filteredTasks.map(task => ({
-        title: task.title,
-        url: task.url,
-        icon: (LucideIcons as unknown as Record<string, LucideIcon>)[task.icon] || FileText,
-        timestamp: task.timestamp
-      }));
+        const mappedTasks = filteredTasks.map(task => ({
+          title: task.title,
+          url: task.url,
+          icon: (LucideIcons as unknown as Record<string, LucideIcon>)[task.icon] || FileText,
+          timestamp: task.timestamp
+        }));
 
         setNavigationContext(prev => ({
           ...prev,
-        recentTasks: mappedTasks,
-        quickActions: []
+          recentTasks: mappedTasks,
+          quickActions: []
         }));
       } catch (error) {
         // Silently fail - don't block UI
@@ -466,44 +396,65 @@ export const SmartSidebar = memo(function SmartSidebar() {
     fetchContext();
 
     // Only subscribe to real-time updates if not in dev mode
+    // Note: user_navigation_context table may not exist, so wrap in try-catch
     if (!(import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false')) {
-    const channel = supabase
-      .channel('user_navigation_context')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'user_navigation_context', filter: `user_id=eq.${user.id}` },
-        () => fetchContext()
-      )
-      .subscribe();
+      try {
+        const channel = supabase
+          .channel('user_navigation_context')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'user_navigation_context', filter: `user_id=eq.${user.id}` },
+            () => fetchContext()
+          )
+          .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      } catch (error) {
+        // Silently fail if table doesn't exist
+        return;
+      }
     }
   }, [currentModule, role, user?.id]);
 
-  // Development mode: Use admin role if role is null
-  const effectiveRole = useMemo(() => 
-    role || (import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false' ? 'admin' : null),
-    [role]
-  );
-  
+  // Use the role from useUserRole, or fallback to profile role, or use super_admin if isSuperAdmin
+  const effectiveRole = useMemo(() => {
+    // Priority: 1. role from useUserRole, 2. profile role, 3. super_admin if isSuperAdmin, 4. null
+    if (role) return role;
+    if (currentProfile?.role) return currentProfile.role as UserRole;
+    if (isSuperAdmin) return 'super_admin' as UserRole;
+    // Only use admin fallback in dev mode if no user at all
+    if (import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false' && !user) {
+      return 'admin' as UserRole;
+    }
+    return null;
+  }, [role, currentProfile?.role, isSuperAdmin, user]);
+
   // Memoize navigation items to prevent recalculation on every render
+  // Always render items if we have a role, even if permissions are still loading
+  // This prevents the sidebar from disappearing during background refetches
   const filteredItems = useMemo(() => {
-    if (!effectiveRole) return [];
-    return getNavigationItems(effectiveRole as UserRole, navigationContext);
-  }, [effectiveRole, navigationContext]);
+    if (!effectiveRole) {
+      return [];
+    }
+    const items = getNavigationItems(effectiveRole as UserRole, navigationContext);
+    return items;
+  }, [effectiveRole, navigationContext, allNavigationItems]);
+
+  // Don't show loading state - always render with available data
+  // The sidebar will update when permissions are available, but won't disappear
 
   const isActive = useCallback((path: string) => currentPath === path, [currentPath]);
-  const isChildActive = useCallback((children?: Array<{ url: string }>) => 
+  const isChildActive = useCallback((children?: Array<{ url: string }>) =>
     children?.some(child => currentPath.startsWith(child.url)) || false, [currentPath]);
 
   const getNavCls = useCallback(({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50", []);
 
   const toggleExpanded = useCallback((title: string) => {
-    setExpandedItems(prev => 
-      prev.includes(title) 
+    setExpandedItems(prev =>
+      prev.includes(title)
         ? prev.filter(item => item !== title)
         : [...prev, title]
     );
@@ -511,9 +462,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   const renderMenuItem = (item: NavigationItem) => {
     const label = t(`nav.${item.titleKey}`);
+    // Always show parent items even if they have no children (they might have children that load later)
     if (item.children) {
       const isExpanded = expandedItems.includes(item.titleKey) || isChildActive(item.children);
-      
+
       return (
         <Collapsible key={item.titleKey} open={isExpanded} onOpenChange={() => toggleExpanded(item.titleKey)}>
           <SidebarMenuItem>
@@ -540,29 +492,23 @@ export const SmartSidebar = memo(function SmartSidebar() {
             {!collapsed && (
               <CollapsibleContent>
                 <SidebarMenu className={`${isRTL ? 'mr-4 border-r' : 'ml-4 border-l'} border-sidebar-border`}>
-                  {item.children.map((child: NavigationChild) => {
-                    // Use translation key if available, otherwise fallback to title
-                    const childLabel = child.titleKey 
-                      ? t(`nav.${child.titleKey}`) 
-                      : child.title;
-                    return (
-                      <SidebarMenuItem key={child.url}>
-                        <SidebarMenuButton asChild>
-                          <NavLink 
-                            to={child.url} 
-                            className={getNavCls({ isActive: isActive(child.url) })}
-                            end={child.url === '/'}
-                          >
-                            <child.icon className="h-4 w-4" />
-                            <span>{childLabel}</span>
-                            {child.contextual && navigationContext.currentModule.includes('attendance') && (
-                              <Star className="h-3 w-3 text-warning ml-auto" />
-                            )}
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
+                  {item.children.map((child: NavigationChild) => (
+                    <SidebarMenuItem key={child.url}>
+                      <SidebarMenuButton asChild>
+                        <NavLink
+                          to={child.url}
+                          className={getNavCls({ isActive: isActive(child.url) })}
+                          end={child.url === '/'}
+                        >
+                          <child.icon className="h-4 w-4" />
+                          <span>{child.title}</span>
+                          {child.contextual && navigationContext.currentModule.includes('attendance') && (
+                            <Star className="h-3 w-3 text-warning ml-auto" />
+                          )}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
                 </SidebarMenu>
               </CollapsibleContent>
             )}
@@ -574,7 +520,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
     return (
       <SidebarMenuItem key={item.url}>
         <SidebarMenuButton asChild>
-          <NavLink 
+          <NavLink
             to={item.url || '/'}
             className={getNavCls({ isActive: isActive(item.url || '/') })}
           >
@@ -631,13 +577,34 @@ export const SmartSidebar = memo(function SmartSidebar() {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-medium text-sidebar-foreground truncate">
-                {user.email?.split('@')[0]}
+                {currentProfile?.full_name || user.email?.split('@')[0]}
               </h3>
               <p className="text-xs text-sidebar-foreground/70 capitalize">
-                {role?.replace('_', ' ')}
+                {currentProfile?.role || role?.replace('_', ' ')}
               </p>
             </div>
           </div>
+          {/* Organization Context */}
+          {currentOrg && (
+            <div className="mt-2 pt-2 border-t border-sidebar-border">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-3 w-3 text-sidebar-foreground/70" />
+                <p className="text-xs text-sidebar-foreground/70 truncate">
+                  {currentOrg.name}
+                </p>
+              </div>
+            </div>
+          )}
+          {isSuperAdmin && !currentOrg && (
+            <div className="mt-2 pt-2 border-t border-sidebar-border">
+              <div className="flex items-center gap-2">
+                <Shield className="h-3 w-3 text-sidebar-foreground/70" />
+                <p className="text-xs text-sidebar-foreground/70">
+                  Super Admin
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -15,6 +15,8 @@ import {
   UserCheck,
   Trophy,
   Building,
+  Building2,
+  DoorOpen,
   Package,
   MessageSquare,
   BarChart3,
@@ -68,129 +70,28 @@ const currentUser: { name: string; role: UserRole; profilePhoto: string } = {
 const navigationItems: NavigationItem[] = [
   {
     titleKey: "dashboard",
-    url: "/",
+    url: "/dashboard",
     icon: Home,
     badge: null,
     roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"]
   },
   {
-    titleKey: "students",
-    icon: Users,
-    roles: ["super_admin", "admin", "teacher", "parent"],
-    children: [
-      { title: "All Students", url: "/students", icon: Users },
-      { title: "Admissions", url: "/students/admissions", icon: UserCheck },
-      { title: "Bulk Import", url: "/students/import", icon: FileText },
-      { title: "ID Cards", url: "/students/id-cards", icon: CreditCard }
-    ]
-  },
-  {
-    titleKey: "classes",
-    icon: GraduationCap,
-    roles: ["super_admin", "admin", "teacher"],
-    children: [
-      { title: "Classes & Sections", url: "/academic/classes", icon: School },
-      { title: "Subjects", url: "/academic/subjects", icon: BookOpen },
-      { title: "Timetable", url: "/academic/timetable", icon: Calendar },
-      { title: "Student Timetable", url: "/academic/student-timetable", icon: Calendar },
-      { title: "Hifz Progress", url: "/academic/hifz-progress", icon: BookOpen }
-    ]
-  },
-  {
-    titleKey: "attendance",
-    url: "/attendance",
-    icon: UserCheck,
-    badge: { text: "5", variant: "destructive" },
-    roles: ["super_admin", "admin", "teacher", "hostel_manager"]
-  },
-  {
-    titleKey: "exams",
-    icon: Trophy,
-    roles: ["super_admin", "admin", "teacher"],
-    children: [
-      { title: "Exam Setup", url: "/exams/setup", icon: Settings },
-      { title: "Student Enrollment", url: "/exams/enrollment", icon: UserCheck },
-      { title: "Roll Number Assignment", url: "/exams/roll-numbers", icon: Users },
-      { title: "Enrolled Students Reports", url: "/exams/enrolled-reports", icon: BarChart3 },
-      { title: "Paper Generator", url: "/exams/paper-generator", icon: FileText },
-      { title: "Results Entry", url: "/exams/results", icon: FileText },
-      { title: "OMR Scanning", url: "/exams/omr-scanning", icon: FileText },
-      { title: "Report Cards", url: "/exams/reports", icon: Trophy }
-    ]
-  },
-  {
-    titleKey: "finance",
-    icon: CreditCard,
-    roles: ["super_admin", "admin", "accountant"],
-    children: [
-      { title: "Fee Management", url: "/finance/fees", icon: CreditCard },
-      { title: "Payments", url: "/finance/payments", icon: FileText },
-      { title: "Donations", url: "/finance/donations", icon: Building }
-    ]
-  },
-  {
-    titleKey: "staff",
-    url: "/staff",
-    icon: Users,
-    roles: ["super_admin", "admin"]
-  },
-  {
-    titleKey: "hostel",
-    icon: Building,
-    roles: ["super_admin", "admin", "hostel_manager"],
-    children: [
-      { title: "Room Management", url: "/hostel/rooms", icon: Building },
-      { title: "Student Assignment", url: "/hostel/students", icon: Users },
-      { title: "Attendance", url: "/hostel/attendance", icon: UserCheck }
-    ]
-  },
-  {
-    titleKey: "library",
-    url: "/library",
-    icon: BookOpen,
-    roles: ["super_admin", "admin", "librarian", "teacher", "student"]
-  },
-  {
-    titleKey: "assets",
-    icon: Package,
-    roles: ["super_admin", "admin", "asset_manager"],
-    children: [
-      { title: "Asset Management", url: "/assets/management", icon: Package },
-      { title: "Asset Categories", url: "/assets/categories", icon: FileText },
-      { title: "Maintenance", url: "/assets/maintenance", icon: Settings },
-      { title: "Asset Reports", url: "/assets/reports", icon: BarChart3 },
-      { title: "Asset Requests", url: "/assets/requests", icon: FileText },
-      { title: "Asset Audit", url: "/assets/audit", icon: UserCheck }
-    ]
-  },
-  {
-    titleKey: "communication",
-    icon: MessageSquare,
-    roles: ["super_admin", "admin", "teacher"],
-    children: [
-      { title: "Announcements", url: "/communication/announcements", icon: Bell },
-      { title: "Messages", url: "/communication/messages", icon: MessageSquare },
-      { title: "Events", url: "/communication/events", icon: Calendar }
-    ]
-  },
-  {
-    titleKey: "reports",
-    url: "/reports",
-    icon: BarChart3,
-    roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"]
-  },
-  {
     titleKey: "settings",
     icon: Settings,
+    badge: null,
     roles: ["super_admin", "admin"],
     children: [
-      { title: "School Information", url: "/settings/school-info", icon: School },
-      { title: "Academic Settings", url: "/settings/academic", icon: GraduationCap },
-      { title: "System Preferences", url: "/settings/system", icon: Settings },
-      { title: "Appearance", url: "/settings/appearance", icon: Package },
-      { title: "Communication", url: "/settings/communication", icon: MessageSquare },
-      { title: "Financial", url: "/settings/financial", icon: CreditCard }
-    ]
+      {
+        title: "Buildings Management",
+        url: "/settings/buildings",
+        icon: Building2,
+      },
+      {
+        title: "Rooms Management",
+        url: "/settings/rooms",
+        icon: DoorOpen,
+      },
+    ],
   }
 ];
 

@@ -10,7 +10,7 @@ const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH
 
 export default function RoleBasedRedirect() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,47 +28,42 @@ export default function RoleBasedRedirect() {
       return;
     }
 
-    console.log('Fetching user role for:', user.email);
+    // Use profile from AuthContext - no Supabase query needed
+    if (profile?.role) {
+      console.log('User role from AuthContext:', profile.role);
+      setUserRole(profile.role);
+      setLoading(false);
+      return;
+    }
+
+    // If profile not available yet, check for pending registration
+    console.log('Profile not available, checking pending registration for:', user.email);
     
-    const fetchUserRole = async () => {
+    const checkPendingRegistration = async () => {
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
+        const { data: pendingData } = await supabase
+          .from('pending_registrations')
+          .select('status')
+          .eq('user_id', user.id)
           .single();
 
-        if (error) {
-          console.error('Error fetching user role:', error);
-          // User might be pending approval
-          // Checking pending registrations
-          const { data: pendingData } = await supabase
-            .from('pending_registrations')
-            .select('status')
-            .eq('user_id', user.id)
-            .single();
-
-          if (pendingData) {
-            console.log('User has pending registration:', pendingData.status);
-            setUserRole('pending');
-          } else {
-            console.log('No profile or pending registration found');
-            setUserRole(null);
-          }
+        if (pendingData) {
+          console.log('User has pending registration:', pendingData.status);
+          setUserRole('pending');
         } else {
-          console.log('User role found:', data.role);
-          setUserRole(data.role);
+          console.log('No profile or pending registration found');
+          setUserRole(null);
         }
       } catch (error) {
-        console.error('Unexpected error fetching user role:', error);
+        console.error('Unexpected error checking pending registration:', error);
         setUserRole(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserRole();
-  }, [user]);
+    checkPendingRegistration();
+  }, [user, profile, navigate]);
 
   useEffect(() => {
     if (loading || !userRole) return;

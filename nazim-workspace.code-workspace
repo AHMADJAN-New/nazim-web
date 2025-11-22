@@ -1,0 +1,19 @@
+{
+    "folders": [
+        {
+            "name": "Nazim Project",
+            "path": "../nazim-project"
+        },
+        {
+            "name": "Nazim School Manager Pro",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "files.exclude": {
+            "**/.git": true,
+            "**/node_modules": true
+        },
+        "powershell.cwd": "Nazim School Manager Pro"
+    }
+}
