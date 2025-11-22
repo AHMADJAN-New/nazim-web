@@ -162,12 +162,15 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasOrganizationsPermission = useHasPermission('organizations.read');
   const hasProfilesPermission = useHasPermission('profiles.read');
   const hasUsersPermission = useHasPermission('users.read');
-  const hasAuthMonitoringPermission = useHasPermission('auth_monitoring.read');
-  const hasSecurityMonitoringPermission = useHasPermission('security_monitoring.read');
-  const hasBrandingPermission = useHasPermission('branding.read');
-  const hasReportsPermission = useHasPermission('reports.read');
-  const hasBackupPermission = useHasPermission('backup.read');
-  const hasResidencyTypesPermission = useHasPermission('academic.residency_types.read');
+    const hasAuthMonitoringPermission = useHasPermission('auth_monitoring.read');
+    const hasSecurityMonitoringPermission = useHasPermission('security_monitoring.read');
+    const hasBrandingPermission = useHasPermission('branding.read');
+    const hasReportsPermission = useHasPermission('reports.read');
+    const hasBackupPermission = useHasPermission('backup.read');
+    const hasResidencyTypesPermission = useHasPermission('academic.residency_types.read');
+    const hasClassesPermission = useHasPermission('academic.classes.read');
+    const hasSubjectsPermission = useHasPermission('academic.subjects.read');
+    const hasAssignmentsPermission = useHasPermission('academic.assignments.read');
 
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -252,12 +255,26 @@ export const SmartSidebar = memo(function SmartSidebar() {
         priority: 8,
         children: [
           // Only show child items if user has the required permission
-          ...(hasResidencyTypesPermission ? [{
-            title: "Residency Types",
-            titleKey: "academic.residencyTypes.title",
-            url: "/settings/residency-types",
-            icon: BookOpen,
-          }] : []),
+            ...(hasClassesPermission ? [{
+              title: t('nav.classes'),
+              url: "/academics/classes",
+              icon: GraduationCap,
+            }] : []),
+            ...(hasSubjectsPermission ? [{
+              title: t('nav.subjects'),
+              url: "/academics/subjects",
+              icon: BookOpen,
+            }] : []),
+            ...(hasAssignmentsPermission ? [{
+              title: t('nav.subjectAssignments'),
+              url: "/academics/assignments",
+              icon: UserCheck,
+            }] : []),
+            ...(hasResidencyTypesPermission ? [{
+              title: t('academic.residencyTypes.title'),
+              url: "/settings/residency-types",
+              icon: BookOpen,
+            }] : []),
         ],
       },
       {
@@ -331,9 +348,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         return hasSettingsPermission;
       }
 
-      if (item.titleKey === 'academicSettings') {
-        // Show if user has any academic-related permission
-        return hasResidencyTypesPermission;
+        if (item.titleKey === 'academicSettings') {
+          // Show if user has any academic-related permission
+          return hasResidencyTypesPermission || hasClassesPermission || hasSubjectsPermission || hasAssignmentsPermission;
       }
 
       if (item.titleKey === 'authentication') {
@@ -343,7 +360,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission]);
+    }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission, hasClassesPermission, hasSubjectsPermission, hasAssignmentsPermission, t]);
 
   // Helper function to filter navigation items by role
   const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {

@@ -5,7 +5,7 @@ export type Language = 'en' | 'ps' | 'fa' | 'ar';
 
 export interface TranslationKeys {
   // Common
-  common: {
+    common: {
     loading: string;
     save: string;
     cancel: string;
@@ -26,15 +26,18 @@ export interface TranslationKeys {
     previous: string;
     submit: string;
     reset: string;
+      actions: string;
   };
   
   // Navigation
-  nav: {
+    nav: {
     dashboard: string;
     students: string;
     admissions: string;
     attendance: string;
     classes: string;
+      subjects: string;
+      subjectAssignments: string;
     exams: string;
     finance: string;
     staff: string;
@@ -151,37 +154,101 @@ export interface TranslationKeys {
     roomDeleted: string;
   };
   
-  // Academic Settings
-  academic: {
-    residencyTypes: {
-      title: string;
-      management: string;
-      addResidencyType: string;
-      editResidencyType: string;
-      deleteResidencyType: string;
-      name: string;
-      code: string;
-      description: string;
-      isActive: string;
-      active: string;
-      inactive: string;
-      searchPlaceholder: string;
-      noResidencyTypesFound: string;
-      noResidencyTypesMessage: string;
-      residencyTypeCreated: string;
-      residencyTypeUpdated: string;
-      residencyTypeDeleted: string;
-      deleteConfirm: string;
-      nameRequired: string;
-      codeRequired: string;
-      codeMaxLength: string;
-      nameMaxLength: string;
-      codeExists: string;
-      globalType: string;
-      organizationType: string;
-      cannotDeleteGlobal: string;
+    // Academic Settings
+    academic: {
+      residencyTypes: {
+        title: string;
+        management: string;
+        addResidencyType: string;
+        editResidencyType: string;
+        deleteResidencyType: string;
+        name: string;
+        code: string;
+        description: string;
+        isActive: string;
+        active: string;
+        inactive: string;
+        searchPlaceholder: string;
+        noResidencyTypesFound: string;
+        noResidencyTypesMessage: string;
+        residencyTypeCreated: string;
+        residencyTypeUpdated: string;
+        residencyTypeDeleted: string;
+        deleteConfirm: string;
+        nameRequired: string;
+        codeRequired: string;
+        codeMaxLength: string;
+        nameMaxLength: string;
+        codeExists: string;
+        globalType: string;
+        organizationType: string;
+        cannotDeleteGlobal: string;
+      };
+      classes: {
+        title: string;
+        management: string;
+        addClass: string;
+        editClass: string;
+        deleteClass: string;
+        deleteConfirm: string;
+        className: string;
+        code: string;
+        gradeLevel: string;
+        section: string;
+        description: string;
+        homeroomTeacher: string;
+        selectHomeroomTeacher: string;
+        noHomeroomTeacher: string;
+        teachers: string;
+        noTeachersAssigned: string;
+        noClassesFound: string;
+      };
+      subjects: {
+        title: string;
+        management: string;
+        addSubject: string;
+        editSubject: string;
+        deleteSubject: string;
+        deleteConfirm: string;
+        subjectName: string;
+        code: string;
+        gradeLevel: string;
+        creditHours: string;
+        description: string;
+        color: string;
+        isCore: string;
+        core: string;
+        elective: string;
+        coreDescription: string;
+        assignedTeachers: string;
+        noTeachersAssigned: string;
+        noSubjectsFound: string;
+      };
+      assignments: {
+        title: string;
+        management: string;
+        addAssignment: string;
+        editAssignment: string;
+        deleteAssignment: string;
+        deleteConfirm: string;
+        class: string;
+        subject: string;
+        teacher: string;
+        schedule: string;
+        notes: string;
+        filters: string;
+        filterClassPlaceholder: string;
+        filterSubjectPlaceholder: string;
+        allClasses: string;
+        allSubjects: string;
+        selectClass: string;
+        selectSubject: string;
+        selectTeacher: string;
+        assignButton: string;
+        noAssignmentsFound: string;
+        unassigned: string;
+      };
     };
-  };
 }
 
 // English translations
@@ -207,6 +274,7 @@ const en: TranslationKeys = {
     previous: 'Previous',
     submit: 'Submit',
     reset: 'Reset',
+      actions: 'Actions',
   },
   nav: {
     dashboard: 'Dashboard',
@@ -214,6 +282,8 @@ const en: TranslationKeys = {
     admissions: 'Admissions',
     attendance: 'Attendance',
     classes: 'Classes',
+    subjects: 'Subjects',
+    subjectAssignments: 'Subject Assignments',
     exams: 'Exams',
     finance: 'Finance',
     staff: 'Staff',
@@ -350,12 +420,76 @@ const en: TranslationKeys = {
       organizationType: 'Organization',
       cannotDeleteGlobal: 'Cannot delete global residency types',
     },
+      classes: {
+        title: 'Classes',
+        management: 'Classes Management',
+        addClass: 'Add Class',
+        editClass: 'Edit Class',
+        deleteClass: 'Delete Class',
+        deleteConfirm: 'Are you sure you want to delete this class?',
+        className: 'Class Name',
+        code: 'Code',
+        gradeLevel: 'Grade Level',
+        section: 'Section',
+        description: 'Description',
+        homeroomTeacher: 'Homeroom Teacher',
+        selectHomeroomTeacher: 'Select homeroom teacher',
+        noHomeroomTeacher: 'No homeroom teacher',
+        teachers: 'Subject Teachers',
+        noTeachersAssigned: 'No teachers assigned yet',
+        noClassesFound: 'No classes found',
+      },
+      subjects: {
+        title: 'Subjects',
+        management: 'Subjects Management',
+        addSubject: 'Add Subject',
+        editSubject: 'Edit Subject',
+        deleteSubject: 'Delete Subject',
+        deleteConfirm: 'Are you sure you want to delete this subject?',
+        subjectName: 'Subject Name',
+        code: 'Code',
+        gradeLevel: 'Grade Level',
+        creditHours: 'Credit Hours',
+        description: 'Description',
+        color: 'Color',
+        isCore: 'Core Subject',
+        core: 'Core',
+        elective: 'Elective',
+        coreDescription: 'Mark as core to highlight mandatory curriculum subjects.',
+        assignedTeachers: 'Assigned Teachers',
+        noTeachersAssigned: 'No teachers assigned yet',
+        noSubjectsFound: 'No subjects found',
+      },
+      assignments: {
+        title: 'Subject Assignments',
+        management: 'Assign subjects to teachers across classes',
+        addAssignment: 'Assign Subject',
+        editAssignment: 'Reassign Subject',
+        deleteAssignment: 'Remove Assignment',
+        deleteConfirm: 'Are you sure you want to remove this assignment?',
+        class: 'Class',
+        subject: 'Subject',
+        teacher: 'Teacher',
+        schedule: 'Schedule Slot',
+        notes: 'Notes',
+        filters: 'Filters',
+        filterClassPlaceholder: 'Filter by class',
+        filterSubjectPlaceholder: 'Filter by subject',
+        allClasses: 'All Classes',
+        allSubjects: 'All Subjects',
+        selectClass: 'Select class',
+        selectSubject: 'Select subject',
+        selectTeacher: 'Select teacher',
+        assignButton: 'Assign Subject',
+        noAssignmentsFound: 'No assignments found',
+        unassigned: 'Unassigned',
+      },
   },
 };
 
 // Pashto translations
 const ps: TranslationKeys = {
-  common: {
+    common: {
     loading: 'بارول کیږي...',
     save: 'ساتل',
     cancel: 'منسوخ',
@@ -376,13 +510,16 @@ const ps: TranslationKeys = {
     previous: 'مخکني',
     submit: 'وسپارل',
     reset: 'بیا ټاکل',
+      actions: 'عملونه',
   },
-  nav: {
+    nav: {
     dashboard: 'کنټرول پینل',
     students: 'زده کوونکي',
     admissions: 'داخلې',
     attendance: 'حاضري',
     classes: 'ټولګۍ',
+      subjects: 'مضامین',
+      subjectAssignments: 'د مضمونونو سپارښتنه',
     exams: 'ازموینې',
     finance: 'مالي چارې',
     staff: 'کارکوونکي',
@@ -519,12 +656,76 @@ const ps: TranslationKeys = {
       organizationType: 'سازمان',
       cannotDeleteGlobal: 'نړیوال د اوسیدو ډولونه پاک کیدی نشي',
     },
+      classes: {
+        title: 'ټولګۍ',
+        management: 'د ټولګیو مدیریت',
+        addClass: 'ټولګی اضافه کړئ',
+        editClass: 'ټولګی سم کړئ',
+        deleteClass: 'ټولګی پاک کړئ',
+        deleteConfirm: 'ایا ډاډه یاست چې دا ټولګی پاک کړئ؟',
+        className: 'د ټولګی نوم',
+        code: 'کوډ',
+        gradeLevel: 'صنف',
+        section: 'څانګه',
+        description: 'تفصیل',
+        homeroomTeacher: 'د ټولګی استاد',
+        selectHomeroomTeacher: 'استاد وټاکئ',
+        noHomeroomTeacher: 'هیڅ استاد نشته',
+        teachers: 'د مضمون استادان',
+        noTeachersAssigned: 'هیڅ استاد نه دی ټاکل شوی',
+        noClassesFound: 'هیڅ ټولګی ونه موندل شو',
+      },
+      subjects: {
+        title: 'مضامین',
+        management: 'د مضامینو مدیریت',
+        addSubject: 'مضمون اضافه کړئ',
+        editSubject: 'مضمون سم کړئ',
+        deleteSubject: 'مضمون پاک کړئ',
+        deleteConfirm: 'ایا ډاډه یاست چې دا مضمون پاک کړئ؟',
+        subjectName: 'د مضمون نوم',
+        code: 'کوډ',
+        gradeLevel: 'صنف',
+        creditHours: 'کریدت ساعته',
+        description: 'تفصیل',
+        color: 'رنګ',
+        isCore: 'اصلي مضمون',
+        core: 'اصلي',
+        elective: 'انتخابي',
+        coreDescription: 'اصلي نښه د لازمي نصاب لپاره وکاروئ.',
+        assignedTeachers: 'ټاکل شوي استادان',
+        noTeachersAssigned: 'هیڅ استاد نه دی ټاکل شوی',
+        noSubjectsFound: 'هیڅ مضمون ونه موندل شو',
+      },
+      assignments: {
+        title: 'د مضمونونو سپارښتنه',
+        management: 'مضامین استادانو ته وویشئ',
+        addAssignment: 'مضمون وټاکئ',
+        editAssignment: 'مضمون بیا وټاکئ',
+        deleteAssignment: 'سپارښتنه پاک کړئ',
+        deleteConfirm: 'ایا ډاډه یاست چې دا سپارښتنه لرې کړئ؟',
+        class: 'ټولګی',
+        subject: 'مضمون',
+        teacher: 'استاد',
+        schedule: 'مهالوېش',
+        notes: 'یادښت',
+        filters: 'فلټرونه',
+        filterClassPlaceholder: 'ټولګی وټاکئ',
+        filterSubjectPlaceholder: 'مضمون وټاکئ',
+        allClasses: 'ټول ټولګۍ',
+        allSubjects: 'ټول مضامین',
+        selectClass: 'ټولګی انتخاب کړئ',
+        selectSubject: 'مضمون انتخاب کړئ',
+        selectTeacher: 'استاد انتخاب کړئ',
+        assignButton: 'مضمون ټاکل',
+        noAssignmentsFound: 'هیڅ سپارښتنه ونه موندل شوه',
+        unassigned: 'نه دی ټاکل شوی',
+      },
   },
 };
 
 // Dari (Farsi) translations
 const fa: TranslationKeys = {
-  common: {
+    common: {
     loading: 'در حال بارگذاری...',
     save: 'ذخیره',
     cancel: 'لغو',
@@ -545,13 +746,16 @@ const fa: TranslationKeys = {
     previous: 'قبلی',
     submit: 'ارسال',
     reset: 'بازنشانی',
+      actions: 'اقدامات',
   },
-  nav: {
+    nav: {
     dashboard: 'داشبورد',
     students: 'دانش‌آموزان',
     admissions: 'پذیرش',
     attendance: 'حاضری',
     classes: 'کلاس‌ها',
+      subjects: 'مضامین',
+      subjectAssignments: 'تخصیص مضامین',
     exams: 'امتحانات',
     finance: 'مالی',
     staff: 'کارکنان',
@@ -688,12 +892,76 @@ const fa: TranslationKeys = {
       organizationType: 'سازمان',
       cannotDeleteGlobal: 'نمی‌توان انواع اقامت جهانی را حذف کرد',
     },
+      classes: {
+        title: 'کلاس‌ها',
+        management: 'مدیریت کلاس‌ها',
+        addClass: 'افزودن کلاس',
+        editClass: 'ویرایش کلاس',
+        deleteClass: 'حذف کلاس',
+        deleteConfirm: 'آیا از حذف این کلاس مطمئن هستید؟',
+        className: 'نام کلاس',
+        code: 'کد',
+        gradeLevel: 'پایه',
+        section: 'بخش',
+        description: 'توضیحات',
+        homeroomTeacher: 'معلم مسوول',
+        selectHomeroomTeacher: 'انتخاب معلم مسوول',
+        noHomeroomTeacher: 'معلم مشخص نشده',
+        teachers: 'معلمان مضامین',
+        noTeachersAssigned: 'هیچ معلمی تعیین نشده است',
+        noClassesFound: 'کلاسی یافت نشد',
+      },
+      subjects: {
+        title: 'مضامین',
+        management: 'مدیریت مضامین',
+        addSubject: 'افزودن مضمون',
+        editSubject: 'ویرایش مضمون',
+        deleteSubject: 'حذف مضمون',
+        deleteConfirm: 'آیا از حذف این مضمون مطمئن هستید؟',
+        subjectName: 'نام مضمون',
+        code: 'کد',
+        gradeLevel: 'پایه',
+        creditHours: 'ساعات درسی',
+        description: 'توضیحات',
+        color: 'رنگ',
+        isCore: 'مضمون اساسی',
+        core: 'اساسی',
+        elective: 'انتخابی',
+        coreDescription: 'برای مشخص کردن مضامین اجباری این گزینه را فعال کنید.',
+        assignedTeachers: 'معلمان تعیین شده',
+        noTeachersAssigned: 'هیچ معلمی تعیین نشده است',
+        noSubjectsFound: 'مضامینی یافت نشد',
+      },
+      assignments: {
+        title: 'تخصیص مضامین',
+        management: 'توزیع مضامین بین معلمان و کلاس‌ها',
+        addAssignment: 'تخصیص مضمون',
+        editAssignment: 'تغییر تخصیص',
+        deleteAssignment: 'حذف تخصیص',
+        deleteConfirm: 'آیا از حذف این تخصیص مطمئن هستید؟',
+        class: 'کلاس',
+        subject: 'مضمون',
+        teacher: 'معلم',
+        schedule: 'برنامه زمانی',
+        notes: 'یادداشت‌ها',
+        filters: 'فیلترها',
+        filterClassPlaceholder: 'فیلتر بر اساس کلاس',
+        filterSubjectPlaceholder: 'فیلتر بر اساس مضمون',
+        allClasses: 'تمام کلاس‌ها',
+        allSubjects: 'تمام مضامین',
+        selectClass: 'انتخاب کلاس',
+        selectSubject: 'انتخاب مضمون',
+        selectTeacher: 'انتخاب معلم',
+        assignButton: 'تخصیص مضمون',
+        noAssignmentsFound: 'هیچ تخصیصی یافت نشد',
+        unassigned: 'تعیین نشده',
+      },
   },
 };
 
 // Arabic translations  
 const ar: TranslationKeys = {
-  common: {
+    common: {
     loading: 'جاري التحميل...',
     save: 'حفظ',
     cancel: 'إلغاء',
@@ -714,13 +982,16 @@ const ar: TranslationKeys = {
     previous: 'السابق',
     submit: 'إرسال',
     reset: 'إعادة تعيين',
+      actions: 'إجراءات',
   },
-  nav: {
+    nav: {
     dashboard: 'لوحة التحكم',
     students: 'الطلاب',
     admissions: 'القبول',
     attendance: 'الحضور',
     classes: 'الفصول',
+      subjects: 'المواد',
+      subjectAssignments: 'تعيين المواد',
     exams: 'الامتحانات',
     finance: 'المالية',
     staff: 'الموظفون',
@@ -857,6 +1128,70 @@ const ar: TranslationKeys = {
       organizationType: 'المنظمة',
       cannotDeleteGlobal: 'لا يمكن حذف أنواع الإقامة العالمية',
     },
+      classes: {
+        title: 'الفصول',
+        management: 'إدارة الفصول',
+        addClass: 'إضافة فصل',
+        editClass: 'تعديل الفصل',
+        deleteClass: 'حذف الفصل',
+        deleteConfirm: 'هل أنت متأكد من حذف هذا الفصل؟',
+        className: 'اسم الفصل',
+        code: 'الرمز',
+        gradeLevel: 'المرحلة',
+        section: 'الشعبة',
+        description: 'الوصف',
+        homeroomTeacher: 'معلم الفصل',
+        selectHomeroomTeacher: 'اختر معلم الفصل',
+        noHomeroomTeacher: 'لم يتم تعيين معلم',
+        teachers: 'معلمو المواد',
+        noTeachersAssigned: 'لا يوجد معلمون معينون',
+        noClassesFound: 'لا توجد فصول',
+      },
+      subjects: {
+        title: 'المواد',
+        management: 'إدارة المواد',
+        addSubject: 'إضافة مادة',
+        editSubject: 'تعديل المادة',
+        deleteSubject: 'حذف المادة',
+        deleteConfirm: 'هل أنت متأكد من حذف هذه المادة؟',
+        subjectName: 'اسم المادة',
+        code: 'الرمز',
+        gradeLevel: 'المرحلة',
+        creditHours: 'عدد الساعات',
+        description: 'الوصف',
+        color: 'اللون',
+        isCore: 'مادة أساسية',
+        core: 'أساسية',
+        elective: 'اختيارية',
+        coreDescription: 'حدد هذا الخيار لتمييز المواد الإجبارية.',
+        assignedTeachers: 'المعلمون المعينون',
+        noTeachersAssigned: 'لا يوجد معلمون معينون',
+        noSubjectsFound: 'لا توجد مواد',
+      },
+      assignments: {
+        title: 'تعيين المواد',
+        management: 'توزيع المواد على المعلمين والفصول',
+        addAssignment: 'تعيين مادة',
+        editAssignment: 'تعديل التعيين',
+        deleteAssignment: 'إزالة التعيين',
+        deleteConfirm: 'هل أنت متأكد من إزالة هذا التعيين؟',
+        class: 'الفصل',
+        subject: 'المادة',
+        teacher: 'المعلم',
+        schedule: 'الجدول الزمني',
+        notes: 'ملاحظات',
+        filters: 'عوامل التصفية',
+        filterClassPlaceholder: 'تصفية حسب الفصل',
+        filterSubjectPlaceholder: 'تصفية حسب المادة',
+        allClasses: 'جميع الفصول',
+        allSubjects: 'جميع المواد',
+        selectClass: 'اختر الفصل',
+        selectSubject: 'اختر المادة',
+        selectTeacher: 'اختر المعلم',
+        assignButton: 'تعيين المادة',
+        noAssignmentsFound: 'لا توجد تعيينات',
+        unassigned: 'غير معيّن',
+      },
   },
 };
 

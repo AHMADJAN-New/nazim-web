@@ -16,6 +16,9 @@ export const SchoolsManagement = lazy(() => import('@/components/settings/School
 export const ReportTemplatesManagement = lazy(() => import('@/components/settings/ReportTemplatesManagement').then(module => ({ default: module.ReportTemplatesManagement })));
 export const ResidencyTypesManagement = lazy(() => import('@/components/settings/ResidencyTypesManagement').then(module => ({ default: module.ResidencyTypesManagement })));
 export const UserManagement = lazy(() => import('@/components/admin/UserManagement').then(module => ({ default: module.UserManagement })));
+export const ClassesManagement = lazy(() => import('@/components/academics/ClassesManagement').then(module => ({ default: module.ClassesManagement })));
+export const SubjectsManagement = lazy(() => import('@/components/academics/SubjectsManagement').then(module => ({ default: module.SubjectsManagement })));
+export const SubjectAssignmentsManagement = lazy(() => import('@/components/academics/SubjectAssignmentsManagement').then(module => ({ default: module.SubjectAssignmentsManagement })));
 
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
