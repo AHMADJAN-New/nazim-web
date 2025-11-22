@@ -32,7 +32,18 @@ import {
   SchoolsManagement,
   ReportTemplatesManagement,
   ResidencyTypesManagement,
-  UserManagement
+  UserManagement,
+  // Financial pages
+  CurrenciesPage,
+  FiscalYearsPage,
+  CostCentersPage,
+  IncomeCategoriesPage,
+  ExpenseCategoriesPage,
+  PaymentMethodsPage,
+  AssetCategoriesPage,
+  FundTypesPage,
+  DebtCategoriesPage,
+  FinancialAccountsPage
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 
@@ -149,6 +160,79 @@ const App = () => (
                       </PermissionGuard>
                     </Suspense>
                   } />
+                  
+                  {/* Financial Settings Routes */}
+                  <Route path="/settings/finance/currencies" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="finance.currencies.read">
+                        <CurrenciesPage />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/finance/fiscal-years" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="finance.fiscal_years.read">
+                        <FiscalYearsPage />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/finance/cost-centers" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="finance.cost_centers.read">
+                        <CostCentersPage />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/finance/income-categories" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="finance.income_categories.read">
+                        <IncomeCategoriesPage />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/finance/expense-categories" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="finance.expense_categories.read">
+                        <ExpenseCategoriesPage />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/finance/payment-methods" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="finance.payment_methods.read">
+                        <PaymentMethodsPage />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/finance/asset-categories" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="finance.asset_categories.read">
+                        <AssetCategoriesPage />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/finance/fund-types" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="finance.fund_types.read">
+                        <FundTypesPage />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/finance/debt-categories" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="finance.debt_categories.read">
+                        <DebtCategoriesPage />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  <Route path="/settings/finance/accounts" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PermissionGuard permission="finance.accounts.read">
+                        <FinancialAccountsPage />
+                      </PermissionGuard>
+                    </Suspense>
+                  } />
+                  
                   {/* Admin routes */}
                   <Route path="/admin/users" element={
                     <Suspense fallback={<PageSkeleton />}>

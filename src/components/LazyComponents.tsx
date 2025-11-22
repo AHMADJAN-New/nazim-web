@@ -17,6 +17,18 @@ export const ReportTemplatesManagement = lazy(() => import('@/components/setting
 export const ResidencyTypesManagement = lazy(() => import('@/components/settings/ResidencyTypesManagement').then(module => ({ default: module.ResidencyTypesManagement })));
 export const UserManagement = lazy(() => import('@/components/admin/UserManagement').then(module => ({ default: module.UserManagement })));
 
+// Lazy load financial settings pages
+export const CurrenciesPage = lazy(() => import('@/pages/settings/finance').then(m => ({ default: m.CurrenciesPage })));
+export const FiscalYearsPage = lazy(() => import('@/pages/settings/finance').then(m => ({ default: m.FiscalYearsPage })));
+export const CostCentersPage = lazy(() => import('@/pages/settings/finance').then(m => ({ default: m.CostCentersPage })));
+export const IncomeCategoriesPage = lazy(() => import('@/pages/settings/finance').then(m => ({ default: m.IncomeCategoriesPage })));
+export const ExpenseCategoriesPage = lazy(() => import('@/pages/settings/finance').then(m => ({ default: m.ExpenseCategoriesPage })));
+export const PaymentMethodsPage = lazy(() => import('@/pages/settings/finance').then(m => ({ default: m.PaymentMethodsPage })));
+export const AssetCategoriesPage = lazy(() => import('@/pages/settings/finance').then(m => ({ default: m.AssetCategoriesPage })));
+export const FundTypesPage = lazy(() => import('@/pages/settings/finance').then(m => ({ default: m.FundTypesPage })));
+export const DebtCategoriesPage = lazy(() => import('@/pages/settings/finance').then(m => ({ default: m.DebtCategoriesPage })));
+export const FinancialAccountsPage = lazy(() => import('@/pages/settings/finance').then(m => ({ default: m.FinancialAccountsPage })));
+
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
 
