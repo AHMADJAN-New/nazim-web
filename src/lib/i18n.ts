@@ -38,6 +38,7 @@ export interface TranslationKeys {
     classes: string;
       subjects: string;
       subjectAssignments: string;
+      timetable: string;
     exams: string;
     finance: string;
     staff: string;
@@ -248,6 +249,54 @@ export interface TranslationKeys {
         noAssignmentsFound: string;
         unassigned: string;
       };
+      periods: {
+        title: string;
+        name: string;
+        day: string;
+        start: string;
+        end: string;
+        timeRange: string;
+        sortOrder: string;
+        maxParallel: string;
+        meta: string;
+        isBreak: string;
+        break: string;
+      };
+      timetable: {
+        title: string;
+        description: string;
+        selectClass: string;
+        allClasses: string;
+        selectOrganizationPrompt: string;
+        generateButton: string;
+        generating: string;
+        preferencesTitle: string;
+        selectTeacher: string;
+        noTeacherSelected: string;
+        selectTeacherFirst: string;
+        preferred: string;
+        available: string;
+        unavailable: string;
+        gridTitle: string;
+        gridSubtitle: string;
+        refresh: string;
+        class: string;
+        subject: string;
+        teacher: string;
+        lock: string;
+        unlock: string;
+        unknownTeacher: string;
+        days: {
+          monday: string;
+          tuesday: string;
+          wednesday: string;
+          thursday: string;
+          friday: string;
+          saturday: string;
+          sunday: string;
+        };
+        generateSummary?: string;
+      };
     };
 }
 
@@ -284,6 +333,7 @@ const en: TranslationKeys = {
     classes: 'Classes',
     subjects: 'Subjects',
     subjectAssignments: 'Subject Assignments',
+      timetable: 'Timetable',
     exams: 'Exams',
     finance: 'Finance',
     staff: 'Staff',
@@ -484,6 +534,53 @@ const en: TranslationKeys = {
         noAssignmentsFound: 'No assignments found',
         unassigned: 'Unassigned',
       },
+      periods: {
+        title: 'Teaching Periods',
+        name: 'Name',
+        day: 'Day',
+        start: 'Start Time',
+        end: 'End Time',
+        timeRange: 'Time Range',
+        sortOrder: 'Sort Order',
+        maxParallel: 'Max Parallel Classes',
+        meta: 'Details',
+        isBreak: 'Mark as break period',
+        break: 'Break',
+      },
+      timetable: {
+        title: 'Smart Timetable',
+        description: 'Generate conflict-free schedules that respect teacher availability.',
+        selectClass: 'Filter by class',
+        allClasses: 'All classes',
+        selectOrganizationPrompt: 'Select an organization to manage timetables.',
+        generateButton: 'Generate timetable',
+        generating: 'Generating...',
+        preferencesTitle: 'Teacher preferences',
+        selectTeacher: 'Select a teacher',
+        noTeacherSelected: 'No teacher selected',
+        selectTeacherFirst: 'Select a teacher to manage preferences',
+        preferred: 'Preferred',
+        available: 'Available',
+        unavailable: 'Blocked',
+        gridTitle: 'Timetable grid',
+        gridSubtitle: 'Lock important sessions or remove conflicts inline.',
+        refresh: 'Refresh',
+        class: 'Class',
+        subject: 'Subject',
+        teacher: 'Teacher',
+        lock: 'Lock',
+        unlock: 'Unlock',
+        unknownTeacher: 'Unknown teacher',
+        days: {
+          monday: 'Monday',
+          tuesday: 'Tuesday',
+          wednesday: 'Wednesday',
+          thursday: 'Thursday',
+          friday: 'Friday',
+          saturday: 'Saturday',
+          sunday: 'Sunday',
+        },
+      },
   },
 };
 
@@ -520,6 +617,7 @@ const ps: TranslationKeys = {
     classes: 'ټولګۍ',
       subjects: 'مضامین',
       subjectAssignments: 'د مضمونونو سپارښتنه',
+      timetable: 'مهالوېش',
     exams: 'ازموینې',
     finance: 'مالي چارې',
     staff: 'کارکوونکي',
@@ -720,6 +818,53 @@ const ps: TranslationKeys = {
         noAssignmentsFound: 'هیڅ سپارښتنه ونه موندل شوه',
         unassigned: 'نه دی ټاکل شوی',
       },
+      periods: {
+        title: 'د تدریس دورې',
+        name: 'نوم',
+        day: 'ورځ',
+        start: 'پیل وخت',
+        end: 'پای وخت',
+        timeRange: 'د وخت لړ',
+        sortOrder: 'د ترتیب شمېره',
+        maxParallel: 'اعظمي موازي ټولګي',
+        meta: 'جزیات',
+        isBreak: 'د وقفې په توګه نښه کړئ',
+        break: 'وقـفه',
+      },
+      timetable: {
+        title: 'هوښیار مهالوېش',
+        description: 'د استادانو د شتون په پام کې نیولو سره بې ټکره مهال وېش جوړ کړئ.',
+        selectClass: 'ټولګی وټاکئ',
+        allClasses: 'ټول ټولګۍ',
+        selectOrganizationPrompt: 'د مهالوېش د مدیریت لپاره سازمان وټاکئ.',
+        generateButton: 'مهالوېش تولید کړئ',
+        generating: 'جوړېږي...',
+        preferencesTitle: 'د استاد خوښې',
+        selectTeacher: 'استاد وټاکئ',
+        noTeacherSelected: 'هیڅ استاد نه دی ټاکل شوی',
+        selectTeacherFirst: 'د خوښې تنظیمولو لپاره استاد وټاکئ',
+        preferred: 'خوښ',
+        available: 'شته',
+        unavailable: 'نه شته',
+        gridTitle: 'د مهالوېش جدول',
+        gridSubtitle: 'مهم دورې قفل کړئ یا ټکرونه سم کړئ.',
+        refresh: 'تازه کول',
+        class: 'ټولګی',
+        subject: 'مضمون',
+        teacher: 'استاد',
+        lock: 'قفل',
+        unlock: 'خلاص کړئ',
+        unknownTeacher: 'نامعلوم استاد',
+        days: {
+          monday: 'دوشنبه',
+          tuesday: 'سه شنبه',
+          wednesday: 'چهارشنبه',
+          thursday: 'پنجشنبه',
+          friday: 'جمعه',
+          saturday: 'شنبه',
+          sunday: 'یکشنبه',
+        },
+      },
   },
 };
 
@@ -756,6 +901,7 @@ const fa: TranslationKeys = {
     classes: 'کلاس‌ها',
       subjects: 'مضامین',
       subjectAssignments: 'تخصیص مضامین',
+      timetable: 'برنامه زمانی',
     exams: 'امتحانات',
     finance: 'مالی',
     staff: 'کارکنان',
@@ -956,6 +1102,53 @@ const fa: TranslationKeys = {
         noAssignmentsFound: 'هیچ تخصیصی یافت نشد',
         unassigned: 'تعیین نشده',
       },
+      periods: {
+        title: 'دوره‌های تدریس',
+        name: 'نام',
+        day: 'روز',
+        start: 'زمان شروع',
+        end: 'زمان پایان',
+        timeRange: 'بازه زمانی',
+        sortOrder: 'ترتیب',
+        maxParallel: 'حداکثر کلاس همزمان',
+        meta: 'جزئیات',
+        isBreak: 'علامت به عنوان استراحت',
+        break: 'استراحت',
+      },
+      timetable: {
+        title: 'برنامه‌ریز هوشمند',
+        description: 'بدون تداخل، با رعایت ترجیحات استادان، برنامه هفتگی بسازید.',
+        selectClass: 'فیلتر بر اساس کلاس',
+        allClasses: 'همه کلاس‌ها',
+        selectOrganizationPrompt: 'برای مدیریت برنامه زمانی، سازمانی را انتخاب کنید.',
+        generateButton: 'تولید برنامه',
+        generating: 'در حال تولید...',
+        preferencesTitle: 'ترجیحات استاد',
+        selectTeacher: 'انتخاب استاد',
+        noTeacherSelected: 'استادی انتخاب نشده است',
+        selectTeacherFirst: 'برای مدیریت ترجیحات ابتدا استاد را انتخاب کنید',
+        preferred: 'مطلوب',
+        available: 'موجود',
+        unavailable: 'ناموجود',
+        gridTitle: 'شبکه برنامه',
+        gridSubtitle: 'جلسات مهم را قفل کرده یا تداخل‌ها را اصلاح کنید.',
+        refresh: 'تازه‌سازی',
+        class: 'کلاس',
+        subject: 'مضمون',
+        teacher: 'استاد',
+        lock: 'قفل',
+        unlock: 'باز کردن',
+        unknownTeacher: 'استاد نامشخص',
+        days: {
+          monday: 'دوشنبه',
+          tuesday: 'سه‌شنبه',
+          wednesday: 'چهارشنبه',
+          thursday: 'پنج‌شنبه',
+          friday: 'جمعه',
+          saturday: 'شنبه',
+          sunday: 'یک‌شنبه',
+        },
+      },
   },
 };
 
@@ -985,14 +1178,15 @@ const ar: TranslationKeys = {
       actions: 'إجراءات',
   },
     nav: {
-    dashboard: 'لوحة التحكم',
-    students: 'الطلاب',
-    admissions: 'القبول',
-    attendance: 'الحضور',
-    classes: 'الفصول',
+      dashboard: 'لوحة التحكم',
+      students: 'الطلاب',
+      admissions: 'القبول',
+      attendance: 'الحضور',
+      classes: 'الفصول',
       subjects: 'المواد',
       subjectAssignments: 'تعيين المواد',
-    exams: 'الامتحانات',
+      timetable: 'الجدول الدراسي',
+      exams: 'الامتحانات',
     finance: 'المالية',
     staff: 'الموظفون',
     hostel: 'السكن الداخلي',
@@ -1191,6 +1385,53 @@ const ar: TranslationKeys = {
         assignButton: 'تعيين المادة',
         noAssignmentsFound: 'لا توجد تعيينات',
         unassigned: 'غير معيّن',
+      },
+      periods: {
+        title: 'حصص التدريس',
+        name: 'الاسم',
+        day: 'اليوم',
+        start: 'وقت البدء',
+        end: 'وقت الانتهاء',
+        timeRange: 'الفترة الزمنية',
+        sortOrder: 'ترتيب العرض',
+        maxParallel: 'أقصى عدد فصول متزامنة',
+        meta: 'تفاصيل',
+        isBreak: 'تحديد كفترة استراحة',
+        break: 'استراحة',
+      },
+      timetable: {
+        title: 'الجدول الذكي',
+        description: 'أنشئ جدولاً خالياً من التعارضات مع مراعاة تفضيلات المعلمين.',
+        selectClass: 'تصفية حسب الفصل',
+        allClasses: 'جميع الفصول',
+        selectOrganizationPrompt: 'يرجى اختيار منظمة لإدارة الجداول الدراسية.',
+        generateButton: 'توليد الجدول',
+        generating: 'جارٍ التوليد...',
+        preferencesTitle: 'تفضيلات المعلمين',
+        selectTeacher: 'اختر المعلم',
+        noTeacherSelected: 'لم يتم اختيار معلم',
+        selectTeacherFirst: 'اختر معلمًا لإدارة تفضيلاته',
+        preferred: 'مفضل',
+        available: 'متاح',
+        unavailable: 'غير متاح',
+        gridTitle: 'عرض الجدول',
+        gridSubtitle: 'يمكنك قفل الحصص المهمة أو تعديل التعارضات مباشرة.',
+        refresh: 'تحديث',
+        class: 'الفصل',
+        subject: 'المادة',
+        teacher: 'المعلم',
+        lock: 'قفل',
+        unlock: 'فتح',
+        unknownTeacher: 'معلم غير معروف',
+        days: {
+          monday: 'الاثنين',
+          tuesday: 'الثلاثاء',
+          wednesday: 'الأربعاء',
+          thursday: 'الخميس',
+          friday: 'الجمعة',
+          saturday: 'السبت',
+          sunday: 'الأحد',
+        },
       },
   },
 };

@@ -19,6 +19,7 @@ export const UserManagement = lazy(() => import('@/components/admin/UserManageme
 export const ClassesManagement = lazy(() => import('@/components/academics/ClassesManagement').then(module => ({ default: module.ClassesManagement })));
 export const SubjectsManagement = lazy(() => import('@/components/academics/SubjectsManagement').then(module => ({ default: module.SubjectsManagement })));
 export const SubjectAssignmentsManagement = lazy(() => import('@/components/academics/SubjectAssignmentsManagement').then(module => ({ default: module.SubjectAssignmentsManagement })));
+export const TimetableManagement = lazy(() => import('@/components/academics/TimetableManagement').then(module => ({ default: module.TimetableManagement })));
 
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';

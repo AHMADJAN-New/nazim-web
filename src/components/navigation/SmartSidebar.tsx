@@ -13,7 +13,8 @@ import type { UserRole } from "@/types/auth";
 import {
   Users,
   GraduationCap,
-  Calendar,
+    Calendar,
+    CalendarClock,
   BookOpen,
   FileText,
   CreditCard,
@@ -171,6 +172,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
     const hasClassesPermission = useHasPermission('academic.classes.read');
     const hasSubjectsPermission = useHasPermission('academic.subjects.read');
     const hasAssignmentsPermission = useHasPermission('academic.assignments.read');
+    const hasPeriodsPermission = useHasPermission('academic.periods.read');
+    const hasTimetablePermission = useHasPermission('academic.timetables.read');
 
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -270,6 +273,11 @@ export const SmartSidebar = memo(function SmartSidebar() {
               url: "/academics/assignments",
               icon: UserCheck,
             }] : []),
+            ...(hasTimetablePermission ? [{
+              title: t('nav.timetable'),
+              url: "/academics/timetable",
+              icon: CalendarClock,
+            }] : []),
             ...(hasResidencyTypesPermission ? [{
               title: t('academic.residencyTypes.title'),
               url: "/settings/residency-types",
@@ -350,7 +358,14 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
         if (item.titleKey === 'academicSettings') {
           // Show if user has any academic-related permission
-          return hasResidencyTypesPermission || hasClassesPermission || hasSubjectsPermission || hasAssignmentsPermission;
+          return (
+            hasResidencyTypesPermission ||
+            hasClassesPermission ||
+            hasSubjectsPermission ||
+            hasAssignmentsPermission ||
+            hasPeriodsPermission ||
+            hasTimetablePermission
+          );
       }
 
       if (item.titleKey === 'authentication') {
@@ -360,7 +375,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-    }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission, hasClassesPermission, hasSubjectsPermission, hasAssignmentsPermission, t]);
+    }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission, hasClassesPermission, hasSubjectsPermission, hasAssignmentsPermission, hasPeriodsPermission, hasTimetablePermission, t]);
 
   // Helper function to filter navigation items by role
   const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {
