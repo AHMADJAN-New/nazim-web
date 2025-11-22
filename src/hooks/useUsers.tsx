@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseAdmin } from '@/integrations/supabase/adminClient';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 
@@ -251,8 +252,8 @@ export const useCreateUser = () => {
         }
       }
 
-      // Create user in auth.users
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Create user in auth.users using admin client (requires service role key)
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: userData.email,
         password: userData.password,
         email_confirm: true,
@@ -286,7 +287,7 @@ export const useCreateUser = () => {
 
       if (profileError) {
         // Try to clean up auth user if profile update fails
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         throw new Error(profileError.message);
       }
 
@@ -365,7 +366,7 @@ export const useUpdateUser = () => {
 
       // Update auth user email if changed
       if (userData.email) {
-        const { error: authError } = await supabase.auth.admin.updateUserById(userData.id, {
+        const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userData.id, {
           email: userData.email,
         });
 
@@ -431,7 +432,7 @@ export const useDeleteUser = () => {
       }
 
       // Delete user (cascade will delete profile)
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
       if (error) {
         throw new Error(error.message);
@@ -466,7 +467,7 @@ export const useResetUserPassword = () => {
         throw new Error('Insufficient permissions to reset passwords');
       }
 
-      const { error } = await supabase.auth.admin.updateUserById(userId, {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         password: newPassword,
       });
 

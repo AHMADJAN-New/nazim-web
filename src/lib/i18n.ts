@@ -45,6 +45,7 @@ export interface TranslationKeys {
     reports: string;
     settings: string;
     authentication: string;
+    academicSettings: string;
   };
   
   // Dashboard
@@ -149,6 +150,38 @@ export interface TranslationKeys {
     roomUpdated: string;
     roomDeleted: string;
   };
+  
+  // Academic Settings
+  academic: {
+    residencyTypes: {
+      title: string;
+      management: string;
+      addResidencyType: string;
+      editResidencyType: string;
+      deleteResidencyType: string;
+      name: string;
+      code: string;
+      description: string;
+      isActive: string;
+      active: string;
+      inactive: string;
+      searchPlaceholder: string;
+      noResidencyTypesFound: string;
+      noResidencyTypesMessage: string;
+      residencyTypeCreated: string;
+      residencyTypeUpdated: string;
+      residencyTypeDeleted: string;
+      deleteConfirm: string;
+      nameRequired: string;
+      codeRequired: string;
+      codeMaxLength: string;
+      nameMaxLength: string;
+      codeExists: string;
+      globalType: string;
+      organizationType: string;
+      cannotDeleteGlobal: string;
+    };
+  };
 }
 
 // English translations
@@ -191,6 +224,7 @@ const en: TranslationKeys = {
     reports: 'Reports',
     settings: 'Settings',
     authentication: 'Authentication',
+    academicSettings: 'Academic Settings',
   },
   dashboard: {
     title: 'Dashboard',
@@ -287,6 +321,36 @@ const en: TranslationKeys = {
     roomUpdated: 'Room updated successfully',
     roomDeleted: 'Room deleted successfully',
   },
+  academic: {
+    residencyTypes: {
+      title: 'Residency Types',
+      management: 'Residency Types Management',
+      addResidencyType: 'Add Residency Type',
+      editResidencyType: 'Edit Residency Type',
+      deleteResidencyType: 'Delete Residency Type',
+      name: 'Name',
+      code: 'Code',
+      description: 'Description',
+      isActive: 'Active Status',
+      active: 'Active',
+      inactive: 'Inactive',
+      searchPlaceholder: 'Search residency types...',
+      noResidencyTypesFound: 'No residency types found',
+      noResidencyTypesMessage: 'Try adjusting your search criteria or add a new residency type.',
+      residencyTypeCreated: 'Residency type created successfully',
+      residencyTypeUpdated: 'Residency type updated successfully',
+      residencyTypeDeleted: 'Residency type deleted successfully',
+      deleteConfirm: 'Are you sure you want to delete this residency type?',
+      nameRequired: 'Name is required',
+      codeRequired: 'Code is required',
+      codeMaxLength: 'Code must be 50 characters or less',
+      nameMaxLength: 'Name must be 100 characters or less',
+      codeExists: 'This code already exists for this organization',
+      globalType: 'Global',
+      organizationType: 'Organization',
+      cannotDeleteGlobal: 'Cannot delete global residency types',
+    },
+  },
 };
 
 // Pashto translations
@@ -329,6 +393,7 @@ const ps: TranslationKeys = {
     reports: 'راپورونه',
     settings: 'ترتیبات',
     authentication: 'د تصدیق مدیریت',
+    academicSettings: 'د علمي ترتیباتو',
   },
   dashboard: {
     title: 'کنټرول پینل',
@@ -425,6 +490,36 @@ const ps: TranslationKeys = {
     roomUpdated: 'اطاق په بریالیتوب سره تغیر شو',
     roomDeleted: 'اطاق په بریالیتوب سره پاک شو',
   },
+  academic: {
+    residencyTypes: {
+      title: 'د اوسیدو ډولونه',
+      management: 'د اوسیدو ډولونو مدیریت',
+      addResidencyType: 'د اوسیدو ډول اضافه کول',
+      editResidencyType: 'د اوسیدو ډول تغیر کول',
+      deleteResidencyType: 'د اوسیدو ډول پاک کول',
+      name: 'نوم',
+      code: 'کوډ',
+      description: 'تفصیل',
+      isActive: 'فعال حالت',
+      active: 'فعال',
+      inactive: 'غیر فعال',
+      searchPlaceholder: 'د اوسیدو ډولونه لټون...',
+      noResidencyTypesFound: 'د اوسیدو ډولونه ونه موندل شول',
+      noResidencyTypesMessage: 'خپل لټون معیارونه تنظیم کړئ یا نوی د اوسیدو ډول اضافه کړئ.',
+      residencyTypeCreated: 'د اوسیدو ډول په بریالیتوب سره اضافه شو',
+      residencyTypeUpdated: 'د اوسیدو ډول په بریالیتوب سره تغیر شو',
+      residencyTypeDeleted: 'د اوسیدو ډول په بریالیتوب سره پاک شو',
+      deleteConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ دا د اوسیدو ډول پاک کړئ؟',
+      nameRequired: 'نوم اړینه دی',
+      codeRequired: 'کوډ اړینه دی',
+      codeMaxLength: 'کوډ باید 50 حروف یا لږ وي',
+      nameMaxLength: 'نوم باید 100 حروف یا لږ وي',
+      codeExists: 'دا کوډ د دې سازمان لپاره شتون لري',
+      globalType: 'نړیوال',
+      organizationType: 'سازمان',
+      cannotDeleteGlobal: 'نړیوال د اوسیدو ډولونه پاک کیدی نشي',
+    },
+  },
 };
 
 // Dari (Farsi) translations
@@ -467,6 +562,7 @@ const fa: TranslationKeys = {
     reports: 'گزارش‌ها',
     settings: 'تنظیمات',
     authentication: 'مدیریت احراز هویت',
+    academicSettings: 'تنظیمات آکادمیک',
   },
   dashboard: {
     title: 'داشبورد',
@@ -563,6 +659,36 @@ const fa: TranslationKeys = {
     roomUpdated: 'اتاق با موفقیت به‌روزرسانی شد',
     roomDeleted: 'اتاق با موفقیت حذف شد',
   },
+  academic: {
+    residencyTypes: {
+      title: 'انواع اقامت',
+      management: 'مدیریت انواع اقامت',
+      addResidencyType: 'افزودن نوع اقامت',
+      editResidencyType: 'ویرایش نوع اقامت',
+      deleteResidencyType: 'حذف نوع اقامت',
+      name: 'نام',
+      code: 'کد',
+      description: 'توضیحات',
+      isActive: 'وضعیت فعال',
+      active: 'فعال',
+      inactive: 'غیرفعال',
+      searchPlaceholder: 'جستجوی انواع اقامت...',
+      noResidencyTypesFound: 'نوع اقامتی یافت نشد',
+      noResidencyTypesMessage: 'معیارهای جستجوی خود را تنظیم کنید یا نوع اقامت جدیدی اضافه کنید.',
+      residencyTypeCreated: 'نوع اقامت با موفقیت ایجاد شد',
+      residencyTypeUpdated: 'نوع اقامت با موفقیت به‌روزرسانی شد',
+      residencyTypeDeleted: 'نوع اقامت با موفقیت حذف شد',
+      deleteConfirm: 'آیا مطمئن هستید که می‌خواهید این نوع اقامت را حذف کنید؟',
+      nameRequired: 'نام الزامی است',
+      codeRequired: 'کد الزامی است',
+      codeMaxLength: 'کد باید حداکثر 50 کاراکتر باشد',
+      nameMaxLength: 'نام باید حداکثر 100 کاراکتر باشد',
+      codeExists: 'این کد برای این سازمان قبلاً وجود دارد',
+      globalType: 'جهانی',
+      organizationType: 'سازمان',
+      cannotDeleteGlobal: 'نمی‌توان انواع اقامت جهانی را حذف کرد',
+    },
+  },
 };
 
 // Arabic translations  
@@ -605,6 +731,7 @@ const ar: TranslationKeys = {
     reports: 'التقارير',
     settings: 'الإعدادات',
     authentication: 'إدارة المصادقة',
+    academicSettings: 'الإعدادات الأكاديمية',
   },
   dashboard: {
     title: 'لوحة التحكم',
@@ -700,6 +827,36 @@ const ar: TranslationKeys = {
     roomCreated: 'تم إنشاء الغرفة بنجاح',
     roomUpdated: 'تم تحديث الغرفة بنجاح',
     roomDeleted: 'تم حذف الغرفة بنجاح',
+  },
+  academic: {
+    residencyTypes: {
+      title: 'أنواع الإقامة',
+      management: 'إدارة أنواع الإقامة',
+      addResidencyType: 'إضافة نوع إقامة',
+      editResidencyType: 'تعديل نوع الإقامة',
+      deleteResidencyType: 'حذف نوع الإقامة',
+      name: 'الاسم',
+      code: 'الكود',
+      description: 'الوصف',
+      isActive: 'الحالة النشطة',
+      active: 'نشط',
+      inactive: 'غير نشط',
+      searchPlaceholder: 'البحث عن أنواع الإقامة...',
+      noResidencyTypesFound: 'لم يتم العثور على أنواع إقامة',
+      noResidencyTypesMessage: 'حاول تعديل معايير البحث أو إضافة نوع إقامة جديد.',
+      residencyTypeCreated: 'تم إنشاء نوع الإقامة بنجاح',
+      residencyTypeUpdated: 'تم تحديث نوع الإقامة بنجاح',
+      residencyTypeDeleted: 'تم حذف نوع الإقامة بنجاح',
+      deleteConfirm: 'هل أنت متأكد أنك تريد حذف نوع الإقامة هذا؟',
+      nameRequired: 'الاسم مطلوب',
+      codeRequired: 'الكود مطلوب',
+      codeMaxLength: 'يجب أن يكون الكود 50 حرفًا أو أقل',
+      nameMaxLength: 'يجب أن يكون الاسم 100 حرف أو أقل',
+      codeExists: 'هذا الكود موجود بالفعل لهذه المنظمة',
+      globalType: 'عالمي',
+      organizationType: 'المنظمة',
+      cannotDeleteGlobal: 'لا يمكن حذف أنواع الإقامة العالمية',
+    },
   },
 };
 
