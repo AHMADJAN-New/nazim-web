@@ -57,12 +57,9 @@ export function PasswordManagement() {
     setResults([]);
     
     try {
-      const { data, error } = await supabase.functions.invoke('update-demo-passwords');
-      
-      if (error) throw error;
-      
-      setResults(data.results || []);
-      toast.success(data.message || 'Demo passwords updated successfully!');
+      // Function removed - update-demo-passwords edge function is not available
+      toast.error('Password update function is not available. Please update passwords manually through the Supabase dashboard.');
+      console.warn('update-demo-passwords function is not available');
     } catch (error: any) {
       toast.error(error.message || 'Failed to update demo passwords');
       console.error('Error updating demo passwords:', error);

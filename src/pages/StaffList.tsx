@@ -260,7 +260,15 @@ export function StaffList() {
                                 </Select>
                             )}
                             {hasCreatePermission && (
-                                <Button type="button" onClick={() => setIsCreateDialogOpen(true)}>
+                                <Button 
+                                    type="button" 
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        console.log('Create staff button clicked');
+                                        setIsCreateDialogOpen(true);
+                                    }}
+                                >
                                     <Plus className="h-4 w-4 mr-2" />
                                     Add Staff
                                 </Button>
@@ -530,6 +538,7 @@ export function StaffList() {
 
             {/* Create Staff Dialog */}
             <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+                console.log('Dialog open state changing:', open, 'Current state:', isCreateDialogOpen);
                 setIsCreateDialogOpen(open);
                 if (!open) {
                     reset();
@@ -606,9 +615,14 @@ export function StaffList() {
                             onSuccess: () => {
                                 setIsCreateDialogOpen(false);
                                 reset();
+                                setCurrentStep(1);
                                 // Force refetch to show the new staff member immediately
                                 // This ensures it appears even when "all" organizations filter is active
                                 refetchStaff();
+                            },
+                            onError: (error) => {
+                                console.error('Error creating staff:', error);
+                                toast.error(error.message || 'Failed to create staff member. Please try again.');
                             },
                         });
                     })}>

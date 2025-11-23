@@ -41,17 +41,11 @@ export function DemoAccountTester() {
     setResults([]);
     const testResults = [];
     
-    // First update passwords
-    try {
-      await supabase.functions.invoke('update-demo-passwords');
-      toast.success('Demo passwords updated!');
-    } catch (error) {
-      toast.error('Failed to update demo passwords');
-      setTesting(false);
-      return;
-    }
+    // Function removed - update-demo-passwords edge function is not available
+    // Skipping password update step and proceeding directly to login tests
+    toast.info('Skipping password update (function not available). Testing login with current passwords...');
 
-    // Then test each account
+    // Test each account
     for (const account of demoAccounts) {
       try {
         const { error } = await supabase.auth.signInWithPassword({
