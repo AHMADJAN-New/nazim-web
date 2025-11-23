@@ -20,6 +20,11 @@ import { LoadTimetableDialog } from './LoadTimetableDialog';
 import { useTeacherPreferences, useTimetable } from '@/hooks/useTimetables';
 import type { SaveEntryInput } from './SaveTimetableDialog';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
+import { useSchools } from '@/hooks/useSchools';
+import { resolveReportBranding } from '@/lib/reporting/branding';
 import {
 	DndContext,
 	DragEndEvent,
@@ -31,7 +36,7 @@ import {
 	useDraggable,
 	useDroppable,
 } from '@dnd-kit/core';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Download, FileText, Printer } from 'lucide-react';
 import { CSS } from '@dnd-kit/utilities';
 
 // Draggable cell component
@@ -118,6 +123,8 @@ export function TimetableGenerator() {
 	const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYearId, organizationId);
 	const { data: staff } = useStaff(organizationId);
 	const { data: assignmentsRaw } = useTeacherSubjectAssignments(organizationId, undefined, selectedAcademicYearId);
+	const { data: schools } = useSchools(organizationId);
+	const school = schools && schools.length > 0 ? schools[0] : null;
 
 	// Selection states
 	const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
@@ -378,10 +385,17 @@ export function TimetableGenerator() {
 	}, [entries]);
 
 	const headerSlots = useMemo(() => {
+		// If we have entries but no selected slots, use slots from entries
+		if (entries.length > 0 && selectedSlotIds.length === 0) {
+			const entrySlotIds = new Set(entries.map(e => e.slot_id));
+			return availableSlots
+				.filter((s) => entrySlotIds.has(s.id))
+				.sort((a, b) => a.start_time.localeCompare(b.start_time));
+		}
 		return availableSlots
 			.filter((s) => selectedSlotIds.includes(s.id))
 			.sort((a, b) => a.start_time.localeCompare(b.start_time));
-	}, [availableSlots, selectedSlotIds]);
+	}, [availableSlots, selectedSlotIds, entries]);
 
 	// Check if moving an entry would cause conflicts (exclude the moving entry by index)
 	const canMoveEntry = (entryIndex: number, newSlotId: string, newDay: DayName) => {
@@ -495,10 +509,367 @@ export function TimetableGenerator() {
 		toast.success('Timetable entry moved successfully');
 	};
 
+	// Export and Print functions
+	const handleExportExcel = () => {
+		if (entries.length === 0) {
+			toast.error('No timetable to export. Please generate a timetable first.');
+			return;
+		}
+
+		try {
+			const days = allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList);
+			
+			// Use central Excel export system
+			const wb = XLSX.utils.book_new();
+
+			// Teacher View Sheet
+			const teacherRows: Array<Array<string | number>> = [];
+			// Add school name if available
+			if (school?.school_name) {
+				teacherRows.push([school.school_name || '']);
+			}
+			teacherRows.push([t('timetable.teacherView') || 'Teacher View']);
+			teacherRows.push([]); // Blank row
+			
+			const teacherHeaders = [t('timetable.teacher') || 'Teacher', ...days.flatMap(day => headerSlots.map(s => `${day} - ${s.name}`))];
+			teacherRows.push(teacherHeaders);
+
+			teacherIdsInScope.forEach((tid) => {
+				const row: Array<string | number> = [teacherMap.get(tid) || tid];
+				days.forEach((day) => {
+					headerSlots.forEach((s) => {
+						const cell = entries.find((e) => e.teacher_id === tid && e.slot_id === s.id && e.day === day);
+						row.push(cell ? `${cell.class_name}\n${cell.subject_name}` : '');
+					});
+				});
+				teacherRows.push(row);
+			});
+			const teacherWs = XLSX.utils.aoa_to_sheet(teacherRows);
+			XLSX.utils.book_append_sheet(wb, teacherWs, (t('timetable.teacherView') || 'Teacher View').slice(0, 31));
+
+			// Class View Sheet
+			const classRows: Array<Array<string | number>> = [];
+			// Add school name if available
+			if (school?.school_name) {
+				classRows.push([school.school_name || '']);
+			}
+			classRows.push([t('timetable.classView') || 'Class View']);
+			classRows.push([]); // Blank row
+			
+			const classHeaders = [t('timetable.class') || 'Class', ...days.flatMap(day => headerSlots.map(s => `${day} - ${s.name}`))];
+			classRows.push(classHeaders);
+
+			Array.from(classesInScope).forEach((cid) => {
+				const row: Array<string | number> = [classMap.get(cid) || cid];
+				days.forEach((day) => {
+					headerSlots.forEach((s) => {
+						const cells = entries.filter((e) => e.class_id === cid && e.slot_id === s.id && e.day === day);
+						const cellText = cells.map(c => `${c.subject_name}\n${c.teacher_name}`).join('\n---\n');
+						row.push(cellText);
+					});
+				});
+				classRows.push(row);
+			});
+			const classWs = XLSX.utils.aoa_to_sheet(classRows);
+			XLSX.utils.book_append_sheet(wb, classWs, (t('timetable.classView') || 'Class View').slice(0, 31));
+
+			const fileName = `timetable_${new Date().toISOString().split('T')[0]}.xlsx`;
+			XLSX.writeFile(wb, fileName);
+			toast.success('Timetable exported to Excel successfully');
+		} catch (error) {
+			console.error('Error exporting to Excel:', error);
+			toast.error('Failed to export timetable to Excel');
+		}
+	};
+
+	const handleExportPdf = async () => {
+		if (entries.length === 0) {
+			toast.error('No timetable to export. Please generate a timetable first.');
+			return;
+		}
+
+		if (!school) {
+			toast.error('Please configure school branding first to export PDF.');
+			return;
+		}
+
+		try {
+			// Initialize PDF fonts if not already done
+			if (pdfFonts && typeof pdfFonts === 'object' && !(pdfMake as any).vfs) {
+				(pdfMake as any).vfs = pdfFonts;
+			}
+
+			if (!(pdfMake as any).vfs) {
+				throw new Error('PDF fonts (vfs) not initialized. Please check pdfmake configuration.');
+			}
+
+			// Get branding from central system (supports Pashto/Arabic fonts)
+			const branding = await resolveReportBranding(school, null);
+
+			// Helper function to normalize Unicode text for PDF
+			const normalizeText = (text: string | number | null | undefined): string => {
+				if (text == null) return '';
+				const str = String(text);
+				// Normalize Unicode to NFC form (canonical composition)
+				// This helps ensure Pashto characters are properly encoded
+				try {
+					return str.normalize('NFC');
+				} catch {
+					return str;
+				}
+			};
+
+			const days = allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList);
+			const content: any[] = [];
+
+			// Title
+			content.push({
+				text: normalizeText(t('timetable.title') || 'Timetable'),
+				fontSize: branding.fontSize + 4,
+				bold: true,
+				alignment: 'center',
+				margin: [0, 0, 0, 16],
+			});
+
+			// Teacher View Table
+			const teacherHeaders = [
+				{ text: normalizeText(t('timetable.teacher') || 'Teacher'), bold: true, fillColor: branding.primaryColor, color: '#ffffff' },
+				...days.flatMap(day => headerSlots.map(s => ({
+					text: normalizeText(`${day}\n${s.name}`),
+					bold: true,
+					fillColor: branding.primaryColor,
+					color: '#ffffff',
+				}))),
+			];
+			const teacherRows: any[][] = [];
+			teacherIdsInScope.forEach((tid) => {
+				const row: any[] = [{ text: normalizeText(teacherMap.get(tid) || tid), fontSize: branding.fontSize }];
+				days.forEach((day) => {
+					headerSlots.forEach((s) => {
+						const cell = entries.find((e) => e.teacher_id === tid && e.slot_id === s.id && e.day === day);
+						row.push({
+							text: cell ? normalizeText(`${cell.class_name}\n${cell.subject_name}`) : '',
+							fontSize: branding.fontSize - 1,
+						});
+					});
+				});
+				teacherRows.push(row);
+			});
+
+			content.push({
+				text: normalizeText(t('timetable.teacherView') || 'Teacher View'),
+				fontSize: branding.fontSize + 2,
+				bold: true,
+				margin: [0, 16, 0, 8],
+			});
+			content.push({
+				table: {
+					headerRows: 1,
+					widths: ['auto', ...Array(headerSlots.length * days.length).fill('*')],
+					body: [teacherHeaders, ...teacherRows],
+				},
+				layout: 'lightHorizontalLines',
+				fontSize: branding.fontSize,
+				margin: [0, 0, 0, 16],
+			});
+
+			// Class View Table
+			const classHeaders = [
+				{ text: normalizeText(t('timetable.class') || 'Class'), bold: true, fillColor: branding.primaryColor, color: '#ffffff' },
+				...days.flatMap(day => headerSlots.map(s => ({
+					text: normalizeText(`${day}\n${s.name}`),
+					bold: true,
+					fillColor: branding.primaryColor,
+					color: '#ffffff',
+				}))),
+			];
+			const classRows: any[][] = [];
+			Array.from(classesInScope).forEach((cid) => {
+				const row: any[] = [{ text: normalizeText(classMap.get(cid) || cid), fontSize: branding.fontSize }];
+				days.forEach((day) => {
+					headerSlots.forEach((s) => {
+						const cells = entries.filter((e) => e.class_id === cid && e.slot_id === s.id && e.day === day);
+						const cellText = cells.map(c => `${c.subject_name}\n${c.teacher_name}`).join('\n---\n');
+						row.push({
+							text: normalizeText(cellText),
+							fontSize: branding.fontSize - 1,
+						});
+					});
+				});
+				classRows.push(row);
+			});
+
+			content.push({
+				text: normalizeText(t('timetable.classView') || 'Class View'),
+				fontSize: branding.fontSize + 2,
+				bold: true,
+				margin: [0, 16, 0, 8],
+			});
+			content.push({
+				table: {
+					headerRows: 1,
+					widths: ['auto', ...Array(headerSlots.length * days.length).fill('*')],
+					body: [classHeaders, ...classRows],
+				},
+				layout: 'lightHorizontalLines',
+				fontSize: branding.fontSize,
+				margin: [0, 0, 0, 16],
+			});
+
+			// pdfmake only has 'Roboto' in vfs_fonts by default
+			// Roboto supports Unicode but Pashto characters may not render perfectly
+			// For better Pashto support, custom fonts would need to be added to pdfmake's vfs
+			// All text values are normalized to NFC Unicode form for proper encoding
+			const docDefinition: any = {
+				pageSize: 'A3',
+				pageOrientation: 'landscape',
+				content,
+				defaultStyle: {
+					fontSize: branding.fontSize,
+					font: 'Roboto', // pdfmake default font (supports Unicode)
+					// Ensure proper text rendering
+					characterSpacing: 0,
+					lineHeight: 1.2,
+				},
+				// Add info for better Unicode handling
+				info: {
+					title: normalizeText(t('timetable.title') || 'Timetable'),
+					author: school?.school_name || '',
+				},
+			};
+
+			const fileName = `timetable_${new Date().toISOString().split('T')[0]}.pdf`;
+			(pdfMake as any).createPdf(docDefinition).download(fileName);
+			toast.success('Timetable exported to PDF successfully');
+		} catch (error) {
+			console.error('Error exporting to PDF:', error);
+			toast.error('Failed to export timetable to PDF');
+		}
+	};
+
+	const handlePrint = () => {
+		if (entries.length === 0) {
+			toast.error('No timetable to print. Please generate a timetable first.');
+			return;
+		}
+
+		// Add print styles to the current page and trigger print
+		const styleId = 'timetable-print-styles';
+		let style = document.getElementById(styleId) as HTMLStyleElement;
+		
+		if (!style) {
+			style = document.createElement('style');
+			style.id = styleId;
+			document.head.appendChild(style);
+		}
+		
+		style.textContent = `
+			@media print {
+				/* Hide everything on the page */
+				body * {
+					visibility: hidden;
+				}
+				/* Show only the timetable section and all its contents */
+				.print-timetable-section,
+				.print-timetable-section * {
+					visibility: visible;
+				}
+				/* Position the timetable section at the top */
+				.print-timetable-section {
+					position: absolute;
+					left: 0;
+					top: 0;
+					width: 100%;
+					margin: 0;
+					padding: 20px;
+				}
+				/* Hide buttons and action controls */
+				.print-timetable-section button,
+				.print-timetable-section [class*="CardHeader"] > div.flex {
+					display: none !important;
+					visibility: hidden !important;
+				}
+				/* Ensure tables are visible and properly formatted */
+				.print-timetable-section table {
+					display: table !important;
+					width: 100% !important;
+					border-collapse: collapse !important;
+					margin: 10px 0 !important;
+				}
+				.print-timetable-section thead {
+					display: table-header-group !important;
+				}
+				.print-timetable-section tbody {
+					display: table-row-group !important;
+				}
+				.print-timetable-section tr {
+					display: table-row !important;
+					page-break-inside: avoid !important;
+				}
+				.print-timetable-section th,
+				.print-timetable-section td {
+					display: table-cell !important;
+					border: 1px solid #000 !important;
+					padding: 6px !important;
+					font-size: 10px !important;
+				}
+				/* Page settings */
+				@page {
+					size: A3 landscape;
+					margin: 1cm;
+				}
+			}
+		`;
+		
+		// Trigger print dialog
+		window.print();
+	};
+
 	// When a saved timetable is loaded, map it into current view
 	useEffect(() => {
-		if (!loadedTimetable?.timetable) return;
+		if (!loadedTimetable?.timetable || !loadedTimetable?.entries) return;
 		const tt = loadedTimetable;
+		
+		// Set the academic year if available (this will trigger schedule slots to load)
+		if (tt.timetable.academic_year_id && tt.timetable.academic_year_id !== selectedAcademicYearId) {
+			setSelectedAcademicYearId(tt.timetable.academic_year_id);
+			// Wait for slots to load before setting selected slots
+			// This will be handled in the next effect run
+			return;
+		}
+		
+		// Extract unique slot IDs and days from loaded entries
+		const uniqueSlotIds = new Set<string>();
+		const uniqueDays = new Set<DayName>();
+		let hasAllYear = false;
+		
+		(tt.entries || []).forEach((e) => {
+			if (e.schedule_slot_id) uniqueSlotIds.add(e.schedule_slot_id);
+			if (e.day_name) {
+				if (e.day_name === 'all_year') {
+					hasAllYear = true;
+				} else {
+					uniqueDays.add(e.day_name);
+				}
+			}
+		});
+		
+		// Set selected slots from loaded timetable entries
+		// Always set them, even if they don't match current academic year slots
+		// The headerSlots memo will handle showing them
+		if (uniqueSlotIds.size > 0) {
+			setSelectedSlotIds(Array.from(uniqueSlotIds));
+		}
+		
+		// Set days
+		if (hasAllYear) {
+			setAllYear(true);
+			setSelectedDays([]);
+		} else if (uniqueDays.size > 0) {
+			setAllYear(false);
+			setSelectedDays(Array.from(uniqueDays));
+		}
+		
 		// Map loaded entries to display rows
 		const entryRows = (tt.entries || []).map((e) => ({
 			class_id: e.class_academic_year_id,
@@ -511,6 +882,7 @@ export function TimetableGenerator() {
 			period_order: e.period_order,
 		}));
 		setEntries(entryRows);
+		
 		// Prepare save entries aligned by index
 		const saveRows: SaveEntryInput[] = (tt.entries || []).map((e) => ({
 			class_academic_year_id: e.class_academic_year_id,
@@ -522,8 +894,8 @@ export function TimetableGenerator() {
 		}));
 		setSaveEntries(saveRows);
 		setUnscheduledCount(0);
-		toast.success('Timetable loaded');
-	}, [loadedTimetable?.timetable?.id]);
+		toast.success('Timetable loaded successfully');
+	}, [loadedTimetable?.timetable?.id, classMap, teacherMap, selectedAcademicYearId, scheduleSlots]);
 
 	return (
 		<div className="space-y-6">
@@ -663,12 +1035,52 @@ export function TimetableGenerator() {
 			</div>
 
 			{entries.length > 0 && (
-				<Card>
+				<Card className="print-timetable-section">
 					<CardHeader className="flex flex-row items-center justify-between">
 						<CardTitle>{t('timetable.results') || 'Results'}</CardTitle>
 						<div className="flex items-center gap-2">
 							<Button
-								onClick={() => setSaveOpen(true)}
+								variant="outline"
+								size="sm"
+								onClick={handleExportExcel}
+								disabled={entries.length === 0}
+								title={t('timetable.exportExcel') || 'Export to Excel'}
+							>
+								<Download className="h-4 w-4 mr-2" />
+								Excel
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={handleExportPdf}
+								disabled={entries.length === 0}
+								title={t('timetable.exportPdf') || 'Export to PDF'}
+							>
+								<FileText className="h-4 w-4 mr-2" />
+								PDF
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={handlePrint}
+								disabled={entries.length === 0}
+								title={t('timetable.print') || 'Print Timetable'}
+							>
+								<Printer className="h-4 w-4 mr-2" />
+								{t('timetable.print') || 'Print'}
+							</Button>
+							<Button
+								onClick={() => {
+									if (saveEntries.length === 0) {
+										toast.error('No entries to save. Please generate a timetable first.');
+										return;
+									}
+									if (!selectedAcademicYearId) {
+										toast.error('Please select an academic year before saving.');
+										return;
+									}
+									setSaveOpen(true);
+								}}
 								disabled={saveEntries.length === 0 || !selectedAcademicYearId}
 							>
 								{t('timetable.save') || 'Save'}
@@ -687,62 +1099,68 @@ export function TimetableGenerator() {
 									<TabsTrigger value="classes">{t('timetable.classView') || 'Class View'}</TabsTrigger>
 								</TabsList>
 								<TabsContent value="teachers" className="mt-4">
-								<div className="w-full overflow-x-auto max-w-full">
-									<div className="inline-block min-w-full align-middle">
-										<table className="min-w-full border">
-										<thead>
-											<tr className="bg-primary text-primary-foreground">
-												<th className="p-2 border">{t('timetable.teacher') || 'Teacher'}</th>
-												{(allYear ? (['all_year'] as DayName[]) : selectedDays).flatMap((day) =>
-													headerSlots.map((s) => (
-														<th key={`${day}-${s.id}`} className="p-2 border">
-															<div className="text-xs capitalize">{day}</div>
-															<div className="text-xs">{s.name}</div>
-															<div className="text-[10px]">{s.start_time} - {s.end_time}</div>
-														</th>
-													))
-												)}
-											</tr>
-										</thead>
-										<tbody>
-											{teacherIdsInScope.map((tid) => (
-												<tr key={tid} className="hover:bg-muted/50">
-													<td className="p-2 border font-medium">{teacherMap.get(tid) || tid}</td>
-													{(allYear ? (['all_year'] as DayName[]) : selectedDays).flatMap((day) =>
-														headerSlots.map((s) => {
-															const cell = entries.find((e) => e.teacher_id === tid && e.slot_id === s.id && e.day === day);
-															const cellId = `cell-${tid}-${day}-${s.id}`;
-															// Find index by matching all key properties instead of reference
-															const entryIndex = cell ? entries.findIndex((e) => 
-																e.teacher_id === cell.teacher_id && 
-																e.class_id === cell.class_id && 
-																e.subject_name === cell.subject_name &&
-																e.slot_id === cell.slot_id &&
-																e.day === cell.day
-															) : -1;
-															return (
-																<DroppableCell
-																	key={cellId}
-																	id={cellId}
-																	className="p-2 border align-top text-sm"
-																>
-																	{cell && entryIndex >= 0 ? (
-																		<DraggableCell id={`entry-${entryIndex}`} className="space-y-1">
-																			<div className="font-medium">{cell.class_name}</div>
-																			<div className="text-muted-foreground">{cell.subject_name}</div>
-																		</DraggableCell>
-																	) : null}
-																</DroppableCell>
-															);
-														})
-													)}
-												</tr>
-											))}
-										</tbody>
-									</table>
+									<div className="w-full overflow-x-auto max-w-full">
+										<div className="inline-block min-w-full align-middle">
+											{headerSlots.length > 0 ? (
+												<table className="min-w-full border">
+													<thead>
+														<tr className="bg-primary text-primary-foreground">
+															<th className="p-2 border">{t('timetable.teacher') || 'Teacher'}</th>
+															{(allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList)).flatMap((day) =>
+																headerSlots.map((s) => (
+																	<th key={`${day}-${s.id}`} className="p-2 border">
+																		<div className="text-xs capitalize">{day}</div>
+																		<div className="text-xs">{s.name}</div>
+																		<div className="text-[10px]">{s.start_time} - {s.end_time}</div>
+																	</th>
+																))
+															)}
+														</tr>
+													</thead>
+													<tbody>
+														{teacherIdsInScope.map((tid) => (
+															<tr key={tid} className="hover:bg-muted/50">
+																<td className="p-2 border font-medium">{teacherMap.get(tid) || tid}</td>
+																{(allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList)).flatMap((day) =>
+																	headerSlots.map((s) => {
+																		const cell = entries.find((e) => e.teacher_id === tid && e.slot_id === s.id && e.day === day);
+																		const cellId = `cell-${tid}-${day}-${s.id}`;
+																		// Find index by matching all key properties instead of reference
+																		const entryIndex = cell ? entries.findIndex((e) => 
+																			e.teacher_id === cell.teacher_id && 
+																			e.class_id === cell.class_id && 
+																			e.subject_name === cell.subject_name &&
+																			e.slot_id === cell.slot_id &&
+																			e.day === cell.day
+																		) : -1;
+																		return (
+																			<DroppableCell
+																				key={cellId}
+																				id={cellId}
+																				className="p-2 border align-top text-sm"
+																			>
+																				{cell && entryIndex >= 0 ? (
+																					<DraggableCell id={`entry-${entryIndex}`} className="space-y-1">
+																						<div className="font-medium">{cell.class_name}</div>
+																						<div className="text-muted-foreground">{cell.subject_name}</div>
+																					</DraggableCell>
+																				) : null}
+																			</DroppableCell>
+																		);
+																	})
+																)}
+															</tr>
+														))}
+													</tbody>
+												</table>
+											) : (
+												<div className="text-center py-8 text-muted-foreground">
+													No schedule slots selected. Please select periods to view the timetable.
+												</div>
+											)}
+										</div>
 									</div>
-								</div>
-							</TabsContent>
+								</TabsContent>
 							<TabsContent value="classes" className="mt-4">
 								<div className="w-full overflow-x-auto max-w-full">
 									<div className="inline-block min-w-full align-middle">
@@ -750,7 +1168,7 @@ export function TimetableGenerator() {
 										<thead>
 											<tr className="bg-primary text-primary-foreground">
 												<th className="p-2 border">{t('timetable.class') || 'Class'}</th>
-												{(allYear ? (['all_year'] as DayName[]) : selectedDays).flatMap((day) =>
+												{(allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList)).flatMap((day) =>
 													headerSlots.map((s) => (
 														<th key={`${day}-${s.id}`} className="p-2 border">
 															<div className="text-xs capitalize">{day}</div>
@@ -765,7 +1183,7 @@ export function TimetableGenerator() {
 											{Array.from(classesInScope).map((cid) => (
 												<tr key={cid} className="hover:bg-muted/50">
 													<td className="p-2 border font-medium">{classMap.get(cid) || cid}</td>
-													{(allYear ? (['all_year'] as DayName[]) : selectedDays).flatMap((day) =>
+													{(allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList)).flatMap((day) =>
 														headerSlots.map((s) => {
 															const cell = entries.filter((e) => e.class_id === cid && e.slot_id === s.id && e.day === day);
 															const cellId = `cell-${cid}-${day}-${s.id}`;
@@ -854,6 +1272,7 @@ export function TimetableGenerator() {
 				open={loadOpen}
 				onOpenChange={setLoadOpen}
 				organizationId={organizationId}
+				academicYearId={selectedAcademicYearId || null}
 				onLoaded={(id) => {
 					setLoadOpen(false);
 					setLoadedTimetableId(id);

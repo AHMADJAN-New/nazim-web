@@ -417,6 +417,9 @@ export interface TranslationKeys {
     description: string;
     periods: string;
     selectTeacher: string;
+    exportExcel: string;
+    exportPdf: string;
+    print: string;
   };
 }
 
@@ -808,6 +811,9 @@ const en: TranslationKeys = {
     description: 'Description',
     periods: 'Periods',
     selectTeacher: 'Select Teacher',
+    exportExcel: 'Export to Excel',
+    exportPdf: 'Export to PDF',
+    print: 'Print',
   },
 };
 
@@ -1211,6 +1217,9 @@ const ps: TranslationKeys = {
     description: 'تفصیل',
     periods: 'ساعتونه',
     selectTeacher: 'استاد انتخاب کړئ',
+    exportExcel: 'د Excel لپاره صادرول',
+    exportPdf: 'د PDF لپاره صادرول',
+    print: 'چاپول',
   },
 };
 
@@ -1614,6 +1623,9 @@ const fa: TranslationKeys = {
     description: 'توضیحات',
     periods: 'ساعات',
     selectTeacher: 'انتخاب معلم',
+    exportExcel: 'صدور به Excel',
+    exportPdf: 'صدور به PDF',
+    print: 'چاپ',
   },
 };
 
@@ -2017,6 +2029,9 @@ const ar: TranslationKeys = {
     description: 'الوصف',
     periods: 'الحصص',
     selectTeacher: 'اختر المعلم',
+    exportExcel: 'تصدير إلى Excel',
+    exportPdf: 'تصدير إلى PDF',
+    print: 'طباعة',
   },
 };
 
