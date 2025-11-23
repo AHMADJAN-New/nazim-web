@@ -21,8 +21,14 @@ export interface TeacherSubjectAssignment {
     // Extended with relationship data
     teacher?: {
         id: string;
+        employee_id: string;
         full_name: string;
         email: string | null;
+        staff_type?: {
+            id: string;
+            name: string;
+            code: string;
+        };
     };
     subject?: {
         id: string;
@@ -66,7 +72,7 @@ export const useTeacherSubjectAssignments = (organizationId?: string, teacherId?
                 .from('teacher_subject_assignments')
                 .select(`
                     *,
-                    teacher:profiles(id, full_name, email),
+                    teacher:staff(id, employee_id, full_name, email, staff_type:staff_types(id, name, code)),
                     subject:subjects(id, name, code),
                     class_academic_year:class_academic_years(
                         id,

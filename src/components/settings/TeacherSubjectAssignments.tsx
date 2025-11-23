@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTeacherSubjectAssignments, useCreateTeacherSubjectAssignment, useUpdateTeacherSubjectAssignment, useDeleteTeacherSubjectAssignment, type TeacherSubjectAssignment } from '@/hooks/useTeacherSubjectAssignments';
-import { useProfile, useProfiles, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useStaff } from '@/hooks/useStaff';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useSchools } from '@/hooks/useSchools';
@@ -89,7 +90,15 @@ export function TeacherSubjectAssignments() {
     const { data: organizations } = useOrganizations();
     const { data: academicYears } = useAcademicYears(selectedOrganizationId || profile?.organization_id);
     const { data: schools } = useSchools(selectedOrganizationId || profile?.organization_id);
-    const { data: teachers } = useProfiles(selectedOrganizationId || profile?.organization_id);
+    const { data: staff, refetch: refetchStaff, isLoading: staffLoading, error: staffError } = useStaff(selectedOrganizationId || profile?.organization_id);
+    
+    // Debug logging
+    if (staffError) {
+        console.error('TeacherSubjectAssignments: Error loading staff:', staffError);
+    }
+    if (staffLoading) {
+        console.log('TeacherSubjectAssignments: Loading staff data...');
+    }
     const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYearId || undefined, selectedOrganizationId || profile?.organization_id);
     const { data: scheduleSlots } = useScheduleSlots(selectedOrganizationId || profile?.organization_id, selectedAcademicYearId || undefined);
     const { data: assignments, isLoading, refetch: refetchAssignments } = useTeacherSubjectAssignments(
@@ -101,11 +110,21 @@ export function TeacherSubjectAssignments() {
     const updateAssignment = useUpdateTeacherSubjectAssignment();
     const deleteAssignment = useDeleteTeacherSubjectAssignment();
 
-    // Filter teachers (role = 'teacher')
-    const teacherProfiles = useMemo(() => {
-        if (!teachers) return [];
-        return teachers.filter(p => p.role === 'teacher' && p.is_active);
-    }, [teachers]);
+    // Filter staff to get active teachers
+    // Note: teacher_subject_assignments.teacher_id now references staff.id (not profiles.id)
+    // This allows staff to be assigned even without a profile/account
+    // useStaff hook already filters out deleted staff, so we don't need to check deleted_at
+    const teacherStaff = useMemo(() => {
+        if (!staff) {
+            console.log('TeacherSubjectAssignments: No staff data available');
+            return [];
+        }
+        console.log('TeacherSubjectAssignments: Staff data:', staff.length, 'records');
+        // Show all active staff - they can be assigned even without profile_id
+        const activeStaff = staff.filter(s => s.status === 'active');
+        console.log('TeacherSubjectAssignments: Active staff:', activeStaff.length, 'records');
+        return activeStaff;
+    }, [staff]);
 
     // Filter classes by school if selected
     const filteredClasses = useMemo(() => {
@@ -158,6 +177,7 @@ export function TeacherSubjectAssignments() {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter(assignment => 
                 assignment.teacher?.full_name?.toLowerCase().includes(query) ||
+                assignment.teacher?.employee_id?.toLowerCase().includes(query) ||
                 assignment.subject?.name?.toLowerCase().includes(query) ||
                 assignment.subject?.code?.toLowerCase().includes(query) ||
                 assignment.class_academic_year?.class?.name?.toLowerCase().includes(query) ||
@@ -181,6 +201,9 @@ export function TeacherSubjectAssignments() {
 
     const handleCreateClick = () => {
         resetForm();
+        // Refetch staff data to get latest teachers
+        refetchStaff();
+        refetchAssignments();
         setIsCreateDialogOpen(true);
     };
 
@@ -240,9 +263,27 @@ export function TeacherSubjectAssignments() {
             return;
         }
 
-        const organizationId = selectedOrganizationId || profile?.organization_id;
+        // Try to get organization_id from selected school first
+        let organizationId = selectedOrganizationId || profile?.organization_id;
+        
+        // If school is selected, get organization_id from school
+        if (!organizationId && selectedSchoolId && selectedSchoolId !== 'all') {
+            const selectedSchool = schools?.find(s => s.id === selectedSchoolId);
+            if (selectedSchool?.organization_id) {
+                organizationId = selectedSchool.organization_id;
+            }
+        }
+        
+        // If still no organization_id, try to get it from the first selected class_academic_year
+        if (!organizationId && selectedClassIds.length > 0) {
+            const firstClass = filteredClasses.find(c => c.id === selectedClassIds[0]);
+            if (firstClass?.organization_id) {
+                organizationId = firstClass.organization_id;
+            }
+        }
+        
         if (!organizationId) {
-            toast.error('Organization ID is required');
+            toast.error('Organization ID is required. Please select a school or ensure you are assigned to an organization.');
             return;
         }
 
@@ -409,11 +450,21 @@ export function TeacherSubjectAssignments() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Teachers</SelectItem>
-                                {teacherProfiles.map((teacher) => (
-                                    <SelectItem key={teacher.id} value={teacher.id}>
-                                        {teacher.full_name || teacher.email || teacher.id}
-                                    </SelectItem>
-                                ))}
+                                {teacherStaff.length === 0 ? (
+                                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                        No active staff with linked profiles found
+                                    </div>
+                                ) : (
+                                    teacherStaff.map((staffMember) => (
+                                        <SelectItem 
+                                            key={staffMember.id} 
+                                            value={staffMember.id}
+                                        >
+                                            {staffMember.employee_id} - {staffMember.full_name} 
+                                            {staffMember.staff_type && ` (${staffMember.staff_type.name})`}
+                                        </SelectItem>
+                                    ))
+                                )}
                             </SelectContent>
                         </Select>
                         <Select value={academicYearFilter} onValueChange={setAcademicYearFilter}>
@@ -478,7 +529,9 @@ export function TeacherSubjectAssignments() {
                                     {filteredAssignments.map((assignment) => (
                                         <TableRow key={assignment.id}>
                                             <TableCell>
-                                                {assignment.teacher?.full_name || 'Unknown'}
+                                                {assignment.teacher?.employee_id && assignment.teacher?.full_name 
+                                                    ? `${assignment.teacher.employee_id} - ${assignment.teacher.full_name}`
+                                                    : assignment.teacher?.full_name || 'Unknown'}
                                             </TableCell>
                                             <TableCell>
                                                 {assignment.class_academic_year?.academic_year?.name || 'Unknown'}
@@ -560,7 +613,11 @@ export function TeacherSubjectAssignments() {
             {/* Create Dialog */}
             <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
                 setIsCreateDialogOpen(open);
-                if (!open) {
+                if (open) {
+                    // Refetch data when dialog opens to get latest
+                    refetchStaff();
+                    refetchAssignments();
+                } else {
                     resetForm();
                 }
             }}>
@@ -591,7 +648,7 @@ export function TeacherSubjectAssignments() {
                                                             ? 'bg-primary text-primary-foreground border-primary'
                                                             : 'bg-background border-muted-foreground text-muted-foreground'
                                                         }`}
-                                                    onClick={() => setCurrentStep(step.id)}
+                                                    onClick={() => setCurrentStep(step.id as Step)}
                                                 >
                                                     {isCompleted ? (
                                                         <CheckCircle2 className="h-4 w-4" />
@@ -609,7 +666,7 @@ export function TeacherSubjectAssignments() {
                                             <div
                                                 className={`flex-1 pb-6 cursor-pointer ${isActive ? 'text-foreground' : 'text-muted-foreground'
                                                     }`}
-                                                onClick={() => setCurrentStep(step.id)}
+                                                onClick={() => setCurrentStep(step.id as Step)}
                                             >
                                                 <span className={`text-xs font-medium block ${isActive ? 'text-primary' : ''}`}>
                                                     {step.label}
@@ -644,11 +701,31 @@ export function TeacherSubjectAssignments() {
                                                             <SelectValue placeholder="Select a teacher" />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            {teacherProfiles.map((teacher) => (
-                                                                <SelectItem key={teacher.id} value={teacher.id}>
-                                                                    {teacher.full_name || teacher.email || teacher.id}
-                                                                </SelectItem>
-                                                            ))}
+                                                            {staffLoading ? (
+                                                                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                                                    Loading staff...
+                                                                </div>
+                                                            ) : staffError ? (
+                                                                <div className="px-2 py-1.5 text-sm text-destructive">
+                                                                    Error loading staff: {staffError.message || 'Unknown error'}
+                                                                </div>
+                                                            ) : teacherStaff.length === 0 ? (
+                                                                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                                                    {staff && staff.length > 0 
+                                                                        ? `No active staff with linked profiles found. Total active staff: ${staff.filter(s => s.status === 'active').length}`
+                                                                        : 'No staff data available.'}
+                                                                </div>
+                                                            ) : (
+                                                                teacherStaff.map((staffMember) => (
+                                                                    <SelectItem 
+                                                                        key={staffMember.id} 
+                                                                        value={staffMember.id}
+                                                                    >
+                                                                        {staffMember.employee_id} - {staffMember.full_name} 
+                                                                        {staffMember.staff_type && ` (${staffMember.staff_type.name})`}
+                                                                    </SelectItem>
+                                                                ))
+                                                            )}
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
@@ -877,7 +954,11 @@ export function TeacherSubjectAssignments() {
             {/* Edit Dialog */}
             <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
                 setIsEditDialogOpen(open);
-                if (!open) {
+                if (open) {
+                    // Refetch data when dialog opens to get latest
+                    refetchStaff();
+                    refetchAssignments();
+                } else {
                     resetForm();
                     setEditingAssignment(null);
                 }
@@ -909,7 +990,7 @@ export function TeacherSubjectAssignments() {
                                                             ? 'bg-primary text-primary-foreground border-primary'
                                                             : 'bg-background border-muted-foreground text-muted-foreground'
                                                         }`}
-                                                    onClick={() => setCurrentStep(step.id)}
+                                                    onClick={() => setCurrentStep(step.id as Step)}
                                                 >
                                                     {isCompleted ? (
                                                         <CheckCircle2 className="h-4 w-4" />
@@ -927,7 +1008,7 @@ export function TeacherSubjectAssignments() {
                                             <div
                                                 className={`flex-1 pb-6 cursor-pointer ${isActive ? 'text-foreground' : 'text-muted-foreground'
                                                     }`}
-                                                onClick={() => setCurrentStep(step.id)}
+                                                onClick={() => setCurrentStep(step.id as Step)}
                                             >
                                                 <span className={`text-xs font-medium block ${isActive ? 'text-primary' : ''}`}>
                                                     {step.label}
@@ -957,7 +1038,14 @@ export function TeacherSubjectAssignments() {
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <Label>Teacher</Label>
-                                                    <Input value={editingAssignment.teacher?.full_name || 'Unknown'} disabled />
+                                                    <Input 
+                                                        value={
+                                                            editingAssignment.teacher?.employee_id && editingAssignment.teacher?.full_name
+                                                                ? `${editingAssignment.teacher.employee_id} - ${editingAssignment.teacher.full_name}`
+                                                                : editingAssignment.teacher?.full_name || 'Unknown'
+                                                        } 
+                                                        disabled 
+                                                    />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>Academic Year</Label>
