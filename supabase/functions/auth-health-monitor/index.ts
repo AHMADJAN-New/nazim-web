@@ -115,7 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
         type: 'missing_demo_accounts',
         severity: 'critical',
         message: `Missing demo accounts: ${missingDemoAccounts.join(', ')}`,
-        recommendation: 'Run the update-demo-passwords function to create missing accounts'
+        recommendation: 'Create missing demo accounts manually through the Supabase dashboard'
       });
     }
 

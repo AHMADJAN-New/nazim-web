@@ -107,6 +107,8 @@ export function SubjectsManagement() {
     const [isSubjectDialogOpen, setIsSubjectDialogOpen] = useState(false);
     const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
     const [isBulkAssignDialogOpen, setIsBulkAssignDialogOpen] = useState(false);
+    const [isAssignToClassDialogOpen, setIsAssignToClassDialogOpen] = useState(false);
+    const [isBulkAssignToClassDialogOpen, setIsBulkAssignToClassDialogOpen] = useState(false);
     const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
@@ -323,11 +325,11 @@ export function SubjectsManagement() {
         if (selectedClassId) {
             setValueAssignToClass('class_id', selectedClassId);
         }
-        setIsAssignDialogOpen(true);
+        setIsAssignToClassDialogOpen(true);
     };
 
     const handleCloseAssignToClassDialog = () => {
-        setIsAssignDialogOpen(false);
+        setIsAssignToClassDialogOpen(false);
         resetAssignToClass();
     };
 
@@ -352,11 +354,11 @@ export function SubjectsManagement() {
         if (selectedClassId) {
             setValueBulkToClass('class_id', selectedClassId);
         }
-        setIsBulkAssignDialogOpen(true);
+        setIsBulkAssignToClassDialogOpen(true);
     };
 
     const handleCloseBulkAssignToClassDialog = () => {
-        setIsBulkAssignDialogOpen(false);
+        setIsBulkAssignToClassDialogOpen(false);
         resetBulkToClass();
     };
 
@@ -623,11 +625,11 @@ export function SubjectsManagement() {
                                 </div>
                                 {hasAssignPermission && selectedClassId && (
                                     <div className="flex items-center space-x-2">
-                                        <Button variant="outline" onClick={handleOpenBulkAssignDialog}>
+                                        <Button variant="outline" onClick={handleOpenBulkAssignToClassDialog}>
                                             <Plus className="mr-2 h-4 w-4" />
                                             Bulk Assign
                                         </Button>
-                                        <Button onClick={handleOpenAssignDialog}>
+                                        <Button onClick={handleOpenAssignToClassDialog}>
                                             <Plus className="mr-2 h-4 w-4" />
                                             Assign Subject
                                         </Button>
@@ -1059,6 +1061,165 @@ export function SubjectsManagement() {
                                 {t('common.cancel')}
                             </Button>
                             <Button type="submit" disabled={bulkAssignSubjects.isPending}>
+                                {t('academic.subjects.assignSubjects')}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Assign Subject to Class Template Dialog */}
+            <Dialog open={isAssignToClassDialogOpen} onOpenChange={setIsAssignToClassDialogOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Assign Subject to Class</DialogTitle>
+                        <DialogDescription>
+                            Assign a subject to the selected class. This will make the subject available in all academic years for this class.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmitAssignToClass(onSubmitAssignToClass)} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="class_id_template">Class *</Label>
+                            <Controller
+                                name="class_id"
+                                control={controlAssignToClass}
+                                render={({ field }) => (
+                                    <Select value={field.value} onValueChange={field.onChange}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a class" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {classes?.map((cls) => (
+                                                <SelectItem key={cls.id} value={cls.id}>
+                                                    {cls.name} ({cls.code})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {assignToClassErrors.class_id && (
+                                <p className="text-sm text-destructive">{assignToClassErrors.class_id.message}</p>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="subject_id_template">{t('academic.subjects.selectSubject')} *</Label>
+                            <Controller
+                                name="subject_id"
+                                control={controlAssignToClass}
+                                render={({ field }) => (
+                                    <Select value={field.value} onValueChange={field.onChange}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder={t('academic.subjects.selectSubject')} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {subjects?.filter(s => s.is_active).map((subject) => (
+                                                <SelectItem key={subject.id} value={subject.id}>
+                                                    {subject.code} - {subject.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {assignToClassErrors.subject_id && (
+                                <p className="text-sm text-destructive">{assignToClassErrors.subject_id.message}</p>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="notes_template">{t('academic.subjects.notes')}</Label>
+                            <Textarea
+                                id="notes_template"
+                                {...registerAssignToClass('notes')}
+                                placeholder="Optional notes"
+                                rows={3}
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={handleCloseAssignToClassDialog}>
+                                {t('common.cancel')}
+                            </Button>
+                            <Button type="submit" disabled={assignSubjectToClass.isPending}>
+                                {t('common.save')}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Assign Subjects to Class Template Dialog */}
+            <Dialog open={isBulkAssignToClassDialogOpen} onOpenChange={setIsBulkAssignToClassDialogOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>{t('academic.subjects.bulkAssignSubjects')}</DialogTitle>
+                        <DialogDescription>
+                            Assign multiple subjects to the selected class at once. These subjects will be available in all academic years for this class.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmitBulkToClass(onSubmitBulkAssignToClass)} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Class *</Label>
+                            <Controller
+                                name="class_id"
+                                control={controlBulkToClass}
+                                render={({ field }) => (
+                                    <Select value={field.value} onValueChange={field.onChange}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a class" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {classes?.map((cls) => (
+                                                <SelectItem key={cls.id} value={cls.id}>
+                                                    {cls.name} ({cls.code})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {bulkToClassErrors.class_id && (
+                                <p className="text-sm text-destructive">{bulkToClassErrors.class_id.message}</p>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label>{t('academic.subjects.selectSubjects')} *</Label>
+                            <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
+                                {subjects?.filter(s => s.is_active).map((subject) => {
+                                    const selectedSubjects = watchBulkToClass('subject_ids') || [];
+                                    const isSelected = selectedSubjects.includes(subject.id);
+                                    return (
+                                        <div key={subject.id} className="flex items-center space-x-2 py-2">
+                                            <Checkbox
+                                                id={`subject-template-${subject.id}`}
+                                                checked={isSelected}
+                                                onCheckedChange={(checked) => {
+                                                    const current = selectedSubjects;
+                                                    if (checked) {
+                                                        setValueBulkToClass('subject_ids', [...current, subject.id]);
+                                                    } else {
+                                                        setValueBulkToClass('subject_ids', current.filter(id => id !== subject.id));
+                                                    }
+                                                }}
+                                            />
+                                            <Label
+                                                htmlFor={`subject-template-${subject.id}`}
+                                                className="cursor-pointer flex-1"
+                                            >
+                                                {subject.code} - {subject.name}
+                                            </Label>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            {bulkToClassErrors.subject_ids && (
+                                <p className="text-sm text-destructive">{bulkToClassErrors.subject_ids.message}</p>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={handleCloseBulkAssignToClassDialog}>
+                                {t('common.cancel')}
+                            </Button>
+                            <Button type="submit" disabled={bulkAssignSubjectsToClass.isPending}>
                                 {t('academic.subjects.assignSubjects')}
                             </Button>
                         </DialogFooter>
