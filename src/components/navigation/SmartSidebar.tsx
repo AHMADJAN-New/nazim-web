@@ -172,6 +172,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasClassesPermission = useHasPermission('academic.classes.read');
   const hasSubjectsPermission = useHasPermission('academic.subjects.read');
   const hasStaffPermission = useHasPermission('staff.read');
+  const hasStudentsPermission = useHasPermission('students.read');
+  const hasStudentAdmissionsPermission = useHasPermission('student_admissions.read');
   const hasStaffTypesPermission = useHasPermission('staff.types.read');
   const hasScheduleSlotsPermission = useHasPermission('academic.schedule_slots.read');
   const hasTeacherSubjectAssignmentsPermission = useHasPermission('academic.teacher_subject_assignments.read');
@@ -208,6 +210,22 @@ export const SmartSidebar = memo(function SmartSidebar() {
         badge: null,
         roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"],
         priority: 3
+      }] : []),
+      ...(hasStudentsPermission ? [{
+        titleKey: "students",
+        url: "/students",
+        icon: GraduationCap,
+        badge: null,
+        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "hostel_manager", "asset_manager"],
+        priority: 3.05
+      }] : []),
+      ...(hasStudentAdmissionsPermission ? [{
+        titleKey: "admissions",
+        url: "/admissions",
+        icon: UserCheck,
+        badge: null,
+        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "hostel_manager", "asset_manager"],
+        priority: 3.055
       }] : []),
       ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission) ? [{
         titleKey: "academicManagement",
