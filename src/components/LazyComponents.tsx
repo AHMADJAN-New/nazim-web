@@ -19,6 +19,7 @@ export const AcademicYearsManagement = lazy(() => import('@/components/settings/
 export const ClassesManagement = lazy(() => import('@/components/settings/ClassesManagement').then(module => ({ default: module.ClassesManagement })));
 export const SubjectsManagement = lazy(() => import('@/components/settings/SubjectsManagement').then(module => ({ default: module.SubjectsManagement })));
 export const ScheduleSlotsManagement = lazy(() => import('@/components/settings/ScheduleSlotsManagement').then(module => ({ default: module.ScheduleSlotsManagement })));
+export const TeacherSubjectAssignments = lazy(() => import('@/components/settings/TeacherSubjectAssignments').then(module => ({ default: module.TeacherSubjectAssignments })));
 export const StaffTypesManagement = lazy(() => import('@/components/settings/StaffTypesManagement').then(module => ({ default: module.StaffTypesManagement })));
 export const StaffList = lazy(() => import('@/pages/StaffList').then(module => ({ default: module.StaffList })));
 export const UserManagement = lazy(() => import('@/components/admin/UserManagement').then(module => ({ default: module.UserManagement })));

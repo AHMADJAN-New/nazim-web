@@ -222,6 +222,102 @@ export const useClassSubjects = (classAcademicYearId?: string, organizationId?: 
     });
 };
 
+// Hook to fetch class subjects for multiple class academic years
+export const useClassSubjectsForMultipleClasses = (classAcademicYearIds: string[], organizationId?: string) => {
+    const { user, profile } = useAuth();
+
+    return useQuery({
+        queryKey: ['class-subjects-multiple', classAcademicYearIds.sort().join(','), organizationId || profile?.organization_id],
+        queryFn: async () => {
+            if (!user || !profile || classAcademicYearIds.length === 0) return [];
+
+            let query = (supabase as any)
+                .from('class_subjects')
+                .select(`
+          *,
+          subject:subjects(*),
+          class_academic_year:class_academic_years(
+            id,
+            class_id,
+            academic_year_id,
+            section_name,
+            class:classes(id, name, code),
+            academic_year:academic_years(id, name, start_date, end_date)
+          )
+        `)
+                .in('class_academic_year_id', classAcademicYearIds);
+
+            // Super admin can see all or filter by org
+            const isSuperAdmin = profile.organization_id === null && profile.role === 'super_admin';
+
+            if (!isSuperAdmin) {
+                // Regular users see only their organization's class subjects
+                const userOrgId = organizationId || profile.organization_id;
+                if (userOrgId) {
+                    query = query.eq('organization_id', userOrgId);
+                } else {
+                    return [];
+                }
+            } else if (organizationId) {
+                query = query.eq('organization_id', organizationId);
+            }
+
+            const { data, error } = await query
+                .is('deleted_at', null);
+
+            if (error) {
+                throw new Error(error.message);
+            }
+
+            // Enrich with teacher and room data
+            let classSubjects = (data || []) as ClassSubject[];
+
+            const teacherIds = [...new Set(classSubjects.map(cs => cs.teacher_id).filter(Boolean))] as string[];
+            const roomIds = [...new Set(classSubjects.map(cs => cs.room_id).filter(Boolean))] as string[];
+
+            let teachersMap = new Map();
+            if (teacherIds.length > 0) {
+                const { data: teachersData } = await (supabase as any)
+                    .from('profiles')
+                    .select('id, full_name')
+                    .in('id', teacherIds);
+                teachersMap = new Map((teachersData || []).map((t: any) => [t.id, t]));
+            }
+
+            let roomsMap = new Map();
+            if (roomIds.length > 0) {
+                const { data: roomsData } = await (supabase as any)
+                    .from('rooms')
+                    .select('id, room_number')
+                    .in('id', roomIds);
+                roomsMap = new Map((roomsData || []).map((r: any) => [r.id, r]));
+            }
+
+            const enriched = classSubjects.map(cs => ({
+                ...cs,
+                teacher: cs.teacher_id && teachersMap.has(cs.teacher_id)
+                    ? { id: cs.teacher_id, full_name: (teachersMap.get(cs.teacher_id) as any).full_name }
+                    : null,
+                room: cs.room_id && roomsMap.has(cs.room_id)
+                    ? { id: cs.room_id, room_number: (roomsMap.get(cs.room_id) as any).room_number }
+                    : null,
+            })) as ClassSubject[];
+
+            // Sort by subject name
+            enriched.sort((a, b) => {
+                const nameA = a.subject?.name || '';
+                const nameB = b.subject?.name || '';
+                return nameA.localeCompare(nameB);
+            });
+
+            return enriched;
+        },
+        enabled: !!user && !!profile && classAcademicYearIds.length > 0,
+        staleTime: 10 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
+    });
+};
+
 export const useSubjectHistory = (subjectId: string) => {
     const { user, profile } = useAuth();
 

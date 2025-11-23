@@ -46,6 +46,7 @@ export interface TranslationKeys {
     settings: string;
     authentication: string;
     academicSettings: string;
+    academicManagement: string;
   };
 
   // Dashboard
@@ -434,6 +435,7 @@ const en: TranslationKeys = {
     settings: 'Settings',
     authentication: 'Authentication',
     academicSettings: 'Academic Settings',
+    academicManagement: 'Academic Management',
   },
   dashboard: {
     title: 'Dashboard',
@@ -800,6 +802,7 @@ const ps: TranslationKeys = {
     settings: 'ترتیبات',
     authentication: 'د تصدیق مدیریت',
     academicSettings: 'د علمي ترتیباتو',
+    academicManagement: 'د علمي مدیریت',
   },
   dashboard: {
     title: 'کنټرول پینل',
@@ -1178,6 +1181,7 @@ const fa: TranslationKeys = {
     settings: 'تنظیمات',
     authentication: 'مدیریت احراز هویت',
     academicSettings: 'تنظیمات آکادمیک',
+    academicManagement: 'مدیریت آکادمیک',
   },
   dashboard: {
     title: 'داشبورد',
@@ -1556,6 +1560,7 @@ const ar: TranslationKeys = {
     settings: 'الإعدادات',
     authentication: 'إدارة المصادقة',
     academicSettings: 'الإعدادات الأكاديمية',
+    academicManagement: 'الإدارة الأكاديمية',
   },
   dashboard: {
     title: 'لوحة التحكم',

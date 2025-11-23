@@ -36,6 +36,7 @@ import {
   ClassesManagement,
   SubjectsManagement,
   ScheduleSlotsManagement,
+  TeacherSubjectAssignments,
   StaffTypesManagement,
   StaffList,
   UserManagement
@@ -170,6 +171,13 @@ const App = () => (
                       <Suspense fallback={<PageSkeleton />}>
                         <PermissionGuard permission="academic.schedule_slots.read">
                           <ScheduleSlotsManagement />
+                        </PermissionGuard>
+                      </Suspense>
+                    } />
+                    <Route path="/settings/teacher-subject-assignments" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PermissionGuard permission="academic.teacher_subject_assignments.read">
+                          <TeacherSubjectAssignments />
                         </PermissionGuard>
                       </Suspense>
                     } />

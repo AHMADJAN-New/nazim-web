@@ -174,6 +174,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasStaffPermission = useHasPermission('staff.read');
   const hasStaffTypesPermission = useHasPermission('staff.types.read');
   const hasScheduleSlotsPermission = useHasPermission('academic.schedule_slots.read');
+  const hasTeacherSubjectAssignmentsPermission = useHasPermission('academic.teacher_subject_assignments.read');
 
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -207,6 +208,33 @@ export const SmartSidebar = memo(function SmartSidebar() {
         badge: null,
         roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"],
         priority: 3
+      }] : []),
+      ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission) ? [{
+        titleKey: "academicManagement",
+        icon: GraduationCap,
+        badge: null,
+        roles: ["super_admin", "admin", "teacher"] as UserRole[],
+        priority: 3.1,
+        children: [
+          ...(hasClassesPermission ? [{
+            title: "Classes",
+            titleKey: "academic.classes.title",
+            url: "/settings/classes",
+            icon: GraduationCap,
+          }] : []),
+          ...(hasSubjectsPermission ? [{
+            title: "Subjects",
+            titleKey: "academic.subjects.title",
+            url: "/settings/subjects",
+            icon: BookOpen,
+          }] : []),
+          ...(hasTeacherSubjectAssignmentsPermission ? [{
+            title: "Teacher Subject Assignments",
+            titleKey: "academic.teacherSubjectAssignments.title",
+            url: "/settings/teacher-subject-assignments",
+            icon: UserCheck,
+          }] : []),
+        ],
       }] : []),
       {
         titleKey: "settings",
@@ -277,18 +305,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "academic.academicYears.title",
             url: "/settings/academic-years",
             icon: Calendar,
-          }] : []),
-          ...(hasClassesPermission ? [{
-            title: "Classes",
-            titleKey: "academic.classes.title",
-            url: "/settings/classes",
-            icon: GraduationCap,
-          }] : []),
-          ...(hasSubjectsPermission ? [{
-            title: "Subjects",
-            titleKey: "academic.subjects.title",
-            url: "/settings/subjects",
-            icon: BookOpen,
           }] : []),
           ...(hasStaffTypesPermission ? [{
             title: "Staff Types",
@@ -374,8 +390,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
       }
 
       if (item.titleKey === 'academicSettings') {
-        // Show if user has any academic-related permission
-        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission || hasClassesPermission || hasSubjectsPermission || hasScheduleSlotsPermission;
+        // Show if user has any academic-related permission (excluding classes, subjects, and assignments which are in academicManagement)
+        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission || hasScheduleSlotsPermission;
+      }
+
+      if (item.titleKey === 'academicManagement') {
+        // Show if user has any academic management permission
+        return hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission;
       }
 
       if (item.titleKey === 'authentication') {
@@ -385,7 +406,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission]);
 
   // Helper function to filter navigation items by role
   const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {
