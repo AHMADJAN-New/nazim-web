@@ -217,7 +217,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         url: "/students",
         icon: GraduationCap,
         badge: null,
-        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "hostel_manager", "asset_manager"],
+        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "hostel_manager", "asset_manager"] as UserRole[],
         priority: 3.05
       }] : []),
       ...(hasStudentAdmissionsPermission ? [{
@@ -225,10 +225,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         url: "/admissions",
         icon: UserCheck,
         badge: null,
-        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "hostel_manager", "asset_manager"],
+        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "hostel_manager", "asset_manager"] as UserRole[],
         priority: 3.055
       }] : []),
-      ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission) ? [{
       ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission) ? [{
         titleKey: "academicManagement",
         icon: GraduationCap,
