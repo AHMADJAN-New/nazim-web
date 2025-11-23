@@ -155,15 +155,15 @@ export function StudentAdmissions() {
         accessorKey: 'student.full_name',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Student" />,
         cell: ({ row }) => (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">{row.original.student?.full_name || 'Unassigned'}</span>
+          <div className="space-y-1 min-w-[200px]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold break-words">{row.original.student?.full_name || 'Unassigned'}</span>
               {row.original.enrollment_status && (
-                <Badge variant={statusVariant(row.original.enrollment_status)}> {row.original.enrollment_status}</Badge>
+                <Badge variant={statusVariant(row.original.enrollment_status)} className="shrink-0"> {row.original.enrollment_status}</Badge>
               )}
             </div>
             <div className="text-xs text-muted-foreground flex gap-2 flex-wrap">
-              {row.original.student?.admission_no && <span>Adm #{row.original.student.admission_no}</span>}
+              {row.original.student?.admission_no && <span className="break-words">Adm #{row.original.student.admission_no}</span>}
               {row.original.admission_year && <span>{row.original.admission_year}</span>}
             </div>
           </div>
@@ -326,7 +326,7 @@ export function StudentAdmissions() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{t('admissions.title') || 'Student Admissions'}</h1>
@@ -337,7 +337,7 @@ export function StudentAdmissions() {
         <div className="flex gap-2">
           {isSuperAdmin && (
             <Select value={selectedOrg || 'all'} onValueChange={(value) => setSelectedOrg(value === 'all' ? 'all' : value)}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-full sm:w-[220px]">
                 <SelectValue placeholder="Organization" />
               </SelectTrigger>
               <SelectContent>
@@ -357,7 +357,7 @@ export function StudentAdmissions() {
                 {t('admissions.add') || 'Admit Student'}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] md:w-full">
               <DialogHeader>
                 <DialogTitle>{isEdit ? 'Update admission' : 'Admit student from registration'}</DialogTitle>
                 <DialogDescription>
@@ -618,7 +618,7 @@ export function StudentAdmissions() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total admissions</CardTitle>
@@ -669,8 +669,8 @@ export function StudentAdmissions() {
               <CardDescription>Overview of class placements and residency tracking.</CardDescription>
             </div>
             <div className="flex flex-col md:flex-row gap-2">
-              <Select value={schoolFilter} onValueChange={setSchoolFilter}>
-                <SelectTrigger className="w-full md:w-[200px]">
+                    <Select value={schoolFilter} onValueChange={setSchoolFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue placeholder="School" />
                 </SelectTrigger>
                 <SelectContent>
@@ -683,7 +683,7 @@ export function StudentAdmissions() {
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AdmissionStatus | 'all')}>
-                <SelectTrigger className="w-full md:w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -698,7 +698,7 @@ export function StudentAdmissions() {
                 </SelectContent>
               </Select>
               <Select value={residencyFilter} onValueChange={(value) => setResidencyFilter(value)}>
-                <SelectTrigger className="w-full md:w-[200px]">
+                <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue placeholder="Residency" />
                 </SelectTrigger>
                 <SelectContent>
@@ -719,7 +719,7 @@ export function StudentAdmissions() {
               <LoadingSpinner />
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-x-auto">
               <DataTable table={table}>
                 <div className="space-y-3">
                   <DataTableToolbar table={table} placeholder="Search by student, admission #, residency" />

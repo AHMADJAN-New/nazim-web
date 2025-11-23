@@ -50,6 +50,7 @@ export interface Student {
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   family_income: string | null;
+  picture_path: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -95,6 +96,7 @@ export interface StudentInsert {
   emergency_contact_name?: string | null;
   emergency_contact_phone?: string | null;
   family_income?: string | null;
+  picture_path?: string | null;
 }
 
 const buildOrganizationFilter = async (

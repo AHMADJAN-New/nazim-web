@@ -207,19 +207,19 @@ export function Students() {
         accessorKey: 'full_name',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Student" />,
         cell: ({ row }) => (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">{row.original.full_name}</span>
-              <Badge variant={statusBadge(row.original.student_status)}>{row.original.student_status}</Badge>
+          <div className="space-y-1 min-w-[200px]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold break-words">{row.original.full_name}</span>
+              <Badge variant={statusBadge(row.original.student_status)} className="shrink-0">{row.original.student_status}</Badge>
               {row.original.is_orphan && (
-                <Badge variant="destructive" className="ml-1">
+                <Badge variant="destructive" className="shrink-0">
                   Orphan
                 </Badge>
               )}
             </div>
             <div className="text-xs text-muted-foreground flex flex-wrap gap-2 items-center">
-              <span>Father: {row.original.father_name}</span>
-              {row.original.guardian_phone && <span>Guardian: {row.original.guardian_phone}</span>}
+              <span className="break-words">Father: {row.original.father_name}</span>
+              {row.original.guardian_phone && <span className="break-words">Guardian: {row.original.guardian_phone}</span>}
             </div>
           </div>
         ),
@@ -290,7 +290,7 @@ export function Students() {
   }, [genderFilter, schoolFilter, statusFilter, table]);
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{t('students.title') || 'Students'}</h1>
@@ -301,7 +301,7 @@ export function Students() {
         <div className="flex gap-2">
           {isSuperAdmin && (
             <Select value={selectedOrg || 'all'} onValueChange={(value) => setSelectedOrg(value === 'all' ? 'all' : value)}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-full sm:w-[220px]">
                 <SelectValue placeholder="Organization" />
               </SelectTrigger>
               <SelectContent>
@@ -321,7 +321,7 @@ export function Students() {
                 {t('students.add') || 'Register Student'}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] md:w-full">
               <DialogHeader>
                 <DialogTitle>{t('students.add') || 'Register Student'}</DialogTitle>
                 <DialogDescription>
@@ -602,7 +602,7 @@ export function Students() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('students.total') || 'Total Students'}</CardTitle>
@@ -656,7 +656,7 @@ export function Students() {
               <LoadingSpinner />
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-x-auto">
               <DataTable table={table}>
                 <div className="space-y-3">
                   <DataTableToolbar
@@ -664,7 +664,7 @@ export function Students() {
                     placeholder="Search students, admission #, guardian phone"
                   >
                     <Select value={schoolFilter} onValueChange={setSchoolFilter}>
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder="School" />
                       </SelectTrigger>
                       <SelectContent>
@@ -677,7 +677,7 @@ export function Students() {
                       </SelectContent>
                     </Select>
                     <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
-                      <SelectTrigger className="w-[150px]">
+                      <SelectTrigger className="w-full sm:w-[150px]">
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -689,7 +689,7 @@ export function Students() {
                       </SelectContent>
                     </Select>
                     <Select value={genderFilter} onValueChange={(value) => setGenderFilter(value as typeof genderFilter)}>
-                      <SelectTrigger className="w-[150px]">
+                      <SelectTrigger className="w-full sm:w-[150px]">
                         <SelectValue placeholder="Gender" />
                       </SelectTrigger>
                       <SelectContent>
@@ -713,7 +713,7 @@ export function Students() {
       </Card>
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] md:w-full">
           <DialogHeader>
             <DialogTitle>Edit Student</DialogTitle>
             <DialogDescription>Update registration and guardian details.</DialogDescription>
