@@ -528,12 +528,17 @@ export const useCreateStaff = () => {
 
       // Validate employee_id uniqueness within organization
       if (finalData.organization_id && finalData.employee_id) {
-        const { data: existing } = await supabase
+        const { data: existing, error: checkError } = await supabase
           .from('staff')
           .select('id')
           .eq('organization_id', finalData.organization_id)
           .eq('employee_id', finalData.employee_id)
-          .single();
+          .maybeSingle();
+
+        // If error is not "not found", it's a real error
+        if (checkError && checkError.code !== 'PGRST116') {
+          throw new Error(checkError.message);
+        }
 
         if (existing) {
           throw new Error('Employee ID already exists in this organization');
@@ -609,13 +614,18 @@ export const useUpdateStaff = () => {
           .single();
 
         if (staff) {
-          const { data: existing } = await supabase
+          const { data: existing, error: checkError } = await supabase
             .from('staff')
             .select('id')
             .eq('organization_id', staff.organization_id)
             .eq('employee_id', updates.employee_id)
             .neq('id', id)
-            .single();
+            .maybeSingle();
+
+          // If error is not "not found", it's a real error
+          if (checkError && checkError.code !== 'PGRST116') {
+            throw new Error(checkError.message);
+          }
 
           if (existing) {
             throw new Error('Employee ID already exists in this organization');

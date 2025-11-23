@@ -551,12 +551,39 @@ export const initializeSecurity = () => {
       );
     }
     
+    // Build img-src with Supabase URL for images
+    const imgSrcParts = [
+      "'self'",
+      "data:",
+      "https:",
+    ];
+    
+    // Add Supabase URL for images in development
+    if (supabaseUrl) {
+      try {
+        const url = new URL(supabaseUrl);
+        imgSrcParts.push(url.origin);
+      } catch (e) {
+        // Fallback: allow common localhost ports for Supabase
+        imgSrcParts.push(
+          "http://127.0.0.1:54321",
+          "http://localhost:54321"
+        );
+      }
+    } else {
+      // Fallback: allow common localhost ports for Supabase
+      imgSrcParts.push(
+        "http://127.0.0.1:54321",
+        "http://localhost:54321"
+      );
+    }
+    
     const policy = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: https:",
+      `img-src ${imgSrcParts.join(' ')}`,
       `connect-src ${connectSrcParts.join(' ')}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",

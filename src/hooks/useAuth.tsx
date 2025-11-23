@@ -72,6 +72,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Uses RPC function to bypass PostgREST schema validation issues
   const loadUserProfile = async (userId: string, retryCount = 0) => {
     setProfileLoading(true);
+
+    // Validate userId before making RPC call
+    if (!userId || userId === 'null' || userId === 'undefined') {
+      console.warn('Invalid userId provided to loadUserProfile:', userId);
+      setProfileLoading(false);
+      setProfile(null);
+      return;
+    }
+
     try {
       // Try RPC function first (bypasses schema validation)
       const { data: rpcData, error: rpcError } = await (supabase as any).rpc('get_user_profile', {
@@ -80,9 +89,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Handle 400 Bad Request - invalid session or RPC error
       if (rpcError && (rpcError.code === 'PGRST301' || rpcError.status === 400 || rpcError.message?.includes('Bad Request'))) {
+        // In dev mode with auth bypass, this is expected - suppress the error
+        if (DEV_AUTH_BYPASS) {
+          setProfileLoading(false);
+          return;
+        }
         console.warn('RPC function returned 400 Bad Request, signing out...');
         setProfile(null);
-        if (!DEV_AUTH_BYPASS && retryCount === 0) {
+        setProfileLoading(false);
+        if (retryCount === 0) {
           // Only sign out on first attempt to avoid loops
           await supabase.auth.signOut();
         }
@@ -145,19 +160,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           return;
         }
 
-        console.error('Failed to load profile:', error);
+        // In dev mode with auth bypass, suppress profile loading errors
+        if (!DEV_AUTH_BYPASS) {
+          console.error('Failed to load profile:', error);
+        }
         setProfile(null);
+        setProfileLoading(false);
       } else if (data) {
         setProfile(data as Profile);
+        setProfileLoading(false);
       } else {
         // No data returned - retry if first attempt
         if (retryCount < 2) {
-          console.log('No profile data, retrying...');
+          if (!DEV_AUTH_BYPASS) {
+            console.log('No profile data, retrying...');
+          }
           setTimeout(async () => {
             await loadUserProfile(userId, retryCount + 1);
           }, (retryCount + 1) * 1000);
           return;
         }
+        setProfileLoading(false);
         // After all retries failed, sign out if no profile found
         console.warn('Profile not found after retries, signing out...');
         setProfile(null);
@@ -230,6 +253,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const safeLoadUserProfile = async (userId: string) => {
       if (!mounted) return;
       if (profileLoaded) return;
+      // Skip in dev mode with auth bypass - profile is set directly
+      if (DEV_AUTH_BYPASS) return;
       profileLoaded = true;
       await loadUserProfile(userId);
     };

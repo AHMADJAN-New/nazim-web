@@ -50,7 +50,9 @@ import { toast } from 'sonner';
 
 const staffSchema = z.object({
     employee_id: z.string().min(1, 'Employee ID is required').max(50, 'Employee ID must be 50 characters or less'),
-    staff_type_id: z.string().uuid('Staff type is required'),
+    staff_type_id: z.string().uuid('Staff type is required').refine((val) => val !== 'none' && val !== null, {
+        message: 'Staff type is required',
+    }),
     school_id: z.string().uuid().nullable().optional(),
     first_name: z.string().min(1, 'First name is required').max(100, 'First name must be 100 characters or less'),
     father_name: z.string().min(1, 'Father name is required').max(100, 'Father name must be 100 characters or less'),
@@ -132,6 +134,7 @@ export function StaffList() {
         handleSubmit,
         control,
         reset,
+        trigger,
         formState: { errors },
     } = useForm<StaffFormData>({
         resolver: zodResolver(staffSchema),
@@ -195,7 +198,7 @@ export function StaffList() {
         if (!staffMember.picture_url) return null;
         const schoolPath = staffMember.school_id ? `${staffMember.school_id}/` : '';
         const path = `${staffMember.organization_id}/${schoolPath}${staffMember.id}/picture/${staffMember.picture_url}`;
-        const { data } = supabase.storage.from('staff-documents').getPublicUrl(path);
+        const { data } = supabase.storage.from('staff-files').getPublicUrl(path);
         return data.publicUrl;
     };
 
@@ -257,7 +260,7 @@ export function StaffList() {
                                 </Select>
                             )}
                             {hasCreatePermission && (
-                                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                                <Button type="button" onClick={() => setIsCreateDialogOpen(true)}>
                                     <Plus className="h-4 w-4 mr-2" />
                                     Add Staff
                                 </Button>
@@ -535,8 +538,10 @@ export function StaffList() {
             }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <form onSubmit={handleSubmit(async (data) => {
-                        if (!data.staff_type_id) {
+                        // Validation is handled by react-hook-form, but double-check required fields
+                        if (!data.staff_type_id || data.staff_type_id === 'none') {
                             toast.error('Please select a staff type');
+                            setCurrentStep(1); // Go back to step 1 to show the error
                             return;
                         }
 
@@ -609,6 +614,9 @@ export function StaffList() {
                     })}>
                         <DialogHeader>
                             <DialogTitle>Create Employee</DialogTitle>
+                            <DialogDescription>
+                                Fill in the employee information step by step. All required fields are marked with an asterisk (*).
+                            </DialogDescription>
                         </DialogHeader>
 
                         <div className="grid grid-cols-[250px_1fr] gap-6 py-4">
@@ -983,7 +991,10 @@ export function StaffList() {
                                         <ChevronRight className="h-4 w-4 ml-2" />
                                     </Button>
                                 ) : (
-                                    <Button type="submit" disabled={createStaff.isPending}>
+                                    <Button
+                                        type="submit"
+                                        disabled={createStaff.isPending}
+                                    >
                                         {createStaff.isPending ? 'Creating...' : 'Create Staff'}
                                     </Button>
                                 )}
@@ -1063,6 +1074,9 @@ export function StaffList() {
                     })}>
                         <DialogHeader>
                             <DialogTitle>Edit Employee</DialogTitle>
+                            <DialogDescription>
+                                Update the employee information step by step. All required fields are marked with an asterisk (*).
+                            </DialogDescription>
                         </DialogHeader>
 
                         <div className="grid grid-cols-[250px_1fr] gap-6 py-4">
