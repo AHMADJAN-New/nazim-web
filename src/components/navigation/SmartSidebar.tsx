@@ -14,6 +14,7 @@ import {
   Users,
   GraduationCap,
   Calendar,
+  Clock,
   BookOpen,
   FileText,
   CreditCard,
@@ -36,7 +37,6 @@ import {
   ChevronRight,
   Bell,
   Star,
-  Clock,
   Target,
   UserCog,
   Lock,
@@ -173,6 +173,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasSubjectsPermission = useHasPermission('academic.subjects.read');
   const hasStaffPermission = useHasPermission('staff.read');
   const hasStaffTypesPermission = useHasPermission('staff.types.read');
+  const hasScheduleSlotsPermission = useHasPermission('academic.schedule_slots.read');
 
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -294,6 +295,11 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/settings/staff-types",
             icon: Users,
           }] : []),
+          ...(hasScheduleSlotsPermission ? [{
+            title: "Schedule Slots",
+            url: "/settings/schedule-slots",
+            icon: Clock,
+          }] : []),
         ],
       },
       {
@@ -369,7 +375,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       if (item.titleKey === 'academicSettings') {
         // Show if user has any academic-related permission
-        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission || hasClassesPermission || hasSubjectsPermission;
+        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission || hasClassesPermission || hasSubjectsPermission || hasScheduleSlotsPermission;
       }
 
       if (item.titleKey === 'authentication') {
@@ -379,7 +385,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission]);
 
   // Helper function to filter navigation items by role
   const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {

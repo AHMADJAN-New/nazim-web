@@ -78,6 +78,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         user_id: userId
       });
 
+      // Handle 400 Bad Request - invalid session or RPC error
+      if (rpcError && (rpcError.code === 'PGRST301' || rpcError.status === 400 || rpcError.message?.includes('Bad Request'))) {
+        console.warn('RPC function returned 400 Bad Request, signing out...');
+        setProfile(null);
+        if (!DEV_AUTH_BYPASS && retryCount === 0) {
+          // Only sign out on first attempt to avoid loops
+          await supabase.auth.signOut();
+        }
+        return;
+      }
+
       if (!rpcError && rpcData && rpcData.length > 0) {
         const profileData = rpcData[0];
         setProfile({
@@ -147,7 +158,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }, (retryCount + 1) * 1000);
           return;
         }
+        // After all retries failed, sign out if no profile found
+        console.warn('Profile not found after retries, signing out...');
         setProfile(null);
+        if (!DEV_AUTH_BYPASS) {
+          await supabase.auth.signOut();
+        }
       }
     } catch (error: any) {
       console.error('Error loading profile:', error);
@@ -162,6 +178,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setTimeout(async () => {
           await loadUserProfile(userId, retryCount + 1);
         }, (retryCount + 1) * 2000);
+        return;
+      }
+      // Handle 400 Bad Request (RPC function error) - sign out
+      if (error?.code === 'PGRST301' || error?.status === 400 || error?.message?.includes('Bad Request')) {
+        console.warn('RPC function error (400 Bad Request), signing out...');
+        setProfile(null);
+        if (!DEV_AUTH_BYPASS) {
+          await supabase.auth.signOut();
+        }
         return;
       }
       setProfile(null);

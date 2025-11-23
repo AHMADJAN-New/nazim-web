@@ -338,6 +338,58 @@ export interface TranslationKeys {
       organizationType: string;
       cannotDeleteGlobal: string;
     };
+    scheduleSlots: {
+      title: string;
+      management: string;
+      addSlot: string;
+      editSlot: string;
+      deleteSlot: string;
+      name: string;
+      code: string;
+      startTime: string;
+      endTime: string;
+      days: string;
+      duration: string;
+      academicYear: string;
+      school: string;
+      sortOrder: string;
+      isActive: string;
+      description: string;
+      active: string;
+      inactive: string;
+      global: string;
+      selectAcademicYear: string;
+      selectDaysHint: string;
+      academicYearHint: string;
+      schoolHint: string;
+      allSchools: string;
+      searchPlaceholder: string;
+      noSlotsFound: string;
+      noSlotsMessage: string;
+      slotCreated: string;
+      slotUpdated: string;
+      slotDeleted: string;
+      deleteConfirm: string;
+      nameRequired: string;
+      codeRequired: string;
+      codeMaxLength: string;
+      nameMaxLength: string;
+      timeRequired: string;
+      invalidTimeFormat: string;
+      endTimeAfterStart: string;
+    };
+    timetable: {
+      days: {
+        title: string;
+        monday: string;
+        tuesday: string;
+        wednesday: string;
+        thursday: string;
+        friday: string;
+        saturday: string;
+        sunday: string;
+      };
+    };
   };
 }
 
@@ -663,6 +715,46 @@ const en: TranslationKeys = {
       globalType: 'Global',
       organizationType: 'Organization',
       cannotDeleteGlobal: 'Cannot delete global subjects',
+    },
+    scheduleSlots: {
+      title: 'Schedule Slots',
+      management: 'Schedule Slots Management',
+      addSlot: 'Add Schedule Slot',
+      editSlot: 'Edit Schedule Slot',
+      deleteSlot: 'Delete Schedule Slot',
+      name: 'Name',
+      code: 'Code',
+      startTime: 'Start Time',
+      endTime: 'End Time',
+      days: 'Days of Week',
+      duration: 'Duration (minutes)',
+      academicYear: 'Academic Year',
+      school: 'School',
+      sortOrder: 'Sort Order',
+      isActive: 'Active Status',
+      description: 'Description',
+      active: 'Active',
+      inactive: 'Inactive',
+      global: 'Global',
+      selectAcademicYear: 'Select Academic Year',
+      selectDaysHint: 'Select the days of the week this slot is available',
+      academicYearHint: 'Leave empty for global slots available to all academic years',
+      schoolHint: 'Leave empty for organization-wide slots, or select a specific school',
+      allSchools: 'All Schools',
+      searchPlaceholder: 'Search schedule slots...',
+      noSlotsFound: 'No schedule slots found',
+      noSlotsMessage: 'Try adjusting your search criteria or add a new schedule slot.',
+      slotCreated: 'Schedule slot created successfully',
+      slotUpdated: 'Schedule slot updated successfully',
+      slotDeleted: 'Schedule slot deleted successfully',
+      deleteConfirm: 'Are you sure you want to delete this schedule slot?',
+      nameRequired: 'Name is required',
+      codeRequired: 'Code is required',
+      codeMaxLength: 'Code must be 50 characters or less',
+      nameMaxLength: 'Name must be 100 characters or less',
+      timeRequired: 'Start and end times are required',
+      invalidTimeFormat: 'Invalid time format (HH:MM)',
+      endTimeAfterStart: 'End time must be after start time',
     },
   },
 };
@@ -990,6 +1082,58 @@ const ps: TranslationKeys = {
       organizationType: 'سازمان',
       cannotDeleteGlobal: 'نړیوال مضامین پاک کیدی نشي',
     },
+    scheduleSlots: {
+      title: 'د وخت جدول سلاټونه',
+      management: 'د وخت جدول سلاټونو مدیریت',
+      addSlot: 'د وخت جدول سلاټ اضافه کول',
+      editSlot: 'د وخت جدول سلاټ تغیر کول',
+      deleteSlot: 'د وخت جدول سلاټ پاک کول',
+      name: 'نوم',
+      code: 'کوډ',
+      startTime: 'د پیل وخت',
+      endTime: 'د پای وخت',
+      days: 'د اونۍ ورځې',
+      duration: 'موده (دقیقې)',
+      academicYear: 'علمی کال',
+      school: 'ښوونځی',
+      sortOrder: 'د ترتیب کچه',
+      isActive: 'فعال حالت',
+      description: 'تفصیل',
+      active: 'فعال',
+      inactive: 'غیر فعال',
+      global: 'نړیوال',
+      selectAcademicYear: 'علمی کال وټاکئ',
+      selectDaysHint: 'د اونۍ هغه ورځې وټاکئ چې دا سلاټ شتون لري',
+      academicYearHint: 'د نړیوالو سلاټونو لپاره خالي پریږدئ چې ټولو علمي کلونو ته شتون ولري',
+      schoolHint: 'د سازمان پراخو سلاټونو لپاره خالي پریږدئ، یا یو ځانګړی ښوونځی وټاکئ',
+      allSchools: 'ټول ښوونځي',
+      searchPlaceholder: 'د وخت جدول سلاټونه لټون...',
+      noSlotsFound: 'د وخت جدول سلاټونه ونه موندل شول',
+      noSlotsMessage: 'خپل لټون معیارونه تنظیم کړئ یا نوی د وخت جدول سلاټ اضافه کړئ.',
+      slotCreated: 'د وخت جدول سلاټ په بریالیتوب سره اضافه شو',
+      slotUpdated: 'د وخت جدول سلاټ په بریالیتوب سره تغیر شو',
+      slotDeleted: 'د وخت جدول سلاټ په بریالیتوب سره پاک شو',
+      deleteConfirm: 'ایا تاسو ډاډه یاست چې تاسو غواړئ دا د وخت جدول سلاټ پاک کړئ؟',
+      nameRequired: 'نوم اړینه دی',
+      codeRequired: 'کوډ اړینه دی',
+      codeMaxLength: 'کوډ باید 50 حروف یا لږ وي',
+      nameMaxLength: 'نوم باید 100 حروف یا لږ وي',
+      timeRequired: 'د پیل او پای وختونه اړین دي',
+      invalidTimeFormat: 'د وخت بڼه ناسمه ده (ساعت:دقیقه)',
+      endTimeAfterStart: 'د پای وخت باید د پیل وخت وروسته وي',
+    },
+    timetable: {
+      days: {
+        title: 'د اونۍ ورځې',
+        monday: 'دوشنبه',
+        tuesday: 'سه‌شنبه',
+        wednesday: 'چهارشنبه',
+        thursday: 'پنجشنبه',
+        friday: 'جمعه',
+        saturday: 'شنبه',
+        sunday: 'یکشنبه',
+      },
+    },
   },
 };
 
@@ -1316,6 +1460,58 @@ const fa: TranslationKeys = {
       organizationType: 'سازمان',
       cannotDeleteGlobal: 'نمی‌توان موضوعات جهانی را حذف کرد',
     },
+    scheduleSlots: {
+      title: 'زمان‌بندی اسلات',
+      management: 'مدیریت زمان‌بندی اسلات',
+      addSlot: 'افزودن اسلات زمان‌بندی',
+      editSlot: 'ویرایش اسلات زمان‌بندی',
+      deleteSlot: 'حذف اسلات زمان‌بندی',
+      name: 'نام',
+      code: 'کد',
+      startTime: 'زمان شروع',
+      endTime: 'زمان پایان',
+      days: 'روزهای هفته',
+      duration: 'مدت زمان (دقیقه)',
+      academicYear: 'سال تحصیلی',
+      school: 'مدرسه',
+      sortOrder: 'ترتیب',
+      isActive: 'وضعیت فعال',
+      description: 'توضیحات',
+      active: 'فعال',
+      inactive: 'غیرفعال',
+      global: 'جهانی',
+      selectAcademicYear: 'انتخاب سال تحصیلی',
+      selectDaysHint: 'روزهای هفته‌ای که این اسلات در دسترس است را انتخاب کنید',
+      academicYearHint: 'برای اسلات‌های جهانی که برای همه سال‌های تحصیلی در دسترس است، خالی بگذارید',
+      schoolHint: 'برای اسلات‌های سازمانی، خالی بگذارید یا یک مدرسه خاص انتخاب کنید',
+      allSchools: 'همه مدارس',
+      searchPlaceholder: 'جستجوی اسلات زمان‌بندی...',
+      noSlotsFound: 'اسلات زمان‌بندی یافت نشد',
+      noSlotsMessage: 'معیارهای جستجوی خود را تنظیم کنید یا اسلات زمان‌بندی جدیدی اضافه کنید.',
+      slotCreated: 'اسلات زمان‌بندی با موفقیت ایجاد شد',
+      slotUpdated: 'اسلات زمان‌بندی با موفقیت به‌روزرسانی شد',
+      slotDeleted: 'اسلات زمان‌بندی با موفقیت حذف شد',
+      deleteConfirm: 'آیا مطمئن هستید که می‌خواهید این اسلات زمان‌بندی را حذف کنید؟',
+      nameRequired: 'نام الزامی است',
+      codeRequired: 'کد الزامی است',
+      codeMaxLength: 'کد باید حداکثر 50 کاراکتر باشد',
+      nameMaxLength: 'نام باید حداکثر 100 کاراکتر باشد',
+      timeRequired: 'زمان شروع و پایان الزامی است',
+      invalidTimeFormat: 'فرمت زمان نامعتبر است (ساعت:دقیقه)',
+      endTimeAfterStart: 'زمان پایان باید بعد از زمان شروع باشد',
+    },
+    timetable: {
+      days: {
+        title: 'روزهای هفته',
+        monday: 'دوشنبه',
+        tuesday: 'سه‌شنبه',
+        wednesday: 'چهارشنبه',
+        thursday: 'پنجشنبه',
+        friday: 'جمعه',
+        saturday: 'شنبه',
+        sunday: 'یکشنبه',
+      },
+    },
   },
 };
 
@@ -1641,6 +1837,58 @@ const ar: TranslationKeys = {
       globalType: 'عالمي',
       organizationType: 'المنظمة',
       cannotDeleteGlobal: 'لا يمكن حذف المواد العالمية',
+    },
+    scheduleSlots: {
+      title: 'فتحات الجدول الزمني',
+      management: 'إدارة فتحات الجدول الزمني',
+      addSlot: 'إضافة فتحة جدول زمني',
+      editSlot: 'تعديل فتحة الجدول الزمني',
+      deleteSlot: 'حذف فتحة الجدول الزمني',
+      name: 'الاسم',
+      code: 'الكود',
+      startTime: 'وقت البدء',
+      endTime: 'وقت الانتهاء',
+      days: 'أيام الأسبوع',
+      duration: 'المدة (بالدقائق)',
+      academicYear: 'السنة الأكاديمية',
+      school: 'المدرسة',
+      sortOrder: 'ترتيب',
+      isActive: 'حالة النشاط',
+      description: 'الوصف',
+      active: 'نشط',
+      inactive: 'غير نشط',
+      global: 'عالمي',
+      selectAcademicYear: 'اختر السنة الأكاديمية',
+      selectDaysHint: 'اختر أيام الأسبوع التي تكون هذه الفتحة متاحة فيها',
+      academicYearHint: 'اتركه فارغًا للفتحات العالمية المتاحة لجميع السنوات الأكاديمية',
+      schoolHint: 'اتركه فارغًا للفتحات على مستوى المنظمة، أو اختر مدرسة محددة',
+      allSchools: 'جميع المدارس',
+      searchPlaceholder: 'البحث عن فتحات الجدول الزمني...',
+      noSlotsFound: 'لم يتم العثور على فتحات جدول زمني',
+      noSlotsMessage: 'حاول تعديل معايير البحث أو إضافة فتحة جدول زمني جديدة.',
+      slotCreated: 'تم إنشاء فتحة الجدول الزمني بنجاح',
+      slotUpdated: 'تم تحديث فتحة الجدول الزمني بنجاح',
+      slotDeleted: 'تم حذف فتحة الجدول الزمني بنجاح',
+      deleteConfirm: 'هل أنت متأكد أنك تريد حذف هذه فتحة الجدول الزمني؟',
+      nameRequired: 'الاسم مطلوب',
+      codeRequired: 'الكود مطلوب',
+      codeMaxLength: 'يجب أن يكون الكود 50 حرفًا أو أقل',
+      nameMaxLength: 'يجب أن يكون الاسم 100 حرف أو أقل',
+      timeRequired: 'وقت البدء والانتهاء مطلوب',
+      invalidTimeFormat: 'تنسيق الوقت غير صالح (ساعة:دقيقة)',
+      endTimeAfterStart: 'يجب أن يكون وقت الانتهاء بعد وقت البدء',
+    },
+    timetable: {
+      days: {
+        title: 'أيام الأسبوع',
+        monday: 'الاثنين',
+        tuesday: 'الثلاثاء',
+        wednesday: 'الأربعاء',
+        thursday: 'الخميس',
+        friday: 'الجمعة',
+        saturday: 'السبت',
+        sunday: 'الأحد',
+      },
     },
   },
 };

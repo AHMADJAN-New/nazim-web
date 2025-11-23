@@ -52,6 +52,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
+
+  // If user exists but no profile after timeout, redirect to auth (invalid session)
+  if (user && !currentProfile && loadingTimeout) {
+    return <Navigate to="/auth" replace />;
+  }
   
   // If organization is required and user doesn't have one (and isn't super admin)
   if (requireOrganization && currentProfile) {
