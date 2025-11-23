@@ -15,6 +15,11 @@ export const PermissionsManagement = lazy(() => import('@/components/settings/Pe
 export const SchoolsManagement = lazy(() => import('@/components/settings/SchoolsManagement').then(module => ({ default: module.SchoolsManagement })));
 export const ReportTemplatesManagement = lazy(() => import('@/components/settings/ReportTemplatesManagement').then(module => ({ default: module.ReportTemplatesManagement })));
 export const ResidencyTypesManagement = lazy(() => import('@/components/settings/ResidencyTypesManagement').then(module => ({ default: module.ResidencyTypesManagement })));
+export const AcademicYearsManagement = lazy(() => import('@/components/settings/AcademicYearsManagement').then(module => ({ default: module.AcademicYearsManagement })));
+export const ClassesManagement = lazy(() => import('@/components/settings/ClassesManagement').then(module => ({ default: module.ClassesManagement })));
+export const SubjectsManagement = lazy(() => import('@/components/settings/SubjectsManagement').then(module => ({ default: module.SubjectsManagement })));
+export const StaffTypesManagement = lazy(() => import('@/components/settings/StaffTypesManagement').then(module => ({ default: module.StaffTypesManagement })));
+export const StaffList = lazy(() => import('@/pages/StaffList').then(module => ({ default: module.StaffList })));
 export const UserManagement = lazy(() => import('@/components/admin/UserManagement').then(module => ({ default: module.UserManagement })));
 export const ClassesManagement = lazy(() => import('@/components/academics/ClassesManagement').then(module => ({ default: module.ClassesManagement })));
 export const SubjectsManagement = lazy(() => import('@/components/academics/SubjectsManagement').then(module => ({ default: module.SubjectsManagement })));

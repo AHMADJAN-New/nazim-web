@@ -21,7 +21,7 @@ export interface Profile {
 // This hook is kept for backward compatibility but now uses AuthContext
 export const useProfile = () => {
   const { profile } = useAuth();
-  
+
   // Return in the same format as before for compatibility
   return {
     data: profile,

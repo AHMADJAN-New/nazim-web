@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (error) {
         // Check for schema-related errors
-        const isSchemaError = 
+        const isSchemaError =
           error.message?.toLowerCase().includes('schema') ||
           error.message?.toLowerCase().includes('querying schema') ||
           error.message?.toLowerCase().includes('database error') ||
@@ -123,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Profile might not exist yet - it will be created by trigger
         if (retryCount < 2 && (
-          error.message?.includes('No rows') || 
+          error.message?.includes('No rows') ||
           error.message?.includes('not found') ||
           error.code === 'PGRST116'
         )) {
@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }, (retryCount + 1) * 1000);
           return;
         }
-        
+
         console.error('Failed to load profile:', error);
         setProfile(null);
       } else if (data) {
@@ -153,7 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error('Error loading profile:', error);
       // Handle schema query errors gracefully with retry
       if (retryCount < 3 && (
-        error?.message?.toLowerCase().includes('schema') || 
+        error?.message?.toLowerCase().includes('schema') ||
         error?.message?.toLowerCase().includes('querying') ||
         error?.message?.toLowerCase().includes('database error') ||
         error?.message?.includes('NetworkError')
