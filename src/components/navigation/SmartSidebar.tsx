@@ -175,6 +175,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasStaffTypesPermission = useHasPermission('staff.types.read');
   const hasScheduleSlotsPermission = useHasPermission('academic.schedule_slots.read');
   const hasTeacherSubjectAssignmentsPermission = useHasPermission('academic.teacher_subject_assignments.read');
+  const hasTimetablesPermission = useHasPermission('academic.timetables.read');
 
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -198,7 +199,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         url: "/dashboard",
         icon: Home,
         badge: null,
-        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"],
+        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"] as UserRole[],
         priority: 1
       },
       ...(hasStaffPermission ? [{
@@ -206,10 +207,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
         url: "/staff",
         icon: Users,
         badge: null,
-        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"],
+        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"] as UserRole[],
         priority: 3
       }] : []),
-      ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission) ? [{
+      ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission) ? [{
         titleKey: "academicManagement",
         icon: GraduationCap,
         badge: null,
@@ -236,11 +237,32 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
         ],
       }] : []),
+      ...((hasTimetablesPermission || hasScheduleSlotsPermission) ? [{
+        titleKey: "timetables",
+        icon: Calendar,
+        badge: null,
+        roles: ["super_admin", "admin", "teacher"] as UserRole[],
+        priority: 8.4,
+        children: [
+          ...(hasTimetablesPermission ? [{
+            title: "Timetable Generation",
+            titleKey: "timetable.title",
+            url: "/academic/timetable-generation",
+            icon: Calendar,
+          }] : []),
+          ...(hasScheduleSlotsPermission ? [{
+            title: "Schedule Slots",
+            titleKey: "academic.scheduleSlots.title",
+            url: "/settings/schedule-slots",
+            icon: Clock,
+          }] : []),
+        ],
+      }] : []),
       {
         titleKey: "settings",
         icon: Settings,
         badge: null,
-        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"],
+        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"] as UserRole[],
         priority: 10,
         children: [
           // Only show child items if user has the required permission
@@ -270,7 +292,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "academicSettings",
         icon: GraduationCap,
         badge: null,
-        roles: ["super_admin", "admin", "teacher"],
+        roles: ["super_admin", "admin", "teacher"] as UserRole[],
         priority: 8,
         children: [
           // Only show child items if user has the required permission
@@ -311,18 +333,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/settings/staff-types",
             icon: Users,
           }] : []),
-          ...(hasScheduleSlotsPermission ? [{
-            title: "Schedule Slots",
-            url: "/settings/schedule-slots",
-            icon: Clock,
-          }] : []),
         ],
       },
       {
         titleKey: "authentication",
         icon: Lock,
         badge: null,
-        roles: ["super_admin", "admin"],
+        roles: ["super_admin", "admin"] as UserRole[],
         priority: 9,
         children: [
           // Only show child items if user has the required permission
@@ -391,12 +408,17 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       if (item.titleKey === 'academicSettings') {
         // Show if user has any academic-related permission (excluding classes, subjects, and assignments which are in academicManagement)
-        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission || hasScheduleSlotsPermission;
+        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission;
       }
 
       if (item.titleKey === 'academicManagement') {
         // Show if user has any academic management permission
         return hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission;
+      }
+      
+      if (item.titleKey === 'timetables') {
+        // Show if user has access to timetables or schedule slots
+        return hasTimetablesPermission || hasScheduleSlotsPermission;
       }
 
       if (item.titleKey === 'authentication') {
@@ -406,7 +428,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission]);
 
   // Helper function to filter navigation items by role
   const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {

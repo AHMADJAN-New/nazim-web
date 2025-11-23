@@ -392,6 +392,32 @@ export interface TranslationKeys {
       };
     };
   };
+
+  // Timetable (UI strings used in generator and dialogs)
+  timetable: {
+    title: string;
+    generate: string;
+    save: string;
+    load: string;
+    loadDesc: string;
+    selectClasses: string;
+    selectDays: string;
+    selectPeriods: string;
+    teacherPreferences: string;
+    teacherPreferencesDesc: string;
+    allYear: string;
+    summary: string;
+    unscheduledNotice: string;
+    results: string;
+    teacherView: string;
+    classView: string;
+    teacher: string;
+    class: string;
+    name: string;
+    description: string;
+    periods: string;
+    selectTeacher: string;
+  };
 }
 
 // English translations
@@ -758,6 +784,30 @@ const en: TranslationKeys = {
       invalidTimeFormat: 'Invalid time format (HH:MM)',
       endTimeAfterStart: 'End time must be after start time',
     },
+  },
+  timetable: {
+    title: 'Timetable Generation',
+    generate: 'Generate',
+    save: 'Save Timetable',
+    load: 'Load Timetable',
+    loadDesc: 'Select a saved timetable to load.',
+    selectClasses: 'Select Classes',
+    selectDays: 'Select Days',
+    selectPeriods: 'Select Periods',
+    teacherPreferences: 'Teacher Preferences',
+    teacherPreferencesDesc: 'Mark slots the selected teacher cannot teach (blocked periods).',
+    allYear: 'All Year',
+    summary: 'Select classes, days, and periods, then click Generate.',
+    unscheduledNotice: 'assignments could not be scheduled',
+    results: 'Results',
+    teacherView: 'Teacher View',
+    classView: 'Class View',
+    teacher: 'Teacher',
+    class: 'Class',
+    name: 'Name',
+    description: 'Description',
+    periods: 'Periods',
+    selectTeacher: 'Select Teacher',
   },
 };
 
@@ -1138,6 +1188,30 @@ const ps: TranslationKeys = {
       },
     },
   },
+  timetable: {
+    title: 'د مهال ویش جوړول',
+    generate: 'جوړول',
+    save: 'مهال ویش خوندي کول',
+    load: 'مهال ویش لور کول',
+    loadDesc: 'خوندي شوی مهال ویش وټاکئ.',
+    selectClasses: 'ټولګي انتخاب کړئ',
+    selectDays: 'ورځې انتخاب کړئ',
+    selectPeriods: 'ساعتونه انتخاب کړئ',
+    teacherPreferences: 'د استادانو ځانګړي وختونه',
+    teacherPreferencesDesc: 'هغه ساعتونه وټاکئ چې استاد پکې درس نه شي ورکولای.',
+    allYear: 'دائمي',
+    summary: 'ټولګي، ورځې او ساعتونه وټاکئ او بیا جوړول کلیک کړئ.',
+    unscheduledNotice: 'دندې مهال‌ویش نه شوې',
+    results: 'پایلې',
+    teacherView: 'د استادانو لید',
+    classView: 'د ټولګیو لید',
+    teacher: 'استاد',
+    class: 'ټولګی',
+    name: 'نوم',
+    description: 'تفصیل',
+    periods: 'ساعتونه',
+    selectTeacher: 'استاد انتخاب کړئ',
+  },
 };
 
 // Dari (Farsi) translations
@@ -1517,6 +1591,30 @@ const fa: TranslationKeys = {
       },
     },
   },
+  timetable: {
+    title: 'ایجاد برنامهٔ زمانی',
+    generate: 'ایجاد',
+    save: 'ذخیرهٔ برنامهٔ زمانی',
+    load: 'بارگذاری برنامهٔ زمانی',
+    loadDesc: 'یک برنامهٔ زمانی ذخیره‌شده را انتخاب کنید.',
+    selectClasses: 'انتخاب کلاس‌ها',
+    selectDays: 'انتخاب روزها',
+    selectPeriods: 'انتخاب ساعات',
+    teacherPreferences: 'ترجیحات معلم',
+    teacherPreferencesDesc: 'ساعات غیرقابل تدریس برای معلم را علامت بزنید.',
+    allYear: 'طول سال',
+    summary: 'کلاس‌ها، روزها و ساعات را انتخاب کرده سپس ایجاد را بزنید.',
+    unscheduledNotice: 'تکالیف زمان‌بندی نشد',
+    results: 'نتایج',
+    teacherView: 'نمای معلم',
+    classView: 'نمای کلاس',
+    teacher: 'معلم',
+    class: 'کلاس',
+    name: 'نام',
+    description: 'توضیحات',
+    periods: 'ساعات',
+    selectTeacher: 'انتخاب معلم',
+  },
 };
 
 // Arabic translations  
@@ -1895,6 +1993,30 @@ const ar: TranslationKeys = {
         sunday: 'الأحد',
       },
     },
+  },
+  timetable: {
+    title: 'إنشاء الجدول الزمني',
+    generate: 'إنشاء',
+    save: 'حفظ الجدول الزمني',
+    load: 'تحميل الجدول الزمني',
+    loadDesc: 'اختر جدولًا زمنيًا محفوظًا لتحميله.',
+    selectClasses: 'اختر الفصول',
+    selectDays: 'اختر الأيام',
+    selectPeriods: 'اختر الحصص',
+    teacherPreferences: 'تفضيلات المعلمين',
+    teacherPreferencesDesc: 'حدد الأوقات التي لا يستطيع المعلم التدريس فيها.',
+    allYear: 'طوال العام',
+    summary: 'اختر الفصول والأيام والحصص ثم اضغط إنشاء.',
+    unscheduledNotice: 'تعذر جدولة بعض الدروس',
+    results: 'النتائج',
+    teacherView: 'عرض المعلمين',
+    classView: 'عرض الفصول',
+    teacher: 'المعلم',
+    class: 'الفصل',
+    name: 'الاسم',
+    description: 'الوصف',
+    periods: 'الحصص',
+    selectTeacher: 'اختر المعلم',
   },
 };
 

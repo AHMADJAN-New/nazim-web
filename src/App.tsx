@@ -16,6 +16,7 @@ import RoleBasedRedirect from "./components/RoleBasedRedirect";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import TimetableGeneration from "./pages/TimetableGeneration";
 
 // Lazy-loaded components with optimized loading
 import {
@@ -89,6 +90,13 @@ const App = () => (
                     <Route path="/dashboard" element={
                       <Suspense fallback={<DashboardSkeleton />}>
                         <Dashboard />
+                      </Suspense>
+                    } />
+                    <Route path="/academic/timetable-generation" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <PermissionGuard permission="academic.timetables.read">
+                          <TimetableGeneration />
+                        </PermissionGuard>
                       </Suspense>
                     } />
                     {/* Settings routes */}
