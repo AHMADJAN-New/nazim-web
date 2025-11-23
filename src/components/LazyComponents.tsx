@@ -22,6 +22,8 @@ export const ScheduleSlotsManagement = lazy(() => import('@/components/settings/
 export const TeacherSubjectAssignments = lazy(() => import('@/components/settings/TeacherSubjectAssignments').then(module => ({ default: module.TeacherSubjectAssignments })));
 export const StaffTypesManagement = lazy(() => import('@/components/settings/StaffTypesManagement').then(module => ({ default: module.StaffTypesManagement })));
 export const StaffList = lazy(() => import('@/pages/StaffList').then(module => ({ default: module.StaffList })));
+export const Students = lazy(() => import('@/pages/Students').then(module => ({ default: module.Students })));
+export const StudentAdmissions = lazy(() => import('@/pages/StudentAdmissions').then(module => ({ default: module.StudentAdmissions })));
 export const UserManagement = lazy(() => import('@/components/admin/UserManagement').then(module => ({ default: module.UserManagement })));
 
 // Re-export loading components for backward compatibility
