@@ -55,6 +55,48 @@ export interface Student {
   updated_at: string;
 }
 
+export interface StudentDocument {
+  id: string;
+  student_id: string;
+  organization_id: string;
+  school_id: string | null;
+  document_type: string;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  description: string | null;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+export interface StudentPreviousStudy {
+  id: string;
+  student_id: string;
+  organization_id: string;
+  school_id: string | null;
+  institution_name: string;
+  level: string | null;
+  start_year: string | null;
+  end_year: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface StudentBehavior {
+  id: string;
+  student_id: string;
+  organization_id: string;
+  school_id: string | null;
+  behavior_type: 'positive' | 'negative';
+  severity: 'low' | 'medium' | 'high' | null;
+  title: string;
+  description: string | null;
+  reported_by: string | null;
+  occurred_on: string | null;
+  created_at: string;
+}
+
 export interface StudentInsert {
   organization_id?: string;
   school_id?: string | null;
@@ -164,6 +206,70 @@ export const useStudents = (organizationId?: string) => {
   });
 };
 
+export const useStudentDocuments = (studentId?: string) => {
+  const { user } = useAuth();
+
+  return useQuery<StudentDocument[]>({
+    queryKey: ['student-documents', studentId],
+    queryFn: async () => {
+      if (!user || !studentId) return [];
+
+      const { data, error } = await (supabase as any)
+        .from('student_documents')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw new Error(error.message);
+      return (data || []) as StudentDocument[];
+    },
+    enabled: !!user && !!studentId,
+  });
+};
+
+export const useStudentPreviousStudies = (studentId?: string) => {
+  const { user } = useAuth();
+
+  return useQuery<StudentPreviousStudy[]>({
+    queryKey: ['student-previous-studies', studentId],
+    queryFn: async () => {
+      if (!user || !studentId) return [];
+
+      const { data, error } = await (supabase as any)
+        .from('student_previous_studies')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw new Error(error.message);
+      return (data || []) as StudentPreviousStudy[];
+    },
+    enabled: !!user && !!studentId,
+  });
+};
+
+export const useStudentBehaviors = (studentId?: string) => {
+  const { user } = useAuth();
+
+  return useQuery<StudentBehavior[]>({
+    queryKey: ['student-behaviors', studentId],
+    queryFn: async () => {
+      if (!user || !studentId) return [];
+
+      const { data, error } = await (supabase as any)
+        .from('student_behaviors')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('occurred_on', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw new Error(error.message);
+      return (data || []) as StudentBehavior[];
+    },
+    enabled: !!user && !!studentId,
+  });
+};
+
 export const useCreateStudent = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
@@ -266,6 +372,186 @@ export const useDeleteStudent = () => {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to remove student');
+    },
+  });
+};
+
+export const useUploadStudentPicture = () => {
+  return useMutation({
+    mutationFn: async ({
+      studentId,
+      organizationId,
+      schoolId,
+      file,
+    }: {
+      studentId: string;
+      organizationId: string;
+      schoolId?: string | null;
+      file: File;
+    }) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const schoolPath = schoolId ? `${schoolId}/` : '';
+      const filePath = `${organizationId}/${schoolPath}${studentId}/picture/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('student-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      const { error: updateError } = await (supabase as any)
+        .from('students')
+        .update({ picture_path: filePath })
+        .eq('id', studentId)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('student-files').getPublicUrl(filePath);
+
+      return publicUrl;
+    },
+    onSuccess: () => {
+      toast.success('Student photo updated');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to upload photo');
+    },
+  });
+};
+
+export const useUploadStudentDocument = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      studentId,
+      organizationId,
+      schoolId,
+      file,
+      documentType,
+      description,
+    }: {
+      studentId: string;
+      organizationId: string;
+      schoolId?: string | null;
+      file: File;
+      documentType: string;
+      description?: string | null;
+    }) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const schoolPath = schoolId ? `${schoolId}/` : '';
+      const filePath = `${organizationId}/${schoolPath}${studentId}/documents/${documentType}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('student-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      const { data: document, error: insertError } = await (supabase as any)
+        .from('student_documents')
+        .insert({
+          student_id: studentId,
+          organization_id: organizationId,
+          school_id: schoolId || null,
+          document_type: documentType,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          mime_type: file.type || null,
+          description: description || null,
+          uploaded_by: user?.id || null,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw new Error(insertError.message);
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('student-files').getPublicUrl(filePath);
+
+      return { document, publicUrl } as { document: StudentDocument; publicUrl: string };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['student-documents'] });
+      toast.success('Student document uploaded');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to upload document');
+    },
+  });
+};
+
+export const useCreateStudentPreviousStudy = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      payload: Omit<StudentPreviousStudy, 'id' | 'created_at'>
+    ) => {
+      const { data, error } = await (supabase as any)
+        .from('student_previous_studies')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data as StudentPreviousStudy;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['student-previous-studies'] });
+      toast.success('Previous study added');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to add previous study');
+    },
+  });
+};
+
+export const useCreateStudentBehavior = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      payload: Omit<StudentBehavior, 'id' | 'created_at'>
+    ) => {
+      const { data, error } = await (supabase as any)
+        .from('student_behaviors')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data as StudentBehavior;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['student-behaviors'] });
+      toast.success('Behavior note saved');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to save behavior note');
     },
   });
 };
