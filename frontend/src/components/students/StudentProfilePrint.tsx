@@ -1,0 +1,715 @@
+import React, { useMemo, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { Student } from '@/hooks/useStudents';
+
+interface StudentProfilePrintProps {
+  student: Student;
+  schoolName: string | null;
+  pictureUrl: string | null;
+  guardianPictureUrl: string | null;
+  isRTL: boolean;
+}
+
+export function StudentProfilePrint({
+  student,
+  schoolName,
+  pictureUrl,
+  guardianPictureUrl,
+  isRTL,
+}: StudentProfilePrintProps) {
+  // Inject print styles
+  useEffect(() => {
+    const styleId = 'student-profile-print-styles';
+    let styleElement = document.getElementById(styleId) as HTMLStyleElement;
+    
+    if (!styleElement) {
+      styleElement = document.createElement('style');
+      styleElement.id = styleId;
+      document.head.appendChild(styleElement);
+    }
+
+    // Screen styles - hide print layout
+    const screenStyleId = 'student-profile-screen-styles';
+    let screenStyleElement = document.getElementById(screenStyleId) as HTMLStyleElement;
+    
+    if (!screenStyleElement) {
+      screenStyleElement = document.createElement('style');
+      screenStyleElement.id = screenStyleId;
+      document.head.appendChild(screenStyleElement);
+    }
+
+    screenStyleElement.textContent = `
+      .student-profile-print-layout {
+        display: none !important;
+      }
+    `;
+
+    styleElement.textContent = `
+      @media print {
+        @page {
+          size: A4 portrait;
+          margin: 15mm;
+        }
+
+        body {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          margin: 0;
+          background: #fff !important;
+        }
+
+        /* Hide dialog and screen content */
+        [data-radix-dialog-overlay],
+        [data-radix-dialog-content] > *:not(.student-profile-print-layout),
+        .student-profile-screen,
+        .no-print {
+          display: none !important;
+        }
+
+        /* Ensure print layout is displayed and positioned */
+        .student-profile-print-layout {
+          display: block !important;
+          position: absolute !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #fff !important;
+          font-family: "Bahij Nassim", "Inter", sans-serif !important;
+          color: #0b0b56 !important;
+          line-height: 1.4 !important;
+          font-size: 10.5pt !important;
+          direction: ${isRTL ? 'rtl' : 'ltr'} !important;
+          text-align: ${isRTL ? 'right' : 'left'} !important;
+          visibility: visible !important;
+        }
+
+        /* Make sure all children of print layout are visible */
+        .student-profile-print-layout * {
+          visibility: visible !important;
+        }
+
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100% !important;
+          height: auto !important;
+          overflow: visible !important;
+        }
+
+        .student-profile-print-layout .print-title {
+          text-align: center;
+          font-size: 20pt;
+          font-weight: 700;
+          margin: 8px 0 16px;
+          color: #0b0b56;
+        }
+
+        .student-profile-print-layout .print-section {
+          border-top: 1px solid #e0e0e0;
+          padding: 12px 0;
+          margin-bottom: 0;
+          background-color: transparent;
+          page-break-inside: avoid;
+        }
+
+        .student-profile-print-layout .print-section:first-of-type {
+          border-top: none;
+        }
+
+        .student-profile-print-layout .print-header-section {
+          border-top: none;
+          padding-bottom: 16px;
+          margin-bottom: 12px;
+        }
+
+        .student-profile-print-layout .print-section-title {
+          font-size: 13pt;
+          font-weight: 600;
+          margin-bottom: 10px;
+          color: #14146f;
+          padding-bottom: 6px;
+          border-bottom: 1px solid #e0e0e0;
+        }
+
+        .student-profile-print-layout table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 0;
+          table-layout: auto;
+        }
+
+        .student-profile-print-layout table tr {
+          page-break-inside: avoid;
+        }
+
+        .student-profile-print-layout td {
+          padding: 6px 8px;
+          vertical-align: middle;
+          font-size: 10pt;
+          word-wrap: break-word;
+          border: none;
+        }
+
+        .student-profile-print-layout td.print-label {
+          width: 140px;
+          font-weight: 600;
+          color: #0b0b56;
+          white-space: nowrap;
+          text-align: ${isRTL ? 'right' : 'left'};
+          padding-right: ${isRTL ? '12px' : '8px'};
+          padding-left: ${isRTL ? '8px' : '12px'};
+        }
+
+        .student-profile-print-layout td.print-value {
+          min-height: 22px;
+          text-align: ${isRTL ? 'right' : 'left'};
+          padding: 6px 8px;
+          vertical-align: middle;
+          font-size: 10.5pt;
+          color: #000;
+        }
+        
+        .student-profile-print-layout td.print-value:empty::after {
+          content: ' ';
+          display: inline-block;
+          width: 100%;
+        }
+
+        .student-profile-print-layout .header-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 0;
+        }
+
+        .student-profile-print-layout .header-photo-cell {
+          width: 35mm;
+          padding: 8px;
+          text-align: center;
+          vertical-align: middle;
+        }
+
+        .student-profile-print-layout .header-photo-cell .photo,
+        .student-profile-print-layout .header-photo-cell .photo-placeholder {
+          width: 32mm;
+          height: 40mm;
+          margin: 0 auto;
+          display: block;
+        }
+
+        .student-profile-print-layout .header-info-cell {
+          padding: 8px 16px;
+          text-align: center;
+          vertical-align: middle;
+        }
+
+        .student-profile-print-layout .header-info {
+          text-align: center;
+        }
+
+        .student-profile-print-layout .header-name {
+          font-size: 16pt;
+          font-weight: 700;
+          color: #0b0b56;
+          margin-bottom: 4px;
+        }
+
+        .student-profile-print-layout .header-subtitle {
+          font-size: 12pt;
+          color: #555;
+          margin-bottom: 4px;
+        }
+
+        .student-profile-print-layout .header-id {
+          font-size: 10pt;
+          color: #777;
+        }
+
+        .student-profile-print-layout .photo-label {
+          font-size: 9pt;
+          font-weight: 600;
+          color: #0b0b56;
+          margin-top: 6px;
+          text-align: center;
+        }
+
+        .student-profile-print-layout .photo {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          border: 1px solid #0b0b56;
+        }
+
+        .student-profile-print-layout .photo-placeholder {
+          width: 100%;
+          height: 100%;
+          border: 1px solid #ddd;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #999;
+          font-size: 9pt;
+          background-color: #f9f9f9;
+        }
+
+        .student-profile-print-layout .blue-title {
+          font-size: 13pt;
+          font-weight: 600;
+          color: #14146f;
+          margin-bottom: 8px;
+        }
+
+        .student-profile-print-layout .signature-line {
+          border-bottom: 1px solid #999;
+          width: 150px;
+          display: inline-block;
+          height: 18px;
+          margin: 0 8px;
+        }
+
+        .student-profile-print-layout .stamp-box {
+          border: 1px solid #aaa;
+          width: 90px;
+          height: 40px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #999;
+          font-size: 9pt;
+        }
+
+        .student-profile-print-layout ul {
+          margin: 4px 0 0;
+          padding-${isRTL ? 'right' : 'left'}: 18px;
+          font-size: 10pt;
+        }
+
+        .student-profile-print-layout li {
+          margin-bottom: 4px;
+        }
+
+        .student-profile-print-layout .page-break {
+          page-break-before: always;
+        }
+      }
+    `;
+
+    return () => {
+      // Cleanup on unmount
+      const style = document.getElementById(styleId);
+      if (style) {
+        style.remove();
+      }
+      const screenStyle = document.getElementById(screenStyleId);
+      if (screenStyle) {
+        screenStyle.remove();
+      }
+    };
+  }, [isRTL]);
+
+  const printText = useMemo(() => {
+    if (isRTL) {
+      return {
+        title: 'د زده کوونکي انفرادي معلومات',
+        personal: 'شخصي معلومات',
+        admissionSection: 'د داخلې معلومات',
+        addressSection: 'استوګنځای معلومات',
+        guardianSection: 'د سرپرست معلومات',
+        otherInfo: 'نور معلومات',
+        name: 'نوم',
+        fatherName: 'د پلار نوم',
+        grandfatherName: 'د نیکه نوم',
+        birthYear: 'د زیږون کال',
+        tazkiraNumber: 'تذکره نمبر',
+        idNumber: 'ID',
+        cardNumber: 'کارډ نمبر',
+        admissionNo: 'اساس نمبر',
+        admissionYear: 'د شمولیت کال',
+        applyingGrade: 'د داخلې درجه',
+        schoolLabel: 'مدرسه',
+        originProvince: 'اصلي ولایت',
+        originDistrict: 'اصلي ولسوالۍ',
+        originVillage: 'اصلي کلي / ناحیه',
+        currentProvince: 'فعلي ولایت',
+        currentDistrict: 'فعلي ولسوالۍ',
+        currentVillage: 'فعلي کلي / ناحیه',
+        homeAddress: 'د فعلي استوګنځای دقیق ادرس',
+        guardianName: 'د سرپرست نوم',
+        guardianRelation: 'له زده کوونکي سره تړاو',
+        guardianPhone: 'ټلفون',
+        guardianTazkira: 'تذکره',
+        guarantorName: 'د ضامن نوم',
+        guarantorPhone: 'د ضامن د ټیلیفون نمبر',
+        guarantorTazkira: 'د ضامن تذکره',
+        guarantorAddress: 'د ضامن ادرس',
+        isOrphan: 'یتیم دی؟',
+        feeStatus: 'د داخلې فیس حالت',
+        createdAt: 'ریکارډ جوړ شوی',
+        updatedAt: 'ریکارډ تازه شوی',
+        guardianLabel: 'سرپرست',
+        studentLabel: 'زده کونکی',
+        yes: 'هو',
+        no: 'نه',
+        commitmentsTitle: 'تعهدات، ضمانت، او تائید',
+        commitmentTitle: 'تعهد نامه',
+        guaranteeTitle: 'ضمانت نامه',
+        approvalTitle: 'تائيد نامه',
+        commitmentText: [
+          'د مدرسې ټول قوانين به په ځان عملي کوم',
+          'د مدرسې د قوانينو سر بېره به شرعي قوانين هم په ځان تطبيقوم',
+          'د مدرسې د ټولو استاذانو او اراکينو به احترام کوم او د مدرسې د ټولو شتمنيو به ساتنه کوم',
+          'له قانون څخه د سرغړونې او يا د غير حاضري په صورت کې د ادارې هر ډول پرېکړه منم او په ځان به يې تطبيقوم',
+          'د کوچني او لوی مبایل په اړه به د مدرسې قانون ته غاړه ږدم، د مخالفت په صورت کې مدرسه زما داخراج یا د مبایل د ضبط حق لري.',
+          'د مدرسې مهتمم يا د هغه نائب په زکوة، صدقه او ورته خيريه چارو کې خپل وکيل ګرځوم',
+        ],
+        guaranteeText: 'ذکر شوي شرائط او ضوابط زما د علم مطابق سم دي؛ لهذا ته مدرسه کې په داخله ورکولو باندې راضي یم او ضمانت درکوم چې مذکور طالب العلم به د مدرسې ټولو قوانينو ته پابند اوسيږي، د مخالفت په صورت کې د مدرسې هر ډول پرېکړه ماته منظوره ده.',
+        approvalText: {
+          admission: 'د داخلې ناظم له لوري مذکور طالب العلم ته په درجه',
+          fee: 'داخله فيس:',
+          date: 'د داخلې تاريخ:',
+          signature: 'د ناظم لاسليک:',
+          stamp: 'مهر',
+        },
+      };
+    }
+    return {
+      title: 'Student Personal Information',
+      personal: 'Personal Information',
+      admissionSection: 'Admission Information',
+      addressSection: 'Address Information',
+      guardianSection: 'Guardian Information',
+      otherInfo: 'Other Information',
+      name: 'Name',
+      fatherName: 'Father Name',
+      grandfatherName: 'Grandfather Name',
+      birthYear: 'Birth Year',
+      tazkiraNumber: 'Tazkira Number',
+      idNumber: 'ID',
+      cardNumber: 'Card Number',
+      admissionNo: 'Admission No',
+      admissionYear: 'Admission Year',
+      applyingGrade: 'Applying Grade',
+      schoolLabel: 'School',
+      originProvince: 'Origin Province',
+      originDistrict: 'Origin District',
+      originVillage: 'Origin Village',
+      currentProvince: 'Current Province',
+      currentDistrict: 'Current District',
+      currentVillage: 'Current Village',
+      homeAddress: 'Home Address',
+      guardianName: 'Guardian Name',
+      guardianRelation: 'Relation',
+      guardianPhone: 'Phone',
+      guardianTazkira: 'Tazkira',
+      guarantorName: 'Guarantor Name',
+      guarantorPhone: 'Guarantor Phone',
+      guarantorTazkira: 'Guarantor Tazkira',
+      guarantorAddress: 'Guarantor Address',
+      isOrphan: 'Is Orphan?',
+      feeStatus: 'Fee Status',
+      createdAt: 'Created At',
+      updatedAt: 'Updated At',
+      guardianLabel: 'Guardian',
+      studentLabel: 'Student',
+      yes: 'Yes',
+      no: 'No',
+      commitmentsTitle: 'Commitments, Guarantee, and Approval',
+      commitmentTitle: 'Commitment',
+      guaranteeTitle: 'Guarantee',
+      approvalTitle: 'Approval',
+      commitmentText: [
+        'I will follow all school rules',
+        'I will follow Islamic laws in addition to school rules',
+        'I will respect all teachers and staff and protect school property',
+        'I accept any decision by the administration for violations or absences',
+        'I will follow school rules regarding mobile phones, and the school has the right to expel me or confiscate my phone if I violate.',
+        'I authorize the school principal or deputy to act on my behalf in zakat, charity, and similar charitable activities',
+      ],
+      guaranteeText: 'The mentioned conditions and regulations are correct according to my knowledge; therefore, I am satisfied with admission to the school and guarantee that the mentioned student will abide by all school rules, and any decision by the school in case of violation is acceptable to me.',
+      approvalText: {
+        admission: 'The mentioned student was admitted to grade',
+        fee: 'Admission Fee:',
+        date: 'Admission Date:',
+        signature: 'Administrator Signature:',
+        stamp: 'Stamp',
+      },
+    };
+  }, [isRTL]);
+
+  const displayValue = (value?: string | number | null) => {
+    if (value === null || value === undefined || value === '') {
+      return '';
+    }
+    return String(value).trim();
+  };
+
+  const boolToText = (value?: boolean | null) => (value ? printText.yes : printText.no);
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString();
+  };
+
+  return (
+    <div className="student-profile-print-layout" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="print-title">{printText.title}</div>
+
+      {/* Header Row with Photos */}
+      <div className="print-section print-header-section">
+        <table className="header-table">
+          <tbody>
+            <tr>
+              <td className="header-photo-cell">
+                {guardianPictureUrl ? (
+                  <img className="photo" src={guardianPictureUrl} alt="Guardian" />
+                ) : (
+                  <div className="photo-placeholder">{printText.guardianLabel}</div>
+                )}
+                <div className="photo-label">{printText.guardianLabel}</div>
+              </td>
+              <td className="header-info-cell">
+                <div className="header-info">
+                  <div className="header-name">{displayValue(student.full_name)}</div>
+                  <div className="header-subtitle">
+                    {displayValue(student.father_name)}
+                    {student.grandfather_name && ` ${displayValue(student.grandfather_name)}`}
+                  </div>
+                  <div className="header-id">{printText.idNumber}: {displayValue(student.admission_no)}</div>
+                </div>
+              </td>
+              <td className="header-photo-cell">
+                {pictureUrl ? (
+                  <img className="photo" src={pictureUrl} alt="Student" />
+                ) : (
+                  <div className="photo-placeholder">{printText.studentLabel}</div>
+                )}
+                <div className="photo-label">{printText.studentLabel}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Personal Information */}
+      <div className="print-section">
+        <div className="print-section-title">{printText.personal}</div>
+        <table>
+          <tbody>
+            <tr>
+              <td className="print-label">{printText.name}</td>
+              <td className="print-value">{displayValue(student.full_name)}</td>
+              <td className="print-label">{printText.fatherName}</td>
+              <td className="print-value">{displayValue(student.father_name)}</td>
+            </tr>
+            <tr>
+              <td className="print-label">{printText.grandfatherName}</td>
+              <td className="print-value">{displayValue(student.grandfather_name)}</td>
+              <td className="print-label">{printText.birthYear}</td>
+              <td className="print-value">{displayValue(student.birth_year)}</td>
+            </tr>
+            {student.mother_name && (
+              <tr>
+                <td className="print-label">{isRTL ? 'د مور نوم' : 'Mother Name'}</td>
+                <td className="print-value">{displayValue(student.mother_name)}</td>
+                <td className="print-label">{isRTL ? 'جنس' : 'Gender'}</td>
+                <td className="print-value">{student.gender === 'male' ? (isRTL ? 'نارینه' : 'Male') : (isRTL ? 'ښځینه' : 'Female')}</td>
+              </tr>
+            )}
+            {!student.mother_name && (
+              <tr>
+                <td className="print-label">{isRTL ? 'جنس' : 'Gender'}</td>
+                <td className="print-value">{student.gender === 'male' ? (isRTL ? 'نارینه' : 'Male') : (isRTL ? 'ښځینه' : 'Female')}</td>
+                <td className="print-label"></td>
+                <td className="print-value"></td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Admission Information */}
+      <div className="print-section">
+        <div className="print-section-title">{printText.admissionSection}</div>
+        <table>
+          <tbody>
+            <tr>
+              <td className="print-label">{printText.cardNumber}</td>
+              <td className="print-value">{displayValue(student.card_number)}</td>
+              <td className="print-label">{printText.admissionNo}</td>
+              <td className="print-value">{displayValue(student.admission_no)}</td>
+            </tr>
+            <tr>
+              <td className="print-label">{printText.admissionYear}</td>
+              <td className="print-value">{displayValue(student.admission_year)}</td>
+              <td className="print-label">{printText.applyingGrade}</td>
+              <td className="print-value">{displayValue(student.applying_grade)}</td>
+            </tr>
+            <tr>
+              <td className="print-label">{printText.schoolLabel}</td>
+              <td className="print-value" colSpan={3}>{displayValue(schoolName)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Address Information */}
+      <div className="print-section">
+        <div className="print-section-title">{printText.addressSection}</div>
+        <table>
+          <tbody>
+            <tr>
+              <td className="print-label">{printText.originProvince}</td>
+              <td className="print-value">{displayValue(student.orig_province)}</td>
+              <td className="print-label">{printText.originDistrict}</td>
+              <td className="print-value">{displayValue(student.orig_district)}</td>
+              <td className="print-label">{printText.originVillage}</td>
+              <td className="print-value">{displayValue(student.orig_village)}</td>
+            </tr>
+            <tr>
+              <td className="print-label">{printText.currentProvince}</td>
+              <td className="print-value">{displayValue(student.curr_province)}</td>
+              <td className="print-label">{printText.currentDistrict}</td>
+              <td className="print-value">{displayValue(student.curr_district)}</td>
+              <td className="print-label">{printText.currentVillage}</td>
+              <td className="print-value">{displayValue(student.curr_village)}</td>
+            </tr>
+            <tr>
+              <td className="print-label">{printText.homeAddress}</td>
+              <td className="print-value" colSpan={5}>{displayValue(student.home_address)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Guardian Information */}
+      <div className="print-section">
+        <div className="print-section-title">{printText.guardianSection}</div>
+        <table>
+          <tbody>
+            <tr>
+              <td className="print-label">{printText.guardianName}</td>
+              <td className="print-value">{displayValue(student.guardian_name)}</td>
+              <td className="print-label">{printText.guardianRelation}</td>
+              <td className="print-value">{displayValue(student.guardian_relation)}</td>
+              <td className="print-label">{printText.guardianPhone}</td>
+              <td className="print-value">{displayValue(student.guardian_phone)}</td>
+            </tr>
+            <tr>
+              <td className="print-label">{printText.guardianTazkira}</td>
+              <td className="print-value">{displayValue(student.guardian_tazkira)}</td>
+              <td className="print-label">{printText.guarantorName}</td>
+              <td className="print-value">{displayValue(student.zamin_name)}</td>
+              <td className="print-label">{printText.guarantorPhone}</td>
+              <td className="print-value">{displayValue(student.zamin_phone)}</td>
+            </tr>
+            <tr>
+              <td className="print-label">{printText.guarantorTazkira}</td>
+              <td className="print-value">{displayValue(student.zamin_tazkira)}</td>
+              <td className="print-label">{printText.guarantorAddress}</td>
+              <td className="print-value" colSpan={3}>{displayValue(student.zamin_address)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Other Information */}
+      <div className="print-section">
+        <div className="print-section-title">{printText.otherInfo}</div>
+        <table>
+          <tbody>
+            <tr>
+              <td className="print-label">{printText.isOrphan}</td>
+              <td className="print-value">{boolToText(student.is_orphan)}</td>
+              <td className="print-label">{printText.feeStatus}</td>
+              <td className="print-value">{displayValue(student.admission_fee_status)}</td>
+            </tr>
+            <tr>
+              <td className="print-label">{printText.createdAt}</td>
+              <td className="print-value">{formatDate(student.created_at)}</td>
+              <td className="print-label">{printText.updatedAt}</td>
+              <td className="print-value">{formatDate(student.updated_at)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Page Break for Second Page */}
+      <div className="page-break"></div>
+
+      {/* Commitments, Guarantee, and Approval */}
+      <div className="print-title">{printText.commitmentsTitle}</div>
+
+      {/* Commitment */}
+      <div className="print-section">
+        <div className="blue-title">{printText.commitmentTitle}</div>
+        <ul>
+          {printText.commitmentText.map((text, index) => (
+            <li key={index}>{text}</li>
+          ))}
+        </ul>
+        <div style={{ marginTop: '18px' }}>
+          {isRTL ? 'امضا: ' : 'Signature: '}
+          <span className="signature-line"></span>
+        </div>
+      </div>
+
+      {/* Guarantee */}
+      <div className="print-section">
+        <div className="blue-title">{printText.guaranteeTitle}</div>
+        <div style={{ fontSize: '13pt', paddingBottom: '10px' }}>
+          {printText.guaranteeText}
+        </div>
+        <div style={{ marginTop: '10px' }}>
+          {isRTL ? 'د ضامن لاسلیک: ' : 'Guarantor Signature: '}
+          <span className="signature-line"></span>
+        </div>
+      </div>
+
+      {/* Approval */}
+      <div className="print-section">
+        <div className="blue-title">{printText.approvalTitle}</div>
+        <table className="guarantee-table" style={{ width: '100%', fontSize: '13.5pt' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: isRTL ? '42%' : '58%', textAlign: isRTL ? 'right' : 'left' }}>
+                {printText.approvalText.admission}
+                <span className="signature-line" style={{ width: '110px', margin: '0 8px', verticalAlign: 'middle' }}></span>
+                {isRTL ? 'کې داخله ورکړل شوه.' : 'was admitted.'}
+              </td>
+              <td style={{ width: isRTL ? '58%' : '42%' }}></td>
+            </tr>
+            <tr>
+              <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '16px' }}>
+                {printText.approvalText.fee}
+                <span className="signature-line" style={{ width: '140px', margin: '0 8px', verticalAlign: 'middle' }}></span>
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '16px' }}>
+                {printText.approvalText.date}
+                <span className="signature-line" style={{ width: '130px', margin: '0 8px', verticalAlign: 'middle' }}></span>
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '16px' }}>
+                {printText.approvalText.signature}
+                <span className="signature-line" style={{ width: '120px', margin: '0 8px', verticalAlign: 'middle' }}></span>
+              </td>
+              <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '16px' }}>
+                {isRTL ? 'مهر: ' : 'Stamp: '}
+                <span className="stamp-box">{printText.approvalText.stamp}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+

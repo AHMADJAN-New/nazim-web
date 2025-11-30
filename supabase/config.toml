@@ -1,0 +1,4 @@
+project_id = "wkrzoelctjwpiwdswmdj"
+
+[functions.auth-health-monitor]
+verify_jwt = true
