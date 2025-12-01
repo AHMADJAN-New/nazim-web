@@ -13,7 +13,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     protected $connection = 'pgsql';
-    protected $table = 'auth.users';
+    protected $table = 'users'; // Now in public schema
     protected $keyType = 'string';
     public $incrementing = false;
     protected $primaryKey = 'id';

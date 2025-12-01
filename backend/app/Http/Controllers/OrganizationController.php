@@ -123,33 +123,70 @@ class OrganizationController extends Controller
      */
     public function accessible(Request $request)
     {
-        $user = $request->user();
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
-
-        // Super admin can access all organizations
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $organizations = Organization::whereNull('deleted_at')
-                ->orderBy('name')
-                ->get();
-        } else {
-            // Get user's organization and any organizations they're assigned to
-            $orgIds = [$profile->organization_id];
+        try {
+            $user = $request->user();
             
-            // Check super_admin_organizations table
-            $assignedOrgs = DB::table('super_admin_organizations')
-                ->where('super_admin_id', $user->id)
-                ->pluck('organization_id')
-                ->toArray();
-            
-            $orgIds = array_merge($orgIds, $assignedOrgs);
-            $orgIds = array_filter(array_unique($orgIds));
+            if (!$user) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
 
-            $organizations = Organization::whereIn('id', $orgIds)
-                ->whereNull('deleted_at')
-                ->orderBy('name')
-                ->get();
+            $profile = DB::connection('pgsql')
+                ->table('profiles')
+                ->where('id', $user->id)
+                ->first();
+
+            if (!$profile) {
+                return response()->json([]);
+            }
+
+            // Super admin can access all organizations
+            if ($profile->role === 'super_admin' && $profile->organization_id === null) {
+                $organizations = DB::connection('pgsql')
+                    ->table('organizations')
+                    ->whereNull('deleted_at')
+                    ->orderBy('name')
+                    ->get();
+            } else {
+                // Get user's organization and any organizations they're assigned to
+                $orgIds = [];
+                
+                if ($profile->organization_id) {
+                    $orgIds[] = $profile->organization_id;
+                }
+                
+                // Check super_admin_organizations table if it exists
+                try {
+                    $assignedOrgs = DB::connection('pgsql')
+                        ->table('super_admin_organizations')
+                        ->where('super_admin_id', $user->id)
+                        ->pluck('organization_id')
+                        ->toArray();
+                    
+                    $orgIds = array_merge($orgIds, $assignedOrgs);
+                } catch (\Exception $e) {
+                    // Table might not exist, ignore
+                }
+                
+                $orgIds = array_filter(array_unique($orgIds));
+
+                if (empty($orgIds)) {
+                    $organizations = collect([]);
+                } else {
+                    $organizations = DB::connection('pgsql')
+                        ->table('organizations')
+                        ->whereIn('id', $orgIds)
+                        ->whereNull('deleted_at')
+                        ->orderBy('name')
+                        ->get();
+                }
+            }
+
+            return response()->json($organizations);
+        } catch (\Exception $e) {
+            \Log::error('OrganizationController::accessible error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Failed to fetch accessible organizations'], 500);
         }
-
-        return response()->json($organizations);
     }
 }

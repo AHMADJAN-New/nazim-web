@@ -1,8 +1,12 @@
 import { z } from 'zod';
 
 const EnvSchema = z.object({
-  VITE_SUPABASE_URL: z.string().url(),
-  VITE_SUPABASE_ANON_KEY: z.string().min(1),
+  // Laravel API Configuration (optional, defaults to localhost)
+  VITE_API_URL: z.string().url().optional(),
+  // Supabase Configuration (optional - deprecated, kept for backward compatibility)
+  VITE_SUPABASE_URL: z.string().url().optional(),
+  VITE_SUPABASE_ANON_KEY: z.string().min(1).optional(),
+  // Other optional configurations
   VITE_VAPID_PUBLIC_KEY: z.string().optional(),
   VITE_DISABLE_AUTH: z.string().optional(), // 'true' to bypass auth in dev
   VITE_ENABLE_QUERY_DEVTOOLS: z.string().optional(),
@@ -12,6 +16,7 @@ type Env = z.infer<typeof EnvSchema>;
 
 function loadEnv(): Env {
   const raw = {
+    VITE_API_URL: import.meta.env.VITE_API_URL as string | undefined,
     VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL as string | undefined,
     VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined,
     VITE_VAPID_PUBLIC_KEY: import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined,

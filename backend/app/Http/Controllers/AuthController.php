@@ -16,7 +16,7 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|unique:auth.users,email',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
             'full_name' => 'required|string|max:255',
             'organization_id' => 'nullable|uuid|exists:organizations,id',
@@ -25,9 +25,8 @@ class AuthController extends Controller
         try {
             DB::beginTransaction();
 
-            // Create auth user (using Supabase auth.users table structure)
-            $userId = DB::connection('pgsql')
-                ->table('auth.users')
+            // Create user in public.users table
+            $userId = DB::table('users')
                 ->insertGetId([
                     'email' => $request->email,
                     'encrypted_password' => Hash::make($request->password),
@@ -80,10 +79,9 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        // Find user in auth.users table (Supabase auth schema)
+        // Find user in users table (public schema)
         try {
-            $authUser = DB::connection('pgsql')
-                ->table('auth.users')
+            $authUser = DB::table('users')
                 ->where('email', $request->email)
                 ->first();
 
@@ -100,7 +98,6 @@ class AuthController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            // If auth.users doesn't exist, try public.users or handle error
             \Log::error('Auth login error: ' . $e->getMessage());
             throw ValidationException::withMessages([
                 'email' => ['Authentication failed. Please contact administrator.'],
@@ -119,21 +116,12 @@ class AuthController extends Controller
         }
 
         // Create token using the User model
-        // Note: User model uses auth.users table with UUID primary key
         try {
-            // Try to find user using the User model
-            // Use where() instead of find() to ensure proper schema resolution
+            // Load user using User model
             $user = User::where('id', $authUser->id)->first();
             
             if (!$user) {
-                // If User model can't find it, create a new instance with the data
-                $user = new User();
-                $user->id = $authUser->id;
-                $user->email = $authUser->email;
-                // Set exists to true so Eloquent treats it as an existing record
-                $user->exists = true;
-                // Set the connection explicitly
-                $user->setConnection('pgsql');
+                throw new \Exception('User model could not find user');
             }
             
             // Create Sanctum token

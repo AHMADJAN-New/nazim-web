@@ -45,11 +45,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Organizations (protected - create, update, delete)
     Route::post('/organizations', [OrganizationController::class, 'store']);
+    // IMPORTANT: More specific routes must come before parameterized routes
+    Route::get('/organizations/accessible', [OrganizationController::class, 'accessible']);
     Route::put('/organizations/{id}', [OrganizationController::class, 'update']);
     Route::patch('/organizations/{id}', [OrganizationController::class, 'update']);
     Route::delete('/organizations/{id}', [OrganizationController::class, 'destroy']);
     Route::get('/organizations/{id}', [OrganizationController::class, 'show']);
-    Route::get('/organizations/accessible', [OrganizationController::class, 'accessible']);
 
     // Profiles
     Route::apiResource('profiles', ProfileController::class);

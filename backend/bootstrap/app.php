@@ -12,10 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
-
+        // API routes use token-based authentication (Bearer tokens)
+        // No need for stateful middleware or CSRF protection
+        // Remove Sanctum stateful middleware from API routes
+        
         $middleware->alias([
             'auth' => \App\Http\Middleware\Authenticate::class,
             'auth.sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
