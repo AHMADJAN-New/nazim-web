@@ -87,8 +87,17 @@ export default function AuthPage() {
 
       if (response.user && response.token) {
         console.log('Sign in successful:', response.user.email);
+        console.log('Profile from login:', response.profile);
+        
+        // If profile doesn't have organization_id, it will be auto-assigned on backend
+        // The profile in response should have the updated organization_id
+        if (response.profile && !response.profile.organization_id && response.profile.role !== 'super_admin') {
+          console.warn('Profile missing organization_id - backend should have assigned it');
+        }
+        
         toast.success('Logged in successfully!');
         // Small delay to ensure token is set, then redirect
+        // The AuthProvider will reload the profile which should have organization_id
         setTimeout(() => {
           window.location.href = '/redirect';
         }, 100);

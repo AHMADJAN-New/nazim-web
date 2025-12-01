@@ -1,27 +1,97 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import { staffApi, staffTypesApi, staffDocumentsApi } from '@/lib/api/client';
 
-// Use generated type from database schema
-export type StaffType = Tables<'staff_types'>;
-export type StaffTypeInsert = TablesInsert<'staff_types'>;
-export type StaffTypeUpdate = TablesUpdate<'staff_types'>;
+// Staff Type types
+export interface StaffType {
+  id: string;
+  organization_id: string | null;
+  name: string;
+  code: string;
+  description: string | null;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
 
-// Use generated type from database schema
-export type StaffDocument = Tables<'staff_documents'>;
-export type StaffDocumentInsert = TablesInsert<'staff_documents'>;
-export type StaffDocumentUpdate = TablesUpdate<'staff_documents'>;
+export type StaffTypeInsert = Omit<StaffType, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
+export type StaffTypeUpdate = Partial<StaffTypeInsert>;
+
+// Staff Document types
+export interface StaffDocument {
+  id: string;
+  staff_id: string;
+  organization_id: string;
+  school_id: string | null;
+  document_type: string;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  description: string | null;
+  uploaded_by: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export type StaffDocumentInsert = Omit<StaffDocument, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
+export type StaffDocumentUpdate = Partial<StaffDocumentInsert>;
 
 // Custom status type for stricter typing
 export type StaffStatus = 'active' | 'inactive' | 'on_leave' | 'terminated' | 'suspended';
 
-// Use generated type from database schema, extended with relations
-export type Staff = Omit<Tables<'staff'>, 'status'> & {
+// Staff types
+export interface Staff {
+  id: string;
+  profile_id: string | null;
+  organization_id: string;
+  employee_id: string;
+  staff_type: string;
+  staff_type_id: string | null;
+  school_id: string | null;
+  first_name: string;
+  father_name: string;
+  grandfather_name: string | null;
+  full_name: string;
+  tazkira_number: string | null;
+  birth_year: string | null;
+  birth_date: string | null;
+  phone_number: string | null;
+  email: string | null;
+  home_address: string | null;
+  origin_province: string | null;
+  origin_district: string | null;
+  origin_village: string | null;
+  current_province: string | null;
+  current_district: string | null;
+  current_village: string | null;
+  religious_education: string | null;
+  religious_university: string | null;
+  religious_graduation_year: string | null;
+  religious_department: string | null;
+  modern_education: string | null;
+  modern_school_university: string | null;
+  modern_graduation_year: string | null;
+  modern_department: string | null;
+  teaching_section: string | null;
+  position: string | null;
+  duty: string | null;
+  salary: string | null;
   status: StaffStatus;
+  picture_url: string | null;
+  document_urls: any[];
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
   // Extended with relations
   staff_type?: StaffType;
   profile?: {
@@ -40,9 +110,10 @@ export type Staff = Omit<Tables<'staff'>, 'status'> & {
     id: string;
     school_name: string;
   };
-};
-export type StaffInsert = TablesInsert<'staff'>;
-export type StaffUpdate = TablesUpdate<'staff'>;
+}
+
+export type StaffInsert = Omit<Staff, 'id' | 'full_name' | 'created_at' | 'updated_at' | 'deleted_at' | 'staff_type' | 'profile' | 'organization' | 'school'>;
+export type StaffUpdate = Partial<StaffInsert>;
 
 export interface StaffStats {
   total: number;
@@ -79,59 +150,17 @@ export const useStaff = (organizationId?: string) => {
         return [];
       }
 
-      // Fetch staff with relations filtered by accessible orgs
-      let query = (supabase as any)
-        .from('staff')
-        .select(`
-          *,
-          staff_type:staff_types(*),
-          organization:organizations(id, name),
-          school:school_branding(id, school_name)
-        `)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
+      // Fetch staff from Laravel API
+      const params: any = {};
       if (organizationId) {
         if (!resolvedOrgIds.includes(organizationId)) {
           return [];
         }
-        query = query.eq('organization_id', organizationId);
-      } else {
-        query = query.in('organization_id', resolvedOrgIds);
+        params.organization_id = organizationId;
       }
 
-      const { data: staffData, error: staffError } = await query;
-
-      if (staffError) {
-        throw new Error(staffError.message);
-      }
-
-      // Fetch profiles separately in batch to avoid ambiguity (staff has multiple FKs to profiles)
-      const profileIds = [...new Set((staffData || []).map((s: any) => s.profile_id).filter(Boolean))] as string[];
-
-      let profilesMap = new Map();
-      if (profileIds.length > 0) {
-        const { data: profilesData } = await (supabase as any)
-          .from('profiles')
-          .select('id, full_name, email, phone, avatar_url, role')
-          .in('id', profileIds);
-
-        if (profilesData) {
-          profilesData.forEach((p: any) => {
-            profilesMap.set(p.id, p);
-          });
-        }
-      }
-
-      // Attach profiles to staff members
-      const staffWithProfiles = (staffData || []).map((staff: any) => {
-        if (staff.profile_id && profilesMap.has(staff.profile_id)) {
-          staff.profile = profilesMap.get(staff.profile_id);
-        }
-        return staff;
-      });
-
-      return staffWithProfiles as Staff[];
+      const staff = await staffApi.list(params);
+      return staff as Staff[];
     },
     enabled: !!user && !!profile, // Allow super admin to see all when organizationId is undefined
   });
@@ -142,42 +171,8 @@ export const useStaffMember = (staffId: string) => {
   return useQuery({
     queryKey: ['staff', staffId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from('staff')
-        .select(`
-          *,
-          staff_type:staff_types(*),
-          organization:organizations(
-            id,
-            name
-          ),
-          school:school_branding(
-            id,
-            school_name
-          )
-        `)
-        .eq('id', staffId)
-        .is('deleted_at', null)
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      // Fetch profile separately if profile_id exists
-      if (data && data.profile_id) {
-        const { data: profileData } = await (supabase as any)
-          .from('profiles')
-          .select('id, full_name, email, phone, avatar_url, role')
-          .eq('id', data.profile_id)
-          .single();
-
-        if (profileData) {
-          data.profile = profileData;
-        }
-      }
-
-      return data as Staff;
+      const staff = await staffApi.get(staffId);
+      return staff as Staff;
     },
   });
 };
@@ -185,60 +180,23 @@ export const useStaffMember = (staffId: string) => {
 // Hook to fetch staff by type
 export const useStaffByType = (staffTypeId: string, organizationId?: string) => {
   const { profile } = useAuth();
+  const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
   const orgId = organizationId || profile?.organization_id || null;
 
   return useQuery({
     queryKey: ['staff', 'type', staffTypeId, orgId],
     queryFn: async () => {
-      let query = (supabase as any)
-        .from('staff')
-        .select(`
-          *,
-          staff_type:staff_types(*),
-          organization:organizations(id, name),
-          school:school_branding(id, school_name)
-        `)
-        .eq('staff_type_id', staffTypeId)
-        .eq('status', 'active')
-        .is('deleted_at', null)
-        .order('full_name', { ascending: true });
-
+      const params: any = {
+        staff_type_id: staffTypeId,
+        status: 'active',
+      };
       if (orgId) {
-        query = query.eq('organization_id', orgId);
+        params.organization_id = orgId;
       }
 
-      const { data: staffData, error: staffError } = await query;
-
-      if (staffError) {
-        throw new Error(staffError.message);
-      }
-
-      // Fetch profiles separately in batch to avoid ambiguity (staff has multiple FKs to profiles)
-      const profileIds = [...new Set((staffData || []).map((s: any) => s.profile_id).filter(Boolean))] as string[];
-
-      let profilesMap = new Map();
-      if (profileIds.length > 0) {
-        const { data: profilesData } = await (supabase as any)
-          .from('profiles')
-          .select('id, full_name, email, phone, avatar_url, role')
-          .in('id', profileIds);
-
-        if (profilesData) {
-          profilesData.forEach((p: any) => {
-            profilesMap.set(p.id, p);
-          });
-        }
-      }
-
-      // Attach profiles to staff members
-      const staffWithProfiles = (staffData || []).map((staff: any) => {
-        if (staff.profile_id && profilesMap.has(staff.profile_id)) {
-          staff.profile = profilesMap.get(staff.profile_id);
-        }
-        return staff;
-      });
-
-      return staffWithProfiles as Staff[];
+      const staff = await staffApi.list(params);
+      // Sort by full_name
+      return (staff as Staff[]).sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
     },
     enabled: (!!orgId || organizationId === undefined) && !orgsLoading,
   });
@@ -261,82 +219,17 @@ export const useStaffStats = (organizationId?: string) => {
         return { total: 0, active: 0, inactive: 0, on_leave: 0, terminated: 0, suspended: 0, by_type: { teacher: 0, admin: 0, accountant: 0, librarian: 0, other: 0 } };
       }
 
-      let baseQuery = (supabase as any).from('staff').select('*', { count: 'exact', head: true }).is('deleted_at', null);
-
+      // Fetch stats from Laravel API
+      const params: any = {};
       if (organizationId) {
         if (!resolvedOrgIds.includes(organizationId)) {
           return { total: 0, active: 0, inactive: 0, on_leave: 0, terminated: 0, suspended: 0, by_type: { teacher: 0, admin: 0, accountant: 0, librarian: 0, other: 0 } };
         }
-        baseQuery = baseQuery.eq('organization_id', organizationId);
-      } else {
-        baseQuery = baseQuery.in('organization_id', resolvedOrgIds);
+        params.organization_id = organizationId;
       }
 
-      // Get teacher type ID
-      const { data: teacherType } = await (supabase as any)
-        .from('staff_types')
-        .select('id')
-        .eq('code', 'teacher')
-        .is('organization_id', null)
-        .is('deleted_at', null)
-        .single();
-
-      const teacherTypeId = teacherType?.id;
-
-      // Build queries for status counts using the same organization filtering logic
-      const buildStatusQuery = (status: string) => {
-        let query = (supabase as any).from('staff').select('*', { count: 'exact', head: true }).eq('status', status).is('deleted_at', null);
-
-        if (organizationId) {
-          if (!resolvedOrgIds.includes(organizationId)) return Promise.resolve({ count: 0 });
-          query = query.eq('organization_id', organizationId);
-        } else {
-          query = query.in('organization_id', resolvedOrgIds);
-        }
-
-        return query;
-      };
-
-      const buildTeacherQuery = () => {
-        if (!teacherTypeId) return Promise.resolve({ count: 0 });
-
-        let query = (supabase as any).from('staff').select('*', { count: 'exact', head: true }).eq('staff_type_id', teacherTypeId).is('deleted_at', null);
-
-        if (organizationId) {
-          if (!resolvedOrgIds.includes(organizationId)) return Promise.resolve({ count: 0 });
-          query = query.eq('organization_id', organizationId);
-        } else {
-          query = query.in('organization_id', resolvedOrgIds);
-        }
-
-        return query;
-      };
-
-      const [total, active, inactive, onLeave, terminated, suspended, teachers] = await Promise.all([
-        baseQuery,
-        buildStatusQuery('active'),
-        buildStatusQuery('inactive'),
-        buildStatusQuery('on_leave'),
-        buildStatusQuery('terminated'),
-        buildStatusQuery('suspended'),
-        buildTeacherQuery(),
-      ]);
-
-      return {
-        total: total.count ?? 0,
-        active: active.count ?? 0,
-        inactive: inactive.count ?? 0,
-        on_leave: onLeave.count ?? 0,
-        terminated: terminated.count ?? 0,
-        suspended: suspended.count ?? 0,
-        by_type: {
-          teacher: teachers.count ?? 0,
-          admin: 0, // Will be calculated from staff_types
-          accountant: 0,
-          librarian: 0,
-          other: 0,
-        },
-      };
+      const stats = await staffApi.stats(params);
+      return stats as StaffStats;
     },
     enabled: !!user && !!profile && !orgsLoading, // Always enabled when user and profile exist
   });
@@ -349,11 +242,13 @@ export const useCreateStaff = () => {
 
   return useMutation({
     mutationFn: async (staffData: StaffInsert) => {
-      // Get organization_id - must be provided or from profile
+      // Get organization_id - automatically use profile's organization_id if not provided
+      // This should always exist after the seeder runs
       const organizationId = staffData.organization_id || profile?.organization_id;
 
       if (!organizationId) {
-        throw new Error('Organization ID is required. User must be assigned to an organization.');
+        // If still no organization_id, this is a system error - user should have been assigned during login
+        throw new Error('You must be assigned to an organization. Please log out and log back in, or contact administrator.');
       }
 
       // Clean up any empty strings in UUID fields
@@ -363,61 +258,9 @@ export const useCreateStaff = () => {
         school_id: staffData.school_id && staffData.school_id !== '' ? staffData.school_id : null,
       };
 
-      // Validate employee_id uniqueness within organization
-      if (finalData.organization_id && finalData.employee_id) {
-        const { data: existing, error: checkError } = await supabase
-          .from('staff')
-          .select('id')
-          .eq('organization_id', finalData.organization_id)
-          .eq('employee_id', finalData.employee_id)
-          .maybeSingle();
-
-        // If error is not "not found", it's a real error
-        if (checkError && checkError.code !== 'PGRST116') {
-          throw new Error(checkError.message);
-        }
-
-        if (existing) {
-          throw new Error('Employee ID already exists in this organization');
-        }
-      }
-
-      // Insert staff without profile relation to avoid ambiguity (staff has multiple FKs to profiles)
-      const { data, error } = await (supabase as any)
-        .from('staff')
-        .insert(finalData)
-        .select(`
-          *,
-          staff_type:staff_types(*),
-          organization:organizations(
-            id,
-            name
-          ),
-          school:school_branding(
-            id,
-            school_name
-          )
-        `)
-        .single();
-
-      // Fetch profile separately if profile_id exists
-      if (data && data.profile_id) {
-        const { data: profileData } = await (supabase as any)
-          .from('profiles')
-          .select('id, full_name, email, phone, avatar_url, role')
-          .eq('id', data.profile_id)
-          .single();
-
-        if (profileData) {
-          data.profile = profileData;
-        }
-      }
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data as Staff;
+      // Create staff via Laravel API (validation handled server-side)
+      const staff = await staffApi.create(finalData);
+      return staff as Staff;
     },
     onSuccess: (data, variables) => {
       // Invalidate all staff queries (including "all" organization filter)
@@ -442,71 +285,9 @@ export const useUpdateStaff = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<StaffInsert> & { id: string }) => {
-      // Validate employee_id uniqueness if being changed
-      if (updates.employee_id) {
-        const { data: staff } = await supabase
-          .from('staff')
-          .select('organization_id')
-          .eq('id', id)
-          .single();
-
-        if (staff) {
-          const { data: existing, error: checkError } = await supabase
-            .from('staff')
-            .select('id')
-            .eq('organization_id', staff.organization_id)
-            .eq('employee_id', updates.employee_id)
-            .neq('id', id)
-            .maybeSingle();
-
-          // If error is not "not found", it's a real error
-          if (checkError && checkError.code !== 'PGRST116') {
-            throw new Error(checkError.message);
-          }
-
-          if (existing) {
-            throw new Error('Employee ID already exists in this organization');
-          }
-        }
-      }
-
-      // Update staff without profile relation to avoid ambiguity
-      const { data, error } = await (supabase as any)
-        .from('staff')
-        .update(updates)
-        .eq('id', id)
-        .select(`
-          *,
-          staff_type:staff_types(*),
-          organization:organizations(
-            id,
-            name
-          ),
-          school:school_branding(
-            id,
-            school_name
-          )
-        `)
-        .single();
-
-      // Fetch profile separately if profile_id exists
-      if (data && data.profile_id) {
-        const { data: profileData } = await (supabase as any)
-          .from('profiles')
-          .select('id, full_name, email, phone, avatar_url, role')
-          .eq('id', data.profile_id)
-          .single();
-
-        if (profileData) {
-          data.profile = profileData;
-        }
-      }
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data as Staff;
+      // Update staff via Laravel API (validation handled server-side)
+      const staff = await staffApi.update(id, updates);
+      return staff as Staff;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
@@ -525,14 +306,7 @@ export const useDeleteStaff = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('staff')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      await staffApi.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
@@ -547,140 +321,38 @@ export const useDeleteStaff = () => {
 
 // Hook to upload staff picture
 export const useUploadStaffPicture = () => {
-  const { user } = useAuth();
-
   return useMutation({
     mutationFn: async ({
       staffId,
-      organizationId,
-      schoolId,
       file
     }: {
       staffId: string;
-      organizationId: string;
-      schoolId?: string | null;
       file: File;
     }) => {
-      // Get staff record to get school_id if not provided
-      const { data: staff } = await (supabase as any)
-        .from('staff')
-        .select('school_id')
-        .eq('id', staffId)
-        .single();
-
-      const finalSchoolId = schoolId || staff?.school_id || null;
-
-      // Build path: {organization_id}/{school_id}/{staff_id}/picture/{filename}
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const schoolPath = finalSchoolId ? `${finalSchoolId}/` : '';
-      const filePath = `${organizationId}/${schoolPath}${staffId}/picture/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('staff-files')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) {
-        throw new Error(uploadError.message);
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('staff-files')
-        .getPublicUrl(filePath);
-
-      // Update staff record with picture URL (store relative path)
-      const { error: updateError } = await (supabase as any)
-        .from('staff')
-        .update({ picture_url: fileName })
-        .eq('id', staffId);
-
-      if (updateError) {
-        throw new Error(updateError.message);
-      }
-
-      return publicUrl;
+      // Upload picture via Laravel API
+      const result = await staffApi.uploadPicture(staffId, file);
+      return result.url;
     },
   });
 };
 
 // Hook to upload staff document
 export const useUploadStaffDocument = () => {
-  const { user } = useAuth();
-
   return useMutation({
     mutationFn: async ({
       staffId,
-      organizationId,
-      schoolId,
       file,
       documentType,
       description
     }: {
       staffId: string;
-      organizationId: string;
-      schoolId?: string | null;
       file: File;
       documentType: string;
       description?: string | null;
     }) => {
-      // Get staff record to get school_id if not provided
-      const { data: staff } = await (supabase as any)
-        .from('staff')
-        .select('school_id')
-        .eq('id', staffId)
-        .single();
-
-      const finalSchoolId = schoolId || staff?.school_id || null;
-
-      // Build path: {organization_id}/{school_id}/{staff_id}/documents/{document_type}/{filename}
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const schoolPath = finalSchoolId ? `${finalSchoolId}/` : '';
-      const filePath = `${organizationId}/${schoolPath}${staffId}/documents/${documentType}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('staff-files')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) {
-        throw new Error(uploadError.message);
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('staff-files')
-        .getPublicUrl(filePath);
-
-      // Insert into staff_documents table
-      const { data: document, error: insertError } = await (supabase as any)
-        .from('staff_documents')
-        .insert({
-          staff_id: staffId,
-          organization_id: organizationId,
-          school_id: finalSchoolId,
-          document_type: documentType,
-          file_name: file.name,
-          file_path: filePath,
-          file_size: file.size,
-          mime_type: file.type,
-          description: description || null,
-          uploaded_by: user?.id || null,
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        throw new Error(insertError.message);
-      }
-
-      return { document, publicUrl };
+      // Upload document via Laravel API
+      const result = await staffApi.uploadDocument(staffId, file, documentType, description);
+      return result;
     },
   });
 };
@@ -699,37 +371,14 @@ export const useStaffTypes = (organizationId?: string) => {
       if (!user || !profile) return [];
       if (orgsLoading) return [];
 
-      let query = (supabase as any)
-        .from('staff_types')
-        .select('*')
-        .is('deleted_at', null)
-        .order('display_order', { ascending: true })
-        .order('name', { ascending: true });
-
-      // Multi-tenancy: Filter by accessible organizations
-      if (accessibleOrgIds.length === 0) {
-        return [];
-      }
-      
-      // Filter by accessible organizations (includes global NULL if user has access)
-      const orgFilter = organizationId 
-        ? (accessibleOrgIds.includes(organizationId) ? [organizationId] : [])
-        : accessibleOrgIds;
-      
-      if (orgFilter.length === 0) {
-        return [];
-      }
-      
-      // Include NULL (global) if user has access, plus specific orgs
-      query = query.or(`organization_id.is.null,organization_id.in.(${orgFilter.join(',')})`);
-
-      const { data, error } = await query;
-
-      if (error) {
-        throw new Error(error.message);
+      // Fetch staff types from Laravel API
+      const params: any = {};
+      if (organizationId) {
+        params.organization_id = organizationId;
       }
 
-      return (data || []) as StaffType[];
+      const staffTypes = await staffTypesApi.list(params);
+      return staffTypes as StaffType[];
     },
     enabled: !!user && !!profile && !orgsLoading,
     staleTime: 10 * 60 * 1000,
@@ -766,37 +415,12 @@ export const useCreateStaffType = () => {
         }
       }
 
-      // Validate code uniqueness
-      const { data: existing } = await (supabase as any)
-        .from('staff_types')
-        .select('id')
-        .eq('code', typeData.code)
-        .eq('organization_id', organizationId)
-        .is('deleted_at', null)
-        .maybeSingle();
-
-      if (existing) {
-        throw new Error('A staff type with this code already exists');
-      }
-
-      const { data, error } = await (supabase as any)
-        .from('staff_types')
-        .insert({
-          name: typeData.name,
-          code: typeData.code,
-          description: typeData.description || null,
-          display_order: typeData.display_order || 0,
-          organization_id: organizationId,
-          is_active: true,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data as StaffType;
+      // Create staff type via Laravel API (validation handled server-side)
+      const staffType = await staffTypesApi.create({
+        ...typeData,
+        organization_id: organizationId,
+      });
+      return staffType as StaffType;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-types'] });
@@ -818,42 +442,9 @@ export const useUpdateStaffType = () => {
         throw new Error('User not authenticated');
       }
 
-      // Validate code uniqueness if being changed
-      if (updates.code) {
-        const { data: currentType } = await (supabase as any)
-          .from('staff_types')
-          .select('organization_id')
-          .eq('id', id)
-          .single();
-
-        if (currentType) {
-          const { data: existing } = await (supabase as any)
-            .from('staff_types')
-            .select('id')
-            .eq('code', updates.code)
-            .eq('organization_id', currentType.organization_id)
-            .neq('id', id)
-            .is('deleted_at', null)
-            .maybeSingle();
-
-          if (existing) {
-            throw new Error('A staff type with this code already exists');
-          }
-        }
-      }
-
-      const { data, error } = await (supabase as any)
-        .from('staff_types')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data as StaffType;
+      // Update staff type via Laravel API (validation handled server-side)
+      const staffType = await staffTypesApi.update(id, updates);
+      return staffType as StaffType;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-types'] });
@@ -876,27 +467,8 @@ export const useDeleteStaffType = () => {
         throw new Error('User not authenticated');
       }
 
-      // Check if staff type is in use
-      const { data: inUse } = await (supabase as any)
-        .from('staff')
-        .select('id')
-        .eq('staff_type_id', id)
-        .is('deleted_at', null)
-        .limit(1);
-
-      if (inUse && inUse.length > 0) {
-        throw new Error('Cannot delete staff type that is assigned to staff members');
-      }
-
-      // Soft delete
-      const { error } = await (supabase as any)
-        .from('staff_types')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      // Delete staff type via Laravel API (validation handled server-side)
+      await staffTypesApi.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-types'] });
@@ -920,18 +492,9 @@ export const useStaffDocuments = (staffId: string) => {
     queryFn: async () => {
       if (!user || !profile) return [];
 
-      const { data, error } = await (supabase as any)
-        .from('staff_documents')
-        .select('*')
-        .eq('staff_id', staffId)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return (data || []) as StaffDocument[];
+      // Fetch documents from Laravel API
+      const documents = await staffDocumentsApi.list(staffId);
+      return documents as StaffDocument[];
     },
     enabled: !!user && !!profile && !!staffId,
     staleTime: 5 * 60 * 1000,
@@ -949,36 +512,8 @@ export const useDeleteStaffDocument = () => {
         throw new Error('User not authenticated');
       }
 
-      // Get document to get file path
-      const { data: document } = await (supabase as any)
-        .from('staff_documents')
-        .select('file_path, staff_id')
-        .eq('id', documentId)
-        .single();
-
-      if (!document) {
-        throw new Error('Document not found');
-      }
-
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('staff-files')
-        .remove([document.file_path]);
-
-      if (storageError) {
-        // Log but don't fail - file might already be deleted
-        console.warn('Storage delete error:', storageError);
-      }
-
-      // Soft delete from database
-      const { error: deleteError } = await (supabase as any)
-        .from('staff_documents')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', documentId);
-
-      if (deleteError) {
-        throw new Error(deleteError.message);
-      }
+      // Delete document via Laravel API
+      await staffDocumentsApi.delete(documentId);
     },
     onSuccess: (_, documentId) => {
       queryClient.invalidateQueries({ queryKey: ['staff-files'] });

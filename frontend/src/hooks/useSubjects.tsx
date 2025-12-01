@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { academicYearsApi, subjectsApi } from '@/lib/api/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 // Use generated type from database schema
@@ -66,26 +66,13 @@ export const useSubjects = (organizationId?: string) => {
         queryFn: async () => {
             if (!user || !profile || orgsLoading) return [];
 
-            let query = (supabase as any)
-                .from('subjects')
-                .select('*');
-
-            const resolvedOrgIds = organizationId ? [organizationId] : orgIds;
-
-            if (resolvedOrgIds.length === 0) {
-                query = query.is('organization_id', null);
-            } else {
-                query = query.or(`organization_id.is.null,organization_id.in.(${resolvedOrgIds.join(',')})`);
+            // Use Laravel API
+            const params: { organization_id?: string } = {};
+            if (organizationId) {
+                params.organization_id = organizationId;
             }
 
-            const { data, error } = await query
-                .is('deleted_at', null)
-                .order('name', { ascending: true });
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
+            const data = await subjectsApi.list(params);
             return (data || []) as Subject[];
         },
         enabled: !!user && !!profile,
@@ -113,8 +100,7 @@ export const useClassSubjects = (classAcademicYearId?: string, organizationId?: 
             class_id,
             academic_year_id,
             section_name,
-            class:classes(id, name, code),
-            academic_year:academic_years(id, name, start_date, end_date)
+            class:classes(id, name, code)
           )
         `);
 
@@ -136,6 +122,34 @@ export const useClassSubjects = (classAcademicYearId?: string, organizationId?: 
 
             // Enrich with teacher and room data
             let classSubjects = (data || []) as ClassSubject[];
+
+            // Fetch academic years separately via Laravel API
+            const academicYearIds = [...new Set(classSubjects.map(cs => cs.class_academic_year?.academic_year_id).filter(Boolean))] as string[];
+            const academicYearsMap: Record<string, { id: string; name: string; start_date: string; end_date: string }> = {};
+            if (academicYearIds.length > 0) {
+                const academicYearsPromises = academicYearIds.map(id => academicYearsApi.get(id).catch(() => null));
+                const academicYearsResults = await Promise.all(academicYearsPromises);
+
+                academicYearsResults.forEach((academicYear: any) => {
+                    if (academicYear && academicYear.id) {
+                        academicYearsMap[academicYear.id] = {
+                            id: academicYear.id,
+                            name: academicYear.name,
+                            start_date: academicYear.start_date,
+                            end_date: academicYear.end_date,
+                        };
+                    }
+                });
+            }
+
+            // Merge academic year data into class_academic_year
+            classSubjects = classSubjects.map(cs => ({
+                ...cs,
+                class_academic_year: cs.class_academic_year ? {
+                    ...cs.class_academic_year,
+                    academic_year: cs.class_academic_year.academic_year_id ? academicYearsMap[cs.class_academic_year.academic_year_id] || null : null,
+                } : undefined,
+            })) as ClassSubject[];
 
             const teacherIds = [...new Set(classSubjects.map(cs => cs.teacher_id).filter(Boolean))] as string[];
             const roomIds = [...new Set(classSubjects.map(cs => cs.room_id).filter(Boolean))] as string[];
@@ -202,8 +216,7 @@ export const useClassSubjectsForMultipleClasses = (classAcademicYearIds: string[
             class_id,
             academic_year_id,
             section_name,
-            class:classes(id, name, code),
-            academic_year:academic_years(id, name, start_date, end_date)
+            class:classes(id, name, code)
           )
         `)
                 .in('class_academic_year_id', classAcademicYearIds);
@@ -232,6 +245,34 @@ export const useClassSubjectsForMultipleClasses = (classAcademicYearIds: string[
 
             // Enrich with teacher and room data
             let classSubjects = (data || []) as ClassSubject[];
+
+            // Fetch academic years separately via Laravel API
+            const academicYearIds = [...new Set(classSubjects.map(cs => cs.class_academic_year?.academic_year_id).filter(Boolean))] as string[];
+            const academicYearsMap: Record<string, { id: string; name: string; start_date: string; end_date: string }> = {};
+            if (academicYearIds.length > 0) {
+                const academicYearsPromises = academicYearIds.map(id => academicYearsApi.get(id).catch(() => null));
+                const academicYearsResults = await Promise.all(academicYearsPromises);
+
+                academicYearsResults.forEach((academicYear: any) => {
+                    if (academicYear && academicYear.id) {
+                        academicYearsMap[academicYear.id] = {
+                            id: academicYear.id,
+                            name: academicYear.name,
+                            start_date: academicYear.start_date,
+                            end_date: academicYear.end_date,
+                        };
+                    }
+                });
+            }
+
+            // Merge academic year data into class_academic_year
+            classSubjects = classSubjects.map(cs => ({
+                ...cs,
+                class_academic_year: cs.class_academic_year ? {
+                    ...cs.class_academic_year,
+                    academic_year: cs.class_academic_year.academic_year_id ? academicYearsMap[cs.class_academic_year.academic_year_id] || null : null,
+                } : undefined,
+            })) as ClassSubject[];
 
             const teacherIds = [...new Set(classSubjects.map(cs => cs.teacher_id).filter(Boolean))] as string[];
             const roomIds = [...new Set(classSubjects.map(cs => cs.room_id).filter(Boolean))] as string[];
@@ -296,8 +337,7 @@ export const useSubjectHistory = (subjectId: string) => {
             class_id,
             academic_year_id,
             section_name,
-            class:classes(id, name, code),
-            academic_year:academic_years(id, name, start_date, end_date, is_current)
+            class:classes(id, name, code)
           )
         `)
                 .eq('subject_id', subjectId)
@@ -307,7 +347,36 @@ export const useSubjectHistory = (subjectId: string) => {
                 throw new Error(error.message);
             }
 
-            const assignments = (data || []) as ClassSubject[];
+            let assignments = (data || []) as ClassSubject[];
+
+            // Fetch academic years separately via Laravel API
+            const academicYearIds = [...new Set(assignments.map(a => a.class_academic_year?.academic_year_id).filter(Boolean))] as string[];
+            const academicYearsMap: Record<string, { id: string; name: string; start_date: string; end_date: string; is_current: boolean }> = {};
+            if (academicYearIds.length > 0) {
+                const academicYearsPromises = academicYearIds.map(id => academicYearsApi.get(id).catch(() => null));
+                const academicYearsResults = await Promise.all(academicYearsPromises);
+
+                academicYearsResults.forEach((academicYear: any) => {
+                    if (academicYear && academicYear.id) {
+                        academicYearsMap[academicYear.id] = {
+                            id: academicYear.id,
+                            name: academicYear.name,
+                            start_date: academicYear.start_date,
+                            end_date: academicYear.end_date,
+                            is_current: academicYear.is_current || false,
+                        };
+                    }
+                });
+            }
+
+            // Merge academic year data into class_academic_year
+            assignments = assignments.map(a => ({
+                ...a,
+                class_academic_year: a.class_academic_year ? {
+                    ...a.class_academic_year,
+                    academic_year: a.class_academic_year.academic_year_id ? academicYearsMap[a.class_academic_year.academic_year_id] || null : null,
+                } : undefined,
+            })) as ClassSubject[];
 
             // Sort by academic year start_date (descending - most recent first)
             return assignments.sort((a, b) => {
@@ -359,49 +428,14 @@ export const useCreateSubject = () => {
                 throw new Error('Cannot create subject for different organization');
             }
 
-            // Validation
-            if (subjectData.name.length > 100) {
-                throw new Error('Name must be 100 characters or less');
-            }
-            if (subjectData.code.length > 50) {
-                throw new Error('Code must be 50 characters or less');
-            }
-
-            // Trim whitespace
-            const trimmedName = subjectData.name.trim();
-            const trimmedCode = subjectData.code.trim().toUpperCase();
-
-            if (!trimmedName) throw new Error('Name cannot be empty');
-            if (!trimmedCode) throw new Error('Code cannot be empty');
-
-            // Check for duplicates
-            const { data: existing } = await (supabase as any)
-                .from('subjects')
-                .select('id')
-                .eq('code', trimmedCode)
-                .eq('organization_id', organizationId)
-                .is('deleted_at', null)
-                .maybeSingle();
-
-            if (existing) {
-                throw new Error('A subject with this code already exists for this organization');
-            }
-
-            const { data, error } = await (supabase as any)
-                .from('subjects')
-                .insert({
-                    name: trimmedName,
-                    code: trimmedCode,
-                    description: subjectData.description || null,
-                    is_active: subjectData.is_active !== undefined ? subjectData.is_active : true,
-                    organization_id: organizationId,
-                })
-                .select()
-                .single();
-
-            if (error) {
-                throw new Error(error.message);
-            }
+            // Use Laravel API
+            const data = await subjectsApi.create({
+                name: subjectData.name.trim(),
+                code: subjectData.code.trim().toUpperCase(),
+                description: subjectData.description || null,
+                is_active: subjectData.is_active !== undefined ? subjectData.is_active : true,
+                organization_id: organizationId,
+            });
 
             return data;
         },
@@ -426,12 +460,7 @@ export const useUpdateSubject = () => {
             }
 
             // Get current subject to check organization
-            const { data: currentSubject } = await (supabase as any)
-                .from('subjects')
-                .select('organization_id')
-                .eq('id', id)
-                .is('deleted_at', null)
-                .single();
+            const currentSubject = await subjectsApi.get(id);
 
             if (!currentSubject) {
                 throw new Error('Subject not found');
@@ -447,57 +476,37 @@ export const useUpdateSubject = () => {
                 throw new Error('Cannot change organization_id');
             }
 
-            // Validation
-            if (updates.name && updates.name.length > 100) {
-                throw new Error('Name must be 100 characters or less');
-            }
-            if (updates.code && updates.code.length > 50) {
-                throw new Error('Code must be 50 characters or less');
-            }
+            // Prepare update data
+            const updateData: {
+                name?: string;
+                code?: string;
+                description?: string | null;
+                is_active?: boolean;
+                organization_id?: string | null;
+            } = {};
 
-            // Trim whitespace
-            const updateData = { ...updates };
-            if (updateData.name) {
-                const trimmedName = updateData.name.trim();
+            if (updates.name !== undefined) {
+                const trimmedName = updates.name.trim();
                 if (!trimmedName) throw new Error('Name cannot be empty');
                 updateData.name = trimmedName;
             }
-            if (updateData.code) {
-                const trimmedCode = updateData.code.trim().toUpperCase();
+            if (updates.code !== undefined) {
+                const trimmedCode = updates.code.trim().toUpperCase();
                 if (!trimmedCode) throw new Error('Code cannot be empty');
                 updateData.code = trimmedCode;
             }
-
-            // Check for duplicates
-            if (updateData.code) {
-                const organizationId = updateData.organization_id !== undefined
-                    ? updateData.organization_id
-                    : currentSubject.organization_id;
-
-                const { data: existing } = await (supabase as any)
-                    .from('subjects')
-                    .select('id')
-                    .eq('code', updateData.code)
-                    .eq('organization_id', organizationId)
-                    .neq('id', id)
-                    .is('deleted_at', null)
-                    .maybeSingle();
-
-                if (existing) {
-                    throw new Error('A subject with this code already exists for this organization');
-                }
+            if (updates.description !== undefined) {
+                updateData.description = updates.description;
+            }
+            if (updates.is_active !== undefined) {
+                updateData.is_active = updates.is_active;
+            }
+            if (updates.organization_id !== undefined && profile.role === 'super_admin') {
+                updateData.organization_id = updates.organization_id;
             }
 
-            const { data, error } = await (supabase as any)
-                .from('subjects')
-                .update(updateData)
-                .eq('id', id)
-                .select()
-                .single();
-
-            if (error) {
-                throw new Error(error.message);
-            }
+            // Use Laravel API
+            const data = await subjectsApi.update(id, updateData);
 
             return data;
         },
@@ -523,12 +532,7 @@ export const useDeleteSubject = () => {
             }
 
             // Get current subject to check organization
-            const { data: currentSubject } = await (supabase as any)
-                .from('subjects')
-                .select('organization_id')
-                .eq('id', id)
-                .is('deleted_at', null)
-                .single();
+            const currentSubject = await subjectsApi.get(id);
 
             if (!currentSubject) {
                 throw new Error('Subject not found');
@@ -539,27 +543,8 @@ export const useDeleteSubject = () => {
                 throw new Error('Cannot delete subject from different organization');
             }
 
-            // Check if subject is in use (has active class_subjects)
-            const { data: activeAssignments } = await (supabase as any)
-                .from('class_subjects')
-                .select('id')
-                .eq('subject_id', id)
-                .is('deleted_at', null)
-                .limit(1);
-
-            if (activeAssignments && activeAssignments.length > 0) {
-                throw new Error('Cannot delete subject that is assigned to classes. Please remove all assignments first.');
-            }
-
-            // Soft delete
-            const { error } = await (supabase as any)
-                .from('subjects')
-                .update({ deleted_at: new Date().toISOString() })
-                .eq('id', id);
-
-            if (error) {
-                throw new Error(error.message);
-            }
+            // Use Laravel API (Laravel will handle soft delete and validation)
+            await subjectsApi.delete(id);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
@@ -982,6 +967,7 @@ export const useCopySubjectsBetweenYears = () => {
 // Class Subject Templates (Subjects assigned to Classes)
 // ============================================================================
 
+// TODO: Migrate to Laravel API - class_subject_templates not yet migrated
 export const useClassSubjectTemplates = (classId?: string, organizationId?: string) => {
     const { user, profile } = useAuth();
     const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
@@ -989,50 +975,17 @@ export const useClassSubjectTemplates = (classId?: string, organizationId?: stri
     return useQuery({
         queryKey: ['class-subject-templates', classId, organizationId, orgIds.join(',')],
         queryFn: async () => {
-            if (!user || !profile || orgsLoading) return [];
-
-            let query = (supabase as any)
-                .from('class_subject_templates')
-                .select(`
-                    *,
-                    subject:subjects(*),
-                    class:classes(id, name, code)
-                `)
-                .is('deleted_at', null);
-
-            // Filter by class_id if provided
-            if (classId) {
-                query = query.eq('class_id', classId);
-            }
-
-            const resolvedOrgIds = organizationId ? [organizationId] : orgIds;
-            if (resolvedOrgIds.length === 0) {
-                return [];
-            }
-            query = query.in('organization_id', resolvedOrgIds);
-
-            const { data, error } = await query;
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            // Sort by subject name (can't order by nested relation in Supabase)
-            const templates = (data || []) as ClassSubjectTemplate[];
-            templates.sort((a, b) => {
-                const nameA = a.subject?.name || '';
-                const nameB = b.subject?.name || '';
-                return nameA.localeCompare(nameB);
-            });
-
-            return templates;
+            // Temporarily disabled - class_subject_templates not yet migrated to Laravel
+            // Return empty array to prevent Supabase errors
+            return [] as ClassSubjectTemplate[];
         },
-        enabled: !!user && !!profile && (classId !== undefined || organizationId !== undefined),
+        enabled: false, // Disabled until migrated
         staleTime: 10 * 60 * 1000,
         gcTime: 30 * 60 * 1000,
     });
 };
 
+// TODO: Migrate to Laravel API - class_subject_templates not yet migrated
 export const useAssignSubjectToClassTemplate = () => {
     const queryClient = useQueryClient();
     const { user, profile } = useAuth();
@@ -1043,77 +996,11 @@ export const useAssignSubjectToClassTemplate = () => {
             subject_id: string;
             notes?: string | null;
         }) => {
-            if (!user || !profile) {
-                throw new Error('User not authenticated');
-            }
-
-            // Get class to determine organization_id
-            const { data: classData } = await (supabase as any)
-                .from('classes')
-                .select('organization_id')
-                .eq('id', assignmentData.class_id)
-                .is('deleted_at', null)
-                .single();
-
-            if (!classData) {
-                throw new Error('Class not found');
-            }
-
-            // Get subject to verify organization_id matches
-            const { data: subjectData } = await (supabase as any)
-                .from('subjects')
-                .select('organization_id')
-                .eq('id', assignmentData.subject_id)
-                .is('deleted_at', null)
-                .single();
-
-            if (!subjectData) {
-                throw new Error('Subject not found');
-            }
-
-            // Determine organization_id (prefer class's)
-            const organizationId = classData.organization_id;
-
-            // Validate organization access
-            if (profile.role !== 'super_admin' && organizationId !== profile.organization_id && organizationId !== null) {
-                throw new Error('Cannot assign subject to class from different organization');
-            }
-
-            // Check for duplicate (same subject in same class)
-            const { data: existing } = await (supabase as any)
-                .from('class_subject_templates')
-                .select('id')
-                .eq('class_id', assignmentData.class_id)
-                .eq('subject_id', assignmentData.subject_id)
-                .is('deleted_at', null)
-                .maybeSingle();
-
-            if (existing) {
-                throw new Error('This subject is already assigned to this class');
-            }
-
-            const { data, error } = await (supabase as any)
-                .from('class_subject_templates')
-                .insert({
-                    class_id: assignmentData.class_id,
-                    subject_id: assignmentData.subject_id,
-                    organization_id: organizationId,
-                    notes: assignmentData.notes || null,
-                    is_active: true,
-                })
-                .select()
-                .single();
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            return data;
+            throw new Error('Class subject templates not yet migrated to Laravel API');
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subject-templates'] });
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
-            toast.success('Subject assigned to class successfully');
         },
         onError: (error: Error) => {
             toast.error(error.message || 'Failed to assign subject to class');
@@ -1121,47 +1008,18 @@ export const useAssignSubjectToClassTemplate = () => {
     });
 };
 
+// TODO: Migrate to Laravel API - class_subject_templates not yet migrated
 export const useRemoveSubjectFromClassTemplate = () => {
     const queryClient = useQueryClient();
     const { user, profile } = useAuth();
 
     return useMutation({
         mutationFn: async (templateId: string) => {
-            if (!user || !profile) {
-                throw new Error('User not authenticated');
-            }
-
-            // Get template to check organization
-            const { data: template } = await (supabase as any)
-                .from('class_subject_templates')
-                .select('organization_id')
-                .eq('id', templateId)
-                .is('deleted_at', null)
-                .single();
-
-            if (!template) {
-                throw new Error('Subject assignment not found');
-            }
-
-            // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && template.organization_id !== profile.organization_id && template.organization_id !== null) {
-                throw new Error('Cannot remove subject assignment from different organization');
-            }
-
-            // Soft delete
-            const { error } = await (supabase as any)
-                .from('class_subject_templates')
-                .update({ deleted_at: new Date().toISOString() })
-                .eq('id', templateId);
-
-            if (error) {
-                throw new Error(error.message);
-            }
+            throw new Error('Class subject templates not yet migrated to Laravel API');
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subject-templates'] });
             queryClient.invalidateQueries({ queryKey: ['class-subjects'] });
-            toast.success('Subject removed from class successfully');
         },
         onError: (error: Error) => {
             toast.error(error.message || 'Failed to remove subject from class');
@@ -1169,6 +1027,7 @@ export const useRemoveSubjectFromClassTemplate = () => {
     });
 };
 
+// TODO: Migrate to Laravel API - class_subject_templates not yet migrated
 export const useBulkAssignSubjectsToClassTemplate = () => {
     const queryClient = useQueryClient();
     const { user, profile } = useAuth();
@@ -1178,69 +1037,11 @@ export const useBulkAssignSubjectsToClassTemplate = () => {
             class_id: string;
             subject_ids: string[];
         }) => {
-            if (!user || !profile) {
-                throw new Error('User not authenticated');
-            }
-
-            // Get class to determine organization_id
-            const { data: classData } = await (supabase as any)
-                .from('classes')
-                .select('organization_id')
-                .eq('id', bulkData.class_id)
-                .is('deleted_at', null)
-                .single();
-
-            if (!classData) {
-                throw new Error('Class not found');
-            }
-
-            const organizationId = classData.organization_id;
-
-            // Validate organization access
-            if (profile.role !== 'super_admin' && organizationId !== profile.organization_id && organizationId !== null) {
-                throw new Error('Cannot assign subjects to class from different organization');
-            }
-
-            // Check for existing assignments
-            const { data: existing } = await (supabase as any)
-                .from('class_subject_templates')
-                .select('subject_id')
-                .eq('class_id', bulkData.class_id)
-                .in('subject_id', bulkData.subject_ids)
-                .is('deleted_at', null);
-
-            const existingSubjectIds = new Set((existing || []).map((e: any) => e.subject_id));
-
-            // Filter out duplicates
-            const subjectIdsToInsert = bulkData.subject_ids.filter(id => !existingSubjectIds.has(id));
-
-            if (subjectIdsToInsert.length === 0) {
-                throw new Error('All selected subjects are already assigned to this class');
-            }
-
-            // Prepare insert data
-            const assignmentsToInsert = subjectIdsToInsert.map(subject_id => ({
-                class_id: bulkData.class_id,
-                subject_id,
-                organization_id: organizationId,
-                is_active: true,
-            }));
-
-            const { data, error } = await (supabase as any)
-                .from('class_subject_templates')
-                .insert(assignmentsToInsert)
-                .select();
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            return data;
+            throw new Error('Class subject templates not yet migrated to Laravel API');
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subject-templates'] });
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
-            toast.success('Subjects assigned to class successfully');
         },
         onError: (error: Error) => {
             toast.error(error.message || 'Failed to assign subjects to class');

@@ -1,96 +1,148 @@
-import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
-import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import { 
+  studentsApi, 
+  studentDocumentsApi, 
+  studentEducationalHistoryApi, 
+  studentDisciplineRecordsApi 
+} from '@/lib/api/client';
 
 // Custom enum types for stricter validation
 export type StudentStatus = 'applied' | 'admitted' | 'active' | 'withdrawn';
 export type AdmissionFeeStatus = 'paid' | 'pending' | 'waived' | 'partial';
 export type Gender = 'male' | 'female';
 
-// Use generated type from database schema, with custom enums for stricter typing
-export type Student = Omit<Tables<'students'>, 'gender' | 'admission_fee_status' | 'student_status'> & {
+// Student interface matching the database schema
+export interface Student {
+  id: string;
+  organization_id: string;
+  school_id: string | null;
+  card_number: string | null;
+  admission_no: string;
+  full_name: string;
+  father_name: string;
+  grandfather_name: string | null;
+  mother_name: string | null;
   gender: Gender;
+  birth_year: string | null;
+  birth_date: string | null;
+  age: number | null;
+  admission_year: string | null;
+  orig_province: string | null;
+  orig_district: string | null;
+  orig_village: string | null;
+  curr_province: string | null;
+  curr_district: string | null;
+  curr_village: string | null;
+  nationality: string | null;
+  preferred_language: string | null;
+  previous_school: string | null;
+  guardian_name: string | null;
+  guardian_relation: string | null;
+  guardian_phone: string | null;
+  guardian_tazkira: string | null;
+  guardian_picture_path: string | null;
+  home_address: string | null;
+  zamin_name: string | null;
+  zamin_phone: string | null;
+  zamin_tazkira: string | null;
+  zamin_address: string | null;
+  applying_grade: string | null;
+  is_orphan: boolean;
   admission_fee_status: AdmissionFeeStatus;
   student_status: StudentStatus;
-};
-export type StudentInsert = TablesInsert<'students'>;
-export type StudentUpdate = TablesUpdate<'students'>;
+  disability_status: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  family_income: string | null;
+  picture_path: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  organization?: {
+    id: string;
+    name: string;
+  };
+  school?: {
+    id: string;
+    school_name: string;
+  };
+}
 
-const buildOrganizationFilter = async (
-  profile: any,
-  accessibleOrgIds: string[],
-  organizationId?: string
-): Promise<{ column: string; value: string[] }> => {
-  if (!profile) {
-    return { column: 'organization_id', value: [] };
-  }
+export interface StudentInsert {
+  admission_no: string;
+  full_name: string;
+  father_name: string;
+  gender: string;
+  organization_id?: string | null;
+  school_id?: string | null;
+  card_number?: string | null;
+  grandfather_name?: string | null;
+  mother_name?: string | null;
+  birth_year?: string | null;
+  birth_date?: string | null;
+  age?: number | null;
+  admission_year?: string | null;
+  orig_province?: string | null;
+  orig_district?: string | null;
+  orig_village?: string | null;
+  curr_province?: string | null;
+  curr_district?: string | null;
+  curr_village?: string | null;
+  nationality?: string | null;
+  preferred_language?: string | null;
+  previous_school?: string | null;
+  guardian_name?: string | null;
+  guardian_relation?: string | null;
+  guardian_phone?: string | null;
+  guardian_tazkira?: string | null;
+  guardian_picture_path?: string | null;
+  home_address?: string | null;
+  zamin_name?: string | null;
+  zamin_phone?: string | null;
+  zamin_tazkira?: string | null;
+  zamin_address?: string | null;
+  applying_grade?: string | null;
+  is_orphan?: boolean;
+  admission_fee_status?: string;
+  student_status?: string;
+  disability_status?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  family_income?: string | null;
+  picture_path?: string | null;
+}
 
-  if (organizationId) {
-    if (accessibleOrgIds.length === 0 || !accessibleOrgIds.includes(organizationId)) {
-      return { column: 'organization_id', value: [] };
-    }
-    return { column: 'organization_id', value: [organizationId] };
-  }
-
-  return { column: 'organization_id', value: accessibleOrgIds };
-};
+export type StudentUpdate = Partial<StudentInsert>;
 
 export const useStudents = (organizationId?: string) => {
   const { user, profile } = useAuth();
-  const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery<Student[]>({
-    queryKey: ['students', organizationId ?? profile?.organization_id ?? null, orgIds.join(',')],
+    queryKey: ['students', organizationId ?? profile?.organization_id ?? null],
     queryFn: async () => {
       if (!user || !profile) {
         console.log('[useStudents] No user or profile, returning empty array');
         return [];
       }
-      if (orgsLoading) return [];
 
       try {
-        console.log('[useStudents] Fetching students for:', {
-          userId: user.id,
-          profileRole: profile.role,
-          profileOrgId: profile.organization_id,
-          requestedOrgId: organizationId,
+        const effectiveOrgId = organizationId || profile.organization_id;
+        console.log('[useStudents] Fetching students for organization:', effectiveOrgId);
+
+        const students = await studentsApi.list({
+          organization_id: effectiveOrgId || undefined,
         });
 
-        const orgFilter = await buildOrganizationFilter(profile, orgIds, organizationId);
-        console.log('[useStudents] Organization filter:', orgFilter);
-
-        let query = (supabase as any)
-          .from('students')
-          .select('*')
-          .is('deleted_at', null)
-          .order('created_at', { ascending: false });
-
-        if (orgFilter.value.length === 0) {
-          console.log('[useStudents] No accessible organizations, returning empty list');
-          return [];
-        }
-
-        query = query.in(orgFilter.column, orgFilter.value);
-        console.log('[useStudents] Filtering by organization_ids:', orgFilter.value);
-
-        const { data, error } = await query;
-        if (error) {
-          console.error('[useStudents] Query error:', error);
-          throw new Error(error.message || 'Failed to fetch students');
-        }
-
-        console.log('[useStudents] Query successful, returned', data?.length || 0, 'students');
-        return (data || []) as Student[];
+        console.log('[useStudents] Fetched', (students as Student[]).length, 'students');
+        return students as Student[];
       } catch (error) {
         console.error('[useStudents] Error fetching students:', error);
         throw error;
       }
     },
-    enabled: !!user && !!profile && !orgsLoading,
+    enabled: !!user && !!profile,
   });
 };
 
@@ -105,37 +157,13 @@ export const useCreateStudent = () => {
         throw new Error('Organization is required to create a student');
       }
 
-      // Convert empty strings to null for date and optional fields
-      const cleanPayload = Object.entries(payload).reduce((acc, [key, value]) => {
-        // Convert empty strings to null for date fields
-        if (key === 'birth_date' && (value === '' || value === null || value === undefined)) {
-          acc[key] = null;
-        }
-        // Convert empty strings to null for optional string fields
-        else if (typeof value === 'string' && value.trim() === '' && key !== 'admission_no' && key !== 'full_name' && key !== 'father_name' && key !== 'gender') {
-          acc[key] = null;
-        } else {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
-
       const insertData = {
-        ...cleanPayload,
+        ...payload,
         organization_id: organizationId,
-        is_orphan: cleanPayload.is_orphan ?? false,
-        admission_fee_status: cleanPayload.admission_fee_status ?? 'pending',
-        student_status: cleanPayload.student_status ?? 'active',
       };
 
-      const { data, error } = await (supabase as any)
-        .from('students')
-        .insert(insertData)
-        .select()
-        .single();
-
-      if (error) throw new Error(error.message);
-      return data as Student;
+      const student = await studentsApi.create(insertData);
+      return student as Student;
     },
     onSuccess: () => {
       toast.success('Student registered successfully');
@@ -155,34 +183,7 @@ export const useUpdateStudent = () => {
     mutationFn: async ({ id, data }: { id: string; data: Partial<StudentInsert> }) => {
       if (!profile) throw new Error('User not authenticated');
 
-      // Convert empty strings to null for date and optional fields
-      const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
-        // Convert empty strings to null for date fields
-        if (key === 'birth_date' && (value === '' || value === null || value === undefined)) {
-          acc[key] = null;
-        }
-        // Convert empty strings to null for optional string fields
-        else if (typeof value === 'string' && value.trim() === '' && key !== 'admission_no' && key !== 'full_name' && key !== 'father_name' && key !== 'gender') {
-          acc[key] = null;
-        } else {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
-
-      let query = (supabase as any)
-        .from('students')
-        .update({ ...cleanData, organization_id: cleanData.organization_id || profile?.organization_id })
-        .eq('id', id)
-        .is('deleted_at', null);
-
-      if (profile.organization_id) {
-        query = query.eq('organization_id', profile.organization_id);
-      }
-
-      const { data: updated, error } = await query.select().single();
-
-      if (error) throw new Error(error.message);
+      const updated = await studentsApi.update(id, data);
       return updated as Student;
     },
     onSuccess: () => {
@@ -202,42 +203,10 @@ export const useDeleteStudent = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       if (!profile) {
-        throw new Error('Organization is required to delete student');
+        throw new Error('User not authenticated');
       }
 
-      // Soft delete: set deleted_at timestamp
-      // Must filter by deleted_at IS NULL to match RLS policy USING clause
-      let query = (supabase as any)
-        .from('students')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id)
-        .is('deleted_at', null); // Only update rows that aren't already deleted
-
-      if (profile.organization_id) {
-        query = query.eq('organization_id', profile.organization_id);
-      }
-
-      const { data, error } = await query.select();
-      if (error) {
-        console.error('[useDeleteStudent] Delete error:', {
-          error,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          studentId: id,
-          profileRole: profile?.role,
-          profileOrgId: profile?.organization_id,
-        });
-        throw new Error(error.message || 'Failed to delete student');
-      }
-
-      // Log success for debugging
-      if (data && data.length > 0) {
-        console.log('[useDeleteStudent] Successfully soft-deleted student:', data[0].id);
-      } else {
-        console.warn('[useDeleteStudent] Update succeeded but no rows returned. Student may already be deleted or not found.');
-      }
+      await studentsApi.delete(id);
       return id;
     },
     onSuccess: () => {
@@ -250,32 +219,33 @@ export const useDeleteStudent = () => {
   });
 };
 
+export interface StudentStats {
+  total: number;
+  male: number;
+  female: number;
+  orphans: number;
+  feePending: number;
+}
+
 export const useStudentStats = (organizationId?: string) => {
-  const { data: students, isLoading } = useStudents(organizationId);
+  const { user, profile } = useAuth();
 
-  const stats = (students || []).reduce(
-    (acc, student) => {
-      acc.total += 1;
-      if (student.gender === 'male') acc.male += 1;
-      if (student.gender === 'female') acc.female += 1;
-      if (student.is_orphan) acc.orphans += 1;
-      if (student.admission_fee_status !== 'paid') acc.feePending += 1;
-      return acc;
+  return useQuery<StudentStats>({
+    queryKey: ['student-stats', organizationId ?? profile?.organization_id ?? null],
+    queryFn: async () => {
+      if (!user || !profile) {
+        return { total: 0, male: 0, female: 0, orphans: 0, feePending: 0 };
+      }
+
+      const effectiveOrgId = organizationId || profile.organization_id;
+      const stats = await studentsApi.stats({
+        organization_id: effectiveOrgId || undefined,
+      });
+
+      return stats as StudentStats;
     },
-    { total: 0, male: 0, female: 0, orphans: 0, feePending: 0 }
-  );
-
-  return { data: stats, isLoading };
-};
-
-export const useSyncStudentOrg = (organizationId?: string) => {
-  const queryClient = useQueryClient();
-  const { profile } = useAuth();
-
-  useEffect(() => {
-    const effectiveOrg = organizationId || profile?.organization_id || null;
-    void queryClient.invalidateQueries({ queryKey: ['students', effectiveOrg] });
-  }, [organizationId, profile?.organization_id, queryClient]);
+    enabled: !!user && !!profile,
+  });
 };
 
 // =============================================================================
@@ -309,15 +279,8 @@ export const useStudentDocuments = (studentId?: string) => {
         return [];
       }
 
-      const { data, error } = await (supabase as any)
-        .from('student_documents')
-        .select('*')
-        .eq('student_id', studentId)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
-      if (error) throw new Error(error.message);
-      return (data || []) as StudentDocument[];
+      const documents = await studentDocumentsApi.list(studentId);
+      return documents as StudentDocument[];
     },
     enabled: !!user && !!profile && !!studentId,
   });
@@ -325,13 +288,11 @@ export const useStudentDocuments = (studentId?: string) => {
 
 export const useUploadStudentDocument = () => {
   const queryClient = useQueryClient();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({
       studentId,
-      organizationId,
-      schoolId,
       file,
       documentType,
       description,
@@ -345,51 +306,12 @@ export const useUploadStudentDocument = () => {
     }) => {
       if (!user) throw new Error('User not authenticated');
 
-      // Generate file path: organization_id/students/student_id/documents/timestamp_filename
-      const timestamp = Date.now();
-      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const filePath = `${organizationId}/students/${studentId}/documents/${timestamp}_${sanitizedFileName}`;
-
-      // Upload file to storage
-      const { error: uploadError } = await supabase.storage
-        .from('student-files')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) throw new Error(uploadError.message);
-
-      // Get school_id from student if not provided
-      let finalSchoolId = schoolId;
-      if (!finalSchoolId) {
-        const { data: studentData } = await (supabase as any)
-          .from('students')
-          .select('school_id')
-          .eq('id', studentId)
-          .single();
-        finalSchoolId = studentData?.school_id || null;
-      }
-
-      // Insert document record
-      const { data: document, error: insertError } = await (supabase as any)
-        .from('student_documents')
-        .insert({
-          student_id: studentId,
-          organization_id: organizationId,
-          school_id: finalSchoolId,
-          document_type: documentType,
-          file_name: file.name,
-          file_path: filePath,
-          file_size: file.size,
-          mime_type: file.type,
-          description: description || null,
-          uploaded_by: user?.id || null,
-        })
-        .select()
-        .single();
-
-      if (insertError) throw new Error(insertError.message);
+      const document = await studentDocumentsApi.create(
+        studentId,
+        file,
+        documentType,
+        description
+      );
 
       return document as StudentDocument;
     },
@@ -413,14 +335,7 @@ export const useDeleteStudentDocument = () => {
         throw new Error('Organization is required');
       }
 
-      // Soft delete
-      const { error } = await (supabase as any)
-        .from('student_documents')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', documentId)
-        .is('deleted_at', null);
-
-      if (error) throw new Error(error.message);
+      await studentDocumentsApi.delete(documentId);
       return { documentId, studentId };
     },
     onSuccess: (_, variables) => {
@@ -478,15 +393,8 @@ export const useStudentEducationalHistory = (studentId?: string) => {
         return [];
       }
 
-      const { data, error } = await (supabase as any)
-        .from('student_educational_history')
-        .select('*')
-        .eq('student_id', studentId)
-        .is('deleted_at', null)
-        .order('start_date', { ascending: false });
-
-      if (error) throw new Error(error.message);
-      return (data || []) as StudentEducationalHistory[];
+      const history = await studentEducationalHistoryApi.list(studentId);
+      return history as StudentEducationalHistory[];
     },
     enabled: !!user && !!profile && !!studentId,
   });
@@ -494,39 +402,24 @@ export const useStudentEducationalHistory = (studentId?: string) => {
 
 export const useCreateStudentEducationalHistory = () => {
   const queryClient = useQueryClient();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (payload: StudentEducationalHistoryInsert) => {
       if (!user) throw new Error('User not authenticated');
 
-      const organizationId = payload.organization_id || profile?.organization_id;
-      if (!organizationId) {
-        throw new Error('Organization is required');
-      }
+      const history = await studentEducationalHistoryApi.create(payload.student_id, {
+        institution_name: payload.institution_name,
+        school_id: payload.school_id,
+        academic_year: payload.academic_year,
+        grade_level: payload.grade_level,
+        start_date: payload.start_date,
+        end_date: payload.end_date,
+        achievements: payload.achievements,
+        notes: payload.notes,
+      });
 
-      // Convert empty strings to null
-      const cleanPayload = Object.entries(payload).reduce((acc, [key, value]) => {
-        if (typeof value === 'string' && value.trim() === '' && key !== 'institution_name') {
-          acc[key] = null;
-        } else {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
-
-      const { data, error } = await (supabase as any)
-        .from('student_educational_history')
-        .insert({
-          ...cleanPayload,
-          organization_id: organizationId,
-          created_by: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw new Error(error.message);
-      return data as StudentEducationalHistory;
+      return history as StudentEducationalHistory;
     },
     onSuccess: (_, variables) => {
       toast.success('Educational history added');
@@ -548,25 +441,7 @@ export const useUpdateStudentEducationalHistory = () => {
         throw new Error('Organization is required');
       }
 
-      // Convert empty strings to null
-      const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
-        if (typeof value === 'string' && value.trim() === '' && key !== 'institution_name') {
-          acc[key] = null;
-        } else {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
-
-      const { data: updated, error } = await (supabase as any)
-        .from('student_educational_history')
-        .update(cleanData)
-        .eq('id', id)
-        .is('deleted_at', null)
-        .select()
-        .single();
-
-      if (error) throw new Error(error.message);
+      const updated = await studentEducationalHistoryApi.update(id, data);
       return { record: updated as StudentEducationalHistory, studentId };
     },
     onSuccess: (result) => {
@@ -589,13 +464,7 @@ export const useDeleteStudentEducationalHistory = () => {
         throw new Error('Organization is required');
       }
 
-      const { error } = await (supabase as any)
-        .from('student_educational_history')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id)
-        .is('deleted_at', null);
-
-      if (error) throw new Error(error.message);
+      await studentEducationalHistoryApi.delete(id);
       return { id, studentId };
     },
     onSuccess: (_, variables) => {
@@ -657,15 +526,8 @@ export const useStudentDisciplineRecords = (studentId?: string) => {
         return [];
       }
 
-      const { data, error } = await (supabase as any)
-        .from('student_discipline_records')
-        .select('*')
-        .eq('student_id', studentId)
-        .is('deleted_at', null)
-        .order('incident_date', { ascending: false });
-
-      if (error) throw new Error(error.message);
-      return (data || []) as StudentDisciplineRecord[];
+      const records = await studentDisciplineRecordsApi.list(studentId);
+      return records as StudentDisciplineRecord[];
     },
     enabled: !!user && !!profile && !!studentId,
   });
@@ -673,41 +535,24 @@ export const useStudentDisciplineRecords = (studentId?: string) => {
 
 export const useCreateStudentDisciplineRecord = () => {
   const queryClient = useQueryClient();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (payload: StudentDisciplineRecordInsert) => {
       if (!user) throw new Error('User not authenticated');
 
-      const organizationId = payload.organization_id || profile?.organization_id;
-      if (!organizationId) {
-        throw new Error('Organization is required');
-      }
+      const record = await studentDisciplineRecordsApi.create(payload.student_id, {
+        incident_date: payload.incident_date,
+        incident_type: payload.incident_type,
+        school_id: payload.school_id,
+        description: payload.description,
+        severity: payload.severity,
+        action_taken: payload.action_taken,
+        resolved: payload.resolved,
+        resolved_date: payload.resolved_date,
+      });
 
-      // Convert empty strings to null
-      const cleanPayload = Object.entries(payload).reduce((acc, [key, value]) => {
-        if (typeof value === 'string' && value.trim() === '' && key !== 'incident_date' && key !== 'incident_type') {
-          acc[key] = null;
-        } else {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
-
-      const { data, error } = await (supabase as any)
-        .from('student_discipline_records')
-        .insert({
-          ...cleanPayload,
-          organization_id: organizationId,
-          severity: cleanPayload.severity || 'minor',
-          resolved: cleanPayload.resolved ?? false,
-          created_by: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw new Error(error.message);
-      return data as StudentDisciplineRecord;
+      return record as StudentDisciplineRecord;
     },
     onSuccess: (_, variables) => {
       toast.success('Discipline record added');
@@ -729,25 +574,7 @@ export const useUpdateStudentDisciplineRecord = () => {
         throw new Error('Organization is required');
       }
 
-      // Convert empty strings to null
-      const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
-        if (typeof value === 'string' && value.trim() === '' && key !== 'incident_date' && key !== 'incident_type') {
-          acc[key] = null;
-        } else {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
-
-      const { data: updated, error } = await (supabase as any)
-        .from('student_discipline_records')
-        .update(cleanData)
-        .eq('id', id)
-        .is('deleted_at', null)
-        .select()
-        .single();
-
-      if (error) throw new Error(error.message);
+      const updated = await studentDisciplineRecordsApi.update(id, data);
       return { record: updated as StudentDisciplineRecord, studentId };
     },
     onSuccess: (result) => {
@@ -770,13 +597,7 @@ export const useDeleteStudentDisciplineRecord = () => {
         throw new Error('Organization is required');
       }
 
-      const { error } = await (supabase as any)
-        .from('student_discipline_records')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id)
-        .is('deleted_at', null);
-
-      if (error) throw new Error(error.message);
+      await studentDisciplineRecordsApi.delete(id);
       return { id, studentId };
     },
     onSuccess: (_, variables) => {
@@ -800,19 +621,7 @@ export const useResolveStudentDisciplineRecord = () => {
         throw new Error('Organization is required');
       }
 
-      const { data: updated, error } = await (supabase as any)
-        .from('student_discipline_records')
-        .update({
-          resolved: true,
-          resolved_date: new Date().toISOString().split('T')[0],
-          resolved_by: user.id,
-        })
-        .eq('id', id)
-        .is('deleted_at', null)
-        .select()
-        .single();
-
-      if (error) throw new Error(error.message);
+      const updated = await studentDisciplineRecordsApi.resolve(id);
       return { record: updated as StudentDisciplineRecord, studentId };
     },
     onSuccess: (result) => {

@@ -1,14 +1,37 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import { residencyTypesApi } from '@/lib/api/client';
 
-// Use generated type from database schema
-export type ResidencyType = Tables<'residency_types'>;
-export type ResidencyTypeInsert = TablesInsert<'residency_types'>;
-export type ResidencyTypeUpdate = TablesUpdate<'residency_types'>;
+// TypeScript interfaces for Residency Type
+export interface ResidencyType {
+  id: string;
+  organization_id: string | null;
+  name: string;
+  code: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface ResidencyTypeInsert {
+  name: string;
+  code: string;
+  description?: string | null;
+  is_active?: boolean;
+  organization_id?: string | null;
+}
+
+export interface ResidencyTypeUpdate {
+  name?: string;
+  code?: string;
+  description?: string | null;
+  is_active?: boolean;
+  organization_id?: string | null;
+}
 
 export const useResidencyTypes = (organizationId?: string) => {
   const { user, profile } = useAuth();
@@ -19,25 +42,10 @@ export const useResidencyTypes = (organizationId?: string) => {
     queryFn: async () => {
       if (!user || !profile || orgsLoading) return [];
 
-      let query = (supabase as any)
-        .from('residency_types')
-        .select('*');
-
-      const resolvedOrgIds = organizationId ? [organizationId] : orgIds;
-
-      if (resolvedOrgIds.length === 0) {
-        query = query.is('organization_id', null);
-      } else {
-        query = query.or(`organization_id.is.null,organization_id.in.(${resolvedOrgIds.join(',')})`);
-      }
-
-      const { data, error } = await query
-        .is('deleted_at', null)
-        .order('name', { ascending: true });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
+      // Fetch residency types from Laravel API
+      const data = await residencyTypesApi.list({
+        organization_id: organizationId,
+      });
 
       return (data || []) as ResidencyType[];
     },
@@ -53,13 +61,7 @@ export const useCreateResidencyType = () => {
   const { orgIds } = useAccessibleOrganizations();
 
   return useMutation({
-    mutationFn: async (residencyTypeData: { 
-      name: string; 
-      code: string; 
-      description?: string | null;
-      is_active?: boolean;
-      organization_id?: string | null;
-    }) => {
+    mutationFn: async (residencyTypeData: ResidencyTypeInsert) => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
       }
@@ -92,36 +94,17 @@ export const useCreateResidencyType = () => {
         throw new Error('Code cannot be empty');
       }
 
-      // Check for duplicates (code must be unique per organization)
-      const { data: existing } = await (supabase as any)
-        .from('residency_types')
-        .select('id')
-        .eq('code', trimmedCode)
-        .eq('organization_id', organizationId)
-        .is('deleted_at', null)
-        .maybeSingle();
+      // Create residency type via Laravel API
+      // Laravel handles duplicate code validation server-side
+      const data = await residencyTypesApi.create({
+        name: trimmedName,
+        code: trimmedCode,
+        description: residencyTypeData.description || null,
+        is_active: residencyTypeData.is_active !== undefined ? residencyTypeData.is_active : true,
+        organization_id: organizationId,
+      });
 
-      if (existing) {
-        throw new Error('This code already exists for this organization');
-      }
-
-      const { data, error } = await (supabase as any)
-        .from('residency_types')
-        .insert({ 
-          name: trimmedName,
-          code: trimmedCode,
-          description: residencyTypeData.description || null,
-          is_active: residencyTypeData.is_active !== undefined ? residencyTypeData.is_active : true,
-          organization_id: organizationId,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
+      return data as ResidencyType;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['residency-types'] });
@@ -144,12 +127,7 @@ export const useUpdateResidencyType = () => {
       }
 
       // Get current residency type to check organization
-      const { data: currentResidencyType } = await (supabase as any)
-        .from('residency_types')
-        .select('organization_id')
-        .eq('id', id)
-        .is('deleted_at', null)
-        .single();
+      const currentResidencyType = await residencyTypesApi.get(id);
 
       if (!currentResidencyType) {
         throw new Error('Residency type not found');
@@ -176,7 +154,7 @@ export const useUpdateResidencyType = () => {
       }
 
       // Trim whitespace if name or code is being updated
-      const updateData = { ...updates };
+      const updateData: ResidencyTypeUpdate = { ...updates };
       if (updateData.name) {
         const trimmedName = updateData.name.trim();
         if (!trimmedName) {
@@ -193,38 +171,11 @@ export const useUpdateResidencyType = () => {
         updateData.code = trimmedCode;
       }
 
-      // Check for duplicates (code must be unique per organization)
-      if (updateData.code) {
-        const organizationId = updateData.organization_id !== undefined 
-          ? updateData.organization_id 
-          : currentResidencyType.organization_id;
+      // Update residency type via Laravel API
+      // Laravel handles duplicate code validation server-side
+      const data = await residencyTypesApi.update(id, updateData);
 
-        const { data: existing } = await (supabase as any)
-          .from('residency_types')
-          .select('id')
-          .eq('code', updateData.code)
-          .eq('organization_id', organizationId)
-          .neq('id', id)
-          .is('deleted_at', null)
-          .maybeSingle();
-
-        if (existing) {
-          throw new Error('This code already exists for this organization');
-        }
-      }
-
-      const { data, error } = await (supabase as any)
-        .from('residency_types')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
+      return data as ResidencyType;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['residency-types'] });
@@ -247,12 +198,7 @@ export const useDeleteResidencyType = () => {
       }
 
       // Get current residency type to check organization
-      const { data: currentResidencyType } = await (supabase as any)
-        .from('residency_types')
-        .select('organization_id')
-        .eq('id', id)
-        .is('deleted_at', null)
-        .single();
+      const currentResidencyType = await residencyTypesApi.get(id);
 
       if (!currentResidencyType) {
         throw new Error('Residency type not found');
@@ -269,15 +215,8 @@ export const useDeleteResidencyType = () => {
         }
       }
 
-      // Soft delete: set deleted_at timestamp
-      const { error } = await (supabase as any)
-        .from('residency_types')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      // Delete residency type via Laravel API (soft delete)
+      await residencyTypesApi.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['residency-types'] });
@@ -288,4 +227,3 @@ export const useDeleteResidencyType = () => {
     },
   });
 };
-

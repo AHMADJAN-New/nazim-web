@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
   DialogContent,
@@ -49,6 +51,7 @@ import {
   DisciplineSeverity,
   Student,
 } from '@/hooks/useStudents';
+import { disciplineRecordSchema, type DisciplineRecordFormData } from '@/lib/validations';
 import { AlertTriangle, Plus, Pencil, Trash2, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -75,10 +78,6 @@ export function StudentDisciplineRecordsDialog({
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<StudentDisciplineRecord | null>(null);
-  const [formData, setFormData] = useState<Partial<StudentDisciplineRecordInsert>>({
-    severity: 'minor',
-    resolved: false,
-  });
 
   const { data: records, isLoading } = useStudentDisciplineRecords(student?.id);
   const createRecord = useCreateStudentDisciplineRecord();
@@ -86,8 +85,33 @@ export function StudentDisciplineRecordsDialog({
   const deleteRecord = useDeleteStudentDisciplineRecord();
   const resolveRecord = useResolveStudentDisciplineRecord();
 
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<DisciplineRecordFormData>({
+    resolver: zodResolver(disciplineRecordSchema),
+    defaultValues: {
+      incident_date: '',
+      incident_type: '',
+      description: '',
+      severity: 'minor',
+      action_taken: '',
+      resolved: false,
+    },
+  });
+
   const resetForm = () => {
-    setFormData({ severity: 'minor', resolved: false });
+    reset({
+      incident_date: '',
+      incident_type: '',
+      description: '',
+      severity: 'minor',
+      action_taken: '',
+      resolved: false,
+    });
     setSelectedRecord(null);
   };
 
@@ -98,37 +122,44 @@ export function StudentDisciplineRecordsDialog({
 
   const openEditDialog = (record: StudentDisciplineRecord) => {
     setSelectedRecord(record);
-    setFormData({
+    reset({
       incident_date: record.incident_date,
       incident_type: record.incident_type,
       description: record.description || '',
-      severity: record.severity,
+      severity: record.severity || 'minor',
       action_taken: record.action_taken || '',
       resolved: record.resolved,
     });
     setIsFormDialogOpen(true);
   };
 
-  const handleSave = async () => {
-    if (!student || !formData.incident_date || !formData.incident_type) return;
+  const handleSave = async (data: DisciplineRecordFormData) => {
+    if (!student) return;
 
     if (selectedRecord) {
       await updateRecord.mutateAsync({
         id: selectedRecord.id,
         studentId: student.id,
-        data: formData,
+        data: {
+          incident_date: data.incident_date,
+          incident_type: data.incident_type,
+          description: data.description || null,
+          severity: data.severity || 'minor',
+          action_taken: data.action_taken || null,
+          resolved: data.resolved,
+        },
       });
     } else {
       await createRecord.mutateAsync({
         student_id: student.id,
         organization_id: student.organization_id,
         school_id: student.school_id,
-        incident_date: formData.incident_date,
-        incident_type: formData.incident_type,
-        description: formData.description || null,
-        severity: formData.severity || 'minor',
-        action_taken: formData.action_taken || null,
-        resolved: formData.resolved || false,
+        incident_date: data.incident_date,
+        incident_type: data.incident_type,
+        description: data.description || null,
+        severity: data.severity || 'minor',
+        action_taken: data.action_taken || null,
+        resolved: data.resolved || false,
       });
     }
 
@@ -267,7 +298,15 @@ export function StudentDisciplineRecordsDialog({
       </Dialog>
 
       {/* Add/Edit Form Dialog */}
-      <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+      <Dialog 
+        open={isFormDialogOpen} 
+        onOpenChange={(open) => {
+          setIsFormDialogOpen(open);
+          if (!open) {
+            resetForm();
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -279,78 +318,96 @@ export function StudentDisciplineRecordsDialog({
               {t('students.disciplineRecordFormDescription') || 'Enter the discipline record details'}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit(handleSave)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="incident_date">{t('students.incidentDate') || 'Incident Date'} *</Label>
                 <Input
                   id="incident_date"
                   type="date"
-                  value={formData.incident_date || ''}
-                  onChange={(e) => setFormData({ ...formData, incident_date: e.target.value })}
+                  {...register('incident_date')}
                 />
+                {errors.incident_date && (
+                  <p className="text-sm text-destructive mt-1">{errors.incident_date.message}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="incident_type">{t('students.incidentType') || 'Incident Type'} *</Label>
                 <Input
                   id="incident_type"
-                  value={formData.incident_type || ''}
-                  onChange={(e) => setFormData({ ...formData, incident_type: e.target.value })}
+                  {...register('incident_type')}
                   placeholder={t('students.incidentTypePlaceholder') || 'e.g., Tardiness, Fighting'}
                 />
+                {errors.incident_type && (
+                  <p className="text-sm text-destructive mt-1">{errors.incident_type.message}</p>
+                )}
               </div>
             </div>
             <div>
               <Label htmlFor="severity">{t('students.severity') || 'Severity'}</Label>
-              <Select
-                value={formData.severity || 'minor'}
-                onValueChange={(value) => setFormData({ ...formData, severity: value as DisciplineSeverity })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="minor">{t('students.severityMinor') || 'Minor'}</SelectItem>
-                  <SelectItem value="moderate">{t('students.severityModerate') || 'Moderate'}</SelectItem>
-                  <SelectItem value="major">{t('students.severityMajor') || 'Major'}</SelectItem>
-                  <SelectItem value="severe">{t('students.severitySevere') || 'Severe'}</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name="severity"
+                render={({ field }) => (
+                  <Select value={field.value || 'minor'} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="minor">{t('students.severityMinor') || 'Minor'}</SelectItem>
+                      <SelectItem value="moderate">{t('students.severityModerate') || 'Moderate'}</SelectItem>
+                      <SelectItem value="major">{t('students.severityMajor') || 'Major'}</SelectItem>
+                      <SelectItem value="severe">{t('students.severitySevere') || 'Severe'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.severity && (
+                <p className="text-sm text-destructive mt-1">{errors.severity.message}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="description">{t('students.description') || 'Description'}</Label>
               <Textarea
                 id="description"
-                value={formData.description || ''}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                {...register('description')}
                 placeholder={t('students.disciplineDescriptionPlaceholder') || 'Describe the incident'}
                 rows={3}
               />
+              {errors.description && (
+                <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="action_taken">{t('students.actionTaken') || 'Action Taken'}</Label>
               <Textarea
                 id="action_taken"
-                value={formData.action_taken || ''}
-                onChange={(e) => setFormData({ ...formData, action_taken: e.target.value })}
+                {...register('action_taken')}
                 placeholder={t('students.actionTakenPlaceholder') || 'What action was taken'}
                 rows={2}
               />
+              {errors.action_taken && (
+                <p className="text-sm text-destructive mt-1">{errors.action_taken.message}</p>
+              )}
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFormDialogOpen(false)}>
-              {t('common.cancel') || 'Cancel'}
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={!formData.incident_date || !formData.incident_type || createRecord.isPending || updateRecord.isPending}
-            >
-              {createRecord.isPending || updateRecord.isPending
-                ? t('common.saving') || 'Saving...'
-                : t('common.save') || 'Save'}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => setIsFormDialogOpen(false)}
+              >
+                {t('common.cancel') || 'Cancel'}
+              </Button>
+              <Button
+                type="submit"
+                disabled={createRecord.isPending || updateRecord.isPending}
+              >
+                {createRecord.isPending || updateRecord.isPending
+                  ? t('common.saving') || 'Saving...'
+                  : t('common.save') || 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

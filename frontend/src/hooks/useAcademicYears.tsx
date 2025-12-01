@@ -1,14 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import { academicYearsApi } from '@/lib/api/client';
 
-// Use generated type from database schema
-export type AcademicYear = Tables<'academic_years'>;
-export type AcademicYearInsert = TablesInsert<'academic_years'>;
-export type AcademicYearUpdate = TablesUpdate<'academic_years'>;
+// Academic Year type definition
+export interface AcademicYear {
+  id: string;
+  organization_id: string | null;
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_current: boolean;
+  description: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export type AcademicYearInsert = Omit<AcademicYear, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
+export type AcademicYearUpdate = Partial<Omit<AcademicYear, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>>;
 
 export const useAcademicYears = (organizationId?: string) => {
   const { user, profile } = useAuth();
@@ -19,28 +31,10 @@ export const useAcademicYears = (organizationId?: string) => {
     queryFn: async () => {
       if (!user || !profile || orgsLoading) return [];
 
-      let query = (supabase as any)
-        .from('academic_years')
-        .select('*');
-
-      const resolvedOrgIds = organizationId ? [organizationId] : orgIds;
-
-      if (resolvedOrgIds.length === 0) {
-        // Only show global years if no orgs; otherwise empty
-        query = query.is('organization_id', null);
-      } else {
-        query = query.or(
-          `organization_id.is.null,organization_id.in.(${resolvedOrgIds.join(',')})`
-        );
-      }
-
-      const { data, error } = await query
-        .is('deleted_at', null)
-        .order('start_date', { ascending: false });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
+      const resolvedOrgId = organizationId || profile.organization_id;
+      const data = await academicYearsApi.list({
+        organization_id: resolvedOrgId || undefined,
+      });
 
       return (data || []) as AcademicYear[];
     },
@@ -59,28 +53,13 @@ export const useCurrentAcademicYear = (organizationId?: string) => {
     queryFn: async () => {
       if (!user || !profile || orgsLoading) return null;
 
-      let query = (supabase as any)
-        .from('academic_years')
-        .select('*')
-        .eq('is_current', true);
+      const resolvedOrgId = organizationId || profile.organization_id;
+      const data = await academicYearsApi.list({
+        organization_id: resolvedOrgId || undefined,
+        is_current: true,
+      });
 
-      const resolvedOrgIds = organizationId ? [organizationId] : orgIds;
-
-      if (resolvedOrgIds.length === 0) {
-        query = query.is('organization_id', null);
-      } else {
-        query = query.or(`organization_id.is.null,organization_id.in.(${resolvedOrgIds.join(',')})`);
-      }
-
-      const { data, error } = await query
-        .is('deleted_at', null)
-        .maybeSingle();
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return (data || null) as AcademicYear | null;
+      return (data && Array.isArray(data) && data.length > 0 ? data[0] : null) as AcademicYear | null;
     },
     enabled: !!user && !!profile,
     staleTime: 10 * 60 * 1000,
@@ -152,39 +131,18 @@ export const useCreateAcademicYear = () => {
         throw new Error('Name cannot be empty');
       }
 
-      // Check for duplicates (name must be unique per organization)
-      const { data: existing } = await (supabase as any)
-        .from('academic_years')
-        .select('id')
-        .eq('name', trimmedName)
-        .eq('organization_id', organizationId)
-        .is('deleted_at', null)
-        .maybeSingle();
+      // Create academic year via Laravel API
+      const data = await academicYearsApi.create({
+        name: trimmedName,
+        start_date: academicYearData.start_date,
+        end_date: academicYearData.end_date,
+        is_current: academicYearData.is_current || false,
+        description: academicYearData.description || null,
+        status: academicYearData.status || 'active',
+        organization_id: organizationId,
+      });
 
-      if (existing) {
-        throw new Error('This academic year name already exists for this organization');
-      }
-
-      // If setting as current, the trigger will handle unsetting others
-      const { data, error } = await (supabase as any)
-        .from('academic_years')
-        .insert({ 
-          name: trimmedName,
-          start_date: academicYearData.start_date,
-          end_date: academicYearData.end_date,
-          is_current: academicYearData.is_current || false,
-          description: academicYearData.description || null,
-          status: academicYearData.status || 'active',
-          organization_id: organizationId,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
+      return data as AcademicYear;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic-years'] });
@@ -208,12 +166,7 @@ export const useUpdateAcademicYear = () => {
       }
 
       // Get current academic year to check organization
-      const { data: currentAcademicYear } = await (supabase as any)
-        .from('academic_years')
-        .select('organization_id, start_date, end_date')
-        .eq('id', id)
-        .is('deleted_at', null)
-        .single();
+      const currentAcademicYear = await academicYearsApi.get(id);
 
       if (!currentAcademicYear) {
         throw new Error('Academic year not found');
@@ -256,39 +209,10 @@ export const useUpdateAcademicYear = () => {
         updateData.name = trimmedName;
       }
 
-      // Check for duplicates (name must be unique per organization)
-      if (updateData.name) {
-        const organizationId = updateData.organization_id !== undefined 
-          ? updateData.organization_id 
-          : currentAcademicYear.organization_id;
+      // Update academic year via Laravel API
+      const data = await academicYearsApi.update(id, updateData);
 
-        const { data: existing } = await (supabase as any)
-          .from('academic_years')
-          .select('id')
-          .eq('name', updateData.name)
-          .eq('organization_id', organizationId)
-          .neq('id', id)
-          .is('deleted_at', null)
-          .maybeSingle();
-
-        if (existing) {
-          throw new Error('This academic year name already exists for this organization');
-        }
-      }
-
-      // If setting as current, the trigger will handle unsetting others
-      const { data, error } = await (supabase as any)
-        .from('academic_years')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
+      return data as AcademicYear;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic-years'] });
@@ -312,12 +236,7 @@ export const useDeleteAcademicYear = () => {
       }
 
       // Get current academic year to check organization
-      const { data: currentAcademicYear } = await (supabase as any)
-        .from('academic_years')
-        .select('organization_id, is_current')
-        .eq('id', id)
-        .is('deleted_at', null)
-        .single();
+      const currentAcademicYear = await academicYearsApi.get(id);
 
       if (!currentAcademicYear) {
         throw new Error('Academic year not found');
@@ -339,15 +258,8 @@ export const useDeleteAcademicYear = () => {
         throw new Error('Cannot delete the current academic year. Please set another year as current first.');
       }
 
-      // Soft delete: set deleted_at timestamp
-      const { error } = await (supabase as any)
-        .from('academic_years')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      // Delete academic year via Laravel API (soft delete)
+      await academicYearsApi.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic-years'] });
@@ -371,12 +283,7 @@ export const useSetCurrentAcademicYear = () => {
       }
 
       // Get current academic year to check organization
-      const { data: academicYear } = await (supabase as any)
-        .from('academic_years')
-        .select('organization_id, is_current')
-        .eq('id', id)
-        .is('deleted_at', null)
-        .single();
+      const academicYear = await academicYearsApi.get(id);
 
       if (!academicYear) {
         throw new Error('Academic year not found');
@@ -387,19 +294,10 @@ export const useSetCurrentAcademicYear = () => {
         throw new Error('Cannot set academic year from different organization as current');
       }
 
-      // Set as current (trigger will unset others)
-      const { data, error } = await (supabase as any)
-        .from('academic_years')
-        .update({ is_current: true })
-        .eq('id', id)
-        .select()
-        .single();
+      // Set as current via Laravel API
+      const data = await academicYearsApi.setCurrent(id);
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
+      return data as AcademicYear;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic-years'] });

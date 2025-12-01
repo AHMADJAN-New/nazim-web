@@ -1,10 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
-import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import type { Tables, TablesInsert, TablesUpdate, Json } from '@/integrations/supabase/types';
+import { scheduleSlotsApi } from '@/lib/api/client';
+import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 // Day of week type for schedule slots
 export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
@@ -29,129 +28,35 @@ export type ScheduleSlotUpdate = TablesUpdate<'schedule_slots'>;
 export const useScheduleSlots = (organizationId?: string, academicYearId?: string) => {
     const { user } = useAuth();
     const { data: profile } = useProfile();
-    const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
     return useQuery({
-        queryKey: ['schedule-slots', organizationId || profile?.organization_id, academicYearId, orgIds.join(',')],
+        queryKey: ['schedule-slots', organizationId || profile?.organization_id, academicYearId],
         queryFn: async () => {
-            if (!user || !profile || orgsLoading) return [];
+            if (!user || !profile) return [];
 
-            let query = (supabase as any)
-                .from('schedule_slots')
-                .select(`
-                    *,
-                    academic_year:academic_years(id, name, start_date, end_date),
-                    school:school_branding(id, school_name)
-                `)
-                .is('deleted_at', null)
-                .order('sort_order', { ascending: true })
-                .order('start_time', { ascending: true });
+            // Fetch schedule slots from Laravel API
+            const slots = await scheduleSlotsApi.list({
+                organization_id: organizationId || profile.organization_id || undefined,
+                academic_year_id: academicYearId,
+            });
 
-            const resolvedOrgIds = organizationId ? [organizationId] : orgIds;
-            if (resolvedOrgIds.length === 0) {
-                query = query.is('organization_id', null);
-            } else {
-                query = query.or(`organization_id.is.null,organization_id.in.(${resolvedOrgIds.join(',')})`);
-            }
-
-            // Filter by academic year if provided
-            if (academicYearId) {
-                // Show slots for this academic year OR global slots (academic_year_id IS NULL)
-                query = query.or(`academic_year_id.eq.${academicYearId},academic_year_id.is.null`);
-            }
-            // If no academic year specified, show all slots (global + year-specific)
-
-            const { data, error } = await query;
-
-            if (error) {
-                // If error is about the school relationship, try fetching without it
-                if (error.message?.includes('school') || error.message?.includes('school_branding')) {
-                    // Retry without school relation
-                    let retryQuery = (supabase as any)
-                        .from('schedule_slots')
-                        .select(`
-                            *,
-                            academic_year:academic_years(id, name, start_date, end_date)
-                        `)
-                        .is('deleted_at', null)
-                        .order('sort_order', { ascending: true })
-                        .order('start_time', { ascending: true });
-
-                    // Apply same filters
-                    const isSuperAdmin = profile.role === 'super_admin';
-                    if (isSuperAdmin) {
-                        if (organizationId) {
-                            retryQuery = retryQuery.eq('organization_id', organizationId);
-                        }
-                    } else {
-                        const userOrgId = profile.organization_id;
-                        if (userOrgId) {
-                            retryQuery = retryQuery.or(`organization_id.is.null,organization_id.eq.${userOrgId}`);
-                        } else {
-                            return [];
-                        }
-                    }
-
-                    if (academicYearId) {
-                        retryQuery = retryQuery.or(`academic_year_id.eq.${academicYearId},academic_year_id.is.null`);
-                    }
-
-                    const { data: retryData, error: retryError } = await retryQuery;
-
-                    if (retryError) {
-                        throw new Error(retryError.message);
-                    }
-
-                    // Fetch schools separately
-                    const slots = retryData || [];
-                    const schoolIds = [...new Set(slots.map((s: any) => s.school_id).filter(Boolean))];
-                    let schoolsMap: Record<string, { id: string; school_name: string }> = {};
-
-                    if (schoolIds.length > 0) {
-                        const { data: schools } = await (supabase as any)
-                            .from('school_branding')
-                            .select('id, school_name')
-                            .in('id', schoolIds);
-
-                        if (schools) {
-                            schoolsMap = schools.reduce((acc: Record<string, { id: string; school_name: string }>, school: any) => {
-                                acc[school.id] = { id: school.id, school_name: school.school_name };
-                                return acc;
-                            }, {});
-                        }
-                    }
-
-                    // Parse days_of_week JSONB array and ensure default_duration_minutes
-                    const parsed = slots.map((slot: any) => ({
-                        ...slot,
-                        days_of_week: Array.isArray(slot.days_of_week)
-                            ? slot.days_of_week
-                            : (typeof slot.days_of_week === 'string'
-                                ? JSON.parse(slot.days_of_week)
-                                : (slot.day_of_week ? [slot.day_of_week] : [])),
-                        default_duration_minutes: slot.default_duration_minutes || 45,
-                        school: slot.school_id ? schoolsMap[slot.school_id] || null : null,
-                    }));
-                    return parsed as ScheduleSlot[];
-                }
-                throw new Error(error.message);
-            }
-
-            // Parse days_of_week JSONB array and ensure default_duration_minutes
-            const parsed = (data || []).map((slot: any) => ({
+            // Parse days_of_week JSONB array and ensure proper format
+            const parsed = (slots || []).map((slot: any) => ({
                 ...slot,
                 days_of_week: Array.isArray(slot.days_of_week)
                     ? slot.days_of_week
                     : (typeof slot.days_of_week === 'string'
                         ? JSON.parse(slot.days_of_week)
-                        : (slot.day_of_week ? [slot.day_of_week] : [])), // Fallback for old data
+                        : (slot.day_of_week ? [slot.day_of_week] : [])),
                 default_duration_minutes: slot.default_duration_minutes || 45,
             }));
+
             return parsed as ScheduleSlot[];
         },
         enabled: !!user && !!profile,
         staleTime: 10 * 60 * 1000,
         gcTime: 30 * 60 * 1000,
+        retry: false, // Prevent infinite retries on connection errors
     });
 };
 
@@ -162,34 +67,27 @@ export const useScheduleSlot = (id: string) => {
     return useQuery({
         queryKey: ['schedule-slot', id],
         queryFn: async () => {
-            if (!user || !profile) return null;
+            if (!user || !profile || !id) return null;
 
-            const { data, error } = await (supabase as any)
-                .from('schedule_slots')
-                .select('*')
-                .eq('id', id)
-                .is('deleted_at', null)
-                .single();
+            // Fetch schedule slot from Laravel API
+            const slot = await scheduleSlotsApi.get(id);
 
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            if (!data) return null;
+            if (!slot) return null;
 
             // Parse days_of_week JSONB array
             const parsed = {
-                ...data,
-                days_of_week: Array.isArray(data.days_of_week)
-                    ? data.days_of_week
-                    : (typeof data.days_of_week === 'string'
-                        ? JSON.parse(data.days_of_week)
-                        : (data.day_of_week ? [data.day_of_week] : [])),
-                default_duration_minutes: data.default_duration_minutes || 45,
+                ...slot,
+                days_of_week: Array.isArray(slot.days_of_week)
+                    ? slot.days_of_week
+                    : (typeof slot.days_of_week === 'string'
+                        ? JSON.parse(slot.days_of_week)
+                        : (slot.day_of_week ? [slot.day_of_week] : [])),
+                default_duration_minutes: slot.default_duration_minutes || 45,
             };
             return parsed as ScheduleSlot;
         },
         enabled: !!user && !!profile && !!id,
+        retry: false, // Prevent infinite retries on connection errors
     });
 };
 
@@ -219,7 +117,7 @@ export const useCreateScheduleSlot = () => {
 
             // Get organization_id - use provided or user's org
             let organizationId = slotData.organization_id;
-            if (!organizationId) {
+            if (organizationId === undefined || organizationId === null) {
                 if (profile.organization_id) {
                     organizationId = profile.organization_id;
                 } else if (profile.role === 'super_admin') {
@@ -230,34 +128,27 @@ export const useCreateScheduleSlot = () => {
             }
 
             // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && organizationId !== profile.organization_id) {
+            if (profile.role !== 'super_admin' && organizationId !== profile.organization_id && organizationId !== null) {
                 throw new Error('Cannot create slot for different organization');
             }
 
-            const { data, error } = await (supabase as any)
-                .from('schedule_slots')
-                .insert({
-                    name: slotData.name.trim(),
-                    code: slotData.code.trim(),
-                    start_time: slotData.start_time,
-                    end_time: slotData.end_time,
-                    days_of_week: slotData.days_of_week || [],
-                    default_duration_minutes: slotData.default_duration_minutes ?? 45,
-                    academic_year_id: slotData.academic_year_id || null,
-                    school_id: slotData.school_id || null,
-                    sort_order: slotData.sort_order ?? 1,
-                    is_active: slotData.is_active ?? true,
-                    description: slotData.description || null,
-                    organization_id: organizationId,
-                })
-                .select()
-                .single();
+            // Create schedule slot via Laravel API
+            const slot = await scheduleSlotsApi.create({
+                name: slotData.name.trim(),
+                code: slotData.code.trim(),
+                start_time: slotData.start_time,
+                end_time: slotData.end_time,
+                days_of_week: slotData.days_of_week || [],
+                default_duration_minutes: slotData.default_duration_minutes ?? 45,
+                academic_year_id: slotData.academic_year_id || null,
+                school_id: slotData.school_id || null,
+                sort_order: slotData.sort_order ?? 1,
+                is_active: slotData.is_active ?? true,
+                description: slotData.description || null,
+                organization_id: organizationId,
+            });
 
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            return data as ScheduleSlot;
+            return slot as ScheduleSlot;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
@@ -267,6 +158,7 @@ export const useCreateScheduleSlot = () => {
         onError: (error: Error) => {
             toast.error(error.message || 'Failed to create schedule slot');
         },
+        retry: false, // Prevent infinite retries on connection errors
     });
 };
 
@@ -282,19 +174,14 @@ export const useUpdateScheduleSlot = () => {
             }
 
             // Get current slot to check organization
-            const { data: currentSlot } = await (supabase as any)
-                .from('schedule_slots')
-                .select('organization_id')
-                .eq('id', id)
-                .is('deleted_at', null)
-                .single();
+            const currentSlot = await scheduleSlotsApi.get(id);
 
             if (!currentSlot) {
                 throw new Error('Schedule slot not found');
             }
 
             // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentSlot.organization_id !== profile.organization_id) {
+            if (profile.role !== 'super_admin' && currentSlot.organization_id !== profile.organization_id && currentSlot.organization_id !== null) {
                 throw new Error('Cannot update slot from different organization');
             }
 
@@ -303,6 +190,7 @@ export const useUpdateScheduleSlot = () => {
                 throw new Error('Cannot change organization_id');
             }
 
+            // Prepare update data
             const updateData: any = {};
             if (updates.name !== undefined) updateData.name = updates.name.trim();
             if (updates.code !== undefined) updateData.code = updates.code.trim();
@@ -316,18 +204,10 @@ export const useUpdateScheduleSlot = () => {
             if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
             if (updates.description !== undefined) updateData.description = updates.description;
 
-            const { data, error } = await (supabase as any)
-                .from('schedule_slots')
-                .update(updateData)
-                .eq('id', id)
-                .select()
-                .single();
+            // Update schedule slot via Laravel API
+            const slot = await scheduleSlotsApi.update(id, updateData);
 
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            return data as ScheduleSlot;
+            return slot as ScheduleSlot;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
@@ -337,6 +217,7 @@ export const useUpdateScheduleSlot = () => {
         onError: (error: Error) => {
             toast.error(error.message || 'Failed to update schedule slot');
         },
+        retry: false, // Prevent infinite retries on connection errors
     });
 };
 
@@ -352,31 +233,19 @@ export const useDeleteScheduleSlot = () => {
             }
 
             // Get current slot to check organization
-            const { data: currentSlot } = await (supabase as any)
-                .from('schedule_slots')
-                .select('organization_id')
-                .eq('id', id)
-                .is('deleted_at', null)
-                .single();
+            const currentSlot = await scheduleSlotsApi.get(id);
 
             if (!currentSlot) {
                 throw new Error('Schedule slot not found');
             }
 
             // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentSlot.organization_id !== profile.organization_id) {
+            if (profile.role !== 'super_admin' && currentSlot.organization_id !== profile.organization_id && currentSlot.organization_id !== null) {
                 throw new Error('Cannot delete slot from different organization');
             }
 
-            // Hard delete - permanently remove the record
-            const { error } = await (supabase as any)
-                .from('schedule_slots')
-                .delete()
-                .eq('id', id);
-
-            if (error) {
-                throw new Error(error.message);
-            }
+            // Delete schedule slot via Laravel API (soft delete)
+            await scheduleSlotsApi.delete(id);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
@@ -386,6 +255,6 @@ export const useDeleteScheduleSlot = () => {
         onError: (error: Error) => {
             toast.error(error.message || 'Failed to delete schedule slot');
         },
+        retry: false, // Prevent infinite retries on connection errors
     });
 };
-

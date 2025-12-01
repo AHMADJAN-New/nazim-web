@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useStaff, useDeleteStaff, useStaffStats, useCreateStaff, useUpdateStaff, useStaffTypes, type Staff, type StaffInsert } from '@/hooks/useStaff';
 import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -102,7 +102,16 @@ export function StaffList() {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [typeFilter, setTypeFilter] = useState<string>('all');
     const [schoolFilter, setSchoolFilter] = useState<string>('all');
-    const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>(profile?.organization_id);
+    // Initialize selectedOrganizationId - will be set from profile when it loads
+    const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>(undefined);
+    
+    // Automatically set selectedOrganizationId from profile when it loads
+    useEffect(() => {
+        if (profile?.organization_id && !selectedOrganizationId) {
+            setSelectedOrganizationId(profile.organization_id);
+        }
+    }, [profile?.organization_id, selectedOrganizationId]);
+    
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -265,9 +274,15 @@ export function StaffList() {
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
+                                        // For non-super-admin users, ensure profile has organization_id
+                                        if (!isSuperAdmin && !profile?.organization_id) {
+                                            toast.error('You are not assigned to an organization. Please log out and log back in.');
+                                            return;
+                                        }
                                         console.log('Create staff button clicked');
                                         setIsCreateDialogOpen(true);
                                     }}
+                                    disabled={!isSuperAdmin && !profile?.organization_id}
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
                                     Add Staff
@@ -547,6 +562,12 @@ export function StaffList() {
             }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <form onSubmit={handleSubmit(async (data) => {
+                        // Wait for profile to load
+                        if (!profile) {
+                            toast.error('Please wait for your profile to load...');
+                            return;
+                        }
+
                         // Validation is handled by react-hook-form, but double-check required fields
                         if (!data.staff_type_id || data.staff_type_id === 'none') {
                             toast.error('Please select a staff type');
@@ -559,20 +580,47 @@ export function StaffList() {
                             ? data.school_id
                             : null;
 
-                        // Get organization_id: from selected school, selected organization, or profile
-                        let organizationId = selectedOrganizationId || profile?.organization_id;
-
-                        // If school is selected, get organization_id from school
-                        if (schoolId && !organizationId) {
-                            const selectedSchool = schools?.find(s => s.id === schoolId);
-                            if (selectedSchool) {
-                                organizationId = selectedSchool.organization_id;
+                        // Get organization_id: 
+                        // 1. For super_admin: use selectedOrganizationId (they must select)
+                        // 2. For regular users: ALWAYS use profile.organization_id (auto-assigned, cannot be changed)
+                        let organizationId: string | undefined;
+                        
+                        if (isSuperAdmin) {
+                            // Super admin must select an organization
+                            organizationId = selectedOrganizationId;
+                            
+                            // If school is selected, get organization_id from school as fallback
+                            if (!organizationId && schoolId) {
+                                const selectedSchool = schools?.find(s => s.id === schoolId);
+                                if (selectedSchool) {
+                                    organizationId = selectedSchool.organization_id;
+                                }
                             }
-                        }
-
-                        if (!organizationId) {
-                            toast.error('Organization ID is required. Please select a school or organization.');
-                            return;
+                            
+                            if (!organizationId) {
+                                toast.error('Please select an organization.');
+                                return;
+                            }
+                        } else {
+                            // Regular users: ALWAYS use profile's organization_id (auto-assigned on login)
+                            // Ignore selectedOrganizationId for regular users - they can only use their own org
+                            organizationId = profile?.organization_id;
+                            
+                            if (!organizationId) {
+                                // This shouldn't happen - backend assigns org on login/register
+                                toast.error('You are not assigned to an organization. Please log out and log back in to refresh your profile.');
+                                console.error('Profile missing organization_id. Profile:', profile);
+                                return;
+                            }
+                            
+                            // If school is selected, validate it belongs to user's organization
+                            if (schoolId) {
+                                const selectedSchool = schools?.find(s => s.id === schoolId);
+                                if (selectedSchool && selectedSchool.organization_id !== organizationId) {
+                                    toast.error('Selected school does not belong to your organization.');
+                                    return;
+                                }
+                            }
                         }
 
                         const staffData: StaffInsert = {

@@ -66,6 +66,25 @@ class OrganizationController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
+        $profile = DB::connection('pgsql')
+            ->table('profiles')
+            ->where('id', $user->id)
+            ->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Check permission: organizations.create
+        // For new organizations, we check if user has the permission globally (organization_id = null)
+        // Super admin can always create organizations
+        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
+            if (!$user->hasPermissionTo('organizations.create')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:organizations,slug',
@@ -95,13 +114,37 @@ class OrganizationController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        $user = $request->user();
+        $profile = DB::connection('pgsql')
+            ->table('profiles')
+            ->where('id', $user->id)
+            ->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        $organization = Organization::whereNull('deleted_at')->findOrFail($id);
+
+        // Check permission: organizations.update
+        // Super admin can always update organizations
+        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
+            if (!$user->hasPermissionTo('organizations.update')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+            
+            // Regular users can only update their own organization
+            if ($profile->organization_id !== $organization->id) {
+                return response()->json(['error' => 'Cannot update organization from different organization'], 403);
+            }
+        }
+
         $request->validate([
             'name' => 'sometimes|string|max:255',
             'slug' => 'sometimes|string|max:255|unique:organizations,slug,' . $id,
             'settings' => 'nullable|array',
         ]);
 
-        $organization = Organization::whereNull('deleted_at')->findOrFail($id);
         $organization->update($request->only(['name', 'slug', 'settings']));
 
         return response()->json($organization);
@@ -110,12 +153,92 @@ class OrganizationController extends Controller
     /**
      * Remove the specified organization (soft delete)
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
+        $user = $request->user();
+        $profile = DB::connection('pgsql')
+            ->table('profiles')
+            ->where('id', $user->id)
+            ->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
         $organization = Organization::findOrFail($id);
+
+        // Check permission: organizations.delete
+        // Super admin can always delete organizations
+        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
+            if (!$user->hasPermissionTo('organizations.delete')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+            
+            // Regular users can only delete their own organization
+            if ($profile->organization_id !== $organization->id) {
+                return response()->json(['error' => 'Cannot delete organization from different organization'], 403);
+            }
+        }
+
         $organization->update(['deleted_at' => now()]);
 
         return response()->json(['message' => 'Organization deleted successfully']);
+    }
+
+    /**
+     * Get organization statistics
+     */
+    public function statistics(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = DB::connection('pgsql')
+            ->table('profiles')
+            ->where('id', $user->id)
+            ->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        $organization = Organization::whereNull('deleted_at')->findOrFail($id);
+
+        // Check permission: organizations.read
+        // Super admin can always view statistics
+        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
+            if (!$user->hasPermissionTo('organizations.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+            
+            // Regular users can only view their own organization's statistics
+            if ($profile->organization_id !== $organization->id) {
+                return response()->json(['error' => 'Cannot view statistics for different organization'], 403);
+            }
+        }
+
+        // Get statistics
+        $userCount = DB::connection('pgsql')
+            ->table('profiles')
+            ->where('organization_id', $id)
+            ->whereNull('deleted_at')
+            ->count();
+
+        $buildingCount = DB::connection('pgsql')
+            ->table('buildings')
+            ->where('organization_id', $id)
+            ->whereNull('deleted_at')
+            ->count();
+
+        $roomCount = DB::connection('pgsql')
+            ->table('rooms')
+            ->where('organization_id', $id)
+            ->whereNull('deleted_at')
+            ->count();
+
+        return response()->json([
+            'userCount' => $userCount,
+            'buildingCount' => $buildingCount,
+            'roomCount' => $roomCount,
+        ]);
     }
 
     /**

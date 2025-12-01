@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +10,7 @@ import type { DayName } from '@/lib/timetableSolver';
 import { useProfile } from '@/hooks/useProfiles';
 import { useLanguage } from '@/hooks/useLanguage';
 import { toast } from 'sonner';
+import { saveTimetableSchema, type SaveTimetableFormData } from '@/lib/validations';
 
 export interface SaveEntryInput {
 	class_academic_year_id: string;
@@ -41,32 +44,52 @@ export function SaveTimetableDialog({
 	const { data: profile } = useProfile();
 	const orgId = organizationId ?? profile?.organization_id ?? null;
 	const { mutateAsync: createTimetable, isPending } = useCreateTimetable();
-	const [name, setName] = useState(defaultName || '');
-	const [description, setDescription] = useState('');
+
+	const {
+		register,
+		handleSubmit,
+		reset,
+		formState: { errors },
+	} = useForm<SaveTimetableFormData>({
+		resolver: zodResolver(saveTimetableSchema),
+		defaultValues: {
+			name: defaultName || '',
+			description: '',
+			timetable_type: 'teaching',
+			organization_id: orgId,
+			academic_year_id: academicYearId ?? null,
+			school_id: schoolId ?? null,
+			entries: entries,
+		},
+	});
 
 	useEffect(() => {
-		if (open && defaultName) setName(defaultName);
-	}, [open, defaultName]);
+		if (open) {
+			// Validate entries before setting
+			const validEntries = entries.filter(e => 
+				e.class_academic_year_id && 
+				e.subject_id && 
+				e.teacher_id && 
+				e.schedule_slot_id && 
+				e.day_name
+			);
+			
+			reset({
+				name: defaultName || '',
+				description: '',
+				timetable_type: 'teaching',
+				organization_id: orgId,
+				academic_year_id: academicYearId ?? null,
+				school_id: schoolId ?? null,
+				entries: validEntries,
+			});
+		}
+	}, [open, defaultName, orgId, academicYearId, schoolId, entries, reset]);
 
-	const isDisabled = useMemo(() => {
-		if (!name || name.trim().length === 0) return true;
-		if (entries.length === 0) return true;
-		if (isPending) return true;
-		// Validate that all entries have required fields
-		const hasInvalidEntries = entries.some(e => 
-			!e.class_academic_year_id || 
-			!e.subject_id || 
-			!e.teacher_id || 
-			!e.schedule_slot_id || 
-			!e.day_name
-		);
-		return hasInvalidEntries;
-	}, [name, entries.length, isPending, entries]);
-
-	const handleSave = async () => {
+	const handleSave = async (data: SaveTimetableFormData) => {
 		try {
-			// Validate entries before saving
-			const invalidEntries = entries.filter(e => 
+			// Validate entries one more time
+			const invalidEntries = data.entries.filter(e => 
 				!e.class_academic_year_id || 
 				!e.subject_id || 
 				!e.teacher_id || 
@@ -75,26 +98,18 @@ export function SaveTimetableDialog({
 			);
 			
 			if (invalidEntries.length > 0) {
-				console.error('Invalid entries found:', invalidEntries);
 				toast.error(`Cannot save: ${invalidEntries.length} entry/entries have missing required fields.`);
 				return;
 			}
 
-			console.log('Saving timetable:', {
-				name: name.trim(),
-				entryCount: entries.length,
-				academicYearId,
-				organizationId: orgId,
-			});
-
 			await createTimetable({
-				name: name.trim(),
-				description: description.trim() || null,
-				timetable_type: 'teaching',
-				organization_id: orgId,
-				academic_year_id: academicYearId ?? null,
-				school_id: schoolId ?? null,
-				entries: entries.map((e) => ({
+				name: data.name.trim(),
+				description: data.description?.trim() || null,
+				timetable_type: data.timetable_type,
+				organization_id: data.organization_id,
+				academic_year_id: data.academic_year_id,
+				school_id: data.school_id,
+				entries: data.entries.map((e) => ({
 					class_academic_year_id: e.class_academic_year_id,
 					subject_id: e.subject_id,
 					teacher_id: e.teacher_id,
@@ -119,24 +134,37 @@ export function SaveTimetableDialog({
 						{t('timetable.saveDesc') || 'Provide a name and optional description for this timetable.'}
 					</DialogDescription>
 				</DialogHeader>
-				<div className="space-y-4">
+				<form onSubmit={handleSubmit(handleSave)} className="space-y-4">
 					<div className="space-y-2">
 						<label className="text-sm font-medium">{t('timetable.name') || 'Name'}</label>
-						<Input value={name} onChange={(e) => setName(e.target.value)} />
+						<Input {...register('name')} />
+						{errors.name && (
+							<p className="text-sm text-destructive mt-1">{errors.name.message}</p>
+						)}
 					</div>
 					<div className="space-y-2">
 						<label className="text-sm font-medium">{t('timetable.description') || 'Description'}</label>
-						<Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+						<Textarea {...register('description')} rows={3} />
+						{errors.description && (
+							<p className="text-sm text-destructive mt-1">{errors.description.message}</p>
+						)}
 					</div>
-				</div>
-				<DialogFooter>
-					<Button variant="outline" onClick={() => onOpenChange(false)}>
-						{t('common.cancel') || 'Cancel'}
-					</Button>
-					<Button onClick={handleSave} disabled={isDisabled}>
-						{t('common.save') || 'Save'}
-					</Button>
-				</DialogFooter>
+					{errors.entries && (
+						<p className="text-sm text-destructive">{errors.entries.message}</p>
+					)}
+					<DialogFooter>
+						<Button 
+							type="button"
+							variant="outline" 
+							onClick={() => onOpenChange(false)}
+						>
+							{t('common.cancel') || 'Cancel'}
+						</Button>
+						<Button type="submit" disabled={isPending}>
+							{t('common.save') || 'Save'}
+						</Button>
+					</DialogFooter>
+				</form>
 			</DialogContent>
 		</Dialog>
 	);

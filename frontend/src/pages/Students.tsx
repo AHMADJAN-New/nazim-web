@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { studentSchema, type StudentFormData } from '@/lib/validations';
 import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
@@ -48,50 +48,6 @@ import { generateStudentProfilePdf } from '@/lib/studentProfilePdf';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const studentSchema = z.object({
-  organization_id: z.string().uuid().optional(),
-  school_id: z.string().uuid().optional().nullable(),
-  card_number: z.string().max(50, 'Card number must be 50 characters or less').optional().nullable(),
-  admission_no: z.string().min(1, 'Admission number is required').max(50, 'Admission number must be 50 characters or less'),
-  full_name: z.string().min(1, 'Full name is required').max(200, 'Name must be 200 characters or less'),
-  father_name: z.string().min(1, 'Father name is required').max(150, 'Father name must be 150 characters or less'),
-  grandfather_name: z.string().max(150, 'Grandfather name must be 150 characters or less').optional().nullable(),
-  mother_name: z.string().max(150, 'Mother name must be 150 characters or less').optional().nullable(),
-  gender: z.enum(['male', 'female']),
-  birth_year: z.string().max(10, 'Birth year must be 10 characters or less').optional().nullable(),
-  birth_date: z.string().max(30, 'Birth date must be 30 characters or less').optional().nullable(),
-  age: z.number().min(3, 'Age must be at least 3').max(25, 'Age must be realistic for school').optional().nullable(),
-  admission_year: z.string().max(10, 'Admission year must be 10 characters or less').optional().nullable(),
-  orig_province: z.string().max(80, 'Province must be 80 characters or less').optional().nullable(),
-  orig_district: z.string().max(80, 'District must be 80 characters or less').optional().nullable(),
-  orig_village: z.string().max(80, 'Village must be 80 characters or less').optional().nullable(),
-  curr_province: z.string().max(80, 'Province must be 80 characters or less').optional().nullable(),
-  curr_district: z.string().max(80, 'District must be 80 characters or less').optional().nullable(),
-  curr_village: z.string().max(80, 'Village must be 80 characters or less').optional().nullable(),
-  nationality: z.string().max(80, 'Nationality must be 80 characters or less').optional().nullable(),
-  preferred_language: z.string().max(50, 'Preferred language must be 50 characters or less').optional().nullable(),
-  previous_school: z.string().max(150, 'Previous school must be 150 characters or less').optional().nullable(),
-  guardian_name: z.string().max(150, 'Guardian name must be 150 characters or less').optional().nullable(),
-  guardian_relation: z.string().max(100, 'Relation must be 100 characters or less').optional().nullable(),
-  guardian_phone: z.string().max(30, 'Phone must be 30 characters or less').optional().nullable(),
-  guardian_tazkira: z.string().max(50, 'Tazkira must be 50 characters or less').optional().nullable(),
-  guardian_picture_path: z.string().max(255, 'Guardian picture path must be 255 characters or less').optional().nullable(),
-  home_address: z.string().max(255, 'Address must be 255 characters or less').optional().nullable(),
-  zamin_name: z.string().max(150, 'Guarantor name must be 150 characters or less').optional().nullable(),
-  zamin_phone: z.string().max(30, 'Guarantor phone must be 30 characters or less').optional().nullable(),
-  zamin_tazkira: z.string().max(50, 'Guarantor tazkira must be 50 characters or less').optional().nullable(),
-  zamin_address: z.string().max(255, 'Guarantor address must be 255 characters or less').optional().nullable(),
-  applying_grade: z.string().max(50, 'Applying grade must be 50 characters or less').optional().nullable(),
-  is_orphan: z.boolean().default(false),
-  admission_fee_status: z.enum(['paid', 'pending', 'waived', 'partial']).default('pending'),
-  student_status: z.enum(['applied', 'admitted', 'active', 'withdrawn']).default('active'),
-  disability_status: z.string().max(150, 'Disability info must be 150 characters or less').optional().nullable(),
-  emergency_contact_name: z.string().max(150, 'Emergency contact must be 150 characters or less').optional().nullable(),
-  emergency_contact_phone: z.string().max(30, 'Emergency contact phone must be 30 characters or less').optional().nullable(),
-  family_income: z.string().max(100, 'Family income must be 100 characters or less').optional().nullable(),
-});
-
-type StudentFormData = z.infer<typeof studentSchema>;
 
 // Helper function to convert empty strings to null for optional fields
 const cleanStudentData = (data: StudentFormData): StudentInsert => {

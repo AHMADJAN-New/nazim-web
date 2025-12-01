@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +41,7 @@ import {
   StudentEducationalHistoryInsert,
   Student,
 } from '@/hooks/useStudents';
+import { educationalHistorySchema, type EducationalHistoryFormData } from '@/lib/validations';
 import { BookOpen, Plus, Pencil, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -58,15 +61,40 @@ export function StudentEducationalHistoryDialog({
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<StudentEducationalHistory | null>(null);
-  const [formData, setFormData] = useState<Partial<StudentEducationalHistoryInsert>>({});
 
   const { data: history, isLoading } = useStudentEducationalHistory(student?.id);
   const createHistory = useCreateStudentEducationalHistory();
   const updateHistory = useUpdateStudentEducationalHistory();
   const deleteHistory = useDeleteStudentEducationalHistory();
 
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<EducationalHistoryFormData>({
+    resolver: zodResolver(educationalHistorySchema),
+    defaultValues: {
+      institution_name: '',
+      academic_year: '',
+      grade_level: '',
+      start_date: '',
+      end_date: '',
+      achievements: '',
+      notes: '',
+    },
+  });
+
   const resetForm = () => {
-    setFormData({});
+    reset({
+      institution_name: '',
+      academic_year: '',
+      grade_level: '',
+      start_date: '',
+      end_date: '',
+      achievements: '',
+      notes: '',
+    });
     setSelectedRecord(null);
   };
 
@@ -77,7 +105,7 @@ export function StudentEducationalHistoryDialog({
 
   const openEditDialog = (record: StudentEducationalHistory) => {
     setSelectedRecord(record);
-    setFormData({
+    reset({
       institution_name: record.institution_name,
       academic_year: record.academic_year || '',
       grade_level: record.grade_level || '',
@@ -89,27 +117,35 @@ export function StudentEducationalHistoryDialog({
     setIsFormDialogOpen(true);
   };
 
-  const handleSave = async () => {
-    if (!student || !formData.institution_name) return;
+  const handleSave = async (data: EducationalHistoryFormData) => {
+    if (!student) return;
 
     if (selectedRecord) {
       await updateHistory.mutateAsync({
         id: selectedRecord.id,
         studentId: student.id,
-        data: formData,
+        data: {
+          institution_name: data.institution_name,
+          academic_year: data.academic_year || null,
+          grade_level: data.grade_level || null,
+          start_date: data.start_date || null,
+          end_date: data.end_date || null,
+          achievements: data.achievements || null,
+          notes: data.notes || null,
+        },
       });
     } else {
       await createHistory.mutateAsync({
         student_id: student.id,
         organization_id: student.organization_id,
         school_id: student.school_id,
-        institution_name: formData.institution_name,
-        academic_year: formData.academic_year || null,
-        grade_level: formData.grade_level || null,
-        start_date: formData.start_date || null,
-        end_date: formData.end_date || null,
-        achievements: formData.achievements || null,
-        notes: formData.notes || null,
+        institution_name: data.institution_name,
+        academic_year: data.academic_year || null,
+        grade_level: data.grade_level || null,
+        start_date: data.start_date || null,
+        end_date: data.end_date || null,
+        achievements: data.achievements || null,
+        notes: data.notes || null,
       });
     }
 
@@ -218,7 +254,15 @@ export function StudentEducationalHistoryDialog({
       </Dialog>
 
       {/* Add/Edit Form Dialog */}
-      <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+      <Dialog 
+        open={isFormDialogOpen} 
+        onOpenChange={(open) => {
+          setIsFormDialogOpen(open);
+          if (!open) {
+            resetForm();
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -230,34 +274,40 @@ export function StudentEducationalHistoryDialog({
               {t('students.educationalHistoryFormDescription') || 'Enter the educational history details'}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit(handleSave)} className="space-y-4">
             <div>
               <Label htmlFor="institution_name">{t('students.institutionName') || 'Institution Name'} *</Label>
               <Input
                 id="institution_name"
-                value={formData.institution_name || ''}
-                onChange={(e) => setFormData({ ...formData, institution_name: e.target.value })}
+                {...register('institution_name')}
                 placeholder={t('students.institutionPlaceholder') || 'School or institution name'}
               />
+              {errors.institution_name && (
+                <p className="text-sm text-destructive mt-1">{errors.institution_name.message}</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="academic_year">{t('students.academicYear') || 'Academic Year'}</Label>
                 <Input
                   id="academic_year"
-                  value={formData.academic_year || ''}
-                  onChange={(e) => setFormData({ ...formData, academic_year: e.target.value })}
+                  {...register('academic_year')}
                   placeholder={t('students.academicYearPlaceholder') || '1403'}
                 />
+                {errors.academic_year && (
+                  <p className="text-sm text-destructive mt-1">{errors.academic_year.message}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="grade_level">{t('students.gradeLevel') || 'Grade Level'}</Label>
                 <Input
                   id="grade_level"
-                  value={formData.grade_level || ''}
-                  onChange={(e) => setFormData({ ...formData, grade_level: e.target.value })}
+                  {...register('grade_level')}
                   placeholder={t('students.gradeLevelPlaceholder') || '5'}
                 />
+                {errors.grade_level && (
+                  <p className="text-sm text-destructive mt-1">{errors.grade_level.message}</p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -266,54 +316,66 @@ export function StudentEducationalHistoryDialog({
                 <Input
                   id="start_date"
                   type="date"
-                  value={formData.start_date || ''}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  {...register('start_date')}
                 />
+                {errors.start_date && (
+                  <p className="text-sm text-destructive mt-1">{errors.start_date.message}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="end_date">{t('students.endDate') || 'End Date'}</Label>
                 <Input
                   id="end_date"
                   type="date"
-                  value={formData.end_date || ''}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  {...register('end_date')}
                 />
+                {errors.end_date && (
+                  <p className="text-sm text-destructive mt-1">{errors.end_date.message}</p>
+                )}
               </div>
             </div>
             <div>
               <Label htmlFor="achievements">{t('students.achievements') || 'Achievements'}</Label>
               <Textarea
                 id="achievements"
-                value={formData.achievements || ''}
-                onChange={(e) => setFormData({ ...formData, achievements: e.target.value })}
+                {...register('achievements')}
                 placeholder={t('students.achievementsPlaceholder') || 'Any achievements or awards'}
                 rows={2}
               />
+              {errors.achievements && (
+                <p className="text-sm text-destructive mt-1">{errors.achievements.message}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="notes">{t('students.notes') || 'Notes'}</Label>
               <Textarea
                 id="notes"
-                value={formData.notes || ''}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                {...register('notes')}
                 placeholder={t('students.notesPlaceholder') || 'Additional notes'}
                 rows={2}
               />
+              {errors.notes && (
+                <p className="text-sm text-destructive mt-1">{errors.notes.message}</p>
+              )}
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFormDialogOpen(false)}>
-              {t('common.cancel') || 'Cancel'}
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={!formData.institution_name || createHistory.isPending || updateHistory.isPending}
-            >
-              {createHistory.isPending || updateHistory.isPending
-                ? t('common.saving') || 'Saving...'
-                : t('common.save') || 'Save'}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => setIsFormDialogOpen(false)}
+              >
+                {t('common.cancel') || 'Cancel'}
+              </Button>
+              <Button
+                type="submit"
+                disabled={createHistory.isPending || updateHistory.isPending}
+              >
+                {createHistory.isPending || updateHistory.isPending
+                  ? t('common.saving') || 'Saving...'
+                  : t('common.save') || 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

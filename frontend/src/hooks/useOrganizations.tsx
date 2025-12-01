@@ -150,36 +150,27 @@ export const useCurrentOrganization = () => {
   });
 };
 
-// TODO: Migrate to Laravel API when statistics endpoint is available
 export const useOrganizationStatistics = (organizationId: string) => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { supabase } = require('@/integrations/supabase/client');
-  
   return useQuery({
     queryKey: ['organization-statistics', organizationId],
     queryFn: async () => {
-      const [usersResult, buildingsResult, roomsResult] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('id', { count: 'exact', head: true })
-          .eq('organization_id', organizationId),
-        supabase
-          .from('buildings')
-          .select('id', { count: 'exact', head: true })
-          .eq('organization_id', organizationId),
-        supabase
-          .from('rooms')
-          .select('id', { count: 'exact', head: true })
-          .eq('organization_id', organizationId),
-      ]);
+      if (!organizationId) {
+        return {
+          userCount: 0,
+          buildingCount: 0,
+          roomCount: 0,
+        };
+      }
 
-      return {
-        userCount: usersResult.count || 0,
-        buildingCount: buildingsResult.count || 0,
-        roomCount: roomsResult.count || 0,
+      const stats = await organizationsApi.statistics(organizationId);
+      return stats as {
+        userCount: number;
+        buildingCount: number;
+        roomCount: number;
       };
     },
     enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -192,69 +183,5 @@ export const useSuperAdminOrganizations = (superAdminId?: string) => {
     data: organizations?.filter(org => orgIds.includes(org.id)) || [],
     isLoading: false,
   };
-};
-
-// TODO: Migrate to Laravel API when super admin assignment endpoint is available
-export const useAssignSuperAdminToOrganization = () => {
-  const queryClient = useQueryClient();
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { supabase } = require('@/integrations/supabase/client');
-
-  return useMutation({
-    mutationFn: async ({ superAdminId, organizationId, isPrimary = false }: { superAdminId: string; organizationId: string; isPrimary?: boolean }) => {
-      const { data, error } = await supabase
-        .from('super_admin_organizations')
-        .insert({
-          super_admin_id: superAdminId,
-          organization_id: organizationId,
-          is_primary: isPrimary,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['super-admin-organizations'] });
-      queryClient.invalidateQueries({ queryKey: ['accessible-organizations'] });
-      toast.success('Super admin assigned to organization');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to assign super admin');
-    },
-  });
-};
-
-// TODO: Migrate to Laravel API when super admin removal endpoint is available
-export const useRemoveSuperAdminFromOrganization = () => {
-  const queryClient = useQueryClient();
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { supabase } = require('@/integrations/supabase/client');
-
-  return useMutation({
-    mutationFn: async ({ superAdminId, organizationId }: { superAdminId: string; organizationId: string }) => {
-      const { error } = await supabase
-        .from('super_admin_organizations')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('super_admin_id', superAdminId)
-        .eq('organization_id', organizationId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['super-admin-organizations'] });
-      queryClient.invalidateQueries({ queryKey: ['accessible-organizations'] });
-      toast.success('Super admin removed from organization');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to remove super admin');
-    },
-  });
 };
 

@@ -1,7 +1,9 @@
 import { ReactNode } from 'react';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { useUserPermissions } from '@/hooks/usePermissions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading';
 
 interface PermissionGuardProps {
   permission: string;
@@ -16,7 +18,17 @@ export function PermissionGuard({
   fallback,
   showError = true 
 }: PermissionGuardProps) {
+  const { data: permissions, isLoading } = useUserPermissions();
   const hasPermission = useHasPermission(permission);
+
+  // Show loading state while permissions are being fetched
+  // hasPermission === undefined means we're loading and have no cached data
+  // Also check if we're loading and don't have permissions yet
+  const isInitialLoad = isLoading && permissions === undefined;
+  
+  if (hasPermission === undefined || isInitialLoad) {
+    return <LoadingSpinner size="lg" text="Checking permissions..." />;
+  }
 
   if (hasPermission) {
     return <>{children}</>;

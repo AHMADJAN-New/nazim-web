@@ -7,7 +7,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useIsSuperAdmin } from "@/hooks/useProfiles";
 import { useCurrentOrganization } from "@/hooks/useOrganizations";
-import { useHasPermission } from "@/hooks/usePermissions";
+import { useHasPermission, useUserPermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
 import type { UserRole } from "@/types/auth";
 import {
@@ -157,6 +157,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   // Prefer role from auth/profile over hook (hook might have dev mode fallback)
   const role = roleFromAuth || roleFromHook;
   const { data: currentOrg } = useCurrentOrganization();
+  const { data: permissions, isLoading: permissionsLoading } = useUserPermissions();
   const hasSettingsPermission = useHasPermission('settings.read');
   const hasBuildingsPermission = useHasPermission('buildings.read');
   const hasRoomsPermission = useHasPermission('rooms.read');
@@ -526,27 +527,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
     // Fetch in background without blocking
     fetchContext();
 
-    // Only subscribe to real-time updates if not in dev mode
-    // Note: user_navigation_context table may not exist, so wrap in try-catch
-    if (!(import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false')) {
-      try {
-        const channel = supabase
-          .channel('user_navigation_context')
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'user_navigation_context', filter: `user_id=eq.${user.id}` },
-            () => fetchContext()
-          )
-          .subscribe();
-
-        return () => {
-          supabase.removeChannel(channel);
-        };
-      } catch (error) {
-        // Silently fail if table doesn't exist
-        return;
-      }
-    }
+    // Realtime subscriptions disabled - using Laravel API instead
+    // If needed, implement polling or use React Query's refetchInterval
   }, [currentModule, role, user?.id]);
 
   // Use the role from useUserRole, or fallback to profile role, or use super_admin if isSuperAdmin
@@ -562,16 +544,29 @@ export const SmartSidebar = memo(function SmartSidebar() {
     return null;
   }, [role, currentProfile?.role, isSuperAdmin, user]);
 
+  // Wait for permissions to load before filtering items (prevents flash)
+  // Super admin can proceed optimistically, but regular users need permissions loaded
+  const isSuperAdminUser = profile?.role === 'super_admin' && profile?.organization_id === null;
+  // Permissions are ready if:
+  // 1. We have cached permissions (even if refetching in background)
+  // 2. We're super admin (don't need to wait)
+  // 3. We're not loading (permissions already loaded or failed)
+  const permissionsReady = permissions !== undefined || isSuperAdminUser || !permissionsLoading;
+
   // Memoize navigation items to prevent recalculation on every render
   // Always render items if we have a role, even if permissions are still loading
   // This prevents the sidebar from disappearing during background refetches
   const filteredItems = useMemo(() => {
+    // If permissions are not ready, return empty array to prevent flash
+    if (!permissionsReady) {
+      return [];
+    }
     if (!effectiveRole) {
       return [];
     }
     const items = getNavigationItems(effectiveRole as UserRole, navigationContext);
     return items;
-  }, [effectiveRole, navigationContext, allNavigationItems]);
+  }, [effectiveRole, navigationContext, allNavigationItems, permissionsReady]);
 
   // Don't show loading state - always render with available data
   // The sidebar will update when permissions are available, but won't disappear

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -9,6 +11,7 @@ import { useScheduleSlots } from '@/hooks/useScheduleSlots';
 import { useStaff } from '@/hooks/useStaff';
 import { useProfile } from '@/hooks/useProfiles';
 import { useLanguage } from '@/hooks/useLanguage';
+import { teacherPreferenceSchema, type TeacherPreferenceFormData } from '@/lib/validations';
 
 interface TeacherPreferencesDialogProps {
 	open: boolean;
@@ -25,8 +28,27 @@ export function TeacherPreferencesDialog({ open, onOpenChange, organizationId, a
 	const { data: staff } = useStaff(orgId);
 	const { data: slots } = useScheduleSlots(orgId, academicYearId || undefined);
 	const { mutateAsync: upsertPref, isPending } = useUpsertTeacherPreference();
-	const [teacherId, setTeacherId] = useState<string | undefined>(undefined);
-	const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
+
+	const {
+		control,
+		handleSubmit,
+		watch,
+		setValue,
+		reset,
+		formState: { errors },
+	} = useForm<TeacherPreferenceFormData>({
+		resolver: zodResolver(teacherPreferenceSchema),
+		defaultValues: {
+			teacher_id: '',
+			schedule_slot_ids: [],
+			organization_id: orgId || null,
+			academic_year_id: academicYearId || null,
+			is_active: true,
+		},
+	});
+
+	const selectedSlotIds = watch('schedule_slot_ids');
+	const teacherId = watch('teacher_id');
 
 	// Load current preference for selected teacher
 	const { data: prefs } = useTeacherPreferences(orgId, teacherId, academicYearId || undefined);
@@ -34,36 +56,40 @@ export function TeacherPreferencesDialog({ open, onOpenChange, organizationId, a
 
 	useEffect(() => {
 		if (existing) {
-			setSelectedSlotIds(existing.schedule_slot_ids || []);
-		} else {
-			setSelectedSlotIds([]);
+			reset({
+				teacher_id: existing.teacher_id,
+				schedule_slot_ids: existing.schedule_slot_ids || [],
+				organization_id: orgId || null,
+				academic_year_id: academicYearId || null,
+				is_active: true,
+			});
+		} else if (teacherId) {
+			setValue('schedule_slot_ids', []);
 		}
-	}, [existing?.id]);
+	}, [existing?.id, teacherId, orgId, academicYearId, reset, setValue]);
 
 	const teacherOptions = useMemo(() => {
 		return (staff || [])
-			.filter((s) => s.is_active !== false)
+			.filter((s) => s.status === 'active')
 			.map((s) => ({ id: s.id, name: s.full_name || s.employee_id || 'Unknown' }));
 	}, [staff]);
 
 	const handleToggleSlot = (slotId: string, checked: boolean | string) => {
 		const isChecked = Boolean(checked);
-		setSelectedSlotIds((prev) => {
-			const set = new Set(prev);
-			if (isChecked) set.add(slotId);
-			else set.delete(slotId);
-			return Array.from(set);
-		});
+		const currentIds = selectedSlotIds || [];
+		const newIds = isChecked
+			? [...currentIds, slotId]
+			: currentIds.filter((id) => id !== slotId);
+		setValue('schedule_slot_ids', newIds);
 	};
 
-	const handleSave = async () => {
-		if (!teacherId) return;
+	const handleSave = async (data: TeacherPreferenceFormData) => {
 		await upsertPref({
-			teacher_id: teacherId,
-			schedule_slot_ids: selectedSlotIds,
-			organization_id: orgId || null,
-			academic_year_id: academicYearId || null,
-			is_active: true,
+			teacher_id: data.teacher_id,
+			schedule_slot_ids: data.schedule_slot_ids,
+			organization_id: data.organization_id,
+			academic_year_id: data.academic_year_id,
+			is_active: data.is_active,
 		});
 		onOpenChange(false);
 	};
@@ -77,29 +103,38 @@ export function TeacherPreferencesDialog({ open, onOpenChange, organizationId, a
 						{t('timetable.teacherPreferencesDesc') || 'Mark slots the selected teacher cannot teach (blocked periods).'}
 					</DialogDescription>
 				</DialogHeader>
-				<div className="space-y-4">
+				<form onSubmit={handleSubmit(handleSave)} className="space-y-4">
 					<div className="grid grid-cols-3 gap-4 items-center">
-						<Label htmlFor="teacher">{t('timetable.selectTeacher') || 'Select Teacher'}</Label>
+						<Label htmlFor="teacher_id">{t('timetable.selectTeacher') || 'Select Teacher'}</Label>
 						<div className="col-span-2">
-							<Select value={teacherId} onValueChange={setTeacherId}>
-								<SelectTrigger id="teacher">
-									<SelectValue placeholder={t('timetable.selectTeacher') || 'Select Teacher'} />
-								</SelectTrigger>
-								<SelectContent>
-									{teacherOptions.map((tch) => (
-										<SelectItem key={tch.id} value={tch.id}>
-											{tch.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							<Controller
+								control={control}
+								name="teacher_id"
+								render={({ field }) => (
+									<Select value={field.value || ''} onValueChange={field.onChange}>
+										<SelectTrigger id="teacher_id">
+											<SelectValue placeholder={t('timetable.selectTeacher') || 'Select Teacher'} />
+										</SelectTrigger>
+										<SelectContent>
+											{teacherOptions.map((tch) => (
+												<SelectItem key={tch.id} value={tch.id}>
+													{tch.name}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
+							/>
+							{errors.teacher_id && (
+								<p className="text-sm text-destructive mt-1">{errors.teacher_id.message}</p>
+							)}
 						</div>
 					</div>
 					<div>
 						<Label className="mb-2 block">{t('timetable.periods') || 'Periods'}</Label>
 						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
 							{(slots || []).map((slot) => {
-								const checked = selectedSlotIds.includes(slot.id);
+								const checked = (selectedSlotIds || []).includes(slot.id);
 								return (
 									<label key={slot.id} className="flex items-center gap-2 border rounded-md p-2">
 										<Checkbox checked={checked} onCheckedChange={(c) => handleToggleSlot(slot.id, c)} />
@@ -111,16 +146,23 @@ export function TeacherPreferencesDialog({ open, onOpenChange, organizationId, a
 								);
 							})}
 						</div>
+						{errors.schedule_slot_ids && (
+							<p className="text-sm text-destructive mt-1">{errors.schedule_slot_ids.message}</p>
+						)}
 					</div>
-				</div>
-				<DialogFooter>
-					<Button variant="outline" onClick={() => onOpenChange(false)}>
-						{t('common.cancel') || 'Cancel'}
-					</Button>
-					<Button onClick={handleSave} disabled={!teacherId || isPending}>
-						{t('common.save') || 'Save'}
-					</Button>
-				</DialogFooter>
+					<DialogFooter>
+						<Button 
+							type="button"
+							variant="outline" 
+							onClick={() => onOpenChange(false)}
+						>
+							{t('common.cancel') || 'Cancel'}
+						</Button>
+						<Button type="submit" disabled={!teacherId || isPending}>
+							{t('common.save') || 'Save'}
+						</Button>
+					</DialogFooter>
+				</form>
 			</DialogContent>
 		</Dialog>
 	);

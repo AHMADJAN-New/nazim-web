@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Seed default organization first
+        $this->call(OrganizationSeeder::class);
+        
         try {
             // Check if users table exists (in public schema)
             $tableExists = DB::connection('pgsql')

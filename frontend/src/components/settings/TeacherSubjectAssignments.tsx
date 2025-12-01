@@ -168,10 +168,26 @@ export function TeacherSubjectAssignments() {
         );
     }, [scheduleSlots, selectedSchoolId]);
 
+    // Enrich assignments with schedule slots from useScheduleSlots hook
+    const enrichedAssignments = useMemo(() => {
+        if (!assignments || !scheduleSlots) return assignments || [];
+        
+        // Create a map of schedule slot IDs to schedule slot objects
+        const slotsMap = new Map(scheduleSlots.map(slot => [slot.id, slot]));
+        
+        // Enrich each assignment with schedule slots
+        return assignments.map(assignment => ({
+            ...assignment,
+            schedule_slots: (assignment.schedule_slot_ids || [])
+                .map((id: string) => slotsMap.get(id))
+                .filter(Boolean),
+        }));
+    }, [assignments, scheduleSlots]);
+
     // Filter assignments by search query
     const filteredAssignments = useMemo(() => {
-        if (!assignments) return [];
-        let filtered = assignments;
+        if (!enrichedAssignments) return [];
+        let filtered = enrichedAssignments;
 
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
@@ -186,7 +202,7 @@ export function TeacherSubjectAssignments() {
         }
 
         return filtered;
-    }, [assignments, searchQuery]);
+    }, [enrichedAssignments, searchQuery]);
 
     const resetForm = () => {
         setCurrentStep(1);

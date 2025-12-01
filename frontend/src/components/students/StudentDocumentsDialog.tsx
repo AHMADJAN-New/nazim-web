@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
   DialogContent,
@@ -38,6 +40,7 @@ import {
   StudentDocument,
   Student,
 } from '@/hooks/useStudents';
+import { documentUploadSchema, type DocumentUploadFormData } from '@/lib/validations';
 import { supabase } from '@/integrations/supabase/client';
 import { FileText, Upload, Trash2, Download, Eye, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
@@ -63,30 +66,42 @@ export function StudentDocumentsDialog({
   const [viewerDocument, setViewerDocument] = useState<StudentDocument | null>(null);
   const [isLoadingViewer, setIsLoadingViewer] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<StudentDocument | null>(null);
-  const [documentFile, setDocumentFile] = useState<File | null>(null);
-  const [documentType, setDocumentType] = useState('');
-  const [documentDescription, setDocumentDescription] = useState('');
 
   const { data: documents, isLoading } = useStudentDocuments(student?.id);
   const uploadDocument = useUploadStudentDocument();
   const deleteDocument = useDeleteStudentDocument();
 
-  const handleUpload = async () => {
-    if (!documentFile || !documentType || !student) return;
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+    watch,
+  } = useForm<DocumentUploadFormData>({
+    resolver: zodResolver(documentUploadSchema),
+    defaultValues: {
+      documentType: '',
+      description: '',
+    },
+  });
+
+  const documentFile = watch('file');
+
+  const handleUpload = async (data: DocumentUploadFormData) => {
+    if (!student || !data.file) return;
 
     await uploadDocument.mutateAsync({
       studentId: student.id,
       organizationId: student.organization_id,
       schoolId: student.school_id,
-      file: documentFile,
-      documentType,
-      description: documentDescription || null,
+      file: data.file,
+      documentType: data.documentType,
+      description: data.description || null,
     });
 
     setIsUploadDialogOpen(false);
-    setDocumentFile(null);
-    setDocumentType('');
-    setDocumentDescription('');
+    reset();
   };
 
   const handleDelete = async () => {
@@ -273,7 +288,15 @@ export function StudentDocumentsDialog({
       </Dialog>
 
       {/* Upload Document Dialog */}
-      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+      <Dialog 
+        open={isUploadDialogOpen} 
+        onOpenChange={(open) => {
+          setIsUploadDialogOpen(open);
+          if (!open) {
+            reset();
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -284,48 +307,70 @@ export function StudentDocumentsDialog({
               {t('students.uploadDocumentDescription') || 'Upload a document for this student'}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit(handleUpload)} className="space-y-4">
             <div>
-              <Label htmlFor="document">{t('students.selectFile') || 'Select File'} *</Label>
-              <Input
-                id="document"
-                type="file"
-                onChange={(e) => setDocumentFile(e.target.files?.[0] || null)}
+              <Label htmlFor="file">{t('students.selectFile') || 'Select File'} *</Label>
+              <Controller
+                control={control}
+                name="file"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <Input
+                    id="file"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+                    {...field}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      onChange(file);
+                    }}
+                  />
+                )}
               />
+              {errors.file && (
+                <p className="text-sm text-destructive mt-1">{errors.file.message}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="documentType">{t('students.documentType') || 'Document Type'} *</Label>
               <Input
                 id="documentType"
-                value={documentType}
-                onChange={(e) => setDocumentType(e.target.value)}
+                {...register('documentType')}
                 placeholder={t('students.documentTypePlaceholder') || 'e.g., Birth Certificate, Tazkira'}
               />
+              {errors.documentType && (
+                <p className="text-sm text-destructive mt-1">{errors.documentType.message}</p>
+              )}
             </div>
             <div>
-              <Label htmlFor="documentDescription">{t('students.description') || 'Description'}</Label>
+              <Label htmlFor="description">{t('students.description') || 'Description'}</Label>
               <Textarea
-                id="documentDescription"
-                value={documentDescription}
-                onChange={(e) => setDocumentDescription(e.target.value)}
+                id="description"
+                {...register('description')}
                 placeholder={t('students.descriptionPlaceholder') || 'Optional description'}
                 rows={3}
               />
+              {errors.description && (
+                <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
+              )}
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
-              {t('common.cancel') || 'Cancel'}
-            </Button>
-            <Button
-              onClick={handleUpload}
-              disabled={!documentFile || !documentType || uploadDocument.isPending}
-            >
-              {uploadDocument.isPending
-                ? t('common.uploading') || 'Uploading...'
-                : t('common.upload') || 'Upload'}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => setIsUploadDialogOpen(false)}
+              >
+                {t('common.cancel') || 'Cancel'}
+              </Button>
+              <Button
+                type="submit"
+                disabled={uploadDocument.isPending}
+              >
+                {uploadDocument.isPending
+                  ? t('common.uploading') || 'Uploading...'
+                  : t('common.upload') || 'Upload'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

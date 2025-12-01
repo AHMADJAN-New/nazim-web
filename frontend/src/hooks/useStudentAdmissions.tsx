@@ -1,15 +1,33 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
-import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import { studentAdmissionsApi } from '@/lib/api/client';
 
 // Custom enum type for stricter validation
 export type AdmissionStatus = 'pending' | 'admitted' | 'active' | 'inactive' | 'suspended' | 'withdrawn' | 'graduated';
 
-// Use generated type from database schema, extended with relations
-export type StudentAdmission = Tables<'student_admissions'> & {
+// Student Admission interface matching the database schema with relations
+export interface StudentAdmission {
+  id: string;
+  organization_id: string;
+  school_id: string | null;
+  student_id: string;
+  academic_year_id: string | null;
+  class_id: string | null;
+  class_academic_year_id: string | null;
+  residency_type_id: string | null;
+  room_id: string | null;
+  admission_year: string | null;
+  admission_date: string;
+  enrollment_status: AdmissionStatus;
+  enrollment_type: string | null;
+  shift: string | null;
+  is_boarder: boolean;
+  fee_status: string | null;
+  placement_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
   student?: {
     id: string;
     full_name: string;
@@ -17,6 +35,10 @@ export type StudentAdmission = Tables<'student_admissions'> & {
     gender: string | null;
     admission_year: string | null;
     guardian_phone: string | null;
+  };
+  organization?: {
+    id: string;
+    name: string;
   };
   academic_year?: {
     id: string;
@@ -45,81 +67,53 @@ export type StudentAdmission = Tables<'student_admissions'> & {
     id: string;
     school_name: string;
   };
-};
-export type StudentAdmissionInsert = TablesInsert<'student_admissions'>;
-export type StudentAdmissionUpdate = TablesUpdate<'student_admissions'>;
+}
 
-const buildOrganizationFilter = async (
-  profile: any,
-  accessibleOrgIds: string[],
-  organizationId?: string,
-): Promise<{ column: string; value: string[] }> => {
-  if (!profile) {
-    return { column: 'organization_id', value: [] };
-  }
+export interface StudentAdmissionInsert {
+  student_id: string;
+  organization_id?: string | null;
+  school_id?: string | null;
+  academic_year_id?: string | null;
+  class_id?: string | null;
+  class_academic_year_id?: string | null;
+  residency_type_id?: string | null;
+  room_id?: string | null;
+  admission_year?: string | null;
+  admission_date?: string;
+  enrollment_status?: string;
+  enrollment_type?: string | null;
+  shift?: string | null;
+  is_boarder?: boolean;
+  fee_status?: string | null;
+  placement_notes?: string | null;
+}
 
-  if (organizationId) {
-    if (accessibleOrgIds.length === 0 || !accessibleOrgIds.includes(organizationId)) {
-      return { column: 'organization_id', value: [] };
-    }
-    return { column: 'organization_id', value: [organizationId] };
-  }
-
-  return { column: 'organization_id', value: accessibleOrgIds };
-};
+export type StudentAdmissionUpdate = Partial<StudentAdmissionInsert>;
 
 export const useStudentAdmissions = (organizationId?: string) => {
   const { user, profile } = useAuth();
-  const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery<StudentAdmission[]>({
-    queryKey: ['student-admissions', organizationId ?? profile?.organization_id ?? null, orgIds.join(',')],
+    queryKey: ['student-admissions', organizationId ?? profile?.organization_id ?? null],
     queryFn: async () => {
       if (!user || !profile) return [];
-      if (orgsLoading) return [];
 
-      const orgFilter = await buildOrganizationFilter(profile, orgIds, organizationId);
-      console.log('[useStudentAdmissions] Organization filter:', orgFilter);
-      console.log('[useStudentAdmissions] Profile:', { id: profile.id, organization_id: profile.organization_id, role: profile.role });
-      
-      // Try with nested relations first
-      let query = (supabase as any)
-        .from('student_admissions')
-        .select(`
-          *,
-          school:school_branding(id, school_name),
-          student:students(id, full_name, admission_no, gender, admission_year, guardian_phone),
-          academic_year:academic_years(id, name, start_date, end_date),
-          class:classes(id, name, grade_level),
-          class_academic_year:class_academic_years(id, section_name),
-          residency_type:residency_types(id, name),
-          room:rooms(id, room_number)
-        `)
-        .is('deleted_at', null)
-        .order('admission_date', { ascending: false })
-        .order('created_at', { ascending: false });
+      try {
+        const effectiveOrgId = organizationId || profile.organization_id;
+        console.log('[useStudentAdmissions] Fetching admissions for organization:', effectiveOrgId);
 
-      if (orgFilter.value.length === 0) {
-        console.log('[useStudentAdmissions] No accessible organizations, returning empty list');
-        return [];
+        const admissions = await studentAdmissionsApi.list({
+          organization_id: effectiveOrgId || undefined,
+        });
+
+        console.log('[useStudentAdmissions] Fetched', (admissions as StudentAdmission[]).length, 'admissions');
+        return admissions as StudentAdmission[];
+      } catch (error) {
+        console.error('[useStudentAdmissions] Error fetching admissions:', error);
+        throw error;
       }
-
-      console.log('[useStudentAdmissions] Applying IN filter:', orgFilter.column, orgFilter.value);
-      query = query.in(orgFilter.column, orgFilter.value);
-
-      const { data, error } = await query;
-      if (error) {
-        console.error('[useStudentAdmissions] Query error:', error);
-        console.error('[useStudentAdmissions] Error details:', JSON.stringify(error, null, 2));
-        throw new Error(error.message || 'Failed to fetch student admissions');
-      }
-      console.log('[useStudentAdmissions] Query successful, returned', data?.length || 0, 'admissions');
-      if (data && data.length > 0) {
-        console.log('[useStudentAdmissions] Sample admission:', JSON.stringify(data[0], null, 2));
-      }
-      return (data || []) as StudentAdmission[];
     },
-    enabled: !!user && !!profile && !orgsLoading,
+    enabled: !!user && !!profile,
   });
 };
 
@@ -137,20 +131,13 @@ export const useCreateStudentAdmission = () => {
       const insertData = {
         ...payload,
         organization_id: organizationId,
-        school_id: payload.school_id || null,
         admission_date: payload.admission_date || new Date().toISOString().slice(0, 10),
         enrollment_status: payload.enrollment_status || 'admitted',
         is_boarder: payload.is_boarder ?? false,
       };
 
-      const { data, error } = await (supabase as any)
-        .from('student_admissions')
-        .insert(insertData)
-        .select()
-        .single();
-
-      if (error) throw new Error(error.message);
-      return data as StudentAdmission;
+      const admission = await studentAdmissionsApi.create(insertData);
+      return admission as StudentAdmission;
     },
     onSuccess: () => {
       toast.success('Student admitted');
@@ -170,19 +157,8 @@ export const useUpdateStudentAdmission = () => {
     mutationFn: async ({ id, data }: { id: string; data: StudentAdmissionUpdate }) => {
       if (!profile) throw new Error('User not authenticated');
 
-      let query = (supabase as any)
-        .from('student_admissions')
-        .update({ ...data, updated_at: new Date().toISOString() })
-        .eq('id', id);
-
-      if (profile.organization_id) {
-        query = query.eq('organization_id', profile.organization_id);
-      }
-
-      const { error } = await query;
-
-      if (error) throw new Error(error.message);
-      return id;
+      const updated = await studentAdmissionsApi.update(id, data);
+      return updated as StudentAdmission;
     },
     onSuccess: () => {
       toast.success('Admission updated');
@@ -201,44 +177,10 @@ export const useDeleteStudentAdmission = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       if (!profile) {
-        throw new Error('Organization is required to remove admission');
+        throw new Error('User not authenticated');
       }
 
-      // Soft delete: set deleted_at timestamp
-      // UPDATE policy allows this without strict super admin checks
-      let query = (supabase as any)
-        .from('student_admissions')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id)
-        .is('deleted_at', null); // Only update rows that aren't already deleted
-
-      if (profile.organization_id) {
-        query = query.eq('organization_id', profile.organization_id);
-      }
-
-      const { data, error } = await query.select();
-      if (error) {
-        // Detailed logging to help diagnose any remaining RLS issues
-        // eslint-disable-next-line no-console
-        console.error('[useDeleteStudentAdmission] Delete error:', {
-          error,
-          message: error.message,
-          details: (error as any).details,
-          hint: (error as any).hint,
-          code: (error as any).code,
-          admissionId: id,
-          profileRole: profile?.role,
-          profileOrgId: profile?.organization_id,
-        });
-        throw new Error(error.message || 'Failed to remove admission');
-      }
-
-      // Optional debug logging
-      if (data && (data as any[]).length > 0) {
-        // eslint-disable-next-line no-console
-        console.log('[useDeleteStudentAdmission] Successfully soft-deleted admission:', (data as any[])[0].id);
-      }
-
+      await studentAdmissionsApi.delete(id);
       return id;
     },
     onSuccess: () => {
@@ -251,19 +193,32 @@ export const useDeleteStudentAdmission = () => {
   });
 };
 
+export interface AdmissionStats {
+  total: number;
+  active: number;
+  pending: number;
+  boarders: number;
+}
+
 export const useAdmissionStats = (organizationId?: string) => {
-  const { data: admissions, isLoading } = useStudentAdmissions(organizationId);
+  const { user, profile } = useAuth();
 
-  const stats = (admissions || []).reduce(
-    (acc, admission) => {
-      acc.total += 1;
-      acc.active += admission.enrollment_status === 'active' ? 1 : 0;
-      acc.pending += admission.enrollment_status === 'pending' || admission.enrollment_status === 'admitted' ? 1 : 0;
-      acc.boarders += admission.is_boarder ? 1 : 0;
-      return acc;
+  const { data: stats, isLoading } = useQuery<AdmissionStats>({
+    queryKey: ['student-admissions-stats', organizationId ?? profile?.organization_id ?? null],
+    queryFn: async () => {
+      if (!user || !profile) {
+        return { total: 0, active: 0, pending: 0, boarders: 0 };
+      }
+
+      const effectiveOrgId = organizationId || profile.organization_id;
+      const result = await studentAdmissionsApi.stats({
+        organization_id: effectiveOrgId || undefined,
+      });
+
+      return result as AdmissionStats;
     },
-    { total: 0, active: 0, pending: 0, boarders: 0 },
-  );
+    enabled: !!user && !!profile,
+  });
 
-  return { stats, isLoading };
+  return { stats: stats || { total: 0, active: 0, pending: 0, boarders: 0 }, isLoading };
 };

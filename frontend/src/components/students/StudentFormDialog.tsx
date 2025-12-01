@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { studentSchema, type StudentFormData } from '@/lib/validations';
 import {
     Dialog,
     DialogContent,
@@ -41,48 +43,8 @@ export interface StudentFormDialogProps {
     onSubmitData?: (values: StudentFormValues, isEdit: boolean, pictureFile?: File | null) => Promise<void> | void;
 }
 
-type StudentFormValues = {
-    organization_id?: string;
-    school_id?: string | null;
-    admission_no: string;
-    card_number?: string | null;
-    full_name: string;
-    father_name: string;
-    grandfather_name?: string | null;
-    mother_name?: string | null;
-    gender: 'male' | 'female';
-    birth_year?: string | null;
-    birth_date?: string | null;
-    age?: number | null;
-    admission_year?: string | null;
-    applying_grade?: string | null;
-    preferred_language?: string | null;
-    nationality?: string | null;
-    previous_school?: string | null;
-    orig_province?: string | null;
-    orig_district?: string | null;
-    orig_village?: string | null;
-    curr_province?: string | null;
-    curr_district?: string | null;
-    curr_village?: string | null;
-    home_address?: string | null;
-    guardian_name?: string | null;
-    guardian_relation?: string | null;
-    guardian_phone?: string | null;
-    guardian_tazkira?: string | null;
-    guardian_picture_path?: string | null;
-    zamin_name?: string | null;
-    zamin_phone?: string | null;
-    zamin_tazkira?: string | null;
-    zamin_address?: string | null;
-    admission_fee_status: 'paid' | 'pending' | 'waived' | 'partial';
-    student_status: 'applied' | 'admitted' | 'active' | 'withdrawn';
-    is_orphan: boolean;
-    disability_status?: string | null;
-    emergency_contact_name?: string | null;
-    emergency_contact_phone?: string | null;
-    family_income?: string | null;
-};
+// Use StudentFormData from shared validation schema
+type StudentFormValues = StudentFormData;
 
 export function StudentFormDialog({ open, onOpenChange, student, onSuccess, onSubmitData }: StudentFormDialogProps) {
     const isEdit = !!student;
@@ -97,6 +59,7 @@ export function StudentFormDialog({ open, onOpenChange, student, onSuccess, onSu
     const [isDisciplineDialogOpen, setIsDisciplineDialogOpen] = useState(false);
 
     const { register, handleSubmit, control, setValue, reset, watch, formState: { errors } } = useForm<StudentFormValues>({
+        resolver: zodResolver(studentSchema),
         defaultValues: {
             admission_no: '',
             card_number: '',

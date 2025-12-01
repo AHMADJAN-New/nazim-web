@@ -44,6 +44,19 @@ class PermissionController extends Controller
             return response()->json(['permissions' => []]);
         }
 
+        // Super admin with no organization gets all global permissions
+        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
+            $permissions = DB::table('permissions')
+                ->whereNull('organization_id')
+                ->where('guard_name', 'web')
+                ->pluck('name')
+                ->toArray();
+            
+            return response()->json([
+                'permissions' => $permissions
+            ]);
+        }
+
         // Get all permissions for the user (via roles and direct permissions)
         // Spatie handles this automatically with organization context
         $permissions = $user->getAllPermissions();

@@ -3,10 +3,15 @@ import { AppHeader } from "./AppHeader";
 import { Outlet, useLocation } from "react-router-dom";
 import { useMemo } from "react";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useUserPermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/hooks/useAuth";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 export function PersistentLayout() {
   const location = useLocation();
   const { isRTL } = useLanguage();
+  const { profile } = useAuth();
+  const { data: permissions, isLoading } = useUserPermissions();
   
   // Extract page title from path (optional - can be enhanced)
   const pageTitle = useMemo(() => {
@@ -15,6 +20,25 @@ export function PersistentLayout() {
     // Add more title mappings as needed
     return '';
   }, [location.pathname]);
+
+  // Wait for permissions to load before rendering routes
+  // This prevents the flash of "Access Denied" messages
+  // Super admin can proceed optimistically, but regular users need permissions loaded
+  const isSuperAdminUser = profile?.role === 'super_admin' && profile?.organization_id === null;
+  
+  // Permissions are ready if:
+  // 1. We have a profile with a role (query can run)
+  // 2. Query is not loading (has completed or is disabled)
+  // 3. We have permissions data (even if empty array) OR we're super admin
+  const hasProfile = profile?.role !== undefined && profile !== null;
+  const queryCanRun = hasProfile && !isLoading;
+  // With placeholderData and initialData, permissions should always be an array, never undefined
+  const hasPermissionsData = Array.isArray(permissions);
+  const permissionsReady = (hasProfile && queryCanRun && hasPermissionsData) || isSuperAdminUser;
+  
+  // Show loading state if permissions are not ready
+  // This blocks ALL routes from rendering until permissions are ready
+  const showLoading = !permissionsReady;
 
   return (
     <div className="min-h-screen flex w-full bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -28,7 +52,13 @@ export function PersistentLayout() {
         />
         
         <div className="flex-1 overflow-auto custom-scrollbar">
-          <Outlet />
+          {showLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <LoadingSpinner size="lg" text="Loading permissions..." />
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </div>
       </div>
     </div>

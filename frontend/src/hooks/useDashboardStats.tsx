@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useEffect } from 'react';
+import { staffApi, studentsApi } from '@/lib/api/client';
+import { useProfile } from './useProfiles';
+import { useAuth } from './useAuth';
 
 export interface DashboardStats {
   totalStudents: number;
@@ -26,19 +27,64 @@ export interface DashboardStats {
 }
 
 export const useDashboardStats = () => {
-  const query = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: async (): Promise<DashboardStats> => {
-      // Only query staff table which exists
-      const { count: staffCount } = await supabase
-        .from('staff')
-        .select('*', { count: 'exact', head: true });
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
 
-      const totalStaff = staffCount || 0;
+  const query = useQuery({
+    queryKey: ['dashboard-stats', profile?.organization_id],
+    queryFn: async (): Promise<DashboardStats> => {
+      if (!user || !profile) {
+        return {
+          totalStudents: 0,
+          totalStaff: 0,
+          todayAttendance: {
+            percentage: 0,
+            present: 0,
+            total: 0
+          },
+          feeCollection: {
+            amount: 0,
+            currency: '₹'
+          },
+          donations: {
+            amount: 0,
+            currency: '₹'
+          },
+          hostelOccupancy: {
+            percentage: 0,
+            occupied: 0,
+            total: 0
+          }
+        };
+      }
+
+      // Fetch staff stats from Laravel API
+      let totalStaff = 0;
+      try {
+        const staffStats = await staffApi.stats({
+          organization_id: profile.organization_id || undefined,
+        });
+        totalStaff = staffStats?.total || 0;
+      } catch (error) {
+        console.error('Failed to fetch staff stats:', error);
+        totalStaff = 0;
+      }
+
+      // Fetch student stats from Laravel API
+      let totalStudents = 0;
+      try {
+        const studentStats = await studentsApi.stats({
+          organization_id: profile.organization_id || undefined,
+        });
+        totalStudents = studentStats?.total || 0;
+      } catch (error) {
+        console.error('Failed to fetch student stats:', error);
+        totalStudents = 0;
+      }
 
       // Return default values for non-existent tables
       return {
-        totalStudents: 0,
+        totalStudents,
         totalStaff,
         todayAttendance: {
           percentage: 0,
@@ -60,20 +106,16 @@ export const useDashboardStats = () => {
         }
       };
     },
+    enabled: !!user && !!profile,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    // Use refetchInterval instead of realtime subscriptions
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    retry: false, // Prevent infinite retries on connection errors
   });
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('dashboard-stats')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, () => query.refetch())
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [query.refetch]);
+  // Realtime subscriptions disabled - using polling instead
+  // React Query will automatically refetch based on refetchInterval
 
   return query;
 };

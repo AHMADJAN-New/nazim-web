@@ -100,30 +100,49 @@ export const useUserPermissions = () => {
       return permissions.sort();
     },
     enabled: !!profile?.role && !orgsLoading,
-    staleTime: 30 * 60 * 1000, // 30 minutes - permissions don't change often
-    gcTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 60 * 60 * 1000, // 1 hour - permissions don't change often
+    gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache longer
     refetchOnWindowFocus: false, // Don't refetch on window focus
     refetchOnMount: false, // Don't refetch on mount if data is fresh
     refetchOnReconnect: false, // Don't refetch on reconnect
+    refetchInterval: false, // Never auto-refetch
+    // CRITICAL: Always return an initial value to prevent undefined state
+    placeholderData: (previousData) => previousData ?? [],
+    // Ensure we always have a value, even if query is disabled
+    initialData: [],
   });
 };
 
-export const useHasPermission = (permissionName: string) => {
+export const useHasPermission = (permissionName: string): boolean | undefined => {
   const { profile } = useAuth();
   const { data: permissions, isLoading } = useUserPermissions();
 
-  if (isLoading && !permissions) {
-    // Initial load - no cached data yet
-    return false;
+  // Super admin always has all permissions (handled by backend)
+  // Optimistically allow super admin during load since backend will enforce
+  if (profile?.role === 'super_admin' && profile.organization_id === null) {
+    // If permissions are loaded, check them
+    if (permissions && permissions.length > 0) {
+      return permissions.includes(permissionName);
+    }
+    // During loading or if no permissions yet, optimistically allow
+    // Backend will enforce the actual permissions
+    return true;
   }
 
-  // If we have permissions (cached or fresh), use them
-  // This ensures sidebar doesn't disappear during background refetches
+  // For regular users: use cached permissions even during background refetch
+  // Only return undefined if we truly have no cached data AND we're loading
   if (permissions && permissions.length > 0) {
+    // We have cached permissions, use them even if refetching in background
     return permissions.includes(permissionName);
   }
 
-  // No permissions found
+  // If loading and no cached data, return undefined (PermissionGuard will show loading)
+  // This only happens on initial load, not on tab switches (cache should be available)
+  if (isLoading && !permissions) {
+    return undefined; // Indicates loading state
+  }
+
+  // No permissions found (not loading, but no permissions)
   return false;
 };
 

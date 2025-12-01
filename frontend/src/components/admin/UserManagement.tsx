@@ -393,7 +393,9 @@ export function UserManagement() {
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{user.role.replace('_', ' ')}</Badge>
+                        <Badge variant="outline">
+                          {typeof user.role === 'string' ? user.role.replace('_', ' ') : 'N/A'}
+                        </Badge>
                       </TableCell>
                       {isSuperAdmin && (
                         <TableCell>

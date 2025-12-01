@@ -1,10 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { supabaseAdmin } from '@/integrations/supabase/adminClient';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { usersApi } from '@/lib/api/client';
 
 interface UserProfileRow {
   id: string;
@@ -20,21 +18,6 @@ interface UserProfileRow {
   default_school_id: string | null;
 }
 
-interface SuperAdminOrganization {
-  organization_id: string;
-  super_admin_id: string;
-  is_primary: boolean;
-  created_at: string;
-  deleted_at: string | null;
-}
-
-interface SchoolBrandingRow {
-  id: string;
-  organization_id: string;
-  school_name: string;
-  created_at: string;
-  deleted_at: string | null;
-}
 
 export interface UserProfile {
   id: string;
@@ -97,60 +80,9 @@ export const useUsers = (filters?: {
         return [];
       }
 
-      let query = (supabase as any)
-        .from('profiles')
-        .select('id, full_name, email, role, organization_id, default_school_id, phone, avatar_url, is_active, created_at, updated_at');
-
-      query = query.in('organization_id', orgIds);
-
-      // Apply filters
-      if (filters?.role) {
-        query = query.eq('role', filters.role);
-      }
-      if (filters?.organization_id !== undefined) {
-        if (filters.organization_id === null || !orgIds.includes(filters.organization_id)) {
-          return [];
-        }
-        query = query.eq('organization_id', filters.organization_id);
-      }
-      if (filters?.is_active !== undefined) {
-        query = query.eq('is_active', filters.is_active);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const rows = (data || []) as UserProfileRow[];
-
-      let users = rows.map((u) => ({
-        id: u.id,
-        name: u.full_name || u.email || '',
-        email: u.email || '',
-        role: u.role || '',
-        organization_id: u.organization_id,
-        default_school_id: u.default_school_id || null,
-        phone: u.phone,
-        avatar: u.avatar_url || null,
-        is_active: u.is_active ?? true,
-        created_at: u.created_at,
-        updated_at: u.updated_at,
-      }));
-
-      // Apply search filter client-side (for better performance with small datasets)
-      if (filters?.search) {
-        const searchLower = filters.search.toLowerCase();
-        users = users.filter(
-          (u) =>
-            u.name.toLowerCase().includes(searchLower) ||
-            u.email.toLowerCase().includes(searchLower) ||
-            u.role.toLowerCase().includes(searchLower)
-        );
-      }
-
-      return users;
+      // Fetch users from Laravel API
+      const users = await usersApi.list(filters);
+      return users as UserProfile[];
     },
     enabled: !!currentProfile && !orgsLoading,
   });
@@ -174,72 +106,27 @@ export const useCreateUser = () => {
         throw new Error('Insufficient permissions to create users');
       }
 
-      // Determine organization_id and default_school_id within accessible orgs
+      // Determine organization_id within accessible orgs
       let organizationId: string | null = userData.organization_id ?? currentProfile.organization_id ?? null;
       if (organizationId && !orgIds.includes(organizationId)) {
         throw new Error('Cannot create user for a non-accessible organization');
       }
-      if (!organizationId) {
-        organizationId = orgIds[0] ?? null;
+      if (!organizationId && orgIds.length > 0) {
+        organizationId = orgIds[0];
       }
 
-      let defaultSchoolId: string | null = null;
-      if (userData.default_school_id) {
-        defaultSchoolId = userData.default_school_id;
-      } else if (organizationId) {
-        const { data: schools } = await (supabase as any)
-          .from('school_branding')
-          .select('id')
-          .eq('organization_id', organizationId)
-          .is('deleted_at', null)
-          .order('created_at', { ascending: true })
-          .limit(1);
-        const schoolRows = (schools || []) as SchoolBrandingRow[];
-        if (schoolRows.length > 0) {
-          defaultSchoolId = schoolRows[0].id;
-        }
-      }
-
-      // Create user in auth.users using admin client (requires service role key)
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      // Create user via Laravel API
+      const result = await usersApi.create({
         email: userData.email,
         password: userData.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: userData.full_name,
-          role: userData.role,
-          organization_id: organizationId,
-          default_school_id: defaultSchoolId,
-        },
+        full_name: userData.full_name,
+        role: userData.role,
+        organization_id: organizationId,
+        default_school_id: userData.default_school_id,
+        phone: userData.phone,
       });
 
-      if (authError) {
-        throw new Error(authError.message);
-      }
-
-      if (!authData.user) {
-        throw new Error('Failed to create user');
-      }
-
-      // Update profile with additional data
-      const { error: profileError } = await (supabase as any)
-        .from('profiles')
-        .update({
-          full_name: userData.full_name,
-          role: userData.role,
-          organization_id: organizationId,
-          default_school_id: defaultSchoolId,
-          phone: userData.phone || null,
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) {
-        // Try to clean up auth user if profile update fails
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-        throw new Error(profileError.message);
-      }
-
-      return authData.user;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -270,25 +157,7 @@ export const useUpdateUser = () => {
         throw new Error('Insufficient permissions to update users');
       }
 
-      // Get target user's profile
-      const { data: targetProfile } = await (supabase as any)
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', userData.id)
-        .single();
-
-      if (!targetProfile) {
-        throw new Error('User not found');
-      }
-
-      const target = targetProfile as { organization_id: string | null };
-
-      // Check organization access for admins
-      if (!orgIds.includes(target.organization_id || '')) {
-        throw new Error('Cannot update user from different organization');
-      }
-
-      // Update profile
+      // Build update data
       const updateData: any = {};
       if (userData.full_name !== undefined) updateData.full_name = userData.full_name;
       if (userData.email !== undefined) updateData.email = userData.email;
@@ -305,28 +174,9 @@ export const useUpdateUser = () => {
         updateData.default_school_id = userData.default_school_id;
       }
 
-      const { error } = await (supabase as any)
-        .from('profiles')
-        .update(updateData)
-        .eq('id', userData.id);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      // Update auth user email if changed
-      if (userData.email) {
-        const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userData.id, {
-          email: userData.email,
-        });
-
-        if (authError) {
-          console.error('Failed to update auth email:', authError);
-          // Don't throw - profile update succeeded
-        }
-      }
-
-      return { id: userData.id };
+      // Update user via Laravel API
+      const result = await usersApi.update(userData.id, updateData);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -356,38 +206,8 @@ export const useDeleteUser = () => {
         throw new Error('Insufficient permissions to delete users');
       }
 
-      // Get target user's profile
-      const { data: targetProfile } = await (supabase as any)
-        .from('profiles')
-        .select('organization_id, role')
-        .eq('id', userId)
-        .single();
-
-      if (!targetProfile) {
-        throw new Error('User not found');
-      }
-
-      const target = targetProfile as { organization_id: string | null; role: string };
-
-      // Prevent deleting super admin
-      if (target.role === 'super_admin') {
-        throw new Error('Cannot delete super admin user');
-      }
-
-      // Check organization access for admins
-      if (isAdmin && !isSuperAdmin) {
-        if (target.organization_id !== currentProfile.organization_id) {
-          throw new Error('Cannot delete user from different organization');
-        }
-      }
-
-      // Delete user (cascade will delete profile)
-      const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
+      // Delete user via Laravel API
+      await usersApi.delete(userId);
       return { id: userId };
     },
     onSuccess: () => {
@@ -417,14 +237,8 @@ export const useResetUserPassword = () => {
         throw new Error('Insufficient permissions to reset passwords');
       }
 
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        password: newPassword,
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
+      // Reset password via Laravel API
+      await usersApi.resetPassword(userId, newPassword);
       return { id: userId };
     },
     onSuccess: () => {

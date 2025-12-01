@@ -230,7 +230,7 @@ export function AppSidebar() {
                 {currentUser.name}
               </h3>
               <p className="text-xs text-sidebar-foreground/70 capitalize">
-                {currentUser.role.replace('_', ' ')}
+                {typeof currentUser.role === 'string' ? currentUser.role.replace('_', ' ') : 'User'}
               </p>
             </div>
           </div>

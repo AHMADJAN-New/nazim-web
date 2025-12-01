@@ -26,6 +26,7 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
 
 // Create Supabase client only if configured (for backward compatibility)
 // In production, this should be removed once all Supabase dependencies are migrated
+// Realtime/WebSocket is disabled - using Laravel API instead
 export const supabase = createClient<Database>(
   SUPABASE_URL || 'http://localhost:54321', 
   SUPABASE_PUBLISHABLE_KEY || 'dummy-key', 
@@ -35,6 +36,10 @@ export const supabase = createClient<Database>(
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+  },
+  realtime: {
+    // Disable realtime/WebSocket connections - using Laravel API instead
+    disabled: true,
   },
   global: {
     headers: {

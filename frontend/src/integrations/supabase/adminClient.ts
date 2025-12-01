@@ -17,19 +17,20 @@ const SUPABASE_SERVICE_ROLE_KEY =
   // This is the "Secret key" shown in `supabase status` output
   'sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz';
 
-if (!SUPABASE_URL) {
-  throw new Error('VITE_SUPABASE_URL is not configured');
+// Supabase is deprecated - using Laravel API instead
+// Validate environment variables (optional - won't throw if missing)
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn('⚠️ Supabase not configured - using Laravel API instead. This is expected after migration.');
+  // Don't throw - just create a dummy client that won't be used
 }
 
-if (!SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn('⚠️ VITE_SUPABASE_SERVICE_ROLE_KEY is not configured. Admin operations may fail.');
-}
-
-// Create admin client with service role key
+// Supabase admin client is deprecated - using Laravel API instead
+// This file is kept for backward compatibility but should not be used for new features
+// Create admin client with service role key (dummy if not configured)
 // This bypasses RLS and should only be used for admin operations
 export const supabaseAdmin = createClient<Database>(
-  SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_URL || 'http://localhost:54321',
+  SUPABASE_SERVICE_ROLE_KEY || 'dummy-key',
   {
     auth: {
       autoRefreshToken: false,

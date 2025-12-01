@@ -137,17 +137,14 @@ export function AuthMonitoringDashboard() {
   useEffect(() => {
     fetchAuthEvents();
     
-    // Set up real-time subscription for auth events
-    const channel = supabase
-      .channel('auth_monitoring')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'auth_monitoring' },
-        () => fetchAuthEvents()
-      )
-      .subscribe();
+    // Realtime subscriptions disabled - using polling instead
+    // Poll every 30 seconds for new auth events
+    const interval = setInterval(() => {
+      fetchAuthEvents();
+    }, 30000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, []);
 

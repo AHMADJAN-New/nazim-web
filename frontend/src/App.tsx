@@ -46,6 +46,7 @@ import {
   UserManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
+import { PermissionRoute } from "@/components/PermissionRoute";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -96,40 +97,40 @@ const App = () => (
                       </Suspense>
                     } />
                     <Route path="/academic/timetable-generation" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="timetables.read">
+                      <PermissionRoute permission="timetables.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <TimetableGeneration />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     {/* Settings routes */}
                     <Route path="/settings/organizations" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="organizations.read">
+                      <PermissionRoute permission="organizations.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <OrganizationsManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/buildings" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="buildings.read">
+                      <PermissionRoute permission="buildings.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <BuildingsManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/rooms" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="rooms.read">
+                      <PermissionRoute permission="rooms.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <RoomsManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/profile" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="profiles.read">
+                      <PermissionRoute permission="profiles.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <ProfileManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/permissions" element={
                       <Suspense fallback={<PageSkeleton />}>
@@ -137,113 +138,113 @@ const App = () => (
                       </Suspense>
                     } />
                     <Route path="/settings/user-permissions" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="permissions.read">
+                      <PermissionRoute permission="permissions.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <UserPermissionsManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/schools" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="branding.read">
+                      <PermissionRoute permission="branding.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <SchoolsManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/report-templates" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="reports.read">
+                      <PermissionRoute permission="reports.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <ReportTemplatesManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/residency-types" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="residency_types.read">
+                      <PermissionRoute permission="residency_types.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <ResidencyTypesManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/academic-years" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="academic_years.read">
+                      <PermissionRoute permission="academic_years.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <AcademicYearsManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/classes" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="classes.read">
+                      <PermissionRoute permission="classes.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <ClassesManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/subjects" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="subjects.read">
+                      <PermissionRoute permission="subjects.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <SubjectsManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/schedule-slots" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="schedule_slots.read">
+                      <PermissionRoute permission="schedule_slots.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <ScheduleSlotsManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/teacher-subject-assignments" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="teacher_subject_assignments.read">
+                      <PermissionRoute permission="teacher_subject_assignments.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <TeacherSubjectAssignments />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/staff-types" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="staff_types.read">
+                      <PermissionRoute permission="staff_types.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <StaffTypesManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/staff" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="staff.read">
+                      <PermissionRoute permission="staff.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <StaffList />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/students" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="students.read">
+                      <PermissionRoute permission="students.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <Students />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/admissions" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="student_admissions.read">
+                      <PermissionRoute permission="student_admissions.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <StudentAdmissions />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/settings/backup" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="backup.read">
+                      <PermissionRoute permission="backup.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <div className="p-6">
                             <h1 className="text-2xl font-bold mb-4">Backup & Restore</h1>
                             <p className="text-muted-foreground">Backup and restore functionality will be implemented here.</p>
                           </div>
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     {/* Admin routes */}
                     <Route path="/admin/users" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <PermissionGuard permission="users.read">
+                      <PermissionRoute permission="users.read">
+                        <Suspense fallback={<PageSkeleton />}>
                           <UserManagement />
-                        </PermissionGuard>
-                      </Suspense>
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                   </Route>
 

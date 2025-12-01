@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Helpers\OrganizationHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -35,13 +36,34 @@ class AuthController extends Controller
                     'updated_at' => now(),
                 ]);
 
+            // Get or create default "ناظم" organization if not provided
+            $organizationId = $request->organization_id;
+            if (!$organizationId) {
+                $organizationId = OrganizationHelper::getDefaultOrganizationId();
+                
+                // If still no organization, create it
+                if (!$organizationId) {
+                    $orgId = (string) \Illuminate\Support\Str::uuid();
+                    DB::table('organizations')->insert([
+                        'id' => $orgId,
+                        'name' => 'ناظم',
+                        'slug' => 'nazim',
+                        'settings' => json_encode([]),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $organizationId = $orgId;
+                    OrganizationHelper::clearCache(); // Clear cache after creating
+                }
+            }
+
             // Create profile
             DB::table('profiles')->insert([
                 'id' => $userId,
                 'email' => $request->email,
                 'full_name' => $request->full_name,
                 'role' => 'staff',
-                'organization_id' => $request->organization_id,
+                'organization_id' => $organizationId,
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -113,6 +135,50 @@ class AuthController extends Controller
             throw ValidationException::withMessages([
                 'email' => ['Your account is inactive.'],
             ]);
+        }
+
+        // Auto-assign organization if user doesn't have one (and is not super_admin)
+        // Only check if organization_id is missing (optimization: skip DB query if already assigned)
+        if (!$profile->organization_id && $profile->role !== 'super_admin') {
+            $defaultOrgId = OrganizationHelper::getDefaultOrganizationId();
+            
+            if ($defaultOrgId) {
+                DB::table('profiles')
+                    ->where('id', $authUser->id)
+                    ->update([
+                        'organization_id' => $defaultOrgId,
+                        'updated_at' => now(),
+                    ]);
+                
+                // Refresh profile to return updated data
+                $profile = DB::table('profiles')
+                    ->where('id', $authUser->id)
+                    ->first();
+            } else {
+                // If default org doesn't exist, create it
+                $orgId = (string) \Illuminate\Support\Str::uuid();
+                DB::table('organizations')->insert([
+                    'id' => $orgId,
+                    'name' => 'ناظم',
+                    'slug' => 'nazim',
+                    'settings' => json_encode([]),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                OrganizationHelper::clearCache();
+                
+                DB::table('profiles')
+                    ->where('id', $authUser->id)
+                    ->update([
+                        'organization_id' => $orgId,
+                        'updated_at' => now(),
+                    ]);
+                
+                // Refresh profile
+                $profile = DB::table('profiles')
+                    ->where('id', $authUser->id)
+                    ->first();
+            }
         }
 
         // Create token using the User model

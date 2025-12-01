@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { toast } from 'sonner';
+import { timetablesApi, teacherTimetablePreferencesApi } from '@/lib/api/client';
 import type { Tables, TablesInsert, TablesUpdate, Json } from '@/integrations/supabase/types';
 
 // Day of week type for timetable entries
@@ -48,25 +48,13 @@ export const useTimetables = (organizationId?: string, academicYearId?: string) 
 		queryFn: async (): Promise<TimetableRow[]> => {
 			if (!user || !profile || orgsLoading) return [];
 
-			let query = (supabase as any)
-				.from('generated_timetables')
-				.select('*')
-				.is('deleted_at', null)
-				.order('created_at', { ascending: false });
+			// Fetch timetables from Laravel API
+			const timetables = await timetablesApi.list({
+				organization_id: organizationId || profile.organization_id || undefined,
+				academic_year_id: academicYearId,
+			});
 
-			const resolvedOrgIds = organizationId ? [organizationId] : orgIds;
-			if (resolvedOrgIds.length === 0) {
-				return [];
-			}
-			query = query.in('organization_id', resolvedOrgIds);
-
-			if (academicYearId) {
-				query = query.eq('academic_year_id', academicYearId);
-			}
-
-			const { data, error } = await query;
-			if (error) throw new Error(error.message);
-			return (data || []) as TimetableRow[];
+			return (timetables || []) as TimetableRow[];
 		},
 		enabled: !!user && !!profile,
 		staleTime: 10 * 60 * 1000,
@@ -83,35 +71,12 @@ export const useTimetable = (timetableId?: string) => {
 		queryFn: async (): Promise<{ timetable: TimetableRow | null; entries: TimetableEntryRow[] }> => {
 			if (!user || !profile || !timetableId) return { timetable: null, entries: [] };
 
-			const { data: timetable, error: tErr } = await (supabase as any)
-				.from('generated_timetables')
-				.select('*')
-				.eq('id', timetableId)
-				.is('deleted_at', null)
-				.single();
-			if (tErr) throw new Error(tErr.message);
-
-			const { data: entries, error: eErr } = await (supabase as any)
-				.from('timetable_entries')
-				.select(`
-          *,
-          class_academic_year:class_academic_years(
-            id, section_name,
-            class:classes(id, name, code),
-            academic_year:academic_years(id, name)
-          ),
-          subject:subjects(id, name, code),
-          teacher:staff(id, full_name),
-          schedule_slot:schedule_slots(id, name, start_time, end_time)
-        `)
-				.eq('timetable_id', timetableId)
-				.is('deleted_at', null)
-				.order('period_order', { ascending: true });
-			if (eErr) throw new Error(eErr.message);
+			// Fetch timetable with entries from Laravel API
+			const response = await timetablesApi.get(timetableId);
 
 			return {
-				timetable: (timetable || null) as TimetableRow | null,
-				entries: (entries || []) as TimetableEntryRow[],
+				timetable: (response.timetable || null) as TimetableRow | null,
+				entries: (response.entries || []) as TimetableEntryRow[],
 			};
 		},
 		enabled: !!user && !!profile && !!timetableId,
@@ -156,40 +121,17 @@ export const useCreateTimetable = () => {
 				}
 			}
 
-			// 1) Create timetable
-			const { data: timetable, error: tErr } = await (supabase as any)
-				.from('generated_timetables')
-				.insert({
-					name: params.name.trim(),
-					timetable_type: params.timetable_type || 'teaching',
-					description: params.description || null,
-					organization_id: organizationId,
-					academic_year_id: params.academic_year_id || null,
-					school_id: params.school_id || null,
-					is_active: true,
-				})
-				.select('*')
-				.single();
-			if (tErr) throw new Error(tErr.message);
-
-			// 2) Insert entries (bulk)
-			const rows = params.entries.map((e) => ({
+			// Create timetable with entries via Laravel API
+			const timetable = await timetablesApi.create({
+				name: params.name.trim(),
+				timetable_type: params.timetable_type || 'teaching',
+				description: params.description || null,
 				organization_id: organizationId,
-				timetable_id: timetable.id,
-				class_academic_year_id: e.class_academic_year_id,
-				subject_id: e.subject_id,
-				teacher_id: e.teacher_id,
-				schedule_slot_id: e.schedule_slot_id,
-				day_name: e.day_name,
-				period_order: e.period_order,
-			}));
-
-			if (rows.length > 0) {
-				const { error: eErr } = await (supabase as any)
-					.from('timetable_entries')
-					.insert(rows);
-				if (eErr) throw new Error(eErr.message);
-			}
+				academic_year_id: params.academic_year_id || null,
+				school_id: params.school_id || null,
+				is_active: true,
+				entries: params.entries,
+			});
 
 			return timetable as TimetableRow;
 		},
@@ -212,20 +154,6 @@ export const useUpdateTimetable = () => {
 		mutationFn: async ({ id, ...updates }: Partial<TimetableRow> & { id: string }) => {
 			if (!user || !profile) throw new Error('User not authenticated');
 
-			const { orgIds } = useAccessibleOrganizations();
-
-			// Validate org access
-			const { data: current } = await (supabase as any)
-				.from('generated_timetables')
-				.select('organization_id')
-				.eq('id', id)
-				.is('deleted_at', null)
-				.single();
-			if (!current) throw new Error('Timetable not found');
-			if (!orgIds.includes(current.organization_id as string)) {
-				throw new Error('Cannot update timetable from different organization');
-			}
-
 			const payload: any = {};
 			if (updates.name !== undefined) payload.name = updates.name.trim();
 			if (updates.description !== undefined) payload.description = updates.description || null;
@@ -234,17 +162,13 @@ export const useUpdateTimetable = () => {
 			if (updates.academic_year_id !== undefined) payload.academic_year_id = updates.academic_year_id;
 			if (updates.school_id !== undefined) payload.school_id = updates.school_id;
 
-			const { data, error } = await (supabase as any)
-				.from('generated_timetables')
-				.update(payload)
-				.eq('id', id)
-				.select('*')
-				.single();
-			if (error) throw new Error(error.message);
-			return data as TimetableRow;
+			// Update timetable via Laravel API
+			const timetable = await timetablesApi.update(id, payload);
+			return timetable as TimetableRow;
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['timetables'] });
+			queryClient.invalidateQueries({ queryKey: ['timetable'] });
 			toast.success('Timetable updated successfully');
 		},
 		onError: (error: Error) => {
@@ -262,29 +186,12 @@ export const useDeleteTimetable = () => {
 		mutationFn: async (id: string) => {
 			if (!user || !profile) throw new Error('User not authenticated');
 
-			const { orgIds } = useAccessibleOrganizations();
-
-			// Validate org access
-			const { data: current } = await (supabase as any)
-				.from('generated_timetables')
-				.select('organization_id')
-				.eq('id', id)
-				.is('deleted_at', null)
-				.single();
-			if (!current) throw new Error('Timetable not found');
-			if (!orgIds.includes(current.organization_id as string)) {
-				throw new Error('Cannot delete timetable from different organization');
-			}
-
-			// Soft delete
-			const { error } = await (supabase as any)
-				.from('generated_timetables')
-				.update({ deleted_at: new Date().toISOString(), is_active: false })
-				.eq('id', id);
-			if (error) throw new Error(error.message);
+			// Delete timetable via Laravel API (soft delete)
+			await timetablesApi.delete(id);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['timetables'] });
+			queryClient.invalidateQueries({ queryKey: ['timetable'] });
 			toast.success('Timetable deleted successfully');
 		},
 		onError: (error: Error) => {
@@ -303,30 +210,15 @@ export const useTeacherPreferences = (organizationId?: string, teacherId?: strin
 		queryFn: async (): Promise<TeacherPreferenceRow[]> => {
 			if (!user || !profile || orgsLoading) return [];
 
-			let query = (supabase as any)
-				.from('teacher_timetable_preferences')
-				.select('*')
-				.is('deleted_at', null)
-				.order('created_at', { ascending: false });
+			// Fetch teacher preferences from Laravel API
+			const preferences = await teacherTimetablePreferencesApi.list({
+				organization_id: organizationId || profile.organization_id || undefined,
+				teacher_id: teacherId,
+				academic_year_id: academicYearId,
+			});
 
-			const resolvedOrgIds = organizationId ? [organizationId] : orgIds;
-			if (resolvedOrgIds.length === 0) return [];
-			query = query.in('organization_id', resolvedOrgIds);
-			if (teacherId) query = query.eq('teacher_id', teacherId);
-			if (academicYearId) query = query.eq('academic_year_id', academicYearId);
-
-			const { data, error } = await query;
-			if (error) throw new Error(error.message);
-
-			// Parse JSONB
-			return (data || []).map((row: any) => ({
-				...row,
-				schedule_slot_ids: Array.isArray(row.schedule_slot_ids)
-					? row.schedule_slot_ids
-					: typeof row.schedule_slot_ids === 'string'
-						? JSON.parse(row.schedule_slot_ids)
-						: [],
-			})) as TeacherPreferenceRow[];
+			// Laravel returns schedule_slot_ids as array directly (JSONB handled server-side)
+			return (preferences || []) as TeacherPreferenceRow[];
 		},
 		enabled: !!user && !!profile,
 		staleTime: 10 * 60 * 1000,
@@ -356,52 +248,17 @@ export const useUpsertTeacherPreference = () => {
 				throw new Error('Cannot update preferences for a non-accessible organization');
 			}
 
-			// Check if a preference exists (by teacher + academic_year + org)
-			let query = (supabase as any)
-				.from('teacher_timetable_preferences')
-				.select('id')
-				.eq('teacher_id', params.teacher_id)
-				.eq('organization_id', organizationId)
-				.is('deleted_at', null)
-				.limit(1);
-			if (params.academic_year_id) {
-				query = query.eq('academic_year_id', params.academic_year_id);
-			} else {
-				query = query.is('academic_year_id', null);
-			}
-			const { data: existing, error: sErr } = await query;
-			if (sErr) throw new Error(sErr.message);
+			// Upsert preference via Laravel API
+			const preference = await teacherTimetablePreferencesApi.upsert({
+				teacher_id: params.teacher_id,
+				schedule_slot_ids: params.schedule_slot_ids,
+				organization_id: organizationId,
+				academic_year_id: params.academic_year_id || null,
+				is_active: params.is_active ?? true,
+				notes: params.notes || null,
+			});
 
-			if (existing && existing.length > 0) {
-				const prefId = existing[0].id;
-				const { data, error } = await (supabase as any)
-					.from('teacher_timetable_preferences')
-					.update({
-						schedule_slot_ids: params.schedule_slot_ids,
-						is_active: params.is_active ?? true,
-						notes: params.notes || null,
-					})
-					.eq('id', prefId)
-					.select('*')
-					.single();
-				if (error) throw new Error(error.message);
-				return data as TeacherPreferenceRow;
-			}
-
-			const { data, error } = await (supabase as any)
-				.from('teacher_timetable_preferences')
-				.insert({
-					teacher_id: params.teacher_id,
-					schedule_slot_ids: params.schedule_slot_ids,
-					organization_id: organizationId,
-					academic_year_id: params.academic_year_id || null,
-					is_active: params.is_active ?? true,
-					notes: params.notes || null,
-				})
-				.select('*')
-				.single();
-			if (error) throw new Error(error.message);
-			return data as TeacherPreferenceRow;
+			return preference as TeacherPreferenceRow;
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['teacher-prefs'] });
@@ -422,23 +279,8 @@ export const useDeleteTeacherPreference = () => {
 		mutationFn: async (id: string) => {
 			if (!user || !profile) throw new Error('User not authenticated');
 
-			// Validate org access
-			const { data: current } = await (supabase as any)
-				.from('teacher_timetable_preferences')
-				.select('organization_id')
-				.eq('id', id)
-				.is('deleted_at', null)
-				.single();
-			if (!current) throw new Error('Preference not found');
-			if (profile.role !== 'super_admin' && current.organization_id !== profile.organization_id) {
-				throw new Error('Cannot delete preference from different organization');
-			}
-
-			const { error } = await (supabase as any)
-				.from('teacher_timetable_preferences')
-				.update({ deleted_at: new Date().toISOString(), is_active: false })
-				.eq('id', id);
-			if (error) throw new Error(error.message);
+			// Delete preference via Laravel API (soft delete)
+			await teacherTimetablePreferencesApi.delete(id);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['teacher-prefs'] });

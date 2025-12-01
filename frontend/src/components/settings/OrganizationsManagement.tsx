@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useOrganizations, useCreateOrganization, useUpdateOrganization, useDeleteOrganization, useOrganizationStatistics } from '@/hooks/useOrganizations';
-import { useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,12 +32,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, Building2, Shield, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Building2, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useIsSuperAdmin as useIsSuperAdminHook } from '@/hooks/useProfiles';
 
 const organizationSchema = z.object({
   name: z.string().min(1, 'Organization name is required').max(255, 'Organization name must be 255 characters or less'),
@@ -51,7 +49,6 @@ const organizationSchema = z.object({
 type OrganizationFormData = z.infer<typeof organizationSchema>;
 
 export function OrganizationsManagement() {
-  const isSuperAdmin = useIsSuperAdminHook();
   const hasCreatePermission = useHasPermission('organizations.create');
   const hasUpdatePermission = useHasPermission('organizations.update');
   const hasDeletePermission = useHasPermission('organizations.delete');
@@ -74,23 +71,6 @@ export function OrganizationsManagement() {
   } = useForm<OrganizationFormData>({
     resolver: zodResolver(organizationSchema),
   });
-
-  // Redirect if not super admin
-  if (!isSuperAdmin) {
-    return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center text-destructive">
-              <Shield className="h-12 w-12 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
-              <p>Only super administrators can manage organizations.</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   const filteredOrganizations = organizations?.filter((org) =>
     org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

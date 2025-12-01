@@ -83,7 +83,72 @@ This is a comprehensive Islamic school management system built with React, TypeS
 - Use enums for status fields
 - Follow naming conventions: snake_case for tables/columns
 - **ALWAYS create index on `organization_id`** for performance
-- **UUID primary keys** for all tables (use `gen_random_uuid()` or PHP `Str::uuid()`)
+
+### UUID Primary Keys - REQUIRED FOR ALL TABLES
+
+**CRITICAL: ALL tables MUST use UUID primary keys. This is mandatory for the entire application.**
+
+#### Database Migrations
+- **ALWAYS** use `UUID` type for primary keys in migrations
+- **ALWAYS** use `DEFAULT gen_random_uuid()` in PostgreSQL migrations
+- **Example:**
+  ```sql
+  CREATE TABLE public.your_table (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      -- other columns...
+  );
+  ```
+
+#### Laravel Models
+- **ALWAYS** configure models to use UUIDs:
+  ```php
+  public $incrementing = false;
+  protected $keyType = 'string';
+  ```
+- **ALWAYS** add `'id'` to `$fillable` array
+- **ALWAYS** implement UUID generation in model boot method:
+  ```php
+  protected static function boot()
+  {
+      parent::boot();
+      
+      static::creating(function ($model) {
+          if (empty($model->id)) {
+              $model->id = (string) Str::uuid();
+          }
+      });
+  }
+  ```
+- **ALWAYS** import `Illuminate\Support\Str` for UUID generation
+
+#### Frontend Types/Interfaces
+- **ALWAYS** define `id` as `string` type (UUIDs are strings)
+- **Example:**
+  ```typescript
+  export interface YourResource {
+    id: string; // UUID as string
+    organization_id: string;
+    // other fields...
+  }
+  ```
+
+#### API Responses
+- **ALWAYS** return UUIDs as strings in JSON responses
+- Laravel automatically serializes UUIDs as strings
+- Frontend should always treat IDs as strings, never numbers
+
+#### Foreign Keys
+- **ALWAYS** use `UUID` type for foreign key columns
+- **ALWAYS** reference UUID primary keys
+- **Example:**
+  ```sql
+  organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE
+  ```
+
+#### Exceptions
+- **NO exceptions** - all tables must use UUIDs
+- Even lookup/reference tables use UUIDs
+- Even junction/pivot tables use UUIDs for their primary keys
 
 ### Laravel API Integration
 - Use custom `ApiClient` from `/src/lib/api/client.ts` for all API calls
@@ -1059,6 +1124,54 @@ ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
 -- Step 6: Create RLS policies (use the 5-policy pattern above)
 ```
 
+#### New Table Migration Pattern (with UUID - REQUIRED)
+```sql
+-- Migration: YYYYMMDDHHMMSS_create_your_table.sql
+
+-- REQUIRED: ALL tables MUST use UUID primary keys
+CREATE TABLE IF NOT EXISTS public.your_table (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  -- REQUIRED: UUID primary key
+    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    -- other columns...
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- ALWAYS create index on organization_id
+CREATE INDEX IF NOT EXISTS idx_your_table_organization_id 
+    ON public.your_table(organization_id);
+
+-- ALWAYS enable RLS
+ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
+
+-- ALWAYS create RLS policies (use the 5-policy pattern above)
+```
+
+#### Laravel Migration Pattern (with UUID - REQUIRED)
+```php
+// Migration: YYYY_MM_DD_HHMMSS_create_your_table.php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+
+Schema::create('your_table', function (Blueprint $table) {
+    // REQUIRED: UUID primary key
+    $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+    
+    // REQUIRED: organization_id for multi-tenancy
+    $table->uuid('organization_id')->nullable();
+    $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
+    
+    // other columns...
+    $table->timestamps();
+    $table->timestamp('deleted_at')->nullable();
+    
+    // ALWAYS create index on organization_id
+    $table->index('organization_id');
+});
+```
+
 #### Migration Security & Performance Best Practices
 
 **CRITICAL: All migrations must follow these security and performance guidelines.**
@@ -1584,6 +1697,183 @@ const form = useForm<StudentFormData>({
 });
 ```
 
+### Form Validation with Zod
+
+**CRITICAL: ALL forms MUST use Zod validation with React Hook Form.**
+
+#### Validation Schema Location
+- **ALWAYS** create validation schemas in `/src/lib/validations/` directory
+- **ALWAYS** export schemas and types from shared validation files
+- **ALWAYS** use shared schemas across components (never duplicate schemas)
+- **ALWAYS** align frontend validation with backend Laravel Form Request validation rules
+
+#### Validation Schema Structure
+```typescript
+// frontend/src/lib/validations/yourResource.ts
+import { z } from 'zod';
+import { optionalUuidSchema, requiredStringLength, optionalStringLength } from './common';
+
+export const yourResourceSchema = z.object({
+  name: requiredStringLength(255, 'Name'),
+  description: optionalStringLength(1000, 'Description'),
+  organization_id: optionalUuidSchema,
+  // ... other fields
+});
+
+export type YourResourceFormData = z.infer<typeof yourResourceSchema>;
+```
+
+#### Using Validation in Components
+```typescript
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { yourResourceSchema, type YourResourceFormData } from '@/lib/validations';
+
+export function YourComponent() {
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<YourResourceFormData>({
+    resolver: zodResolver(yourResourceSchema), // REQUIRED: Always use zodResolver
+    defaultValues: {
+      // Default values
+    },
+  });
+
+  const onSubmit = async (data: YourResourceFormData) => {
+    // Handle form submission
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Input {...register('name')} />
+      {errors.name && (
+        <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
+      )}
+      {/* ... other fields */}
+    </form>
+  );
+}
+```
+
+#### File Upload Validation
+```typescript
+// Use Controller for file inputs
+<Controller
+  control={control}
+  name="file"
+  render={({ field: { onChange, value, ...field } }) => (
+    <Input
+      type="file"
+      {...field}
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        onChange(file);
+      }}
+    />
+  )}
+/>
+{errors.file && (
+  <p className="text-sm text-destructive mt-1">{errors.file.message}</p>
+)}
+```
+
+#### Select/Dropdown Validation
+```typescript
+// Use Controller for Select components
+<Controller
+  control={control}
+  name="fieldName"
+  render={({ field }) => (
+    <Select value={field.value || ''} onValueChange={field.onChange}>
+      <SelectTrigger>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {/* options */}
+      </SelectContent>
+    </Select>
+  )}
+/>
+{errors.fieldName && (
+  <p className="text-sm text-destructive mt-1">{errors.fieldName.message}</p>
+)}
+```
+
+#### Common Validation Utilities
+- **ALWAYS** use utilities from `/src/lib/validations/common.ts`:
+  - `uuidSchema` - UUID validation
+  - `optionalUuidSchema` - Optional UUID
+  - `emailSchema` - Email validation
+  - `optionalEmailSchema` - Optional email
+  - `phoneSchema` - Phone number validation
+  - `requiredStringLength(max, fieldName)` - Required string with max length
+  - `optionalStringLength(max, fieldName)` - Optional string with max length
+
+#### Cross-Field Validation
+```typescript
+// Use .refine() for cross-field validation
+export const schema = z.object({
+  start_date: z.string().optional().nullable(),
+  end_date: z.string().optional().nullable(),
+}).refine(
+  (data) => {
+    if (data.start_date && data.end_date) {
+      return new Date(data.end_date) >= new Date(data.start_date);
+    }
+    return true;
+  },
+  {
+    message: 'End date must be after or equal to start date',
+    path: ['end_date'],
+  }
+);
+```
+
+#### File Upload Validation
+```typescript
+// Use fileUpload utilities for file validation
+import { fileSchema, validateFile } from '@/lib/validations/fileUpload';
+
+export const documentUploadSchema = z.object({
+  file: fileSchema, // Validates file type and size
+  documentType: requiredStringLength(100, 'Document type'),
+  description: optionalStringLength(500, 'Description'),
+});
+```
+
+#### Validation Rules
+1. **ALWAYS** use `zodResolver` with React Hook Form
+2. **ALWAYS** display validation errors to users
+3. **ALWAYS** align frontend validation with backend Laravel Form Request rules
+4. **ALWAYS** use shared validation schemas (never duplicate)
+5. **ALWAYS** validate required fields, string lengths, UUIDs, emails, etc.
+6. **ALWAYS** use Controller for file inputs and Select components
+7. **ALWAYS** reset forms when dialogs close
+8. **ALWAYS** handle optional/nullable fields correctly (use `.optional().nullable()`)
+
+#### Backend Alignment
+- Frontend validation should match or be stricter than backend validation
+- Backend validation is the source of truth for security
+- Frontend validation provides better UX (immediate feedback)
+- Both frontend and backend must validate the same rules
+
+#### Validation Checklist
+Before submitting a form component, verify:
+- [ ] Uses `zodResolver` with React Hook Form
+- [ ] Validation schema is in `/src/lib/validations/`
+- [ ] Schema exports both schema and TypeScript type
+- [ ] All form fields have validation rules
+- [ ] Error messages display for all fields
+- [ ] File uploads use Controller and file validation
+- [ ] Select components use Controller
+- [ ] Cross-field validation implemented where needed
+- [ ] Validation aligns with backend Laravel Form Request rules
+- [ ] Form resets when dialog closes
+
 ### State Management
 ```typescript
 // Local state
@@ -1801,7 +2091,12 @@ const { t, isRTL, language } = useLanguage();
 - Use descriptive migration names: `YYYY_MM_DD_HHMMSS_description.php`
 - Include `organization_id` in tenant table migrations
 - Create indexes on `organization_id` for performance
-- Use UUIDs for primary keys: `$table->uuid('id')->primary()`
+- **REQUIRED: ALWAYS use UUIDs for primary keys**
+  ```php
+  $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+  ```
+- **REQUIRED: For Laravel migrations, use PostgreSQL's gen_random_uuid() function**
+- **REQUIRED: Configure corresponding Eloquent model with UUID support** (see UUID Primary Keys section above)
 
 ### API Response Format
 ```php

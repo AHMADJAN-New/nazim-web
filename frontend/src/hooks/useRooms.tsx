@@ -1,12 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
-import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import { roomsApi } from '@/lib/api/client';
 
-// Use generated type from database schema, extended with relations
-export type Room = Tables<'rooms'> & {
+// TypeScript interfaces for Room
+export interface Room {
+  id: string;
+  room_number: string;
+  building_id: string;
+  school_id: string;
+  staff_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
   // Extended with relationship data
   building?: {
     id: string;
@@ -18,13 +24,23 @@ export type Room = Tables<'rooms'> & {
     profile?: {
       full_name: string;
     };
-  };
-};
-export type RoomInsert = TablesInsert<'rooms'>;
-export type RoomUpdate = TablesUpdate<'rooms'>;
+  } | null;
+}
+
+export interface RoomInsert {
+  room_number: string;
+  building_id: string;
+  staff_id?: string | null;
+}
+
+export interface RoomUpdate {
+  room_number?: string;
+  building_id?: string;
+  staff_id?: string | null;
+}
 
 // Room with guaranteed relations (for query results)
-export type RoomWithRelations = Tables<'rooms'> & {
+export interface RoomWithRelations extends Room {
   building: {
     id: string;
     building_name: string;
@@ -36,145 +52,26 @@ export type RoomWithRelations = Tables<'rooms'> & {
       full_name: string;
     };
   } | null;
-};
+}
 
 export const useRooms = (schoolId?: string, organizationId?: string) => {
   const { user, profile } = useAuth();
-  const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery({
-    queryKey: ['rooms', schoolId, organizationId || profile?.organization_id, orgIds.join(',')],
+    queryKey: ['rooms', schoolId, organizationId || profile?.organization_id],
     queryFn: async () => {
-      if (!user || !profile || orgsLoading) return [];
+      if (!user || !profile) return [];
 
-      // Optimized query: fetch rooms first, then fetch related data in parallel
-      let roomsQuery = (supabase as any)
-        .from('rooms')
-        .select('id, room_number, building_id, staff_id, school_id, created_at, updated_at');
-
+      // Fetch rooms via Laravel API (relationships included)
+      const params: { school_id?: string; building_id?: string; organization_id?: string } = {};
       if (schoolId) {
-        // Filter by specific school
-        roomsQuery = roomsQuery.eq('school_id', schoolId);
-      } else {
-        const resolvedOrgIds = organizationId ? [organizationId] : orgIds;
-        if (resolvedOrgIds.length === 0) return [];
-
-        const { data: schools, error: schoolsError } = await (supabase as any)
-          .from('school_branding')
-          .select('id')
-          .in('organization_id', resolvedOrgIds)
-          .is('deleted_at', null);
-
-        if (schoolsError) {
-          throw new Error(schoolsError.message);
-        }
-
-        if (schools && schools.length > 0) {
-          const schoolIds = schools.map((s: any) => s.id);
-          roomsQuery = roomsQuery.in('school_id', schoolIds);
-        } else {
-          return [];
-        }
+        params.school_id = schoolId;
+      } else if (organizationId || profile.organization_id) {
+        params.organization_id = organizationId || profile.organization_id || undefined;
       }
 
-      // Try with deleted_at filter, fallback if column doesn't exist
-      let rooms;
-      const { data: roomsData, error: roomsError } = await roomsQuery.is('deleted_at', null).order('room_number', { ascending: true });
-
-      // If error is about missing column, retry without the filter
-      if (roomsError && (roomsError.code === '42703' || roomsError.message?.includes('column') || roomsError.message?.includes('does not exist'))) {
-        const { data: retryData, error: retryError } = await roomsQuery.order('room_number', { ascending: true });
-        if (retryError) {
-          throw new Error(retryError.message);
-        }
-        rooms = retryData || [];
-      } else if (roomsError) {
-        throw new Error(roomsError.message);
-      } else {
-        rooms = roomsData || [];
-      }
-
-      if (!rooms || rooms.length === 0) {
-        return [];
-      }
-
-      // Get unique building IDs and staff IDs
-      const buildingIds = [...new Set(rooms.map((r: any) => r.building_id).filter(Boolean))] as string[];
-      const staffIds = [...new Set(rooms.map((r: any) => r.staff_id).filter(Boolean))] as string[];
-
-      // Fetch related data in parallel (excluding soft-deleted)
-      // Optimized: Use single queries with proper filtering instead of nested queries
-      const [buildingsResult, staffResult] = await Promise.all([
-        buildingIds.length > 0
-          ? supabase
-            .from('buildings')
-            .select('id, building_name, school_id')
-            .in('id', buildingIds)
-            .is('deleted_at', null)
-          : Promise.resolve({ data: [], error: null }),
-        staffIds.length > 0
-          ? supabase
-            .from('staff')
-            .select(`
-                id,
-                profile_id
-              `)
-            .in('id', staffIds)
-            .is('deleted_at', null)
-          : Promise.resolve({ data: [], error: null }),
-      ]);
-
-      // Fetch staff profiles in a separate optimized query (avoid N+1)
-      let staffProfilesMap = new Map<string, { full_name: string }>();
-      if (staffResult.data && staffResult.data.length > 0) {
-        const profileIds = [...new Set(staffResult.data.map((s: any) => s.profile_id).filter(Boolean))] as string[];
-        if (profileIds.length > 0) {
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('id, full_name')
-            .in('id', profileIds);
-          
-          if (profilesData) {
-            profilesData.forEach((p: any) => {
-              staffProfilesMap.set(p.id, { full_name: p.full_name });
-            });
-          }
-        }
-      }
-
-      if (buildingsResult.error) {
-        console.error('Error fetching buildings:', buildingsResult.error);
-      }
-      if (staffResult.error) {
-        console.error('Error fetching staff:', staffResult.error);
-      }
-
-      // Create lookup maps for efficient joining
-      const buildingsMap = new Map(
-        (buildingsResult.data || []).map(b => [b.id, b])
-      );
-      const staffMap = new Map(
-        (staffResult.data || []).map(s => [
-          s.id,
-          {
-            id: s.id,
-            profile: s.profile_id ? (staffProfilesMap.get(s.profile_id) || null) : null,
-          },
-        ])
-      );
-
-      // Combine data
-      const roomsWithRelations: RoomWithRelations[] = rooms.map(room => ({
-        ...room,
-        building: buildingsMap.get(room.building_id) || {
-          id: room.building_id,
-          building_name: 'Unknown',
-          school_id: room.school_id,
-        },
-        staff: room.staff_id ? (staffMap.get(room.staff_id) || null) : null,
-      }));
-
-      return roomsWithRelations;
+      const rooms = await roomsApi.list(params);
+      return (rooms || []) as RoomWithRelations[];
     },
     enabled: !!user && !!profile,
     staleTime: 10 * 60 * 1000,
@@ -185,36 +82,11 @@ export const useRooms = (schoolId?: string, organizationId?: string) => {
 export const useCreateRoom = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
-  const { orgIds } = useAccessibleOrganizations();
 
   return useMutation({
     mutationFn: async (roomData: { room_number: string; building_id: string; staff_id?: string | null }) => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
-      }
-
-      // Get building to verify school
-      const { data: building, error: buildingError } = await supabase
-        .from('buildings')
-        .select('school_id')
-        .eq('id', roomData.building_id)
-        .is('deleted_at', null)
-        .single();
-
-      if (buildingError || !building) {
-        throw new Error('Building not found');
-      }
-
-      // Verify building belongs to an accessible organization
-      const { data: school } = await (supabase as any)
-        .from('school_branding')
-        .select('organization_id')
-        .eq('id', (building as any).school_id)
-        .is('deleted_at', null)
-        .single();
-
-      if (!school || !orgIds.includes((school as any).organization_id)) {
-        throw new Error('Building does not belong to an accessible organization');
       }
 
       // Validation: max 100 characters
@@ -228,35 +100,15 @@ export const useCreateRoom = () => {
         throw new Error('Room number cannot be empty');
       }
 
-      // Check for duplicates (same room number in same building)
-      const { data: existing } = await supabase
-        .from('rooms')
-        .select('id')
-        .eq('room_number', trimmedNumber)
-        .eq('building_id', roomData.building_id)
-        .single();
+      // Create room via Laravel API (validation handled server-side)
+      // Laravel will auto-set school_id from building
+      const room = await roomsApi.create({
+        room_number: trimmedNumber,
+        building_id: roomData.building_id,
+        staff_id: roomData.staff_id || null,
+      });
 
-      if (existing) {
-        throw new Error('This room number already exists in the selected building');
-      }
-
-      // School_id will be set automatically by trigger from building
-      const { data, error } = await supabase
-        .from('rooms')
-        .insert({
-          room_number: trimmedNumber,
-          building_id: roomData.building_id,
-          staff_id: roomData.staff_id || null,
-          school_id: (building as any).school_id, // Inherit from building
-        } as any)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
+      return room as RoomWithRelations;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
@@ -289,74 +141,25 @@ export const useUpdateRoom = () => {
       }
 
       // Trim whitespace if room_number is being updated
-      let trimmedNumber = room_number;
+      const updateData: RoomUpdate = {};
       if (room_number) {
-        trimmedNumber = room_number.trim();
+        const trimmedNumber = room_number.trim();
         if (!trimmedNumber) {
           throw new Error('Room number cannot be empty');
         }
+        updateData.room_number = trimmedNumber;
+      }
+      if (building_id !== undefined) {
+        updateData.building_id = building_id;
+      }
+      if (staff_id !== undefined) {
+        updateData.staff_id = staff_id || null;
       }
 
-      // Get current room to check school
-      const { data: currentRoom } = await supabase
-        .from('rooms')
-        .select('school_id, building_id')
-        .eq('id', id)
-        .is('deleted_at', null)
-        .single() as { data: any; error: any };
-
-      if (!currentRoom) {
-        throw new Error('Room not found');
-      }
-
-      // If building_id is being changed, verify new building belongs to same school (or update school_id)
-      if (building_id && building_id !== currentRoom.building_id) {
-        const { data: newBuilding } = await supabase
-          .from('buildings')
-          .select('school_id')
-          .eq('id', building_id)
-          .is('deleted_at', null)
-          .single();
-
-        if (!newBuilding) {
-          throw new Error('Building not found');
-        }
-
-        // Room's school_id will be updated by trigger to match building's school_id
-      }
-
-      // Check for duplicates (excluding current record)
-      if (trimmedNumber && building_id) {
-        const { data: existing } = await supabase
-          .from('rooms')
-          .select('id')
-          .eq('room_number', trimmedNumber)
-          .eq('building_id', building_id)
-          .neq('id', id)
-          .single();
-
-        if (existing) {
-          throw new Error('This room number already exists in the selected building');
-        }
-      }
-
-      const updateData: { room_number?: string; building_id?: string; staff_id?: string | null } = {};
-      if (trimmedNumber !== undefined) updateData.room_number = trimmedNumber;
-      if (building_id !== undefined) updateData.building_id = building_id;
-      if (staff_id !== undefined) updateData.staff_id = staff_id || null;
-
-      const { data, error } = await supabase
-        .from('rooms')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
+      // Update room via Laravel API (validation handled server-side)
+      // Laravel will auto-update school_id if building_id changes
+      const room = await roomsApi.update(id, updateData);
+      return room as RoomWithRelations;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
@@ -373,23 +176,8 @@ export const useDeleteRoom = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // Note: Check if room is in use by students or other entities
-      // This should be done in the application layer
-      // For now, we'll just attempt deletion and handle FK errors
-
-      // Soft delete: set deleted_at timestamp
-      const { error } = await supabase
-        .from('rooms')
-        .update({ deleted_at: new Date().toISOString() } as any)
-        .eq('id', id);
-
-      if (error) {
-        // Check if it's a foreign key constraint error
-        if (error.code === '23503') {
-          throw new Error('This room is in use and cannot be deleted');
-        }
-        throw new Error(error.message);
-      }
+      // Delete room via Laravel API (validation handled server-side)
+      await roomsApi.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
@@ -400,4 +188,3 @@ export const useDeleteRoom = () => {
     },
   });
 };
-

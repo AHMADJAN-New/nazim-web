@@ -1,20 +1,33 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
-import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import type { Tables, TablesInsert, TablesUpdate, Json } from '@/integrations/supabase/types';
+import { teacherSubjectAssignmentsApi } from '@/lib/api/client';
 
-// Use generated type from database schema, extended with relations
-export type TeacherSubjectAssignment = Omit<Tables<'teacher_subject_assignments'>, 'schedule_slot_ids'> & {
-    schedule_slot_ids: string[]; // Override Json type with proper array type
-    // Extended with relationship data
+// Type definition for teacher subject assignment
+export type TeacherSubjectAssignment = {
+    id: string;
+    organization_id: string | null;
+    teacher_id: string;
+    class_academic_year_id: string;
+    subject_id: string;
+    schedule_slot_ids: string[];
+    school_id: string | null;
+    academic_year_id: string | null;
+    is_active: boolean;
+    notes: string | null;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+    // Extended with relationship data from Laravel API
     teacher?: {
         id: string;
         employee_id: string;
-        full_name: string;
+        first_name: string;
+        father_name: string;
+        grandfather_name: string | null;
         email: string | null;
+        staff_type_id: string | null;
         staff_type?: {
             id: string;
             name: string;
@@ -36,10 +49,18 @@ export type TeacherSubjectAssignment = Omit<Tables<'teacher_subject_assignments'
             name: string;
             code: string;
         };
-        academic_year?: {
-            id: string;
-            name: string;
-        };
+    };
+    academic_year?: {
+        id: string;
+        name: string;
+    };
+    school?: {
+        id: string;
+        school_name: string;
+    };
+    organization?: {
+        id: string;
+        name: string;
     };
     schedule_slots?: Array<{
         id: string;
@@ -49,94 +70,56 @@ export type TeacherSubjectAssignment = Omit<Tables<'teacher_subject_assignments'
         end_time: string;
     }>;
 };
-export type TeacherSubjectAssignmentInsert = TablesInsert<'teacher_subject_assignments'>;
-export type TeacherSubjectAssignmentUpdate = TablesUpdate<'teacher_subject_assignments'>;
+
+export type TeacherSubjectAssignmentInsert = {
+    teacher_id: string;
+    class_academic_year_id: string;
+    subject_id: string;
+    schedule_slot_ids: string[];
+    school_id?: string | null;
+    academic_year_id?: string | null;
+    organization_id?: string;
+    is_active?: boolean;
+    notes?: string | null;
+};
+
+export type TeacherSubjectAssignmentUpdate = {
+    schedule_slot_ids?: string[];
+    is_active?: boolean;
+    notes?: string | null;
+};
 
 export const useTeacherSubjectAssignments = (organizationId?: string, teacherId?: string, academicYearId?: string) => {
     const { user } = useAuth();
     const { data: profile } = useProfile();
-    const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
     return useQuery({
-        queryKey: ['teacher-subject-assignments', organizationId || profile?.organization_id, teacherId, academicYearId, orgIds.join(',')],
+        queryKey: ['teacher-subject-assignments', organizationId || profile?.organization_id, teacherId, academicYearId],
         queryFn: async () => {
-            if (!user || !profile || orgsLoading) return [];
+            if (!user || !profile) return [];
 
-            let query = (supabase as any)
-                .from('teacher_subject_assignments')
-                .select(`
-                    *,
-                    teacher:staff(id, employee_id, full_name, email, staff_type:staff_types(id, name, code)),
-                    subject:subjects(id, name, code),
-                    class_academic_year:class_academic_years(
-                        id,
-                        class_id,
-                        academic_year_id,
-                        section_name,
-                        class:classes(id, name, code),
-                        academic_year:academic_years(id, name)
-                    )
-                `)
-                .is('deleted_at', null)
-                .order('created_at', { ascending: false });
+            // Fetch assignments from Laravel API
+            const assignments = await teacherSubjectAssignmentsApi.list({
+                organization_id: organizationId || profile.organization_id || undefined,
+                teacher_id: teacherId,
+                academic_year_id: academicYearId,
+            });
 
-            const resolvedOrgIds = organizationId ? [organizationId] : orgIds;
-            if (resolvedOrgIds.length === 0) {
-                return [];
-            }
-            query = query.in('organization_id', resolvedOrgIds);
-
-            // Filter by teacher if provided
-            if (teacherId) {
-                query = query.eq('teacher_id', teacherId);
-            }
-
-            // Filter by academic year if provided
-            if (academicYearId) {
-                query = query.eq('academic_year_id', academicYearId);
-            }
-
-            const { data, error } = await query;
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            // Parse schedule_slot_ids JSONB array
-            const parsed = (data || []).map((assignment: any) => ({
+            // Note: Schedule slots are fetched separately by the component using useScheduleSlots hook
+            // We just return the assignments with schedule_slot_ids array
+            return assignments.map((assignment: any) => ({
                 ...assignment,
-                schedule_slot_ids: Array.isArray(assignment.schedule_slot_ids)
-                    ? assignment.schedule_slot_ids
-                    : (typeof assignment.schedule_slot_ids === 'string'
-                        ? JSON.parse(assignment.schedule_slot_ids)
-                        : []),
-            }));
-
-            // Fetch schedule slots for each assignment
-            const allSlotIds = [...new Set(parsed.flatMap((a: any) => a.schedule_slot_ids))];
-            let slotsMap: Record<string, any> = {};
-
-            if (allSlotIds.length > 0) {
-                const { data: slotsData } = await (supabase as any)
-                    .from('schedule_slots')
-                    .select('id, name, code, start_time, end_time')
-                    .in('id', allSlotIds)
-                    .is('deleted_at', null);
-
-                if (slotsData) {
-                    slotsMap = slotsData.reduce((acc: Record<string, any>, slot: any) => {
-                        acc[slot.id] = slot;
-                        return acc;
-                    }, {});
-                }
-            }
-
-            // Enrich assignments with schedule slots
-            return parsed.map((assignment: any) => ({
-                ...assignment,
-                schedule_slots: assignment.schedule_slot_ids
-                    .map((id: string) => slotsMap[id])
-                    .filter(Boolean),
+                // schedule_slots will be populated by the component using useScheduleSlots hook
+                schedule_slots: [], // Empty array - component will populate this
+                // Build full_name for teacher from first_name, father_name, grandfather_name
+                teacher: assignment.teacher ? {
+                    ...assignment.teacher,
+                    full_name: [
+                        assignment.teacher.first_name,
+                        assignment.teacher.father_name,
+                        assignment.teacher.grandfather_name,
+                    ].filter(Boolean).join(' '),
+                } : undefined,
             })) as TeacherSubjectAssignment[];
         },
         enabled: !!user && !!profile,
@@ -178,32 +161,25 @@ export const useCreateTeacherSubjectAssignment = () => {
                 }
             }
 
-            // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && organizationId !== profile.organization_id) {
-                throw new Error('Cannot create assignment for different organization');
+            // Create assignment via Laravel API
+            const assignment = await teacherSubjectAssignmentsApi.create({
+                ...assignmentData,
+                organization_id: organizationId,
+            });
+
+            // Build full_name for teacher
+            if (assignment.teacher) {
+                assignment.teacher = {
+                    ...assignment.teacher,
+                    full_name: [
+                        assignment.teacher.first_name,
+                        assignment.teacher.father_name,
+                        assignment.teacher.grandfather_name,
+                    ].filter(Boolean).join(' '),
+                };
             }
 
-            const { data, error } = await (supabase as any)
-                .from('teacher_subject_assignments')
-                .insert({
-                    teacher_id: assignmentData.teacher_id,
-                    class_academic_year_id: assignmentData.class_academic_year_id,
-                    subject_id: assignmentData.subject_id,
-                    schedule_slot_ids: assignmentData.schedule_slot_ids,
-                    school_id: assignmentData.school_id || null,
-                    academic_year_id: assignmentData.academic_year_id || null,
-                    organization_id: organizationId,
-                    is_active: assignmentData.is_active ?? true,
-                    notes: assignmentData.notes || null,
-                })
-                .select()
-                .single();
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            return data as TeacherSubjectAssignment;
+            return assignment as TeacherSubjectAssignment;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['teacher-subject-assignments'] });
@@ -226,40 +202,26 @@ export const useUpdateTeacherSubjectAssignment = () => {
                 throw new Error('User not authenticated');
             }
 
-            // Get current assignment to check organization
-            const { data: currentAssignment } = await (supabase as any)
-                .from('teacher_subject_assignments')
-                .select('organization_id')
-                .eq('id', id)
-                .is('deleted_at', null)
-                .single();
+            // Update assignment via Laravel API
+            const assignment = await teacherSubjectAssignmentsApi.update(id, {
+                schedule_slot_ids: updates.schedule_slot_ids,
+                is_active: updates.is_active,
+                notes: updates.notes,
+            });
 
-            if (!currentAssignment) {
-                throw new Error('Assignment not found');
+            // Build full_name for teacher
+            if (assignment.teacher) {
+                assignment.teacher = {
+                    ...assignment.teacher,
+                    full_name: [
+                        assignment.teacher.first_name,
+                        assignment.teacher.father_name,
+                        assignment.teacher.grandfather_name,
+                    ].filter(Boolean).join(' '),
+                };
             }
 
-            // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentAssignment.organization_id !== profile.organization_id) {
-                throw new Error('Cannot update assignment from different organization');
-            }
-
-            const updateData: any = {};
-            if (updates.schedule_slot_ids !== undefined) updateData.schedule_slot_ids = updates.schedule_slot_ids;
-            if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
-            if (updates.notes !== undefined) updateData.notes = updates.notes;
-
-            const { data, error } = await (supabase as any)
-                .from('teacher_subject_assignments')
-                .update(updateData)
-                .eq('id', id)
-                .select()
-                .single();
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            return data as TeacherSubjectAssignment;
+            return assignment as TeacherSubjectAssignment;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['teacher-subject-assignments'] });
@@ -282,32 +244,8 @@ export const useDeleteTeacherSubjectAssignment = () => {
                 throw new Error('User not authenticated');
             }
 
-            // Get current assignment to check organization
-            const { data: currentAssignment } = await (supabase as any)
-                .from('teacher_subject_assignments')
-                .select('organization_id')
-                .eq('id', id)
-                .is('deleted_at', null)
-                .single();
-
-            if (!currentAssignment) {
-                throw new Error('Assignment not found');
-            }
-
-            // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentAssignment.organization_id !== profile.organization_id) {
-                throw new Error('Cannot delete assignment from different organization');
-            }
-
-            // Hard delete
-            const { error } = await (supabase as any)
-                .from('teacher_subject_assignments')
-                .delete()
-                .eq('id', id);
-
-            if (error) {
-                throw new Error(error.message);
-            }
+            // Delete assignment via Laravel API
+            await teacherSubjectAssignmentsApi.delete(id);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['teacher-subject-assignments'] });
@@ -318,4 +256,3 @@ export const useDeleteTeacherSubjectAssignment = () => {
         },
     });
 };
-

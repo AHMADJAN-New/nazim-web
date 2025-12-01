@@ -48,7 +48,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       const response = await authApi.getProfile();
       if (response) {
-        setProfile(response as Profile);
+        const profileData = response as Profile;
+        setProfile(profileData);
+        
+        // If profile doesn't have organization_id (and not super_admin),
+        // backend should have assigned it on login, so this is unexpected
+        if (!profileData.organization_id && profileData.role !== 'super_admin') {
+          console.warn('Profile missing organization_id - backend should have assigned it. User may need to log out and log back in.');
+        }
       }
     } catch (error: any) {
       console.error('Failed to load profile:', error);
@@ -75,7 +82,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           if (response.user && response.profile) {
             setUser(response.user);
             setSession({ token });
-            setProfile(response.profile as Profile);
+            
+            // If profile doesn't have organization_id (and not super_admin), 
+            // backend should have assigned it during login, so refresh profile
+            if (!response.profile.organization_id && response.profile.role !== 'super_admin') {
+              console.warn('Profile missing organization_id, refreshing...');
+              // Refresh profile to get updated organization_id
+              await loadUserProfile();
+            } else {
+              setProfile(response.profile as Profile);
+            }
           } else {
             // Invalid token, clear it
             apiClient.setToken(null);
