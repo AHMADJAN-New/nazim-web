@@ -41,8 +41,10 @@ export function useStudentAutocomplete() {
             return data as StudentAutocompleteData;
         },
         enabled: !!user && !!profile,
-        staleTime: 10 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
+        staleTime: 10 * 60 * 1000, // 10 minutes
+        gcTime: 30 * 60 * 1000, // 30 minutes
+        refetchOnWindowFocus: false, // REQUIRED: Performance optimization
+        refetchOnReconnect: false, // REQUIRED: Performance optimization
     });
 }
 

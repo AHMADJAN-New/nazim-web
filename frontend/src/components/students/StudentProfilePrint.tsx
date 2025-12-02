@@ -1,6 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { Student } from '@/hooks/useStudents';
+import type { Student } from '@/types/domain/student';
 
 interface StudentProfilePrintProps {
   student: Student;

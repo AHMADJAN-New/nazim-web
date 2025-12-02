@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { studentSchema, type StudentFormData } from '@/lib/validations';
@@ -30,7 +30,7 @@ import { useSchools } from '@/hooks/useSchools';
 import { useProfile } from '@/hooks/useProfiles';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 import { useLanguage } from '@/hooks/useLanguage';
-import type { Student } from '@/hooks/useStudents';
+import type { Student } from '@/types/domain/student';
 import { StudentDocumentsDialog } from './StudentDocumentsDialog';
 import { StudentEducationalHistoryDialog } from './StudentEducationalHistoryDialog';
 import { StudentDisciplineRecordsDialog } from './StudentDisciplineRecordsDialog';
@@ -46,7 +46,8 @@ export interface StudentFormDialogProps {
 // Use StudentFormData from shared validation schema
 type StudentFormValues = StudentFormData;
 
-export function StudentFormDialog({ open, onOpenChange, student, onSuccess, onSubmitData }: StudentFormDialogProps) {
+// PERFORMANCE: Memoized to prevent unnecessary re-renders
+export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenChange, student, onSuccess, onSubmitData }: StudentFormDialogProps) {
     const isEdit = !!student;
     const { t } = useLanguage();
     const { data: ac } = useStudentAutocomplete();
@@ -211,29 +212,31 @@ export function StudentFormDialog({ open, onOpenChange, student, onSuccess, onSu
     }, [open, student, reset, schools]);
 
     const onSubmit = async (values: StudentFormValues) => {
-        // Duplicate check before closing
-        try {
-            const dupes = await duplicateCheck.mutateAsync({
-                full_name: values.full_name,
-                father_name: values.father_name,
-                tazkira_number: values.guardian_tazkira || null,
-                card_number: values.card_number || null,
-                admission_no: values.admission_no || null,
-            });
+        // Duplicate check only for new students (not for updates)
+        if (!isEdit) {
+            try {
+                const dupes = await duplicateCheck.mutateAsync({
+                    full_name: values.full_name,
+                    father_name: values.father_name,
+                    tazkira_number: values.guardian_tazkira || null,
+                    card_number: values.card_number || null,
+                    admission_no: values.admission_no || null,
+                });
 
-            if (dupes.length > 0 && !isEdit) {
-                // Simple confirm UX; can be upgraded to custom dialog
-                const first = dupes[0];
-                const proceed = window.confirm(
-                    `${t('students.potentialDuplicate') || 'Potential duplicate found'} (e.g., ${first.full_name} - ${first.match_reason}).\n` +
-                    `${t('students.proceedCreate') || 'Do you still want to proceed creating a new record?'}`
-                );
-                if (!proceed) {
-                    return;
+                if (dupes.length > 0) {
+                    // Simple confirm UX; can be upgraded to custom dialog
+                    const first = dupes[0];
+                    const proceed = window.confirm(
+                        `${t('students.potentialDuplicate') || 'Potential duplicate found'} (e.g., ${first.full_name} - ${first.match_reason}).\n` +
+                        `${t('students.proceedCreate') || 'Do you still want to proceed creating a new record?'}`
+                    );
+                    if (!proceed) {
+                        return;
+                    }
                 }
+            } catch {
+                // Ignore duplicate check failure; allow proceed
             }
-        } catch {
-            // Ignore duplicate check failure; allow proceed
         }
 
         if (onSubmitData) {
@@ -631,7 +634,7 @@ export function StudentFormDialog({ open, onOpenChange, student, onSuccess, onSu
         />
     </>
     );
-}
+});
 
 export default StudentFormDialog;
 

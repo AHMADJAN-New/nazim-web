@@ -5,43 +5,48 @@ namespace App\Http\Controllers;
 use App\Models\Organization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrganizationController extends Controller
 {
     /**
-     * Display a listing of organizations
-     * Public endpoint for signup form, or filtered for authenticated users
+     * Display a listing of organizations (protected - requires authentication)
+     * Returns organizations filtered by user's access
      */
     public function index(Request $request)
     {
         try {
+            $user = $request->user();
+            
+            if (!$user) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
+
             // Use DB facade directly to avoid Eloquent issues if table doesn't exist
             $query = DB::connection('pgsql')
                 ->table('organizations')
                 ->whereNull('deleted_at');
 
-            // If user is authenticated, filter by their organization
-            $user = $request->user();
-            if ($user) {
-                $profile = DB::connection('pgsql')
-                    ->table('profiles')
-                    ->where('id', $user->id)
-                    ->first();
-                
-                if ($profile) {
-                    // Super admin can see all, others see only their organization
-                    if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
-                        $query->where('id', $profile->organization_id);
-                    }
+            $profile = DB::connection('pgsql')
+                ->table('profiles')
+                ->where('id', $user->id)
+                ->first();
+            
+            if ($profile) {
+                // Super admin can see all, others see only their organization
+                if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
+                    $query->where('id', $profile->organization_id);
                 }
+            } else {
+                // No profile found, return empty
+                return response()->json([]);
             }
-            // If no user, return all active organizations (for signup form)
 
             $organizations = $query->orderBy('name')->get();
 
             return response()->json($organizations);
         } catch (\Illuminate\Database\QueryException $e) {
-            \Log::error('OrganizationController::index database error: ' . $e->getMessage(), [
+            Log::error('OrganizationController::index database error: ' . $e->getMessage(), [
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
                 'trace' => $e->getTraceAsString()
@@ -54,7 +59,44 @@ class OrganizationController extends Controller
             
             return response()->json(['error' => 'Failed to fetch organizations'], 500);
         } catch (\Exception $e) {
-            \Log::error('OrganizationController::index error: ' . $e->getMessage(), [
+            Log::error('OrganizationController::index error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Failed to fetch organizations'], 500);
+        }
+    }
+
+    /**
+     * Public endpoint for signup form - returns minimal organization data only
+     * Returns only id, name, and slug (no sensitive settings or other data)
+     */
+    public function publicList(Request $request)
+    {
+        try {
+            // Use DB facade directly to avoid Eloquent issues if table doesn't exist
+            $organizations = DB::connection('pgsql')
+                ->table('organizations')
+                ->whereNull('deleted_at')
+                ->select('id', 'name', 'slug') // Only return minimal data needed for signup
+                ->orderBy('name')
+                ->get();
+
+            return response()->json($organizations);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('OrganizationController::publicList database error: ' . $e->getMessage(), [
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // If table doesn't exist, return empty array instead of error
+            if (str_contains($e->getMessage(), 'does not exist') || str_contains($e->getMessage(), 'relation')) {
+                return response()->json([]);
+            }
+            
+            return response()->json(['error' => 'Failed to fetch organizations'], 500);
+        } catch (\Exception $e) {
+            Log::error('OrganizationController::publicList error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['error' => 'Failed to fetch organizations'], 500);
@@ -306,7 +348,7 @@ class OrganizationController extends Controller
 
             return response()->json($organizations);
         } catch (\Exception $e) {
-            \Log::error('OrganizationController::accessible error: ' . $e->getMessage(), [
+            Log::error('OrganizationController::accessible error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['error' => 'Failed to fetch accessible organizations'], 500);

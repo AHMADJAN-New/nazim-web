@@ -12,7 +12,7 @@ vi.mock('../hooks/useAuth', () => ({
   })
 }));
 
-vi.mock('@/integrations/supabase/client', () => {
+vi.mock('@/lib/api/client', () => {
   const sampleStudent = {
     id: '1',
     organization_id: 'org-1',
@@ -59,18 +59,9 @@ vi.mock('@/integrations/supabase/client', () => {
     updated_at: '2024-01-01'
   };
 
-  const builder: any = {
-    is: vi.fn(() => builder),
-    order: vi.fn(() => builder),
-    eq: vi.fn(() => builder),
-    in: vi.fn(() => builder),
-    select: vi.fn(() => builder),
-    then: (resolve: any) => resolve({ data: [sampleStudent], error: null })
-  };
-
   return {
-    supabase: {
-      from: vi.fn(() => builder)
+    studentsApi: {
+      list: vi.fn(() => Promise.resolve([sampleStudent]))
     }
   };
 });

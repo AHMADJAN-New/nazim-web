@@ -72,7 +72,7 @@ export function PermissionsManagement() {
     
     // Regular users see: global permissions + their organization's permissions
     return allPermissions.filter(p => 
-      p.organization_id === null || p.organization_id === profile.organization_id
+      p.organizationId === null || p.organizationId === profile.organization_id
     );
   }, [allPermissions, profile, isSuperAdmin]);
   
@@ -121,7 +121,7 @@ export function PermissionsManagement() {
     return rolePermissionsQueries
       .filter(({ query }) => {
         const rolePerms = query.data || [];
-        return rolePerms.some(rp => rp.permission_id === permissionId);
+        return rolePerms.some(rp => rp.permissionId === permissionId);
       })
       .map(({ role }) => role);
   };
@@ -133,11 +133,12 @@ export function PermissionsManagement() {
     let filtered = permissions;
 
     if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.resource.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+        p.name?.toLowerCase().includes(query) ||
+        p.resource?.toLowerCase().includes(query) ||
+        p.action?.toLowerCase().includes(query) ||
+        (p.description && p.description.toLowerCase().includes(query))
       );
     }
 
@@ -267,14 +268,14 @@ export function PermissionsManagement() {
     if (isSuperAdmin) return true;
     if (!hasPermissionsUpdatePermission) return false;
     // Regular admin can only edit permissions for their organization
-    return permission.organization_id === profile?.organization_id;
+    return permission.organizationId === profile?.organization_id;
   };
 
   const isPermissionDeletable = (permission: Permission): boolean => {
     if (isSuperAdmin) return true;
     if (!hasPermissionsUpdatePermission) return false;
     // Regular admin can only delete permissions for their organization (not global)
-    return permission.organization_id === profile?.organization_id && permission.organization_id !== null;
+    return permission.organizationId === profile?.organization_id && permission.organizationId !== null;
   };
 
   return (
@@ -408,7 +409,7 @@ export function PermissionsManagement() {
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             {permission.name}
-                            {permission.organization_id === null ? (
+                            {permission.organizationId === null ? (
                               <Badge variant="outline" className="text-xs">Global</Badge>
                             ) : (
                               <Badge variant="secondary" className="text-xs">Org-Specific</Badge>

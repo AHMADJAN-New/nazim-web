@@ -3,44 +3,34 @@ import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { academicYearsApi } from '@/lib/api/client';
+import type * as AcademicYearApi from '@/types/api/academicYear';
+import type { AcademicYear } from '@/types/domain/academicYear';
+import { mapAcademicYearApiToDomain, mapAcademicYearDomainToInsert, mapAcademicYearDomainToUpdate } from '@/mappers/academicYearMapper';
 
-// Academic Year type definition
-export interface AcademicYear {
-  id: string;
-  organization_id: string | null;
-  name: string;
-  start_date: string;
-  end_date: string;
-  is_current: boolean;
-  description: string | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-}
-
-export type AcademicYearInsert = Omit<AcademicYear, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
-export type AcademicYearUpdate = Partial<Omit<AcademicYear, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>>;
+// Re-export domain types for convenience
+export type { AcademicYear } from '@/types/domain/academicYear';
 
 export const useAcademicYears = (organizationId?: string) => {
   const { user, profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery({
+  return useQuery<AcademicYear[]>({
     queryKey: ['academic-years', organizationId || profile?.organization_id, orgIds.join(',')],
     queryFn: async () => {
-      if (!user || !profile || orgsLoading) return [];
+      if (!user || !profile) return [];
 
       const resolvedOrgId = organizationId || profile.organization_id;
-      const data = await academicYearsApi.list({
+      const apiAcademicYears = await academicYearsApi.list({
         organization_id: resolvedOrgId || undefined,
       });
 
-      return (data || []) as AcademicYear[];
+      // Map API models to domain models
+      return (apiAcademicYears as AcademicYearApi.AcademicYear[]).map(mapAcademicYearApiToDomain);
     },
-    enabled: !!user && !!profile,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    enabled: !!user && !!profile && !orgsLoading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 
@@ -48,10 +38,10 @@ export const useCurrentAcademicYear = (organizationId?: string) => {
   const { user, profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery({
+  return useQuery<AcademicYear | null>({
     queryKey: ['current-academic-year', organizationId || profile?.organization_id, orgIds.join(',')],
     queryFn: async () => {
-      if (!user || !profile || orgsLoading) return null;
+      if (!user || !profile) return null;
 
       const resolvedOrgId = organizationId || profile.organization_id;
       const data = await academicYearsApi.list({
@@ -59,11 +49,16 @@ export const useCurrentAcademicYear = (organizationId?: string) => {
         is_current: true,
       });
 
-      return (data && Array.isArray(data) && data.length > 0 ? data[0] : null) as AcademicYear | null;
+      if (data && Array.isArray(data) && data.length > 0) {
+        return mapAcademicYearApiToDomain(data[0] as AcademicYearApi.AcademicYear);
+      }
+      
+      return null;
     },
-    enabled: !!user && !!profile,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    enabled: !!user && !!profile && !orgsLoading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 
@@ -74,19 +69,19 @@ export const useCreateAcademicYear = () => {
   return useMutation({
     mutationFn: async (academicYearData: { 
       name: string; 
-      start_date: string;
-      end_date: string;
-      is_current?: boolean;
+      startDate: Date | string;
+      endDate: Date | string;
+      isCurrent?: boolean;
       description?: string | null;
       status?: string;
-      organization_id?: string | null;
+      organizationId?: string | null;
     }) => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
       }
 
       // Get organization_id - use provided or user's org
-      let organizationId = academicYearData.organization_id;
+      let organizationId = academicYearData.organizationId;
       if (organizationId === undefined) {
         if (profile.role === 'super_admin') {
           // Super admin can create global years (NULL) or org-specific
@@ -108,9 +103,13 @@ export const useCreateAcademicYear = () => {
         throw new Error('Name must be 100 characters or less');
       }
 
-      // Validation: date range
-      const startDate = new Date(academicYearData.start_date);
-      const endDate = new Date(academicYearData.end_date);
+      // Convert dates to Date objects if strings
+      const startDate = typeof academicYearData.startDate === 'string' 
+        ? new Date(academicYearData.startDate) 
+        : academicYearData.startDate;
+      const endDate = typeof academicYearData.endDate === 'string'
+        ? new Date(academicYearData.endDate)
+        : academicYearData.endDate;
       
       if (isNaN(startDate.getTime())) {
         throw new Error('Invalid start date');
@@ -131,18 +130,22 @@ export const useCreateAcademicYear = () => {
         throw new Error('Name cannot be empty');
       }
 
-      // Create academic year via Laravel API
-      const data = await academicYearsApi.create({
+      // Convert domain model to API insert payload
+      const insertData = mapAcademicYearDomainToInsert({
         name: trimmedName,
-        start_date: academicYearData.start_date,
-        end_date: academicYearData.end_date,
-        is_current: academicYearData.is_current || false,
+        startDate,
+        endDate,
+        isCurrent: academicYearData.isCurrent || false,
         description: academicYearData.description || null,
         status: academicYearData.status || 'active',
-        organization_id: organizationId,
+        organizationId,
       });
 
-      return data as AcademicYear;
+      // Create academic year via Laravel API
+      const apiAcademicYear = await academicYearsApi.create(insertData);
+      
+      // Map API response back to domain model
+      return mapAcademicYearApiToDomain(apiAcademicYear as AcademicYearApi.AcademicYear);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic-years'] });
@@ -166,20 +169,21 @@ export const useUpdateAcademicYear = () => {
       }
 
       // Get current academic year to check organization
-      const currentAcademicYear = await academicYearsApi.get(id);
+      const currentAcademicYearApi = await academicYearsApi.get(id);
+      const currentAcademicYear = mapAcademicYearApiToDomain(currentAcademicYearApi as AcademicYearApi.AcademicYear);
 
       if (!currentAcademicYear) {
         throw new Error('Academic year not found');
       }
 
       // Validate organization access (unless super admin)
-      if (profile.role !== 'super_admin' && currentAcademicYear.organization_id !== profile.organization_id && currentAcademicYear.organization_id !== null) {
+      if (profile.role !== 'super_admin' && currentAcademicYear.organizationId !== profile.organization_id && currentAcademicYear.organizationId !== null) {
         throw new Error('Cannot update academic year from different organization');
       }
 
-      // Prevent organization_id changes (unless super admin)
-      if (updates.organization_id !== undefined && profile.role !== 'super_admin') {
-        throw new Error('Cannot change organization_id');
+      // Prevent organizationId changes (unless super admin)
+      if (updates.organizationId !== undefined && profile.role !== 'super_admin') {
+        throw new Error('Cannot change organizationId');
       }
 
       // Validation: max 100 characters for name
@@ -188,8 +192,8 @@ export const useUpdateAcademicYear = () => {
       }
 
       // Validation: date range
-      const startDate = updates.start_date ? new Date(updates.start_date) : new Date(currentAcademicYear.start_date);
-      const endDate = updates.end_date ? new Date(updates.end_date) : new Date(currentAcademicYear.end_date);
+      const startDate = updates.startDate || currentAcademicYear.startDate;
+      const endDate = updates.endDate || currentAcademicYear.endDate;
       
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         throw new Error('Invalid date format');
@@ -199,8 +203,8 @@ export const useUpdateAcademicYear = () => {
         throw new Error('End date must be after start date');
       }
 
-      // Trim whitespace if name is being updated
-      const updateData = { ...updates };
+      // Prepare update data
+      const updateData: Partial<AcademicYear> = { ...updates };
       if (updateData.name) {
         const trimmedName = updateData.name.trim();
         if (!trimmedName) {
@@ -209,10 +213,14 @@ export const useUpdateAcademicYear = () => {
         updateData.name = trimmedName;
       }
 
-      // Update academic year via Laravel API
-      const data = await academicYearsApi.update(id, updateData);
+      // Convert domain model to API update payload
+      const apiUpdateData = mapAcademicYearDomainToUpdate(updateData);
 
-      return data as AcademicYear;
+      // Update academic year via Laravel API
+      const apiAcademicYear = await academicYearsApi.update(id, apiUpdateData);
+
+      // Map API response back to domain model
+      return mapAcademicYearApiToDomain(apiAcademicYear as AcademicYearApi.AcademicYear);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic-years'] });
@@ -236,25 +244,26 @@ export const useDeleteAcademicYear = () => {
       }
 
       // Get current academic year to check organization
-      const currentAcademicYear = await academicYearsApi.get(id);
+      const currentAcademicYearApi = await academicYearsApi.get(id);
+      const currentAcademicYear = mapAcademicYearApiToDomain(currentAcademicYearApi as AcademicYearApi.AcademicYear);
 
       if (!currentAcademicYear) {
         throw new Error('Academic year not found');
       }
 
       // Validate organization access (unless super admin)
-      // Note: Global years (organization_id = NULL) can only be deleted by super admin
+      // Note: Global years (organizationId = NULL) can only be deleted by super admin
       if (profile.role !== 'super_admin') {
-        if (currentAcademicYear.organization_id === null) {
+        if (currentAcademicYear.organizationId === null) {
           throw new Error('Cannot delete global academic years');
         }
-        if (currentAcademicYear.organization_id !== profile.organization_id) {
+        if (currentAcademicYear.organizationId !== profile.organization_id) {
           throw new Error('Cannot delete academic year from different organization');
         }
       }
 
       // Prevent deletion of current year (warn user)
-      if (currentAcademicYear.is_current) {
+      if (currentAcademicYear.isCurrent) {
         throw new Error('Cannot delete the current academic year. Please set another year as current first.');
       }
 
@@ -283,21 +292,23 @@ export const useSetCurrentAcademicYear = () => {
       }
 
       // Get current academic year to check organization
-      const academicYear = await academicYearsApi.get(id);
+      const academicYearApi = await academicYearsApi.get(id);
+      const academicYear = mapAcademicYearApiToDomain(academicYearApi as AcademicYearApi.AcademicYear);
 
       if (!academicYear) {
         throw new Error('Academic year not found');
       }
 
       // Validate organization access (unless super admin)
-      if (profile.role !== 'super_admin' && academicYear.organization_id !== profile.organization_id && academicYear.organization_id !== null) {
+      if (profile.role !== 'super_admin' && academicYear.organizationId !== profile.organization_id && academicYear.organizationId !== null) {
         throw new Error('Cannot set academic year from different organization as current');
       }
 
       // Set as current via Laravel API
-      const data = await academicYearsApi.setCurrent(id);
+      const apiAcademicYear = await academicYearsApi.setCurrent(id);
 
-      return data as AcademicYear;
+      // Map API response back to domain model
+      return mapAcademicYearApiToDomain(apiAcademicYear as AcademicYearApi.AcademicYear);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic-years'] });

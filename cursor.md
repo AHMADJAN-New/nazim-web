@@ -1,226 +1,1222 @@
-# Nazim School Management System - Cursor Documentation
+# Nazim School Management System - Cursor Rules
 
-## 🏫 Project Overview
+## Project Overview
+This is a comprehensive Islamic school management system built with React, TypeScript, and Laravel. The application serves educational institutions with features for student management, academics, finance, communication, and more.
 
-**Nazim School Management System** is a comprehensive, modern web application designed specifically for Islamic educational institutions. It provides a complete solution for managing all aspects of school operations from student admissions to graduation.
+**⚠️ CRITICAL: This is a MULTI-TENANT SaaS application. ALL code must enforce organization isolation. See "Multi-Tenancy Architecture" section below.**
 
-## 🛠️ Technology Stack
+## Tech Stack
+- **Frontend**: React 18.3.1, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Backend**: Laravel 12 (PHP 8.2+), PostgreSQL, Laravel Sanctum (API Authentication)
+- **Database**: PostgreSQL with `auth` schema
+- **Permission System**: Spatie Laravel Permission with organization scoping
+- **State Management**: TanStack Query (React Query)
+- **Routing**: React Router DOM v6 (frontend), Laravel API routes (backend)
+- **Forms**: React Hook Form + Zod validation
+- **Charts**: Recharts
+- **Testing**: Vitest, Testing Library (frontend), PHPUnit (backend)
 
-### Frontend
-- **React 18.3.1** - Modern React with hooks and concurrent features
-- **TypeScript** - Full type safety and better developer experience
-- **Vite 5.4.1** - Fast build tool with SWC compilation
-- **Tailwind CSS** - Utility-first CSS framework
-- **shadcn/ui** - High-quality, accessible UI components
-- **TanStack Query** - Powerful data synchronization for React
-- **React Router DOM v6** - Declarative routing
-- **React Hook Form** - Performant forms with easy validation
-- **Zod** - TypeScript-first schema validation
-- **Recharts** - Composable charting library
-- **Lucide React** - Beautiful & consistent icon toolkit
+## Code Style & Standards
 
-### Backend & Database
-- **Supabase** - Backend-as-a-Service platform
-- **PostgreSQL** - Robust relational database
-- **Supabase Auth** - Authentication and user management
-- **Supabase Storage** - File storage and management
-- **Supabase Edge Functions** - Serverless functions
-- **Row Level Security (RLS)** - Database-level security
+### TypeScript
+- Use strict TypeScript with proper type definitions
+- Define interfaces for all data structures
+- Use generic types where appropriate
+- Avoid `any` type – use proper typing
+- Export types from dedicated type files
+- When React Query generics cause `TS2589: Type instantiation is excessively deep and possibly infinite` (usually with complex `useQuery` return types):
 
-### Development Tools
-- **Vitest** - Fast unit testing framework
-- **Testing Library** - Simple and complete testing utilities
-- **ESLint** - Code linting and quality assurance
-- **TypeScript ESLint** - TypeScript-specific linting rules
-- **Prettier** - Code formatting
-- **Husky** - Git hooks for quality gates
+  1. **First**, simplify types:
+     - Give `useQuery` an explicit data type: `useQuery<Permission[]>({...})`
+     - Make the `queryFn` return `Promise<Permission[]>` directly
+     - Avoid deeply nested inferred types in `queryKey` and `select` callbacks
 
-## 🏗️ Project Structure
+  2. If the error still persists and only at the **call site**, it is acceptable to:
 
+     ```ts
+     // @ts-expect-error TS2589 – React Query type depth workaround
+     return useQuery<Permission[]>({
+       queryKey: ['permissions', profile?.organization_id],
+       queryFn: fetchPermissions,
+       enabled: !!profile,
+     });
+     ```
+
+     - Only use `// @ts-expect-error` **above the minimal line** that triggers TS2589
+     - Add a clear comment explaining it is a React Query type depth workaround
+     - Do **not** use `@ts-ignore` for this; prefer `@ts-expect-error` so the compiler verifies it
+
+  3. Do **not** refactor working logic just to appease TS depth if the runtime code is correct and the types are already explicit at the hook boundary.
+
+- **Never use `// @ts-ignore` in this project.**
+  - If a suppression is truly needed, use `// @ts-expect-error <short_reason>` and keep it as close as possible to the line causing the error (primarily for TS2589 React Query depth issues).
+
+### React Patterns
+- Use functional components with hooks
+- Implement proper error boundaries
+- Use React.memo for performance optimization
+- Follow React best practices for state management
+- Use custom hooks for reusable logic
+
+### File Organization
+- Components in `/src/components/`
+- Pages in `/src/pages/`
+- Hooks in `/src/hooks/`
+- Types in `/src/types/`
+- Utils in `/src/lib/`
+- Use index files for clean imports
+
+### Naming Conventions
+- Components: PascalCase (e.g., `StudentDashboard`)
+- Files: PascalCase for components, camelCase for utilities
+- Variables: camelCase
+- Constants: UPPER_SNAKE_CASE
+- Database tables: snake_case
+
+## Database & Backend
+
+### Database Schema
+- **PostgreSQL** with `public` and `auth` schemas
+- Use proper foreign key relationships
+- **ALWAYS add `organization_id` to tenant tables** (see Multi-Tenancy section)
+- **Users stored in `auth.users` table**
+- Use enums for status fields
+- Follow naming conventions: snake_case for tables/columns
+- **ALWAYS create index on `organization_id`** for performance
+
+### UUID Primary Keys - REQUIRED FOR ALL TABLES
+
+**CRITICAL: ALL tables MUST use UUID primary keys. This is mandatory for the entire application.**
+
+#### Database Migrations
+- **ALWAYS** use `UUID` type for primary keys in migrations
+- **ALWAYS** use `DEFAULT gen_random_uuid()` in PostgreSQL migrations
+- **Example:**
+  ```sql
+  CREATE TABLE public.your_table (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      -- other columns...
+  );
+  ```
+
+#### Laravel Models
+- **ALWAYS** configure models to use UUIDs:
+  ```php
+  public $incrementing = false;
+  protected $keyType = 'string';
+  ```
+- **ALWAYS** add `'id'` to `$fillable` array
+- **ALWAYS** implement UUID generation in model boot method:
+  ```php
+  protected static function boot()
+  {
+      parent::boot();
+      
+      static::creating(function ($model) {
+          if (empty($model->id)) {
+              $model->id = (string) Str::uuid();
+          }
+      });
+  }
+  ```
+- **ALWAYS** import `Illuminate\Support\Str` for UUID generation
+
+#### Frontend Types/Interfaces
+- **ALWAYS** define `id` as `string` type (UUIDs are strings)
+- **Example:**
+  ```typescript
+  export interface YourResource {
+    id: string; // UUID as string
+    organization_id: string;
+    // other fields...
+  }
+  ```
+
+#### API Responses
+- **ALWAYS** return UUIDs as strings in JSON responses
+- Laravel automatically serializes UUIDs as strings
+- Frontend should always treat IDs as strings, never numbers
+
+#### Foreign Keys
+- **ALWAYS** use `UUID` type for foreign key columns
+- **ALWAYS** reference UUID primary keys
+- **Example:**
+  ```sql
+  organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE
+  ```
+
+#### Exceptions
+- **NO exceptions** - all tables must use UUIDs
+- Even lookup/reference tables use UUIDs
+- Even junction/pivot tables use UUIDs for their primary keys
+
+### Laravel API Integration
+- Use custom `ApiClient` from `/src/lib/api/client.ts` for all API calls
+- All API calls use RESTful endpoints (e.g., `/api/organizations`, `/api/auth/login`)
+- Implement proper error handling with try/catch
+- Use TanStack Query for data fetching and caching
+- All API calls in hooks must:
+  - Handle errors gracefully and throw descriptive errors
+  - Return **parsed, typed data** (never raw API response objects) to components
+  - Include authentication token in headers (handled automatically by ApiClient)
+
+### API Client Pattern
+```typescript
+import { apiClient } from '@/lib/api/client';
+
+// GET request
+const { data } = await apiClient.organizations.list();
+
+// POST request
+const result = await apiClient.auth.login({ email, password });
+
+// PUT/PATCH request
+const updated = await apiClient.organizations.update(id, data);
+
+// DELETE request
+await apiClient.organizations.delete(id);
 ```
-src/
-├── components/           # Reusable UI components
-│   ├── ui/              # shadcn/ui components
-│   ├── admin/           # Admin-specific components
-│   ├── auth/            # Authentication components
-│   ├── dashboard/       # Dashboard components
-│   ├── dashboards/      # Role-specific dashboards
-│   ├── hifz/            # Quran memorization components
-│   ├── layout/          # Layout components
-│   ├── navigation/      # Navigation components
-│   └── omr/             # OMR scanning components
-├── hooks/               # Custom React hooks
-├── integrations/        # External service integrations
-│   └── supabase/        # Supabase client and types
-├── lib/                 # Utility functions and configurations
-├── pages/               # Page components
-│   ├── academic/        # Academic management pages
-│   ├── communication/   # Communication pages
-│   ├── exams/           # Examination pages
-│   ├── finance/         # Financial management pages
-│   ├── hostel/          # Hostel management pages
-│   ├── parent/          # Parent portal pages
-│   ├── settings/        # Settings pages
-│   └── students/        # Student management pages
-├── types/               # TypeScript type definitions
-└── test/                # Test utilities and setup
+
+
+### Query Patterns
+```typescript
+// Use TanStack Query for data fetching with Laravel API
+const { data, isLoading, error } = useQuery({
+  queryKey: ['students', organizationId, page, search],
+  queryFn: () => apiClient.students.list({ organizationId, page, search }),
+  staleTime: 5 * 60 * 1000, // 5 minutes
+  enabled: !!organizationId, // Only fetch when organizationId is available
+});
 ```
 
-## 🎨 Design System
+## Multi-Tenancy Architecture
 
-### Color Palette
-- **Primary**: Deep Islamic Green (`hsl(158, 58%, 28%)`)
-- **Secondary**: Warm Gold (`hsl(45, 85%, 58%)`)
-- **Accent**: Royal Blue (`hsl(217, 71%, 53%)`)
-- **Success**: Green (`hsl(142, 71%, 45%)`)
-- **Warning**: Orange (`hsl(38, 92%, 50%)`)
-- **Destructive**: Red (`hsl(0, 84%, 60%)`)
+**CRITICAL: This is a multi-tenant SaaS application. ALL code must follow organization isolation patterns.**
 
-### Typography
-- **Primary Font**: Inter (Latin scripts)
-- **Arabic Font**: Noto Sans Arabic (Arabic scripts)
-- **RTL Support**: Full right-to-left language support
+### Core Principles
+- **Every tenant table MUST have `organization_id` column**
+- **RLS policies MUST enforce organization isolation**
+- **Frontend hooks MUST filter by organization_id**
+- **Storage paths MUST include organization_id**
+- **All users MUST belong to an organization (organization_id is required)**
 
-### Components
-- **40+ shadcn/ui components** with custom styling
-- **Responsive design** with mobile-first approach
-- **Dark/Light mode** support
-- **Accessibility** features built-in
-- **Custom animations** and transitions
+### Database Schema - Multi-Tenancy
 
-## 🗄️ Database Schema
+#### Required Pattern for Tenant Tables
+```sql
+-- ALWAYS add organization_id to tenant tables
+CREATE TABLE IF NOT EXISTS public.your_table (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    -- other columns...
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
-### Core Entities
-- **Users**: `profiles`, `user_roles`, `user_security_settings`
-- **Students**: `students`, `student_parents`, `admission_applications`
-- **Academic**: `classes`, `subjects`, `academic_years`, `attendance`
-- **Examinations**: `exams`, `exam_questions`, `exam_results`, `omr_scans`
-- **Finance**: `fees`, `invoices`, `donations`, `fee_structures`
-- **Communication**: `messages`, `communications`, `events`, `notifications`
-- **Hostel**: `hostel_rooms`, `hostel_allocations`
-- **Library**: `library_books`, `library_transactions`
-- **Assets**: `assets`, `file_uploads`
-- **Reports**: `generated_reports`, `report_templates`
-- **Hifz**: `hifz_progress` for Quran memorization tracking
+-- ALWAYS create index on organization_id
+CREATE INDEX IF NOT EXISTS idx_your_table_organization_id ON public.your_table(organization_id);
 
-### Security Features
-- **Audit Logs**: Complete action tracking
-- **Auth Monitoring**: Security event logging
-- **Role Management**: Multi-level permissions
-- **Password Security**: Secure password policies
+-- ALWAYS enable RLS
+ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
 
-## 🚀 Key Features
+-- ALWAYS create RLS policies (5 standard policies)
+-- 1. Service role full access
+CREATE POLICY "Service role full access to your_table"
+    ON public.your_table FOR ALL TO service_role
+    USING (true) WITH CHECK (true);
 
-### 1. Student Management
-- Complete student lifecycle management
-- Admission applications with approval workflow
-- Student profiles with academic records
-- Parent-student relationships
-- Bulk import capabilities
-- ID card generation with QR codes
+-- 2. Users can read their organization's data
+CREATE POLICY "Users can read their organization's your_table"
+    ON public.your_table FOR SELECT TO authenticated
+    USING (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
 
-### 2. Academic Management
-- Class and subject management
-- Timetable creation and management
-- Grade-level organization
-- Academic year management
-- Student enrollment tracking
+-- 3. Users can insert in their organization
+CREATE POLICY "Users can insert your_table in their organization"
+    ON public.your_table FOR INSERT TO authenticated
+    WITH CHECK (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
 
-### 3. Attendance System
-- Real-time attendance tracking
-- Multiple attendance devices support
-- Attendance summaries and reports
-- Automated notifications
-- Device integration capabilities
+-- 4. Users can update their organization's data
+CREATE POLICY "Users can update their organization's your_table"
+    ON public.your_table FOR UPDATE TO authenticated
+    USING (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    )
+    WITH CHECK (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
 
-### 4. Examination System
-- Complete exam management
-- Question bank with multiple question types
-- OMR (Optical Mark Recognition) scanning
-- Automated result processing
-- Report card generation
-- Roll number assignment
+-- 5. Users can delete their organization's data
+CREATE POLICY "Users can delete their organization's your_table"
+    ON public.your_table FOR DELETE TO authenticated
+    USING (
+        organization_id = (
+            SELECT organization_id FROM public.profiles WHERE id = auth.uid()
+        )
+        OR (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) IS NULL
+    );
+```
 
-### 5. Hifz Progress Tracking
-- Quran memorization progress
-- Daily session logging
-- Teacher feedback system
-- Progress analytics and reports
-- Mistake tracking and improvement
+#### Tables with Organization Isolation (Current)
+- ✅ `organizations` - Root tenant table
+- ✅ `profiles` - User profiles (organization_id is REQUIRED for all users)
+- ✅ `buildings` - Organization-scoped
+- ✅ `rooms` - Organization-scoped (inherits from building)
+- ✅ `staff` - Organization-scoped
 
-### 6. Financial Management
-- Fee structure management
-- Payment tracking and invoicing
-- Donation management
-- Financial reporting
-- Automated fee calculations
+#### Future Tables That Need Organization Isolation
+When creating new tables, ALWAYS add organization_id:
+- `students` - Student records
+- `classes` - Class management
+- `subjects` - Subject management
+- `exams` - Examination records
+- `attendance` - Attendance tracking
+- `fees` - Fee management
+- `library_books` - Library management
+- `assets` - Asset management
+- Any other tenant-specific data
 
-### 7. Communication Hub
-- Announcements and notifications
-- Parent-teacher messaging
-- Event management
-- SMS integration
-- Email notifications
+### Frontend Hooks - Multi-Tenancy Pattern
 
-### 8. Hostel Management
-- Room allocation and management
-- Student assignments
-- Hostel attendance tracking
-- Fee management for hostel residents
+#### Standard Hook Pattern with Organization Filtering
+```typescript
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api/client';
+import { useProfile } from './useProfiles';
+import { useAuth } from './useAuth';
 
-### 9. Library System
-- Book catalog management
-- Issue and return tracking
-- Fine management
-- Student borrowing history
+export interface YourResource {
+  id: string;
+  organization_id: string;
+  // other fields...
+}
 
-### 10. Asset Management
-- School asset tracking
-- Maintenance scheduling
-- Asset assignment
-- Depreciation tracking
+// ALWAYS filter by user's organization
+export const useYourResources = () => {
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
 
-## 👥 User Roles & Permissions
+  return useQuery({
+    queryKey: ['your-resources', profile?.organization_id],
+    queryFn: async () => {
+      if (!user || !profile || !profile.organization_id) return [];
 
-### Role Hierarchy
-1. **Super Admin** - Full system access across all schools
-2. **Admin** - School-level administration
-3. **Teacher** - Academic management and student interaction
-4. **Staff** - Operational tasks and support
-5. **Student** - Personal academic information access
-6. **Parent** - Child's academic information and communication
+      // Users can only see their organization's data
+      return await apiClient.yourResources.list({ organizationId: profile.organization_id });
+    },
+    enabled: !!user && !!profile && !!profile.organization_id,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+};
 
-### Permission System
-- **Granular permissions** for each role
-- **Feature-based access control**
-- **Data-level security** with RLS
-- **Audit trails** for all actions
+// ALWAYS validate organization_id in mutations
+export const useCreateYourResource = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
 
-## 🔧 Development Guidelines
+  return useMutation({
+    mutationFn: async (resourceData: { /* fields */; organization_id?: string }) => {
+      if (!user || !profile || !profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
 
-### Code Style
-- **TypeScript strict mode** enabled
-- **Functional components** with hooks
-- **Custom hooks** for reusable logic
-- **Proper error boundaries** implementation
-- **Performance optimization** with React.memo
+      // Always use user's organization_id (ignore provided organization_id for security)
+      const organizationId = profile.organization_id;
 
-### File Naming
-- **Components**: PascalCase (`StudentDashboard.tsx`)
-- **Hooks**: camelCase with `use` prefix (`useStudents.tsx`)
-- **Utilities**: camelCase (`utils.ts`)
-- **Types**: camelCase (`student.ts`)
+      return await apiClient.yourResources.create({
+        ...resourceData,
+        organization_id: organizationId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['your-resources'] });
+    },
+  });
+};
+
+// ALWAYS check organization_id in update mutations
+export const useUpdateYourResource = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<YourResource> & { id: string }) => {
+      if (!user || !profile) {
+        throw new Error('User not authenticated');
+      }
+
+      // Get current resource to check organization (Laravel validates this server-side)
+      // Frontend validation is for UX, but server enforces security
+      const currentResource = await apiClient.yourResources.get(id);
+
+      // Validate organization access - user can only update their organization's resources
+      if (currentResource.organization_id !== profile.organization_id) {
+        throw new Error('Cannot update resource from different organization');
+      }
+
+      // Prevent organization_id changes - users cannot change organization_id
+      if (updates.organization_id) {
+        throw new Error('Cannot change organization_id');
+      }
+
+      return await apiClient.yourResources.update(id, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['your-resources'] });
+    },
+  });
+};
+```
+
+## Multi-Tenant Permission Pattern
+
+**CRITICAL: Permissions system supports true multi-tenancy with organization-scoped permissions using Spatie Laravel Permission.**
+
+### Permission System (Spatie Laravel Permission)
+- **Package**: `spatie/laravel-permission` with custom organization scoping
+- **Custom Models**: `App\Models\Permission` and `App\Models\Role` extend Spatie models
+- **Organization Scoping**: All permissions and roles support `organization_id` field
+- **Teams Feature**: Enabled for organization-based permission isolation
+
+### Permission Table Structure
+
+#### Permissions Table (Spatie)
+- **`organization_id`**: `UUID | NULL`
+  - `NULL` = Global/system permissions (available to all organizations)
+  - `UUID` = Organization-specific permissions
+- **Unique constraint**: `(name, organization_id, guard_name)` - allows same permission name for different orgs
+- **Index**: Always create index on `organization_id` for performance
+- **Additional fields**: `resource`, `action`, `description` for better permission management
+
+#### Roles Table (Spatie)
+- **`organization_id`**: `UUID` (REQUIRED - no NULL values)
+  - All roles are organization-specific
+- **Unique constraint**: `(name, organization_id, guard_name)`
+- **Index**: Always create index on `organization_id` for performance
+
+#### Model Has Roles Table (Spatie)
+- Links users to roles with organization context
+- Managed automatically by Spatie package
+
+#### Model Has Permissions Table (Spatie)
+- Links users directly to permissions (per-user overrides)
+- Supports organization scoping
+- Soft delete support via `deleted_at` column
+
+### RLS Policies for Permissions
+
+#### Permissions Table RLS (Laravel handles this via middleware)
+**Note**: Since we're using Laravel, RLS policies are replaced by Laravel middleware and controller logic. However, if you need RLS for direct database access:
+
+```sql
+-- Authenticated users can only read permissions for their organization
+CREATE POLICY "Authenticated users can read permissions"
+    ON public.permissions
+    FOR SELECT
+    TO authenticated
+    USING (
+        organization_id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
+    );
+```
+
+#### Role Permissions Table RLS (Laravel handles this via middleware)
+**Note**: Since we're using Laravel, RLS policies are replaced by Laravel middleware and controller logic. However, if you need RLS for direct database access:
+
+```sql
+-- Authenticated users can only read role permissions for their organization
+CREATE POLICY "Authenticated users can read role_permissions"
+    ON public.role_permissions
+    FOR SELECT
+    TO authenticated
+    USING (
+        organization_id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
+    );
+```
+
+### Permission Query Pattern
+
+#### Permission Name Format
+**CRITICAL: Permission names do NOT use prefixes like `academic.*`**
+- ✅ **CORRECT**: `classes.read`, `subjects.create`, `timetables.read`, `schedule_slots.update`
+- ❌ **WRONG**: `academic.classes.read`, `academic.subjects.create`, `academic.timetables.read`
+- **Resource values**: Match the resource name (e.g., `resource='classes'` for `name='classes.read'`)
+- **Pattern**: `{resource}.{action}` (e.g., `classes.read`, `students.create`, `timetables.export`)
+
+#### Frontend Hook Pattern
+```typescript
+// ALWAYS query permissions via Laravel API
+// Laravel backend uses Spatie to get all permissions (roles + direct permissions)
+export const useUserPermissions = () => {
+  const { data: profile } = useProfile();
+
+  return useQuery({
+    queryKey: ['user-permissions', profile?.id, profile?.organization_id],
+    queryFn: async () => {
+      if (!profile || !profile.organization_id) return [];
+
+      // Fetch permissions from Laravel API
+      // Laravel backend handles: user permissions + role permissions + organization scoping
+      const permissions = await apiClient.permissions.userPermissions();
+      return permissions;
+    },
+    enabled: !!profile && !!profile.organization_id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+```
+
+> **Note:** The `useUserPermissions` hook checks `user_permissions` first (per-user overrides), then falls back to `role_permissions`. This matches the database `has_permission_for_resource()` function behavior.
+
+### Navigation Visibility Pattern
+
+#### Menu Visibility Logic
+```typescript
+// ALWAYS use permission checks, NOT role checks
+const allNavigationItems = useMemo((): NavigationItem[] => {
+  const items: NavigationItem[] = [
+    {
+      titleKey: "settings",
+      children: [
+        // Only show if user has permission
+        ...(hasBackupPermission ? [{
+          title: "Backup & Restore",
+          url: "/settings/backup",
+          icon: Package,
+        }] : []),
+        ...(hasBuildingsPermission ? [{
+          title: "Buildings Management",
+          url: "/settings/buildings",
+          icon: Building2,
+        }] : []),
+        // ... other children
+      ],
+    },
+  ];
+
+  // Filter menus: Show only if they have visible children
+  return items.filter(item => {
+    if (item.children && item.children.length > 0) {
+      // Show menu only if at least one child is visible
+      return item.children.length > 0;
+    }
+    // For menus without children, check parent permission
+    if (item.titleKey === 'settings') {
+      return hasSettingsPermission;
+    }
+    return true;
+  });
+}, [hasSettingsPermission, hasBackupPermission, hasBuildingsPermission, /* ... */]);
+```
+
+#### Key Rules
+1. **NO role-based fallbacks**: Remove all `isSuperAdmin || role === 'admin'` checks
+2. **Permission-only checks**: Use `useHasPermission('permission.name')` for all visibility
+3. **Hide empty menus**: Hide parent menu if no children are visible
+4. **Show if any child visible**: Show parent menu if at least one child has permission
+
+### Permission Assignment Pattern
+
+#### Permission Name Format
+**CRITICAL: Use direct resource names, NOT prefixed names**
+- ✅ **CORRECT**: `classes.read`, `subjects.create`, `timetables.read`, `schedule_slots.update`, `teacher_subject_assignments.read`
+- ❌ **WRONG**: `academic.classes.read`, `academic.subjects.create`, `academic.timetables.read`
+- **Resource values**: Must match the resource name (e.g., `resource='classes'` for `name='classes.read'`)
+
+#### Migration Pattern
+```sql
+-- 1. Create global permissions (organization_id = NULL)
+-- Use direct resource names: {resource}.{action}
+INSERT INTO public.permissions (name, resource, action, description, organization_id) VALUES
+    ('settings.read', 'settings', 'read', 'Access to Settings', NULL),
+    ('backup.read', 'backup', 'read', 'Access to Backup', NULL),
+    ('classes.read', 'classes', 'read', 'View classes', NULL),
+    ('classes.create', 'classes', 'create', 'Create classes', NULL),
+    ('classes.update', 'classes', 'update', 'Update classes', NULL),
+    ('classes.delete', 'classes', 'delete', 'Delete classes', NULL),
+    ('classes.assign', 'classes', 'assign', 'Assign classes', NULL),
+    ('classes.copy', 'classes', 'copy', 'Copy classes', NULL),
+    ('subjects.read', 'subjects', 'read', 'View subjects', NULL),
+    ('timetables.read', 'timetables', 'read', 'View timetables', NULL),
+    ('timetables.export', 'timetables', 'export', 'Export timetables', NULL),
+    ('schedule_slots.read', 'schedule_slots', 'read', 'View schedule slots', NULL),
+    ('teacher_subject_assignments.read', 'teacher_subject_assignments', 'read', 'View teacher assignments', NULL)
+ON CONFLICT (name, organization_id) DO NOTHING;
+
+-- 2. Assign permissions to roles per organization
+-- For each organization, assign permissions to roles
+INSERT INTO public.role_permissions (role, permission_id, organization_id)
+SELECT 'admin', p.id, o.id
+FROM public.permissions p
+CROSS JOIN public.organizations o
+WHERE p.organization_id IS NULL -- Only global permissions
+  AND p.resource != 'organizations' -- Exclude org management
+ON CONFLICT (role, permission_id, organization_id) DO NOTHING;
+
+-- 3. Assign permissions to roles per organization
+-- Each organization's roles get their organization's permissions
+INSERT INTO public.role_permissions (role, permission_id, organization_id)
+SELECT 'admin', p.id, o.id
+FROM public.permissions p
+CROSS JOIN public.organizations o
+WHERE p.organization_id = o.id
+ON CONFLICT (role, permission_id, organization_id) DO NOTHING;
+
+-- 4. Assign per-user permissions (for staff with specific roles like clerk, librarian, etc.)
+-- Example: Assign attendance permissions to a specific staff user
+INSERT INTO public.user_permissions (user_id, permission_id, organization_id)
+SELECT 
+    'user-uuid-here'::UUID, -- Specific user ID
+    p.id,
+    'org-uuid-here'::UUID -- User's organization
+FROM public.permissions p
+WHERE p.organization_id = 'org-uuid-here'::UUID -- Permissions from user's organization
+  AND p.name IN ('attendance.read', 'attendance.create', 'attendance.update')
+ON CONFLICT (user_id, permission_id, organization_id) DO NOTHING;
+```
+
+#### RLS Policy Pattern with Permission Checks
+```sql
+-- ALWAYS use has_permission_for_resource() function for permission checks
+-- This function checks user_permissions first, then role_permissions
+CREATE POLICY "Users can read your_table" ON public.your_table
+    FOR SELECT TO authenticated
+    USING (
+        deleted_at IS NULL
+        AND organization_id = public.get_current_user_organization_id()
+        AND public.has_permission_for_resource('your_table', 'read')
+    );
+
+CREATE POLICY "Users can create your_table" ON public.your_table
+    FOR INSERT TO authenticated
+    WITH CHECK (
+        deleted_at IS NULL
+        AND organization_id = public.get_current_user_organization_id()
+        AND public.has_permission_for_resource('your_table', 'create')
+    );
+```
+
+**Key Points:**
+- In Laravel, use Spatie's `hasPermissionTo()` method with organization context
+- Spatie automatically checks:
+  1. Direct user permissions first (per-user overrides)
+  2. Role-based permissions second
+- Resource name must match the permission's `resource` column (e.g., `'classes'`, `'subjects'`, `'timetables'`)
+- Action name must match the permission's `action` column (e.g., `'read'`, `'create'`, `'update'`, `'delete'`)
+- All permission checks are organization-scoped - users can only have permissions for their organization
+
+### Organization-Scoped Permissions Management
+
+**CRITICAL: Permissions management is organization-scoped. Each organization can create and manage their own permissions.**
+
+#### RLS Policies for Write Operations
+
+```sql
+-- Permissions table: Users can only modify their organization's permissions
+-- Note: Laravel middleware handles this, but if using RLS:
+CREATE POLICY "Authenticated users can insert their organization's permissions"
+    ON public.permissions
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        organization_id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
+    );
+
+-- Similar policies for UPDATE and DELETE on permissions and role_permissions
+-- All policies enforce organization_id = user's organization_id
+```
+
+#### Permission Management Hooks Pattern
+
+```typescript
+// ALWAYS use organization context in permission management hooks
+export const useCreatePermission = () => {
+  const { data: profile } = useProfile();
+  
+  return useMutation({
+    mutationFn: async (permissionData: { name: string; resource: string; action: string; description?: string }) => {
+      if (!profile?.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+      
+      // Users can only create permissions for their organization
+      return await apiClient.permissions.create({
+        ...permissionData,
+        organization_id: profile.organization_id,
+      });
+    },
+  });
+};
+
+// ALWAYS validate organization scope when assigning permissions to roles
+export const useAssignPermissionToRole = () => {
+  const { data: profile } = useProfile();
+  
+  return useMutation({
+    mutationFn: async ({ role, permissionId }: { role: string; permissionId: string }) => {
+      if (!profile?.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      // Get permission to validate organization scope
+      const permission = await apiClient.permissions.get(permissionId);
+      
+      // Users can only assign permissions from their organization
+      if (permission.organization_id !== profile.organization_id) {
+        throw new Error('Cannot assign permission from different organization');
+      }
+      
+      // Assign permission to role within user's organization
+      return await apiClient.permissions.assignToRole({
+        role,
+        permission_id: permissionId,
+        organization_id: profile.organization_id,
+      });
+    },
+  });
+};
+
+// Assign permission to specific user (for staff with custom permissions)
+export const useAssignPermissionToUser = () => {
+  const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+  
+  return useMutation({
+    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
+      if (!profile?.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+      
+      // Get permission to validate organization scope
+      const permission = await apiClient.permissions.get(permissionId);
+      
+      // Get user profile to get their organization
+      const userProfile = await apiClient.profiles.get(userId);
+      
+      // Users can only assign permissions within their organization
+      if (userProfile.organization_id !== profile.organization_id) {
+        throw new Error('Cannot assign permissions to users in different organization');
+      }
+      if (permission.organization_id !== profile.organization_id) {
+        throw new Error('Cannot assign permission from different organization');
+      }
+      
+      // Assign permission to user within same organization
+      const result = await apiClient.permissions.assignToUser({
+        user_id: userId,
+        permission_id: permissionId,
+        organization_id: profile.organization_id,
+      });
+      
+      // Invalidate user permissions query
+      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+      
+      return result;
+    },
+  });
+};
+
+// Remove permission from user (soft delete)
+export const useRemovePermissionFromUser = () => {
+  const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+  
+  return useMutation({
+    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
+      if (!profile?.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+      
+      // Users can only remove permissions within their organization
+      await apiClient.permissions.removeFromUser({
+        user_id: userId,
+        permission_id: permissionId,
+        organization_id: profile.organization_id,
+      });
+      
+      // Invalidate user permissions query
+      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+    },
+  });
+};
+```
+
+#### UI Pattern for Permissions Management
+
+```typescript
+// ALWAYS filter permissions by organization
+const permissions = useMemo(() => {
+  if (!allPermissions || !profile || !profile.organization_id) return [];
+  
+  // Users only see their organization's permissions
+  return allPermissions.filter(p => 
+    p.organization_id === profile.organization_id
+  );
+}, [allPermissions, profile]);
+
+// ALWAYS show organization context
+{profile?.organization_id && (
+  <Card className="bg-blue-50">
+    <CardContent>
+      <p>Managing permissions for: <strong>{currentOrg?.name}</strong></p>
+      <p className="text-xs">You can manage permissions for your organization</p>
+    </CardContent>
+  </Card>
+)}
+
+// ALWAYS validate edit/delete permissions
+const isPermissionEditable = (permission: Permission): boolean => {
+  return permission.organization_id === profile?.organization_id;
+};
+
+const isPermissionDeletable = (permission: Permission): boolean => {
+  // Users can only delete permissions from their organization
+  return permission.organization_id === profile?.organization_id;
+};
+```
+
+#### Key Rules for Organization-Scoped Permissions
+
+1. **Create Permissions**: Users can only create permissions for their organization
+2. **Edit Permissions**: Users can only edit their organization's permissions
+3. **Delete Permissions**: Users can only delete their organization's permissions
+4. **Assign to Roles**: Users can only assign permissions to roles within their organization
+5. **Assign to Users**: Users can only assign permissions to users within their organization (via `user_permissions` table)
+6. **View Permissions**: Users only see their organization's permissions
+7. **Laravel Enforcement**: All write operations are enforced by Laravel middleware and controllers with organization filtering
+8. **UI Context**: Always show organization context banner in permissions management UI
+9. **Permission Name Format**: Use direct resource names (e.g., `classes.read`, `subjects.create`) - NO `academic.` prefix
+10. **Permission Checking**: Always use Spatie's `hasPermissionTo()` with organization context in Laravel controllers
+11. **User Permissions Priority**: Direct user permissions take precedence over role-based permissions (handled by Spatie)
+12. **Soft Deletes**: Use `UPDATE ... SET deleted_at = NOW()` for `user_permissions`, never hard DELETE
+13. **Organization Required**: All users must have an organization_id - no NULL values allowed
+
+### Storage - Multi-Tenancy Pattern
+
+#### Storage Path Structure (Laravel Storage)
+```typescript
+// ALWAYS include organization_id in storage paths
+// Path format: {organization_id}/{resource_id}/{file_type}/{file_name}
+
+export const useUploadFile = () => {
+  return useMutation({
+    mutationFn: async ({ 
+      resourceId, 
+      organizationId, 
+      file, 
+      fileType 
+    }: { 
+      resourceId: string; 
+      organizationId: string; 
+      file: File; 
+      fileType: string;
+    }) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${resourceId}/${fileType}/${Date.now()}.${fileExt}`;
+      const filePath = `${organizationId}/${fileName}`; // ALWAYS prefix with organization_id
+
+      // Upload via Laravel API endpoint
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('path', filePath);
+
+      const result = await apiClient.files.upload(formData);
+      return result.path;
+    },
+  });
+};
+```
+
+#### Laravel Storage Configuration
+- Use Laravel's Storage facade (`Storage::disk('local')` or `Storage::disk('s3')`)
+- Organization isolation enforced in Laravel controllers/middleware
+- Storage paths validated server-side to ensure organization_id matches user's organization
+
+### Helper Functions - Multi-Tenancy
+
+#### Use Laravel API Endpoints
+```typescript
+// ALWAYS use Laravel API endpoints for organization-related queries
+// Laravel backend enforces security server-side
+
+// Get user's organization_id (from profile)
+const { data: profile } = useProfile();
+const organizationId = profile?.organization_id;
+
+// Validate user has organization
+if (!organizationId) {
+  throw new Error('User must be assigned to an organization');
+}
+
+// Get user's organization
+const { data: organization } = await apiClient.organizations.get(organizationId);
+```
+
+### Components - Multi-Tenancy Pattern
+
+#### Component Organization Context
+```typescript
+import { useProfile } from '@/hooks/useProfiles';
+import { useCurrentOrganization } from '@/hooks/useOrganizations';
+
+export function YourComponent() {
+  const { data: profile } = useProfile();
+  const { data: organization } = useCurrentOrganization();
+  
+  // ALWAYS check organization context
+  if (!profile?.organization_id) {
+    return <div>No organization assigned. Please contact administrator.</div>;
+  }
+
+  // Use organization context in data fetching
+  const { data: resources } = useYourResources();
+
+  return (
+    <div>
+      {organization && <h1>{organization.name}</h1>}
+      {/* Component content */}
+    </div>
+  );
+}
+```
+
+### Migration Files - Multi-Tenancy
+
+#### Migration Pattern
+```sql
+-- Migration: YYYYMMDDHHMMSS_add_organization_to_your_table.sql
+
+-- Step 1: Add organization_id column
+ALTER TABLE public.your_table 
+    ADD COLUMN IF NOT EXISTS organization_id UUID NULL 
+    REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+-- Step 2: Create index
+CREATE INDEX IF NOT EXISTS idx_your_table_organization_id 
+    ON public.your_table(organization_id);
+
+-- Step 3: Update existing data (if any)
+-- For new tables, this step is not needed
+UPDATE public.your_table 
+SET organization_id = (SELECT id FROM public.organizations LIMIT 1)
+WHERE organization_id IS NULL;
+
+-- Step 4: Make NOT NULL (after data migration)
+ALTER TABLE public.your_table 
+    ALTER COLUMN organization_id SET NOT NULL;
+
+-- Step 5: Enable RLS
+ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
+
+-- Step 6: Create RLS policies (use the 5-policy pattern above)
+```
+
+#### New Table Migration Pattern (with UUID - REQUIRED)
+```sql
+-- Migration: YYYYMMDDHHMMSS_create_your_table.sql
+
+-- REQUIRED: ALL tables MUST use UUID primary keys
+CREATE TABLE IF NOT EXISTS public.your_table (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  -- REQUIRED: UUID primary key
+    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    -- other columns...
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- ALWAYS create index on organization_id
+CREATE INDEX IF NOT EXISTS idx_your_table_organization_id 
+    ON public.your_table(organization_id);
+
+-- ALWAYS enable RLS
+ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
+
+-- ALWAYS create RLS policies (use the 5-policy pattern above)
+```
+
+#### Laravel Migration Pattern (with UUID - REQUIRED)
+```php
+// Migration: YYYY_MM_DD_HHMMSS_create_your_table.php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+
+Schema::create('your_table', function (Blueprint $table) {
+    // REQUIRED: UUID primary key
+    $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+    
+    // REQUIRED: organization_id for multi-tenancy
+    $table->uuid('organization_id')->nullable();
+    $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
+    
+    // other columns...
+    $table->timestamps();
+    $table->timestamp('deleted_at')->nullable();
+    
+    // ALWAYS create index on organization_id
+    $table->index('organization_id');
+});
+```
+
+#### Migration Security & Performance Best Practices
+
+**CRITICAL: All migrations must follow these security and performance guidelines.**
+
+##### Function Security - SET search_path
+
+**ALWAYS** set `search_path = public` on all functions to prevent search_path injection attacks:
+
+```sql
+-- ✅ CORRECT: Function with secure search_path
+CREATE OR REPLACE FUNCTION public.your_function()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public  -- REQUIRED for security
+AS $$
+BEGIN
+    -- function body
+    RETURN NEW;
+END;
+$$;
+
+-- ❌ WRONG: Function without search_path (security vulnerability)
+CREATE OR REPLACE FUNCTION public.your_function()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- function body
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Required for:**
+- All trigger functions
+- All helper functions
+- All SECURITY DEFINER functions (especially critical)
+- All stored procedures
+
+##### Policy Naming - Character Limit
+
+**ALWAYS** keep policy names under 63 characters to avoid PostgreSQL truncation warnings:
+
+```sql
+-- ✅ CORRECT: Short, descriptive policy name (35 chars)
+CREATE POLICY "Users can insert org role_permissions" ON public.role_permissions
+    FOR INSERT TO authenticated
+    WITH CHECK (...);
+
+-- ❌ WRONG: Policy name too long (will be truncated, causes warnings)
+CREATE POLICY "Authenticated users can insert their organization's role_permissions" ON public.role_permissions
+    FOR INSERT TO authenticated
+    WITH CHECK (...);
+```
+
+**Guidelines:**
+- Use abbreviations where clear: "org" instead of "organization", "role_perms" instead of "role_permissions"
+- Prioritize clarity but stay under 63 characters
+- Test policy names before committing
+
+##### Policy Consolidation - Avoid Multiple Permissive Policies
+
+**ALWAYS** consolidate multiple permissive policies for the same action into a single policy:
+
+```sql
+-- ✅ CORRECT: Single consolidated policy
+CREATE POLICY "Users can read profiles" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (
+        deleted_at IS NULL
+        AND (
+            id = (SELECT auth.uid())
+            OR organization_id = public.get_current_user_organization_id()
+            OR public.get_current_user_organization_id() IS NULL
+        )
+    );
+
+-- ❌ WRONG: Multiple permissive policies (causes security warnings)
+CREATE POLICY "Users can read their own profile" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (id = (SELECT auth.uid()));
+
+CREATE POLICY "Users can read profiles in their organization" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (organization_id = public.get_current_user_organization_id());
+```
+
+**Benefits:**
+- Eliminates "multiple permissive policies" security warnings
+- Better performance (single policy evaluation)
+- Easier to maintain and understand
+- Cleaner migration output
+
+##### DROP Statements - Fresh Database Migrations
+
+**For fresh database migrations** (initial schema, new projects), **DO NOT** include `DROP IF EXISTS` statements:
+
+```sql
+-- ✅ CORRECT: Clean migration for fresh database
+CREATE TRIGGER update_your_table_updated_at
+    BEFORE UPDATE ON public.your_table
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE POLICY "Users can read your_table" ON public.your_table
+    FOR SELECT TO authenticated
+    USING (...);
+
+-- ❌ WRONG: Unnecessary DROP statements (causes NOTICE noise)
+DROP TRIGGER IF EXISTS update_your_table_updated_at ON public.your_table;
+CREATE TRIGGER update_your_table_updated_at
+    BEFORE UPDATE ON public.your_table
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP POLICY IF EXISTS "Users can read your_table" ON public.your_table;
+CREATE POLICY "Users can read your_table" ON public.your_table
+    FOR SELECT TO authenticated
+    USING (...);
+```
+
+**When to use DROP IF EXISTS:**
+- **Only** for migrations that modify existing objects (ALTER migrations)
+- **Only** when migrating from an older schema version
+- **Never** for initial schema migrations on fresh databases
+
+**Benefits of omitting DROP statements:**
+- Cleaner migration output (no NOTICE messages)
+- Faster execution (no unnecessary DROP operations)
+- Simpler, more readable migrations
+- Clearer intent (creating new objects, not modifying existing)
+
+##### Function Format Standard
+
+**ALWAYS** use this standard format for all functions:
+
+```sql
+CREATE OR REPLACE FUNCTION public.function_name()
+RETURNS TYPE
+LANGUAGE plpgsql
+SECURITY DEFINER  -- Only if needed
+SET search_path = public  -- REQUIRED
+STABLE  -- If function is STABLE or IMMUTABLE
+AS $$
+DECLARE
+    -- variables
+BEGIN
+    -- function body
+END;
+$$;
+```
+
+**Key points:**
+- Always specify `LANGUAGE plpgsql` explicitly
+- Always include `SET search_path = public`
+- Use `SECURITY DEFINER` only when necessary
+- Add `STABLE` or `IMMUTABLE` when applicable for performance
+- Use `AS $$` syntax (not `$$ LANGUAGE plpgsql`)
+
+##### Migration Checklist
+
+Before committing a migration, verify:
+
+- [ ] All functions have `SET search_path = public`
+- [ ] All policy names are under 63 characters
+- [ ] No multiple permissive policies for same action (consolidated)
+- [ ] No unnecessary `DROP IF EXISTS` statements (for fresh migrations)
+- [ ] All functions use standard format
+- [ ] All policies follow organization isolation patterns
+- [ ] All triggers are properly defined
+- [ ] Migration runs cleanly without NOTICE warnings (except extension notices)
+
+### Testing - Multi-Tenancy
+
+#### Test Organization Isolation
+```typescript
+describe('useYourResources', () => {
+  it('should filter by organization_id for all users', async () => {
+    // Test that users only see their organization's data
+  });
+
+  it('should prevent cross-organization access', async () => {
+    // Test that users cannot access other organizations' data
+  });
+
+  it('should require organization_id for all operations', async () => {
+    // Test that users without organization_id cannot perform operations
+  });
+});
+```
+
+### Security Checklist - Multi-Tenancy
+
+**ALWAYS verify:**
+- [ ] Table has `organization_id` column
+- [ ] `organization_id` has foreign key to `organizations` table
+- [ ] Index created on `organization_id`
+- [ ] RLS enabled on table
+- [ ] Laravel middleware validates `organization_id` in controllers
+- [ ] Frontend hook filters by `organization_id`
+- [ ] Mutations validate `organization_id` matches user's organization
+- [ ] Storage paths include `organization_id`
+- [ ] Laravel controllers enforce organization isolation
+- [ ] All users have `organization_id` (no NULL values)
+- [ ] Users can only access their own organization's data
+
+### Common Mistakes to Avoid
+
+❌ **DON'T:**
+- Create tables without `organization_id`
+- Allow NULL values for `organization_id` in tenant tables
+- Query without organization filtering
+- Allow organization_id changes (users cannot change their organization)
+- Store files without organization_id in path
+- Trust client-side organization_id validation only
+- Create users without assigning them to an organization
+
+✅ **DO:**
+- Always add `organization_id` to tenant tables (NOT NULL)
+- Always enforce organization_id in Laravel middleware and controllers
+- Always filter queries by organization_id
+- Always validate organization_id in mutations (must match user's organization)
+- Always include organization_id in storage paths
+- Always test organization isolation
+- Always require organization_id when creating users
+- Always validate organization_id server-side (never trust client-side only)
+
+## UI/UX Guidelines
+
+### Design System
+- Use shadcn/ui components consistently
+- Follow Islamic-inspired design principles
+- Implement responsive design (mobile-first)
+- Support RTL languages (Arabic, Pashto, Farsi)
+- Use semantic color tokens
 
 ### Component Structure
 ```typescript
 interface ComponentProps {
   // Define all props with proper types
-  title: string;
-  onAction: (data: ActionData) => void;
-  isLoading?: boolean;
 }
 
-export function ComponentName({ title, onAction, isLoading = false }: ComponentProps) {
+export function ComponentName({ prop1, prop2 }: ComponentProps) {
   // Component logic
   return (
     <div className="proper-tailwind-classes">
@@ -230,48 +1226,585 @@ export function ComponentName({ title, onAction, isLoading = false }: ComponentP
 }
 ```
 
-### Data Fetching Pattern
+### Styling
+- Use Tailwind CSS utility classes
+- Create custom CSS variables for theming
+- Implement dark/light mode support
+- Use consistent spacing and typography
+- Follow accessibility guidelines
+
+## Internationalization (i18n)
+
+### Language Support
+- **Supported Languages**: English (en), Pashto (ps), Farsi (fa), Arabic (ar)
+- **RTL Languages**: Arabic, Pashto, Farsi
+- **LTR Languages**: English
+
+### Translation System
+- All translations are stored in `/src/lib/i18n.ts`
+- Use the `useLanguage` hook to access translations
+- Translation keys follow a hierarchical structure: `category.key` (e.g., `students.title`, `nav.dashboard`)
+
+### Using Translations
 ```typescript
-// Custom hook for data fetching
-export const useStudents = (params: StudentParams) => {
-  return useQuery({
-    queryKey: ['students', params],
-    queryFn: () => fetchStudents(params),
-    enabled: !!params.classId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+import { useLanguage } from '@/hooks/useLanguage';
+
+function MyComponent() {
+  const { t, isRTL, language } = useLanguage();
+  
+  return (
+    <div>
+      <h1>{t('students.title')}</h1>
+      <p>{t('students.searchPlaceholder')}</p>
+    </div>
+  );
+}
+```
+
+### Translation Key Structure
+- **Common**: `common.loading`, `common.save`, `common.cancel`, etc.
+- **Navigation**: `nav.dashboard`, `nav.students`, `nav.allStudents`, etc.
+- **Students**: `students.title`, `students.management`, `students.addStudent`, etc.
+- **Dashboard**: `dashboard.title`, `dashboard.totalStudents`, etc.
+- **Forms**: `forms.required`, `forms.invalidEmail`, etc.
+
+### Adding New Translations
+1. Add the key to the `TranslationKeys` interface in `/src/lib/i18n.ts`
+2. Add translations for all languages (en, ps, fa, ar)
+3. Use the key in components with `t('category.key')`
+
+### RTL (Right-to-Left) Support
+
+#### Implementation
+- RTL is automatically applied when an RTL language is selected
+- The `useLanguage` hook sets `document.documentElement.dir` to `'rtl'` or `'ltr'`
+- Sidebar position changes based on RTL: `side={isRTL ? "right" : "left"}`
+- Layout direction is set via `dir` attribute on main containers
+
+#### RTL CSS Rules
+- RTL-specific CSS is in `/src/index.css` under `[dir="rtl"]` selectors
+- Text alignment automatically reverses: `.text-left` becomes right-aligned in RTL
+- Auto margins reverse: `.ml-auto` becomes `margin-right: auto` in RTL
+- Borders adjust: `.border-l` becomes right border in RTL
+
+#### Component RTL Handling
+```typescript
+// In components, use isRTL from useLanguage hook
+const { isRTL } = useLanguage();
+
+// Apply conditional classes
+<div className={isRTL ? 'mr-4 border-r' : 'ml-4 border-l'}>
+  {/* Content */}
+</div>
+
+// Sidebar component
+<Sidebar side={isRTL ? "right" : "left"} dir={isRTL ? 'rtl' : 'ltr'}>
+  {/* Sidebar content */}
+</Sidebar>
+```
+
+#### Navigation Items with Translations
+- Navigation items should use `titleKey` for translation keys
+- Children items should have `titleKey` property for translations
+- Example:
+```typescript
+{
+  title: "All Students", // Fallback
+  titleKey: "allStudents", // Translation key
+  url: "/students",
+  icon: Users
+}
+```
+
+### Language Provider
+- `LanguageProvider` wraps the entire app in `App.tsx`
+- Language preference is stored in `localStorage` with key `'nazim-language'`
+- Default language is English (`'en'`)
+- Language switcher is available in both sidebar and header
+
+## Authentication & Security
+
+### User Roles
+- `admin`: School-level administration (organization-scoped)
+- `teacher`: Academic management
+- `staff`: Operational tasks
+- `student`: Personal academic access
+- `parent`: Child's academic information
+
+### Security Practices
+- Implement proper role-based access control
+- Use JWT tokens for authentication
+- Validate all user inputs
+- Implement audit logging
+- Follow OWASP security guidelines
+- **ALWAYS enforce multi-tenancy isolation** (organization_id filtering)
+- **ALWAYS use RLS policies** for database-level security
+- **ALWAYS validate organization_id** in all mutations
+- **NEVER trust client-side organization_id** - validate server-side
+
+### Development Mode Auth Bypass
+- In development, authentication can be bypassed using `VITE_DISABLE_AUTH` env variable
+- Mock user is created with `admin` role
+- This should NEVER be enabled in production
+
+## Type System Architecture - API vs Domain Separation
+
+**CRITICAL: All modules MUST follow the API/Domain type separation pattern for maintainability, type safety, and performance.**
+
+### Core Principles
+- **API Types**: Match Laravel API responses exactly (snake_case, DB structure)
+- **Domain Types**: UI-friendly structure (camelCase, nested objects, business logic)
+- **Mapper Layer**: Converts between API and Domain models
+- **Components**: Always work with Domain types (never API types directly)
+
+### File Structure
+```
+frontend/src/
+├── types/
+│   ├── api/
+│   │   └── {resource}.ts          # API types (snake_case, DB model)
+│   └── domain/
+│       └── {resource}.ts           # Domain types (camelCase, UI model)
+├── mappers/
+│   └── {resource}Mapper.ts         # API ↔ Domain conversion
+├── hooks/
+│   └── use{Resource}.tsx            # Returns domain models
+└── pages/
+    └── {Resource}.tsx               # Uses domain types
+```
+
+### API Types Pattern (`types/api/{resource}.ts`)
+
+**Purpose**: Match Laravel API response structure exactly (snake_case, direct DB mapping)
+
+```typescript
+// frontend/src/types/api/student.ts
+export interface Student {
+  id: string;
+  organization_id: string;
+  school_id: string | null;
+  admission_no: string;
+  full_name: string;
+  father_name: string;
+  // ... all fields match API response exactly (snake_case)
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudentInsert {
+  admission_no: string;
+  full_name: string;
+  // ... fields for API insert payload
+}
+
+export type StudentUpdate = Partial<StudentInsert>;
+```
+
+**Rules**:
+- ✅ Use snake_case for all field names
+- ✅ Match Laravel API response structure exactly
+- ✅ Include all DB columns (even nullable ones)
+- ✅ Use `string` for dates (ISO strings from API)
+- ✅ No "Api" suffix in type names (as requested)
+- ✅ Export all related types (Insert, Update, nested types)
+
+### Domain Types Pattern (`types/domain/{resource}.ts`)
+
+**Purpose**: UI-friendly structure with business logic and nested objects
+
+```typescript
+// frontend/src/types/domain/student.ts
+export interface Student {
+  id: string;
+  organizationId: string;  // camelCase
+  schoolId: string | null;
+  admissionNumber: string;
+  fullName: string;
+  fatherName: string;
+  // ... nested structures
+  address: Address;
+  guardians: Guardian[];
+  healthInfo: HealthInfo;
+  previousSchools: PreviousSchool[];
+  documents: StudentDocument[];
+  // ... Date objects (not strings)
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Address {
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  landmark?: string;
+}
+```
+
+**Rules**:
+- ✅ Use camelCase for all field names
+- ✅ Create nested structures (Address, Guardian, etc.)
+- ✅ Use `Date` objects (not strings) for dates
+- ✅ Include business logic types (Status enums, etc.)
+- ✅ Export all related domain types
+
+### Mapper Pattern (`mappers/{resource}Mapper.ts`)
+
+**Purpose**: Convert between API and Domain models
+
+```typescript
+// frontend/src/mappers/studentMapper.ts
+import type * as StudentApi from '@/types/api/student';
+import type { Student } from '@/types/domain/student';
+
+/**
+ * Convert API Student model to Domain Student model
+ */
+export function mapStudentApiToDomain(api: StudentApi.Student): Student {
+  return {
+    id: api.id,
+    organizationId: api.organization_id,
+    schoolId: api.school_id,
+    admissionNumber: api.admission_no,
+    fullName: api.full_name,
+    fatherName: api.father_name,
+    // ... map all fields
+    // Parse nested structures
+    address: {
+      street: api.home_address || '',
+      city: api.curr_district || '',
+      // ...
+    },
+    guardians: api.guardian_name ? [{
+      id: `guardian-${api.id}`,
+      firstName: api.guardian_name.split(' ')[0],
+      // ...
+    }] : [],
+    // Convert dates
+    createdAt: api.created_at ? new Date(api.created_at) : new Date(),
+    updatedAt: api.updated_at ? new Date(api.updated_at) : new Date(),
+  };
+}
+
+/**
+ * Convert Domain Student model to API StudentInsert payload
+ */
+export function mapStudentDomainToInsert(domain: Partial<Student>): StudentApi.StudentInsert {
+  return {
+    admission_no: domain.admissionNumber || '',
+    full_name: domain.fullName || '',
+    father_name: domain.fatherName || '',
+    organization_id: domain.organizationId || null,
+    school_id: domain.schoolId || null,
+    // ... map all fields back to snake_case
+    // Flatten nested structures
+    home_address: domain.address 
+      ? `${domain.address.street}, ${domain.address.city}` 
+      : null,
+    guardian_name: domain.guardians?.[0] 
+      ? `${domain.guardians[0].firstName} ${domain.guardians[0].lastName}` 
+      : null,
+    // Convert dates to ISO strings
+    birth_date: domain.dateOfBirth?.toISOString() || null,
+  };
+}
+
+/**
+ * Convert Domain Student model to API StudentUpdate payload
+ */
+export function mapStudentDomainToUpdate(domain: Partial<Student>): StudentApi.StudentUpdate {
+  return mapStudentDomainToInsert(domain);
+}
+```
+
+**Rules**:
+- ✅ Always create mapper functions for bidirectional conversion
+- ✅ Handle nested structures (flatten for API, nest for Domain)
+- ✅ Convert dates (string ↔ Date)
+- ✅ Handle null/undefined gracefully
+- ✅ Use namespace imports for API types: `import type * as ResourceApi from '@/types/api/resource'`
+- ✅ Use direct imports for Domain types: `import type { Resource } from '@/types/domain/resource'`
+
+### Hooks Pattern (`hooks/use{Resource}.tsx`)
+
+**Purpose**: Fetch data, map to domain models, return domain types
+
+```typescript
+// frontend/src/hooks/useStudents.tsx
+import type * as StudentApi from '@/types/api/student';
+import type { Student } from '@/types/domain/student';
+import { mapStudentApiToDomain, mapStudentDomainToInsert } from '@/mappers/studentMapper';
+
+// Re-export domain types for convenience
+export type { Student, StudentStatus } from '@/types/domain/student';
+
+export const useStudents = (organizationId?: string) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<Student[]>({
+    queryKey: ['students', organizationId ?? profile?.organization_id ?? null],
+    queryFn: async () => {
+      if (!user || !profile) {
+        if (import.meta.env.DEV) {
+          console.log('[useStudents] No user or profile');
+        }
+        return [];
+      }
+
+      // Fetch API data
+      const apiStudents = await studentsApi.list({
+        organization_id: organizationId || profile.organization_id,
+      });
+
+      // Map to domain models
+      return (apiStudents as StudentApi.Student[]).map(mapStudentApiToDomain);
+    },
+    enabled: !!user && !!profile,
+    staleTime: 5 * 60 * 1000,        // 5 minutes
+    refetchOnWindowFocus: false,     // Performance optimization
+    refetchOnReconnect: false,        // Performance optimization
+  });
+};
+
+export const useCreateStudent = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+
+  return useMutation({
+    mutationFn: async (payload: Partial<Student>) => {
+      // Convert domain to API payload
+      const insertData = mapStudentDomainToInsert({
+        ...payload,
+        organizationId: payload.organizationId || profile?.organization_id,
+      });
+
+      // Call API
+      const apiStudent = await studentsApi.create(insertData);
+      
+      // Map response back to domain
+      return mapStudentApiToDomain(apiStudent as StudentApi.Student);
+    },
+    onSuccess: () => {
+      toast.success('Student created successfully');
+      void queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
   });
 };
 ```
 
-### Form Handling
+**Rules**:
+- ✅ Always import API types with namespace: `import type * as ResourceApi from '@/types/api/resource'`
+- ✅ Always import Domain types directly: `import type { Resource } from '@/types/domain/resource'`
+- ✅ Always map API responses to Domain models in `queryFn`
+- ✅ Always convert Domain models to API payloads in mutations
+- ✅ Re-export Domain types from hooks for convenience
+- ✅ Add performance optimizations (see Performance section below)
+- ✅ Guard console.log statements (see Performance section below)
+
+### Component Pattern (`pages/{Resource}.tsx`)
+
+**Purpose**: Use Domain types, never API types
+
 ```typescript
-// React Hook Form + Zod validation
-const form = useForm<StudentFormData>({
-  resolver: zodResolver(studentSchema),
-  defaultValues: {
-    // Default values
+// frontend/src/pages/Students.tsx
+import { useStudents, useCreateStudent } from '@/hooks/useStudents';
+import type { Student } from '@/types/domain/student';  // Import domain type
+
+export function Students() {
+  const { data: students } = useStudents();  // Returns Student[] (domain)
+  const createStudent = useCreateStudent();
+
+  const handleCreate = (data: Partial<Student>) => {
+    // Work with domain model
+    createStudent.mutate({
+      ...data,
+      organizationId: profile?.organization_id,
+    });
+  };
+
+  return (
+    <div>
+      {students?.map(student => (
+        <div key={student.id}>
+          {/* Use camelCase properties */}
+          <h2>{student.fullName}</h2>
+          <p>{student.admissionNumber}</p>
+          <p>{student.address.city}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+**Rules**:
+- ✅ Always import Domain types: `import type { Resource } from '@/types/domain/resource'`
+- ✅ Never import API types in components
+- ✅ Use camelCase properties from Domain types
+- ✅ Work with nested structures (address, guardians, etc.)
+- ✅ Use Date objects (not strings) for dates
+
+### Creating New Modules
+
+**When creating a new resource module (e.g., `teachers`, `classes`, `subjects`):**
+
+1. **Create API types** (`types/api/{resource}.ts`)
+   - Match Laravel API response structure
+   - Use snake_case
+   - Export all types (Resource, ResourceInsert, ResourceUpdate)
+
+2. **Create Domain types** (`types/domain/{resource}.ts`)
+   - Create UI-friendly structure
+   - Use camelCase
+   - Add nested structures where appropriate
+   - Use Date objects for dates
+
+3. **Create Mapper** (`mappers/{resource}Mapper.ts`)
+   - Implement `map{Resource}ApiToDomain()`
+   - Implement `map{Resource}DomainToInsert()`
+   - Implement `map{Resource}DomainToUpdate()`
+   - Handle all field transformations
+
+4. **Create Hooks** (`hooks/use{Resource}.tsx`)
+   - Import API types with namespace
+   - Import Domain types directly
+   - Map API → Domain in queries
+   - Map Domain → API in mutations
+   - Add performance optimizations
+   - Guard console.log statements
+   - Re-export Domain types
+
+5. **Create Components** (`pages/{Resource}.tsx`)
+   - Import Domain types only
+   - Use camelCase properties
+   - Work with nested structures
+
+### Updating Existing Modules
+
+**When updating an existing module:**
+
+1. **Check current structure**
+   - Identify if types are mixed (API + Domain)
+   - Check if mapper exists
+   - Verify hooks return correct types
+
+2. **Refactor step-by-step**
+   - Create API types file (extract from hooks)
+   - Create Domain types file (refine from existing types)
+   - Create mapper (implement conversions)
+   - Update hooks (use mapper, return domain)
+   - Update components (use domain types, camelCase)
+
+3. **Verify**
+   - All components use Domain types
+   - No API types imported in components
+   - Mapper handles all conversions
+   - Performance optimizations added
+   - Console.log statements guarded
+
+## Performance Optimization
+
+### Code Splitting
+- Use lazy loading for all pages
+- Implement proper loading states
+- Use Suspense boundaries
+- Optimize bundle size
+
+### Data Fetching with TanStack Query
+
+**CRITICAL: All queries MUST include performance optimizations.**
+
+#### Required Query Options
+```typescript
+return useQuery({
+  queryKey: ['resource', organizationId],
+  queryFn: async () => {
+    // Fetch and map data
   },
+  enabled: !!user && !!profile,
+  staleTime: 5 * 60 * 1000,        // REQUIRED: 5 minutes
+  refetchOnWindowFocus: false,     // REQUIRED: Prevent refetch on tab switch
+  refetchOnReconnect: false,       // OPTIONAL: Prevent refetch on reconnect
 });
 ```
 
-## 🧪 Testing Strategy
+#### Performance Settings
+- **`staleTime: 5 * 60 * 1000`** - Data is fresh for 5 minutes (reduces unnecessary refetches)
+- **`refetchOnWindowFocus: false`** - Don't refetch when user switches tabs (prevents noise)
+- **`refetchOnReconnect: false`** - Don't refetch when network reconnects (optional, use when data changes infrequently)
+- **`gcTime: 30 * 60 * 1000`** - Keep unused data in cache for 30 minutes (default is usually fine)
+
+#### Console.log Guarding
+
+**CRITICAL: All console.log statements MUST be guarded in production.**
+
+```typescript
+// ✅ CORRECT: Guarded console.log
+if (import.meta.env.DEV) {
+  console.log('[useStudents] Fetched', students.length, 'students');
+}
+
+// ✅ CORRECT: Guarded console.error (keep errors in production)
+if (import.meta.env.DEV) {
+  console.error('[useStudents] Error:', error);
+}
+
+// ❌ WRONG: Unconditional console.log (adds overhead in production)
+console.log('[useStudents] Fetched', students.length, 'students');
+```
+
+**Rules**:
+- ✅ Always guard `console.log()` with `if (import.meta.env.DEV)`
+- ✅ Always guard `console.warn()` with `if (import.meta.env.DEV)`
+- ✅ Keep `console.error()` in production (for error tracking)
+- ✅ Remove debug console.log from useEffect hooks
+- ✅ Use logger abstraction for production logging (if available)
+
+### Rendering
+- Use React.memo for expensive components
+- Implement proper key props
+- Avoid unnecessary re-renders
+- Use useMemo and useCallback appropriately
+- Memoize filtered lists and calculations
+
+### Loading States
+- Use unified loading components from `/src/components/ui/loading.tsx`
+- `LoadingSpinner`: For general loading states
+- `PageSkeleton`: For page-level loading
+- `DashboardSkeleton`: For dashboard loading
+- `TableSkeleton`: For table loading
+- All loaders use consistent styling (centered spinner with border)
+
+### Performance Checklist
+
+Before committing a module, verify:
+- [ ] Query has `staleTime: 5 * 60 * 1000`
+- [ ] Query has `refetchOnWindowFocus: false`
+- [ ] All `console.log()` statements guarded with `if (import.meta.env.DEV)`
+- [ ] Mapper functions handle all field conversions
+- [ ] Components use Domain types (not API types)
+- [ ] No unnecessary re-renders (use React.memo where appropriate)
+- [ ] Filtered lists are memoized with `useMemo`
+
+## Testing Strategy
 
 ### Unit Tests
-- **Component rendering** tests
-- **User interaction** tests
-- **Custom hooks** tests
-- **Utility functions** tests
+- Test component rendering
+- Test user interactions
+- Test custom hooks
+- Test utility functions
 
 ### Integration Tests
-- **API integration** tests
-- **Database operations** tests
-- **Authentication flows** tests
-- **Role-based access** tests
+- Test API integrations
+- Test database operations
+- Test authentication flows
+- Test role-based access
 
 ### Test Structure
 ```typescript
-describe('StudentDashboard', () => {
-  it('should render student information correctly', () => {
+describe('ComponentName', () => {
+  it('should render correctly', () => {
     // Test implementation
   });
   
@@ -281,175 +1814,545 @@ describe('StudentDashboard', () => {
 });
 ```
 
-## 🔒 Security Implementation
+## Error Handling
 
-### Authentication
-- **JWT tokens** for secure authentication
-- **Role-based authorization** with granular permissions
-- **Session management** with automatic refresh
-- **Password policies** and security requirements
+### Client-Side
+- Use error boundaries for component errors
+- Implement proper error states
+- Show user-friendly error messages
+- Log errors for debugging
 
-### Data Protection
-- **Row Level Security (RLS)** for database access
-- **Input validation** with Zod schemas
-- **XSS protection** with proper sanitization
-- **CSRF protection** with secure tokens
+### Server-Side (Laravel)
+- Handle Laravel exceptions gracefully
+- Use Laravel's exception handling and logging
+- Return proper HTTP status codes (200, 201, 400, 401, 403, 404, 500)
+- Log errors to Laravel log files (`storage/logs/laravel.log`)
+- Use Laravel's validation for request validation
+- Return JSON error responses with consistent format
 
-### Audit Logging
-- **Complete action tracking** for all user activities
-- **Security event monitoring** for suspicious activities
-- **Data change logging** for compliance
-- **Performance monitoring** for system health
+## Code Quality
 
-## 🌍 Internationalization
-
-### Multi-language Support
-- **English** - Primary language
-- **Urdu** - Local language support
-- **Arabic** - Islamic content support
-- **Pashto** - Regional language support
-
-### RTL Support
-- **Right-to-left** layout support
-- **Arabic text** rendering
-- **Cultural adaptations** for Islamic practices
-- **Proper font** selection for different scripts
-
-## 📱 Progressive Web App
-
-### PWA Features
-- **Offline support** for basic functionality
-- **App installation** on mobile devices
-- **Push notifications** for real-time updates
-- **Background sync** for data synchronization
-
-### Performance
-- **Lazy loading** for all pages
-- **Code splitting** for optimal bundle sizes
-- **Caching strategies** for improved performance
-- **Image optimization** for faster loading
-
-## 🚀 Deployment
-
-### Environment Configuration
-```typescript
-// Environment variables
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_APP_ENV=production
-```
-
-### Build Process
-- **Vite** for fast builds and hot reload
-- **TypeScript** compilation with strict mode
-- **Tailwind CSS** purging for optimal bundle size
-- **Asset optimization** for production
-
-### Deployment Options
-- **Lovable Platform** - Primary deployment
-- **Custom Domain** - Domain connection support
-- **Environment Management** - Dev/prod configurations
-- **Database Migrations** - Automated schema updates
-
-## 📊 Business Model
-
-### Pricing Tiers
-- **Starter**: ₹2,999/month (up to 200 students)
-- **Professional**: ₹5,999/month (up to 1000 students)
-- **Enterprise**: ₹12,999/month (unlimited students)
-
-### Feature Matrix
-- **Core Features** - Available in all plans
-- **Advanced Features** - Higher tier plans
-- **Custom Integrations** - Enterprise only
-- **Support Levels** - Varies by plan
-
-## 🎯 Target Market
-
-### Primary Users
-- **Islamic schools** and madrasas
-- **Private educational** institutions
-- **International schools** with Islamic focus
-- **Educational organizations** worldwide
-
-### Geographic Focus
-- **Pakistan** and South Asia
-- **Middle East** and North Africa
-- **Global Islamic** educational institutions
-- **Multicultural** educational settings
-
-## 🔮 Future Roadmap
-
-### Planned Features
-- **Mobile applications** (iOS/Android)
-- **Advanced analytics** and AI insights
-- **Third-party integrations** (payment gateways, LMS)
-- **White-label solutions** for resellers
-- **API marketplace** for developers
-
-### Technical Improvements
-- **Microservices architecture** for scalability
-- **Advanced caching** strategies
-- **Real-time collaboration** features
-- **Advanced security** measures
-
-## 🏆 Competitive Advantages
-
-1. **Islamic-Focused Design** - Specifically designed for Islamic educational institutions
-2. **Comprehensive Solution** - All-in-one platform covering every aspect of school management
-3. **Modern Technology** - Latest web technologies and best practices
-4. **User-Friendly Interface** - Intuitive design with role-based customization
-5. **Scalable Architecture** - Handles institutions from 200 to unlimited students
-6. **Enterprise Security** - Bank-grade security with complete audit trails
-7. **Multilingual Support** - Support for multiple languages and RTL scripts
-8. **Real-time Features** - Live updates and collaborative capabilities
-
-## 🛠️ Development Commands
-
-### Installation
-```bash
-npm install
-```
-
-### Development
-```bash
-npm run dev
-```
-
-### Building
-```bash
-npm run build
-```
-
-### Testing
-```bash
-npm run test
-```
-
-### Linting
-```bash
-npm run lint
-```
-
-## 📚 Additional Resources
+### Linting & Formatting
+- Use ESLint for code quality
+- Use Prettier for code formatting
+- Follow consistent code style
+- Remove unused imports and variables
 
 ### Documentation
-- [React Documentation](https://react.dev/)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [Tailwind CSS Docs](https://tailwindcss.com/docs)
-- [Supabase Documentation](https://supabase.com/docs)
-- [TanStack Query Docs](https://tanstack.com/query/latest)
+- Write clear component documentation
+- Use JSDoc for complex functions
+- Document API endpoints
+- Keep README updated
 
-### Design Resources
-- [shadcn/ui Components](https://ui.shadcn.com/)
-- [Lucide Icons](https://lucide.dev/)
-- [Tailwind UI](https://tailwindui.com/)
+## Git Workflow
 
-### Islamic Resources
-- [Islamic Calendar API](https://api.aladhan.com/)
-- [Quran API](https://api.alquran.cloud/)
-- [Prayer Times API](https://api.aladhan.com/)
+### Commit Messages
+- Use conventional commit format
+- Be descriptive and clear
+- Reference issues where applicable
+- Keep commits atomic
 
----
+### Branch Strategy
+- Use feature branches for new features
+- Use descriptive branch names
+- Keep branches up to date
+- Use pull requests for code review
 
-**Note**: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your development work.
+## Deployment
+
+### Environment Variables
+- Use proper environment configuration
+- Never commit sensitive data
+- Use different configs for dev/prod
+- Document required environment variables
+
+### Build Process
+- Use Vite for fast builds
+- Optimize bundle size
+- Implement proper caching
+- Use CDN for static assets
+
+## Common Patterns
+
+### Data Fetching with Multi-Tenancy
+```typescript
+// ALWAYS use this pattern for tenant-scoped resources
+export const useStudents = (params: StudentParams) => {
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+
+  return useQuery({
+    queryKey: ['students', profile?.organization_id, params],
+    queryFn: async () => {
+      if (!user || !profile || !profile.organization_id) return [];
+
+      // Multi-tenancy: Users can only see their organization's data
+      // Fetch from Laravel API (server handles organization filtering)
+      return await apiClient.students.list({
+        organizationId: profile.organization_id,
+        ...params,
+      });
+    },
+    enabled: !!user && !!profile && !!profile.organization_id,
+  });
+};
+```
+
+### Form Handling
+```typescript
+// React Hook Form + Zod
+const form = useForm<StudentFormData>({
+  resolver: zodResolver(studentSchema),
+  defaultValues: {
+    // Default values
+  },
+});
+```
+
+### Form Validation with Zod
+
+**CRITICAL: ALL forms MUST use Zod validation with React Hook Form.**
+
+#### Validation Schema Location
+- **ALWAYS** create validation schemas in `/src/lib/validations/` directory
+- **ALWAYS** export schemas and types from shared validation files
+- **ALWAYS** use shared schemas across components (never duplicate schemas)
+- **ALWAYS** align frontend validation with backend Laravel Form Request validation rules
+
+#### Validation Schema Structure
+```typescript
+// frontend/src/lib/validations/yourResource.ts
+import { z } from 'zod';
+import { optionalUuidSchema, requiredStringLength, optionalStringLength } from './common';
+
+export const yourResourceSchema = z.object({
+  name: requiredStringLength(255, 'Name'),
+  description: optionalStringLength(1000, 'Description'),
+  organization_id: optionalUuidSchema,
+  // ... other fields
+});
+
+export type YourResourceFormData = z.infer<typeof yourResourceSchema>;
+```
+
+#### Using Validation in Components
+```typescript
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { yourResourceSchema, type YourResourceFormData } from '@/lib/validations';
+
+export function YourComponent() {
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<YourResourceFormData>({
+    resolver: zodResolver(yourResourceSchema), // REQUIRED: Always use zodResolver
+    defaultValues: {
+      // Default values
+    },
+  });
+
+  const onSubmit = async (data: YourResourceFormData) => {
+    // Handle form submission
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Input {...register('name')} />
+      {errors.name && (
+        <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
+      )}
+      {/* ... other fields */}
+    </form>
+  );
+}
+```
+
+#### File Upload Validation
+```typescript
+// Use Controller for file inputs
+<Controller
+  control={control}
+  name="file"
+  render={({ field: { onChange, value, ...field } }) => (
+    <Input
+      type="file"
+      {...field}
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        onChange(file);
+      }}
+    />
+  )}
+/>
+{errors.file && (
+  <p className="text-sm text-destructive mt-1">{errors.file.message}</p>
+)}
+```
+
+#### Select/Dropdown Validation
+```typescript
+// Use Controller for Select components
+<Controller
+  control={control}
+  name="fieldName"
+  render={({ field }) => (
+    <Select value={field.value || ''} onValueChange={field.onChange}>
+      <SelectTrigger>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {/* options */}
+      </SelectContent>
+    </Select>
+  )}
+/>
+{errors.fieldName && (
+  <p className="text-sm text-destructive mt-1">{errors.fieldName.message}</p>
+)}
+```
+
+#### Common Validation Utilities
+- **ALWAYS** use utilities from `/src/lib/validations/common.ts`:
+  - `uuidSchema` - UUID validation
+  - `optionalUuidSchema` - Optional UUID
+  - `emailSchema` - Email validation
+  - `optionalEmailSchema` - Optional email
+  - `phoneSchema` - Phone number validation
+  - `requiredStringLength(max, fieldName)` - Required string with max length
+  - `optionalStringLength(max, fieldName)` - Optional string with max length
+
+#### Cross-Field Validation
+```typescript
+// Use .refine() for cross-field validation
+export const schema = z.object({
+  start_date: z.string().optional().nullable(),
+  end_date: z.string().optional().nullable(),
+}).refine(
+  (data) => {
+    if (data.start_date && data.end_date) {
+      return new Date(data.end_date) >= new Date(data.start_date);
+    }
+    return true;
+  },
+  {
+    message: 'End date must be after or equal to start date',
+    path: ['end_date'],
+  }
+);
+```
+
+#### File Upload Validation
+```typescript
+// Use fileUpload utilities for file validation
+import { fileSchema, validateFile } from '@/lib/validations/fileUpload';
+
+export const documentUploadSchema = z.object({
+  file: fileSchema, // Validates file type and size
+  documentType: requiredStringLength(100, 'Document type'),
+  description: optionalStringLength(500, 'Description'),
+});
+```
+
+#### Validation Rules
+1. **ALWAYS** use `zodResolver` with React Hook Form
+2. **ALWAYS** display validation errors to users
+3. **ALWAYS** align frontend validation with backend Laravel Form Request rules
+4. **ALWAYS** use shared validation schemas (never duplicate)
+5. **ALWAYS** validate required fields, string lengths, UUIDs, emails, etc.
+6. **ALWAYS** use Controller for file inputs and Select components
+7. **ALWAYS** reset forms when dialogs close
+8. **ALWAYS** handle optional/nullable fields correctly (use `.optional().nullable()`)
+
+#### Backend Alignment
+- Frontend validation should match or be stricter than backend validation
+- Backend validation is the source of truth for security
+- Frontend validation provides better UX (immediate feedback)
+- Both frontend and backend must validate the same rules
+
+#### Validation Checklist
+Before submitting a form component, verify:
+- [ ] Uses `zodResolver` with React Hook Form
+- [ ] Validation schema is in `/src/lib/validations/`
+- [ ] Schema exports both schema and TypeScript type
+- [ ] All form fields have validation rules
+- [ ] Error messages display for all fields
+- [ ] File uploads use Controller and file validation
+- [ ] Select components use Controller
+- [ ] Cross-field validation implemented where needed
+- [ ] Validation aligns with backend Laravel Form Request rules
+- [ ] Form resets when dialog closes
+
+### State Management
+```typescript
+// Local state
+const [isLoading, setIsLoading] = useState(false);
+
+// Server state
+const { data, isLoading, error } = useQuery({
+  queryKey: ['key'],
+  queryFn: fetchFunction,
+});
+```
+
+### Translation Usage
+```typescript
+// Always use useLanguage hook
+const { t, isRTL, language } = useLanguage();
+
+// Use translation keys
+<h1>{t('students.title')}</h1>
+<Button>{t('common.save')}</Button>
+
+// Check RTL for conditional styling
+<div className={isRTL ? 'text-right' : 'text-left'}>
+  {t('students.searchPlaceholder')}
+</div>
+```
+
+## Layout & Navigation
+
+### Persistent Layout
+- `PersistentLayout` component provides sidebar and header for all protected routes
+- Sidebar persists across route changes (SPA behavior)
+- Layout respects RTL direction
+- Sidebar position changes based on language direction
+
+### Sidebar Navigation
+- `SmartSidebar` component handles navigation
+- Navigation items are filtered by user role
+- All navigation items use translation keys
+- Children items should have `titleKey` for translations
+- Sidebar collapses/expands with icon-only mode
+
+## Islamic School Specific Guidelines
+
+### Hifz Progress
+- Track Quran memorization progress
+- Implement proper Arabic text handling
+- Support different memorization methods
+- Provide progress analytics
+
+### Academic Calendar
+- Support Islamic calendar
+- Handle prayer times
+- Implement holiday management
+- Support different academic years
+
+### Communication
+- Support multiple languages
+- Implement proper notification systems
+- Handle parent-teacher communication
+- Support SMS and email integration
+
+## Performance Monitoring
+
+### Metrics to Track
+- Page load times
+- API response times
+- User interaction metrics
+- Error rates
+- Database query performance
+
+### Optimization
+- Use React DevTools Profiler
+- Monitor bundle size
+- Implement proper caching
+- Use performance budgets
+
+## Security Considerations
+
+### Data Protection
+- Encrypt sensitive data
+- Implement proper access controls
+- Use HTTPS everywhere
+- Regular security audits
+
+### User Privacy
+- Follow GDPR guidelines
+- Implement data retention policies
+- Provide data export functionality
+- Allow data deletion
+
+## Accessibility
+
+### WCAG Guidelines
+- Use semantic HTML
+- Implement proper ARIA labels
+- Ensure keyboard navigation
+- Provide alt text for images
+- Use proper color contrast
+
+### Testing
+- Test with screen readers
+- Test keyboard navigation
+- Test with different zoom levels
+- Test with high contrast mode
+
+## Maintenance
+
+### Code Reviews
+- Review for security issues
+- Check performance implications
+- Ensure proper error handling
+- Verify accessibility compliance
+- Verify translations are used correctly
+- Check RTL layout correctness
+
+### Updates
+- Keep dependencies updated
+- Monitor security advisories
+- Test updates thoroughly
+- Document breaking changes
+
+## Troubleshooting
+
+### Common Issues
+- Authentication problems
+- Database connection issues
+- Performance problems
+- Browser compatibility
+- Translation keys not found (check key spelling and language files)
+- RTL layout issues (check `dir` attribute and CSS)
+- **Table not found (404 errors)**: Migrations not run - run `php artisan migrate` to apply Laravel migrations
+- **Bad Request (400 errors) on queries**: Check query syntax, especially nested relations and ordering
+
+### Database Migration Errors
+
+#### Table Not Found (500 Errors)
+**Symptom**: `SQLSTATE[42P01]: Undefined table: relation "table_name" does not exist`
+
+**Causes**:
+1. **Migrations not applied**: New tables created in migration files but not run against database
+2. **Table name typo**: Check spelling matches migration file exactly
+3. **Schema mismatch**: Table exists in different schema (check `public` vs `auth` schema)
+
+**Solutions**:
+1. **Run migrations**: 
+   ```bash
+   cd backend
+   php artisan migrate
+   ```
+2. **Verify table exists**: Check PostgreSQL directly or use `php artisan tinker`
+3. **Check migration order**: Ensure migrations are numbered sequentially and dependencies are met
+4. **Reset database** (development only): `php artisan migrate:fresh --seed`
+
+#### Authentication Errors (401)
+**Symptom**: `401 Unauthorized` or `Unauthenticated`
+
+**Common Causes**:
+1. **Token expired**: Sanctum token has expired
+2. **Token missing**: No token in request headers
+3. **Invalid token**: Token doesn't exist in database
+
+**Solutions**:
+1. **Re-authenticate**: User should log in again
+2. **Check token storage**: Verify token is stored in localStorage
+3. **Check API client**: Ensure ApiClient includes token in headers
+
+#### Permission Errors (403)
+**Symptom**: `403 Forbidden` or `This action is unauthorized`
+
+**Common Causes**:
+1. **Missing permission**: User doesn't have required Spatie permission
+2. **Organization mismatch**: User trying to access different organization's data
+3. **Role insufficient**: User role doesn't have required permissions
+
+**Solutions**:
+1. **Check permissions**: Verify user has required permission via Spatie
+2. **Check organization**: Ensure user's organization_id matches resource's organization_id
+3. **Check middleware**: Verify `EnsureOrganizationAccess` middleware is applied
+
+### Debugging
+- Use browser dev tools
+- Implement proper logging
+- Use React DevTools
+- Monitor network requests
+- Check translation keys in console: `t('key')` should return translated string
+- Verify RTL: Check `document.documentElement.dir` in console
+- **Check Laravel logs**: `backend/storage/logs/laravel.log` for detailed error messages
+- **Verify migrations**: Run `php artisan migrate:status` to see applied migrations
+- **Test API endpoints**: Use Postman, curl, or browser to test API directly
+- **Laravel Tinker**: Use `php artisan tinker` to test database queries and models
+- **Check API responses**: Inspect network tab in browser dev tools for API response structure
+
+## Backend Development (Laravel)
+
+### Laravel Structure
+- **Controllers**: `backend/app/Http/Controllers/` - Handle HTTP requests
+- **Models**: `backend/app/Models/` - Eloquent models for database tables
+- **Migrations**: `backend/database/migrations/` - Database schema changes
+- **Routes**: `backend/routes/api.php` - API route definitions
+- **Middleware**: `backend/app/Http/Middleware/` - Request/response middleware
+- **Seeders**: `backend/database/seeders/` - Database seeding
+
+### Laravel Best Practices
+- Use Form Requests for validation (`php artisan make:request`)
+- Use Resource Controllers for CRUD operations
+- Use Eloquent relationships for database queries
+- Use Laravel's built-in validation rules
+- Use middleware for authentication and authorization
+- Use service classes for complex business logic
+- Use repositories for data access abstraction (if needed)
+
+### Database Migrations
+- Always use migrations for schema changes
+- Use descriptive migration names: `YYYY_MM_DD_HHMMSS_description.php`
+- Include `organization_id` in tenant table migrations
+- Create indexes on `organization_id` for performance
+- **REQUIRED: ALWAYS use UUIDs for primary keys**
+  ```php
+  $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+  ```
+- **REQUIRED: For Laravel migrations, use PostgreSQL's gen_random_uuid() function**
+- **REQUIRED: Configure corresponding Eloquent model with UUID support** (see UUID Primary Keys section above)
+
+### API Response Format
+```php
+// Success response
+return response()->json([
+    'data' => $resource,
+    'message' => 'Operation successful'
+], 200);
+
+// Error response
+return response()->json([
+    'error' => 'Error message',
+    'details' => $validationErrors // if validation errors
+], 400);
+```
+
+### Authentication Middleware
+- Use `auth:sanctum` middleware for protected routes
+- Use `EnsureOrganizationAccess` middleware for organization-scoped routes
+- Validate organization_id in controllers, not just middleware
+
+### Permission Checking (Spatie)
+```php
+// Get user's organization_id from profile
+$profile = DB::table('profiles')->where('id', $user->id)->first();
+$organizationId = $profile->organization_id;
+
+// Validate user has organization
+if (!$organizationId) {
+    abort(403, 'User must be assigned to an organization');
+}
+
+// Check permission (with organization context)
+if (!$user->hasPermissionTo('classes.read', $organizationId)) {
+    abort(403, 'Unauthorized');
+}
+
+// Check role (with organization context)
+if (!$user->hasRole('admin', $organizationId)) {
+    abort(403, 'Unauthorized');
+}
+
+// Get all permissions (automatically scoped to user's organization by Spatie)
+$permissions = $user->getAllPermissions();
+```
+
+Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented. The backend is now Laravel, so follow Laravel conventions and best practices.

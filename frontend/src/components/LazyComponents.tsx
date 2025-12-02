@@ -3,7 +3,6 @@ import { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
 
 // Lazy load core pages for better code splitting
 export const Dashboard = lazy(() => import('@/pages/Dashboard'));
-export const PendingApprovalPage = lazy(() => import('@/pages/PendingApprovalPage'));
 export const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 
 // Lazy load settings components

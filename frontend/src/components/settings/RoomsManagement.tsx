@@ -91,10 +91,11 @@ export function RoomsManagement() {
   const isLoading = roomsLoading || buildingsLoading || staffLoading;
 
   const filteredRooms = rooms?.filter((room) => {
+    const query = (searchQuery || '').toLowerCase();
     const matchesSearch =
-      room.room_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      room.building?.building_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      room.staff?.profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      room.room_number?.toLowerCase().includes(query) ||
+      room.building?.building_name?.toLowerCase().includes(query) ||
+      room.staff?.profile?.full_name?.toLowerCase().includes(query);
     return matchesSearch;
   }) || [];
 

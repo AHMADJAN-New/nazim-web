@@ -21,7 +21,6 @@ import TimetableGeneration from "./pages/TimetableGeneration";
 // Lazy-loaded components with optimized loading
 import {
   Dashboard,
-  PendingApprovalPage,
   ResetPasswordPage,
   DashboardSkeleton,
   PageSkeleton,
@@ -78,7 +77,12 @@ const App = () => (
       <Sonner />
       <LanguageProvider>
         <AuthProvider>
-          <BrowserRouter>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
             <SidebarProvider>
               <ErrorBoundary>
                 <Routes>
@@ -86,7 +90,6 @@ const App = () => (
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/redirect" element={<ProtectedRoute><RoleBasedRedirect /></ProtectedRoute>} />
-                  <Route path="/pending-approval" element={<ProtectedRoute><PendingApprovalPage /></ProtectedRoute>} />
 
                   {/* Protected routes with persistent layout */}
                   <Route element={<ProtectedRoute><PersistentLayout /></ProtectedRoute>}>

@@ -7,114 +7,23 @@ import {
   studentEducationalHistoryApi, 
   studentDisciplineRecordsApi 
 } from '@/lib/api/client';
+import type * as StudentApi from '@/types/api/student';
+import type { Student } from '@/types/domain/student';
+import { mapStudentApiToDomain, mapStudentDomainToInsert, mapStudentDomainToUpdate } from '@/mappers/studentMapper';
 
-// Custom enum types for stricter validation
-export type StudentStatus = 'applied' | 'admitted' | 'active' | 'withdrawn';
-export type AdmissionFeeStatus = 'paid' | 'pending' | 'waived' | 'partial';
-export type Gender = 'male' | 'female';
+// Re-export domain types for convenience
+export type { Student, StudentStatus, AdmissionFeeStatus, Gender } from '@/types/domain/student';
 
-// Student interface matching the database schema
-export interface Student {
-  id: string;
-  organization_id: string;
-  school_id: string | null;
-  card_number: string | null;
-  admission_no: string;
-  full_name: string;
-  father_name: string;
-  grandfather_name: string | null;
-  mother_name: string | null;
-  gender: Gender;
-  birth_year: string | null;
-  birth_date: string | null;
-  age: number | null;
-  admission_year: string | null;
-  orig_province: string | null;
-  orig_district: string | null;
-  orig_village: string | null;
-  curr_province: string | null;
-  curr_district: string | null;
-  curr_village: string | null;
-  nationality: string | null;
-  preferred_language: string | null;
-  previous_school: string | null;
-  guardian_name: string | null;
-  guardian_relation: string | null;
-  guardian_phone: string | null;
-  guardian_tazkira: string | null;
-  guardian_picture_path: string | null;
-  home_address: string | null;
-  zamin_name: string | null;
-  zamin_phone: string | null;
-  zamin_tazkira: string | null;
-  zamin_address: string | null;
-  applying_grade: string | null;
-  is_orphan: boolean;
-  admission_fee_status: AdmissionFeeStatus;
-  student_status: StudentStatus;
-  disability_status: string | null;
-  emergency_contact_name: string | null;
-  emergency_contact_phone: string | null;
-  family_income: string | null;
-  picture_path: string | null;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  organization?: {
-    id: string;
-    name: string;
-  };
-  school?: {
-    id: string;
-    school_name: string;
-  };
-}
-
-export interface StudentInsert {
-  admission_no: string;
-  full_name: string;
-  father_name: string;
-  gender: string;
-  organization_id?: string | null;
-  school_id?: string | null;
-  card_number?: string | null;
-  grandfather_name?: string | null;
-  mother_name?: string | null;
-  birth_year?: string | null;
-  birth_date?: string | null;
-  age?: number | null;
-  admission_year?: string | null;
-  orig_province?: string | null;
-  orig_district?: string | null;
-  orig_village?: string | null;
-  curr_province?: string | null;
-  curr_district?: string | null;
-  curr_village?: string | null;
-  nationality?: string | null;
-  preferred_language?: string | null;
-  previous_school?: string | null;
-  guardian_name?: string | null;
-  guardian_relation?: string | null;
-  guardian_phone?: string | null;
-  guardian_tazkira?: string | null;
-  guardian_picture_path?: string | null;
-  home_address?: string | null;
-  zamin_name?: string | null;
-  zamin_phone?: string | null;
-  zamin_tazkira?: string | null;
-  zamin_address?: string | null;
-  applying_grade?: string | null;
-  is_orphan?: boolean;
-  admission_fee_status?: string;
-  student_status?: string;
-  disability_status?: string | null;
-  emergency_contact_name?: string | null;
-  emergency_contact_phone?: string | null;
-  family_income?: string | null;
-  picture_path?: string | null;
-}
-
-export type StudentUpdate = Partial<StudentInsert>;
+// Re-export API types for documents, history, and discipline (these remain API models)
+export type {
+  StudentDocument,
+  StudentEducationalHistory,
+  StudentEducationalHistoryInsert,
+  StudentDisciplineRecord,
+  StudentDisciplineRecordInsert,
+  DisciplineSeverity,
+  StudentStats,
+} from '@/types/api/student';
 
 export const useStudents = (organizationId?: string) => {
   const { user, profile } = useAuth();
@@ -123,26 +32,31 @@ export const useStudents = (organizationId?: string) => {
     queryKey: ['students', organizationId ?? profile?.organization_id ?? null],
     queryFn: async () => {
       if (!user || !profile) {
-        console.log('[useStudents] No user or profile, returning empty array');
         return [];
       }
 
       try {
         const effectiveOrgId = organizationId || profile.organization_id;
-        console.log('[useStudents] Fetching students for organization:', effectiveOrgId);
 
-        const students = await studentsApi.list({
+        const apiStudents = await studentsApi.list({
           organization_id: effectiveOrgId || undefined,
         });
 
-        console.log('[useStudents] Fetched', (students as Student[]).length, 'students');
-        return students as Student[];
+        // Map API models to domain models
+        const domainStudents = (apiStudents as StudentApi.Student[]).map(mapStudentApiToDomain);
+
+        return domainStudents;
       } catch (error) {
-        console.error('[useStudents] Error fetching students:', error);
+        if (import.meta.env.DEV) {
+          console.error('[useStudents] Error fetching students:', error);
+        }
         throw error;
       }
     },
     enabled: !!user && !!profile,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 
@@ -151,19 +65,21 @@ export const useCreateStudent = () => {
   const { profile } = useAuth();
 
   return useMutation({
-    mutationFn: async (payload: StudentInsert) => {
-      const organizationId = payload.organization_id || profile?.organization_id;
+    mutationFn: async (payload: Partial<Student>) => {
+      const organizationId = payload.organizationId || profile?.organization_id;
       if (!organizationId) {
         throw new Error('Organization is required to create a student');
       }
 
-      const insertData = {
+      // Convert domain model to API insert payload
+      const insertData = mapStudentDomainToInsert({
         ...payload,
-        organization_id: organizationId,
-      };
+        organizationId,
+      });
 
-      const student = await studentsApi.create(insertData);
-      return student as Student;
+      const apiStudent = await studentsApi.create(insertData);
+      // Map API response back to domain model
+      return mapStudentApiToDomain(apiStudent as StudentApi.Student);
     },
     onSuccess: () => {
       toast.success('Student registered successfully');
@@ -180,11 +96,15 @@ export const useUpdateStudent = () => {
   const { profile } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<StudentInsert> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Student> }) => {
       if (!profile) throw new Error('User not authenticated');
 
-      const updated = await studentsApi.update(id, data);
-      return updated as Student;
+      // Convert domain model to API update payload
+      const updateData = mapStudentDomainToUpdate(data);
+
+      const apiStudent = await studentsApi.update(id, updateData);
+      // Map API response back to domain model
+      return mapStudentApiToDomain(apiStudent as StudentApi.Student);
     },
     onSuccess: () => {
       toast.success('Student information updated');
@@ -219,18 +139,10 @@ export const useDeleteStudent = () => {
   });
 };
 
-export interface StudentStats {
-  total: number;
-  male: number;
-  female: number;
-  orphans: number;
-  feePending: number;
-}
-
 export const useStudentStats = (organizationId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<StudentStats>({
+  return useQuery<StudentApi.StudentStats>({
     queryKey: ['student-stats', organizationId ?? profile?.organization_id ?? null],
     queryFn: async () => {
       if (!user || !profile) {
@@ -242,9 +154,12 @@ export const useStudentStats = (organizationId?: string) => {
         organization_id: effectiveOrgId || undefined,
       });
 
-      return stats as StudentStats;
+      return stats as StudentApi.StudentStats;
     },
     enabled: !!user && !!profile,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
+    refetchOnReconnect: false, // REQUIRED: Performance optimization
   });
 };
 
@@ -252,27 +167,10 @@ export const useStudentStats = (organizationId?: string) => {
 // Student Documents
 // =============================================================================
 
-export interface StudentDocument {
-  id: string;
-  student_id: string;
-  organization_id: string;
-  school_id: string | null;
-  document_type: string;
-  file_name: string;
-  file_path: string;
-  file_size: number | null;
-  mime_type: string | null;
-  description: string | null;
-  uploaded_by: string | null;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-}
-
 export const useStudentDocuments = (studentId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<StudentDocument[]>({
+  return useQuery<StudentApi.StudentDocument[]>({
     queryKey: ['student-documents', studentId],
     queryFn: async () => {
       if (!user || !profile || !studentId) {
@@ -280,9 +178,12 @@ export const useStudentDocuments = (studentId?: string) => {
       }
 
       const documents = await studentDocumentsApi.list(studentId);
-      return documents as StudentDocument[];
+      return documents as StudentApi.StudentDocument[];
     },
     enabled: !!user && !!profile && !!studentId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
+    refetchOnReconnect: false, // REQUIRED: Performance optimization
   });
 };
 
@@ -313,7 +214,7 @@ export const useUploadStudentDocument = () => {
         description
       );
 
-      return document as StudentDocument;
+      return document as StudentApi.StudentDocument;
     },
     onSuccess: (_, variables) => {
       toast.success('Document uploaded successfully');
@@ -352,41 +253,10 @@ export const useDeleteStudentDocument = () => {
 // Student Educational History
 // =============================================================================
 
-export interface StudentEducationalHistory {
-  id: string;
-  student_id: string;
-  organization_id: string;
-  school_id: string | null;
-  institution_name: string;
-  academic_year: string | null;
-  grade_level: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  achievements: string | null;
-  notes: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-}
-
-export interface StudentEducationalHistoryInsert {
-  student_id: string;
-  organization_id?: string;
-  school_id?: string | null;
-  institution_name: string;
-  academic_year?: string | null;
-  grade_level?: string | null;
-  start_date?: string | null;
-  end_date?: string | null;
-  achievements?: string | null;
-  notes?: string | null;
-}
-
 export const useStudentEducationalHistory = (studentId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<StudentEducationalHistory[]>({
+  return useQuery<StudentApi.StudentEducationalHistory[]>({
     queryKey: ['student-educational-history', studentId],
     queryFn: async () => {
       if (!user || !profile || !studentId) {
@@ -394,9 +264,12 @@ export const useStudentEducationalHistory = (studentId?: string) => {
       }
 
       const history = await studentEducationalHistoryApi.list(studentId);
-      return history as StudentEducationalHistory[];
+      return history as StudentApi.StudentEducationalHistory[];
     },
     enabled: !!user && !!profile && !!studentId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
+    refetchOnReconnect: false, // REQUIRED: Performance optimization
   });
 };
 
@@ -405,7 +278,7 @@ export const useCreateStudentEducationalHistory = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (payload: StudentEducationalHistoryInsert) => {
+    mutationFn: async (payload: StudentApi.StudentEducationalHistoryInsert) => {
       if (!user) throw new Error('User not authenticated');
 
       const history = await studentEducationalHistoryApi.create(payload.student_id, {
@@ -419,7 +292,7 @@ export const useCreateStudentEducationalHistory = () => {
         notes: payload.notes,
       });
 
-      return history as StudentEducationalHistory;
+      return history as StudentApi.StudentEducationalHistory;
     },
     onSuccess: (_, variables) => {
       toast.success('Educational history added');
@@ -436,13 +309,13 @@ export const useUpdateStudentEducationalHistory = () => {
   const { profile } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ id, studentId, data }: { id: string; studentId: string; data: Partial<StudentEducationalHistoryInsert> }) => {
+    mutationFn: async ({ id, studentId, data }: { id: string; studentId: string; data: Partial<StudentApi.StudentEducationalHistoryInsert> }) => {
       if (!profile?.organization_id && profile?.role !== 'super_admin') {
         throw new Error('Organization is required');
       }
 
       const updated = await studentEducationalHistoryApi.update(id, data);
-      return { record: updated as StudentEducationalHistory, studentId };
+      return { record: updated as StudentApi.StudentEducationalHistory, studentId };
     },
     onSuccess: (result) => {
       toast.success('Educational history updated');
@@ -481,45 +354,10 @@ export const useDeleteStudentEducationalHistory = () => {
 // Student Discipline Records
 // =============================================================================
 
-export type DisciplineSeverity = 'minor' | 'moderate' | 'major' | 'severe';
-
-export interface StudentDisciplineRecord {
-  id: string;
-  student_id: string;
-  organization_id: string;
-  school_id: string | null;
-  incident_date: string;
-  incident_type: string;
-  description: string | null;
-  severity: DisciplineSeverity;
-  action_taken: string | null;
-  resolved: boolean;
-  resolved_date: string | null;
-  resolved_by: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-}
-
-export interface StudentDisciplineRecordInsert {
-  student_id: string;
-  organization_id?: string;
-  school_id?: string | null;
-  incident_date: string;
-  incident_type: string;
-  description?: string | null;
-  severity?: DisciplineSeverity;
-  action_taken?: string | null;
-  resolved?: boolean;
-  resolved_date?: string | null;
-  resolved_by?: string | null;
-}
-
 export const useStudentDisciplineRecords = (studentId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<StudentDisciplineRecord[]>({
+  return useQuery<StudentApi.StudentDisciplineRecord[]>({
     queryKey: ['student-discipline-records', studentId],
     queryFn: async () => {
       if (!user || !profile || !studentId) {
@@ -527,9 +365,12 @@ export const useStudentDisciplineRecords = (studentId?: string) => {
       }
 
       const records = await studentDisciplineRecordsApi.list(studentId);
-      return records as StudentDisciplineRecord[];
+      return records as StudentApi.StudentDisciplineRecord[];
     },
     enabled: !!user && !!profile && !!studentId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
+    refetchOnReconnect: false, // REQUIRED: Performance optimization
   });
 };
 
@@ -538,7 +379,7 @@ export const useCreateStudentDisciplineRecord = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (payload: StudentDisciplineRecordInsert) => {
+    mutationFn: async (payload: StudentApi.StudentDisciplineRecordInsert) => {
       if (!user) throw new Error('User not authenticated');
 
       const record = await studentDisciplineRecordsApi.create(payload.student_id, {
@@ -552,7 +393,7 @@ export const useCreateStudentDisciplineRecord = () => {
         resolved_date: payload.resolved_date,
       });
 
-      return record as StudentDisciplineRecord;
+      return record as StudentApi.StudentDisciplineRecord;
     },
     onSuccess: (_, variables) => {
       toast.success('Discipline record added');
@@ -569,13 +410,13 @@ export const useUpdateStudentDisciplineRecord = () => {
   const { profile } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ id, studentId, data }: { id: string; studentId: string; data: Partial<StudentDisciplineRecordInsert> }) => {
+    mutationFn: async ({ id, studentId, data }: { id: string; studentId: string; data: Partial<StudentApi.StudentDisciplineRecordInsert> }) => {
       if (!profile?.organization_id && profile?.role !== 'super_admin') {
         throw new Error('Organization is required');
       }
 
       const updated = await studentDisciplineRecordsApi.update(id, data);
-      return { record: updated as StudentDisciplineRecord, studentId };
+      return { record: updated as StudentApi.StudentDisciplineRecord, studentId };
     },
     onSuccess: (result) => {
       toast.success('Discipline record updated');
@@ -622,7 +463,7 @@ export const useResolveStudentDisciplineRecord = () => {
       }
 
       const updated = await studentDisciplineRecordsApi.resolve(id);
-      return { record: updated as StudentDisciplineRecord, studentId };
+      return { record: updated as StudentApi.StudentDisciplineRecord, studentId };
     },
     onSuccess: (result) => {
       toast.success('Discipline record marked as resolved');

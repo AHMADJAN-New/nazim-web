@@ -1,135 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { staffApi, staffTypesApi, staffDocumentsApi } from '@/lib/api/client';
+import type * as StaffApi from '@/types/api/staff';
+import type { Staff, StaffType, StaffDocument, StaffStats } from '@/types/domain/staff';
+import {
+  mapStaffApiToDomain,
+  mapStaffDomainToInsert,
+  mapStaffDomainToUpdate,
+  mapStaffTypeApiToDomain,
+  mapStaffTypeDomainToInsert,
+  mapStaffTypeDomainToUpdate,
+  mapStaffDocumentApiToDomain,
+} from '@/mappers/staffMapper';
 
-// Staff Type types
-export interface StaffType {
-  id: string;
-  organization_id: string | null;
-  name: string;
-  code: string;
-  description: string | null;
-  is_active: boolean;
-  display_order: number;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-}
-
-export type StaffTypeInsert = Omit<StaffType, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
-export type StaffTypeUpdate = Partial<StaffTypeInsert>;
-
-// Staff Document types
-export interface StaffDocument {
-  id: string;
-  staff_id: string;
-  organization_id: string;
-  school_id: string | null;
-  document_type: string;
-  file_name: string;
-  file_path: string;
-  file_size: number | null;
-  mime_type: string | null;
-  description: string | null;
-  uploaded_by: string | null;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-}
-
-export type StaffDocumentInsert = Omit<StaffDocument, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
-export type StaffDocumentUpdate = Partial<StaffDocumentInsert>;
-
-// Custom status type for stricter typing
-export type StaffStatus = 'active' | 'inactive' | 'on_leave' | 'terminated' | 'suspended';
-
-// Staff types
-export interface Staff {
-  id: string;
-  profile_id: string | null;
-  organization_id: string;
-  employee_id: string;
-  staff_type: string;
-  staff_type_id: string | null;
-  school_id: string | null;
-  first_name: string;
-  father_name: string;
-  grandfather_name: string | null;
-  full_name: string;
-  tazkira_number: string | null;
-  birth_year: string | null;
-  birth_date: string | null;
-  phone_number: string | null;
-  email: string | null;
-  home_address: string | null;
-  origin_province: string | null;
-  origin_district: string | null;
-  origin_village: string | null;
-  current_province: string | null;
-  current_district: string | null;
-  current_village: string | null;
-  religious_education: string | null;
-  religious_university: string | null;
-  religious_graduation_year: string | null;
-  religious_department: string | null;
-  modern_education: string | null;
-  modern_school_university: string | null;
-  modern_graduation_year: string | null;
-  modern_department: string | null;
-  teaching_section: string | null;
-  position: string | null;
-  duty: string | null;
-  salary: string | null;
-  status: StaffStatus;
-  picture_url: string | null;
-  document_urls: any[];
-  notes: string | null;
-  created_by: string | null;
-  updated_by: string | null;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  // Extended with relations
-  staff_type?: StaffType;
-  profile?: {
-    id: string;
-    full_name: string;
-    email: string;
-    phone: string | null;
-    avatar_url: string | null;
-    role: string;
-  };
-  organization?: {
-    id: string;
-    name: string;
-  };
-  school?: {
-    id: string;
-    school_name: string;
-  };
-}
-
-export type StaffInsert = Omit<Staff, 'id' | 'full_name' | 'created_at' | 'updated_at' | 'deleted_at' | 'staff_type' | 'profile' | 'organization' | 'school'>;
-export type StaffUpdate = Partial<StaffInsert>;
-
-export interface StaffStats {
-  total: number;
-  active: number;
-  inactive: number;
-  on_leave: number;
-  terminated: number;
-  suspended: number;
-  by_type: {
-    teacher: number;
-    admin: number;
-    accountant: number;
-    librarian: number;
-    other: number;
-  };
-}
+// Re-export domain types for convenience
+export type { Staff, StaffType, StaffDocument, StaffStats, StaffStatus } from '@/types/domain/staff';
 
 // Hook to fetch all staff with organization filtering
 export const useStaff = (organizationId?: string) => {
@@ -137,7 +24,7 @@ export const useStaff = (organizationId?: string) => {
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
   const orgId = organizationId || profile?.organization_id || null;
 
-  return useQuery({
+  return useQuery<Staff[]>({
     queryKey: ['staff', orgId, orgIds.join(',')],
     queryFn: async () => {
       if (!user || !profile) return [];
@@ -159,21 +46,28 @@ export const useStaff = (organizationId?: string) => {
         params.organization_id = organizationId;
       }
 
-      const staff = await staffApi.list(params);
-      return staff as Staff[];
+      const apiStaff = await staffApi.list(params);
+      // Map API models to domain models
+      return (apiStaff as StaffApi.Staff[]).map(mapStaffApiToDomain);
     },
-    enabled: !!user && !!profile, // Allow super admin to see all when organizationId is undefined
+    enabled: !!user && !!profile,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 
 // Hook to fetch a single staff member
 export const useStaffMember = (staffId: string) => {
-  return useQuery({
+  return useQuery<Staff>({
     queryKey: ['staff', staffId],
     queryFn: async () => {
-      const staff = await staffApi.get(staffId);
-      return staff as Staff;
+      const apiStaff = await staffApi.get(staffId);
+      return mapStaffApiToDomain(apiStaff as StaffApi.Staff);
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
+    refetchOnReconnect: false, // REQUIRED: Performance optimization
   });
 };
 
@@ -183,7 +77,7 @@ export const useStaffByType = (staffTypeId: string, organizationId?: string) => 
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
   const orgId = organizationId || profile?.organization_id || null;
 
-  return useQuery({
+  return useQuery<Staff[]>({
     queryKey: ['staff', 'type', staffTypeId, orgId],
     queryFn: async () => {
       const params: any = {
@@ -194,11 +88,15 @@ export const useStaffByType = (staffTypeId: string, organizationId?: string) => 
         params.organization_id = orgId;
       }
 
-      const staff = await staffApi.list(params);
-      // Sort by full_name
-      return (staff as Staff[]).sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
+      const apiStaff = await staffApi.list(params);
+      // Map API models to domain models and sort by fullName
+      const domainStaff = (apiStaff as StaffApi.Staff[]).map(mapStaffApiToDomain);
+      return domainStaff.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
     },
     enabled: (!!orgId || organizationId === undefined) && !orgsLoading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
+    refetchOnReconnect: false, // REQUIRED: Performance optimization
   });
 };
 
@@ -207,31 +105,43 @@ export const useStaffStats = (organizationId?: string) => {
   const { user, profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery({
+  return useQuery<StaffStats>({
     queryKey: ['staff-stats', organizationId === undefined ? 'all' : organizationId, orgIds.join(',')],
     queryFn: async (): Promise<StaffStats> => {
       if (!user || !profile || orgsLoading) {
-        return { total: 0, active: 0, inactive: 0, on_leave: 0, terminated: 0, suspended: 0, by_type: { teacher: 0, admin: 0, accountant: 0, librarian: 0, other: 0 } };
+        return { total: 0, active: 0, inactive: 0, onLeave: 0, terminated: 0, suspended: 0, byType: { teacher: 0, admin: 0, accountant: 0, librarian: 0, other: 0 } };
       }
 
       const resolvedOrgIds = orgIds;
       if (resolvedOrgIds.length === 0) {
-        return { total: 0, active: 0, inactive: 0, on_leave: 0, terminated: 0, suspended: 0, by_type: { teacher: 0, admin: 0, accountant: 0, librarian: 0, other: 0 } };
+        return { total: 0, active: 0, inactive: 0, onLeave: 0, terminated: 0, suspended: 0, byType: { teacher: 0, admin: 0, accountant: 0, librarian: 0, other: 0 } };
       }
 
       // Fetch stats from Laravel API
       const params: any = {};
       if (organizationId) {
         if (!resolvedOrgIds.includes(organizationId)) {
-          return { total: 0, active: 0, inactive: 0, on_leave: 0, terminated: 0, suspended: 0, by_type: { teacher: 0, admin: 0, accountant: 0, librarian: 0, other: 0 } };
+          return { total: 0, active: 0, inactive: 0, onLeave: 0, terminated: 0, suspended: 0, byType: { teacher: 0, admin: 0, accountant: 0, librarian: 0, other: 0 } };
         }
         params.organization_id = organizationId;
       }
 
-      const stats = await staffApi.stats(params);
-      return stats as StaffStats;
+      const apiStats = await staffApi.stats(params);
+      const stats = apiStats as StaffApi.StaffStats;
+      // Map API stats to domain stats
+      return {
+        total: stats.total,
+        active: stats.active,
+        inactive: stats.inactive,
+        onLeave: stats.on_leave,
+        terminated: stats.terminated,
+        suspended: stats.suspended,
+        byType: stats.by_type,
+      };
     },
-    enabled: !!user && !!profile && !orgsLoading, // Always enabled when user and profile exist
+    enabled: !!user && !!profile && !orgsLoading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -241,35 +151,32 @@ export const useCreateStaff = () => {
   const { profile } = useAuth();
 
   return useMutation({
-    mutationFn: async (staffData: StaffInsert) => {
+    mutationFn: async (staffData: Partial<Staff>) => {
       // Get organization_id - automatically use profile's organization_id if not provided
-      // This should always exist after the seeder runs
-      const organizationId = staffData.organization_id || profile?.organization_id;
+      const organizationId = staffData.organizationId || profile?.organization_id;
 
       if (!organizationId) {
-        // If still no organization_id, this is a system error - user should have been assigned during login
         throw new Error('You must be assigned to an organization. Please log out and log back in, or contact administrator.');
       }
 
-      // Clean up any empty strings in UUID fields
-      const finalData: StaffInsert = {
+      // Convert domain model to API insert payload
+      const insertData = mapStaffDomainToInsert({
         ...staffData,
-        organization_id: organizationId,
-        school_id: staffData.school_id && staffData.school_id !== '' ? staffData.school_id : null,
-      };
+        organizationId,
+        schoolId: staffData.schoolId && staffData.schoolId !== '' ? staffData.schoolId : null,
+      });
 
-      // Create staff via Laravel API (validation handled server-side)
-      const staff = await staffApi.create(finalData);
-      return staff as Staff;
+      // Create staff via Laravel API
+      const apiStaff = await staffApi.create(insertData);
+      // Map API response back to domain model
+      return mapStaffApiToDomain(apiStaff as StaffApi.Staff);
     },
     onSuccess: (data, variables) => {
-      // Invalidate all staff queries (including "all" organization filter)
+      // Invalidate all staff queries
       queryClient.invalidateQueries({ queryKey: ['staff'] });
-      // Also invalidate the specific organization's staff if organization_id was provided
-      if (variables.organization_id) {
-        queryClient.invalidateQueries({ queryKey: ['staff', variables.organization_id] });
+      if (variables.organizationId) {
+        queryClient.invalidateQueries({ queryKey: ['staff', variables.organizationId] });
       }
-      // Invalidate stats for all organizations
       queryClient.invalidateQueries({ queryKey: ['staff-stats'] });
       toast.success('Staff member created successfully');
     },
@@ -284,10 +191,14 @@ export const useUpdateStaff = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<StaffInsert> & { id: string }) => {
-      // Update staff via Laravel API (validation handled server-side)
-      const staff = await staffApi.update(id, updates);
-      return staff as Staff;
+    mutationFn: async ({ id, ...updates }: Partial<Staff> & { id: string }) => {
+      // Convert domain model to API update payload
+      const updateData = mapStaffDomainToUpdate(updates);
+
+      // Update staff via Laravel API
+      const apiStaff = await staffApi.update(id, updateData);
+      // Map API response back to domain model
+      return mapStaffApiToDomain(apiStaff as StaffApi.Staff);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
@@ -365,7 +276,7 @@ export const useStaffTypes = (organizationId?: string) => {
   const { user, profile } = useAuth();
   const { orgIds: accessibleOrgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery({
+  return useQuery<StaffType[]>({
     queryKey: ['staff-types', organizationId, accessibleOrgIds.join(',')],
     queryFn: async () => {
       if (!user || !profile) return [];
@@ -377,12 +288,13 @@ export const useStaffTypes = (organizationId?: string) => {
         params.organization_id = organizationId;
       }
 
-      const staffTypes = await staffTypesApi.list(params);
-      return staffTypes as StaffType[];
+      const apiStaffTypes = await staffTypesApi.list(params);
+      // Map API models to domain models
+      return (apiStaffTypes as StaffApi.StaffType[]).map(mapStaffTypeApiToDomain);
     },
     enabled: !!user && !!profile && !orgsLoading,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -392,19 +304,13 @@ export const useCreateStaffType = () => {
   const { primaryOrgId } = useAccessibleOrganizations();
 
   return useMutation({
-    mutationFn: async (typeData: {
-      name: string;
-      code: string;
-      description?: string | null;
-      display_order?: number;
-      organization_id?: string | null;
-    }) => {
+    mutationFn: async (typeData: Partial<StaffType>) => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
       }
 
       // Get organization_id - use provided or user's primary org
-      let organizationId = typeData.organization_id;
+      let organizationId = typeData.organizationId;
       if (organizationId === undefined) {
         if (primaryOrgId) {
           organizationId = primaryOrgId;
@@ -415,12 +321,16 @@ export const useCreateStaffType = () => {
         }
       }
 
-      // Create staff type via Laravel API (validation handled server-side)
-      const staffType = await staffTypesApi.create({
+      // Convert domain model to API insert payload
+      const insertData = mapStaffTypeDomainToInsert({
         ...typeData,
-        organization_id: organizationId,
+        organizationId,
       });
-      return staffType as StaffType;
+
+      // Create staff type via Laravel API
+      const apiStaffType = await staffTypesApi.create(insertData);
+      // Map API response back to domain model
+      return mapStaffTypeApiToDomain(apiStaffType as StaffApi.StaffType);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-types'] });
@@ -442,9 +352,13 @@ export const useUpdateStaffType = () => {
         throw new Error('User not authenticated');
       }
 
-      // Update staff type via Laravel API (validation handled server-side)
-      const staffType = await staffTypesApi.update(id, updates);
-      return staffType as StaffType;
+      // Convert domain model to API update payload
+      const updateData = mapStaffTypeDomainToUpdate(updates);
+
+      // Update staff type via Laravel API
+      const apiStaffType = await staffTypesApi.update(id, updateData);
+      // Map API response back to domain model
+      return mapStaffTypeApiToDomain(apiStaffType as StaffApi.StaffType);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-types'] });
@@ -467,7 +381,7 @@ export const useDeleteStaffType = () => {
         throw new Error('User not authenticated');
       }
 
-      // Delete staff type via Laravel API (validation handled server-side)
+      // Delete staff type via Laravel API
       await staffTypesApi.delete(id);
     },
     onSuccess: () => {
@@ -487,18 +401,19 @@ export const useDeleteStaffType = () => {
 export const useStaffDocuments = (staffId: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery({
+  return useQuery<StaffDocument[]>({
     queryKey: ['staff-files', staffId],
     queryFn: async () => {
       if (!user || !profile) return [];
 
       // Fetch documents from Laravel API
-      const documents = await staffDocumentsApi.list(staffId);
-      return documents as StaffDocument[];
+      const apiDocuments = await staffDocumentsApi.list(staffId);
+      // Map API models to domain models
+      return (apiDocuments as StaffApi.StaffDocument[]).map(mapStaffDocumentApiToDomain);
     },
     enabled: !!user && !!profile && !!staffId,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -515,7 +430,7 @@ export const useDeleteStaffDocument = () => {
       // Delete document via Laravel API
       await staffDocumentsApi.delete(documentId);
     },
-    onSuccess: (_, documentId) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-files'] });
       toast.success('Document deleted successfully');
     },

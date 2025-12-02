@@ -108,7 +108,14 @@ class RoomController extends Controller
                 ->whereNull('deleted_at')
                 ->get();
 
-            $profileIds = $staffList->pluck('profile_id')->filter()->unique()->toArray();
+            $profileIds = $staffList->pluck('profile_id')
+                ->filter(function ($id) {
+                    // Filter out null, empty strings, 0, and ensure it's a valid UUID-like string
+                    return !empty($id) && $id !== '0' && $id !== 0 && is_string($id);
+                })
+                ->unique()
+                ->values()
+                ->toArray();
             $profiles = [];
             if (!empty($profileIds)) {
                 $profiles = DB::table('profiles')
@@ -119,11 +126,16 @@ class RoomController extends Controller
             }
 
             foreach ($staffList as $staff) {
+                $staffProfile = null;
+                if (!empty($staff->profile_id) && isset($profiles[$staff->profile_id])) {
+                    $staffProfile = [
+                        'full_name' => $profiles[$staff->profile_id]->full_name ?? null,
+                    ];
+                }
+                
                 $staffMap[$staff->id] = [
                     'id' => $staff->id,
-                    'profile' => isset($profiles[$staff->profile_id]) ? [
-                        'full_name' => $profiles[$staff->profile_id]->full_name ?? null,
-                    ] : null,
+                    'profile' => $staffProfile,
                 ];
             }
         }
@@ -205,16 +217,19 @@ class RoomController extends Controller
         ];
 
         // Add staff if provided
-        if ($room->staff_id && Schema::hasTable('staff')) {
+        if (!empty($room->staff_id) && Schema::hasTable('staff')) {
             $staff = DB::table('staff')
                 ->where('id', $room->staff_id)
                 ->whereNull('deleted_at')
                 ->first();
 
-            if ($staff && $staff->profile_id) {
-                $staffProfile = DB::table('profiles')
-                    ->where('id', $staff->profile_id)
-                    ->first();
+            if ($staff) {
+                $staffProfile = null;
+                if (!empty($staff->profile_id) && $staff->profile_id !== '0' && $staff->profile_id !== 0) {
+                    $staffProfile = DB::table('profiles')
+                        ->where('id', $staff->profile_id)
+                        ->first();
+                }
 
                 $roomArray['staff'] = [
                     'id' => $staff->id,
@@ -222,7 +237,11 @@ class RoomController extends Controller
                         'full_name' => $staffProfile->full_name ?? null,
                     ] : null,
                 ];
+            } else {
+                $roomArray['staff'] = null;
             }
+        } else {
+            $roomArray['staff'] = null;
         }
 
         return response()->json($roomArray, 201);
@@ -280,16 +299,19 @@ class RoomController extends Controller
         ] : null;
 
         // Add staff
-        if ($room->staff_id && Schema::hasTable('staff')) {
+        if (!empty($room->staff_id) && Schema::hasTable('staff')) {
             $staff = DB::table('staff')
                 ->where('id', $room->staff_id)
                 ->whereNull('deleted_at')
                 ->first();
 
-            if ($staff && $staff->profile_id) {
-                $staffProfile = DB::table('profiles')
-                    ->where('id', $staff->profile_id)
-                    ->first();
+            if ($staff) {
+                $staffProfile = null;
+                if (!empty($staff->profile_id) && $staff->profile_id !== '0' && $staff->profile_id !== 0) {
+                    $staffProfile = DB::table('profiles')
+                        ->where('id', $staff->profile_id)
+                        ->first();
+                }
 
                 $roomArray['staff'] = [
                     'id' => $staff->id,
@@ -388,6 +410,9 @@ class RoomController extends Controller
         }
 
         $room->update($updateData);
+        
+        // Refresh the model to ensure we have the latest data
+        $room->refresh();
 
         // Enrich with relationships
         $roomArray = $room->toArray();
@@ -405,16 +430,19 @@ class RoomController extends Controller
         ] : null;
 
         // Add staff
-        if ($room->staff_id && Schema::hasTable('staff')) {
+        if (!empty($room->staff_id) && Schema::hasTable('staff')) {
             $staff = DB::table('staff')
                 ->where('id', $room->staff_id)
                 ->whereNull('deleted_at')
                 ->first();
 
-            if ($staff && $staff->profile_id) {
-                $staffProfile = DB::table('profiles')
-                    ->where('id', $staff->profile_id)
-                    ->first();
+            if ($staff) {
+                $staffProfile = null;
+                if (!empty($staff->profile_id) && $staff->profile_id !== '0' && $staff->profile_id !== 0) {
+                    $staffProfile = DB::table('profiles')
+                        ->where('id', $staff->profile_id)
+                        ->first();
+                }
 
                 $roomArray['staff'] = [
                     'id' => $staff->id,

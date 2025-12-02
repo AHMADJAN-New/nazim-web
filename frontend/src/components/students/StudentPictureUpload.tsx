@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
-import { supabase } from '@/integrations/supabase/client';
 
 interface StudentPictureUploadProps {
     studentId?: string;
@@ -36,29 +35,17 @@ export function StudentPictureUpload({
 
     const [imageUrl, setImageUrl] = useState<string | null>(null);
 
-    // Fetch signed URL for existing image (bucket is private)
+    // Fetch picture URL from Laravel API
     useEffect(() => {
-        if (currentFileName && studentId && organizationId && !previewUrl) {
-            const schoolPath = schoolId ? `${schoolId}/` : '';
-            const path = `${organizationId}/${schoolPath}${studentId}/picture/${currentFileName}`;
-            
-            supabase.storage
-                .from('student-files')
-                .createSignedUrl(path, 3600)
-                .then(({ data, error }) => {
-                    if (error) {
-                        console.error('Error creating signed URL:', error);
-                        setImageError(true);
-                        setImageUrl(null);
-                    } else if (data) {
-                        setImageUrl(data.signedUrl);
-                        setImageError(false);
-                    }
-                });
+        if (studentId && !previewUrl) {
+            // Use Laravel API endpoint for student picture
+            const pictureUrl = `/api/students/${studentId}/picture`;
+            setImageUrl(pictureUrl);
+            setImageError(false);
         } else {
             setImageUrl(null);
         }
-    }, [currentFileName, studentId, organizationId, schoolId, previewUrl]);
+    }, [studentId, previewUrl]);
 
     const resolvedPreview = useMemo(() => {
         // If user selected a new file, show that preview
@@ -87,15 +74,13 @@ export function StudentPictureUpload({
     const onUpload = async () => {
         if (!file || !studentId || !organizationId) return;
         try {
-            const result = await upload.mutateAsync({ file, studentId, organizationId, schoolId });
+            await upload.mutateAsync({ file, studentId, organizationId, schoolId });
             setFile(null);
             setPreviewUrl(null); // Clear preview so it shows the uploaded image
             setImageError(false);
             
-            // Use the signed URL returned from the upload hook immediately
-            if (result?.signedUrl) {
-                setImageUrl(result.signedUrl);
-            }
+            // Update image URL to use Laravel API endpoint
+            setImageUrl(`/api/students/${studentId}/picture`);
             
             // Clear the file input
             const input = document.getElementById('student-picture-input') as HTMLInputElement;

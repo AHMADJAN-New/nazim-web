@@ -27,8 +27,9 @@ class UpdateStudentRequest extends FormRequest
         $profile = DB::table('profiles')->where('id', $user->id)->first();
         
         // Get the student's organization_id
-        $student = DB::table('students')->where('id', $studentId)->first();
-        $organizationId = $student->organization_id ?? $profile->organization_id ?? null;
+        // If student doesn't exist, let controller handle 404 - use profile's org_id for validation
+        $student = DB::table('students')->where('id', $studentId)->whereNull('deleted_at')->first();
+        $organizationId = $student ? ($student->organization_id ?? $profile->organization_id ?? null) : ($profile->organization_id ?? null);
 
         return [
             'admission_no' => [
@@ -98,6 +99,14 @@ class UpdateStudentRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // Remove organization_id from request to prevent validation error
+        // Organization ID should never be changed during updates
+        $data = $this->all();
+        if (isset($data['organization_id'])) {
+            unset($data['organization_id']);
+            $this->merge($data);
+        }
+
         // Convert empty strings to null for optional fields
         $fieldsToClean = [
             'card_number', 'grandfather_name', 'mother_name', 'birth_year', 'birth_date',

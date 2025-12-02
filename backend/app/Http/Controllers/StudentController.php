@@ -110,15 +110,6 @@ class StudentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        try {
-            if (!$user->hasPermissionTo('students.read')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.read: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
-        }
-
         $student = Student::with(['organization', 'school'])
             ->whereNull('deleted_at')
             ->find($id);
@@ -302,50 +293,128 @@ class StudentController extends Controller
      */
     public function uploadPicture(Request $request, string $id)
     {
-        $user = $request->user();
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        try {
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
 
-        if (!$profile) {
-            return response()->json(['error' => 'Profile not found'], 404);
+            $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+            if (!$profile) {
+                return response()->json(['error' => 'Profile not found'], 404);
+            }
+
+            $student = Student::whereNull('deleted_at')->find($id);
+
+            if (!$student) {
+                return response()->json(['error' => 'Student not found'], 404);
+            }
+
+            $orgIds = $this->getAccessibleOrgIds($profile);
+
+            if (!in_array($student->organization_id, $orgIds)) {
+                return response()->json(['error' => 'Cannot update student from different organization'], 403);
+            }
+
+            // Validate the file
+            $validated = $request->validate([
+                'file' => 'required|file|max:5120|mimes:jpeg,jpg,png,gif,webp',
+            ]);
+
+            $file = $request->file('file');
+            if (!$file) {
+                return response()->json(['error' => 'No file provided'], 422);
+            }
+
+            $extension = $file->getClientOriginalExtension();
+            $timestamp = time();
+            $filename = "{$timestamp}_{$id}.{$extension}";
+            $path = "{$student->organization_id}/students/{$id}/pictures/{$filename}";
+
+            // Delete old picture if exists
+            if ($student->picture_path && Storage::disk('local')->exists($student->picture_path)) {
+                Storage::disk('local')->delete($student->picture_path);
+            }
+
+            // Store new picture
+            Storage::disk('local')->put($path, file_get_contents($file));
+
+            // Update student record
+            $student->update(['picture_path' => $path]);
+
+            return response()->json([
+                'message' => 'Picture uploaded successfully',
+                'picture_path' => $path,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Picture upload validation failed', [
+                'errors' => $e->errors(),
+                'student_id' => $id,
+            ]);
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error uploading student picture: ' . $e->getMessage(), [
+                'student_id' => $id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to upload picture: ' . $e->getMessage()], 500);
         }
+    }
 
-        $student = Student::whereNull('deleted_at')->find($id);
+    /**
+     * Get student picture
+     */
+    public function getPicture(Request $request, string $id)
+    {
+        try {
+            $user = $request->user();
+            if (!$user) {
+                abort(401, 'Unauthorized');
+            }
 
-        if (!$student) {
-            return response()->json(['error' => 'Student not found'], 404);
+            $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+            if (!$profile) {
+                abort(404, 'Profile not found');
+            }
+
+            $student = Student::whereNull('deleted_at')->find($id);
+
+            if (!$student) {
+                abort(404, 'Student not found');
+            }
+
+            $orgIds = $this->getAccessibleOrgIds($profile);
+
+            if (!in_array($student->organization_id, $orgIds)) {
+                abort(403, 'Cannot access student from different organization');
+            }
+
+            // If no picture_path, return 404
+            if (!$student->picture_path) {
+                abort(404, 'Picture not found');
+            }
+
+            // Check if file exists
+            if (!Storage::disk('local')->exists($student->picture_path)) {
+                abort(404, 'Picture file not found');
+            }
+
+            $file = Storage::disk('local')->get($student->picture_path);
+            $mimeType = Storage::disk('local')->mimeType($student->picture_path) ?? 'image/jpeg';
+
+            return response($file, 200)
+                ->header('Content-Type', $mimeType)
+                ->header('Content-Disposition', 'inline; filename="' . basename($student->picture_path) . '"')
+                ->header('Cache-Control', 'public, max-age=3600');
+        } catch (\Exception $e) {
+            Log::error('Error getting student picture: ' . $e->getMessage());
+            abort(404, 'Picture not found');
         }
-
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot update student from different organization'], 403);
-        }
-
-        $request->validate([
-            'file' => 'required|file|max:5120|mimes:jpeg,jpg,png,gif,webp',
-        ]);
-
-        $file = $request->file('file');
-        $extension = $file->getClientOriginalExtension();
-        $timestamp = time();
-        $filename = "{$timestamp}_{$id}.{$extension}";
-        $path = "{$student->organization_id}/students/{$id}/pictures/{$filename}";
-
-        // Delete old picture if exists
-        if ($student->picture_path) {
-            Storage::disk('local')->delete($student->picture_path);
-        }
-
-        // Store new picture
-        Storage::disk('local')->put($path, file_get_contents($file));
-
-        // Update student record
-        $student->update(['picture_path' => $path]);
-
-        return response()->json([
-            'message' => 'Picture uploaded successfully',
-            'picture_path' => $path,
-        ]);
     }
 
     /**
@@ -408,148 +477,187 @@ class StudentController extends Controller
      */
     public function checkDuplicates(Request $request)
     {
-        $user = $request->user();
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        try {
+            $user = $request->user();
+            if (!$user) {
+                Log::warning('[StudentController::checkDuplicates] User not authenticated');
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
 
-        if (!$profile) {
-            return response()->json(['error' => 'Profile not found'], 404);
-        }
+            $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
+            if (!$profile) {
+                Log::warning('[StudentController::checkDuplicates] Profile not found for user', ['user_id' => $user->id]);
+                return response()->json(['error' => 'Profile not found'], 404);
+            }
 
-        if (empty($orgIds)) {
-            return response()->json([]);
-        }
+            $orgIds = $this->getAccessibleOrgIds($profile);
 
-        $request->validate([
-            'full_name' => 'required|string',
-            'father_name' => 'required|string',
-            'tazkira_number' => 'nullable|string',
-            'card_number' => 'nullable|string',
-            'admission_no' => 'nullable|string',
-        ]);
+            if (empty($orgIds)) {
+                Log::info('[StudentController::checkDuplicates] No accessible organizations for user', ['user_id' => $user->id]);
+                return response()->json([]);
+            }
 
-        $results = [];
+            $request->validate([
+                'full_name' => 'required|string',
+                'father_name' => 'required|string',
+                'tazkira_number' => 'nullable|string',
+                'card_number' => 'nullable|string',
+                'admission_no' => 'nullable|string',
+            ]);
 
-        $baseQuery = Student::whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds)
-            ->select('id', 'full_name', 'father_name', 'tazkira_number', 'card_number', 'admission_no', 'orig_province', 'admission_year', 'created_at');
+            $results = [];
 
-        // Exact: name + father_name
-        $exactMatches = (clone $baseQuery)
-            ->where('full_name', $request->full_name)
-            ->where('father_name', $request->father_name)
-            ->get();
-        foreach ($exactMatches as $match) {
-            $results[] = [
-                'id' => $match->id,
-                'full_name' => $match->full_name,
-                'father_name' => $match->father_name,
-                'tazkira_number' => $match->tazkira_number,
-                'card_number' => $match->card_number,
-                'admission_no' => $match->admission_no,
-                'orig_province' => $match->orig_province,
-                'admission_year' => $match->admission_year,
-                'created_at' => $match->created_at,
-                'match_reason' => 'Exact name and father name match',
-            ];
-        }
+            // Ensure orgIds is an array and not empty before querying
+            if (!is_array($orgIds) || empty($orgIds)) {
+                Log::warning('[StudentController::checkDuplicates] Invalid organization IDs', ['orgIds' => $orgIds]);
+                return response()->json([]);
+            }
 
-        // Tazkira number match
-        if ($request->tazkira_number) {
-            $tazkiraMatches = (clone $baseQuery)
-                ->where('guardian_tazkira', $request->tazkira_number)
+            $baseQuery = Student::whereNull('deleted_at')
+                ->whereIn('organization_id', $orgIds)
+                ->select('id', 'full_name', 'father_name', 'tazkira_number', 'guardian_tazkira', 'card_number', 'admission_no', 'orig_province', 'admission_year', 'created_at');
+
+            // Exact: name + father_name
+            $exactMatches = (clone $baseQuery)
+                ->where('full_name', $request->full_name)
+                ->where('father_name', $request->father_name)
                 ->get();
-            foreach ($tazkiraMatches as $match) {
+            foreach ($exactMatches as $match) {
                 $results[] = [
                     'id' => $match->id,
-                    'full_name' => $match->full_name,
-                    'father_name' => $match->father_name,
-                    'tazkira_number' => $match->tazkira_number,
-                    'card_number' => $match->card_number,
-                    'admission_no' => $match->admission_no,
-                    'orig_province' => $match->orig_province,
-                    'admission_year' => $match->admission_year,
+                    'full_name' => $match->full_name ?? null,
+                    'father_name' => $match->father_name ?? null,
+                    'tazkira_number' => $match->tazkira_number ?? null,
+                    'card_number' => $match->card_number ?? null,
+                    'admission_no' => $match->admission_no ?? null,
+                    'orig_province' => $match->orig_province ?? null,
+                    'admission_year' => $match->admission_year ?? null,
                     'created_at' => $match->created_at,
-                    'match_reason' => 'Guardian tazkira matches',
+                    'match_reason' => 'Exact name and father name match',
                 ];
             }
-        }
 
-        // Card number match
-        if ($request->card_number) {
-            $cardMatches = (clone $baseQuery)
-                ->where('card_number', $request->card_number)
+            // Tazkira number match
+            if ($request->tazkira_number) {
+                $tazkiraMatches = (clone $baseQuery)
+                    ->where(function($q) use ($request) {
+                        $q->where('tazkira_number', $request->tazkira_number)
+                          ->orWhere('guardian_tazkira', $request->tazkira_number);
+                    })
+                    ->get();
+                foreach ($tazkiraMatches as $match) {
+                    $results[] = [
+                        'id' => $match->id,
+                        'full_name' => $match->full_name ?? null,
+                        'father_name' => $match->father_name ?? null,
+                        'tazkira_number' => $match->tazkira_number ?? null,
+                        'card_number' => $match->card_number ?? null,
+                        'admission_no' => $match->admission_no ?? null,
+                        'orig_province' => $match->orig_province ?? null,
+                        'admission_year' => $match->admission_year ?? null,
+                        'created_at' => $match->created_at,
+                        'match_reason' => 'Tazkira number matches',
+                    ];
+                }
+            }
+
+            // Card number match
+            if ($request->card_number) {
+                $cardMatches = (clone $baseQuery)
+                    ->where('card_number', $request->card_number)
+                    ->get();
+                foreach ($cardMatches as $match) {
+                    $results[] = [
+                        'id' => $match->id,
+                        'full_name' => $match->full_name ?? null,
+                        'father_name' => $match->father_name ?? null,
+                        'tazkira_number' => $match->tazkira_number ?? null,
+                        'card_number' => $match->card_number ?? null,
+                        'admission_no' => $match->admission_no ?? null,
+                        'orig_province' => $match->orig_province ?? null,
+                        'admission_year' => $match->admission_year ?? null,
+                        'created_at' => $match->created_at,
+                        'match_reason' => 'Card number matches',
+                    ];
+                }
+            }
+
+            // Admission number match
+            if ($request->admission_no) {
+                $admissionMatches = (clone $baseQuery)
+                    ->where('admission_no', $request->admission_no)
+                    ->get();
+                foreach ($admissionMatches as $match) {
+                    $results[] = [
+                        'id' => $match->id,
+                        'full_name' => $match->full_name ?? null,
+                        'father_name' => $match->father_name ?? null,
+                        'tazkira_number' => $match->tazkira_number ?? null,
+                        'card_number' => $match->card_number ?? null,
+                        'admission_no' => $match->admission_no ?? null,
+                        'orig_province' => $match->orig_province ?? null,
+                        'admission_year' => $match->admission_year ?? null,
+                        'created_at' => $match->created_at,
+                        'match_reason' => 'Admission number matches',
+                    ];
+                }
+            }
+
+            // Partial: name LIKE and father_name LIKE
+            $partialMatches = (clone $baseQuery)
+                ->where('full_name', 'ilike', "%{$request->full_name}%")
+                ->where('father_name', 'ilike', "%{$request->father_name}%")
                 ->get();
-            foreach ($cardMatches as $match) {
+            foreach ($partialMatches as $match) {
                 $results[] = [
                     'id' => $match->id,
-                    'full_name' => $match->full_name,
-                    'father_name' => $match->father_name,
-                    'tazkira_number' => $match->tazkira_number,
-                    'card_number' => $match->card_number,
-                    'admission_no' => $match->admission_no,
-                    'orig_province' => $match->orig_province,
-                    'admission_year' => $match->admission_year,
+                    'full_name' => $match->full_name ?? null,
+                    'father_name' => $match->father_name ?? null,
+                    'tazkira_number' => $match->tazkira_number ?? null,
+                    'card_number' => $match->card_number ?? null,
+                    'admission_no' => $match->admission_no ?? null,
+                    'orig_province' => $match->orig_province ?? null,
+                    'admission_year' => $match->admission_year ?? null,
                     'created_at' => $match->created_at,
-                    'match_reason' => 'Card number matches',
+                    'match_reason' => 'Partial name and father name match',
                 ];
             }
-        }
 
-        // Admission number match
-        if ($request->admission_no) {
-            $admissionMatches = (clone $baseQuery)
-                ->where('admission_no', $request->admission_no)
-                ->get();
-            foreach ($admissionMatches as $match) {
-                $results[] = [
-                    'id' => $match->id,
-                    'full_name' => $match->full_name,
-                    'father_name' => $match->father_name,
-                    'tazkira_number' => $match->tazkira_number,
-                    'card_number' => $match->card_number,
-                    'admission_no' => $match->admission_no,
-                    'orig_province' => $match->orig_province,
-                    'admission_year' => $match->admission_year,
-                    'created_at' => $match->created_at,
-                    'match_reason' => 'Admission number matches',
-                ];
+            // Deduplicate by id + reason
+            $seen = [];
+            $unique = [];
+            foreach ($results as $rec) {
+                try {
+                    $key = "{$rec['id']}:{$rec['match_reason']}";
+                    if (!in_array($key, $seen)) {
+                        $seen[] = $key;
+                        $unique[] = $rec;
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('[StudentController::checkDuplicates] Error processing result', [
+                        'result' => $rec,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Continue processing other results
+                }
             }
-        }
 
-        // Partial: name LIKE and father_name LIKE
-        $partialMatches = (clone $baseQuery)
-            ->where('full_name', 'ilike', "%{$request->full_name}%")
-            ->where('father_name', 'ilike', "%{$request->father_name}%")
-            ->get();
-        foreach ($partialMatches as $match) {
-            $results[] = [
-                'id' => $match->id,
-                'full_name' => $match->full_name,
-                'father_name' => $match->father_name,
-                'tazkira_number' => $match->tazkira_number,
-                'card_number' => $match->card_number,
-                'admission_no' => $match->admission_no,
-                'orig_province' => $match->orig_province,
-                'admission_year' => $match->admission_year,
-                'created_at' => $match->created_at,
-                'match_reason' => 'Partial name and father name match',
-            ];
+            return response()->json(array_slice($unique, 0, 25));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('[StudentController::checkDuplicates] Validation error', ['errors' => $e->errors()]);
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('[StudentController::checkDuplicates] Unexpected error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+            return response()->json([
+                'error' => 'An error occurred while checking for duplicate students',
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
         }
-
-        // Deduplicate by id + reason
-        $seen = [];
-        $unique = [];
-        foreach ($results as $rec) {
-            $key = "{$rec['id']}:{$rec['match_reason']}";
-            if (!in_array($key, $seen)) {
-                $seen[] = $key;
-                $unique[] = $rec;
-            }
-        }
-
-        return response()->json(array_slice($unique, 0, 25));
     }
 }
 

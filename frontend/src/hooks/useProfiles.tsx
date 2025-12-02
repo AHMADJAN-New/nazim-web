@@ -3,25 +3,12 @@ import { profilesApi } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import type * as ProfileApi from '@/types/api/profile';
+import type { Profile } from '@/types/domain/profile';
+import { mapProfileApiToDomain, mapProfileDomainToUpdate } from '@/mappers/profileMapper';
 
-// Profile type matching Laravel API response
-export interface Profile {
-  id: string;
-  organization_id: string | null;
-  role: string | null;
-  full_name: string | null;
-  email: string | null;
-  phone: string | null;
-  avatar_url: string | null;
-  is_active: boolean;
-  default_school_id: string | null;
-  created_at?: string;
-  updated_at?: string;
-  deleted_at?: string | null;
-}
-
-export type ProfileInsert = Omit<Profile, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
-export type ProfileUpdate = Partial<ProfileInsert>;
+// Re-export domain types for convenience
+export type { Profile } from '@/types/domain/profile';
 
 // DEPRECATED: Use useAuth() instead
 // This hook is kept for backward compatibility but now uses AuthContext
@@ -40,7 +27,7 @@ export const useProfiles = (organizationId?: string) => {
   const { user, profile: currentProfile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery({
+  return useQuery<Profile[]>({
     queryKey: ['profiles', organizationId, orgIds.join(',')],
     queryFn: async () => {
       if (!user || !currentProfile || orgsLoading) return [];
@@ -54,13 +41,17 @@ export const useProfiles = (organizationId?: string) => {
 
       // Use Laravel API - backend handles organization filtering
       const params = organizationId ? { organization_id: organizationId } : undefined;
-      const profiles = await profilesApi.list(params);
+      const apiProfiles = await profilesApi.list(params);
 
-      return (profiles as Profile[]).sort((a, b) => {
+      // Sort by created_at (descending)
+      const sorted = (apiProfiles as ProfileApi.Profile[]).sort((a, b) => {
         const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
         const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
         return bDate - aDate; // Descending order
       });
+
+      // Map API → Domain
+      return sorted.map(mapProfileApiToDomain);
     },
     enabled: !!user && !!currentProfile && !orgsLoading,
   });
@@ -82,37 +73,43 @@ export const useUpdateProfile = () => {
       const isOwnProfile = id === user.id;
       const isSuperAdmin = currentProfile.role === 'super_admin';
 
-      const updateData: any = {};
+      // Convert Domain → API for update payload
+      const domainUpdate: Partial<Profile> = {};
       
       if (isOwnProfile) {
-        // Users can update: full_name, phone, avatar_url, default_school_id
-        if (updates.full_name !== undefined) updateData.full_name = updates.full_name;
-        if (updates.phone !== undefined) updateData.phone = updates.phone;
-        if (updates.avatar_url !== undefined) updateData.avatar_url = updates.avatar_url;
-        if (updates.default_school_id !== undefined) updateData.default_school_id = updates.default_school_id;
+        // Users can update: fullName, phone, avatarUrl, defaultSchoolId
+        if (updates.fullName !== undefined) domainUpdate.fullName = updates.fullName;
+        if (updates.phone !== undefined) domainUpdate.phone = updates.phone;
+        if (updates.avatarUrl !== undefined) domainUpdate.avatarUrl = updates.avatarUrl;
+        if (updates.defaultSchoolId !== undefined) domainUpdate.defaultSchoolId = updates.defaultSchoolId;
       } else {
-        // Admins can update: full_name, email, phone, avatar_url, role, is_active, organization_id, default_school_id
-        if (updates.full_name !== undefined) updateData.full_name = updates.full_name;
-        if (updates.email !== undefined) updateData.email = updates.email;
-        if (updates.phone !== undefined) updateData.phone = updates.phone;
-        if (updates.avatar_url !== undefined) updateData.avatar_url = updates.avatar_url;
-        if (updates.role !== undefined) updateData.role = updates.role;
-        if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
-        if (updates.default_school_id !== undefined) updateData.default_school_id = updates.default_school_id;
+        // Admins can update: fullName, email, phone, avatarUrl, role, isActive, organizationId, defaultSchoolId
+        if (updates.fullName !== undefined) domainUpdate.fullName = updates.fullName;
+        if (updates.email !== undefined) domainUpdate.email = updates.email;
+        if (updates.phone !== undefined) domainUpdate.phone = updates.phone;
+        if (updates.avatarUrl !== undefined) domainUpdate.avatarUrl = updates.avatarUrl;
+        if (updates.role !== undefined) domainUpdate.role = updates.role;
+        if (updates.isActive !== undefined) domainUpdate.isActive = updates.isActive;
+        if (updates.defaultSchoolId !== undefined) domainUpdate.defaultSchoolId = updates.defaultSchoolId;
         
-        // Only super admin can change organization_id
-        if (updates.organization_id !== undefined && isSuperAdmin) {
+        // Only super admin can change organizationId
+        if (updates.organizationId !== undefined && isSuperAdmin) {
           // Validate organization is accessible
-          if (updates.organization_id && !orgIds.includes(updates.organization_id)) {
+          if (updates.organizationId && !orgIds.includes(updates.organizationId)) {
             throw new Error('Cannot assign profile to a non-accessible organization');
           }
-          updateData.organization_id = updates.organization_id;
+          domainUpdate.organizationId = updates.organizationId;
         }
       }
 
+      // Map Domain → API
+      const updateData = mapProfileDomainToUpdate(domainUpdate);
+
       // Use Laravel API - backend handles authorization
-      const updatedProfile = await profilesApi.update(id, updateData);
-      return updatedProfile as Profile;
+      const apiProfile = await profilesApi.update(id, updateData);
+      
+      // Map API → Domain
+      return mapProfileApiToDomain(apiProfile as ProfileApi.Profile);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['profile', data.id] });

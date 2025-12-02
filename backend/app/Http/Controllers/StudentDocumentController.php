@@ -43,15 +43,6 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        try {
-            if (!$user->hasPermissionTo('students.read')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.read: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
-        }
-
         // Check student exists and user has access
         $student = Student::whereNull('deleted_at')->find($studentId);
         if (!$student) {
@@ -64,13 +55,35 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $documents = StudentDocument::with(['uploadedBy'])
-            ->where('student_id', $studentId)
+        $documents = StudentDocument::where('student_id', $studentId)
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return response()->json($documents);
+        // Enrich with uploaded_by profile data manually
+        $uploadedByIds = $documents->pluck('uploaded_by')->filter()->unique()->toArray();
+        $profiles = [];
+        if (!empty($uploadedByIds)) {
+            $profiles = DB::table('profiles')
+                ->whereIn('id', $uploadedByIds)
+                ->select('id', 'full_name', 'email')
+                ->get()
+                ->keyBy('id');
+        }
+
+        $enrichedDocuments = $documents->map(function ($doc) use ($profiles) {
+            $uploadedByProfile = $profiles->get($doc->uploaded_by);
+            return [
+                ...$doc->toArray(),
+                'uploaded_by_profile' => $uploadedByProfile ? [
+                    'id' => $uploadedByProfile->id,
+                    'full_name' => $uploadedByProfile->full_name,
+                    'email' => $uploadedByProfile->email,
+                ] : null,
+            ];
+        });
+
+        return response()->json($enrichedDocuments);
     }
 
     /**
@@ -83,15 +96,6 @@ class StudentDocumentController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
-        }
-
-        try {
-            if (!$user->hasPermissionTo('students.manage_documents')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.manage_documents: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
         }
 
         // Check student exists and user has access
@@ -128,9 +132,20 @@ class StudentDocumentController extends Controller
             'uploaded_by' => $user->id,
         ]);
 
-        $document->load(['uploadedBy']);
+        // Enrich with uploaded_by profile data
+        $uploadedByProfile = DB::table('profiles')
+            ->where('id', $user->id)
+            ->select('id', 'full_name', 'email')
+            ->first();
 
-        return response()->json($document, 201);
+        $documentArray = $document->toArray();
+        $documentArray['uploaded_by_profile'] = $uploadedByProfile ? [
+            'id' => $uploadedByProfile->id,
+            'full_name' => $uploadedByProfile->full_name,
+            'email' => $uploadedByProfile->email,
+        ] : null;
+
+        return response()->json($documentArray, 201);
     }
 
     /**
@@ -143,15 +158,6 @@ class StudentDocumentController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
-        }
-
-        try {
-            if (!$user->hasPermissionTo('students.manage_documents')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.manage_documents: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
         }
 
         $document = StudentDocument::whereNull('deleted_at')->find($id);
@@ -170,6 +176,42 @@ class StudentDocumentController extends Controller
         $document->delete();
 
         return response()->json(['message' => 'Document deleted successfully']);
+    }
+
+    /**
+     * Download/view the specified document
+     */
+    public function download(string $id)
+    {
+        $user = request()->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        $document = StudentDocument::whereNull('deleted_at')->find($id);
+
+        if (!$document) {
+            return response()->json(['error' => 'Document not found'], 404);
+        }
+
+        $orgIds = $this->getAccessibleOrgIds($profile);
+
+        if (!in_array($document->organization_id, $orgIds)) {
+            return response()->json(['error' => 'Cannot access document from different organization'], 403);
+        }
+
+        if (!Storage::disk('local')->exists($document->file_path)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        $file = Storage::disk('local')->get($document->file_path);
+        $mimeType = $document->mime_type ?? Storage::disk('local')->mimeType($document->file_path);
+
+        return response($file, 200)
+            ->header('Content-Type', $mimeType)
+            ->header('Content-Disposition', 'inline; filename="' . $document->file_name . '"');
     }
 }
 

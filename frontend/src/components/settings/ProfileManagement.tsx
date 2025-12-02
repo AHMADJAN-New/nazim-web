@@ -75,13 +75,15 @@ export function ProfileManagement() {
       : currentProfile;
     
     if (profile) {
+      // Handle both API format (currentProfile from useAuth) and domain format (profiles from useProfiles)
+      const isDomainFormat = profileId !== undefined; // profiles from useProfiles are domain format
       reset({
-        full_name: profile.full_name || '',
+        full_name: isDomainFormat ? (profile as any).fullName || '' : (profile as any).full_name || '',
         email: profile.email || '',
         phone: profile.phone || '',
         role: profile.role,
-        organization_id: profile.organization_id || null,
-        is_active: profile.is_active,
+        organization_id: isDomainFormat ? (profile as any).organizationId || null : (profile as any).organization_id || null,
+        is_active: isDomainFormat ? (profile as any).isActive : (profile as any).is_active,
       });
       setSelectedProfileId(profile.id);
     }
@@ -96,8 +98,17 @@ export function ProfileManagement() {
 
   const onSubmit = (data: ProfileFormData) => {
     if (selectedProfileId) {
+      // Map form data (snake_case) to domain types (camelCase)
       updateProfile.mutate(
-        { id: selectedProfileId, ...data },
+        { 
+          id: selectedProfileId,
+          fullName: data.full_name,
+          email: data.email,
+          phone: data.phone,
+          role: data.role,
+          organizationId: data.organization_id || null,
+          isActive: data.is_active,
+        },
         {
           onSuccess: () => {
             handleCloseDialog();
@@ -204,11 +215,12 @@ export function ProfileManagement() {
                       </TableRow>
                     ) : (
                       profiles?.map((profile) => {
-                        const org = isSuperAdmin && organizations?.find(o => o.id === profile.organization_id);
+                        // profiles from useProfiles are domain format (camelCase)
+                        const org = isSuperAdmin && organizations?.find(o => o.id === profile.organizationId);
                         return (
                           <TableRow key={profile.id}>
                             <TableCell className="font-medium">
-                              {profile.full_name || 'No name'}
+                              {profile.fullName || 'No name'}
                             </TableCell>
                             <TableCell>{profile.email || 'No email'}</TableCell>
                             <TableCell>
@@ -218,16 +230,16 @@ export function ProfileManagement() {
                             </TableCell>
                             {isSuperAdmin && (
                               <TableCell>
-                                {org?.name || (profile.organization_id === null ? 'Super Admin' : 'Unknown')}
+                                {org?.name || (profile.organizationId === null ? 'Super Admin' : 'Unknown')}
                               </TableCell>
                             )}
                             <TableCell>
                               <span className={`text-xs px-2 py-1 rounded ${
-                                profile.is_active 
+                                profile.isActive 
                                   ? 'bg-green-100 text-green-800' 
                                   : 'bg-red-100 text-red-800'
                               }`}>
-                                {profile.is_active ? 'Active' : 'Inactive'}
+                                {profile.isActive ? 'Active' : 'Inactive'}
                               </span>
                             </TableCell>
                             <TableCell className="text-right">

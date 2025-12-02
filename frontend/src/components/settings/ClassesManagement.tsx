@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useClasses, useClassAcademicYears, useClassHistory, useCreateClass, useUpdateClass, useDeleteClass, useAssignClassToYear, useUpdateClassYearInstance, useRemoveClassFromYear, useCopyClassesBetweenYears, useBulkAssignClassSections, type Class, type ClassAcademicYear } from '@/hooks/useClasses';
+import { useClasses, useClassAcademicYears, useClassHistory, useCreateClass, useUpdateClass, useDeleteClass, useAssignClassToYear, useUpdateClassYearInstance, useRemoveClassFromYear, useCopyClassesBetweenYears, useBulkAssignClassSections } from '@/hooks/useClasses';
+import type { Class, ClassAcademicYear } from '@/types/domain/class';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -198,10 +199,11 @@ export function ClassesManagement() {
 
     const filteredClasses = useMemo(() => {
         if (!classes) return [];
+        const query = (searchQuery || '').toLowerCase();
         let filtered = classes.filter((cls) =>
-            cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            cls.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (cls.description && cls.description.toLowerCase().includes(searchQuery.toLowerCase()))
+            cls.name?.toLowerCase().includes(query) ||
+            cls.code?.toLowerCase().includes(query) ||
+            (cls.description && cls.description.toLowerCase().includes(query))
         );
 
         if (gradeLevelFilter !== 'all') {
@@ -219,10 +221,10 @@ export function ClassesManagement() {
                 resetClass({
                     name: cls.name,
                     code: cls.code,
-                    grade_level: cls.grade_level,
+                    grade_level: cls.gradeLevel,
                     description: cls.description || '',
                     default_capacity: cls.default_capacity,
-                    is_active: cls.is_active,
+                    is_active: cls.isActive,
                 });
                 setSelectedClass(classId);
             }
@@ -255,17 +257,18 @@ export function ClassesManagement() {
 
     const onSubmitClass = (data: ClassFormData) => {
         if (selectedClass) {
+            // Convert form data to domain model
             const updateData: Partial<Class> & { id: string } = {
                 id: selectedClass,
                 name: data.name,
                 code: data.code,
-                default_capacity: data.default_capacity,
-                is_active: data.is_active,
+                defaultCapacity: data.default_capacity,
+                isActive: data.is_active,
             };
-            if (data.grade_level !== undefined) updateData.grade_level = data.grade_level;
+            if (data.grade_level !== undefined) updateData.gradeLevel = data.grade_level;
             if (data.description !== undefined) updateData.description = data.description;
             if (isSuperAdmin) {
-                updateData.organization_id = selectedOrganizationId || profile?.organization_id || null;
+                updateData.organizationId = selectedOrganizationId || profile?.organization_id || null;
             }
             updateClass.mutate(updateData, {
                 onSuccess: () => {
@@ -273,14 +276,15 @@ export function ClassesManagement() {
                 },
             });
         } else {
+            // Convert form data to domain model
             createClass.mutate({
                 name: data.name,
                 code: data.code,
-                grade_level: data.grade_level,
+                gradeLevel: data.grade_level,
                 description: data.description,
-                default_capacity: data.default_capacity,
-                is_active: data.is_active,
-                organization_id: selectedOrganizationId || profile?.organization_id || null,
+                defaultCapacity: data.default_capacity,
+                isActive: data.is_active,
+                organizationId: selectedOrganizationId || profile?.organization_id || null,
             }, {
                 onSuccess: () => {
                     handleCloseClassDialog();
@@ -342,12 +346,13 @@ export function ClassesManagement() {
                 .map(s => s.trim())
                 .filter(Boolean);
 
+            // Convert form data to domain model
             bulkAssignSections.mutate({
-                class_id: data.class_id,
-                academic_year_id: data.academic_year_id,
+                classId: data.class_id,
+                academicYearId: data.academic_year_id,
                 sections,
-                default_room_id: data.default_room_id,
-                default_capacity: data.default_capacity,
+                defaultRoomId: data.default_room_id,
+                defaultCapacity: data.default_capacity,
             }, {
                 onSuccess: () => {
                     handleCloseBulkSectionsDialog();
@@ -370,11 +375,12 @@ export function ClassesManagement() {
 
     const onSubmitAssign = (data: AssignClassFormData) => {
         if (data.class_id && data.academic_year_id) {
+            // Convert form data to domain model
             assignClass.mutate({
-                class_id: data.class_id,
-                academic_year_id: data.academic_year_id,
-                section_name: data.section_name,
-                room_id: data.room_id,
+                classId: data.class_id,
+                academicYearId: data.academic_year_id,
+                sectionName: data.section_name,
+                roomId: data.room_id,
                 capacity: data.capacity,
                 notes: data.notes,
             }, {
@@ -409,11 +415,12 @@ export function ClassesManagement() {
 
     const onSubmitCopy = (data: CopyClassesFormData) => {
         if (data.from_academic_year_id && data.to_academic_year_id && data.class_instance_ids.length > 0) {
+            // Convert form data to domain model
             copyClasses.mutate({
-                from_academic_year_id: data.from_academic_year_id,
-                to_academic_year_id: data.to_academic_year_id,
-                class_instance_ids: data.class_instance_ids,
-                copy_assignments: data.copy_assignments || false,
+                fromAcademicYearId: data.from_academic_year_id,
+                toAcademicYearId: data.to_academic_year_id,
+                classInstanceIds: data.class_instance_ids,
+                copyAssignments: data.copy_assignments || false,
             }, {
                 onSuccess: () => {
                     handleCloseCopyDialog();
@@ -456,10 +463,10 @@ export function ClassesManagement() {
 
     const handleEditInstance = (instance: ClassAcademicYear) => {
         resetAssign({
-            class_id: instance.class_id,
-            academic_year_id: instance.academic_year_id,
-            section_name: instance.section_name || null,
-            room_id: instance.room_id || null,
+            class_id: instance.classId,
+            academic_year_id: instance.academicYearId,
+            section_name: instance.sectionName || null,
+            room_id: instance.roomId || null,
             capacity: instance.capacity || null,
             notes: instance.notes || null,
         });
@@ -604,17 +611,17 @@ export function ClassesManagement() {
                                                 <TableRow key={cls.id}>
                                                     <TableCell className="font-medium">{cls.name}</TableCell>
                                                     <TableCell>{cls.code}</TableCell>
-                                                    <TableCell>{cls.grade_level !== null ? `Grade ${cls.grade_level}` : '-'}</TableCell>
+                                                    <TableCell>{cls.gradeLevel !== null ? `Grade ${cls.gradeLevel}` : '-'}</TableCell>
                                                     <TableCell>{cls.default_capacity}</TableCell>
                                                     <TableCell>
-                                                        <Badge variant={cls.is_active ? 'default' : 'secondary'}>
-                                                            {cls.is_active ? t('academic.classes.active') : t('academic.classes.inactive')}
+                                                        <Badge variant={cls.isActive ? 'default' : 'secondary'}>
+                                                            {cls.isActive ? t('academic.classes.active') : t('academic.classes.inactive')}
                                                         </Badge>
                                                     </TableCell>
                                                     {isSuperAdmin && (
                                                         <TableCell>
                                                             <Badge variant="outline">
-                                                                {cls.organization_id === null
+                                                                {cls.organizationId === null
                                                                     ? t('academic.classes.globalType')
                                                                     : 'Organization'}
                                                             </Badge>
@@ -634,7 +641,7 @@ export function ClassesManagement() {
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 onClick={() => handleOpenClassDialog(cls.id)}
-                                                                disabled={!hasUpdatePermission || (cls.organization_id === null && !isSuperAdmin)}
+                                                                disabled={!hasUpdatePermission || (cls.organizationId === null && !isSuperAdmin)}
                                                             >
                                                                 <Pencil className="h-4 w-4" />
                                                             </Button>
@@ -642,7 +649,7 @@ export function ClassesManagement() {
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 onClick={() => handleDeleteClick(cls.id)}
-                                                                disabled={!hasDeletePermission || (cls.organization_id === null && !isSuperAdmin)}
+                                                                disabled={!hasDeletePermission || (cls.organizationId === null && !isSuperAdmin)}
                                                             >
                                                                 <Trash2 className="h-4 w-4 text-destructive" />
                                                             </Button>
@@ -723,15 +730,15 @@ export function ClassesManagement() {
                                                                 {instance.class?.name || 'Unknown'}
                                                             </TableCell>
                                                             <TableCell>
-                                                                {instance.section_name ? (
-                                                                    <Badge variant="outline">{instance.section_name}</Badge>
+                                                                {instance.sectionName ? (
+                                                                    <Badge variant="outline">{instance.sectionName}</Badge>
                                                                 ) : (
                                                                     <span className="text-muted-foreground text-sm">-</span>
                                                                 )}
                                                             </TableCell>
-                                                            <TableCell>{instance.room?.room_number || '-'}</TableCell>
-                                                            <TableCell>{instance.capacity || instance.class?.default_capacity || '-'}</TableCell>
-                                                            <TableCell>{instance.current_student_count}</TableCell>
+                                                            <TableCell>{instance.room?.roomNumber || '-'}</TableCell>
+                                                            <TableCell>{instance.capacity || instance.class?.defaultCapacity || '-'}</TableCell>
+                                                            <TableCell>{instance.currentStudentCount}</TableCell>
                                                             <TableCell className="text-right">
                                                                 <div className="flex justify-end gap-2">
                                                                     <Button
@@ -829,15 +836,15 @@ export function ClassesManagement() {
                                             <TableRow key={instance.id}>
                                                 <TableCell>{instance.academic_year?.name || '-'}</TableCell>
                                                 <TableCell>
-                                                    {instance.section_name ? (
-                                                        <Badge variant="outline">{instance.section_name}</Badge>
+                                                    {instance.sectionName ? (
+                                                        <Badge variant="outline">{instance.sectionName}</Badge>
                                                     ) : (
                                                         <span className="text-muted-foreground text-sm">-</span>
                                                     )}
                                                 </TableCell>
-                                                <TableCell>{instance.teacher?.full_name || '-'}</TableCell>
-                                                <TableCell>{instance.room?.room_number || '-'}</TableCell>
-                                                <TableCell>{instance.current_student_count}</TableCell>
+                                                <TableCell>{instance.teacher?.fullName || '-'}</TableCell>
+                                                <TableCell>{instance.room?.roomNumber || '-'}</TableCell>
+                                                <TableCell>{instance.currentStudentCount}</TableCell>
                                             </TableRow>
                                         ))
                                     )}
@@ -1014,7 +1021,7 @@ export function ClassesManagement() {
                                                 <SelectValue placeholder={t('academic.classes.selectClass')} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {classes?.filter(c => c.is_active).map((cls) => (
+                                                {classes?.filter(c => c.isActive).map((cls) => (
                                                     <SelectItem key={cls.id} value={cls.id}>
                                                         {cls.name} ({cls.code})
                                                     </SelectItem>
@@ -1166,7 +1173,7 @@ export function ClassesManagement() {
                                                 <SelectValue placeholder={t('academic.classes.selectClass')} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {classes?.filter(c => c.is_active).map((cls) => (
+                                                {classes?.filter(c => c.isActive).map((cls) => (
                                                     <SelectItem key={cls.id} value={cls.id}>
                                                         {cls.name} ({cls.code})
                                                     </SelectItem>

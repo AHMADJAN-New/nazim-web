@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useStaffTypes, useCreateStaffType, useUpdateStaffType, useDeleteStaffType, type StaffType } from '@/hooks/useStaff';
+import { useStaffTypes, useCreateStaffType, useUpdateStaffType, useDeleteStaffType } from '@/hooks/useStaff';
+import type { StaffType } from '@/types/domain/staff';
 import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useOrganizations } from '@/hooks/useOrganizations';
@@ -92,10 +93,11 @@ export function StaffTypesManagement() {
 
     const filteredStaffTypes = useMemo(() => {
         if (!staffTypes) return [];
+        const query = (searchQuery || '').toLowerCase();
         return staffTypes.filter((type) =>
-            type.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            type.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (type.description && type.description.toLowerCase().includes(searchQuery.toLowerCase()))
+            type.name?.toLowerCase().includes(query) ||
+            type.code?.toLowerCase().includes(query) ||
+            (type.description && type.description.toLowerCase().includes(query))
         );
     }, [staffTypes, searchQuery]);
 
@@ -107,8 +109,8 @@ export function StaffTypesManagement() {
                     name: type.name,
                     code: type.code,
                     description: type.description || '',
-                    display_order: type.display_order,
-                    is_active: type.is_active,
+                    display_order: type.displayOrder,
+                    is_active: type.isActive,
                 });
                 setSelectedStaffType(staffTypeId);
             }
@@ -139,14 +141,15 @@ export function StaffTypesManagement() {
 
     const onSubmit = (data: StaffTypeFormData) => {
         if (selectedStaffType) {
+            // Convert form data to domain model
             updateStaffType.mutate(
                 {
                     id: selectedStaffType,
                     name: data.name,
                     code: data.code,
                     description: data.description || null,
-                    display_order: data.display_order,
-                    is_active: data.is_active,
+                    displayOrder: data.display_order,
+                    isActive: data.is_active,
                 },
                 {
                     onSuccess: () => {
@@ -155,12 +158,13 @@ export function StaffTypesManagement() {
                 }
             );
         } else {
+            // Convert form data to domain model
             createStaffType.mutate({
                 name: data.name,
                 code: data.code,
                 description: data.description || null,
-                display_order: data.display_order,
-                organization_id: selectedOrganizationId || profile?.organization_id || null,
+                displayOrder: data.display_order,
+                organizationId: selectedOrganizationId || profile?.organization_id || null,
             }, {
                 onSuccess: () => {
                     handleCloseDialog();
@@ -287,16 +291,16 @@ export function StaffTypesManagement() {
                                             <TableCell className="max-w-md truncate">
                                                 {type.description || '-'}
                                             </TableCell>
-                                            <TableCell>{type.display_order}</TableCell>
+                                            <TableCell>{type.displayOrder}</TableCell>
                                             <TableCell>
-                                                <Badge variant={type.is_active ? 'default' : 'secondary'}>
-                                                    {type.is_active ? 'Active' : 'Inactive'}
+                                                <Badge variant={type.isActive ? 'default' : 'secondary'}>
+                                                    {type.isActive ? 'Active' : 'Inactive'}
                                                 </Badge>
                                             </TableCell>
                                             {isSuperAdmin && (
                                                 <TableCell>
                                                     <Badge variant="outline">
-                                                        {type.organization_id === null
+                                                        {type.organizationId === null
                                                             ? 'Global'
                                                             : 'Organization'}
                                                     </Badge>
@@ -308,7 +312,7 @@ export function StaffTypesManagement() {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => handleOpenDialog(type.id)}
-                                                        disabled={!hasUpdatePermission || (type.organization_id === null && !isSuperAdmin)}
+                                                        disabled={!hasUpdatePermission || (type.organizationId === null && !isSuperAdmin)}
                                                     >
                                                         <Pencil className="h-4 w-4" />
                                                     </Button>
@@ -316,7 +320,7 @@ export function StaffTypesManagement() {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => handleDeleteClick(type.id)}
-                                                        disabled={!hasDeletePermission || (type.organization_id === null && !isSuperAdmin)}
+                                                        disabled={!hasDeletePermission || (type.organizationId === null && !isSuperAdmin)}
                                                     >
                                                         <Trash2 className="h-4 w-4 text-destructive" />
                                                     </Button>

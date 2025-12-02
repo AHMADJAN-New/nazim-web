@@ -118,9 +118,10 @@ export function ScheduleSlotsManagement() {
     const filteredSlots = useMemo(() => {
         if (!slots) return [];
         return slots.filter((slot) => {
+            const query = (searchQuery || '').toLowerCase();
             const matchesSearch =
-                slot.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                slot.code.toLowerCase().includes(searchQuery.toLowerCase());
+                slot.name?.toLowerCase().includes(query) ||
+                slot.code?.toLowerCase().includes(query);
 
             // Filter by school if selected
             let matchesSchool = true;

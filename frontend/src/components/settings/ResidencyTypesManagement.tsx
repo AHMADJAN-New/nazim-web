@@ -90,10 +90,11 @@ export function ResidencyTypesManagement() {
 
   const filteredResidencyTypes = useMemo(() => {
     if (!residencyTypes) return [];
+    const query = (searchQuery || '').toLowerCase();
     return residencyTypes.filter((type) =>
-      type.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      type.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (type.description && type.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      type.name?.toLowerCase().includes(query) ||
+      type.code?.toLowerCase().includes(query) ||
+      (type.description && type.description.toLowerCase().includes(query))
     );
   }, [residencyTypes, searchQuery]);
 

@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useIsSuperAdmin } from "@/hooks/useProfiles";
 import { useCurrentOrganization } from "@/hooks/useOrganizations";
 import { useHasPermission, useUserPermissions } from "@/hooks/usePermissions";
-import { supabase } from "@/integrations/supabase/client";
 import type { UserRole } from "@/types/auth";
 import {
   Users,
@@ -489,20 +488,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
     // Fetch context asynchronously (non-blocking)
     const fetchContext = async () => {
       try {
-        // Use type assertion since user_navigation_context table may not exist in types
-        const { data, error } = await (supabase as any)
-          .from('user_navigation_context')
-          .select('recent_tasks')
-          .eq('user_id', user.id)
-          .single();
-
-        if (error) {
-          // Silently fail - don't block UI (table might not exist)
-          return;
-        }
-
-        const tasks: DbRecentTask[] = (data?.recent_tasks as unknown as DbRecentTask[]) || [];
-
+        // TODO: Migrate to Laravel API endpoint for user navigation context
+        // For now, return empty array - this feature needs Laravel API implementation
+        const tasks: DbRecentTask[] = [];
         const filteredTasks = tasks.filter(
           task => (!task.role || task.role === role) && (!task.context || task.context === currentModule)
         );

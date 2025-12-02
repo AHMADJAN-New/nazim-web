@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,21 +19,17 @@ export default function ResetPasswordPage() {
   });
 
   useEffect(() => {
-    // Check if we have the required tokens from the URL
-    const access_token = searchParams.get('access_token');
-    const refresh_token = searchParams.get('refresh_token');
+    // Check if we have the required token from the URL
+    const token = searchParams.get('token');
     
-    if (!access_token || !refresh_token) {
+    if (!token) {
       toast.error('Invalid reset link. Please request a new password reset.');
       navigate('/auth');
       return;
     }
 
-    // Set the session with the tokens
-    supabase.auth.setSession({
-      access_token,
-      refresh_token
-    });
+    // TODO: Validate token with Laravel API
+    // Token validation should be done when submitting the form
   }, [searchParams, navigate]);
 
   const validatePassword = (password: string): string[] => {
@@ -75,21 +70,17 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: formData.password
-      });
+      const token = searchParams.get('token');
+      if (!token) {
+        throw new Error('Reset token is missing');
+      }
 
-      if (error) throw error;
-
-      // Log the password reset completion
-      await supabase.functions.invoke('log-password-event', {
-        body: {
-          event_type: 'password_reset_completed'
-        }
-      });
-
-      toast.success('Password reset successfully! You can now sign in with your new password.');
-      navigate('/auth');
+      // TODO: Implement Laravel API endpoint for password reset
+      // await authApi.resetPassword(token, formData.password);
+      
+      toast.error('Password reset endpoint not yet implemented in Laravel API');
+      // toast.success('Password reset successfully! You can now sign in with your new password.');
+      // navigate('/auth');
     } catch (error: any) {
       toast.error(error.message || 'Failed to reset password');
     } finally {

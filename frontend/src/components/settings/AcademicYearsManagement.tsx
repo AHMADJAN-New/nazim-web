@@ -123,9 +123,10 @@ export function AcademicYearsManagement() {
 
   const filteredAcademicYears = useMemo(() => {
     if (!academicYears) return [];
+    const query = (searchQuery || '').toLowerCase();
     let filtered = academicYears.filter((year) =>
-      year.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (year.description && year.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      year.name?.toLowerCase().includes(query) ||
+      (year.description && year.description.toLowerCase().includes(query))
     );
     
     if (statusFilter !== 'all') {
@@ -139,10 +140,14 @@ export function AcademicYearsManagement() {
     if (academicYearId) {
       const year = academicYears?.find((y) => y.id === academicYearId);
       if (year) {
+        // Safely extract date part, handling undefined/null values
+        const startDate = year.start_date ? (year.start_date.includes('T') ? year.start_date.split('T')[0] : year.start_date) : '';
+        const endDate = year.end_date ? (year.end_date.includes('T') ? year.end_date.split('T')[0] : year.end_date) : '';
+        
         reset({
-          name: year.name,
-          start_date: year.start_date.split('T')[0], // Extract date part only
-          end_date: year.end_date.split('T')[0],
+          name: year.name || '',
+          start_date: startDate,
+          end_date: endDate,
           description: year.description || '',
           status: year.status as 'active' | 'archived' | 'planned',
           is_current: year.is_current,

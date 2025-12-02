@@ -4,13 +4,11 @@ import App from './App.tsx'
 import './index.css'
 // DISABLED: Console replacer causes infinite logging loop
 // import './lib/console-replacer' // Initialize logging system
-import { initializeSecurity } from './lib/security' // Initialize security
-import { initializePerformanceMonitoring } from './lib/performance' // Initialize performance monitoring
-import { initializeAccessibility } from './lib/accessibility' // Initialize accessibility
 import { LanguageProvider } from '@/hooks/useLanguage';
+import { RootBootstrap } from './RootBootstrap';
 
 // Unregister any existing service workers (PWA removed for performance)
-if ('serviceWorker' in navigator) {
+if (import.meta.env.DEV && 'serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     registrations.forEach((registration) => {
       registration.unregister();
@@ -22,6 +20,7 @@ if ('serviceWorker' in navigator) {
 // Ensure right-click (context menu) works properly
 // Fix: Allow right-click everywhere by default
 // Only prevent on elements that explicitly need custom context menus
+// Keep this listener - it's cheap and non-blocking
 document.addEventListener('contextmenu', (e) => {
   const target = e.target as HTMLElement;
   
@@ -44,23 +43,12 @@ document.addEventListener('contextmenu', (e) => {
   // Don't call preventDefault() - allow normal right-click behavior
 }, false); // Use bubble phase, not capture, so we don't interfere
 
-// Initialize security measures (lightweight, keep it)
-initializeSecurity();
-
-// Initialize performance monitoring only in production or when explicitly enabled
-if (import.meta.env.PROD || import.meta.env.VITE_ENABLE_PERF_MONITORING === 'true') {
-  initializePerformanceMonitoring();
-}
-
-// Initialize accessibility features asynchronously (non-blocking)
-setTimeout(() => {
-  initializeAccessibility();
-}, 0);
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <LanguageProvider>
-      <App />
+      <RootBootstrap>
+        <App />
+      </RootBootstrap>
     </LanguageProvider>
   </StrictMode>
 );

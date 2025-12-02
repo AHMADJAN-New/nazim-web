@@ -3,7 +3,7 @@ import { organizationsApi } from '@/lib/api/client';
 import { useAuth } from './useAuth';
 
 export const useAccessibleOrganizations = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   const query = useQuery({
     queryKey: ['accessible-organizations', user?.id, profile?.organization_id, profile?.role],
@@ -38,7 +38,9 @@ export const useAccessibleOrganizations = () => {
         // For super admin with null org_id, if no orgs returned, they might not have any assigned
         // This is expected behavior - they'll need to be assigned organizations
         if (orgIds.size === 0 && profile.role === 'super_admin' && !profile.organization_id) {
-          console.warn('Super admin has no organizations assigned. Please assign organizations manually.');
+          if (import.meta.env.DEV) {
+            console.warn('Super admin has no organizations assigned. Please assign organizations manually.');
+          }
         }
 
         // Try to find a primary org - use profile org_id as primary, or first org from list
@@ -59,16 +61,40 @@ export const useAccessibleOrganizations = () => {
           primaryOrgId,
         };
       } catch (error: any) {
-        // If API call fails, return empty array
-        console.error('Failed to fetch accessible organizations:', error);
+        // If API call fails, provide helpful error information
+        const errorMessage = error?.message || 'Unknown error';
+        const isDevToolsBlocked = errorMessage?.includes('blocked') || errorMessage?.toLowerCase().includes('devtools');
+        const isNetworkError = errorMessage?.includes('Network error') || 
+                               errorMessage?.includes('Failed to fetch') ||
+                               errorMessage?.includes('Unable to connect');
+        
+        if (import.meta.env.DEV) {
+          if (isDevToolsBlocked) {
+            console.warn(
+              '⚠️ Accessible organizations request blocked by DevTools. ' +
+              'Disable request blocking in DevTools Network tab and refresh.'
+            );
+          } else if (isNetworkError) {
+            console.warn(
+              '⚠️ Failed to fetch accessible organizations - backend may not be running. ' +
+              'Ensure Laravel backend is running on port 8000.'
+            );
+          } else {
+          console.error('Failed to fetch accessible organizations:', error);
+          }
+        }
+        
+        // Return fallback data - use profile organization if available
         return {
           orgIds: profile.organization_id ? [profile.organization_id] : [],
           primaryOrgId: profile.organization_id || null,
         };
       }
     },
-    enabled: !!user && !!profile,
-    staleTime: 5 * 60 * 1000,
+    enabled: !!user && !!profile && !loading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
+    refetchOnReconnect: false, // REQUIRED: Performance optimization
   });
 
   return {

@@ -49,7 +49,6 @@ return new class extends Migration
             }
         }
         
-        // Step 2: Check if role_permissions table exists (custom Supabase structure)
         $hasRolePermissionsTable = DB::select("
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
@@ -61,7 +60,6 @@ return new class extends Migration
         $useCustomTable = !empty($hasRolePermissionsTable) && $hasRolePermissionsTable[0]->exists;
         
         if ($useCustomTable) {
-            // Use custom role_permissions table (Supabase structure)
             DB::statement("
                 INSERT INTO role_permissions (role, permission_id, organization_id)
                 SELECT 

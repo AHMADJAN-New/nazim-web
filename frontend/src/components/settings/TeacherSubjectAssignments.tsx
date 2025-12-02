@@ -190,7 +190,7 @@ export function TeacherSubjectAssignments() {
         let filtered = enrichedAssignments;
 
         if (searchQuery) {
-            const query = searchQuery.toLowerCase();
+            const query = (searchQuery || '').toLowerCase();
             filtered = filtered.filter(assignment => 
                 assignment.teacher?.full_name?.toLowerCase().includes(query) ||
                 assignment.teacher?.employee_id?.toLowerCase().includes(query) ||

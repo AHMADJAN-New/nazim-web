@@ -96,7 +96,7 @@ async function handleRequest(request) {
   
   try {
     // API requests - Network First with offline fallback
-    if (url.pathname.startsWith('/api/') || url.hostname.includes('supabase')) {
+    if (url.pathname.startsWith('/api/')) {
       return await networkFirstStrategy(request, API_CACHE_NAME);
     }
     

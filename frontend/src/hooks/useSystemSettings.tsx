@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface SystemSettings {
@@ -33,35 +32,10 @@ export const useSystemSettings = () => {
   return useQuery({
     queryKey: ['system-settings'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_settings')
-        .select('*')
-        .eq('category', 'general');
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      // Convert key-value pairs to settings object
-      const settings: any = {};
-      data?.forEach((setting) => {
-        const key = setting.key;
-        let value = setting.value;
-        
-        // Parse JSON values if needed
-        if (typeof value === 'string') {
-          try {
-            value = JSON.parse(value);
-          } catch {
-            // Keep as string if not valid JSON
-          }
-        }
-        
-        settings[key] = value;
-      });
-
-      return settings as SystemSettings;
+      // TODO: Migrate to Laravel API endpoint for fetching system settings
+      throw new Error('System settings endpoint not yet implemented in Laravel API');
     },
+    enabled: false, // Disabled until migrated
   });
 };
 
@@ -70,24 +44,8 @@ export const useUpdateSystemSettings = () => {
 
   return useMutation({
     mutationFn: async (settingsData: Partial<SystemSettings>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const updates = Object.entries(settingsData).map(([key, value]) => ({
-        category: 'general',
-        key,
-        value: typeof value === 'object' ? JSON.stringify(value) : value,
-        description: `System setting for ${key}`,
-        is_public: false,
-        updated_by: user?.id || '',
-      }));
-
-      const { error } = await supabase
-        .from('system_settings')
-        .upsert(updates, { onConflict: 'key,category' });
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      // TODO: Migrate to Laravel API endpoint for updating system settings
+      throw new Error('Update system settings endpoint not yet implemented in Laravel API');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-settings'] });

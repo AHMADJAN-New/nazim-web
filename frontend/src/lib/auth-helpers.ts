@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { User } from '@supabase/supabase-js';
+// For now, they throw errors indicating they need to be updated
 
 /**
  * Auth helper functions for permission checking and access control
@@ -19,33 +18,18 @@ export interface Profile {
 /**
  * Require user to be authenticated
  * Throws error if not authenticated
+ * TODO: Migrate to Laravel API
  */
-export async function requireAuth(): Promise<User> {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  
-  if (error || !user) {
-    throw new Error('Authentication required');
-  }
-  
-  return user;
+export async function requireAuth(): Promise<any> {
+  throw new Error('requireAuth needs to be migrated to Laravel API. Use useAuth hook instead.');
 }
 
 /**
  * Get user's profile
+ * TODO: Migrate to Laravel API - use profilesApi.get() instead
  */
 export async function getUserProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, organization_id, role, full_name, email, phone, avatar_url, is_active')
-    .eq('id', userId)
-    .single();
-
-  if (error) {
-    console.error('Failed to get user profile:', error);
-    return null;
-  }
-
-  return data as Profile;
+  throw new Error('getUserProfile needs to be migrated to Laravel API. Use profilesApi.get() or useAuth hook instead.');
 }
 
 /**
@@ -101,17 +85,8 @@ export async function userHasPermission(permissionName: string): Promise<boolean
     return true;
   }
   
-  // Check permission via database function
-  const { data, error } = await supabase.rpc('user_has_permission', {
-    permission_name: permissionName,
-  });
-  
-  if (error) {
-    console.error('Failed to check permission:', error);
-    return false;
-  }
-  
-  return data === true;
+  // TODO: Migrate to Laravel API - use permissionsApi.userPermissions() instead
+  throw new Error('userHasPermission needs to be migrated to Laravel API. Use useHasPermission hook instead.');
 }
 
 /**

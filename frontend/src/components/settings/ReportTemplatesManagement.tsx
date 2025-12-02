@@ -120,10 +120,13 @@ export function ReportTemplatesManagement() {
         }
     }, [schools, selectedSchoolId]);
 
-    const filteredTemplates = templates?.filter((template) =>
-        template.template_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        template.template_type.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+    const filteredTemplates = templates?.filter((template) => {
+        const query = (searchQuery || '').toLowerCase();
+        return (
+            template.template_name?.toLowerCase().includes(query) ||
+            template.template_type?.toLowerCase().includes(query)
+        );
+    }) || [];
 
     const handleOpenDialog = (templateId?: string) => {
         if (templateId) {

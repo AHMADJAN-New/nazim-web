@@ -114,11 +114,12 @@ export function SchoolsManagement() {
   });
 
   const filteredSchools = schools?.filter((school) => {
+    const query = (searchQuery || '').toLowerCase();
     const matchesSearch =
-      school.school_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.school_name_arabic?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.school_name_pashto?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.school_email?.toLowerCase().includes(searchQuery.toLowerCase());
+      school.school_name?.toLowerCase().includes(query) ||
+      school.school_name_arabic?.toLowerCase().includes(query) ||
+      school.school_name_pashto?.toLowerCase().includes(query) ||
+      school.school_email?.toLowerCase().includes(query);
     
     const matchesOrg = organizationFilter === 'all' || school.organization_id === organizationFilter;
     

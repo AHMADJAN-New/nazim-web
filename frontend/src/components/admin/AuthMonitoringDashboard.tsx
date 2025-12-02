@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,15 +47,10 @@ export function AuthMonitoringDashboard() {
   const fetchAuthEvents = async () => {
     setLoading(true);
     try {
-      // Fetch recent auth events
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('auth_monitoring')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (eventsError) throw eventsError;
-      setEvents(eventsData || []);
+      // TODO: Migrate to Laravel API endpoint for auth monitoring
+      // For now, return empty array
+      const eventsData: AuthEvent[] = [];
+      setEvents(eventsData);
 
       // Calculate stats
       const now = new Date();
@@ -90,14 +84,8 @@ export function AuthMonitoringDashboard() {
 
   const markAsResolved = async (eventId: string) => {
     try {
-      const { error } = await supabase
-        .from('auth_monitoring')
-        .update({ resolved: true })
-        .eq('id', eventId);
-
-      if (error) throw error;
-      
-      toast.success('Event marked as resolved');
+      // TODO: Migrate to Laravel API endpoint
+      toast.error('Auth monitoring endpoint not yet implemented in Laravel API');
       fetchAuthEvents();
     } catch (error: any) {
       toast.error('Failed to mark event as resolved');
@@ -107,26 +95,9 @@ export function AuthMonitoringDashboard() {
   const testAuthSystem = async () => {
     setLoading(true);
     try {
-      // Test login with invalid credentials to generate monitoring event
-      await supabase.auth.signInWithPassword({
-        email: 'test@example.com',
-        password: 'invalid'
-      });
-    } catch (error) {
-      // Expected to fail
-    }
-
-    // Log a test event
-    try {
-      await supabase.rpc('log_auth_event', {
-        event_type: 'auth_system_test',
-        event_data: { test_time: new Date().toISOString() },
-        error_message: null,
-        user_email: 'system@test.com'
-      });
-      
-      toast.success('Auth system test completed');
-      setTimeout(fetchAuthEvents, 1000);
+      // TODO: Migrate to Laravel API endpoint for auth system testing
+      // For now, show message that this feature needs Laravel API implementation
+      toast.error('Auth system test endpoint not yet implemented in Laravel API');
     } catch (error: any) {
       toast.error('Auth system test failed');
     } finally {

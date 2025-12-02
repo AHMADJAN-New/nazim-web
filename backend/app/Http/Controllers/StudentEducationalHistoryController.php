@@ -43,15 +43,6 @@ class StudentEducationalHistoryController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        try {
-            if (!$user->hasPermissionTo('students.read')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.read: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
-        }
-
         // Check student exists and user has access
         $student = Student::whereNull('deleted_at')->find($studentId);
         if (!$student) {
@@ -64,13 +55,35 @@ class StudentEducationalHistoryController extends Controller
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $history = StudentEducationalHistory::with(['createdBy'])
-            ->where('student_id', $studentId)
+        $history = StudentEducationalHistory::where('student_id', $studentId)
             ->whereNull('deleted_at')
             ->orderBy('start_date', 'desc')
             ->get();
 
-        return response()->json($history);
+        // Enrich with created_by profile data manually to avoid relationship issues
+        $createdByIds = $history->pluck('created_by')->filter()->unique()->toArray();
+        $profiles = [];
+        if (!empty($createdByIds)) {
+            $profiles = DB::table('profiles')
+                ->whereIn('id', $createdByIds)
+                ->select('id', 'full_name', 'email')
+                ->get()
+                ->keyBy('id');
+        }
+
+        $enrichedHistory = $history->map(function ($item) use ($profiles) {
+            $createdByProfile = $profiles->get($item->created_by);
+            return [
+                ...$item->toArray(),
+                'created_by_profile' => $createdByProfile ? [
+                    'id' => $createdByProfile->id,
+                    'full_name' => $createdByProfile->full_name,
+                    'email' => $createdByProfile->email,
+                ] : null,
+            ];
+        });
+
+        return response()->json($enrichedHistory);
     }
 
     /**
@@ -83,15 +96,6 @@ class StudentEducationalHistoryController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
-        }
-
-        try {
-            if (!$user->hasPermissionTo('students.update')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.update: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
         }
 
         // Check student exists and user has access
@@ -113,9 +117,21 @@ class StudentEducationalHistoryController extends Controller
         $validated['created_by'] = $user->id;
 
         $history = StudentEducationalHistory::create($validated);
-        $history->load(['createdBy']);
+        
+        // Enrich with created_by profile data
+        $createdByProfile = DB::table('profiles')
+            ->where('id', $user->id)
+            ->select('id', 'full_name', 'email')
+            ->first();
 
-        return response()->json($history, 201);
+        $historyArray = $history->toArray();
+        $historyArray['created_by_profile'] = $createdByProfile ? [
+            'id' => $createdByProfile->id,
+            'full_name' => $createdByProfile->full_name,
+            'email' => $createdByProfile->email,
+        ] : null;
+
+        return response()->json($historyArray, 201);
     }
 
     /**
@@ -128,15 +144,6 @@ class StudentEducationalHistoryController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
-        }
-
-        try {
-            if (!$user->hasPermissionTo('students.update')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.update: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
         }
 
         $history = StudentEducationalHistory::whereNull('deleted_at')->find($id);
@@ -155,9 +162,21 @@ class StudentEducationalHistoryController extends Controller
         unset($validated['organization_id']);
 
         $history->update($validated);
-        $history->load(['createdBy']);
+        
+        // Enrich with created_by profile data
+        $createdByProfile = DB::table('profiles')
+            ->where('id', $history->created_by)
+            ->select('id', 'full_name', 'email')
+            ->first();
 
-        return response()->json($history);
+        $historyArray = $history->toArray();
+        $historyArray['created_by_profile'] = $createdByProfile ? [
+            'id' => $createdByProfile->id,
+            'full_name' => $createdByProfile->full_name,
+            'email' => $createdByProfile->email,
+        ] : null;
+
+        return response()->json($historyArray);
     }
 
     /**
@@ -170,15 +189,6 @@ class StudentEducationalHistoryController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
-        }
-
-        try {
-            if (!$user->hasPermissionTo('students.update')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.update: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
         }
 
         $history = StudentEducationalHistory::whereNull('deleted_at')->find($id);

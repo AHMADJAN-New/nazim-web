@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -39,7 +38,6 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   // Use React Query hook for notifications (properly cached)
   const { data: notifications = [] } = useNotifications();
   
-  // Get profile from AuthContext (no Supabase query needed)
   const { profile: authProfile } = useAuth();
   
   // Map auth profile to UserProfile format

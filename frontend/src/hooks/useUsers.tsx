@@ -3,56 +3,12 @@ import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { usersApi } from '@/lib/api/client';
+import type * as UserApi from '@/types/api/user';
+import type { UserProfile, CreateUserData, UpdateUserData } from '@/types/domain/user';
+import { mapUserProfileApiToDomain, mapCreateUserDataDomainToApi, mapUpdateUserDataDomainToApi } from '@/mappers/userMapper';
 
-interface UserProfileRow {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-  role: string;
-  organization_id: string | null;
-  phone: string | null;
-  avatar_url: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  default_school_id: string | null;
-}
-
-
-export interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  organization_id: string | null;
-  default_school_id?: string | null;
-  phone: string | null;
-  avatar?: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateUserData {
-  email: string;
-  password: string;
-  full_name: string;
-  role: string;
-  organization_id?: string | null;
-  default_school_id?: string | null;
-  phone?: string;
-}
-
-export interface UpdateUserData {
-  id: string;
-  full_name?: string;
-  email?: string;
-  role?: string;
-  organization_id?: string | null;
-  default_school_id?: string | null;
-  phone?: string;
-  is_active?: boolean;
-}
+// Re-export domain types for convenience
+export type { UserProfile, CreateUserData, UpdateUserData } from '@/types/domain/user';
 
 export const useUsers = (filters?: {
   role?: string;
@@ -63,9 +19,9 @@ export const useUsers = (filters?: {
   const { profile: currentProfile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-  return useQuery({
+  return useQuery<UserProfile[]>({
     queryKey: ['users', filters, orgIds.join(',')],
-    queryFn: async (): Promise<UserProfile[]> => {
+    queryFn: async () => {
       if (!currentProfile || orgsLoading) {
         throw new Error('User not authenticated');
       }
@@ -81,8 +37,10 @@ export const useUsers = (filters?: {
       }
 
       // Fetch users from Laravel API
-      const users = await usersApi.list(filters);
-      return users as UserProfile[];
+      const apiUsers = await usersApi.list(filters);
+      
+      // Map API → Domain
+      return (apiUsers as UserApi.UserProfile[]).map(mapUserProfileApiToDomain);
     },
     enabled: !!currentProfile && !orgsLoading,
   });
@@ -106,8 +64,8 @@ export const useCreateUser = () => {
         throw new Error('Insufficient permissions to create users');
       }
 
-      // Determine organization_id within accessible orgs
-      let organizationId: string | null = userData.organization_id ?? currentProfile.organization_id ?? null;
+      // Determine organizationId within accessible orgs
+      let organizationId: string | null = userData.organizationId ?? currentProfile.organizationId ?? null;
       if (organizationId && !orgIds.includes(organizationId)) {
         throw new Error('Cannot create user for a non-accessible organization');
       }
@@ -115,18 +73,20 @@ export const useCreateUser = () => {
         organizationId = orgIds[0];
       }
 
-      // Create user via Laravel API
-      const result = await usersApi.create({
-        email: userData.email,
-        password: userData.password,
-        full_name: userData.full_name,
-        role: userData.role,
-        organization_id: organizationId,
-        default_school_id: userData.default_school_id,
-        phone: userData.phone,
-      });
+      // Update domain data with resolved organizationId
+      const domainDataWithOrg: CreateUserData = {
+        ...userData,
+        organizationId,
+      };
 
-      return result;
+      // Map Domain → API
+      const apiData = mapCreateUserDataDomainToApi(domainDataWithOrg);
+
+      // Create user via Laravel API
+      const apiResult = await usersApi.create(apiData);
+
+      // Map API → Domain
+      return mapUserProfileApiToDomain(apiResult as UserApi.UserProfile);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -157,26 +117,21 @@ export const useUpdateUser = () => {
         throw new Error('Insufficient permissions to update users');
       }
 
-      // Build update data
-      const updateData: any = {};
-      if (userData.full_name !== undefined) updateData.full_name = userData.full_name;
-      if (userData.email !== undefined) updateData.email = userData.email;
-      if (userData.role !== undefined) updateData.role = userData.role;
-      if (userData.phone !== undefined) updateData.phone = userData.phone;
-      if (userData.is_active !== undefined) updateData.is_active = userData.is_active;
-      if (userData.organization_id !== undefined && isSuperAdmin) {
-        if (userData.organization_id && !orgIds.includes(userData.organization_id)) {
+      // Validate organizationId if provided
+      if (userData.organizationId !== undefined && isSuperAdmin) {
+        if (userData.organizationId && !orgIds.includes(userData.organizationId)) {
           throw new Error('Cannot assign user to a non-accessible organization');
         }
-        updateData.organization_id = userData.organization_id;
-      }
-      if (userData.default_school_id !== undefined && (isSuperAdmin || isAdmin)) {
-        updateData.default_school_id = userData.default_school_id;
       }
 
+      // Map Domain → API
+      const updateData = mapUpdateUserDataDomainToApi(userData);
+
       // Update user via Laravel API
-      const result = await usersApi.update(userData.id, updateData);
-      return result;
+      const apiResult = await usersApi.update(userData.id, updateData);
+      
+      // Map API → Domain
+      return mapUserProfileApiToDomain(apiResult as UserApi.UserProfile);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });

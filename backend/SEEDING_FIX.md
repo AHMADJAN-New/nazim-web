@@ -3,7 +3,6 @@
 ## Issues Fixed
 
 1. **Sanctum Trait Not Found**: The `Laravel\Sanctum\HasApiTokens` trait was not being found when running seeders.
-2. **Database Seeder**: Updated to work with the existing Supabase database structure (`auth.users` table).
 
 ## Changes Made
 

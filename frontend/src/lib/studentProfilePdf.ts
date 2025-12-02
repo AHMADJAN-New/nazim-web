@@ -5,6 +5,7 @@ import type {
   StudentEducationalHistory,
   StudentDisciplineRecord,
 } from '@/hooks/useStudents';
+import type { Student } from '@/types/domain/student';
 
 // Initialize pdfmake fonts
 try {

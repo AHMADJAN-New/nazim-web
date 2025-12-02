@@ -43,15 +43,6 @@ class StudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        try {
-            if (!$user->hasPermissionTo('students.read')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.read: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
-        }
-
         // Check student exists and user has access
         $student = Student::whereNull('deleted_at')->find($studentId);
         if (!$student) {
@@ -83,15 +74,6 @@ class StudentDisciplineRecordController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
-        }
-
-        try {
-            if (!$user->hasPermissionTo('students.update')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.update: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
         }
 
         // Check student exists and user has access
@@ -132,15 +114,6 @@ class StudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        try {
-            if (!$user->hasPermissionTo('students.update')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.update: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
-        }
-
         $record = StudentDisciplineRecord::whereNull('deleted_at')->find($id);
 
         if (!$record) {
@@ -174,15 +147,6 @@ class StudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        try {
-            if (!$user->hasPermissionTo('students.update')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.update: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
-        }
-
         $record = StudentDisciplineRecord::whereNull('deleted_at')->find($id);
 
         if (!$record) {
@@ -210,15 +174,6 @@ class StudentDisciplineRecordController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
-        }
-
-        try {
-            if (!$user->hasPermissionTo('students.update')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::error("Permission check failed for students.update: " . $e->getMessage());
-            return response()->json(['error' => 'Permission check failed'], 500);
         }
 
         $record = StudentDisciplineRecord::whereNull('deleted_at')->find($id);

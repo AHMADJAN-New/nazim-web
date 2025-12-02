@@ -1,6 +1,6 @@
 /**
  * Password validation utility
- * Extracted from useSecureAuth to remove Supabase dependency
+ * Extracted from useSecureAuth
  */
 
 export const validatePasswordStrength = (password: string): string[] => {

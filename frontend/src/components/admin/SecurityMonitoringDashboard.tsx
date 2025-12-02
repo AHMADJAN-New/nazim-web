@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, Shield, Users, Clock, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -40,14 +39,9 @@ export const SecurityMonitoringDashboard: React.FC = () => {
 
   const fetchSecurityData = async () => {
     try {
-      // Fetch recent security events
-      const { data: events, error: eventsError } = await supabase
-        .from('auth_monitoring')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (eventsError) throw eventsError;
+      // TODO: Migrate to Laravel API endpoint for security monitoring
+      // For now, return empty array
+      const events: SecurityAlert[] = [];
 
       setAlerts(events || []);
 

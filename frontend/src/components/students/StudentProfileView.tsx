@@ -1,9 +1,8 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, memo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { supabase } from '@/integrations/supabase/client';
 import { useSchools } from '@/hooks/useSchools';
 import { useProfile } from '@/hooks/useProfiles';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -11,8 +10,8 @@ import {
   useStudentDocuments,
   useStudentEducationalHistory,
   useStudentDisciplineRecords,
-  type Student,
 } from '@/hooks/useStudents';
+import type { Student } from '@/types/domain/student';
 import { StudentProfilePrint } from './StudentProfilePrint';
 import { generateStudentProfilePdf } from '@/lib/studentProfilePdf';
 import { 
@@ -75,7 +74,8 @@ function InfoSection({ title, children }: { title: string; children: React.React
   );
 }
 
-export function StudentProfileView({ open, onOpenChange, student }: StudentProfileViewProps) {
+// PERFORMANCE: Memoized to prevent unnecessary re-renders
+export const StudentProfileView = memo(function StudentProfileView({ open, onOpenChange, student }: StudentProfileViewProps) {
   const { data: profile } = useProfile();
   const { isRTL, t } = useLanguage();
   const yesText = isRTL ? 'هو' : 'Yes';
@@ -84,10 +84,11 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
   const orgIdForQuery = isSuperAdmin ? undefined : profile?.organization_id;
   const { data: schools } = useSchools(orgIdForQuery);
   
-  // Fetch documents, history, and discipline records
-  const { data: documents } = useStudentDocuments(student?.id);
-  const { data: educationalHistory } = useStudentEducationalHistory(student?.id);
-  const { data: disciplineRecords } = useStudentDisciplineRecords(student?.id);
+  // Fetch documents, history, and discipline records - only when dialog is open
+  // PERFORMANCE: Conditional fetching prevents unnecessary API calls when dialog is closed
+  const { data: documents } = useStudentDocuments(open ? student?.id : undefined);
+  const { data: educationalHistory } = useStudentEducationalHistory(open ? student?.id : undefined);
+  const { data: disciplineRecords } = useStudentDisciplineRecords(open ? student?.id : undefined);
 
   const printText = isRTL
     ? {
@@ -246,44 +247,36 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
   };
 
   const schoolName = useMemo(() => {
-    if (!student?.school_id || !schools) return null;
-    return schools.find(s => s.id === student.school_id)?.school_name || null;
-  }, [student?.school_id, schools]);
+    if (!student?.schoolId || !schools) return null;
+    return schools.find(s => s.id === student.schoolId)?.schoolName || null;
+  }, [student?.schoolId, schools]);
 
   const [pictureUrl, setPictureUrl] = useState<string | null>(null);
 
   // Fetch signed URL for student picture (bucket is private)
   useEffect(() => {
-    if (!student?.picture_path || !student?.organization_id) {
+    if (!student?.picturePath || !student?.organizationId) {
       setPictureUrl(null);
       return;
     }
 
-    const schoolPath = student.school_id ? `${student.school_id}/` : '';
-    const path = `${student.organization_id}/${schoolPath}${student.id}/picture/${student.picture_path}`;
-    
-    supabase.storage
-      .from('student-files')
-      .createSignedUrl(path, 3600)
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Error creating signed URL for student picture:', error);
-          setPictureUrl(null);
-        } else if (data) {
-          setPictureUrl(data.signedUrl);
-        }
-      });
-  }, [student?.picture_path, student?.organization_id, student?.school_id, student?.id]);
+    // Use Laravel API endpoint for student picture
+    if (student?.id) {
+      setPictureUrl(`/api/students/${student.id}/picture`);
+    } else {
+      setPictureUrl(null);
+    }
+  }, [student?.id]);
 
   const guardianPictureUrl = useMemo(() => {
-    if (!student?.guardian_picture_path) return null;
-    if (student.guardian_picture_path.startsWith('http')) {
-      return student.guardian_picture_path;
+    if (!student?.guardianPicturePath) return null;
+    if (student.guardianPicturePath.startsWith('http')) {
+      return student.guardianPicturePath;
     }
     return null;
-  }, [student?.guardian_picture_path]);
+  }, [student?.guardianPicturePath]);
 
-  const statusBadgeVariant = (status: Student['student_status']) => {
+  const statusBadgeVariant = (status: Student['status']) => {
     switch (status) {
       case 'active':
         return 'default';
@@ -298,7 +291,7 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
     }
   };
 
-  const feeStatusBadgeVariant = (status: Student['admission_fee_status']) => {
+  const feeStatusBadgeVariant = (status: Student['admissionFeeStatus']) => {
     switch (status) {
       case 'paid':
         return 'default';
@@ -368,7 +361,7 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
                     {pictureUrl ? (
                       <img
                         src={pictureUrl}
-                        alt={student.full_name}
+                        alt={student.fullName}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none';
@@ -378,7 +371,7 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
                       <UserCircle className="w-20 h-20 text-muted-foreground" />
                     )}
                   </div>
-                  {student.is_orphan && (
+                  {student.isOrphan && (
                     <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
                       <Badge variant="destructive" className="shadow-md">
                         <Heart className="w-3 h-3 mr-1" />
@@ -389,39 +382,43 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
                 </div>
                 <div className="flex-1 space-y-3">
                   <div>
-                    <h2 className="text-3xl font-bold">{student.full_name}</h2>
+                    <h2 className="text-3xl font-bold">{student.fullName}</h2>
                     <p className="text-muted-foreground text-lg">
-                      {student.father_name}
-                      {student.grandfather_name && ` ${student.grandfather_name}`}
+                      {student.fatherName}
+                      {student.grandfatherName && ` ${student.grandfatherName}`}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant={statusBadgeVariant(student.student_status)} className="text-sm px-3 py-1">
-                      {student.student_status.charAt(0).toUpperCase() + student.student_status.slice(1)}
-                    </Badge>
-                    <Badge variant={feeStatusBadgeVariant(student.admission_fee_status)} className="text-sm px-3 py-1">
-                      Fee: {student.admission_fee_status.charAt(0).toUpperCase() + student.admission_fee_status.slice(1)}
-                    </Badge>
+                    {student.status && (
+                      <Badge variant={statusBadgeVariant(student.status)} className="text-sm px-3 py-1">
+                        {student.status.charAt(0).toUpperCase() + student.status.slice(1)}
+                      </Badge>
+                    )}
+                    {student.admissionFeeStatus && (
+                      <Badge variant={feeStatusBadgeVariant(student.admissionFeeStatus)} className="text-sm px-3 py-1">
+                        Fee: {student.admissionFeeStatus.charAt(0).toUpperCase() + student.admissionFeeStatus.slice(1)}
+                      </Badge>
+                    )}
                     <Badge variant="outline" className="text-sm px-3 py-1">
                       {student.gender === 'male' ? 'Male' : 'Female'}
                     </Badge>
-                    {student.applying_grade && (
+                    {student.applyingGrade && (
                       <Badge variant="outline" className="text-sm px-3 py-1">
-                        Grade {student.applying_grade}
+                        Grade {student.applyingGrade}
                       </Badge>
                     )}
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    {student.admission_no && (
+                    {student.admissionNumber && (
                       <div>
                         <div className="text-muted-foreground">{t('students.admissionNo') || 'Admission No'}</div>
-                        <div className="font-semibold">{student.admission_no}</div>
+                        <div className="font-semibold">{student.admissionNumber}</div>
                       </div>
                     )}
-                    {student.card_number && (
+                    {student.cardNumber && (
                       <div>
                         <div className="text-muted-foreground">{t('students.cardNumber') || 'Card Number'}</div>
-                        <div className="font-semibold">{student.card_number}</div>
+                        <div className="font-semibold">{student.cardNumber}</div>
                       </div>
                     )}
                     {student.age && (
@@ -445,24 +442,24 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
           {/* Personal Information and Admission Information - Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print-grid print-section">
             <InfoSection title={t('students.personalInfo') || 'Personal Information'}>
-              <InfoRow label={t('students.fullName') || 'Full Name'} value={student.full_name} icon={<User className="w-4 h-4" />} />
-              <InfoRow label={t('students.fatherName') || 'Father Name'} value={student.father_name} icon={<User className="w-4 h-4" />} />
-              <InfoRow label={t('students.grandfatherName') || 'Grandfather Name'} value={student.grandfather_name} icon={<User className="w-4 h-4" />} />
-              <InfoRow label={t('students.motherName') || 'Mother Name'} value={student.mother_name} icon={<User className="w-4 h-4" />} />
+              <InfoRow label={t('students.fullName') || 'Full Name'} value={student.fullName} icon={<User className="w-4 h-4" />} />
+              <InfoRow label={t('students.fatherName') || 'Father Name'} value={student.fatherName} icon={<User className="w-4 h-4" />} />
+              <InfoRow label={t('students.grandfatherName') || 'Grandfather Name'} value={student.grandfatherName} icon={<User className="w-4 h-4" />} />
+              <InfoRow label={t('students.motherName') || 'Mother Name'} value={student.motherName} icon={<User className="w-4 h-4" />} />
               <InfoRow label={t('students.gender') || 'Gender'} value={student.gender === 'male' ? t('students.male') : t('students.female')} icon={<User className="w-4 h-4" />} />
-              <InfoRow label={t('students.birthYear') || 'Birth Year'} value={student.birth_year} icon={<Calendar className="w-4 h-4" />} />
-              <InfoRow label={t('students.birthDate') || 'Birth Date'} value={student.birth_date} icon={<Calendar className="w-4 h-4" />} />
+              <InfoRow label={t('students.birthYear') || 'Birth Year'} value={student.birthYear} icon={<Calendar className="w-4 h-4" />} />
+              <InfoRow label={t('students.birthDate') || 'Birth Date'} value={student.birthDate} icon={<Calendar className="w-4 h-4" />} />
               <InfoRow label={t('students.age') || 'Age'} value={student.age ? `${student.age} ${t('common.years') || 'years'}` : null} icon={<Calendar className="w-4 h-4" />} />
               <InfoRow label={t('students.nationality') || 'Nationality'} value={student.nationality} icon={<Shield className="w-4 h-4" />} />
-              <InfoRow label={t('students.preferredLanguage') || 'Preferred Language'} value={student.preferred_language} icon={<FileText className="w-4 h-4" />} />
-              <InfoRow label={t('students.previousSchool') || 'Previous School'} value={student.previous_school} icon={<School className="w-4 h-4" />} />
+              <InfoRow label={t('students.preferredLanguage') || 'Preferred Language'} value={student.preferredLanguage} icon={<FileText className="w-4 h-4" />} />
+              <InfoRow label={t('students.previousSchool') || 'Previous School'} value={student.previousSchool} icon={<School className="w-4 h-4" />} />
             </InfoSection>
 
             <InfoSection title={t('students.admissionInfo') || 'Admission Information'}>
-              <InfoRow label={t('students.admissionNo') || 'Admission Number'} value={student.admission_no} icon={<FileText className="w-4 h-4" />} />
-              <InfoRow label={t('students.cardNumber') || 'Card Number'} value={student.card_number} icon={<FileText className="w-4 h-4" />} />
-              <InfoRow label={t('students.admissionYear') || 'Admission Year'} value={student.admission_year} icon={<Calendar className="w-4 h-4" />} />
-              <InfoRow label={t('students.applyingGrade') || 'Applying Grade'} value={student.applying_grade} icon={<School className="w-4 h-4" />} />
+              <InfoRow label={t('students.admissionNo') || 'Admission Number'} value={student.admissionNumber} icon={<FileText className="w-4 h-4" />} />
+              <InfoRow label={t('students.cardNumber') || 'Card Number'} value={student.cardNumber} icon={<FileText className="w-4 h-4" />} />
+              <InfoRow label={t('students.admissionYear') || 'Admission Year'} value={student.admissionYear} icon={<Calendar className="w-4 h-4" />} />
+              <InfoRow label={t('students.applyingGrade') || 'Applying Grade'} value={student.applyingGrade} icon={<School className="w-4 h-4" />} />
               <InfoRow label={t('students.school') || 'School'} value={schoolName} icon={<School className="w-4 h-4" />} />
             </InfoSection>
           </div>
@@ -478,10 +475,10 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label={t('students.originProvince') || 'Province'} value={student.orig_province} />
-                  <InfoRow label={t('students.originDistrict') || 'District'} value={student.orig_district} />
-                  <InfoRow label={t('students.originVillage') || 'Village'} value={student.orig_village} />
-                  {!student.orig_province && !student.orig_district && !student.orig_village && (
+                  <InfoRow label={t('students.originProvince') || 'Province'} value={student.origProvince} />
+                  <InfoRow label={t('students.originDistrict') || 'District'} value={student.origDistrict} />
+                  <InfoRow label={t('students.originVillage') || 'Village'} value={student.origVillage} />
+                  {!student.origProvince && !student.origDistrict && !student.origVillage && (
                     <div className="text-sm text-muted-foreground py-4 text-center col-span-2">{t('students.noOriginAddress') || 'No origin address recorded'}</div>
                   )}
                 </div>
@@ -497,11 +494,11 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label={t('students.currentProvince') || 'Province'} value={student.curr_province} />
-                  <InfoRow label={t('students.currentDistrict') || 'District'} value={student.curr_district} />
-                  <InfoRow label={t('students.currentVillage') || 'Village'} value={student.curr_village} />
-                  <InfoRow label={t('students.homeAddress') || 'Home Address'} value={student.home_address} />
-                  {!student.curr_province && !student.curr_district && !student.curr_village && !student.home_address && (
+                  <InfoRow label={t('students.currentProvince') || 'Province'} value={student.currProvince} />
+                  <InfoRow label={t('students.currentDistrict') || 'District'} value={student.currDistrict} />
+                  <InfoRow label={t('students.currentVillage') || 'Village'} value={student.currVillage} />
+                  <InfoRow label={t('students.homeAddress') || 'Home Address'} value={student.homeAddress} />
+                  {!student.currProvince && !student.currDistrict && !student.currVillage && !student.homeAddress && (
                     <div className="text-sm text-muted-foreground py-4 text-center col-span-2">{t('students.noCurrentAddress') || 'No current address recorded'}</div>
                   )}
                 </div>
@@ -512,21 +509,21 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
           {/* Guardian and Guarantor Information - Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print-grid print-section">
             <InfoSection title={t('students.guardianInfo') || 'Guardian Information'}>
-              <InfoRow label={t('students.guardianName') || 'Guardian Name'} value={student.guardian_name} icon={<Users className="w-4 h-4" />} />
-              <InfoRow label={t('students.relation') || 'Relation'} value={student.guardian_relation} icon={<Users className="w-4 h-4" />} />
-              <InfoRow label={t('students.phone') || 'Phone'} value={student.guardian_phone} icon={<Phone className="w-4 h-4" />} />
-              <InfoRow label={t('students.guardianTazkira') || 'Tazkira'} value={student.guardian_tazkira} icon={<FileText className="w-4 h-4" />} />
-              {!student.guardian_name && !student.guardian_phone && (
+              <InfoRow label={t('students.guardianName') || 'Guardian Name'} value={student.guardianName} icon={<Users className="w-4 h-4" />} />
+              <InfoRow label={t('students.relation') || 'Relation'} value={student.guardianRelation} icon={<Users className="w-4 h-4" />} />
+              <InfoRow label={t('students.phone') || 'Phone'} value={student.guardianPhone} icon={<Phone className="w-4 h-4" />} />
+              <InfoRow label={t('students.guardianTazkira') || 'Tazkira'} value={student.guardianTazkira} icon={<FileText className="w-4 h-4" />} />
+              {!student.guardianName && !student.guardianPhone && (
                 <div className="text-sm text-muted-foreground py-4 text-center">{t('students.noGuardianInfo') || 'No guardian information recorded'}</div>
               )}
             </InfoSection>
 
-            {(student.zamin_name || student.zamin_phone || student.zamin_tazkira || student.zamin_address) ? (
+            {(student.zaminName || student.zaminPhone || student.zaminTazkira || student.zaminAddress) ? (
               <InfoSection title={t('students.guarantorInfo') || 'Guarantor (Zamin) Information'}>
-                <InfoRow label={t('students.name') || 'Name'} value={student.zamin_name} icon={<Users className="w-4 h-4" />} />
-                <InfoRow label={t('students.phone') || 'Phone'} value={student.zamin_phone} icon={<Phone className="w-4 h-4" />} />
-                <InfoRow label={t('students.zaminTazkira') || 'Tazkira'} value={student.zamin_tazkira} icon={<FileText className="w-4 h-4" />} />
-                <InfoRow label={t('students.zaminAddress') || 'Address'} value={student.zamin_address} icon={<MapPin className="w-4 h-4" />} />
+                <InfoRow label={t('students.name') || 'Name'} value={student.zaminName} icon={<Users className="w-4 h-4" />} />
+                <InfoRow label={t('students.phone') || 'Phone'} value={student.zaminPhone} icon={<Phone className="w-4 h-4" />} />
+                <InfoRow label={t('students.zaminTazkira') || 'Tazkira'} value={student.zaminTazkira} icon={<FileText className="w-4 h-4" />} />
+                <InfoRow label={t('students.zaminAddress') || 'Address'} value={student.zaminAddress} icon={<MapPin className="w-4 h-4" />} />
               </InfoSection>
             ) : (
               <Card>
@@ -551,10 +548,10 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label={t('students.disabilityStatus') || 'Disability Status'} value={student.disability_status} icon={<AlertCircle className="w-4 h-4" />} />
-                  <InfoRow label={t('students.emergencyContactName') || 'Emergency Contact Name'} value={student.emergency_contact_name} icon={<Phone className="w-4 h-4" />} />
-                  <InfoRow label={t('students.emergencyContactPhone') || 'Emergency Contact Phone'} value={student.emergency_contact_phone} icon={<Phone className="w-4 h-4" />} />
-                  {!student.disability_status && !student.emergency_contact_name && !student.emergency_contact_phone && (
+                  <InfoRow label={t('students.disabilityStatus') || 'Disability Status'} value={student.disabilityStatus} icon={<AlertCircle className="w-4 h-4" />} />
+                  <InfoRow label={t('students.emergencyContactName') || 'Emergency Contact Name'} value={student.emergencyContactName} icon={<Phone className="w-4 h-4" />} />
+                  <InfoRow label={t('students.emergencyContactPhone') || 'Emergency Contact Phone'} value={student.emergencyContactPhone} icon={<Phone className="w-4 h-4" />} />
+                  {!student.disabilityStatus && !student.emergencyContactName && !student.emergencyContactPhone && (
                     <div className="text-sm text-muted-foreground py-4 text-center col-span-2">{t('students.noEmergencyInfo') || 'No emergency information recorded'}</div>
                   )}
                 </div>
@@ -570,8 +567,8 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label={t('students.familyIncome') || 'Family Income / Support'} value={student.family_income} icon={<FileText className="w-4 h-4" />} />
-                  {!student.family_income && (
+                  <InfoRow label={t('students.familyIncome') || 'Family Income / Support'} value={student.familyIncome} icon={<FileText className="w-4 h-4" />} />
+                  {!student.familyIncome && (
                     <div className="text-sm text-muted-foreground py-4 text-center col-span-2">{t('students.noFinancialInfo') || 'No financial information recorded'}</div>
                   )}
                 </div>
@@ -706,7 +703,9 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
                                     : 'bg-blue-100 text-blue-800'
                             }
                           >
-                            {t(`students.severity${record.severity.charAt(0).toUpperCase() + record.severity.slice(1)}`) || record.severity}
+                            {record.severity 
+                              ? (t(`students.severity${record.severity.charAt(0).toUpperCase() + record.severity.slice(1)}`) || record.severity)
+                              : 'Unknown'}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2">
@@ -769,7 +768,7 @@ export function StudentProfileView({ open, onOpenChange, student }: StudentProfi
       </DialogContent>
     </Dialog>
   );
-}
+});
 
 export default StudentProfileView;
 

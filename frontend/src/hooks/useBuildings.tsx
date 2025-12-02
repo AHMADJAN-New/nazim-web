@@ -2,32 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { buildingsApi, schoolsApi } from '@/lib/api/client';
+import type * as BuildingApi from '@/types/api/building';
+import type { Building } from '@/types/domain/building';
+import { mapBuildingApiToDomain, mapBuildingDomainToInsert, mapBuildingDomainToUpdate } from '@/mappers/buildingMapper';
 
-// TypeScript interfaces for Building
-export interface Building {
-  id: string;
-  building_name: string;
-  school_id: string;
-  organization_id?: string | null; // Computed from school relationship
-  created_at: string;
-  updated_at: string;
-  deleted_at?: string | null;
-}
-
-export interface BuildingInsert {
-  building_name: string;
-  school_id: string;
-}
-
-export interface BuildingUpdate {
-  building_name?: string;
-  school_id?: string;
-}
+// Re-export domain types for convenience
+export type { Building } from '@/types/domain/building';
 
 export const useBuildings = (schoolId?: string, organizationId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery({
+  return useQuery<Building[]>({
     queryKey: ['buildings', schoolId, organizationId || profile?.organization_id],
     queryFn: async () => {
       if (!user || !profile) return [];
@@ -40,12 +25,15 @@ export const useBuildings = (schoolId?: string, organizationId?: string) => {
         params.organization_id = organizationId || profile.organization_id || undefined;
       }
 
-      const buildings = await buildingsApi.list(params);
-      return (buildings || []) as Building[];
+      const apiBuildings = await buildingsApi.list(params);
+      
+      // Map API models to domain models
+      return (apiBuildings as BuildingApi.Building[]).map(mapBuildingApiToDomain);
     },
     enabled: !!user && !!profile,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 
@@ -54,13 +42,13 @@ export const useCreateBuilding = () => {
   const { user, profile } = useAuth();
 
   return useMutation({
-    mutationFn: async (buildingData: { building_name: string; school_id?: string }) => {
+    mutationFn: async (buildingData: { buildingName: string; schoolId?: string }) => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
       }
 
       // Get school_id - use provided, user's default_school_id, or get first school for user's org
-      let schoolId = buildingData.school_id;
+      let schoolId = buildingData.schoolId;
       if (!schoolId) {
         // First, try to use user's default_school_id
         if (profile.default_school_id) {
@@ -83,23 +71,27 @@ export const useCreateBuilding = () => {
       }
 
       // Validation: max 100 characters
-      if (buildingData.building_name.length > 100) {
+      if (buildingData.buildingName.length > 100) {
         throw new Error('Building name must be 100 characters or less');
       }
 
       // Trim whitespace
-      const trimmedName = buildingData.building_name.trim();
+      const trimmedName = buildingData.buildingName.trim();
       if (!trimmedName) {
         throw new Error('Building name cannot be empty');
       }
 
-      // Create building via Laravel API (validation handled server-side)
-      const building = await buildingsApi.create({
-        building_name: trimmedName,
-        school_id: schoolId,
+      // Convert domain model to API insert payload
+      const insertData = mapBuildingDomainToInsert({
+        buildingName: trimmedName,
+        schoolId,
       });
 
-      return building as Building;
+      // Create building via Laravel API (validation handled server-side)
+      const apiBuilding = await buildingsApi.create(insertData);
+      
+      // Map API response back to domain model
+      return mapBuildingApiToDomain(apiBuilding as BuildingApi.Building);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buildings'] });
@@ -117,26 +109,31 @@ export const useUpdateBuilding = () => {
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Building> & { id: string }) => {
       // Validation: max 100 characters
-      if (updates.building_name && updates.building_name.length > 100) {
+      if (updates.buildingName && updates.buildingName.length > 100) {
         throw new Error('Building name must be 100 characters or less');
       }
 
-      // Trim whitespace if building_name is being updated
-      const updateData: BuildingUpdate = {};
-      if (updates.building_name) {
-        const trimmedName = updates.building_name.trim();
+      // Prepare update data
+      const updateData: Partial<Building> = {};
+      if (updates.buildingName) {
+        const trimmedName = updates.buildingName.trim();
         if (!trimmedName) {
           throw new Error('Building name cannot be empty');
         }
-        updateData.building_name = trimmedName;
+        updateData.buildingName = trimmedName;
       }
-      if (updates.school_id) {
-        updateData.school_id = updates.school_id;
+      if (updates.schoolId) {
+        updateData.schoolId = updates.schoolId;
       }
 
+      // Convert domain model to API update payload
+      const apiUpdateData = mapBuildingDomainToUpdate(updateData);
+
       // Update building via Laravel API (validation handled server-side)
-      const building = await buildingsApi.update(id, updateData);
-      return building as Building;
+      const apiBuilding = await buildingsApi.update(id, apiUpdateData);
+      
+      // Map API response back to domain model
+      return mapBuildingApiToDomain(apiBuilding as BuildingApi.Building);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buildings'] });

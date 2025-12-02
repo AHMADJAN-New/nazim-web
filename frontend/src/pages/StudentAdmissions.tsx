@@ -161,7 +161,7 @@ export function StudentAdmissions() {
   // Filter admissions for display
   const filteredAdmissions = useMemo(() => {
     const list = admissions || [];
-    const searchLower = searchQuery.toLowerCase().trim();
+    const searchLower = (searchQuery || '').toLowerCase().trim();
     
     return list
       .filter((admission) => {

@@ -1,9 +1,11 @@
 /**
  * Laravel API Client
- * Replaces Supabase client for backend API calls
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// Use relative path in dev (via Vite proxy) or full URL in production
+// In development, Vite proxy handles /api -> http://localhost:8000/api
+// This eliminates CORS preflight overhead
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
 
 export interface Profile {
   id: string;
@@ -24,12 +26,29 @@ interface RequestOptions extends RequestInit {
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
+  private lastDevToolsWarning: number = 0;
+  private readonly DEVTOOLS_WARNING_THROTTLE = 5000; // 5 seconds
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
     // Load token from localStorage
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('api_token');
+    }
+    
+    // Development helper messages
+    if (import.meta.env.DEV && typeof window !== 'undefined') {
+      // Log helpful information once on initialization
+      if (!(window as any).__API_CLIENT_INITIALIZED__) {
+        (window as any).__API_CLIENT_INITIALIZED__ = true;
+        console.log('%c🔧 API Client Initialized', 'color: #10b981; font-weight: bold;');
+        console.log(`Base URL: ${baseUrl}`);
+        console.log('💡 Development Tips:');
+        console.log('  • Ensure Laravel backend is running: `php artisan serve` (port 8000)');
+        console.log('  • Check Vite proxy is working (should proxy /api to http://localhost:8000/api)');
+        console.log('  • Disable "Disable cache" in DevTools Network tab if requests are blocked');
+        console.log('  • Check browser console for CORS errors if requests fail');
+      }
     }
   }
 
@@ -47,15 +66,25 @@ class ApiClient {
   }
 
   private buildUrl(endpoint: string, params?: Record<string, any>): string {
-    const url = new URL(`${this.baseUrl}${endpoint}`, window.location.origin);
+    // Construct full URL - handles both relative (/api) and absolute (http://...) baseUrls
+    // For relative URLs, URL constructor uses window.location.origin as base
+    // This works perfectly with Vite proxy: /api/students -> http://localhost:5173/api/students
+    const fullPath = `${this.baseUrl}${endpoint}`;
+    const url = new URL(fullPath, window.location.origin);
     
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (Array.isArray(value)) {
-            value.forEach(v => url.searchParams.append(key, String(v)));
+            value.forEach(v => {
+              // Convert booleans to 1/0 for better Laravel compatibility
+              const paramValue = typeof v === 'boolean' ? (v ? '1' : '0') : String(v);
+              url.searchParams.append(key, paramValue);
+            });
           } else {
-            url.searchParams.append(key, String(value));
+            // Convert booleans to 1/0 for better Laravel compatibility
+            const paramValue = typeof value === 'boolean' ? (value ? '1' : '0') : String(value);
+            url.searchParams.append(key, paramValue);
           }
         }
       });
@@ -93,14 +122,65 @@ class ApiClient {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: response.statusText }));
+        
+        // For validation errors (400), include details if available
+        if (response.status === 400 && error.details) {
+          const details = Object.entries(error.details)
+            .map(([key, messages]) => `${key}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+            .join('; ');
+          throw new Error(error.message || 'Validation failed' + (details ? ` - ${details}` : ''));
+        }
+        
         throw new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
       }
 
       return response.json();
     } catch (error: any) {
+      // Detect DevTools request blocking
+      const isDevToolsBlocked = error.message?.includes('blocked') || 
+                                 error.message?.toLowerCase().includes('devtools') ||
+                                 (error.name === 'TypeError' && error.message?.includes('Failed to fetch'));
+      
+      // Check if request was actually blocked by DevTools (visible in Network tab as "blocked:devtools")
+      // This happens when "Disable cache" or request blocking is enabled in DevTools
+      // Throttle warnings to avoid console spam (max once per 5 seconds)
+      if (isDevToolsBlocked && import.meta.env.DEV) {
+        const now = Date.now();
+        if (now - this.lastDevToolsWarning > this.DEVTOOLS_WARNING_THROTTLE) {
+          this.lastDevToolsWarning = now;
+          const devToolsMessage = 
+            '⚠️ Request appears to be blocked by DevTools. ' +
+            'To fix: Open DevTools → Network tab → Disable "Disable cache" and any request blocking. ' +
+            'Then refresh the page.';
+          console.warn(devToolsMessage);
+        }
+      }
+
       // Handle network errors
-      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        throw new Error('Network error: Unable to connect to API server. Please ensure the Laravel backend is running.');
+      if (error.message?.includes('Failed to fetch') || 
+          error.message?.includes('NetworkError') ||
+          error.message?.includes('blocked') ||
+          error.name === 'TypeError') {
+        // Check if it's a CORS or network issue
+        const isNetworkError = !error.response && (error.message?.includes('Failed to fetch') || error.name === 'TypeError');
+        if (isNetworkError) {
+          // Provide helpful error message with troubleshooting steps
+          const backendUrl = this.baseUrl.includes('localhost') || this.baseUrl.includes('127.0.0.1') 
+            ? 'http://localhost:8000' 
+            : this.baseUrl;
+          
+          let errorMessage = `Network error: Unable to connect to API server at ${backendUrl}.`;
+          
+          if (import.meta.env.DEV) {
+            errorMessage += '\n\nTroubleshooting steps:';
+            errorMessage += '\n1. Ensure Laravel backend is running: `php artisan serve` (should run on port 8000)';
+            errorMessage += '\n2. Check if DevTools is blocking requests (Network tab → disable "Disable cache")';
+            errorMessage += '\n3. Verify Vite proxy is working (check Vite dev server console)';
+            errorMessage += '\n4. Check browser console for CORS errors';
+          }
+          
+          throw new Error(errorMessage);
+        }
       }
       throw error;
     }
@@ -152,8 +232,8 @@ export const apiClient = new ApiClient(API_URL);
 
 // Auth API
 export const authApi = {
-  login: async (email: string, password: string) => {
-    const response = await apiClient.post<{ user: any; token: string }>('/auth/login', {
+  login: async (email: string, password: string): Promise<{ user: any; token: string; profile?: any }> => {
+    const response = await apiClient.post<{ user: any; token: string; profile?: any }>('/auth/login', {
       email,
       password,
     });
@@ -196,6 +276,11 @@ export const authApi = {
 export const organizationsApi = {
   list: async (params?: { organization_id?: string }) => {
     return apiClient.get('/organizations', params);
+  },
+
+  // Public endpoint for signup form (no authentication required)
+  publicList: async () => {
+    return apiClient.get('/organizations/public');
   },
 
   get: async (id: string) => {
@@ -662,6 +747,13 @@ export const classesApi = {
       academic_year_id: academicYearId,
       organization_id: organizationId,
     });
+  },
+};
+
+// Class Academic Years API
+export const classAcademicYearsApi = {
+  get: async (id: string) => {
+    return apiClient.get(`/class-academic-years/${id}`);
   },
 };
 
@@ -1420,5 +1512,87 @@ export const subjectsApi = {
 
   delete: async (id: string) => {
     return apiClient.delete(`/subjects/${id}`);
+  },
+};
+
+// Class Subject Templates API
+export const classSubjectTemplatesApi = {
+  list: async (params?: {
+    class_id?: string;
+    organization_id?: string;
+  }) => {
+    return apiClient.get('/class-subject-templates', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/class-subject-templates/${id}`);
+  },
+
+  create: async (data: {
+    class_id: string;
+    subject_id: string;
+    organization_id?: string | null;
+    is_required?: boolean;
+    credits?: number | null;
+    hours_per_week?: number | null;
+  }) => {
+    return apiClient.post('/class-subject-templates', data);
+  },
+
+  update: async (id: string, data: {
+    is_required?: boolean;
+    credits?: number | null;
+    hours_per_week?: number | null;
+  }) => {
+    return apiClient.put(`/class-subject-templates/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/class-subject-templates/${id}`);
+  },
+};
+
+// Class Subjects API
+export const classSubjectsApi = {
+  list: async (params?: {
+    class_academic_year_id?: string;
+    subject_id?: string;
+    organization_id?: string;
+  }) => {
+    return apiClient.get('/class-subjects', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/class-subjects/${id}`);
+  },
+
+  create: async (data: {
+    class_subject_template_id?: string | null;
+    class_academic_year_id: string;
+    subject_id: string;
+    organization_id?: string | null;
+    teacher_id?: string | null;
+    room_id?: string | null;
+    credits?: number | null;
+    hours_per_week?: number | null;
+    is_required?: boolean;
+    notes?: string | null;
+  }) => {
+    return apiClient.post('/class-subjects', data);
+  },
+
+  update: async (id: string, data: {
+    teacher_id?: string | null;
+    room_id?: string | null;
+    credits?: number | null;
+    hours_per_week?: number | null;
+    is_required?: boolean;
+    notes?: string | null;
+  }) => {
+    return apiClient.put(`/class-subjects/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/class-subjects/${id}`);
   },
 };

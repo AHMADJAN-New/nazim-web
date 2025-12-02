@@ -72,10 +72,13 @@ export function OrganizationsManagement() {
     resolver: zodResolver(organizationSchema),
   });
 
-  const filteredOrganizations = organizations?.filter((org) =>
-    org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    org.slug.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredOrganizations = organizations?.filter((org) => {
+    const query = (searchQuery || '').toLowerCase();
+    return (
+      org.name?.toLowerCase().includes(query) ||
+      org.slug?.toLowerCase().includes(query)
+    );
+  }) || [];
 
   const handleOpenDialog = (orgId?: string) => {
     if (orgId) {

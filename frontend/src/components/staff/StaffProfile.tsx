@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useStaffMember, useStaffDocuments, useUploadStaffPicture, useUploadStaffDocument, useDeleteStaffDocument, type Staff } from '@/hooks/useStaff';
-import { supabase } from '@/integrations/supabase/client';
+import { useStaffMember, useStaffDocuments, useUploadStaffPicture, useUploadStaffDocument, useDeleteStaffDocument } from '@/hooks/useStaff';
+import type { Staff } from '@/types/domain/staff';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
@@ -103,15 +103,18 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
 
   const getPictureUrl = () => {
     if (!staff.picture_url) return null;
+    // Construct URL from Laravel API storage path
+    const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
     const schoolPath = staff.school_id ? `${staff.school_id}/` : '';
     const path = `${staff.organization_id}/${schoolPath}${staff.id}/picture/${staff.picture_url}`;
-    const { data } = supabase.storage.from('staff-files').getPublicUrl(path);
-    return data.publicUrl;
+    return `${baseUrl.replace('/api', '')}/storage/staff-files/${path}`;
   };
 
   const getDocumentUrl = (document: any) => {
-    const { data } = supabase.storage.from('staff-files').getPublicUrl(document.file_path);
-    return data.publicUrl;
+    if (!document.file_path) return null;
+    // Construct URL from Laravel API storage path
+    const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
+    return `${baseUrl.replace('/api', '')}/storage/staff-files/${document.file_path}`;
   };
 
   const handleUploadPicture = async () => {
@@ -120,8 +123,8 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
     uploadPicture.mutate(
       {
         staffId: staff.id,
-        organizationId: staff.organization_id,
-        schoolId: staff.school_id,
+        organizationId: staff.organizationId,
+        schoolId: staff.schoolId,
         file: pictureFile,
       },
       {
@@ -139,8 +142,8 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
     uploadDocument.mutate(
       {
         staffId: staff.id,
-        organizationId: staff.organization_id,
-        schoolId: staff.school_id,
+        organizationId: staff.organizationId,
+        schoolId: staff.schoolId,
         file: documentFile,
         documentType,
         description: documentDescription || null,
@@ -194,7 +197,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 <Label className="text-muted-foreground text-sm">Photo path</Label>
                 <div className="mt-2">
                   {pictureUrl ? (
-                    <img src={pictureUrl} alt={staff.full_name} className="w-24 h-24 rounded-full object-cover" />
+                    <img src={pictureUrl} alt={staff.fullName} className="w-24 h-24 rounded-full object-cover" />
                   ) : (
                     <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center">
                       <User className="w-12 h-12 text-muted-foreground" />
@@ -215,7 +218,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
               </div>
               <div>
                 <Label className="text-muted-foreground text-sm">Employee ID</Label>
-                <p className="font-medium text-primary">{staff.employee_id}</p>
+                <p className="font-medium text-primary">{staff.employeeId}</p>
               </div>
             </div>
 
@@ -223,7 +226,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
             <div className="space-y-4">
               <div>
                 <Label className="text-muted-foreground text-sm">Full name</Label>
-                <p className="font-medium text-primary">{staff.full_name}</p>
+                <p className="font-medium text-primary">{staff.fullName}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Badge variant={getStatusBadgeVariant(staff.status)}>
@@ -240,11 +243,11 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                   </Badge>
                 )}
               </div>
-              {staff.created_at && (
+              {staff.createdAt && (
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <Label className="text-muted-foreground text-sm">Hire Date:</Label>
-                  <span className="text-sm">{new Date(staff.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                  <span className="text-sm">{staff.createdAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 </div>
               )}
             </div>
@@ -265,16 +268,16 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
             {/* Column 1: Personal Information */}
             <div className="space-y-4">
               <h4 className="font-medium text-sm text-muted-foreground mb-3">Personal Information</h4>
-              {staff.birth_date && (
+              {staff.dateOfBirth && (
                 <div>
                   <Label className="text-muted-foreground text-xs">Date of Birth</Label>
-                  <p className="text-sm font-medium">{new Date(staff.birth_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  <p className="text-sm font-medium">{staff.dateOfBirth?.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
               )}
-              {staff.tazkira_number && (
+              {staff.tazkiraNumber && (
                 <div>
                   <Label className="text-muted-foreground text-xs">Civil ID / Tazkira</Label>
-                  <p className="text-sm font-medium">{staff.tazkira_number}</p>
+                  <p className="text-sm font-medium">{staff.tazkiraNumber}</p>
                 </div>
               )}
             </div>
@@ -319,7 +322,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                   <Phone className="w-4 h-4 text-green-600" />
                   <div>
                     <Label className="text-muted-foreground text-xs">Phone Number</Label>
-                    <p className="text-sm font-medium text-green-600">{staff.phone_number}</p>
+                    <p className="text-sm font-medium text-green-600">{staff.phoneNumber}</p>
                   </div>
                 </div>
               )}
@@ -387,28 +390,28 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
               <CardContent className="space-y-3">
                 <div>
                   <Label className="text-muted-foreground">First Name</Label>
-                  <p className="font-medium">{staff.first_name}</p>
+                  <p className="font-medium">{staff.firstName}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Father Name</Label>
-                  <p className="font-medium">{staff.father_name}</p>
+                  <p className="font-medium">{staff.fatherName}</p>
                 </div>
                 {staff.grandfather_name && (
                   <div>
                     <Label className="text-muted-foreground">Grandfather Name</Label>
-                    <p className="font-medium">{staff.grandfather_name}</p>
+                    <p className="font-medium">{staff.grandfatherName}</p>
                   </div>
                 )}
                 {staff.tazkira_number && (
                   <div>
                     <Label className="text-muted-foreground">Tazkira Number</Label>
-                    <p className="font-medium">{staff.tazkira_number}</p>
+                    <p className="font-medium">{staff.tazkiraNumber}</p>
                   </div>
                 )}
                 {staff.birth_year && (
                   <div>
                     <Label className="text-muted-foreground">Birth Year</Label>
-                    <p className="font-medium">{staff.birth_year}</p>
+                    <p className="font-medium">{staff.birthYear}</p>
                   </div>
                 )}
               </CardContent>
@@ -428,13 +431,13 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 {staff.phone_number && (
                   <div>
                     <Label className="text-muted-foreground">Phone</Label>
-                    <p className="font-medium">{staff.phone_number}</p>
+                    <p className="font-medium">{staff.phoneNumber}</p>
                   </div>
                 )}
-                {staff.home_address && (
+                {staff.homeAddress && (
                   <div>
                     <Label className="text-muted-foreground">Home Address</Label>
-                    <p className="font-medium">{staff.home_address}</p>
+                    <p className="font-medium">{staff.homeAddress}</p>
                   </div>
                 )}
               </CardContent>
@@ -445,22 +448,22 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 <CardTitle>Origin Location</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {staff.origin_province && (
+                {staff.originLocation.province && (
                   <div>
                     <Label className="text-muted-foreground">Province</Label>
-                    <p className="font-medium">{staff.origin_province}</p>
+                    <p className="font-medium">{staff.originLocation.province}</p>
                   </div>
                 )}
-                {staff.origin_district && (
+                {staff.originLocation.district && (
                   <div>
                     <Label className="text-muted-foreground">District</Label>
-                    <p className="font-medium">{staff.origin_district}</p>
+                    <p className="font-medium">{staff.originLocation.district}</p>
                   </div>
                 )}
-                {staff.origin_village && (
+                {staff.originLocation.village && (
                   <div>
                     <Label className="text-muted-foreground">Village</Label>
-                    <p className="font-medium">{staff.origin_village}</p>
+                    <p className="font-medium">{staff.originLocation.village}</p>
                   </div>
                 )}
               </CardContent>
@@ -471,22 +474,22 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 <CardTitle>Current Location</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {staff.current_province && (
+                {staff.currentLocation.province && (
                   <div>
                     <Label className="text-muted-foreground">Province</Label>
-                    <p className="font-medium">{staff.current_province}</p>
+                    <p className="font-medium">{staff.currentLocation.province}</p>
                   </div>
                 )}
-                {staff.current_district && (
+                {staff.currentLocation.district && (
                   <div>
                     <Label className="text-muted-foreground">District</Label>
-                    <p className="font-medium">{staff.current_district}</p>
+                    <p className="font-medium">{staff.currentLocation.district}</p>
                   </div>
                 )}
-                {staff.current_village && (
+                {staff.currentLocation.village && (
                   <div>
                     <Label className="text-muted-foreground">Village</Label>
-                    <p className="font-medium">{staff.current_village}</p>
+                    <p className="font-medium">{staff.currentLocation.village}</p>
                   </div>
                 )}
               </CardContent>
@@ -519,7 +522,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 {staff.religious_education && (
                   <div>
                     <Label className="text-muted-foreground">Education Level</Label>
-                    <p className="font-medium">{staff.religious_education}</p>
+                    <p className="font-medium">{staff.religiousEducation.level}</p>
                   </div>
                 )}
                 {staff.religious_university && (
@@ -540,7 +543,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                     <p className="font-medium">{staff.religious_department}</p>
                   </div>
                 )}
-                {!staff.religious_education && !staff.religious_university && (
+                {!staff.religiousEducation.level && !staff.religiousEducation.institution && (
                   <p className="text-muted-foreground text-sm">No religious education information available</p>
                 )}
               </CardContent>
@@ -557,7 +560,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 {staff.modern_education && (
                   <div>
                     <Label className="text-muted-foreground">Education Level</Label>
-                    <p className="font-medium">{staff.modern_education}</p>
+                    <p className="font-medium">{staff.modernEducation.level}</p>
                   </div>
                 )}
                 {staff.modern_school_university && (
@@ -578,7 +581,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                     <p className="font-medium">{staff.modern_department}</p>
                   </div>
                 )}
-                {!staff.modern_education && !staff.modern_school_university && (
+                {!staff.modernEducation.level && !staff.modernEducation.institution && (
                   <p className="text-muted-foreground text-sm">No modern education information available</p>
                 )}
               </CardContent>
@@ -612,7 +615,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 {staff.teaching_section && (
                   <div>
                     <Label className="text-muted-foreground">Teaching Section</Label>
-                    <p className="font-medium">{staff.teaching_section}</p>
+                    <p className="font-medium">{staff.teachingSection}</p>
                   </div>
                 )}
                 {staff.salary && (
@@ -631,7 +634,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
               <CardContent className="space-y-3">
                 <div>
                   <Label className="text-muted-foreground">Employee ID</Label>
-                  <p className="font-medium">{staff.employee_id}</p>
+                  <p className="font-medium">{staff.employeeId}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Status</Label>
@@ -639,16 +642,16 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                     {staff.status.replace('_', ' ').toUpperCase()}
                   </Badge>
                 </div>
-                {staff.created_at && (
+                {staff.createdAt && (
                   <div>
                     <Label className="text-muted-foreground">Created At</Label>
-                    <p className="font-medium">{new Date(staff.created_at).toLocaleDateString()}</p>
+                    <p className="font-medium">{staff.createdAt.toLocaleDateString()}</p>
                   </div>
                 )}
-                {staff.updated_at && (
+                {staff.updatedAt && (
                   <div>
                     <Label className="text-muted-foreground">Last Updated</Label>
-                    <p className="font-medium">{new Date(staff.updated_at).toLocaleDateString()}</p>
+                    <p className="font-medium">{staff.updatedAt.toLocaleDateString()}</p>
                   </div>
                 )}
               </CardContent>

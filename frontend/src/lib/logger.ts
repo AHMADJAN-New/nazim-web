@@ -1,5 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-
 export type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
 interface LogContext {
@@ -62,18 +60,19 @@ class Logger {
     if (!this.isProduction) return;
     
     try {
-      // Store critical logs in Supabase for monitoring
+      // Store critical logs via Laravel API for monitoring
+      // TODO: Implement Laravel API endpoint for application logs
+      // For now, logs are only sent to console and external monitoring services
       if (entry.level === 'error' || entry.level === 'warn') {
-        await supabase
-          .from('application_logs')
-          .insert({
-            level: entry.level,
-            message: entry.message,
-            context: entry.context,
-            timestamp: entry.timestamp,
-            user_agent: entry.userAgent,
-            url: entry.url,
-          });
+        // Future: Use Laravel API to persist logs
+        // await apiClient.post('/logs', {
+        //   level: entry.level,
+        //   message: entry.message,
+        //   context: entry.context,
+        //   timestamp: entry.timestamp,
+        //   user_agent: entry.userAgent,
+        //   url: entry.url,
+        // });
       }
     } catch (error) {
       // Fallback to console if logging service fails

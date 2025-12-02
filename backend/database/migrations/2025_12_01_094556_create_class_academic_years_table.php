@@ -12,7 +12,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Table already exists in Supabase, so we only create if it doesn't exist
         if (!Schema::hasTable('class_academic_years')) {
         Schema::create('class_academic_years', function (Blueprint $table) {
                 $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));

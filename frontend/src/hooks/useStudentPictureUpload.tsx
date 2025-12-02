@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { apiClient } from '@/lib/api/client';
 
 export interface UploadStudentPictureArgs {
     studentId: string;
@@ -14,49 +14,20 @@ export const useStudentPictureUpload = () => {
     
     return useMutation({
         mutationFn: async ({ studentId, organizationId, schoolId, file }: UploadStudentPictureArgs) => {
-            // Build path: {organization_id}/{school_id}/{student_id}/picture/{filename}
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}.${fileExt}`;
-            const schoolPath = schoolId ? `${schoolId}/` : '';
-            const filePath = `${organizationId}/${schoolPath}${studentId}/picture/${fileName}`;
+            const formData = new FormData();
+            formData.append('file', file);
 
-            const { error: uploadError } = await supabase.storage
-                .from('student-files')
-                .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: false,
-                });
-
-            if (uploadError) {
-                throw new Error(uploadError.message);
-            }
-
-            // Update student record with picture_path (store just fileName to keep path logic centralized)
-            const { error: updateError } = await (supabase as any)
-                .from('students')
-                .update({ picture_path: fileName })
-                .eq('id', studentId);
-
-            if (updateError) {
-                throw new Error(updateError.message);
-            }
-
-            // Get signed URL for the uploaded file (bucket is private)
-            const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-                .from('student-files')
-                .createSignedUrl(filePath, 3600);
-
-            if (signedUrlError) {
-                console.error('Error creating signed URL after upload:', signedUrlError);
-            }
+            // Don't set Content-Type header - browser will set it automatically with boundary for FormData
+            const response = await apiClient.post(`/students/${studentId}/picture`, formData);
 
             // Invalidate student queries to refresh the data
             void queryClient.invalidateQueries({ queryKey: ['students'] });
 
-            // Return signed URL and fileName for immediate use
+            // Return picture URL and path
+            const pictureUrl = `/api/students/${studentId}/picture`;
             return {
-                signedUrl: signedUrlData?.signedUrl || null,
-                fileName,
+                pictureUrl,
+                picturePath: response.picture_path,
             };
         },
         onSuccess: () => {

@@ -12,7 +12,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Skip if table already exists (created via Supabase migrations)
         if (Schema::hasTable('student_documents')) {
             return;
         }

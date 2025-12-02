@@ -2,62 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { roomsApi } from '@/lib/api/client';
+import type * as RoomApi from '@/types/api/room';
+import type { Room } from '@/types/domain/room';
+import { mapRoomApiToDomain, mapRoomDomainToInsert, mapRoomDomainToUpdate } from '@/mappers/roomMapper';
 
-// TypeScript interfaces for Room
-export interface Room {
-  id: string;
-  room_number: string;
-  building_id: string;
-  school_id: string;
-  staff_id?: string | null;
-  created_at: string;
-  updated_at: string;
-  deleted_at?: string | null;
-  // Extended with relationship data
-  building?: {
-    id: string;
-    building_name: string;
-    school_id: string;
-  };
-  staff?: {
-    id: string;
-    profile?: {
-      full_name: string;
-    };
-  } | null;
-}
-
-export interface RoomInsert {
-  room_number: string;
-  building_id: string;
-  staff_id?: string | null;
-}
-
-export interface RoomUpdate {
-  room_number?: string;
-  building_id?: string;
-  staff_id?: string | null;
-}
-
-// Room with guaranteed relations (for query results)
-export interface RoomWithRelations extends Room {
-  building: {
-    id: string;
-    building_name: string;
-    school_id: string;
-  };
-  staff: {
-    id: string;
-    profile?: {
-      full_name: string;
-    };
-  } | null;
-}
+// Re-export domain types for convenience
+export type { Room } from '@/types/domain/room';
 
 export const useRooms = (schoolId?: string, organizationId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery({
+  return useQuery<Room[]>({
     queryKey: ['rooms', schoolId, organizationId || profile?.organization_id],
     queryFn: async () => {
       if (!user || !profile) return [];
@@ -70,12 +25,15 @@ export const useRooms = (schoolId?: string, organizationId?: string) => {
         params.organization_id = organizationId || profile.organization_id || undefined;
       }
 
-      const rooms = await roomsApi.list(params);
-      return (rooms || []) as RoomWithRelations[];
+      const apiRooms = await roomsApi.list(params);
+      
+      // Map API models to domain models
+      return (apiRooms as RoomApi.Room[]).map(mapRoomApiToDomain);
     },
     enabled: !!user && !!profile,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 
@@ -84,31 +42,35 @@ export const useCreateRoom = () => {
   const { user, profile } = useAuth();
 
   return useMutation({
-    mutationFn: async (roomData: { room_number: string; building_id: string; staff_id?: string | null }) => {
+    mutationFn: async (roomData: { roomNumber: string; buildingId: string; staffId?: string | null }) => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
       }
 
       // Validation: max 100 characters
-      if (roomData.room_number.length > 100) {
+      if (roomData.roomNumber.length > 100) {
         throw new Error('Room number must be 100 characters or less');
       }
 
       // Trim whitespace
-      const trimmedNumber = roomData.room_number.trim();
+      const trimmedNumber = roomData.roomNumber.trim();
       if (!trimmedNumber) {
         throw new Error('Room number cannot be empty');
       }
 
-      // Create room via Laravel API (validation handled server-side)
-      // Laravel will auto-set school_id from building
-      const room = await roomsApi.create({
-        room_number: trimmedNumber,
-        building_id: roomData.building_id,
-        staff_id: roomData.staff_id || null,
+      // Convert domain model to API insert payload
+      const insertData = mapRoomDomainToInsert({
+        roomNumber: trimmedNumber,
+        buildingId: roomData.buildingId,
+        staffId: roomData.staffId || null,
       });
 
-      return room as RoomWithRelations;
+      // Create room via Laravel API (validation handled server-side)
+      // Laravel will auto-set school_id from building
+      const apiRoom = await roomsApi.create(insertData);
+      
+      // Map API response back to domain model
+      return mapRoomApiToDomain(apiRoom as RoomApi.Room);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
@@ -126,40 +88,45 @@ export const useUpdateRoom = () => {
   return useMutation({
     mutationFn: async ({
       id,
-      room_number,
-      building_id,
-      staff_id,
+      roomNumber,
+      buildingId,
+      staffId,
     }: {
       id: string;
-      room_number?: string;
-      building_id?: string;
-      staff_id?: string | null;
+      roomNumber?: string;
+      buildingId?: string;
+      staffId?: string | null;
     }) => {
       // Validation: max 100 characters
-      if (room_number && room_number.length > 100) {
+      if (roomNumber && roomNumber.length > 100) {
         throw new Error('Room number must be 100 characters or less');
       }
 
-      // Trim whitespace if room_number is being updated
-      const updateData: RoomUpdate = {};
-      if (room_number) {
-        const trimmedNumber = room_number.trim();
+      // Prepare update data
+      const updateData: Partial<Room> = {};
+      if (roomNumber) {
+        const trimmedNumber = roomNumber.trim();
         if (!trimmedNumber) {
           throw new Error('Room number cannot be empty');
         }
-        updateData.room_number = trimmedNumber;
+        updateData.roomNumber = trimmedNumber;
       }
-      if (building_id !== undefined) {
-        updateData.building_id = building_id;
+      if (buildingId !== undefined) {
+        updateData.buildingId = buildingId;
       }
-      if (staff_id !== undefined) {
-        updateData.staff_id = staff_id || null;
+      if (staffId !== undefined) {
+        updateData.staffId = staffId || null;
       }
+
+      // Convert domain model to API update payload
+      const apiUpdateData = mapRoomDomainToUpdate(updateData);
 
       // Update room via Laravel API (validation handled server-side)
       // Laravel will auto-update school_id if building_id changes
-      const room = await roomsApi.update(id, updateData);
-      return room as RoomWithRelations;
+      const apiRoom = await roomsApi.update(id, apiUpdateData);
+      
+      // Map API response back to domain model
+      return mapRoomApiToDomain(apiRoom as RoomApi.Room);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });

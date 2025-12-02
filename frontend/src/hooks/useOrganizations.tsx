@@ -3,55 +3,54 @@ import { organizationsApi } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import type * as OrganizationApi from '@/types/api/organization';
+import type { Organization } from '@/types/domain/organization';
+import { mapOrganizationApiToDomain, mapOrganizationDomainToInsert, mapOrganizationDomainToUpdate } from '@/mappers/organizationMapper';
 
-// Organization type matching Laravel API response
-export interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  settings?: Record<string, any>;
-  created_at?: string;
-  updated_at?: string;
-  deleted_at?: string | null;
-}
-
-export type OrganizationInsert = Omit<Organization, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
-export type OrganizationUpdate = Partial<OrganizationInsert>;
+// Re-export domain types for convenience
+export type { Organization } from '@/types/domain/organization';
 
 export const useOrganizations = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
-  
-  return useQuery({
+
+  return useQuery<Organization[]>({
     queryKey: ['organizations', orgIds.join(',')],
     queryFn: async () => {
-      if (!user) return [];
+      if (!user || authLoading) return [];
       if (orgsLoading) return [];
-      
+
       // Use Laravel API - it already filters by accessible organizations
-      const organizations = await organizationsApi.list();
+      const apiOrganizations = await organizationsApi.list();
+      
+      // Map API models to domain models
+      let organizations = (apiOrganizations as OrganizationApi.Organization[]).map(mapOrganizationApiToDomain);
       
       // Filter by accessible org IDs if we have them
       if (orgIds.length > 0) {
-        return (organizations as Organization[]).filter(org => orgIds.includes(org.id));
+        organizations = organizations.filter(org => orgIds.includes(org.id));
       }
       
-      return organizations as Organization[];
+      return organizations;
     },
-    enabled: !!user && !orgsLoading,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    enabled: !!user && !authLoading && !orgsLoading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 
 export const useOrganization = (id: string) => {
-  return useQuery({
+  return useQuery<Organization>({
     queryKey: ['organizations', id],
     queryFn: async () => {
-      const organization = await organizationsApi.get(id);
-      return organization as Organization;
+      const apiOrganization = await organizationsApi.get(id);
+      return mapOrganizationApiToDomain(apiOrganization as OrganizationApi.Organization);
     },
     enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 
@@ -66,13 +65,17 @@ export const useCreateOrganization = () => {
         throw new Error('Slug must contain only lowercase letters, numbers, and hyphens');
       }
 
-      const organization = await organizationsApi.create({
+      // Convert domain model to API insert payload
+      const insertData = mapOrganizationDomainToInsert({
         name: orgData.name.trim(),
         slug: orgData.slug.trim().toLowerCase(),
         settings: orgData.settings || {},
       });
 
-      return organization as Organization;
+      const apiOrganization = await organizationsApi.create(insertData);
+      
+      // Map API response back to domain model
+      return mapOrganizationApiToDomain(apiOrganization as OrganizationApi.Organization);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
@@ -90,7 +93,7 @@ export const useUpdateOrganization = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Organization> & { id: string }) => {
-      const updateData: any = {};
+      const updateData: Partial<Organization> = {};
       if (updates.name) updateData.name = updates.name.trim();
       if (updates.slug) {
         const slugRegex = /^[a-z0-9-]+$/;
@@ -101,8 +104,13 @@ export const useUpdateOrganization = () => {
       }
       if (updates.settings !== undefined) updateData.settings = updates.settings;
 
-      const organization = await organizationsApi.update(id, updateData);
-      return organization as Organization;
+      // Convert domain model to API update payload
+      const apiUpdateData = mapOrganizationDomainToUpdate(updateData);
+
+      const apiOrganization = await organizationsApi.update(id, apiUpdateData);
+      
+      // Map API response back to domain model
+      return mapOrganizationApiToDomain(apiOrganization as OrganizationApi.Organization);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
@@ -136,17 +144,20 @@ export const useDeleteOrganization = () => {
 export const useCurrentOrganization = () => {
   const { profile } = useAuth();
 
-  return useQuery({
+  return useQuery<Organization | null>({
     queryKey: ['current-organization', profile?.organization_id],
     queryFn: async () => {
       if (!profile || !profile.organization_id) {
         return null; // Super admin or no organization
       }
 
-      const organization = await organizationsApi.get(profile.organization_id);
-      return organization as Organization;
+      const apiOrganization = await organizationsApi.get(profile.organization_id);
+      return mapOrganizationApiToDomain(apiOrganization as OrganizationApi.Organization);
     },
     enabled: !!profile && !!profile.organization_id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 
@@ -166,11 +177,13 @@ export const useOrganizationStatistics = (organizationId: string) => {
       return stats as {
         userCount: number;
         buildingCount: number;
-        roomCount: number;
+        roomCount: 0;
       };
     },
     enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false, // REQUIRED: Performance optimization
+    refetchOnReconnect: false, // REQUIRED: Performance optimization
   });
 };
 

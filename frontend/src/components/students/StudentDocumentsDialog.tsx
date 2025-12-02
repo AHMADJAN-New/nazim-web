@@ -41,7 +41,6 @@ import {
   Student,
 } from '@/hooks/useStudents';
 import { documentUploadSchema, type DocumentUploadFormData } from '@/lib/validations';
-import { supabase } from '@/integrations/supabase/client';
 import { FileText, Upload, Trash2, Download, Eye, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -117,16 +116,9 @@ export function StudentDocumentsDialog({
   };
 
   const handleDownload = async (doc: StudentDocument) => {
-    const { data, error } = await supabase.storage
-      .from('student-files')
-      .createSignedUrl(doc.file_path, 60);
-
-    if (error) {
-      console.error('Failed to get download URL:', error);
-      return;
-    }
-
-    window.open(data.signedUrl, '_blank');
+    // Use Laravel API endpoint for document download
+    const downloadUrl = `/api/student-documents/${doc.id}/download`;
+    window.open(downloadUrl, '_blank');
   };
 
   const formatFileSize = (bytes: number | null) => {
@@ -161,18 +153,9 @@ export function StudentDocumentsDialog({
     setViewerDocument(doc);
     
     try {
-      const { data, error } = await supabase.storage
-        .from('student-files')
-        .createSignedUrl(doc.file_path, 3600); // 1 hour expiry
-
-      if (error) {
-        console.error('Failed to get view URL:', error);
-        toast.error(t('students.viewDocumentError') || 'Failed to load document');
-        setIsLoadingViewer(false);
-        return;
-      }
-
-      setViewerUrl(data.signedUrl);
+      // Use Laravel API endpoint for document viewing
+      const viewUrl = `/api/student-documents/${doc.id}/download`;
+      setViewerUrl(viewUrl);
       setIsViewerOpen(true);
     } catch (error) {
       console.error('Error viewing document:', error);

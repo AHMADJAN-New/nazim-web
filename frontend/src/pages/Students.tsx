@@ -15,9 +15,8 @@ import {
   useUpdateStudent,
   useStudentEducationalHistory,
   useStudentDisciplineRecords,
-  type Student,
-  type StudentInsert,
 } from '@/hooks/useStudents';
+import type { Student } from '@/types/domain/student';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,23 +44,22 @@ import { StudentDocumentsDialog } from '@/components/students/StudentDocumentsDi
 import { StudentEducationalHistoryDialog } from '@/components/students/StudentEducationalHistoryDialog';
 import { StudentDisciplineRecordsDialog } from '@/components/students/StudentDisciplineRecordsDialog';
 import { generateStudentProfilePdf } from '@/lib/studentProfilePdf';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 
-// Helper function to convert empty strings to null for optional fields
-const cleanStudentData = (data: StudentFormData): StudentInsert => {
+// Helper function to convert StudentFormData to domain Student format
+const cleanStudentData = (data: StudentFormData): Partial<Student> => {
   const cleaned: any = { ...data };
 
   // List of optional fields that should be null if empty
   const optionalFields = [
-    'card_number', 'grandfather_name', 'mother_name', 'birth_year', 'birth_date',
-    'admission_year', 'orig_province', 'orig_district', 'orig_village',
-    'curr_province', 'curr_district', 'curr_village', 'nationality',
-    'preferred_language', 'previous_school', 'guardian_name', 'guardian_relation',
-    'guardian_phone', 'guardian_tazkira', 'guardian_picture_path', 'home_address',
-    'zamin_name', 'zamin_phone', 'zamin_tazkira', 'zamin_address', 'applying_grade',
-    'disability_status', 'emergency_contact_name', 'emergency_contact_phone', 'family_income'
+    'cardNumber', 'grandfatherName', 'motherName', 'birthYear', 'birthDate',
+    'admissionYear', 'origProvince', 'origDistrict', 'origVillage',
+    'currProvince', 'currDistrict', 'currVillage', 'nationality',
+    'preferredLanguage', 'previousSchool', 'guardianName', 'guardianRelation',
+    'guardianPhone', 'guardianTazkira', 'guardianPicturePath', 'homeAddress',
+    'zaminName', 'zaminPhone', 'zaminTazkira', 'zaminAddress', 'applyingGrade',
+    'disabilityStatus', 'emergencyContactName', 'emergencyContactPhone', 'familyIncome'
   ];
 
   optionalFields.forEach(field => {
@@ -73,7 +71,7 @@ const cleanStudentData = (data: StudentFormData): StudentInsert => {
   return cleaned;
 };
 
-const statusBadge = (status: Student['student_status']) => {
+const statusBadge = (status: Student['status']) => {
   switch (status) {
     case 'active':
       return 'default';
@@ -111,7 +109,7 @@ export function Students() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [studentToView, setStudentToView] = useState<Student | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | Student['student_status']>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | Student['status']>('all');
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
   const [schoolFilter, setSchoolFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -121,18 +119,7 @@ export function Students() {
   const [historyDialogStudent, setHistoryDialogStudent] = useState<Student | null>(null);
   const [disciplineDialogStudent, setDisciplineDialogStudent] = useState<Student | null>(null);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('[Students Component] Data state:', {
-      studentsCount: students?.length || 0,
-      students: students?.map(s => ({ id: s.id, admission_no: s.admission_no, student_status: s.student_status, gender: s.gender, school_id: s.school_id })),
-      isLoading,
-      error: error?.message,
-      profile: profile ? { id: profile.id, role: profile.role, orgId: profile.organization_id } : null,
-      orgIdForQuery,
-      filters: { statusFilter, genderFilter, schoolFilter },
-    });
-  }, [students, isLoading, error, profile, orgIdForQuery, statusFilter, genderFilter, schoolFilter]);
+  // Debug logging removed for performance (was causing excessive re-renders)
 
   const {
     register,
@@ -154,36 +141,39 @@ export function Students() {
   const onDialogSubmit = async (values: any, isEdit: boolean, pictureFile?: File | null) => {
     // Use same cleaning as existing submit
     const cleanedData = cleanStudentData(values as StudentFormData);
-    // Resolve organization_id respecting multi-tenancy
-    let organizationId = cleanedData.organization_id || profile?.organization_id || null;
+    // Resolve organizationId respecting multi-tenancy
+    let organizationId = cleanedData.organizationId || profile?.organization_id || null;
     if (isSuperAdmin) {
       if (selectedOrg && selectedOrg !== 'all') {
         organizationId = selectedOrg;
       }
     }
     // Fallback: derive organization from selected school (for super_admin without header org selection)
-    if (!organizationId && cleanedData.school_id) {
-      const schoolMatch = schools?.find((s) => s.id === cleanedData.school_id);
+    if (!organizationId && cleanedData.schoolId) {
+      const schoolMatch = schools?.find((s) => s.id === cleanedData.schoolId);
       if (schoolMatch && (schoolMatch as any).organization_id) {
         organizationId = (schoolMatch as any).organization_id as string;
       }
     }
     if (!organizationId) {
-      // eslint-disable-next-line no-console
-      console.warn('Organization is required to create/update student');
+      if (import.meta.env.DEV) {
+        console.warn('Organization is required to create/update student');
+      }
       return;
     }
 
-    const payload: StudentInsert = {
+    const payload: Partial<Student> = {
       ...cleanedData,
-      organization_id: organizationId,
-      school_id: cleanedData.school_id || null,
+      organizationId,
+      schoolId: cleanedData.schoolId || null,
     };
 
     if (isEdit && selectedStudent) {
+      // Remove organizationId from update payload - it should never be updated
+      const { organizationId: _, ...updatePayload } = payload;
       await new Promise<void>((resolve, reject) => {
         updateStudent.mutate(
-          { id: selectedStudent.id, data: payload },
+          { id: selectedStudent.id, data: updatePayload },
           {
             onSuccess: async (updatedStudent) => {
               // Upload picture if one was selected during edit
@@ -193,10 +183,12 @@ export function Students() {
                     file: pictureFile,
                     studentId: updatedStudent.id,
                     organizationId,
-                    schoolId: cleanedData.school_id || null,
+                    schoolId: cleanedData.schoolId || null,
                   });
                 } catch (error) {
-                  console.error('Failed to upload picture:', error);
+                  if (import.meta.env.DEV) {
+                    console.error('Failed to upload picture:', error);
+                  }
                   // Don't reject the whole mutation if picture upload fails
                 }
               }
@@ -217,10 +209,12 @@ export function Students() {
                   file: pictureFile,
                   studentId: createdStudent.id,
                   organizationId,
-                  schoolId: cleanedData.school_id || null,
+                  schoolId: cleanedData.schoolId || null,
                 });
               } catch (error) {
-                console.error('Failed to upload picture:', error);
+                if (import.meta.env.DEV) {
+                  console.error('Failed to upload picture:', error);
+                }
                 // Don't reject the whole mutation if picture upload fails
               }
             }
@@ -235,15 +229,17 @@ export function Students() {
   const onSubmit = (data: StudentFormData) => {
     // Clean the data (convert empty strings to null)
     const cleanedData = cleanStudentData(data);
-    const payload: StudentInsert = {
+    const payload: Partial<Student> = {
       ...cleanedData,
-      organization_id: cleanedData.organization_id || profile?.organization_id,
-      school_id: cleanedData.school_id || null,
+      organizationId: cleanedData.organizationId || profile?.organization_id,
+      schoolId: cleanedData.schoolId || null,
     };
 
     if (selectedStudent) {
+      // Remove organizationId from update payload - it should never be updated
+      const { organizationId, ...updatePayload } = payload;
       updateStudent.mutate(
-        { id: selectedStudent.id, data: payload },
+        { id: selectedStudent.id, data: updatePayload },
         {
           onSuccess: () => {
             setIsEditOpen(false);
@@ -291,46 +287,29 @@ export function Students() {
   const handlePrint = async (student: Student) => {
     try {
       // Get school name
-      const schoolName = schools?.find(s => s.id === student.school_id)?.school_name || null;
+      const schoolName = schools?.find(s => s.id === student.schoolId)?.school_name || student.school?.schoolName || null;
 
       // Get student picture URL
       let pictureUrl: string | null = null;
-      if (student.picture_path && student.organization_id) {
-        const schoolPath = student.school_id ? `${student.school_id}/` : '';
-        const path = `${student.organization_id}/${schoolPath}${student.id}/picture/${student.picture_path}`;
-        const { data, error } = await supabase.storage
-          .from('student-files')
-          .createSignedUrl(path, 3600);
-        if (!error && data) {
-          pictureUrl = data.signedUrl;
-        }
+      if (student.picturePath && student.organizationId) {
+        // Construct URL from Laravel API storage path
+        const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
+        const schoolPath = student.schoolId ? `${student.schoolId}/` : '';
+        const path = `${student.organizationId}/${schoolPath}${student.id}/picture/${student.picturePath}`;
+        // Laravel typically serves files from /storage/ path
+        pictureUrl = `${baseUrl.replace('/api', '')}/storage/student-files/${path}`;
       }
 
       // Get guardian picture URL
       let guardianPictureUrl: string | null = null;
-      if (student.guardian_picture_path?.startsWith('http')) {
-        guardianPictureUrl = student.guardian_picture_path;
+      if (student.guardianPicturePath?.startsWith('http')) {
+        guardianPictureUrl = student.guardianPicturePath;
       }
 
-      // Fetch educational history
-      const { data: historyData, error: historyError } = await (supabase as any)
-        .from('student_educational_history')
-        .select('*')
-        .eq('student_id', student.id)
-        .is('deleted_at', null)
-        .order('start_date', { ascending: false });
-
-      const educationalHistory = historyError ? [] : (historyData || []);
-
-      // Fetch discipline records
-      const { data: disciplineData, error: disciplineError } = await (supabase as any)
-        .from('student_discipline_records')
-        .select('*')
-        .eq('student_id', student.id)
-        .is('deleted_at', null)
-        .order('incident_date', { ascending: false });
-
-      const disciplineRecords = disciplineError ? [] : (disciplineData || []);
+      // TODO: Migrate to Laravel API endpoints for educational history and discipline records
+      // For now, return empty arrays until endpoints are implemented
+      const educationalHistory: any[] = [];
+      const disciplineRecords: any[] = [];
 
       await generateStudentProfilePdf({
         student,
@@ -350,22 +329,22 @@ export function Students() {
   // Filter and sort students for display
   const filteredStudents = useMemo(() => {
     const list = students || [];
-    const searchLower = searchQuery.toLowerCase().trim();
+    const searchLower = (searchQuery || '').toLowerCase().trim();
     
     return list
       .filter((student) => {
         // Apply filters
-        if (statusFilter !== 'all' && student.student_status !== statusFilter) return false;
+        if (statusFilter !== 'all' && student.status !== statusFilter) return false;
         if (genderFilter !== 'all' && student.gender !== genderFilter) return false;
-        if (schoolFilter !== 'all' && student.school_id !== schoolFilter) return false;
+        if (schoolFilter !== 'all' && student.schoolId !== schoolFilter) return false;
         
         // Apply search query
         if (searchLower) {
-          const matchesName = student.full_name?.toLowerCase().includes(searchLower);
-          const matchesAdmissionNo = student.admission_no?.toLowerCase().includes(searchLower);
-          const matchesFatherName = student.father_name?.toLowerCase().includes(searchLower);
-          const matchesGuardianPhone = student.guardian_phone?.toLowerCase().includes(searchLower);
-          const matchesCardNumber = student.card_number?.toLowerCase().includes(searchLower);
+          const matchesName = student.fullName?.toLowerCase().includes(searchLower);
+          const matchesAdmissionNo = student.admissionNumber?.toLowerCase().includes(searchLower);
+          const matchesFatherName = student.fatherName?.toLowerCase().includes(searchLower);
+          const matchesGuardianPhone = student.guardianPhone?.toLowerCase().includes(searchLower);
+          const matchesCardNumber = student.cardNumber?.toLowerCase().includes(searchLower);
           
           if (!matchesName && !matchesAdmissionNo && !matchesFatherName && !matchesGuardianPhone && !matchesCardNumber) {
             return false;
@@ -374,7 +353,7 @@ export function Students() {
         
         return true;
       })
-      .sort((a, b) => a.admission_no.localeCompare(b.admission_no));
+      .sort((a, b) => a.admissionNumber.localeCompare(b.admissionNumber));
   }, [students, statusFilter, genderFilter, schoolFilter, searchQuery]);
 
   return (
@@ -534,41 +513,41 @@ export function Students() {
                       {filteredStudents.length > 0 ? (
                         filteredStudents.map((student) => (
                           <TableRow key={student.id}>
-                            <TableCell className="font-medium">{student.admission_no}</TableCell>
+                            <TableCell className="font-medium">{student.admissionNumber}</TableCell>
                             <TableCell>
                               <div className="space-y-1 min-w-[200px]">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-semibold break-words">{student.full_name}</span>
-                                  <Badge variant={statusBadge(student.student_status)} className="shrink-0">
-                                    {student.student_status === 'applied' ? t('students.applied') :
-                                     student.student_status === 'admitted' ? t('students.admitted') :
-                                     student.student_status === 'active' ? t('students.active') :
-                                     student.student_status === 'withdrawn' ? t('students.withdrawn') :
-                                     student.student_status}
+                                  <span className="font-semibold break-words">{student.fullName}</span>
+                                  <Badge variant={statusBadge(student.status)} className="shrink-0">
+                                    {student.status === 'applied' ? t('students.applied') :
+                                     student.status === 'admitted' ? t('students.admitted') :
+                                     student.status === 'active' ? t('students.active') :
+                                     student.status === 'withdrawn' ? t('students.withdrawn') :
+                                     student.status}
                                   </Badge>
-                                  {student.is_orphan && (
+                                  {student.isOrphan && (
                                     <Badge variant="destructive" className="shrink-0">
                                       {t('students.orphan') || 'Orphan'}
                                     </Badge>
                                   )}
                                 </div>
                                 <div className="text-xs text-muted-foreground flex flex-wrap gap-2 items-center">
-                                  <span className="break-words">{t('students.father') || 'Father'}: {student.father_name}</span>
-                                  {student.guardian_phone && (
-                                    <span className="break-words">{t('students.guardian') || 'Guardian'}: {student.guardian_phone}</span>
+                                  <span className="break-words">{t('students.father') || 'Father'}: {student.fatherName}</span>
+                                  {student.guardianPhone && (
+                                    <span className="break-words">{t('students.guardian') || 'Guardian'}: {student.guardianPhone}</span>
                                   )}
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>
-                              {schools?.find((school) => school.id === student.school_id)?.school_name || '—'}
+                              {schools?.find((school) => school.id === student.schoolId)?.school_name || student.school?.schoolName || '—'}
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline">
                                 {student.gender === 'male' ? t('students.male') : t('students.female')}
                               </Badge>
                             </TableCell>
-                            <TableCell>{student.applying_grade || '—'}</TableCell>
+                            <TableCell>{student.applyingGrade || '—'}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1 flex-wrap">
                                 <Button 

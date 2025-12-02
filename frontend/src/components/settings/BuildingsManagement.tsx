@@ -190,7 +190,7 @@ export function BuildingsManagement() {
   }, [isDialogOpen, selectedBuilding, filteredSchools, watch, setValue]);
 
   const filteredBuildings = buildings?.filter((building) =>
-    building.building_name.toLowerCase().includes(searchQuery.toLowerCase())
+    building.building_name?.toLowerCase().includes((searchQuery || '').toLowerCase())
   ) || [];
 
   // Find default template for buildings

@@ -4,61 +4,45 @@ import { useProfile } from './useProfiles';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { toast } from 'sonner';
 import { timetablesApi, teacherTimetablePreferencesApi } from '@/lib/api/client';
-import type { Tables, TablesInsert, TablesUpdate, Json } from '@/integrations/supabase/types';
+import type * as TimetableApi from '@/types/api/timetable';
+import type { Timetable, TimetableEntry, TeacherPreference } from '@/types/domain/timetable';
+import {
+	mapTimetableApiToDomain,
+	mapTimetableDomainToInsert,
+	mapTimetableDomainToUpdate,
+	mapTimetableEntryApiToDomain,
+	mapTimetableEntryDomainToInsert,
+	mapTeacherPreferenceApiToDomain,
+	mapTeacherPreferenceDomainToInsert,
+} from '@/mappers/timetableMapper';
 
-// Day of week type for timetable entries
-export type DayName = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday' | 'all_year';
-
-// Use generated type from database schema
-export type TimetableRow = Tables<'generated_timetables'>;
-export type TimetableRowInsert = TablesInsert<'generated_timetables'>;
-export type TimetableRowUpdate = TablesUpdate<'generated_timetables'>;
-
-// Use generated type from database schema, extended with relations
-export type TimetableEntryRow = Omit<Tables<'timetable_entries'>, 'day_name'> & {
-	day_name: DayName; // Override string with specific enum
-	// Optional denormalized data for UI convenience
-	class_academic_year?: {
-		id: string;
-		section_name: string | null;
-		class?: { id: string; name: string; code: string } | null;
-		academic_year?: { id: string; name: string } | null;
-	} | null;
-	subject?: { id: string; name: string; code: string } | null;
-	teacher?: { id: string; full_name: string } | null;
-	schedule_slot?: { id: string; name: string; start_time: string; end_time: string } | null;
-};
-export type TimetableEntryRowInsert = TablesInsert<'timetable_entries'>;
-export type TimetableEntryRowUpdate = TablesUpdate<'timetable_entries'>;
-
-// Use generated type from database schema, with override for Json array
-export type TeacherPreferenceRow = Omit<Tables<'teacher_timetable_preferences'>, 'schedule_slot_ids'> & {
-	schedule_slot_ids: string[]; // JSONB array at boundary, cast to string[]
-};
-export type TeacherPreferenceRowInsert = TablesInsert<'teacher_timetable_preferences'>;
-export type TeacherPreferenceRowUpdate = TablesUpdate<'teacher_timetable_preferences'>;
+// Re-export domain types and DayName for convenience
+export type { Timetable, TimetableEntry, TeacherPreference } from '@/types/domain/timetable';
+export type { DayName } from '@/types/api/timetable';
 
 export const useTimetables = (organizationId?: string, academicYearId?: string) => {
 	const { user } = useAuth();
 	const { data: profile } = useProfile();
 	const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-	return useQuery({
+	return useQuery<Timetable[]>({
 		queryKey: ['timetables', organizationId || profile?.organization_id, academicYearId, orgIds.join(',')],
-		queryFn: async (): Promise<TimetableRow[]> => {
+		queryFn: async () => {
 			if (!user || !profile || orgsLoading) return [];
 
 			// Fetch timetables from Laravel API
-			const timetables = await timetablesApi.list({
+			const apiTimetables = await timetablesApi.list({
 				organization_id: organizationId || profile.organization_id || undefined,
 				academic_year_id: academicYearId,
 			});
 
-			return (timetables || []) as TimetableRow[];
+			// Map API models to domain models
+			return (apiTimetables as TimetableApi.Timetable[]).map(mapTimetableApiToDomain);
 		},
 		enabled: !!user && !!profile,
-		staleTime: 10 * 60 * 1000,
-		gcTime: 30 * 60 * 1000,
+		staleTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
 	});
 };
 
@@ -66,22 +50,23 @@ export const useTimetable = (timetableId?: string) => {
 	const { user } = useAuth();
 	const { data: profile } = useProfile();
 
-	return useQuery({
+	return useQuery<{ timetable: Timetable | null; entries: TimetableEntry[] }>({
 		queryKey: ['timetable', timetableId],
-		queryFn: async (): Promise<{ timetable: TimetableRow | null; entries: TimetableEntryRow[] }> => {
+		queryFn: async () => {
 			if (!user || !profile || !timetableId) return { timetable: null, entries: [] };
 
 			// Fetch timetable with entries from Laravel API
-			const response = await timetablesApi.get(timetableId);
+			const response = await timetablesApi.get(timetableId) as { timetable?: TimetableApi.Timetable; entries?: TimetableApi.TimetableEntry[] };
 
 			return {
-				timetable: (response.timetable || null) as TimetableRow | null,
-				entries: (response.entries || []) as TimetableEntryRow[],
+				timetable: response.timetable ? mapTimetableApiToDomain(response.timetable) : null,
+				entries: (response.entries || []).map(entry => mapTimetableEntryApiToDomain(entry)),
 			};
 		},
 		enabled: !!user && !!profile && !!timetableId,
-		staleTime: 5 * 60 * 1000,
-		gcTime: 30 * 60 * 1000,
+		staleTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
 	});
 };
 
@@ -94,22 +79,22 @@ export const useCreateTimetable = () => {
 		mutationFn: async (params: {
 			name: string;
 			description?: string | null;
-			timetable_type?: string;
-			organization_id?: string | null;
-			academic_year_id?: string | null;
-			school_id?: string | null;
+			timetableType?: string;
+			organizationId?: string | null;
+			academicYearId?: string | null;
+			schoolId?: string | null;
 			entries: Array<{
-				class_academic_year_id: string;
-				subject_id: string;
-				teacher_id: string;
-				schedule_slot_id: string;
-				day_name: TimetableEntryRow['day_name'];
-				period_order: number;
+				classAcademicYearId: string;
+				subjectId: string;
+				teacherId: string;
+				scheduleSlotId: string;
+				dayName: TimetableApi.DayName;
+				periodOrder: number;
 			}>;
 		}) => {
 			if (!user || !profile) throw new Error('User not authenticated');
 
-			let organizationId = params.organization_id;
+			let organizationId = params.organizationId;
 			if (organizationId === undefined) {
 				if (profile.organization_id) {
 					organizationId = profile.organization_id;
@@ -121,19 +106,36 @@ export const useCreateTimetable = () => {
 				}
 			}
 
-			// Create timetable with entries via Laravel API
-			const timetable = await timetablesApi.create({
+			// Convert domain model to API insert payload
+			const insertData = mapTimetableDomainToInsert({
 				name: params.name.trim(),
-				timetable_type: params.timetable_type || 'teaching',
+				timetableType: params.timetableType || 'teaching',
 				description: params.description || null,
-				organization_id: organizationId,
-				academic_year_id: params.academic_year_id || null,
-				school_id: params.school_id || null,
-				is_active: true,
-				entries: params.entries,
+				organizationId,
+				academicYearId: params.academicYearId || null,
+				schoolId: params.schoolId || null,
+				isActive: true,
 			});
 
-			return timetable as TimetableRow;
+			// Convert entries to API format
+			const entries = params.entries.map(entry => mapTimetableEntryDomainToInsert({
+				timetableId: '', // Will be set by backend
+				classAcademicYearId: entry.classAcademicYearId,
+				subjectId: entry.subjectId,
+				teacherId: entry.teacherId,
+				scheduleSlotId: entry.scheduleSlotId,
+				dayName: entry.dayName,
+				periodOrder: entry.periodOrder,
+			}));
+
+			// Create timetable with entries via Laravel API
+			const apiTimetable = await timetablesApi.create({
+				...insertData,
+				entries,
+			});
+
+			// Map API response back to domain model
+			return mapTimetableApiToDomain(apiTimetable as TimetableApi.Timetable);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['timetables'] });
@@ -151,20 +153,25 @@ export const useUpdateTimetable = () => {
 	const { data: profile } = useProfile();
 
 	return useMutation({
-		mutationFn: async ({ id, ...updates }: Partial<TimetableRow> & { id: string }) => {
+		mutationFn: async ({ id, ...updates }: Partial<Timetable> & { id: string }) => {
 			if (!user || !profile) throw new Error('User not authenticated');
 
-			const payload: any = {};
-			if (updates.name !== undefined) payload.name = updates.name.trim();
-			if (updates.description !== undefined) payload.description = updates.description || null;
-			if (updates.is_active !== undefined) payload.is_active = updates.is_active;
-			if (updates.timetable_type !== undefined) payload.timetable_type = updates.timetable_type;
-			if (updates.academic_year_id !== undefined) payload.academic_year_id = updates.academic_year_id;
-			if (updates.school_id !== undefined) payload.school_id = updates.school_id;
+			// Convert domain model to API update payload
+			const updateData: Partial<Timetable> = {};
+			if (updates.name !== undefined) updateData.name = updates.name.trim();
+			if (updates.description !== undefined) updateData.description = updates.description || null;
+			if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
+			if (updates.timetableType !== undefined) updateData.timetableType = updates.timetableType;
+			if (updates.academicYearId !== undefined) updateData.academicYearId = updates.academicYearId;
+			if (updates.schoolId !== undefined) updateData.schoolId = updates.schoolId;
+
+			const apiUpdateData = mapTimetableDomainToUpdate(updateData);
 
 			// Update timetable via Laravel API
-			const timetable = await timetablesApi.update(id, payload);
-			return timetable as TimetableRow;
+			const apiTimetable = await timetablesApi.update(id, apiUpdateData);
+			
+			// Map API response back to domain model
+			return mapTimetableApiToDomain(apiTimetable as TimetableApi.Timetable);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['timetables'] });
@@ -205,24 +212,25 @@ export const useTeacherPreferences = (organizationId?: string, teacherId?: strin
 	const { data: profile } = useProfile();
 	const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-	return useQuery({
+	return useQuery<TeacherPreference[]>({
 		queryKey: ['teacher-prefs', organizationId || profile?.organization_id, teacherId, academicYearId, orgIds.join(',')],
-		queryFn: async (): Promise<TeacherPreferenceRow[]> => {
+		queryFn: async () => {
 			if (!user || !profile || orgsLoading) return [];
 
 			// Fetch teacher preferences from Laravel API
-			const preferences = await teacherTimetablePreferencesApi.list({
+			const apiPreferences = await teacherTimetablePreferencesApi.list({
 				organization_id: organizationId || profile.organization_id || undefined,
 				teacher_id: teacherId,
 				academic_year_id: academicYearId,
 			});
 
-			// Laravel returns schedule_slot_ids as array directly (JSONB handled server-side)
-			return (preferences || []) as TeacherPreferenceRow[];
+			// Map API models to domain models
+			return (apiPreferences as TimetableApi.TeacherPreference[]).map(mapTeacherPreferenceApiToDomain);
 		},
 		enabled: !!user && !!profile,
-		staleTime: 10 * 60 * 1000,
-		gcTime: 30 * 60 * 1000,
+		staleTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
 	});
 };
 
@@ -234,31 +242,35 @@ export const useUpsertTeacherPreference = () => {
 
 	return useMutation({
 		mutationFn: async (params: {
-			teacher_id: string;
-			schedule_slot_ids: string[];
-			organization_id?: string | null;
-			academic_year_id?: string | null;
-			is_active?: boolean;
+			teacherId: string;
+			scheduleSlotIds: string[];
+			organizationId?: string | null;
+			academicYearId?: string | null;
+			isActive?: boolean;
 			notes?: string | null;
 		}) => {
 			if (!user || !profile) throw new Error('User not authenticated');
 
-			let organizationId = params.organization_id ?? profile.organization_id ?? null;
+			let organizationId = params.organizationId ?? profile.organization_id ?? null;
 			if (organizationId && !orgIds.includes(organizationId)) {
 				throw new Error('Cannot update preferences for a non-accessible organization');
 			}
 
-			// Upsert preference via Laravel API
-			const preference = await teacherTimetablePreferencesApi.upsert({
-				teacher_id: params.teacher_id,
-				schedule_slot_ids: params.schedule_slot_ids,
-				organization_id: organizationId,
-				academic_year_id: params.academic_year_id || null,
-				is_active: params.is_active ?? true,
+			// Convert domain model to API insert payload
+			const insertData = mapTeacherPreferenceDomainToInsert({
+				teacherId: params.teacherId,
+				scheduleSlotIds: params.scheduleSlotIds,
+				organizationId,
+				academicYearId: params.academicYearId || null,
+				isActive: params.isActive ?? true,
 				notes: params.notes || null,
 			});
 
-			return preference as TeacherPreferenceRow;
+			// Upsert preference via Laravel API
+			const apiPreference = await teacherTimetablePreferencesApi.upsert(insertData);
+
+			// Map API response back to domain model
+			return mapTeacherPreferenceApiToDomain(apiPreference as TimetableApi.TeacherPreference);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['teacher-prefs'] });

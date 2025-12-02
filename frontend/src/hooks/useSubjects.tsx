@@ -2,66 +2,29 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import { academicYearsApi, subjectsApi } from '@/lib/api/client';
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import { academicYearsApi, subjectsApi, classSubjectsApi, classSubjectTemplatesApi, classAcademicYearsApi } from '@/lib/api/client';
+import type * as SubjectApi from '@/types/api/subject';
+import type { Subject, ClassSubject, ClassSubjectTemplate } from '@/types/domain/subject';
+import { 
+    mapSubjectApiToDomain, 
+    mapSubjectDomainToInsert, 
+    mapSubjectDomainToUpdate,
+    mapClassSubjectApiToDomain,
+    mapClassSubjectDomainToInsert,
+    mapClassSubjectDomainToUpdate,
+    mapClassSubjectTemplateApiToDomain,
+    mapClassSubjectTemplateDomainToInsert,
+    mapClassSubjectTemplateDomainToUpdate,
+} from '@/mappers/subjectMapper';
 
-// Use generated type from database schema
-export type Subject = Tables<'subjects'>;
-export type SubjectInsert = TablesInsert<'subjects'>;
-export type SubjectUpdate = TablesUpdate<'subjects'>;
-
-// Use generated type from database schema, extended with relations
-export type ClassSubjectTemplate = Tables<'class_subject_templates'> & {
-    // Extended with relationship data
-    subject?: Subject;
-    class?: {
-        id: string;
-        name: string;
-        code: string;
-    };
-};
-export type ClassSubjectTemplateInsert = TablesInsert<'class_subject_templates'>;
-export type ClassSubjectTemplateUpdate = TablesUpdate<'class_subject_templates'>;
-
-// Use generated type from database schema, extended with relations
-export type ClassSubject = Tables<'class_subjects'> & {
-    // Extended with relationship data
-    subject?: Subject;
-    class_subject_template?: ClassSubjectTemplate;
-    class_academic_year?: {
-        id: string;
-        class_id: string;
-        academic_year_id: string;
-        section_name: string | null;
-        class?: {
-            id: string;
-            name: string;
-            code: string;
-        };
-        academic_year?: {
-            id: string;
-            name: string;
-            start_date: string;
-            end_date: string;
-        };
-    };
-    teacher?: {
-        id: string;
-        full_name: string;
-    };
-    room?: {
-        id: string;
-        room_number: string;
-    };
-};
-export type ClassSubjectInsert = TablesInsert<'class_subjects'>;
-export type ClassSubjectUpdate = TablesUpdate<'class_subjects'>;
+// Re-export domain types for convenience
+export type { Subject, ClassSubject, ClassSubjectTemplate } from '@/types/domain/subject';
 
 export const useSubjects = (organizationId?: string) => {
     const { user, profile } = useAuth();
     const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-    return useQuery({
+    return useQuery<Subject[]>({
         queryKey: ['subjects', organizationId || profile?.organization_id, orgIds.join(',')],
         queryFn: async () => {
             if (!user || !profile || orgsLoading) return [];
@@ -72,12 +35,14 @@ export const useSubjects = (organizationId?: string) => {
                 params.organization_id = organizationId;
             }
 
-            const data = await subjectsApi.list(params);
-            return (data || []) as Subject[];
+            const apiSubjects = await subjectsApi.list(params);
+            // Map API models to domain models
+            return (apiSubjects as SubjectApi.Subject[]).map(mapSubjectApiToDomain);
         },
         enabled: !!user && !!profile,
-        staleTime: 10 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
     });
 };
 
@@ -85,115 +50,43 @@ export const useClassSubjects = (classAcademicYearId?: string, organizationId?: 
     const { user, profile } = useAuth();
     const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
-    return useQuery({
+    return useQuery<ClassSubject[]>({
         queryKey: ['class-subjects', classAcademicYearId, organizationId || profile?.organization_id, orgIds.join(',')],
         queryFn: async () => {
             if (!user || !profile || !classAcademicYearId || orgsLoading) return [];
 
-            let query = (supabase as any)
-                .from('class_subjects')
-                .select(`
-          *,
-          subject:subjects(*),
-          class_academic_year:class_academic_years(
-            id,
-            class_id,
-            academic_year_id,
-            section_name,
-            class:classes(id, name, code)
-          )
-        `);
-
-            // Filter by class_academic_year
-            query = query.eq('class_academic_year_id', classAcademicYearId);
+            // Use Laravel API
+            const params: { class_academic_year_id: string; organization_id?: string } = {
+                class_academic_year_id: classAcademicYearId,
+            };
 
             const resolvedOrgIds = organizationId ? [organizationId] : orgIds;
             if (resolvedOrgIds.length === 0) {
                 return [];
             }
-            query = query.in('organization_id', resolvedOrgIds);
-
-            const { data, error } = await query
-                .is('deleted_at', null);
-
-            if (error) {
-                throw new Error(error.message);
+            // If multiple orgs, we'll need to fetch for each, but for now use first
+            if (resolvedOrgIds.length > 0) {
+                params.organization_id = resolvedOrgIds[0];
             }
 
-            // Enrich with teacher and room data
-            let classSubjects = (data || []) as ClassSubject[];
+            const apiClassSubjects = await classSubjectsApi.list(params);
+            
+            // Map API models to domain models
+            const classSubjects = (apiClassSubjects as SubjectApi.ClassSubject[]).map(mapClassSubjectApiToDomain);
 
-            // Fetch academic years separately via Laravel API
-            const academicYearIds = [...new Set(classSubjects.map(cs => cs.class_academic_year?.academic_year_id).filter(Boolean))] as string[];
-            const academicYearsMap: Record<string, { id: string; name: string; start_date: string; end_date: string }> = {};
-            if (academicYearIds.length > 0) {
-                const academicYearsPromises = academicYearIds.map(id => academicYearsApi.get(id).catch(() => null));
-                const academicYearsResults = await Promise.all(academicYearsPromises);
-
-                academicYearsResults.forEach((academicYear: any) => {
-                    if (academicYear && academicYear.id) {
-                        academicYearsMap[academicYear.id] = {
-                            id: academicYear.id,
-                            name: academicYear.name,
-                            start_date: academicYear.start_date,
-                            end_date: academicYear.end_date,
-                        };
-                    }
-                });
-            }
-
-            // Merge academic year data into class_academic_year
-            classSubjects = classSubjects.map(cs => ({
-                ...cs,
-                class_academic_year: cs.class_academic_year ? {
-                    ...cs.class_academic_year,
-                    academic_year: cs.class_academic_year.academic_year_id ? academicYearsMap[cs.class_academic_year.academic_year_id] || null : null,
-                } : undefined,
-            })) as ClassSubject[];
-
-            const teacherIds = [...new Set(classSubjects.map(cs => cs.teacher_id).filter(Boolean))] as string[];
-            const roomIds = [...new Set(classSubjects.map(cs => cs.room_id).filter(Boolean))] as string[];
-
-            let teachersMap = new Map();
-            if (teacherIds.length > 0) {
-                const { data: teachersData } = await (supabase as any)
-                    .from('profiles')
-                    .select('id, full_name')
-                    .in('id', teacherIds);
-                teachersMap = new Map((teachersData || []).map((t: any) => [t.id, t]));
-            }
-
-            let roomsMap = new Map();
-            if (roomIds.length > 0) {
-                const { data: roomsData } = await (supabase as any)
-                    .from('rooms')
-                    .select('id, room_number')
-                    .in('id', roomIds);
-                roomsMap = new Map((roomsData || []).map((r: any) => [r.id, r]));
-            }
-
-            const enriched = classSubjects.map(cs => ({
-                ...cs,
-                teacher: cs.teacher_id && teachersMap.has(cs.teacher_id)
-                    ? { id: cs.teacher_id, full_name: (teachersMap.get(cs.teacher_id) as any).full_name }
-                    : null,
-                room: cs.room_id && roomsMap.has(cs.room_id)
-                    ? { id: cs.room_id, room_number: (roomsMap.get(cs.room_id) as any).room_number }
-                    : null,
-            })) as ClassSubject[];
-
-            // Sort by subject name (can't order by nested relation in Supabase)
-            enriched.sort((a, b) => {
+            // Sort by subject name
+            classSubjects.sort((a, b) => {
                 const nameA = a.subject?.name || '';
                 const nameB = b.subject?.name || '';
                 return nameA.localeCompare(nameB);
             });
 
-            return enriched;
+            return classSubjects;
         },
         enabled: !!user && !!profile && !!classAcademicYearId,
-        staleTime: 10 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
     });
 };
 
@@ -201,197 +94,88 @@ export const useClassSubjects = (classAcademicYearId?: string, organizationId?: 
 export const useClassSubjectsForMultipleClasses = (classAcademicYearIds: string[], organizationId?: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery({
+    return useQuery<ClassSubject[]>({
         queryKey: ['class-subjects-multiple', classAcademicYearIds.sort().join(','), organizationId || profile?.organization_id],
         queryFn: async () => {
             if (!user || !profile || classAcademicYearIds.length === 0) return [];
 
-            let query = (supabase as any)
-                .from('class_subjects')
-                .select(`
-          *,
-          subject:subjects(*),
-          class_academic_year:class_academic_years(
-            id,
-            class_id,
-            academic_year_id,
-            section_name,
-            class:classes(id, name, code)
-          )
-        `)
-                .in('class_academic_year_id', classAcademicYearIds);
+            // Fetch class subjects for each class academic year
+            const allClassSubjects: ClassSubject[] = [];
+            
+            for (const classAcademicYearId of classAcademicYearIds) {
+                const params: { class_academic_year_id: string; organization_id?: string } = {
+                    class_academic_year_id: classAcademicYearId,
+                };
 
-            // Super admin can see all or filter by org
-            const isSuperAdmin = profile.role === 'super_admin';
-
-            if (!isSuperAdmin) {
-                // Regular users see only their organization's class subjects
-                const userOrgId = organizationId || profile.organization_id;
-                if (userOrgId) {
-                    query = query.eq('organization_id', userOrgId);
-                } else {
-                    return [];
-                }
-            } else if (organizationId) {
-                query = query.eq('organization_id', organizationId);
-            }
-
-            const { data, error } = await query
-                .is('deleted_at', null);
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            // Enrich with teacher and room data
-            let classSubjects = (data || []) as ClassSubject[];
-
-            // Fetch academic years separately via Laravel API
-            const academicYearIds = [...new Set(classSubjects.map(cs => cs.class_academic_year?.academic_year_id).filter(Boolean))] as string[];
-            const academicYearsMap: Record<string, { id: string; name: string; start_date: string; end_date: string }> = {};
-            if (academicYearIds.length > 0) {
-                const academicYearsPromises = academicYearIds.map(id => academicYearsApi.get(id).catch(() => null));
-                const academicYearsResults = await Promise.all(academicYearsPromises);
-
-                academicYearsResults.forEach((academicYear: any) => {
-                    if (academicYear && academicYear.id) {
-                        academicYearsMap[academicYear.id] = {
-                            id: academicYear.id,
-                            name: academicYear.name,
-                            start_date: academicYear.start_date,
-                            end_date: academicYear.end_date,
-                        };
+                // Super admin can see all or filter by org
+                const isSuperAdmin = profile.role === 'super_admin';
+                if (!isSuperAdmin) {
+                    const userOrgId = organizationId || profile.organization_id;
+                    if (userOrgId) {
+                        params.organization_id = userOrgId;
+                    } else {
+                        continue; // Skip if no org ID
                     }
-                });
+                } else if (organizationId) {
+                    params.organization_id = organizationId;
+                }
+
+                try {
+                    const apiClassSubjects = await classSubjectsApi.list(params);
+                    const classSubjects = (apiClassSubjects as SubjectApi.ClassSubject[]).map(mapClassSubjectApiToDomain);
+                    allClassSubjects.push(...classSubjects);
+                } catch (error) {
+                    if (import.meta.env.DEV) {
+                        console.error(`[useClassSubjectsForMultipleClasses] Error fetching for class academic year ${classAcademicYearId}:`, error);
+                    }
+                }
             }
-
-            // Merge academic year data into class_academic_year
-            classSubjects = classSubjects.map(cs => ({
-                ...cs,
-                class_academic_year: cs.class_academic_year ? {
-                    ...cs.class_academic_year,
-                    academic_year: cs.class_academic_year.academic_year_id ? academicYearsMap[cs.class_academic_year.academic_year_id] || null : null,
-                } : undefined,
-            })) as ClassSubject[];
-
-            const teacherIds = [...new Set(classSubjects.map(cs => cs.teacher_id).filter(Boolean))] as string[];
-            const roomIds = [...new Set(classSubjects.map(cs => cs.room_id).filter(Boolean))] as string[];
-
-            let teachersMap = new Map();
-            if (teacherIds.length > 0) {
-                const { data: teachersData } = await (supabase as any)
-                    .from('profiles')
-                    .select('id, full_name')
-                    .in('id', teacherIds);
-                teachersMap = new Map((teachersData || []).map((t: any) => [t.id, t]));
-            }
-
-            let roomsMap = new Map();
-            if (roomIds.length > 0) {
-                const { data: roomsData } = await (supabase as any)
-                    .from('rooms')
-                    .select('id, room_number')
-                    .in('id', roomIds);
-                roomsMap = new Map((roomsData || []).map((r: any) => [r.id, r]));
-            }
-
-            const enriched = classSubjects.map(cs => ({
-                ...cs,
-                teacher: cs.teacher_id && teachersMap.has(cs.teacher_id)
-                    ? { id: cs.teacher_id, full_name: (teachersMap.get(cs.teacher_id) as any).full_name }
-                    : null,
-                room: cs.room_id && roomsMap.has(cs.room_id)
-                    ? { id: cs.room_id, room_number: (roomsMap.get(cs.room_id) as any).room_number }
-                    : null,
-            })) as ClassSubject[];
 
             // Sort by subject name
-            enriched.sort((a, b) => {
+            allClassSubjects.sort((a, b) => {
                 const nameA = a.subject?.name || '';
                 const nameB = b.subject?.name || '';
                 return nameA.localeCompare(nameB);
             });
 
-            return enriched;
+            return allClassSubjects;
         },
         enabled: !!user && !!profile && classAcademicYearIds.length > 0,
-        staleTime: 10 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
     });
 };
 
 export const useSubjectHistory = (subjectId: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery({
+    return useQuery<ClassSubject[]>({
         queryKey: ['subject-history', subjectId],
         queryFn: async () => {
             if (!user || !profile || !subjectId) return [];
 
-            const { data, error } = await (supabase as any)
-                .from('class_subjects')
-                .select(`
-          *,
-          class_academic_year:class_academic_years(
-            id,
-            class_id,
-            academic_year_id,
-            section_name,
-            class:classes(id, name, code)
-          )
-        `)
-                .eq('subject_id', subjectId)
-                .is('deleted_at', null);
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            let assignments = (data || []) as ClassSubject[];
-
-            // Fetch academic years separately via Laravel API
-            const academicYearIds = [...new Set(assignments.map(a => a.class_academic_year?.academic_year_id).filter(Boolean))] as string[];
-            const academicYearsMap: Record<string, { id: string; name: string; start_date: string; end_date: string; is_current: boolean }> = {};
-            if (academicYearIds.length > 0) {
-                const academicYearsPromises = academicYearIds.map(id => academicYearsApi.get(id).catch(() => null));
-                const academicYearsResults = await Promise.all(academicYearsPromises);
-
-                academicYearsResults.forEach((academicYear: any) => {
-                    if (academicYear && academicYear.id) {
-                        academicYearsMap[academicYear.id] = {
-                            id: academicYear.id,
-                            name: academicYear.name,
-                            start_date: academicYear.start_date,
-                            end_date: academicYear.end_date,
-                            is_current: academicYear.is_current || false,
-                        };
-                    }
-                });
-            }
-
-            // Merge academic year data into class_academic_year
-            assignments = assignments.map(a => ({
-                ...a,
-                class_academic_year: a.class_academic_year ? {
-                    ...a.class_academic_year,
-                    academic_year: a.class_academic_year.academic_year_id ? academicYearsMap[a.class_academic_year.academic_year_id] || null : null,
-                } : undefined,
-            })) as ClassSubject[];
+            // Use Laravel API
+            const apiClassSubjects = await classSubjectsApi.list({ subject_id: subjectId });
+            
+            // Map API models to domain models
+            const assignments = (apiClassSubjects as SubjectApi.ClassSubject[]).map(mapClassSubjectApiToDomain);
 
             // Sort by academic year start_date (descending - most recent first)
             return assignments.sort((a, b) => {
-                const dateA = a.class_academic_year?.academic_year?.start_date
-                    ? new Date(a.class_academic_year.academic_year.start_date).getTime()
+                const dateA = a.classAcademicYear?.academicYear?.startDate
+                    ? a.classAcademicYear.academicYear.startDate.getTime()
                     : 0;
-                const dateB = b.class_academic_year?.academic_year?.start_date
-                    ? new Date(b.class_academic_year.academic_year.start_date).getTime()
+                const dateB = b.classAcademicYear?.academicYear?.startDate
+                    ? b.classAcademicYear.academicYear.startDate.getTime()
                     : 0;
                 return dateB - dateA;
             });
         },
         enabled: !!user && !!profile && !!subjectId,
-        staleTime: 10 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
     });
 };
 
@@ -400,19 +184,13 @@ export const useCreateSubject = () => {
     const { user, profile } = useAuth();
 
     return useMutation({
-        mutationFn: async (subjectData: {
-            name: string;
-            code: string;
-            description?: string | null;
-            is_active?: boolean;
-            organization_id?: string | null;
-        }) => {
+        mutationFn: async (subjectData: Partial<Subject>) => {
             if (!user || !profile) {
                 throw new Error('User not authenticated');
             }
 
             // Get organization_id - use provided or user's org
-            let organizationId = subjectData.organization_id;
+            let organizationId = subjectData.organizationId;
             if (organizationId === undefined) {
                 if (profile.role === 'super_admin') {
                     organizationId = null; // Default to global
@@ -428,16 +206,18 @@ export const useCreateSubject = () => {
                 throw new Error('Cannot create subject for different organization');
             }
 
-            // Use Laravel API
-            const data = await subjectsApi.create({
-                name: subjectData.name.trim(),
-                code: subjectData.code.trim().toUpperCase(),
-                description: subjectData.description || null,
-                is_active: subjectData.is_active !== undefined ? subjectData.is_active : true,
-                organization_id: organizationId,
+            // Convert domain model to API insert payload
+            const insertData = mapSubjectDomainToInsert({
+                ...subjectData,
+                name: subjectData.name?.trim() || '',
+                code: subjectData.code?.trim().toUpperCase() || '',
+                organizationId,
             });
 
-            return data;
+            // Use Laravel API
+            const apiSubject = await subjectsApi.create(insertData);
+            // Map API response back to domain model
+            return mapSubjectApiToDomain(apiSubject as SubjectApi.Subject);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
@@ -460,30 +240,25 @@ export const useUpdateSubject = () => {
             }
 
             // Get current subject to check organization
-            const currentSubject = await subjectsApi.get(id);
+            const currentSubjectApi = await subjectsApi.get(id);
+            const currentSubject = mapSubjectApiToDomain(currentSubjectApi as SubjectApi.Subject);
 
             if (!currentSubject) {
                 throw new Error('Subject not found');
             }
 
             // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentSubject.organization_id !== profile.organization_id && currentSubject.organization_id !== null) {
+            if (profile.role !== 'super_admin' && currentSubject.organizationId !== profile.organization_id && currentSubject.organizationId !== null) {
                 throw new Error('Cannot update subject from different organization');
             }
 
-            // Prevent organization_id changes (unless super admin)
-            if (updates.organization_id !== undefined && profile.role !== 'super_admin') {
-                throw new Error('Cannot change organization_id');
+            // Prevent organizationId changes (unless super admin)
+            if (updates.organizationId !== undefined && profile.role !== 'super_admin') {
+                throw new Error('Cannot change organizationId');
             }
 
-            // Prepare update data
-            const updateData: {
-                name?: string;
-                code?: string;
-                description?: string | null;
-                is_active?: boolean;
-                organization_id?: string | null;
-            } = {};
+            // Prepare update data with trimmed values
+            const updateData: Partial<Subject> = {};
 
             if (updates.name !== undefined) {
                 const trimmedName = updates.name.trim();
@@ -498,17 +273,20 @@ export const useUpdateSubject = () => {
             if (updates.description !== undefined) {
                 updateData.description = updates.description;
             }
-            if (updates.is_active !== undefined) {
-                updateData.is_active = updates.is_active;
+            if (updates.isActive !== undefined) {
+                updateData.isActive = updates.isActive;
             }
-            if (updates.organization_id !== undefined && profile.role === 'super_admin') {
-                updateData.organization_id = updates.organization_id;
+            if (updates.organizationId !== undefined && profile.role === 'super_admin') {
+                updateData.organizationId = updates.organizationId;
             }
+
+            // Convert domain model to API update payload
+            const apiUpdateData = mapSubjectDomainToUpdate(updateData);
 
             // Use Laravel API
-            const data = await subjectsApi.update(id, updateData);
-
-            return data;
+            const apiSubject = await subjectsApi.update(id, apiUpdateData);
+            // Map API response back to domain model
+            return mapSubjectApiToDomain(apiSubject as SubjectApi.Subject);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
@@ -572,34 +350,24 @@ export const useAssignSubjectToClass = () => {
             }
 
             // Get class_academic_year to determine organization_id and room_id
-            const { data: classYearData } = await (supabase as any)
-                .from('class_academic_years')
-                .select('organization_id, room_id')
-                .eq('id', assignmentData.class_academic_year_id)
-                .is('deleted_at', null)
-                .single();
+            const classYearData = await classAcademicYearsApi.get(assignmentData.class_academic_year_id);
 
             if (!classYearData) {
                 throw new Error('Class instance not found');
             }
 
             // Auto-fetch room from class_academic_year if not provided
-            const roomId = assignmentData.room_id || classYearData.room_id || null;
+            const roomId = assignmentData.room_id || (classYearData as any).room_id || null;
 
             // Get subject to verify organization_id matches
-            const { data: subjectData } = await (supabase as any)
-                .from('subjects')
-                .select('organization_id')
-                .eq('id', assignmentData.subject_id)
-                .is('deleted_at', null)
-                .single();
+            const subjectData = await subjectsApi.get(assignmentData.subject_id);
 
             if (!subjectData) {
                 throw new Error('Subject not found');
             }
 
             // Determine organization_id (prefer class_academic_year's)
-            const organizationId = classYearData.organization_id;
+            const organizationId = (classYearData as any).organization_id;
 
             // Validate organization access
             if (profile.role !== 'super_admin' && organizationId !== profile.organization_id && organizationId !== null) {
@@ -607,37 +375,30 @@ export const useAssignSubjectToClass = () => {
             }
 
             // Check for duplicate (same subject in same class_academic_year)
-            const { data: existing } = await (supabase as any)
-                .from('class_subjects')
-                .select('id')
-                .eq('class_academic_year_id', assignmentData.class_academic_year_id)
-                .eq('subject_id', assignmentData.subject_id)
-                .is('deleted_at', null)
-                .maybeSingle();
+            const existing = await classSubjectsApi.list({
+                class_academic_year_id: assignmentData.class_academic_year_id,
+                subject_id: assignmentData.subject_id,
+            });
 
-            if (existing) {
+            if (Array.isArray(existing) && existing.length > 0) {
                 throw new Error('This subject is already assigned to this class');
             }
 
-            const { data, error } = await (supabase as any)
-                .from('class_subjects')
-                .insert({
-                    class_academic_year_id: assignmentData.class_academic_year_id,
-                    subject_id: assignmentData.subject_id,
-                    organization_id: organizationId,
-                    teacher_id: null, // Teacher assignment will be handled separately
-                    room_id: roomId, // Use provided room or class's room
-                    notes: assignmentData.notes || null,
-                    is_active: true,
-                })
-                .select()
-                .single();
+            // Convert to API insert payload
+            const insertData = mapClassSubjectDomainToInsert({
+                classAcademicYearId: assignmentData.class_academic_year_id,
+                subjectId: assignmentData.subject_id,
+                organizationId,
+                teacherId: null, // Teacher assignment will be handled separately
+                roomId, // Use provided room or class's room
+                notes: assignmentData.notes || null,
+                isRequired: true,
+            });
 
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            return data;
+            const apiClassSubject = await classSubjectsApi.create(insertData);
+            
+            // Map API response back to domain model
+            return mapClassSubjectApiToDomain(apiClassSubject as SubjectApi.ClassSubject);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subjects'] });
@@ -661,50 +422,37 @@ export const useUpdateClassSubject = () => {
             }
 
             // Get current assignment to check organization
-            const { data: currentAssignment } = await (supabase as any)
-                .from('class_subjects')
-                .select('organization_id, class_academic_year_id, subject_id')
-                .eq('id', id)
-                .is('deleted_at', null)
-                .single();
+            const currentAssignmentApi = await classSubjectsApi.get(id);
+            const currentAssignment = mapClassSubjectApiToDomain(currentAssignmentApi as SubjectApi.ClassSubject);
 
             if (!currentAssignment) {
                 throw new Error('Subject assignment not found');
             }
 
             // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentAssignment.organization_id !== profile.organization_id && currentAssignment.organization_id !== null) {
+            if (profile.role !== 'super_admin' && currentAssignment.organizationId !== profile.organization_id && currentAssignment.organizationId !== null) {
                 throw new Error('Cannot update subject assignment from different organization');
             }
 
-            // Check for duplicate if subject_id is being changed
-            if (updates.subject_id !== undefined && updates.subject_id !== currentAssignment.subject_id) {
-                const { data: existing } = await (supabase as any)
-                    .from('class_subjects')
-                    .select('id')
-                    .eq('class_academic_year_id', currentAssignment.class_academic_year_id)
-                    .eq('subject_id', updates.subject_id)
-                    .neq('id', id)
-                    .is('deleted_at', null)
-                    .maybeSingle();
+            // Check for duplicate if subjectId is being changed
+            if (updates.subjectId !== undefined && updates.subjectId !== currentAssignment.subjectId) {
+                const existing = await classSubjectsApi.list({
+                    class_academic_year_id: currentAssignment.classAcademicYearId,
+                    subject_id: updates.subjectId,
+                });
 
-                if (existing) {
+                if (Array.isArray(existing) && existing.some((cs: any) => cs.id !== id)) {
                     throw new Error('This subject is already assigned to this class');
                 }
             }
 
-            const { data, error } = await (supabase as any)
-                .from('class_subjects')
-                .update(updates)
-                .eq('id', id)
-                .select()
-                .single();
+            // Convert domain model to API update payload
+            const apiUpdateData = mapClassSubjectDomainToUpdate(updates);
 
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            return data;
+            const apiClassSubject = await classSubjectsApi.update(id, apiUpdateData);
+            
+            // Map API response back to domain model
+            return mapClassSubjectApiToDomain(apiClassSubject as SubjectApi.ClassSubject);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subjects'] });
@@ -728,31 +476,20 @@ export const useRemoveSubjectFromClass = () => {
             }
 
             // Get current assignment to check organization
-            const { data: currentAssignment } = await (supabase as any)
-                .from('class_subjects')
-                .select('organization_id')
-                .eq('id', id)
-                .is('deleted_at', null)
-                .single();
+            const currentAssignmentApi = await classSubjectsApi.get(id);
+            const currentAssignment = mapClassSubjectApiToDomain(currentAssignmentApi as SubjectApi.ClassSubject);
 
             if (!currentAssignment) {
                 throw new Error('Subject assignment not found');
             }
 
             // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentAssignment.organization_id !== profile.organization_id && currentAssignment.organization_id !== null) {
+            if (profile.role !== 'super_admin' && currentAssignment.organizationId !== profile.organization_id && currentAssignment.organizationId !== null) {
                 throw new Error('Cannot remove subject assignment from different organization');
             }
 
-            // Soft delete
-            const { error } = await (supabase as any)
-                .from('class_subjects')
-                .update({ deleted_at: new Date().toISOString() })
-                .eq('id', id);
-
-            if (error) {
-                throw new Error(error.message);
-            }
+            // Delete via Laravel API (handles soft delete)
+            await classSubjectsApi.delete(id);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subjects'] });
@@ -780,20 +517,15 @@ export const useBulkAssignSubjects = () => {
             }
 
             // Get class_academic_year to determine organization_id and room_id
-            const { data: classYearData } = await (supabase as any)
-                .from('class_academic_years')
-                .select('organization_id, room_id')
-                .eq('id', bulkData.class_academic_year_id)
-                .is('deleted_at', null)
-                .single();
+            const classYearData = await classAcademicYearsApi.get(bulkData.class_academic_year_id);
 
             if (!classYearData) {
                 throw new Error('Class instance not found');
             }
 
-            const organizationId = classYearData.organization_id;
+            const organizationId = (classYearData as any).organization_id;
             // Auto-fetch room from class_academic_year if not provided
-            const roomId = bulkData.default_room_id || classYearData.room_id || null;
+            const roomId = bulkData.default_room_id || (classYearData as any).room_id || null;
 
             // Validate organization access
             if (profile.role !== 'super_admin' && organizationId !== profile.organization_id && organizationId !== null) {
@@ -801,14 +533,12 @@ export const useBulkAssignSubjects = () => {
             }
 
             // Check for existing assignments
-            const { data: existingAssignments } = await (supabase as any)
-                .from('class_subjects')
-                .select('subject_id')
-                .eq('class_academic_year_id', bulkData.class_academic_year_id)
-                .is('deleted_at', null);
+            const existingAssignments = await classSubjectsApi.list({
+                class_academic_year_id: bulkData.class_academic_year_id,
+            });
 
             const existingSubjectIds = new Set(
-                (existingAssignments || []).map((a: any) => a.subject_id)
+                (existingAssignments as SubjectApi.ClassSubject[] || []).map((a: any) => a.subject_id)
             );
 
             // Filter out subjects that are already assigned
@@ -820,28 +550,24 @@ export const useBulkAssignSubjects = () => {
                 throw new Error('All specified subjects are already assigned to this class');
             }
 
-            // Prepare bulk insert data
-            const insertData = newSubjectIds.map(subjectId => ({
-                class_academic_year_id: bulkData.class_academic_year_id,
-                subject_id: subjectId,
-                organization_id: organizationId,
-                teacher_id: null, // Teacher assignment will be handled separately
-                room_id: roomId, // Use provided room or class's room
-                is_active: true,
-            }));
+            // Create assignments one by one (Laravel API handles bulk operations)
+            const created: ClassSubject[] = [];
+            for (const subjectId of newSubjectIds) {
+                const insertData = mapClassSubjectDomainToInsert({
+                    classAcademicYearId: bulkData.class_academic_year_id,
+                    subjectId,
+                    organizationId,
+                    teacherId: null, // Teacher assignment will be handled separately
+                    roomId, // Use provided room or class's room
+                    isRequired: true,
+                });
 
-            // Bulk insert
-            const { data, error } = await (supabase as any)
-                .from('class_subjects')
-                .insert(insertData)
-                .select();
-
-            if (error) {
-                throw new Error(error.message);
+                const apiClassSubject = await classSubjectsApi.create(insertData);
+                created.push(mapClassSubjectApiToDomain(apiClassSubject as SubjectApi.ClassSubject));
             }
 
             return {
-                created: data,
+                created,
                 skipped: bulkData.subject_ids.length - newSubjectIds.length,
             };
         },
@@ -871,85 +597,63 @@ export const useCopySubjectsBetweenYears = () => {
             }
 
             // Get all subject assignments to copy
-            const { data: sourceAssignments, error: fetchError } = await (supabase as any)
-                .from('class_subjects')
-                .select('*')
-                .eq('class_academic_year_id', copyData.from_class_academic_year_id)
-                .is('deleted_at', null);
+            const sourceAssignmentsApi = await classSubjectsApi.list({
+                class_academic_year_id: copyData.from_class_academic_year_id,
+            });
 
-            if (fetchError) {
-                throw new Error(fetchError.message);
-            }
-
-            if (!sourceAssignments || sourceAssignments.length === 0) {
+            if (!sourceAssignmentsApi || (sourceAssignmentsApi as SubjectApi.ClassSubject[]).length === 0) {
                 throw new Error('No subject assignments found to copy');
             }
 
+            const sourceAssignments = (sourceAssignmentsApi as SubjectApi.ClassSubject[]).map(mapClassSubjectApiToDomain);
+
             // Get target class_academic_year to determine organization_id
-            const { data: targetClassYear } = await (supabase as any)
-                .from('class_academic_years')
-                .select('organization_id')
-                .eq('id', copyData.to_class_academic_year_id)
-                .is('deleted_at', null)
-                .single();
+            const targetClassYear = await classAcademicYearsApi.get(copyData.to_class_academic_year_id);
 
             if (!targetClassYear) {
                 throw new Error('Target class instance not found');
             }
 
-            // Prepare new assignments
-            const newAssignments = sourceAssignments.map((assignment: ClassSubject) => {
-                const newAssignment: any = {
-                    class_academic_year_id: copyData.to_class_academic_year_id,
-                    subject_id: assignment.subject_id,
-                    organization_id: targetClassYear.organization_id,
-                    weekly_hours: assignment.weekly_hours,
-                    notes: assignment.notes,
-                    is_active: true,
-                };
-
-                // Copy assignments if requested
-                if (copyData.copy_assignments) {
-                    newAssignment.teacher_id = assignment.teacher_id;
-                    newAssignment.room_id = assignment.room_id;
-                }
-
-                return newAssignment;
+            // Check for duplicates before inserting
+            const existingAssignments = await classSubjectsApi.list({
+                class_academic_year_id: copyData.to_class_academic_year_id,
             });
 
-            // Check for duplicates before inserting
-            const { data: existingAssignments } = await (supabase as any)
-                .from('class_subjects')
-                .select('subject_id')
-                .eq('class_academic_year_id', copyData.to_class_academic_year_id)
-                .is('deleted_at', null);
-
             const existingSubjectIds = new Set(
-                (existingAssignments || []).map((a: any) => a.subject_id)
+                (existingAssignments as SubjectApi.ClassSubject[] || []).map((a: any) => a.subject_id)
             );
 
-            // Filter out duplicates
-            const assignmentsToInsert = newAssignments.filter(
-                (a: any) => !existingSubjectIds.has(a.subject_id)
-            );
+            // Create new assignments
+            const created: ClassSubject[] = [];
+            for (const assignment of sourceAssignments) {
+                // Skip if already exists
+                if (existingSubjectIds.has(assignment.subject_id)) {
+                    continue;
+                }
 
-            if (assignmentsToInsert.length === 0) {
+                const insertData = mapClassSubjectDomainToInsert({
+                    classAcademicYearId: copyData.to_class_academic_year_id,
+                    subjectId: assignment.subject_id,
+                    organizationId: targetClassYear.organization_id,
+                    hoursPerWeek: (assignment as any).weekly_hours || null,
+                    notes: assignment.notes || null,
+                    isRequired: true,
+                    // Copy assignments if requested
+                    teacherId: copyData.copy_assignments ? (assignment as any).teacher_id : null,
+                    roomId: copyData.copy_assignments ? (assignment as any).room_id : null,
+                });
+
+                const apiClassSubject = await classSubjectsApi.create(insertData);
+                created.push(mapClassSubjectApiToDomain(apiClassSubject as SubjectApi.ClassSubject));
+            }
+
+            if (created.length === 0) {
                 throw new Error('All subjects are already assigned to the target class');
             }
 
-            // Insert all new assignments
-            const { data, error } = await (supabase as any)
-                .from('class_subjects')
-                .insert(assignmentsToInsert)
-                .select();
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
             return {
-                created: data,
-                skipped: newAssignments.length - assignmentsToInsert.length,
+                created,
+                skipped: sourceAssignments.length - created.length,
             };
         },
         onSuccess: (result) => {
@@ -976,7 +680,6 @@ export const useClassSubjectTemplates = (classId?: string, organizationId?: stri
         queryKey: ['class-subject-templates', classId, organizationId, orgIds.join(',')],
         queryFn: async () => {
             // Temporarily disabled - class_subject_templates not yet migrated to Laravel
-            // Return empty array to prevent Supabase errors
             return [] as ClassSubjectTemplate[];
         },
         enabled: false, // Disabled until migrated
@@ -992,11 +695,30 @@ export const useAssignSubjectToClassTemplate = () => {
 
     return useMutation({
         mutationFn: async (assignmentData: {
-            class_id: string;
-            subject_id: string;
-            notes?: string | null;
+            classId: string;
+            subjectId: string;
+            isRequired?: boolean;
+            credits?: number | null;
+            hoursPerWeek?: number | null;
         }) => {
-            throw new Error('Class subject templates not yet migrated to Laravel API');
+            if (!user || !profile) {
+                throw new Error('User not authenticated');
+            }
+
+            // Convert to API insert payload
+            const insertData = mapClassSubjectTemplateDomainToInsert({
+                classId: assignmentData.classId,
+                subjectId: assignmentData.subjectId,
+                organizationId: profile.organization_id || null,
+                isRequired: assignmentData.isRequired ?? false,
+                credits: assignmentData.credits || null,
+                hoursPerWeek: assignmentData.hoursPerWeek || null,
+            });
+
+            const apiTemplate = await classSubjectTemplatesApi.create(insertData);
+            
+            // Map API response back to domain model
+            return mapClassSubjectTemplateApiToDomain(apiTemplate as SubjectApi.ClassSubjectTemplate);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subject-templates'] });
@@ -1015,7 +737,12 @@ export const useRemoveSubjectFromClassTemplate = () => {
 
     return useMutation({
         mutationFn: async (templateId: string) => {
-            throw new Error('Class subject templates not yet migrated to Laravel API');
+            if (!user || !profile) {
+                throw new Error('User not authenticated');
+            }
+
+            // Delete via Laravel API
+            await classSubjectTemplatesApi.delete(templateId);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subject-templates'] });
@@ -1034,10 +761,33 @@ export const useBulkAssignSubjectsToClassTemplate = () => {
 
     return useMutation({
         mutationFn: async (bulkData: {
-            class_id: string;
-            subject_ids: string[];
+            classId: string;
+            subjectIds: string[];
+            isRequired?: boolean;
+            credits?: number | null;
+            hoursPerWeek?: number | null;
         }) => {
-            throw new Error('Class subject templates not yet migrated to Laravel API');
+            if (!user || !profile) {
+                throw new Error('User not authenticated');
+            }
+
+            // Create templates one by one
+            const created: ClassSubjectTemplate[] = [];
+            for (const subjectId of bulkData.subjectIds) {
+                const insertData = mapClassSubjectTemplateDomainToInsert({
+                    classId: bulkData.classId,
+                    subjectId,
+                    organizationId: profile.organization_id || null,
+                    isRequired: bulkData.isRequired ?? false,
+                    credits: bulkData.credits || null,
+                    hoursPerWeek: bulkData.hoursPerWeek || null,
+                });
+
+                const apiTemplate = await classSubjectTemplatesApi.create(insertData);
+                created.push(mapClassSubjectTemplateApiToDomain(apiTemplate as SubjectApi.ClassSubjectTemplate));
+            }
+
+            return created;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subject-templates'] });

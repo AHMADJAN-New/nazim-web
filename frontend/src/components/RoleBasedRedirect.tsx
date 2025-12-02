@@ -1,88 +1,44 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { useState } from 'react';
 import { LoadingSpinner } from '@/components/ui/loading';
 
+/**
+ * Simple redirect component that sends authenticated users to the dashboard.
+ * Since we now use permissions for access control, we don't need role-based redirects.
+ * All users go to the dashboard, and PermissionRoute/PermissionGuard handle access control.
+ */
 export default function RoleBasedRedirect() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, profile, loading } = useAuth();
 
   useEffect(() => {
+    // Wait for auth to load
+    if (loading) {
+      return;
+    }
+
+    // If no user, redirect to auth
     if (!user) {
-      console.log('No user in RoleBasedRedirect, staying on current page');
-      setLoading(false);
+      navigate('/auth', { replace: true });
       return;
     }
 
-    // Use profile from AuthContext - no Supabase query needed
-    if (profile?.role) {
-      console.log('User role from AuthContext:', profile.role);
-      setUserRole(profile.role);
-      setLoading(false);
+    // Check if user has pending approval status
+    // This is determined by the profile's is_active status or role
+    if (profile && (profile.role === 'pending' || !profile.is_active)) {
+      navigate('/pending-approval', { replace: true });
       return;
     }
 
-    // If profile not available yet, check for pending registration
-    console.log('Profile not available, checking pending registration for:', user.email);
+    // All authenticated users go to dashboard
+    // PermissionRoute and PermissionGuard will handle access control
+    navigate('/dashboard', { replace: true });
+  }, [user, profile, loading, navigate]);
 
-    const checkPendingRegistration = async () => {
-      try {
-        const { data: pendingData } = await (supabase as any)
-          .from('pending_registrations')
-          .select('status')
-          .eq('user_id', user.id)
-          .single();
-
-        if (pendingData) {
-          console.log('User has pending registration:', pendingData.status);
-          setUserRole('pending');
-        } else {
-          console.log('No profile or pending registration found');
-          setUserRole(null);
-        }
-      } catch (error) {
-        console.error('Unexpected error checking pending registration:', error);
-        setUserRole(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkPendingRegistration();
-  }, [user, profile, navigate]);
-
-  useEffect(() => {
-    if (loading || !userRole) return;
-
-    console.log('Redirecting based on role:', userRole);
-
-    // Redirect based on role
-    switch (userRole) {
-      case 'super_admin':
-        console.log('Redirecting to super admin');
-        navigate('/super-admin');
-        break;
-      case 'admin':
-        console.log('Redirecting to school admin');
-        navigate('/school-admin');
-        break;
-      case 'pending':
-        console.log('Redirecting to pending approval');
-        navigate('/pending-approval');
-        break;
-      default:
-        console.log('Redirecting to dashboard');
-        navigate('/dashboard');
-        break;
-    }
-  }, [userRole, loading, navigate]);
-
-  if (loading) {
-    return <LoadingSpinner size="lg" text="Determining user role..." fullScreen />;
+  // Show loading while determining redirect
+  if (loading || !user) {
+    return <LoadingSpinner size="lg" text="Loading..." fullScreen />;
   }
 
   return null;

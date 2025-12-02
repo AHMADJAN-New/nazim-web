@@ -40,11 +40,13 @@ Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
 // Public stats endpoints (for landing page)
+// Note: These return aggregate counts across all organizations
+// Consider protecting if aggregate data is sensitive
 Route::get('/stats/students-count', [StatsController::class, 'studentsCount']);
 Route::get('/stats/staff-count', [StatsController::class, 'staffCount']);
 
-// Public organizations endpoint (for signup form)
-Route::get('/organizations', [OrganizationController::class, 'index']);
+// Public organizations endpoint (for signup form - returns minimal data only)
+Route::get('/organizations/public', [OrganizationController::class, 'publicList']);
 
 // Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -54,7 +56,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/auth/profile', [AuthController::class, 'profile']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
 
-    // Organizations (protected - create, update, delete)
+    // Organizations (protected - all operations require authentication)
+    Route::get('/organizations', [OrganizationController::class, 'index']);
     Route::post('/organizations', [OrganizationController::class, 'store']);
     // IMPORTANT: More specific routes must come before parameterized routes
     Route::get('/organizations/accessible', [OrganizationController::class, 'accessible']);
@@ -111,12 +114,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/students/stats', [StudentController::class, 'stats']);
     Route::get('/students/autocomplete', [StudentController::class, 'autocomplete']);
     Route::post('/students/check-duplicates', [StudentController::class, 'checkDuplicates']);
-    Route::apiResource('students', StudentController::class);
+    // Picture routes must come before resource route to avoid conflicts
+    Route::get('/students/{id}/picture', [StudentController::class, 'getPicture']);
     Route::post('/students/{id}/picture', [StudentController::class, 'uploadPicture']);
+    Route::apiResource('students', StudentController::class);
     
     // Student Documents
     Route::get('/students/{id}/documents', [StudentDocumentController::class, 'index']);
     Route::post('/students/{id}/documents', [StudentDocumentController::class, 'store']);
+    Route::get('/student-documents/{id}/download', [StudentDocumentController::class, 'download']);
     Route::delete('/student-documents/{id}', [StudentDocumentController::class, 'destroy']);
     
     // Student Educational History

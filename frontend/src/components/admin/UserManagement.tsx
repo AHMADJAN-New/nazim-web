@@ -145,8 +145,8 @@ export function UserManagement() {
       setValue('full_name', user.name);
       setValue('email', user.email);
       setValue('role', user.role as any);
-      setValue('organization_id', user.organization_id || null);
-      setValue('default_school_id', (user as any).default_school_id || null);
+      setValue('organization_id', user.organizationId || null);
+      setValue('default_school_id', user.defaultSchoolId || null);
       setValue('phone', user.phone || '');
     } else {
       setSelectedUser(null);
@@ -172,13 +172,14 @@ export function UserManagement() {
   const onSubmit = async (data: UserFormData) => {
     try {
       if (isEditMode && selectedUser) {
+        // Map form data (snake_case) to domain types (camelCase)
         const updateData: UpdateUserData = {
           id: selectedUser.id,
-          full_name: data.full_name,
+          fullName: data.full_name,
           email: data.email,
           role: data.role,
-          organization_id: data.organization_id || null,
-          default_school_id: data.default_school_id || null,
+          organizationId: data.organization_id || null,
+          defaultSchoolId: data.default_school_id || null,
           phone: data.phone || undefined,
         };
         await updateUser.mutateAsync(updateData);
@@ -187,13 +188,14 @@ export function UserManagement() {
           toast.error('Password is required for new users');
           return;
         }
+        // Map form data (snake_case) to domain types (camelCase)
         const createData: CreateUserData = {
           email: data.email,
           password: data.password,
-          full_name: data.full_name,
+          fullName: data.full_name,
           role: data.role,
-          organization_id: data.organization_id || null,
-          default_school_id: data.default_school_id || null,
+          organizationId: data.organization_id || null,
+          defaultSchoolId: data.default_school_id || null,
           phone: data.phone || undefined,
         };
         await createUser.mutateAsync(createData);
@@ -245,10 +247,10 @@ export function UserManagement() {
         user.name,
         user.email,
         user.role,
-        user.organization_id || 'None',
+        user.organizationId || 'None',
         user.phone || '',
-        user.is_active ? 'Active' : 'Inactive',
-        new Date(user.created_at).toLocaleDateString(),
+        user.isActive ? 'Active' : 'Inactive',
+        user.createdAt.toLocaleDateString(),
       ].join(',')),
     ].join('\n');
 
@@ -399,9 +401,9 @@ export function UserManagement() {
                       </TableCell>
                       {isSuperAdmin && (
                         <TableCell>
-                          {user.organization_id ? (
+                          {user.organizationId ? (
                             <Badge variant="secondary">
-                              {organizations?.find(o => o.id === user.organization_id)?.name || 'Unknown'}
+                              {organizations?.find(o => o.id === user.organizationId)?.name || 'Unknown'}
                             </Badge>
                           ) : (
                             <span className="text-muted-foreground">None</span>
@@ -410,8 +412,8 @@ export function UserManagement() {
                       )}
                       <TableCell>{user.phone || '-'}</TableCell>
                       <TableCell>
-                        <Badge variant={user.is_active ? 'default' : 'secondary'}>
-                          {user.is_active ? 'Active' : 'Inactive'}
+                        <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                          {user.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -472,7 +474,7 @@ export function UserManagement() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {users?.filter(u => u.is_active).length || 0}
+                  {users?.filter(u => u.isActive).length || 0}
                 </div>
               </CardContent>
             </Card>
@@ -482,7 +484,7 @@ export function UserManagement() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {users?.filter(u => !u.is_active).length || 0}
+                  {users?.filter(u => !u.isActive).length || 0}
                 </div>
               </CardContent>
             </Card>

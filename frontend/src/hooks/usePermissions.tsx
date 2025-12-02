@@ -1,51 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { permissionsApi } from '@/lib/api/client';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import type * as PermissionApi from '@/types/api/permission';
+import type { Permission, RolePermission } from '@/types/domain/permission';
+import { mapPermissionApiToDomain, mapRolePermissionApiToDomain } from '@/mappers/permissionMapper';
 
-// Permission type matching Laravel API response
-export interface Permission {
-  id: string;
-  name: string;
-  resource: string;
-  action: string;
-  description?: string | null;
-  organization_id?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export type PermissionInsert = Omit<Permission, 'id' | 'created_at' | 'updated_at'>;
-export type PermissionUpdate = Partial<PermissionInsert>;
-
-// Role permission type
-export interface RolePermission {
-  id: string;
-  role: string;
-  permission_id: string;
-  organization_id?: string | null;
-  created_at?: string;
-  updated_at?: string;
-  permission?: Permission;
-}
-
-export type RolePermissionInsert = Omit<RolePermission, 'id' | 'created_at' | 'updated_at' | 'permission'>;
-export type RolePermissionUpdate = Partial<RolePermissionInsert>;
+// Re-export domain types for convenience
+export type { Permission, RolePermission } from '@/types/domain/permission';
 
 export const usePermissions = () => {
-  return useQuery({
+  return useQuery<Permission[]>({
     queryKey: ['permissions'],
     queryFn: async () => {
-      const permissions = await permissionsApi.list();
+      const apiPermissions = await permissionsApi.list();
       // Laravel API returns permissions sorted, but ensure they're sorted by resource and action
-      return (permissions as Permission[]).sort((a, b) => {
+      const sorted = (apiPermissions as PermissionApi.Permission[]).sort((a, b) => {
         if (a.resource !== b.resource) {
           return a.resource.localeCompare(b.resource);
         }
         return a.action.localeCompare(b.action);
       });
+      // Map API → Domain
+      return sorted.map(mapPermissionApiToDomain);
     },
     staleTime: 30 * 60 * 1000, // 30 minutes - permissions don't change often
     gcTime: 60 * 60 * 1000, // 1 hour
@@ -56,21 +34,11 @@ export const useRolePermissions = (role: string) => {
   return useQuery({
     queryKey: ['role-permissions', role],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('role_permissions')
-        .select(`
-          *,
-          permission:permissions(*)
-        `)
-        .eq('role', role);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data as (RolePermission & { permission: Permission })[];
+      // TODO: Implement Laravel API endpoint for role permissions
+      // For now, return empty array - this functionality needs to be migrated to Laravel API
+      throw new Error('Role permissions endpoint not yet implemented in Laravel API. Please use user permissions instead.');
     },
-    enabled: !!role,
+    enabled: false, // Disabled until Laravel API endpoint is available
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });
@@ -161,41 +129,8 @@ export const useAssignPermissionToRole = () => {
         throw new Error('You do not have permission to assign permissions');
       }
 
-      // Get the permission to validate organization scope
-      const { data: permission, error: permError } = await (supabase as any)
-        .from('permissions')
-        .select('id, organization_id')
-        .eq('id', permissionId)
-        .single();
-
-      if (permError || !permission) {
-        throw new Error('Permission not found');
-      }
-
-      const perm = permission as { id: string; organization_id: string | null };
-
-      // Determine organization scope
-      const organizationId = perm.organization_id ?? profile.organization_id;
-
-      const { data, error } = await supabase
-        .from('role_permissions')
-        .insert({
-          role,
-          permission_id: permissionId,
-          organization_id: organizationId,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        // If it's a unique constraint violation, the permission is already assigned
-        if (error.code === '23505') {
-          return { role, permission_id: permissionId, organization_id: organizationId }; // Return existing assignment
-        }
-        throw new Error(error.message);
-      }
-
-      return data;
+      // TODO: Implement Laravel API endpoint for assigning permissions to roles
+      throw new Error('Assign permission to role endpoint not yet implemented in Laravel API. Please use user permissions management instead.');
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['role-permissions', variables.role] });
@@ -223,20 +158,8 @@ export const useRemovePermissionFromRole = () => {
         throw new Error('You do not have permission to remove permissions');
       }
 
-      // Build delete query with organization filter
-      let deleteQuery: any = (supabase as any)
-        .from('role_permissions')
-        .delete()
-        .eq('role', role)
-        .eq('permission_id', permissionId);
-
-      const { error } = await deleteQuery;
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return { role, permission_id: permissionId };
+      // TODO: Implement Laravel API endpoint for removing permissions from roles
+      throw new Error('Remove permission from role endpoint not yet implemented in Laravel API. Please use user permissions management instead.');
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['role-permissions', variables.role] });
@@ -269,20 +192,8 @@ export const useCreatePermission = () => {
         throw new Error('You do not have permission to create permissions');
       }
 
-      const { data, error } = await (supabase as any)
-        .from('permissions')
-        .insert({
-          ...permissionData,
-          organization_id: profile.organization_id ?? null,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data as Permission;
+      // TODO: Implement Laravel API endpoint for creating permissions
+      throw new Error('Create permission endpoint not yet implemented in Laravel API.');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
@@ -319,31 +230,8 @@ export const useUpdatePermission = () => {
         throw new Error('You do not have permission to update permissions');
       }
 
-      // Get current permission to validate organization scope
-      const { data: currentPermission, error: fetchError } = await (supabase as any)
-        .from('permissions')
-        .select('id, organization_id')
-        .eq('id', id)
-        .single();
-
-      if (fetchError || !currentPermission) {
-        throw new Error('Permission not found');
-      }
-
-      const currentPerm = currentPermission as { id: string; organization_id: string | null };
-
-      const { data, error } = await (supabase as any)
-        .from('permissions')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
+      // TODO: Implement Laravel API endpoint for updating permissions
+      throw new Error('Update permission endpoint not yet implemented in Laravel API.');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
@@ -371,29 +259,8 @@ export const useDeletePermission = () => {
         throw new Error('You do not have permission to delete permissions');
       }
 
-      // Get current permission to validate organization scope
-      const { data: currentPermission, error: fetchError } = await (supabase as any)
-        .from('permissions')
-        .select('id, organization_id')
-        .eq('id', permissionId)
-        .single();
-
-      if (fetchError || !currentPermission) {
-        throw new Error('Permission not found');
-      }
-
-      const currentPerm = currentPermission as { id: string; organization_id: string | null };
-
-      const { error } = await (supabase as any)
-        .from('permissions')
-        .delete()
-        .eq('id', permissionId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return { id: permissionId };
+      // TODO: Implement Laravel API endpoint for deleting permissions
+      throw new Error('Delete permission endpoint not yet implemented in Laravel API.');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
@@ -411,15 +278,6 @@ export const useDeletePermission = () => {
 // User Permissions Hooks (for managing per-user permissions)
 // ============================================================================
 
-export interface UserPermission {
-  id: string;
-  user_id: string;
-  permission_id: string;
-  organization_id: string | null;
-  created_at: string;
-  deleted_at: string | null;
-}
-
 export const useUserPermissionsForUser = (userId: string) => {
   const { profile } = useAuth();
 
@@ -430,64 +288,9 @@ export const useUserPermissionsForUser = (userId: string) => {
         return { userPermissions: [], rolePermissions: [] };
       }
 
-      // Get user's profile to determine their role
-      const { data: userProfile, error: profileError } = await (supabase as any)
-        .from('profiles')
-        .select('role, organization_id')
-        .eq('id', userId)
-        .single();
-
-      if (profileError || !userProfile) {
-        throw new Error('User not found');
-      }
-
-      const userRole = userProfile.role;
-      const userOrgId = userProfile.organization_id;
-
-      // Get user-specific permissions
-      const { data: userPermsData, error: userPermsError } = await (supabase as any)
-        .from('user_permissions')
-        .select(`
-          id,
-          permission_id,
-          organization_id,
-          permission:permissions(id, name, resource, action, description, organization_id)
-        `)
-        .eq('user_id', userId)
-        .is('deleted_at', null);
-
-      if (userPermsError) {
-        throw new Error(userPermsError.message);
-      }
-
-      // Get role-based permissions
-      let rolePermsData = null;
-      if (userRole && userOrgId) {
-        const { data, error: rolePermsError } = await (supabase as any)
-          .from('role_permissions')
-          .select(`
-            permission:permissions(id, name, resource, action, description, organization_id)
-          `)
-          .eq('role', userRole)
-          .or(`organization_id.is.null,organization_id.eq.${userOrgId}`);
-
-        if (rolePermsError) {
-          throw new Error(rolePermsError.message);
-        }
-        rolePermsData = data;
-      }
-
-      return {
-        userPermissions: (userPermsData || []).map((up: any) => ({
-          id: up.id,
-          permission_id: up.permission_id,
-          organization_id: up.organization_id,
-          permission: up.permission,
-        })),
-        rolePermissions: (rolePermsData || []).map((rp: any) => ({
-          permission: rp.permission,
-        })),
-      };
+      // TODO: Implement Laravel API endpoint for getting user permissions for a specific user
+      // This should return both user-specific and role-based permissions
+      throw new Error('Get user permissions for user endpoint not yet implemented in Laravel API.');
     },
     enabled: !!userId && !!profile,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -510,51 +313,8 @@ export const useAssignPermissionToUser = () => {
         throw new Error('You do not have permission to assign user permissions');
       }
 
-      // Get the permission to validate organization scope
-      const { data: permission, error: permError } = await (supabase as any)
-        .from('permissions')
-        .select('id, organization_id')
-        .eq('id', permissionId)
-        .single();
-
-      if (permError || !permission) {
-        throw new Error('Permission not found');
-      }
-
-      const perm = permission as { id: string; organization_id: string | null };
-
-      // Get target user's profile
-      const { data: userProfile, error: userError } = await (supabase as any)
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', userId)
-        .single();
-
-      if (userError || !userProfile) {
-        throw new Error('User not found');
-      }
-
-      const organizationId = perm.organization_id ?? profile.organization_id;
-
-      const { data, error } = await (supabase as any)
-        .from('user_permissions')
-        .insert({
-          user_id: userId,
-          permission_id: permissionId,
-          organization_id: organizationId,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        // If it's a unique constraint violation, the permission is already assigned
-        if (error.code === '23505') {
-          return { user_id: userId, permission_id: permissionId, organization_id: organizationId };
-        }
-        throw new Error(error.message);
-      }
-
-      return data;
+      // TODO: Implement Laravel API endpoint for assigning permissions to users
+      throw new Error('Assign permission to user endpoint not yet implemented in Laravel API.');
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user-permissions-for-user', variables.userId] });
@@ -582,21 +342,8 @@ export const useRemovePermissionFromUser = () => {
         throw new Error('You do not have permission to remove user permissions');
       }
 
-      // Build delete query with organization filter
-      let deleteQuery: any = (supabase as any)
-        .from('user_permissions')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('user_id', userId)
-        .eq('permission_id', permissionId)
-        .is('deleted_at', null);
-
-      const { error } = await deleteQuery;
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return { user_id: userId, permission_id: permissionId };
+      // TODO: Implement Laravel API endpoint for removing permissions from users
+      throw new Error('Remove permission from user endpoint not yet implemented in Laravel API.');
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user-permissions-for-user', variables.userId] });

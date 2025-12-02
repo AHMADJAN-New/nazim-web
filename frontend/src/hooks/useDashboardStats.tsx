@@ -1,11 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
-import { staffApi, studentsApi } from '@/lib/api/client';
+import { staffApi, studentsApi, classesApi, roomsApi, buildingsApi } from '@/lib/api/client';
 import { useProfile } from './useProfiles';
 import { useAuth } from './useAuth';
 
 export interface DashboardStats {
   totalStudents: number;
   totalStaff: number;
+  totalClasses: number;
+  totalRooms: number;
+  totalBuildings: number;
+  studentGender: {
+    male: number;
+    female: number;
+  };
   todayAttendance: {
     percentage: number;
     present: number;
@@ -37,6 +44,13 @@ export const useDashboardStats = () => {
         return {
           totalStudents: 0,
           totalStaff: 0,
+          totalClasses: 0,
+          totalRooms: 0,
+          totalBuildings: 0,
+          studentGender: {
+            male: 0,
+            female: 0
+          },
           todayAttendance: {
             percentage: 0,
             present: 0,
@@ -58,34 +72,29 @@ export const useDashboardStats = () => {
         };
       }
 
-      // Fetch staff stats from Laravel API
-      let totalStaff = 0;
-      try {
-        const staffStats = await staffApi.stats({
-          organization_id: profile.organization_id || undefined,
-        });
-        totalStaff = staffStats?.total || 0;
-      } catch (error) {
-        console.error('Failed to fetch staff stats:', error);
-        totalStaff = 0;
-      }
+      const organizationId = profile.organization_id || undefined;
 
-      // Fetch student stats from Laravel API
-      let totalStudents = 0;
-      try {
-        const studentStats = await studentsApi.stats({
-          organization_id: profile.organization_id || undefined,
-        });
-        totalStudents = studentStats?.total || 0;
-      } catch (error) {
-        console.error('Failed to fetch student stats:', error);
-        totalStudents = 0;
-      }
+      // Fetch all stats in parallel
+      const [staffStats, studentStats, classes, rooms, buildings] = await Promise.all([
+        staffApi.stats({ organization_id: organizationId }).catch(() => ({ total: 0 })),
+        studentsApi.stats({ organization_id: organizationId }).catch(() => ({ total: 0, male: 0, female: 0 })),
+        classesApi.list({ organization_id: organizationId }).catch(() => []),
+        roomsApi.list({ organization_id: organizationId }).catch(() => []),
+        buildingsApi.list({ organization_id: organizationId }).catch(() => []),
+      ]);
 
-      // Return default values for non-existent tables
+      const studentStatsData = studentStats as any;
+
       return {
-        totalStudents,
-        totalStaff,
+        totalStudents: studentStatsData?.total || 0,
+        totalStaff: (staffStats as any)?.total || 0,
+        totalClasses: Array.isArray(classes) ? classes.length : 0,
+        totalRooms: Array.isArray(rooms) ? rooms.length : 0,
+        totalBuildings: Array.isArray(buildings) ? buildings.length : 0,
+        studentGender: {
+          male: studentStatsData?.male || 0,
+          female: studentStatsData?.female || 0
+        },
         todayAttendance: {
           percentage: 0,
           present: 0,

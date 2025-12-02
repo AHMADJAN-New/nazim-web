@@ -75,7 +75,6 @@ class AssignOrganizationsPermissions extends Command
 
         $this->info("Found {$organizations->count()} organization(s)");
 
-        // Step 3: Check if role_permissions table exists (custom Supabase structure)
         $hasRolePermissionsTable = DB::select("
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
@@ -87,7 +86,6 @@ class AssignOrganizationsPermissions extends Command
         $useCustomTable = !empty($hasRolePermissionsTable) && $hasRolePermissionsTable[0]->exists;
 
         if ($useCustomTable) {
-            // Use custom role_permissions table (Supabase structure)
             $this->info('Using custom role_permissions table...');
             
             $result = DB::statement("

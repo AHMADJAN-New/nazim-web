@@ -231,7 +231,6 @@ export class CircuitBreaker {
 
 // Global circuit breakers for different services
 export const circuitBreakers = {
-  supabase: new CircuitBreaker({ failureThreshold: 3, recoveryTimeout: 30000 }),
   external: new CircuitBreaker({ failureThreshold: 5, recoveryTimeout: 60000 }),
 };
 

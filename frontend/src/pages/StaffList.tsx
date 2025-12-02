@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useStaff, useDeleteStaff, useStaffStats, useCreateStaff, useUpdateStaff, useStaffTypes, type Staff, type StaffInsert } from '@/hooks/useStaff';
+import { useStaff, useDeleteStaff, useStaffStats, useCreateStaff, useUpdateStaff, useStaffTypes } from '@/hooks/useStaff';
+import type { Staff } from '@/types/domain/staff';
 import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useOrganizations } from '@/hooks/useOrganizations';
@@ -45,7 +46,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { StaffProfile } from '@/components/staff/StaffProfile';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const staffSchema = z.object({
@@ -156,15 +156,16 @@ export function StaffList() {
         if (!staff) return [];
 
         return staff.filter((s) => {
+            const query = (searchQuery || '').toLowerCase();
             const matchesSearch =
-                s.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.employee_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.phone_number?.toLowerCase().includes(searchQuery.toLowerCase());
+                s.fullName?.toLowerCase().includes(query) ||
+                s.employeeId?.toLowerCase().includes(query) ||
+                s.email?.toLowerCase().includes(query) ||
+                s.phoneNumber?.toLowerCase().includes(query);
 
             const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
-            const matchesType = typeFilter === 'all' || s.staff_type_id === typeFilter;
-            const matchesSchool = schoolFilter === 'all' || s.school_id === schoolFilter;
+            const matchesType = typeFilter === 'all' || s.staffTypeId === typeFilter;
+            const matchesSchool = schoolFilter === 'all' || s.schoolId === schoolFilter;
 
             return matchesSearch && matchesStatus && matchesType && matchesSchool;
         });
@@ -204,11 +205,14 @@ export function StaffList() {
     };
 
     const getPictureUrl = (staffMember: Staff) => {
-        if (!staffMember.picture_url) return null;
-        const schoolPath = staffMember.school_id ? `${staffMember.school_id}/` : '';
-        const path = `${staffMember.organization_id}/${schoolPath}${staffMember.id}/picture/${staffMember.picture_url}`;
-        const { data } = supabase.storage.from('staff-files').getPublicUrl(path);
-        return data.publicUrl;
+        if (!staffMember.pictureUrl) return null;
+        // Construct URL from Laravel API storage path
+        // Laravel API returns full URLs or paths that can be accessed via /storage/ endpoint
+        const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
+        const schoolPath = staffMember.schoolId ? `${staffMember.schoolId}/` : '';
+        const path = `${staffMember.organizationId}/${schoolPath}${staffMember.id}/picture/${staffMember.pictureUrl}`;
+        // Laravel typically serves files from /storage/ path
+        return `${baseUrl.replace('/api', '')}/storage/staff-files/${path}`;
     };
 
     if (!hasReadPermission) {
@@ -309,19 +313,19 @@ export function StaffList() {
                             </Card>
                             <Card>
                                 <CardContent className="p-4">
-                                    <div className="text-2xl font-bold text-orange-600">{stats.on_leave}</div>
+                                    <div className="text-2xl font-bold text-orange-600">{stats.onLeave}</div>
                                     <div className="text-sm text-muted-foreground">On Leave</div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="p-4">
-                                    <div className="text-2xl font-bold text-blue-600">{stats.by_type.teacher}</div>
+                                    <div className="text-2xl font-bold text-blue-600">{stats.byType.teacher}</div>
                                     <div className="text-sm text-muted-foreground">Teachers</div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="p-4">
-                                    <div className="text-2xl font-bold text-purple-600">{stats.by_type.admin}</div>
+                                    <div className="text-2xl font-bold text-purple-600">{stats.byType.admin}</div>
                                     <div className="text-sm text-muted-foreground">Admins</div>
                                 </CardContent>
                             </Card>
@@ -435,18 +439,18 @@ export function StaffList() {
                                                 <TableCell>
                                                     <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
                                                         {pictureUrl ? (
-                                                            <img src={pictureUrl} alt={staffMember.full_name} className="w-full h-full object-cover" />
+                                                            <img src={pictureUrl} alt={staffMember.fullName} className="w-full h-full object-cover" />
                                                         ) : (
                                                             <Users className="w-6 h-6 text-muted-foreground" />
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="font-medium">{staffMember.full_name}</TableCell>
+                                                <TableCell className="font-medium">{staffMember.fullName}</TableCell>
                                                 <TableCell>
-                                                    <code className="px-2 py-1 bg-muted rounded text-sm">{staffMember.employee_id}</code>
+                                                    <code className="px-2 py-1 bg-muted rounded text-sm">{staffMember.employeeId}</code>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline">{staffMember.staff_type?.name || 'Unknown'}</Badge>
+                                                    <Badge variant="outline">{staffMember.staffTypeRelation?.name || 'Unknown'}</Badge>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant={getStatusBadgeVariant(staffMember.status)}>
@@ -455,7 +459,7 @@ export function StaffList() {
                                                 </TableCell>
                                                 <TableCell>
                                                     {staffMember.school ? (
-                                                        <span className="text-sm">{staffMember.school.school_name}</span>
+                                                        <span className="text-sm">{staffMember.school.schoolName}</span>
                                                     ) : (
                                                         <span className="text-sm text-muted-foreground">-</span>
                                                     )}
@@ -467,9 +471,9 @@ export function StaffList() {
                                                                 {staffMember.email}
                                                             </div>
                                                         )}
-                                                        {staffMember.phone_number && (
+                                                        {staffMember.phoneNumber && (
                                                             <div className="text-xs text-muted-foreground">
-                                                                {staffMember.phone_number}
+                                                                {staffMember.phoneNumber}
                                                             </div>
                                                         )}
                                                     </div>
@@ -492,33 +496,33 @@ export function StaffList() {
                                                                     setIsEditDialogOpen(true);
                                                                     setCurrentStep(1);
                                                                     reset({
-                                                                        employee_id: staffMember.employee_id,
-                                                                        staff_type_id: staffMember.staff_type_id,
-                                                                        school_id: staffMember.school_id || null,
-                                                                        first_name: staffMember.first_name,
-                                                                        father_name: staffMember.father_name,
-                                                                        grandfather_name: staffMember.grandfather_name || null,
-                                                                        tazkira_number: staffMember.tazkira_number || null,
-                                                                        birth_year: staffMember.birth_year || null,
-                                                                        birth_date: staffMember.birth_date || null,
-                                                                        phone_number: staffMember.phone_number || null,
+                                                                        employee_id: staffMember.employeeId,
+                                                                        staff_type_id: staffMember.staffTypeId,
+                                                                        school_id: staffMember.schoolId || null,
+                                                                        first_name: staffMember.firstName,
+                                                                        father_name: staffMember.fatherName,
+                                                                        grandfather_name: staffMember.grandfatherName || null,
+                                                                        tazkira_number: staffMember.tazkiraNumber || null,
+                                                                        birth_year: staffMember.birthYear || null,
+                                                                        birth_date: staffMember.birthDate || null,
+                                                                        phone_number: staffMember.phoneNumber || null,
                                                                         email: staffMember.email || null,
-                                                                        home_address: staffMember.home_address || null,
-                                                                        origin_province: staffMember.origin_province || null,
-                                                                        origin_district: staffMember.origin_district || null,
-                                                                        origin_village: staffMember.origin_village || null,
-                                                                        current_province: staffMember.current_province || null,
-                                                                        current_district: staffMember.current_district || null,
-                                                                        current_village: staffMember.current_village || null,
-                                                                        religious_education: staffMember.religious_education || null,
-                                                                        religious_university: staffMember.religious_university || null,
-                                                                        religious_graduation_year: staffMember.religious_graduation_year || null,
-                                                                        religious_department: staffMember.religious_department || null,
-                                                                        modern_education: staffMember.modern_education || null,
-                                                                        modern_school_university: staffMember.modern_school_university || null,
-                                                                        modern_graduation_year: staffMember.modern_graduation_year || null,
-                                                                        modern_department: staffMember.modern_department || null,
-                                                                        teaching_section: staffMember.teaching_section || null,
+                                                                        home_address: staffMember.homeAddress || null,
+                                                                        origin_province: staffMember.originLocation.province || null,
+                                                                        origin_district: staffMember.originLocation.district || null,
+                                                                        origin_village: staffMember.originLocation.village || null,
+                                                                        current_province: staffMember.currentLocation.province || null,
+                                                                        current_district: staffMember.currentLocation.district || null,
+                                                                        current_village: staffMember.currentLocation.village || null,
+                                                                        religious_education: staffMember.religiousEducation.level || null,
+                                                                        religious_university: staffMember.religiousEducation.institution || null,
+                                                                        religious_graduation_year: staffMember.religiousEducation.graduationYear || null,
+                                                                        religious_department: staffMember.religiousEducation.department || null,
+                                                                        modern_education: staffMember.modernEducation.level || null,
+                                                                        modern_school_university: staffMember.modernEducation.institution || null,
+                                                                        modern_graduation_year: staffMember.modernEducation.graduationYear || null,
+                                                                        modern_department: staffMember.modernEducation.department || null,
+                                                                        teaching_section: staffMember.teachingSection || null,
                                                                         position: staffMember.position || null,
                                                                         duty: staffMember.duty || null,
                                                                         salary: staffMember.salary || null,
@@ -623,35 +627,44 @@ export function StaffList() {
                             }
                         }
 
-                        const staffData: StaffInsert = {
-                            employee_id: data.employee_id,
-                            staff_type_id: data.staff_type_id,
-                            first_name: data.first_name,
-                            father_name: data.father_name,
-                            organization_id: organizationId,
-                            school_id: schoolId,
+                        // Convert form data (snake_case) to domain model (camelCase)
+                        const staffData: Partial<Staff> = {
+                            employeeId: data.employee_id,
+                            staffTypeId: data.staff_type_id,
+                            firstName: data.first_name,
+                            fatherName: data.father_name,
+                            organizationId,
+                            schoolId,
                             email: data.email || null,
-                            grandfather_name: data.grandfather_name || null,
-                            tazkira_number: data.tazkira_number || null,
-                            birth_year: data.birth_year || null,
-                            birth_date: data.birth_date || null,
-                            phone_number: data.phone_number || null,
-                            home_address: data.home_address || null,
-                            origin_province: data.origin_province || null,
-                            origin_district: data.origin_district || null,
-                            origin_village: data.origin_village || null,
-                            current_province: data.current_province || null,
-                            current_district: data.current_district || null,
-                            current_village: data.current_village || null,
-                            religious_education: data.religious_education || null,
-                            religious_university: data.religious_university || null,
-                            religious_graduation_year: data.religious_graduation_year || null,
-                            religious_department: data.religious_department || null,
-                            modern_education: data.modern_education || null,
-                            modern_school_university: data.modern_school_university || null,
-                            modern_graduation_year: data.modern_graduation_year || null,
-                            modern_department: data.modern_department || null,
-                            teaching_section: data.teaching_section || null,
+                            grandfatherName: data.grandfather_name || null,
+                            tazkiraNumber: data.tazkira_number || null,
+                            birthYear: data.birth_year || null,
+                            birthDate: data.birth_date || null,
+                            phoneNumber: data.phone_number || null,
+                            homeAddress: data.home_address || null,
+                            originLocation: {
+                                province: data.origin_province || null,
+                                district: data.origin_district || null,
+                                village: data.origin_village || null,
+                            },
+                            currentLocation: {
+                                province: data.current_province || null,
+                                district: data.current_district || null,
+                                village: data.current_village || null,
+                            },
+                            religiousEducation: {
+                                level: data.religious_education || null,
+                                institution: data.religious_university || null,
+                                graduationYear: data.religious_graduation_year || null,
+                                department: data.religious_department || null,
+                            },
+                            modernEducation: {
+                                level: data.modern_education || null,
+                                institution: data.modern_school_university || null,
+                                graduationYear: data.modern_graduation_year || null,
+                                department: data.modern_department || null,
+                            },
+                            teachingSection: data.teaching_section || null,
                             position: data.position || null,
                             duty: data.duty || null,
                             salary: data.salary || null,
@@ -1082,33 +1095,43 @@ export function StaffList() {
                             return;
                         }
 
-                        const staffData: Partial<StaffInsert> = {
-                            employee_id: data.employee_id,
-                            staff_type_id: data.staff_type_id,
-                            first_name: data.first_name,
-                            father_name: data.father_name,
+                        // Convert form data (snake_case) to domain model (camelCase)
+                        const schoolId = data.school_id && data.school_id !== 'none' && data.school_id !== '' ? data.school_id : null;
+                        const staffData: Partial<Staff> = {
+                            employeeId: data.employee_id,
+                            staffTypeId: data.staff_type_id,
+                            firstName: data.first_name,
+                            fatherName: data.father_name,
                             email: data.email || null,
-                            grandfather_name: data.grandfather_name || null,
-                            tazkira_number: data.tazkira_number || null,
-                            birth_year: data.birth_year || null,
-                            birth_date: data.birth_date || null,
-                            phone_number: data.phone_number || null,
-                            home_address: data.home_address || null,
-                            origin_province: data.origin_province || null,
-                            origin_district: data.origin_district || null,
-                            origin_village: data.origin_village || null,
-                            current_province: data.current_province || null,
-                            current_district: data.current_district || null,
-                            current_village: data.current_village || null,
-                            religious_education: data.religious_education || null,
-                            religious_university: data.religious_university || null,
-                            religious_graduation_year: data.religious_graduation_year || null,
-                            religious_department: data.religious_department || null,
-                            modern_education: data.modern_education || null,
-                            modern_school_university: data.modern_school_university || null,
-                            modern_graduation_year: data.modern_graduation_year || null,
-                            modern_department: data.modern_department || null,
-                            teaching_section: data.teaching_section || null,
+                            grandfatherName: data.grandfather_name || null,
+                            tazkiraNumber: data.tazkira_number || null,
+                            birthYear: data.birth_year || null,
+                            birthDate: data.birth_date || null,
+                            phoneNumber: data.phone_number || null,
+                            homeAddress: data.home_address || null,
+                            originLocation: {
+                                province: data.origin_province || null,
+                                district: data.origin_district || null,
+                                village: data.origin_village || null,
+                            },
+                            currentLocation: {
+                                province: data.current_province || null,
+                                district: data.current_district || null,
+                                village: data.current_village || null,
+                            },
+                            religiousEducation: {
+                                level: data.religious_education || null,
+                                institution: data.religious_university || null,
+                                graduationYear: data.religious_graduation_year || null,
+                                department: data.religious_department || null,
+                            },
+                            modernEducation: {
+                                level: data.modern_education || null,
+                                institution: data.modern_school_university || null,
+                                graduationYear: data.modern_graduation_year || null,
+                                department: data.modern_department || null,
+                            },
+                            teachingSection: data.teaching_section || null,
                             position: data.position || null,
                             duty: data.duty || null,
                             salary: data.salary || null,
@@ -1116,9 +1139,8 @@ export function StaffList() {
                             notes: data.notes || null,
                         };
 
-                        const schoolId = data.school_id && data.school_id !== 'none' && data.school_id !== '' ? data.school_id : null;
-                        if (schoolId !== editingStaff.school_id) {
-                            staffData.school_id = schoolId;
+                        if (schoolId !== editingStaff.schoolId) {
+                            staffData.schoolId = schoolId;
                         }
 
                         updateStaff.mutate(

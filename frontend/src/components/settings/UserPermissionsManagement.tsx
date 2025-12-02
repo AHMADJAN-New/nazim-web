@@ -73,7 +73,7 @@ export function UserPermissionsManagement() {
     
     // Regular users see: global permissions + their organization's permissions
     return allPermissions.filter(p => 
-      p.organization_id === null || p.organization_id === profile.organization_id
+      p.organizationId === null || p.organizationId === profile.organization_id
     );
   }, [allPermissions, profile, isSuperAdmin]);
   
@@ -84,9 +84,9 @@ export function UserPermissionsManagement() {
     return allUsers.filter(user => {
       // Search filter
       if (searchQuery) {
-        const query = searchQuery.toLowerCase();
+        const query = (searchQuery || '').toLowerCase();
         const matchesSearch = 
-          user.full_name?.toLowerCase().includes(query) ||
+          user.fullName?.toLowerCase().includes(query) ||
           user.email?.toLowerCase().includes(query) ||
           user.role?.toLowerCase().includes(query);
         if (!matchesSearch) return false;
@@ -309,7 +309,7 @@ export function UserPermissionsManagement() {
                   filteredUsers.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">
-                        {user.full_name || 'No name'}
+                        {user.fullName || 'No name'}
                       </TableCell>
                       <TableCell>{user.email || 'No email'}</TableCell>
                       <TableCell>
@@ -317,9 +317,9 @@ export function UserPermissionsManagement() {
                       </TableCell>
                       {isSuperAdmin && (
                         <TableCell>
-                          {user.organization_id ? (
+                          {user.organizationId ? (
                             <Badge variant="secondary">
-                              {currentOrg?.id === user.organization_id ? currentOrg.name : 'Other'}
+                              {currentOrg?.id === user.organizationId ? currentOrg.name : 'Other'}
                             </Badge>
                           ) : (
                             <span className="text-muted-foreground">None</span>
@@ -327,8 +327,8 @@ export function UserPermissionsManagement() {
                         </TableCell>
                       )}
                       <TableCell>
-                        <Badge variant={user.is_active ? 'default' : 'secondary'}>
-                          {user.is_active ? 'Active' : 'Inactive'}
+                        <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                          {user.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -356,7 +356,7 @@ export function UserPermissionsManagement() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Manage Permissions for {selectedUser?.full_name || selectedUser?.email || 'User'}
+              Manage Permissions for {selectedUser?.fullName || selectedUser?.email || 'User'}
             </DialogTitle>
             <DialogDescription>
               Assign or remove specific permissions for this user. User-specific permissions override role-based permissions.

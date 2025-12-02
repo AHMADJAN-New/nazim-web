@@ -2,120 +2,99 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { classesApi } from '@/lib/api/client';
+import type * as ClassApi from '@/types/api/class';
+import type { Class, ClassAcademicYear } from '@/types/domain/class';
+import {
+    mapClassApiToDomain,
+    mapClassDomainToInsert,
+    mapClassDomainToUpdate,
+    mapClassAcademicYearApiToDomain,
+    mapClassAcademicYearDomainToInsert,
+    mapClassAcademicYearDomainToUpdate,
+} from '@/mappers/classMapper';
 
-// Class type definition
-export interface Class {
-    id: string;
-    organization_id: string | null;
-    name: string;
-    code: string;
-    grade_level: number | null;
-    description: string | null;
-    default_capacity: number;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-    deleted_at: string | null;
-}
-
-export type ClassInsert = Omit<Class, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
-export type ClassUpdate = Partial<Omit<Class, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'organization_id'>>;
-
-// Class Academic Year type definition
-export interface ClassAcademicYear {
-    id: string;
-    class_id: string;
-    academic_year_id: string;
-    organization_id: string | null;
-    section_name: string | null;
-    teacher_id: string | null;
-    room_id: string | null;
-    capacity: number | null;
-    current_student_count: number;
-    is_active: boolean;
-    notes: string | null;
-    created_at: string;
-    updated_at: string;
-    deleted_at: string | null;
-    // Extended with relationship data
-    class?: Class;
-    academic_year?: {
-        id: string;
-        name: string;
-        start_date: string;
-        end_date: string;
-        is_current?: boolean;
-    };
-    teacher?: {
-        id: string;
-        full_name: string;
-    };
-    room?: {
-        id: string;
-        room_number: string;
-        building?: {
-            id: string;
-            building_name: string;
-        };
-    };
-}
-
-export type ClassAcademicYearInsert = Omit<ClassAcademicYear, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'class' | 'academic_year' | 'teacher' | 'room'>;
-export type ClassAcademicYearUpdate = Partial<Omit<ClassAcademicYear, 'id' | 'class_id' | 'academic_year_id' | 'organization_id' | 'created_at' | 'updated_at' | 'deleted_at' | 'class' | 'academic_year' | 'teacher' | 'room'>>;
+// Re-export domain types for convenience
+export type { Class, ClassAcademicYear } from '@/types/domain/class';
 
 export const useClasses = (organizationId?: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery({
+    return useQuery<Class[]>({
         queryKey: ['classes', organizationId || profile?.organization_id],
         queryFn: async () => {
             if (!user || !profile) return [];
 
-            const data = await classesApi.list({
-                organization_id: organizationId || profile?.organization_id,
+            const apiClasses = await classesApi.list({
+                organization_id: organizationId || profile.organization_id,
             });
 
-            return (data || []) as Class[];
+            // Map API models to domain models
+            return (apiClasses as ClassApi.Class[]).map(mapClassApiToDomain);
         },
         enabled: !!user && !!profile,
-        staleTime: 10 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
     });
 };
 
 export const useClassAcademicYears = (academicYearId?: string, organizationId?: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery({
+    return useQuery<ClassAcademicYear[]>({
         queryKey: ['class-academic-years', academicYearId, organizationId || profile?.organization_id],
         queryFn: async () => {
             if (!user || !profile || !academicYearId) return [];
 
-            const data = await classesApi.getByAcademicYear(academicYearId, organizationId || profile?.organization_id);
+            try {
+                const apiClassYears = await classesApi.getByAcademicYear(academicYearId, organizationId || profile.organization_id);
 
-            return (data || []) as ClassAcademicYear[];
+                // Map API models to domain models
+                return (apiClassYears as ClassApi.ClassAcademicYear[]).map(mapClassAcademicYearApiToDomain);
+            } catch (error: any) {
+                // Log error but don't throw - return empty array to prevent UI breakage
+                const status = error?.response?.status || error?.status;
+                const message = error?.message || error?.response?.data?.error || 'Unknown error';
+                
+                // Log only in development or for non-404 errors
+                if (status !== 404) {
+                    console.error('Failed to fetch class academic years:', {
+                        status,
+                        message,
+                        academicYearId,
+                        error
+                    });
+                }
+                
+                // Return empty array for any error (404, 500, etc.) to prevent UI breakage
+                return [];
+            }
         },
         enabled: !!user && !!profile && !!academicYearId,
-        staleTime: 10 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnWindowFocus: false, // REQUIRED: Performance optimization
+        refetchOnReconnect: false, // REQUIRED: Performance optimization
+        retry: false, // Don't retry on error to prevent console spam
     });
 };
 
 export const useClassHistory = (classId: string) => {
     const { user, profile } = useAuth();
 
-    return useQuery({
+    return useQuery<ClassAcademicYear[]>({
         queryKey: ['class-history', classId],
         queryFn: async () => {
             if (!user || !profile || !classId) return [];
 
-            const data = await classesApi.getAcademicYears(classId);
+            const apiClassYears = await classesApi.getAcademicYears(classId);
 
-            return (data || []) as ClassAcademicYear[];
+            // Map API models to domain models
+            return (apiClassYears as ClassApi.ClassAcademicYear[]).map(mapClassAcademicYearApiToDomain);
         },
         enabled: !!user && !!profile && !!classId,
-        staleTime: 10 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnWindowFocus: false, // REQUIRED: Performance optimization
+        refetchOnReconnect: false, // REQUIRED: Performance optimization
     });
 };
 
@@ -124,25 +103,20 @@ export const useCreateClass = () => {
     const { user, profile } = useAuth();
 
     return useMutation({
-        mutationFn: async (classData: {
-            name: string;
-            code: string;
-            grade_level?: number | null;
-            description?: string | null;
-            default_capacity?: number;
-            is_active?: boolean;
-            organization_id?: string | null;
-        }) => {
+        mutationFn: async (classData: Partial<Class>) => {
             if (!user || !profile) {
                 throw new Error('User not authenticated');
             }
 
-            const data = await classesApi.create({
+            // Convert domain model to API insert payload
+            const insertData = mapClassDomainToInsert({
                 ...classData,
-                organization_id: classData.organization_id ?? (profile.role === 'super_admin' ? null : profile.organization_id),
+                organizationId: classData.organizationId ?? (profile.role === 'super_admin' ? null : profile.organization_id),
             });
 
-            return data as Class;
+            const apiClass = await classesApi.create(insertData);
+            // Map API response back to domain model
+            return mapClassApiToDomain(apiClass as ClassApi.Class);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['classes'] });
@@ -164,9 +138,12 @@ export const useUpdateClass = () => {
                 throw new Error('User not authenticated');
             }
 
-            const data = await classesApi.update(id, updates);
+            // Convert domain model to API update payload
+            const updateData = mapClassDomainToUpdate(updates);
 
-            return data as Class;
+            const apiClass = await classesApi.update(id, updateData);
+            // Map API response back to domain model
+            return mapClassApiToDomain(apiClass as ClassApi.Class);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['classes'] });
@@ -206,22 +183,18 @@ export const useAssignClassToYear = () => {
     const { user, profile } = useAuth();
 
     return useMutation({
-        mutationFn: async (assignmentData: {
-            class_id: string;
-            academic_year_id: string;
-            section_name?: string | null;
-            room_id?: string | null;
-            capacity?: number | null;
-            notes?: string | null;
-        }) => {
+        mutationFn: async (assignmentData: Partial<ClassAcademicYear>) => {
             if (!user || !profile) {
                 throw new Error('User not authenticated');
             }
 
-            const { class_id, ...rest } = assignmentData;
-            const data = await classesApi.assignToYear(class_id, rest);
+            // Convert domain model to API insert payload
+            const insertData = mapClassAcademicYearDomainToInsert(assignmentData);
 
-            return data as ClassAcademicYear;
+            const { classId, ...rest } = insertData;
+            const apiClassYear = await classesApi.assignToYear(classId, rest);
+            // Map API response back to domain model
+            return mapClassAcademicYearApiToDomain(apiClassYear as ClassApi.ClassAcademicYear);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
@@ -244,9 +217,12 @@ export const useUpdateClassYearInstance = () => {
                 throw new Error('User not authenticated');
             }
 
-            const data = await classesApi.updateInstance(id, updates);
+            // Convert domain model to API update payload
+            const updateData = mapClassAcademicYearDomainToUpdate(updates);
 
-            return data as ClassAcademicYear;
+            const apiClassYear = await classesApi.updateInstance(id, updateData);
+            // Map API response back to domain model
+            return mapClassAcademicYearApiToDomain(apiClassYear as ClassApi.ClassAcademicYear);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
@@ -288,19 +264,28 @@ export const useBulkAssignClassSections = () => {
 
     return useMutation({
         mutationFn: async (bulkData: {
-            class_id: string;
-            academic_year_id: string;
+            classId: string;
+            academicYearId: string;
             sections: string[]; // Array of section names like ['A', 'B', 'C', 'D']
-            default_room_id?: string | null;
-            default_capacity?: number | null;
+            defaultRoomId?: string | null;
+            defaultCapacity?: number | null;
         }) => {
             if (!user || !profile) {
                 throw new Error('User not authenticated');
             }
 
-            const result = await classesApi.bulkAssignSections(bulkData);
+            const result = await classesApi.bulkAssignSections({
+                class_id: bulkData.classId,
+                academic_year_id: bulkData.academicYearId,
+                sections: bulkData.sections,
+                default_room_id: bulkData.defaultRoomId,
+                default_capacity: bulkData.defaultCapacity,
+            });
 
-            return result as { created: ClassAcademicYear[]; skipped: number };
+            return {
+                created: (result.created as ClassApi.ClassAcademicYear[]).map(mapClassAcademicYearApiToDomain),
+                skipped: result.skipped,
+            };
         },
         onSuccess: (result) => {
             queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
@@ -319,18 +304,24 @@ export const useCopyClassesBetweenYears = () => {
 
     return useMutation({
         mutationFn: async (copyData: {
-            from_academic_year_id: string;
-            to_academic_year_id: string;
-            class_instance_ids: string[];
-            copy_assignments?: boolean; // Copy teachers and rooms
+            fromAcademicYearId: string;
+            toAcademicYearId: string;
+            classInstanceIds: string[];
+            copyAssignments?: boolean; // Copy teachers and rooms
         }) => {
             if (!user || !profile) {
                 throw new Error('User not authenticated');
             }
 
-            const data = await classesApi.copyBetweenYears(copyData);
+            const apiClassYears = await classesApi.copyBetweenYears({
+                from_academic_year_id: copyData.fromAcademicYearId,
+                to_academic_year_id: copyData.toAcademicYearId,
+                class_instance_ids: copyData.classInstanceIds,
+                copy_assignments: copyData.copyAssignments,
+            });
 
-            return data as ClassAcademicYear[];
+            // Map API models to domain models
+            return (apiClassYears as ClassApi.ClassAcademicYear[]).map(mapClassAcademicYearApiToDomain);
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
@@ -342,4 +333,3 @@ export const useCopyClassesBetweenYears = () => {
         },
     });
 };
-

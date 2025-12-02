@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useSubjects, useClassSubjects, useSubjectHistory, useCreateSubject, useUpdateSubject, useDeleteSubject, useAssignSubjectToClass, useUpdateClassSubject, useRemoveSubjectFromClass, useBulkAssignSubjects, useCopySubjectsBetweenYears, useClassSubjectTemplates, useAssignSubjectToClassTemplate, useRemoveSubjectFromClassTemplate, useBulkAssignSubjectsToClassTemplate, type Subject, type ClassSubject, type ClassSubjectTemplate } from '@/hooks/useSubjects';
+import { useSubjects, useClassSubjects, useSubjectHistory, useCreateSubject, useUpdateSubject, useDeleteSubject, useAssignSubjectToClass, useUpdateClassSubject, useRemoveSubjectFromClass, useBulkAssignSubjects, useCopySubjectsBetweenYears, useClassSubjectTemplates, useAssignSubjectToClassTemplate, useRemoveSubjectFromClassTemplate, useBulkAssignSubjectsToClassTemplate } from '@/hooks/useSubjects';
+import type { Subject } from '@/types/domain/subject';
 import { useClassAcademicYears, useClasses } from '@/hooks/useClasses';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
@@ -243,10 +244,10 @@ export function SubjectsManagement() {
 
         // Search filter
         if (searchQuery) {
-            const query = searchQuery.toLowerCase();
+            const query = (searchQuery || '').toLowerCase();
             filtered = filtered.filter(s =>
-                s.name.toLowerCase().includes(query) ||
-                s.code.toLowerCase().includes(query) ||
+                s.name?.toLowerCase().includes(query) ||
+                s.code?.toLowerCase().includes(query) ||
                 (s.description && s.description.toLowerCase().includes(query))
             );
         }
@@ -265,7 +266,7 @@ export function SubjectsManagement() {
             setValueSubject('name', subject.name);
             setValueSubject('code', subject.code);
             setValueSubject('description', subject.description || '');
-            setValueSubject('is_active', subject.is_active);
+            setValueSubject('is_active', subject.isActive);
         } else {
             setSelectedSubject(null);
             resetSubject();
@@ -576,8 +577,8 @@ export function SubjectsManagement() {
                                                     {subject.description || '-'}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant={subject.is_active ? 'default' : 'secondary'}>
-                                                        {subject.is_active ? t('academic.subjects.active') : t('academic.subjects.inactive')}
+                                                    <Badge variant={subject.isActive ? 'default' : 'secondary'}>
+                                                        {subject.isActive ? t('academic.subjects.active') : t('academic.subjects.inactive')}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">

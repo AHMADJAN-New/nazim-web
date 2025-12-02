@@ -11,8 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
-import { DemoAccountsTab } from '@/components/auth/DemoAccountsTab';
 
 interface Organization {
   id: string;
@@ -46,8 +44,8 @@ export default function AuthPage() {
 
   const fetchOrganizations = async () => {
     try {
-      // Fetch organizations from Laravel API
-      const data = await organizationsApi.list();
+      // Fetch organizations from Laravel API (public endpoint for signup form)
+      const data = await organizationsApi.publicList() as Organization[];
       setOrganizations(data || []);
       
       if (!data || data.length === 0) {
@@ -98,8 +96,9 @@ export default function AuthPage() {
         toast.success('Logged in successfully!');
         // Small delay to ensure token is set, then redirect
         // The AuthProvider will reload the profile which should have organization_id
+        // Redirect to /redirect which will handle pending approval check and send to dashboard
         setTimeout(() => {
-          window.location.href = '/redirect';
+          navigate('/redirect', { replace: true }); 
         }, 100);
       } else {
         console.warn('Sign in returned no user data');
@@ -212,12 +211,9 @@ export default function AuthPage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className={`grid w-full ${import.meta.env.DEV ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              {import.meta.env.DEV && (
-                <TabsTrigger value="demo">Demo Accounts</TabsTrigger>
-              )}
             </TabsList>
 
             <TabsContent value="login">
@@ -245,13 +241,6 @@ export default function AuthPage() {
                 <Button type="submit" className="w-full" disabled={authLoading}>
                   {authLoading ? 'Signing In...' : 'Sign In'}
                 </Button>
-                <div className="text-center">
-                  <ForgotPasswordDialog>
-                    <Button variant="link" type="button" className="text-sm text-muted-foreground">
-                      Forgot your password?
-                    </Button>
-                  </ForgotPasswordDialog>
-                </div>
               </form>
             </TabsContent>
 
@@ -367,12 +356,6 @@ export default function AuthPage() {
                 </Button>
               </form>
             </TabsContent>
-
-            {import.meta.env.DEV && (
-              <TabsContent value="demo">
-                <DemoAccountsTab />
-              </TabsContent>
-            )}
           </Tabs>
         </CardContent>
       </Card>
