@@ -29,21 +29,23 @@ class AcademicYearController extends Controller
                 'academic_year_id' => 'nullable|uuid', // Allow but ignore this parameter
             ]);
 
-            // Note: Academic years don't require specific permission check for reading
-            // All authenticated users can read academic years for their organization + global years
-
-            // Get accessible organization IDs
-            $orgIds = [];
-            if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-                $orgIds = DB::table('organizations')
-                    ->whereNull('deleted_at')
-                    ->pluck('id')
-                    ->toArray();
-            } else {
-                if ($profile->organization_id) {
-                    $orgIds = [$profile->organization_id];
-                }
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
+
+            // Check permission WITH organization context
+            try {
+                if (!$user->hasPermissionTo('academic_years.read', $profile->organization_id)) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Permission check failed for academic_years.read: " . $e->getMessage());
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+
+            // Get accessible organization IDs (user's organization only)
+            $orgIds = [$profile->organization_id];
 
             $query = AcademicYear::whereNull('deleted_at');
 
@@ -58,11 +60,9 @@ class AcademicYearController extends Controller
                     return response()->json(['error' => 'Academic year not found'], 404);
                 }
 
-                // Check organization access
-                if ($profile->role !== 'super_admin') {
-                    if ($academicYear->organization_id !== null && $academicYear->organization_id !== $profile->organization_id) {
-                        return response()->json(['error' => 'Academic year not found'], 404);
-                    }
+                // Check organization access (all users)
+                if ($academicYear->organization_id !== null && $academicYear->organization_id !== $profile->organization_id) {
+                    return response()->json(['error' => 'Academic year not found'], 404);
                 }
 
                 return response()->json([$academicYear]); // Return as array for consistency
@@ -131,20 +131,26 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
-            // Get organization_id - use provided or user's org
-            $organizationId = $request->organization_id;
-            if ($organizationId === null) {
-                if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-                    $organizationId = null; // Global year
-                } else if ($profile->organization_id) {
-                    $organizationId = $profile->organization_id;
-                } else {
-                    return response()->json(['error' => 'User must be assigned to an organization'], 400);
-                }
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
-            // Validate organization access (unless super admin)
-            if ($profile->role !== 'super_admin' && $organizationId !== $profile->organization_id && $organizationId !== null) {
+            // Check permission WITH organization context
+            try {
+                if (!$user->hasPermissionTo('academic_years.create', $profile->organization_id)) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Permission check failed for academic_years.create: " . $e->getMessage());
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+
+            // Get organization_id - use provided or user's org
+            $organizationId = $request->organization_id ?? $profile->organization_id;
+
+            // Validate organization access (all users)
+            if ($organizationId !== $profile->organization_id) {
                 return response()->json(['error' => 'Cannot create academic year for different organization'], 403);
             }
 
@@ -208,17 +214,30 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            // Check permission WITH organization context
+            try {
+                if (!$user->hasPermissionTo('academic_years.read', $profile->organization_id)) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Permission check failed for academic_years.read: " . $e->getMessage());
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+
             $academicYear = AcademicYear::whereNull('deleted_at')->find($id);
 
             if (!$academicYear) {
                 return response()->json(['error' => 'Academic year not found'], 404);
             }
 
-            // Check organization access (unless super admin)
-            if ($profile->role !== 'super_admin') {
-                if ($academicYear->organization_id !== null && $academicYear->organization_id !== $profile->organization_id) {
-                    return response()->json(['error' => 'Academic year not found'], 404);
-                }
+            // Check organization access (all users)
+            if ($academicYear->organization_id !== null && $academicYear->organization_id !== $profile->organization_id) {
+                return response()->json(['error' => 'Academic year not found'], 404);
             }
 
             return response()->json($academicYear);
@@ -248,21 +267,34 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            // Check permission WITH organization context
+            try {
+                if (!$user->hasPermissionTo('academic_years.update', $profile->organization_id)) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Permission check failed for academic_years.update: " . $e->getMessage());
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+
             $academicYear = AcademicYear::whereNull('deleted_at')->find($id);
 
             if (!$academicYear) {
                 return response()->json(['error' => 'Academic year not found'], 404);
             }
 
-            // Validate organization access (unless super admin)
-            if ($profile->role !== 'super_admin') {
-                if ($academicYear->organization_id !== null && $academicYear->organization_id !== $profile->organization_id) {
-                    return response()->json(['error' => 'Cannot update academic year from different organization'], 403);
-                }
+            // Validate organization access (all users)
+            if ($academicYear->organization_id !== null && $academicYear->organization_id !== $profile->organization_id) {
+                return response()->json(['error' => 'Cannot update academic year from different organization'], 403);
             }
 
-            // Prevent organization_id changes (unless super admin)
-            if ($request->has('organization_id') && $profile->role !== 'super_admin') {
+            // Prevent organization_id changes (all users)
+            if ($request->has('organization_id')) {
                 return response()->json(['error' => 'Cannot change organization_id'], 403);
             }
 
@@ -327,21 +359,34 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            // Check permission WITH organization context
+            try {
+                if (!$user->hasPermissionTo('academic_years.delete', $profile->organization_id)) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Permission check failed for academic_years.delete: " . $e->getMessage());
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+
             $academicYear = AcademicYear::whereNull('deleted_at')->find($id);
 
             if (!$academicYear) {
                 return response()->json(['error' => 'Academic year not found'], 404);
             }
 
-            // Validate organization access (unless super admin)
-            // Note: Global years (organization_id = NULL) can only be deleted by super admin
-            if ($profile->role !== 'super_admin') {
-                if ($academicYear->organization_id === null) {
-                    return response()->json(['error' => 'Cannot delete global academic years'], 403);
-                }
-                if ($academicYear->organization_id !== $profile->organization_id) {
-                    return response()->json(['error' => 'Cannot delete academic year from different organization'], 403);
-                }
+            // Validate organization access (all users)
+            // Note: Global years (organization_id = NULL) cannot be deleted by regular users
+            if ($academicYear->organization_id === null) {
+                return response()->json(['error' => 'Cannot delete global academic years'], 403);
+            }
+            if ($academicYear->organization_id !== $profile->organization_id) {
+                return response()->json(['error' => 'Cannot delete academic year from different organization'], 403);
             }
 
             // Prevent deletion of current year

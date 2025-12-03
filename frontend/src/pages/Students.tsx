@@ -4,8 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { studentSchema, type StudentFormData } from '@/lib/validations';
 import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
-import { useOrganizations } from '@/hooks/useOrganizations';
+import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import {
   useCreateStudent,
@@ -89,10 +88,7 @@ const statusBadge = (status: Student['status']) => {
 export function Students() {
   const { t, isRTL } = useLanguage();
   const { data: profile } = useProfile();
-  const isSuperAdmin = useIsSuperAdmin();
-  const { data: organizations } = useOrganizations();
-  const [selectedOrg, setSelectedOrg] = useState<string | undefined>(profile?.organization_id);
-  const orgIdForQuery = selectedOrg === 'all' ? undefined : selectedOrg;
+  const orgIdForQuery = profile?.organization_id;
 
   const { data: students, isLoading, error } = useStudents(orgIdForQuery);
   const { data: stats } = useStudentStats(orgIdForQuery);
@@ -142,13 +138,9 @@ export function Students() {
     // Use same cleaning as existing submit
     const cleanedData = cleanStudentData(values as StudentFormData);
     // Resolve organizationId respecting multi-tenancy
+    // All users are restricted to their own organization
     let organizationId = cleanedData.organizationId || profile?.organization_id || null;
-    if (isSuperAdmin) {
-      if (selectedOrg && selectedOrg !== 'all') {
-        organizationId = selectedOrg;
-      }
-    }
-    // Fallback: derive organization from selected school (for super_admin without header org selection)
+    // Fallback: derive organization from selected school (for admin without header org selection)
     if (!organizationId && cleanedData.schoolId) {
       const schoolMatch = schools?.find((s) => s.id === cleanedData.schoolId);
       if (schoolMatch && (schoolMatch as any).organization_id) {
@@ -366,21 +358,6 @@ export function Students() {
           </p>
         </div>
         <div className="flex gap-2">
-          {isSuperAdmin && (
-            <Select value={selectedOrg || 'all'} onValueChange={(value) => setSelectedOrg(value === 'all' ? 'all' : value)}>
-              <SelectTrigger className="w-full sm:w-[220px]">
-                <SelectValue placeholder={t('students.organization') || 'Organization'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('students.allOrganizations') || 'All Organizations'}</SelectItem>
-                {organizations?.map((org) => (
-                  <SelectItem key={org.id} value={org.id}>
-                    {org.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
           <Button onClick={() => setIsCreateOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             {t('students.add') || 'Register Student'}

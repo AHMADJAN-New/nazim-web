@@ -49,10 +49,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/auth" replace />;
   }
 
-  // If organization is required and user doesn't have one (and isn't super admin)
+  // If organization is required and user doesn't have one
   if (requireOrganization && currentProfile) {
-    const isSuperAdmin = currentProfile.role === 'super_admin';
-    if (!isSuperAdmin && !currentProfile.organization_id) {
+    if (!currentProfile.organization_id) {
       return (
         <div className="container mx-auto p-6">
           <div className="text-center">

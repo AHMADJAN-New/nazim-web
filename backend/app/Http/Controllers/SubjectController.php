@@ -23,29 +23,23 @@ class SubjectController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('subjects.read')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for subjects.read - allowing access: " . $e->getMessage());
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('subjects.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subjects.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         $query = Subject::whereNull('deleted_at');
 
@@ -89,33 +83,28 @@ class SubjectController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('subjects.create')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for subjects.create - allowing access: " . $e->getMessage());
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('subjects.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subjects.create: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $validated = $request->validated();
 
         // Get organization_id - use provided or user's org
-        $organizationId = $validated['organization_id'] ?? null;
-        if ($organizationId === null) {
-            if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-                $organizationId = null; // Global subject
-            } else if ($profile->organization_id) {
-                $organizationId = $profile->organization_id;
-            } else {
-                return response()->json(['error' => 'User must be assigned to an organization'], 400);
-            }
-        }
+        $organizationId = $validated['organization_id'] ?? $profile->organization_id;
 
-        // Validate organization access (unless super admin)
-        if ($profile->role !== 'super_admin' && $organizationId !== $profile->organization_id && $organizationId !== null) {
+        // Validate organization access (all users)
+        if ($organizationId !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot create subject for different organization'], 403);
         }
 
@@ -142,15 +131,19 @@ class SubjectController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('subjects.read')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for subjects.read - allowing access: " . $e->getMessage());
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('subjects.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subjects.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $subject = Subject::whereNull('deleted_at')->find($id);
@@ -159,11 +152,9 @@ class SubjectController extends Controller
             return response()->json(['error' => 'Subject not found'], 404);
         }
 
-        // Check organization access
-        if ($profile->role !== 'super_admin') {
-            if ($subject->organization_id !== $profile->organization_id && $subject->organization_id !== null) {
-                return response()->json(['error' => 'Access denied to this subject'], 403);
-            }
+        // Check organization access (all users)
+        if ($subject->organization_id !== $profile->organization_id && $subject->organization_id !== null) {
+            return response()->json(['error' => 'Access denied to this subject'], 403);
         }
 
         return response()->json($subject);
@@ -181,15 +172,19 @@ class SubjectController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('subjects.update')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for subjects.update - allowing access: " . $e->getMessage());
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('subjects.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subjects.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $subject = Subject::whereNull('deleted_at')->find($id);
@@ -198,17 +193,15 @@ class SubjectController extends Controller
             return response()->json(['error' => 'Subject not found'], 404);
         }
 
-        // Check organization access
-        if ($profile->role !== 'super_admin') {
-            if ($subject->organization_id !== $profile->organization_id && $subject->organization_id !== null) {
-                return response()->json(['error' => 'Cannot update subject from different organization'], 403);
-            }
+        // Check organization access (all users)
+        if ($subject->organization_id !== $profile->organization_id && $subject->organization_id !== null) {
+            return response()->json(['error' => 'Cannot update subject from different organization'], 403);
         }
 
         $validated = $request->validated();
 
-        // Prevent organization_id changes (unless super admin)
-        if (isset($validated['organization_id']) && $profile->role !== 'super_admin') {
+        // Prevent organization_id changes (all users)
+        if (isset($validated['organization_id'])) {
             unset($validated['organization_id']);
         }
 
@@ -225,9 +218,7 @@ class SubjectController extends Controller
         if (isset($validated['is_active'])) {
             $subject->is_active = $validated['is_active'];
         }
-        if (isset($validated['organization_id']) && $profile->role === 'super_admin') {
-            $subject->organization_id = $validated['organization_id'];
-        }
+        // organization_id cannot be changed
 
         $subject->save();
 
@@ -246,15 +237,19 @@ class SubjectController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('subjects.delete')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for subjects.delete - allowing access: " . $e->getMessage());
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('subjects.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for subjects.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $subject = Subject::whereNull('deleted_at')->find($id);
@@ -263,11 +258,9 @@ class SubjectController extends Controller
             return response()->json(['error' => 'Subject not found'], 404);
         }
 
-        // Check organization access
-        if ($profile->role !== 'super_admin') {
-            if ($subject->organization_id !== $profile->organization_id && $subject->organization_id !== null) {
-                return response()->json(['error' => 'Cannot delete subject from different organization'], 403);
-            }
+        // Check organization access (all users)
+        if ($subject->organization_id !== $profile->organization_id && $subject->organization_id !== null) {
+            return response()->json(['error' => 'Cannot delete subject from different organization'], 403);
         }
 
         $subject->delete();

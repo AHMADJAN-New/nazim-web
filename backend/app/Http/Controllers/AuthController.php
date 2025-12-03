@@ -137,9 +137,9 @@ class AuthController extends Controller
             ]);
         }
 
-        // Auto-assign organization if user doesn't have one (and is not super_admin)
+        // Auto-assign organization if user doesn't have one
         // Only check if organization_id is missing (optimization: skip DB query if already assigned)
-        if (!$profile->organization_id && $profile->role !== 'super_admin') {
+        if (!$profile->organization_id) {
             $defaultOrgId = OrganizationHelper::getDefaultOrganizationId();
             
             if ($defaultOrgId) {

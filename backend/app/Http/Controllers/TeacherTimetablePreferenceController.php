@@ -24,29 +24,22 @@ class TeacherTimetablePreferenceController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
-            // Check permission (allow super_admin to bypass)
-            if ($profile->role !== 'super_admin') {
-                try {
-                    if (!$user->hasPermissionTo('teacher_timetable_preferences.read')) {
-                        return response()->json(['error' => 'This action is unauthorized'], 403);
-                    }
-                } catch (\Exception $e) {
-                    Log::warning("Permission check failed for teacher_timetable_preferences.read - allowing access: " . $e->getMessage());
-                }
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
-            // Get accessible organization IDs
-            $orgIds = [];
-            if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-                $orgIds = DB::table('organizations')
-                    ->whereNull('deleted_at')
-                    ->pluck('id')
-                    ->toArray();
-            } else {
-                if ($profile->organization_id) {
-                    $orgIds = [$profile->organization_id];
+            // Check permission (all users)
+            try {
+                if (!$user->hasPermissionTo('teacher_timetable_preferences.read', $profile->organization_id)) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
+            } catch (\Exception $e) {
+                Log::warning("Permission check failed for teacher_timetable_preferences.read - allowing access: " . $e->getMessage());
             }
+
+            // Get accessible organization IDs (user's organization only)
+            $orgIds = [$profile->organization_id];
 
             $query = TeacherTimetablePreference::whereNull('deleted_at');
 
@@ -153,31 +146,27 @@ class TeacherTimetablePreferenceController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('teacher_timetable_preferences.create')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for teacher_timetable_preferences.create - allowing access: " . $e->getMessage());
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission (all users)
+        try {
+            if (!$user->hasPermissionTo('teacher_timetable_preferences.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for teacher_timetable_preferences.create - allowing access: " . $e->getMessage());
         }
 
         $validated = $request->validated();
 
         // Get organization_id - use provided or user's org
-        $organizationId = $validated['organization_id'] ?? null;
-        if ($organizationId === null) {
-            if ($profile->organization_id) {
-                $organizationId = $profile->organization_id;
-            } else {
-                return response()->json(['error' => 'User must be assigned to an organization'], 400);
-            }
-        }
+        $organizationId = $validated['organization_id'] ?? $profile->organization_id;
 
-        // Validate organization access (unless super admin)
-        if ($profile->role !== 'super_admin' && $organizationId !== $profile->organization_id && $organizationId !== null) {
+        // Validate organization access (all users)
+        if ($organizationId !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot create preference for different organization'], 403);
         }
 
@@ -225,15 +214,18 @@ class TeacherTimetablePreferenceController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('teacher_timetable_preferences.read')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for teacher_timetable_preferences.read - allowing access: " . $e->getMessage());
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission (all users)
+        try {
+            if (!$user->hasPermissionTo('teacher_timetable_preferences.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for teacher_timetable_preferences.read - allowing access: " . $e->getMessage());
         }
 
         $preference = TeacherTimetablePreference::whereNull('deleted_at')
@@ -244,11 +236,9 @@ class TeacherTimetablePreferenceController extends Controller
             return response()->json(['error' => 'Teacher timetable preference not found'], 404);
         }
 
-        // Check organization access
-        if ($profile->role !== 'super_admin') {
-            if ($preference->organization_id !== $profile->organization_id && $preference->organization_id !== null) {
-                return response()->json(['error' => 'Access denied to this preference'], 403);
-            }
+        // Check organization access (all users)
+        if ($preference->organization_id !== $profile->organization_id && $preference->organization_id !== null) {
+            return response()->json(['error' => 'Access denied to this preference'], 403);
         }
 
         return response()->json([
@@ -284,15 +274,18 @@ class TeacherTimetablePreferenceController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('teacher_timetable_preferences.update')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for teacher_timetable_preferences.update - allowing access: " . $e->getMessage());
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission (all users)
+        try {
+            if (!$user->hasPermissionTo('teacher_timetable_preferences.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for teacher_timetable_preferences.update - allowing access: " . $e->getMessage());
         }
 
         $preference = TeacherTimetablePreference::whereNull('deleted_at')->find($id);
@@ -301,11 +294,9 @@ class TeacherTimetablePreferenceController extends Controller
             return response()->json(['error' => 'Teacher timetable preference not found'], 404);
         }
 
-        // Check organization access
-        if ($profile->role !== 'super_admin') {
-            if ($preference->organization_id !== $profile->organization_id && $preference->organization_id !== null) {
-                return response()->json(['error' => 'Cannot update preference from different organization'], 403);
-            }
+        // Check organization access (all users)
+        if ($preference->organization_id !== $profile->organization_id && $preference->organization_id !== null) {
+            return response()->json(['error' => 'Cannot update preference from different organization'], 403);
         }
 
         $validated = $request->validated();
@@ -357,15 +348,18 @@ class TeacherTimetablePreferenceController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('teacher_timetable_preferences.delete')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for teacher_timetable_preferences.delete - allowing access: " . $e->getMessage());
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission (all users)
+        try {
+            if (!$user->hasPermissionTo('teacher_timetable_preferences.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for teacher_timetable_preferences.delete - allowing access: " . $e->getMessage());
         }
 
         $preference = TeacherTimetablePreference::whereNull('deleted_at')->find($id);
@@ -374,11 +368,9 @@ class TeacherTimetablePreferenceController extends Controller
             return response()->json(['error' => 'Teacher timetable preference not found'], 404);
         }
 
-        // Check organization access
-        if ($profile->role !== 'super_admin') {
-            if ($preference->organization_id !== $profile->organization_id && $preference->organization_id !== null) {
-                return response()->json(['error' => 'Cannot delete preference from different organization'], 403);
-            }
+        // Check organization access (all users)
+        if ($preference->organization_id !== $profile->organization_id && $preference->organization_id !== null) {
+            return response()->json(['error' => 'Cannot delete preference from different organization'], 403);
         }
 
         $preference->delete();
@@ -398,31 +390,27 @@ class TeacherTimetablePreferenceController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('teacher_timetable_preferences.create') && !$user->hasPermissionTo('teacher_timetable_preferences.update')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for teacher_timetable_preferences upsert - allowing access: " . $e->getMessage());
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission (all users)
+        try {
+            if (!$user->hasPermissionTo('teacher_timetable_preferences.create', $profile->organization_id) && !$user->hasPermissionTo('teacher_timetable_preferences.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for teacher_timetable_preferences upsert - allowing access: " . $e->getMessage());
         }
 
         $validated = $request->validated();
 
         // Get organization_id - use provided or user's org
-        $organizationId = $validated['organization_id'] ?? null;
-        if ($organizationId === null) {
-            if ($profile->organization_id) {
-                $organizationId = $profile->organization_id;
-            } else {
-                return response()->json(['error' => 'User must be assigned to an organization'], 400);
-            }
-        }
+        $organizationId = $validated['organization_id'] ?? $profile->organization_id;
 
-        // Validate organization access (unless super admin)
-        if ($profile->role !== 'super_admin' && $organizationId !== $profile->organization_id && $organizationId !== null) {
+        // Validate organization access (all users)
+        if ($organizationId !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot upsert preference for different organization'], 403);
         }
 

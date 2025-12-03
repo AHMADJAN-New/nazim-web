@@ -46,27 +46,9 @@ return new class extends Migration
             $table->unique(['name', 'organization_id', 'guard_name']);
         });
 
-        Schema::create($tableNames['model_has_permissions'], function (Blueprint $table) use ($tableNames, $columnNames) {
-            $table->unsignedBigInteger('permission_id');
-
-            $table->string('model_type');
-            $table->uuid($columnNames['model_morph_key']);
-            $table->uuid('organization_id')->nullable();
-            $table->index([$columnNames['model_morph_key'], 'model_type'], 'model_has_permissions_model_id_model_type_index');
-
-            $table->foreign('permission_id')
-                ->references('id')
-                ->on($tableNames['permissions'])
-                ->onDelete('cascade');
-
-            $table->foreign('organization_id')
-                ->references('id')
-                ->on('organizations')
-                ->onDelete('cascade');
-
-            $table->primary(['permission_id', $columnNames['model_morph_key'], 'model_type', 'organization_id'],
-                'model_has_permissions_permission_model_organization_primary');
-        });
+        // NOTE: model_has_permissions table is NOT created - we don't use direct user permissions
+        // All permissions are assigned via roles only (role_has_permissions table)
+        // Users get permissions through their roles (model_has_roles -> roles -> role_has_permissions)
 
         Schema::create($tableNames['model_has_roles'], function (Blueprint $table) use ($tableNames, $columnNames) {
             $table->unsignedBigInteger('role_id');
@@ -131,7 +113,7 @@ return new class extends Migration
 
         Schema::dropIfExists($tableNames['role_has_permissions']);
         Schema::dropIfExists($tableNames['model_has_roles']);
-        Schema::dropIfExists($tableNames['model_has_permissions']);
+        // model_has_permissions table was never created - no need to drop
         Schema::dropIfExists($tableNames['roles']);
         Schema::dropIfExists($tableNames['permissions']);
     }

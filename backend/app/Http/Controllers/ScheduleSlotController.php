@@ -24,31 +24,23 @@ class ScheduleSlotController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
-            // Check permission (allow super_admin to bypass)
-            if ($profile->role !== 'super_admin') {
-                try {
-                    if (!$user->hasPermissionTo('schedule_slots.read')) {
-                        return response()->json(['error' => 'This action is unauthorized'], 403);
-                    }
-                } catch (\Exception $e) {
-                    // If permission doesn't exist, log but allow access (for migration period)
-                    Log::warning("Permission check failed for schedule_slots.read - allowing access: " . $e->getMessage());
-                    // Allow access if permission doesn't exist (during migration)
-                }
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
-            // Get accessible organization IDs
-            $orgIds = [];
-            if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-                $orgIds = DB::table('organizations')
-                    ->whereNull('deleted_at')
-                    ->pluck('id')
-                    ->toArray();
-            } else {
-                if ($profile->organization_id) {
-                    $orgIds = [$profile->organization_id];
+                try {
+                if (!$user->hasPermissionTo('schedule_slots.read', $profile->organization_id)) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
+            } catch (\Exception $e) {
+                // If permission doesn't exist, log but allow access (for migration period)
+                Log::warning("Permission check failed for schedule_slots.read - allowing access: " . $e->getMessage());
+                // Allow access if permission doesn't exist (during migration)
             }
+
+            // Get accessible organization IDs (user's organization only)
+            $orgIds = [$profile->organization_id];
 
             $query = ScheduleSlot::whereNull('deleted_at')
                 ->orderBy('sort_order', 'asc')
@@ -168,35 +160,28 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('schedule_slots.create')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                // If permission doesn't exist, log but allow access (for migration period)
-                Log::warning("Permission check failed for schedule_slots.create - allowing access: " . $e->getMessage());
-                // Allow access if permission doesn't exist (during migration)
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('schedule_slots.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            // If permission doesn't exist, log but allow access (for migration period)
+            Log::warning("Permission check failed for schedule_slots.create - allowing access: " . $e->getMessage());
+            // Allow access if permission doesn't exist (during migration)
         }
 
         $validated = $request->validated();
 
         // Get organization_id - use provided or user's org
-        $organizationId = $validated['organization_id'] ?? null;
-        if ($organizationId === null) {
-            if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-                $organizationId = null; // Global slot
-            } else if ($profile->organization_id) {
-                $organizationId = $profile->organization_id;
-            } else {
-                return response()->json(['error' => 'User must be assigned to an organization'], 400);
-            }
-        }
+        $organizationId = $validated['organization_id'] ?? $profile->organization_id;
 
-        // Validate organization access (unless super admin)
-        if ($profile->role !== 'super_admin' && $organizationId !== $profile->organization_id && $organizationId !== null) {
+        // Validate organization access (all users)
+        if ($organizationId !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot create slot for different organization'], 403);
         }
 
@@ -258,17 +243,19 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('schedule_slots.read')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                // If permission doesn't exist, log but allow access (for migration period)
-                Log::warning("Permission check failed for schedule_slots.read - allowing access: " . $e->getMessage());
-                // Allow access if permission doesn't exist (during migration)
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('schedule_slots.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            // If permission doesn't exist, log but allow access (for migration period)
+            Log::warning("Permission check failed for schedule_slots.read - allowing access: " . $e->getMessage());
+            // Allow access if permission doesn't exist (during migration)
         }
 
         $slot = ScheduleSlot::whereNull('deleted_at')
@@ -279,11 +266,9 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Schedule slot not found'], 404);
         }
 
-        // Check organization access
-        if ($profile->role !== 'super_admin') {
-            if ($slot->organization_id !== $profile->organization_id && $slot->organization_id !== null) {
-                return response()->json(['error' => 'Access denied to this schedule slot'], 403);
-            }
+        // Check organization access (all users)
+        if ($slot->organization_id !== $profile->organization_id && $slot->organization_id !== null) {
+            return response()->json(['error' => 'Access denied to this schedule slot'], 403);
         }
 
         return response()->json([
@@ -327,17 +312,19 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('schedule_slots.update')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                // If permission doesn't exist, log but allow access (for migration period)
-                Log::warning("Permission check failed for schedule_slots.update - allowing access: " . $e->getMessage());
-                // Allow access if permission doesn't exist (during migration)
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('schedule_slots.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            // If permission doesn't exist, log but allow access (for migration period)
+            Log::warning("Permission check failed for schedule_slots.update - allowing access: " . $e->getMessage());
+            // Allow access if permission doesn't exist (during migration)
         }
 
         $slot = ScheduleSlot::whereNull('deleted_at')->find($id);
@@ -346,17 +333,15 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Schedule slot not found'], 404);
         }
 
-        // Check organization access
-        if ($profile->role !== 'super_admin') {
-            if ($slot->organization_id !== $profile->organization_id && $slot->organization_id !== null) {
-                return response()->json(['error' => 'Cannot update slot from different organization'], 403);
-            }
+        // Check organization access (all users)
+        if ($slot->organization_id !== $profile->organization_id && $slot->organization_id !== null) {
+            return response()->json(['error' => 'Cannot update slot from different organization'], 403);
         }
 
         $validated = $request->validated();
 
-        // Prevent organization_id changes (unless super admin)
-        if (isset($validated['organization_id']) && $profile->role !== 'super_admin') {
+        // Prevent organization_id changes (all users)
+        if (isset($validated['organization_id'])) {
             unset($validated['organization_id']);
         }
 
@@ -394,9 +379,7 @@ class ScheduleSlotController extends Controller
         if (isset($validated['description'])) {
             $slot->description = $validated['description'];
         }
-        if (isset($validated['organization_id']) && $profile->role === 'super_admin') {
-            $slot->organization_id = $validated['organization_id'];
-        }
+        // organization_id cannot be changed
 
         $slot->save();
         $slot->load(['academicYear', 'school']);
@@ -442,17 +425,19 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('schedule_slots.delete')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                // If permission doesn't exist, log but allow access (for migration period)
-                Log::warning("Permission check failed for schedule_slots.delete - allowing access: " . $e->getMessage());
-                // Allow access if permission doesn't exist (during migration)
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('schedule_slots.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            // If permission doesn't exist, log but allow access (for migration period)
+            Log::warning("Permission check failed for schedule_slots.delete - allowing access: " . $e->getMessage());
+            // Allow access if permission doesn't exist (during migration)
         }
 
         $slot = ScheduleSlot::whereNull('deleted_at')->find($id);
@@ -461,11 +446,9 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Schedule slot not found'], 404);
         }
 
-        // Check organization access
-        if ($profile->role !== 'super_admin') {
-            if ($slot->organization_id !== $profile->organization_id && $slot->organization_id !== null) {
-                return response()->json(['error' => 'Cannot delete slot from different organization'], 403);
-            }
+        // Check organization access (all users)
+        if ($slot->organization_id !== $profile->organization_id && $slot->organization_id !== null) {
+            return response()->json(['error' => 'Cannot delete slot from different organization'], 403);
         }
 
         $slot->delete();

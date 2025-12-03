@@ -6,7 +6,7 @@ import {
   useRemovePermissionFromUser,
   type Permission
 } from '@/hooks/usePermissions';
-import { useProfile, useProfiles, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile, useProfiles } from '@/hooks/useProfiles';
 import { useCurrentOrganization } from '@/hooks/useOrganizations';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,6 @@ import { toast } from 'sonner';
 
 export function UserPermissionsManagement() {
   const { data: profile } = useProfile();
-  const isSuperAdmin = useIsSuperAdmin();
   const { data: currentOrg } = useCurrentOrganization();
   const hasPermissionsPermission = useHasPermission('permissions.read');
   const hasPermissionsUpdatePermission = useHasPermission('permissions.update');
@@ -66,16 +65,11 @@ export function UserPermissionsManagement() {
   const permissions = useMemo(() => {
     if (!allPermissions || !profile) return [];
     
-    if (isSuperAdmin) {
-      // Super admin sees all permissions
-      return allPermissions;
-    }
-    
-    // Regular users see: global permissions + their organization's permissions
+    // Users see: global permissions + their organization's permissions
     return allPermissions.filter(p => 
       p.organizationId === null || p.organizationId === profile.organization_id
     );
-  }, [allPermissions, profile, isSuperAdmin]);
+  }, [allPermissions, profile]);
   
   // Filter users
   const filteredUsers = useMemo(() => {
@@ -192,7 +186,7 @@ export function UserPermissionsManagement() {
   };
   
   // Check if user has permission to view user permissions management
-  if (!hasPermissionsPermission && !isSuperAdmin) {
+  if (!hasPermissionsPermission) {
     return (
       <div className="container mx-auto p-6">
         <Card>
@@ -293,7 +287,6 @@ export function UserPermissionsManagement() {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
-                  {isSuperAdmin && <TableHead>Organization</TableHead>}
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -301,7 +294,7 @@ export function UserPermissionsManagement() {
               <TableBody>
                 {filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isSuperAdmin ? 6 : 5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       No users found.
                     </TableCell>
                   </TableRow>
@@ -315,17 +308,6 @@ export function UserPermissionsManagement() {
                       <TableCell>
                         <Badge variant="outline">{user.role}</Badge>
                       </TableCell>
-                      {isSuperAdmin && (
-                        <TableCell>
-                          {user.organizationId ? (
-                            <Badge variant="secondary">
-                              {currentOrg?.id === user.organizationId ? currentOrg.name : 'Other'}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">None</span>
-                          )}
-                        </TableCell>
-                      )}
                       <TableCell>
                         <Badge variant={user.isActive ? 'default' : 'secondary'}>
                           {user.isActive ? 'Active' : 'Inactive'}
@@ -336,7 +318,7 @@ export function UserPermissionsManagement() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleOpenPermissionsDialog(user.id)}
-                          disabled={!hasPermissionsUpdatePermission && !isSuperAdmin}
+                          disabled={!hasPermissionsUpdatePermission}
                         >
                           <Shield className="h-4 w-4 mr-2" />
                           Manage Permissions
@@ -388,7 +370,7 @@ export function UserPermissionsManagement() {
                               <Checkbox
                                 checked={hasPermission}
                                 onCheckedChange={() => handleTogglePermission(permission)}
-                                disabled={!hasPermissionsUpdatePermission && !isSuperAdmin}
+                                disabled={!hasPermissionsUpdatePermission}
                               />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">

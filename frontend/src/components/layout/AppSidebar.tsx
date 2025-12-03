@@ -73,13 +73,13 @@ const navigationItems: NavigationItem[] = [
     url: "/dashboard",
     icon: Home,
     badge: null,
-    roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"]
+    roles: ["admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"]
   },
   {
     titleKey: "settings",
     icon: Settings,
     badge: null,
-    roles: ["super_admin", "admin"],
+    roles: ["admin"],
     children: [
       {
         title: "Buildings Management",

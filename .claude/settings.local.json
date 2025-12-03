@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(php artisan:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(powershell -Command \"$files = @(''AcademicYearController.php'', ''AuthController.php'', ''ClassController.php'', ''ResidencyTypeController.php'', ''RoomController.php'', ''SchoolBrandingController.php'', ''StaffController.php'', ''StaffDocumentController.php'', ''StaffTypeController.php'', ''StudentAdmissionController.php'', ''StudentDisciplineRecordController.php'', ''StudentDocumentController.php'', ''StudentEducationalHistoryController.php'', ''TeacherSubjectAssignmentController.php''); foreach ($file in $files) { if (Test-Path $file) { $content = Get-Content $file -Raw; $pattern1 = ''if \\($profile->role === ''''super_admin'''' && $profile->organization_id === null\\) \\{\\s+$orgIds = DB::table\\(''''organizations''''\\)\\s+->whereNull\\(''''deleted_at''''\\)\\s+->pluck\\(''''id''''\\)\\s+->toArray\\(\\);\\s+\\} else \\{\\s+if \\($profile->organization_id\\) \\{\\s+$orgIds = \\[$profile->organization_id\\];\\s+\\}\\s+\\}''; $replacement1 = ''if ($profile->organization_id) {\\n            $orgIds = [$profile->organization_id];\\n        }''; $content = $content -replace $pattern1, $replacement1; Set-Content $file -Value $content; Write-Host \"\"Updated: $file\"\"; } }\")"
     ],
     "deny": [],
     "ask": []

@@ -20,27 +20,18 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission: branding.read
-        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
-            if (!$user->hasPermissionTo('branding.read')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            // Super admin can see all organizations
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            // Regular users see only their organization
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Check permission: branding.read (all users)
+        if (!$user->hasPermissionTo('branding.read', $profile->organization_id)) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         if (empty($orgIds)) {
             return response()->json([]);
@@ -80,11 +71,14 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission: branding.read
-        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
-            if (!$user->hasPermissionTo('branding.read')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission: branding.read (all users)
+        if (!$user->hasPermissionTo('branding.read', $profile->organization_id)) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $school = SchoolBranding::whereNull('deleted_at')->find($id);
@@ -93,20 +87,8 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'School not found'], 404);
         }
 
-        // Check organization access
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
-        }
-
-        if (!in_array($school->organization_id, $orgIds)) {
+        // Check organization access (user's organization only)
+        if ($school->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'School not found'], 404);
         }
 
@@ -125,11 +107,14 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission: branding.create
-        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
-            if (!$user->hasPermissionTo('branding.create')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission: branding.create (all users)
+        if (!$user->hasPermissionTo('branding.create', $profile->organization_id)) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $request->validate([
@@ -161,18 +146,8 @@ class SchoolBrandingController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
-        }
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         // Validate organization access
         if (!in_array($request->organization_id, $orgIds)) {
@@ -223,11 +198,14 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission: branding.update
-        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
-            if (!$user->hasPermissionTo('branding.update')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission: branding.update (all users)
+        if (!$user->hasPermissionTo('branding.update', $profile->organization_id)) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $school = SchoolBranding::whereNull('deleted_at')->find($id);
@@ -236,21 +214,8 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'School not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
-        }
-
-        // Check organization access
-        if (!in_array($school->organization_id, $orgIds)) {
+        // Check organization access (user's organization only)
+        if ($school->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot update school from different organization'], 403);
         }
 
@@ -325,11 +290,14 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission: branding.delete
-        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
-            if (!$user->hasPermissionTo('branding.delete')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission: branding.delete (all users)
+        if (!$user->hasPermissionTo('branding.delete', $profile->organization_id)) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $school = SchoolBranding::whereNull('deleted_at')->find($id);
@@ -338,21 +306,8 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'School not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
-        }
-
-        // Check organization access
-        if (!in_array($school->organization_id, $orgIds)) {
+        // Check organization access (user's organization only)
+        if ($school->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot delete school from different organization'], 403);
         }
 

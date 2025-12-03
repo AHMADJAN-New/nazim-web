@@ -8,6 +8,7 @@ use App\Helpers\OrganizationHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -25,28 +26,23 @@ class UserController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permissions
-        $isAdmin = in_array($profile->role, ['admin', 'super_admin']);
-        if (!$isAdmin) {
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('users.read', $profile->organization_id)) {
+                return response()->json(['error' => 'Insufficient permissions to view users'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for users.read - denying access: " . $e->getMessage());
             return response()->json(['error' => 'Insufficient permissions to view users'], 403);
         }
 
-        // Get accessible organization IDs
-        // Super admin with null org_id can see all organizations
-        // Others see only their organization
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            // Super admin can see all organizations
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            // Regular admin sees only their organization
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
-        }
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         if (empty($orgIds)) {
             return response()->json([]);
@@ -127,7 +123,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email|max:255',
             'password' => 'required|string|min:8',
             'full_name' => 'required|string|max:255',
-            'role' => 'required|string|in:super_admin,admin,teacher,staff,student,parent',
+            'role' => 'required|string|in:admin,teacher,staff,student,parent',
             'organization_id' => 'nullable|uuid|exists:organizations,id',
             'default_school_id' => 'nullable|uuid',
             'phone' => 'nullable|string|max:20',
@@ -140,41 +136,37 @@ class UserController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $isSuperAdmin = $currentProfile->role === 'super_admin';
-        $isAdmin = $currentProfile->role === 'admin';
+        // Require organization_id for all users
+        if (!$currentProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
 
-        if (!$isSuperAdmin && !$isAdmin) {
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('users.create', $currentProfile->organization_id)) {
+                return response()->json(['error' => 'Insufficient permissions to create users'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for users.create - denying access: " . $e->getMessage());
             return response()->json(['error' => 'Insufficient permissions to create users'], 403);
         }
 
-        // Get accessible organization IDs
-        // Super admin with null org_id can see all organizations
-        // Others see only their organization
-        $orgIds = [];
-        if ($isSuperAdmin && $currentProfile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($currentProfile->organization_id) {
-                $orgIds = [$currentProfile->organization_id];
-            }
-        }
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$currentProfile->organization_id];
 
         // Determine organization_id
         $organizationId = $request->organization_id ?? $currentProfile->organization_id ?? null;
-        
+
         // If no organization_id provided, get default "ناظم" organization (cached)
         if (!$organizationId) {
             $organizationId = OrganizationHelper::getDefaultOrganizationId();
-            
+
             if (!$organizationId && !empty($orgIds)) {
                 $organizationId = $orgIds[0];
             }
         }
-        
-        if ($organizationId && !in_array($organizationId, $orgIds) && !$isSuperAdmin) {
+
+        if ($organizationId && !in_array($organizationId, $orgIds)) {
             return response()->json(['error' => 'Cannot create user for a non-accessible organization'], 403);
         }
 
@@ -243,7 +235,7 @@ class UserController extends Controller
         $request->validate([
             'full_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|max:255',
-            'role' => 'sometimes|string|in:super_admin,admin,teacher,staff,student,parent',
+            'role' => 'sometimes|string|in:admin,teacher,staff,student,parent',
             'organization_id' => 'nullable|uuid|exists:organizations,id',
             'default_school_id' => 'nullable|uuid',
             'phone' => 'nullable|string|max:20',
@@ -257,10 +249,18 @@ class UserController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $isSuperAdmin = $currentProfile->role === 'super_admin';
-        $isAdmin = $currentProfile->role === 'admin';
+        // Require organization_id for all users
+        if (!$currentProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
 
-        if (!$isSuperAdmin && !$isAdmin) {
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('users.update', $currentProfile->organization_id)) {
+                return response()->json(['error' => 'Insufficient permissions to update users'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for users.update - denying access: " . $e->getMessage());
             return response()->json(['error' => 'Insufficient permissions to update users'], 403);
         }
 
@@ -271,23 +271,13 @@ class UserController extends Controller
             return response()->json(['error' => 'User not found'], 404);
         }
 
-        // Get accessible organization IDs
-        // Super admin with null org_id can see all organizations
-        // Others see only their organization
-        $orgIds = [];
-        if ($isSuperAdmin && $currentProfile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($currentProfile->organization_id) {
-                $orgIds = [$currentProfile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$currentProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check organization access for admins
-        if (!in_array($targetProfile->organization_id, $orgIds)) {
+        // Check organization access (all users)
+        if ($targetProfile->organization_id !== $currentProfile->organization_id) {
             return response()->json(['error' => 'Cannot update user from different organization'], 403);
         }
 
@@ -299,12 +289,9 @@ class UserController extends Controller
         if ($request->has('is_active')) $updateData['is_active'] = $request->is_active;
         if ($request->has('default_school_id')) $updateData['default_school_id'] = $request->default_school_id;
 
-        // Only super admin can change organization_id
-        if ($request->has('organization_id') && $isSuperAdmin) {
-            if ($request->organization_id && !in_array($request->organization_id, $orgIds)) {
-                return response()->json(['error' => 'Cannot assign user to a non-accessible organization'], 403);
-            }
-            $updateData['organization_id'] = $request->organization_id;
+        // Prevent organization_id changes (all users)
+        if ($request->has('organization_id') && $request->organization_id !== $targetProfile->organization_id) {
+            return response()->json(['error' => 'Cannot change organization_id'], 403);
         }
 
         // Update email in both users and profiles tables
@@ -352,10 +339,18 @@ class UserController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $isSuperAdmin = $currentProfile->role === 'super_admin';
-        $isAdmin = $currentProfile->role === 'admin';
+        // Require organization_id for all users
+        if (!$currentProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
 
-        if (!$isSuperAdmin && !$isAdmin) {
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('users.delete', $currentProfile->organization_id)) {
+                return response()->json(['error' => 'Insufficient permissions to delete users'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for users.delete - denying access: " . $e->getMessage());
             return response()->json(['error' => 'Insufficient permissions to delete users'], 403);
         }
 
@@ -366,16 +361,9 @@ class UserController extends Controller
             return response()->json(['error' => 'User not found'], 404);
         }
 
-        // Prevent deleting super admin
-        if ($targetProfile->role === 'super_admin') {
-            return response()->json(['error' => 'Cannot delete super admin user'], 403);
-        }
-
-        // Check organization access for admins
-        if ($isAdmin && !$isSuperAdmin) {
-            if ($targetProfile->organization_id !== $currentProfile->organization_id) {
-                return response()->json(['error' => 'Cannot delete user from different organization'], 403);
-            }
+        // Check organization access (all users)
+        if ($targetProfile->organization_id !== $currentProfile->organization_id) {
+            return response()->json(['error' => 'Cannot delete user from different organization'], 403);
         }
 
         // Delete user (cascade will delete profile)
@@ -401,10 +389,18 @@ class UserController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $isSuperAdmin = $currentProfile->role === 'super_admin';
-        $isAdmin = $currentProfile->role === 'admin';
+        // Require organization_id for all users
+        if (!$currentProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
 
-        if (!$isSuperAdmin && !$isAdmin) {
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('users.reset_password', $currentProfile->organization_id)) {
+                return response()->json(['error' => 'Insufficient permissions to reset passwords'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for users.reset_password - denying access: " . $e->getMessage());
             return response()->json(['error' => 'Insufficient permissions to reset passwords'], 403);
         }
 

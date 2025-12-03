@@ -28,6 +28,7 @@ import { StudentPictureUpload } from './StudentPictureUpload';
 import { useStudentDuplicateCheck } from '@/hooks/useStudentDuplicateCheck';
 import { useSchools } from '@/hooks/useSchools';
 import { useProfile } from '@/hooks/useProfiles';
+import { useHasPermission } from '@/hooks/usePermissions';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
 import { useLanguage } from '@/hooks/useLanguage';
 import type { Student } from '@/types/domain/student';
@@ -106,8 +107,10 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
 
     const duplicateCheck = useStudentDuplicateCheck();
     const { data: profile } = useProfile();
-    const isSuperAdmin = profile?.role === 'super_admin';
-    const orgIdForQuery = isSuperAdmin ? undefined : profile?.organization_id;
+    const hasCreatePermission = useHasPermission('students.create');
+    const hasUpdatePermission = useHasPermission('students.update');
+    const hasStudentsPermission = hasCreatePermission || hasUpdatePermission;
+    const orgIdForQuery = profile?.organization_id;
     const { data: schools } = useSchools(orgIdForQuery);
     const formValues = watch();
 

@@ -7,6 +7,7 @@ use App\Http\Requests\StoreRoomRequest;
 use App\Http\Requests\UpdateRoomRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class RoomController extends Controller
@@ -23,23 +24,23 @@ class RoomController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('rooms.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for rooms.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        if (empty($orgIds)) {
-            return response()->json([]);
-        }
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         // Get schools for accessible organizations
         $schoolIds = DB::table('school_branding')
@@ -132,7 +133,7 @@ class RoomController extends Controller
                         'full_name' => $profiles[$staff->profile_id]->full_name ?? null,
                     ];
                 }
-                
+
                 $staffMap[$staff->id] = [
                     'id' => $staff->id,
                     'profile' => $staffProfile,
@@ -143,7 +144,7 @@ class RoomController extends Controller
         // Enrich rooms with relationships
         $rooms = $rooms->map(function ($room) use ($buildings, $staffMap) {
             $roomArray = $room->toArray();
-            
+
             // Add building relationship
             $building = $buildings[$room->building_id] ?? null;
             $roomArray['building'] = $building ? [
@@ -173,6 +174,20 @@ class RoomController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('rooms.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for rooms.create: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         // Get building to verify school and get school_id
         $building = DB::table('buildings')
@@ -194,11 +209,9 @@ class RoomController extends Controller
             return response()->json(['error' => 'Building does not belong to an accessible school'], 404);
         }
 
-        // Check organization access (unless super admin)
-        if ($profile->role !== 'super_admin') {
-            if ($school->organization_id !== $profile->organization_id) {
-                return response()->json(['error' => 'Building does not belong to an accessible organization'], 403);
-            }
+        // Check organization access (all users)
+        if ($school->organization_id !== $profile->organization_id) {
+            return response()->json(['error' => 'Building does not belong to an accessible organization'], 403);
         }
 
         $room = Room::create([
@@ -259,6 +272,20 @@ class RoomController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('rooms.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for rooms.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         $room = Room::whereNull('deleted_at')->find($id);
 
@@ -276,11 +303,9 @@ class RoomController extends Controller
             return response()->json(['error' => 'Room not found'], 404);
         }
 
-        // Check organization access (unless super admin)
-        if ($profile->role !== 'super_admin') {
-            if ($school->organization_id !== $profile->organization_id) {
-                return response()->json(['error' => 'Room not found'], 404);
-            }
+        // Check organization access (all users)
+        if ($school->organization_id !== $profile->organization_id) {
+            return response()->json(['error' => 'Room not found'], 404);
         }
 
         // Enrich with relationships
@@ -341,6 +366,20 @@ class RoomController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('rooms.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for rooms.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         $room = Room::whereNull('deleted_at')->find($id);
 
@@ -358,11 +397,9 @@ class RoomController extends Controller
             return response()->json(['error' => 'Room not found'], 404);
         }
 
-        // Check organization access (unless super admin)
-        if ($profile->role !== 'super_admin') {
-            if ($school->organization_id !== $profile->organization_id) {
-                return response()->json(['error' => 'Cannot update room from different organization'], 403);
-            }
+        // Check organization access (all users)
+        if ($school->organization_id !== $profile->organization_id) {
+            return response()->json(['error' => 'Cannot update room from different organization'], 403);
         }
 
         // If building_id is being changed, validate new building and update school_id
@@ -387,11 +424,9 @@ class RoomController extends Controller
                 return response()->json(['error' => 'Building does not belong to an accessible school'], 404);
             }
 
-            // Check organization access for new building
-            if ($profile->role !== 'super_admin') {
-                if ($newBuildingSchool->organization_id !== $profile->organization_id) {
-                    return response()->json(['error' => 'Cannot move room to different organization'], 403);
-                }
+            // Check organization access for new building (all users)
+            if ($newBuildingSchool->organization_id !== $profile->organization_id) {
+                return response()->json(['error' => 'Cannot move room to different organization'], 403);
             }
 
             $newSchoolId = $newBuilding->school_id;
@@ -410,7 +445,7 @@ class RoomController extends Controller
         }
 
         $room->update($updateData);
-        
+
         // Refresh the model to ensure we have the latest data
         $room->refresh();
 
@@ -472,6 +507,20 @@ class RoomController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('rooms.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for rooms.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         $room = Room::whereNull('deleted_at')->find($id);
 
@@ -489,11 +538,9 @@ class RoomController extends Controller
             return response()->json(['error' => 'Room not found'], 404);
         }
 
-        // Check organization access (unless super admin)
-        if ($profile->role !== 'super_admin') {
-            if ($school->organization_id !== $profile->organization_id) {
-                return response()->json(['error' => 'Cannot delete room from different organization'], 403);
-            }
+        // Check organization access (all users)
+        if ($school->organization_id !== $profile->organization_id) {
+            return response()->json(['error' => 'Cannot delete room from different organization'], 403);
         }
 
         // Check if room is in use (e.g., by class_academic_years)

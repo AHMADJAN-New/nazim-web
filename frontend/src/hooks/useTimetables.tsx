@@ -98,9 +98,6 @@ export const useCreateTimetable = () => {
 			if (organizationId === undefined) {
 				if (profile.organization_id) {
 					organizationId = profile.organization_id;
-				} else if (profile.role === 'super_admin') {
-					// Super admin can work with null organization_id (global timetables)
-					organizationId = null;
 				} else {
 					throw new Error('User must be assigned to an organization');
 				}

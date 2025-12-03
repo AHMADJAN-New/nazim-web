@@ -75,91 +75,52 @@ class AssignOrganizationsPermissions extends Command
 
         $this->info("Found {$organizations->count()} organization(s)");
 
-        $hasRolePermissionsTable = DB::select("
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'role_permissions'
-            ) as exists
-        ");
+        // Use Spatie's standard role_has_permissions table only
+        $assignedCount = 0;
+        
+        foreach ($organizations as $org) {
+            // Get or create admin role for this organization
+            $role = DB::table($rolesTable)
+                ->where('name', 'admin')
+                ->where('organization_id', $org->id)
+                ->where('guard_name', 'web')
+                ->first();
 
-        $useCustomTable = !empty($hasRolePermissionsTable) && $hasRolePermissionsTable[0]->exists;
+            if (!$role) {
+                // Create admin role if it doesn't exist
+                $roleId = DB::table($rolesTable)->insertGetId([
+                    'name' => 'admin',
+                    'guard_name' => 'web',
+                    'organization_id' => $org->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $this->line("Created admin role for organization: {$org->name}");
+            } else {
+                $roleId = $role->id;
+            }
 
-        if ($useCustomTable) {
-            $this->info('Using custom role_permissions table...');
-            
-            $result = DB::statement("
-                INSERT INTO role_permissions (role, permission_id, organization_id)
-                SELECT 
-                    'admin',
-                    p.id,
-                    o.id
-                FROM {$permissionsTable} p
-                CROSS JOIN organizations o
-                WHERE p.organization_id IS NULL
-                  AND p.name IN ('organizations.read', 'organizations.create', 'organizations.update', 'organizations.delete')
-                  AND p.guard_name = 'web'
-                  AND o.deleted_at IS NULL
-                ON CONFLICT (role, permission_id, organization_id) DO NOTHING
-            ");
-            
-            $count = DB::table('role_permissions')
-                ->where('role', 'admin')
-                ->join($permissionsTable, 'role_permissions.permission_id', '=', "{$permissionsTable}.id")
-                ->whereIn("{$permissionsTable}.name", ['organizations.read', 'organizations.create', 'organizations.update', 'organizations.delete'])
-                ->count();
-            
-            $this->info("Assigned permissions to admin role. Total assignments: {$count}");
-        } else {
-            // Use Spatie's role_has_permissions table
-            $this->info('Using Spatie role_has_permissions table...');
-            
-            $assignedCount = 0;
-            
-            foreach ($organizations as $org) {
-                // Get or create admin role for this organization
-                $role = DB::table($rolesTable)
-                    ->where('name', 'admin')
-                    ->where('organization_id', $org->id)
-                    ->where('guard_name', 'web')
-                    ->first();
+            // Assign organizations permissions to admin role using Spatie's standard table
+            $permissions = DB::table($permissionsTable)
+                ->where('organization_id', null)
+                ->where('guard_name', 'web')
+                ->whereIn('name', ['organizations.read', 'organizations.create', 'organizations.update', 'organizations.delete'])
+                ->get();
 
-                if (!$role) {
-                    // Create admin role if it doesn't exist
-                    $roleId = DB::table($rolesTable)->insertGetId([
-                        'name' => 'admin',
-                        'guard_name' => 'web',
-                        'organization_id' => $org->id,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                    $this->line("Created admin role for organization: {$org->name}");
-                } else {
-                    $roleId = $role->id;
-                }
-
-                // Assign organizations permissions to admin role
-                $permissions = DB::table($permissionsTable)
-                    ->where('organization_id', null)
-                    ->where('guard_name', 'web')
-                    ->whereIn('name', ['organizations.read', 'organizations.create', 'organizations.update', 'organizations.delete'])
-                    ->get();
-
-                foreach ($permissions as $permission) {
-                    $inserted = DB::table($roleHasPermissionsTable)->insertOrIgnore([
-                        'permission_id' => $permission->id,
-                        'role_id' => $roleId,
-                        'organization_id' => $org->id,
-                    ]);
-                    
-                    if ($inserted) {
-                        $assignedCount++;
-                    }
+            foreach ($permissions as $permission) {
+                $inserted = DB::table($roleHasPermissionsTable)->insertOrIgnore([
+                    'permission_id' => $permission->id,
+                    'role_id' => $roleId,
+                    'organization_id' => $org->id,
+                ]);
+                
+                if ($inserted) {
+                    $assignedCount++;
                 }
             }
-            
-            $this->info("Assigned {$assignedCount} permission(s) to admin role(s)");
         }
+        
+        $this->info("Assigned {$assignedCount} permission(s) to admin role(s) using Spatie's standard role_has_permissions table");
 
         // Clear permission cache
         app('cache')

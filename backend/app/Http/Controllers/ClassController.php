@@ -27,19 +27,23 @@ class ClassController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('classes.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for classes.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         $query = ClassModel::whereNull('deleted_at');
 
@@ -85,21 +89,26 @@ class ClassController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-
-        // Get organization_id - use provided or user's org
-        $organizationId = $request->organization_id;
-        if ($organizationId === null) {
-            if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-                $organizationId = null; // Global class
-            } else if ($profile->organization_id) {
-                $organizationId = $profile->organization_id;
-            } else {
-                return response()->json(['error' => 'User must be assigned to an organization'], 403);
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Validate organization access (unless super admin)
-        if ($profile->role !== 'super_admin' && $organizationId !== $profile->organization_id && $organizationId !== null) {
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('classes.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for classes.create: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Get organization_id - use provided or user's org
+        $organizationId = $request->organization_id ?? $profile->organization_id;
+
+        // Validate organization access (all users)
+        if ($organizationId !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot create class for different organization'], 403);
         }
 
@@ -128,6 +137,20 @@ class ClassController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('classes.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for classes.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         $class = ClassModel::whereNull('deleted_at')->find($id);
 
@@ -135,18 +158,13 @@ class ClassController extends Controller
             return response()->json(['error' => 'Class not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         // Check organization access (allow global classes)
         if ($class->organization_id !== null && !in_array($class->organization_id, $orgIds)) {
@@ -168,6 +186,20 @@ class ClassController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('classes.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for classes.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         $class = ClassModel::whereNull('deleted_at')->find($id);
 
@@ -175,26 +207,21 @@ class ClassController extends Controller
             return response()->json(['error' => 'Class not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check organization access (unless super admin)
-        if ($profile->role !== 'super_admin' && $class->organization_id !== null && !in_array($class->organization_id, $orgIds)) {
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
+        // Check organization access (all users)
+        if ($class->organization_id !== null && !in_array($class->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot update class from different organization'], 403);
         }
 
-        // Prevent organization_id changes (unless super admin)
-        if ($request->has('organization_id') && $profile->role !== 'super_admin') {
+        // Prevent organization_id changes (all users)
+        if ($request->has('organization_id')) {
             return response()->json(['error' => 'Cannot change organization_id'], 403);
         }
 
@@ -222,6 +249,20 @@ class ClassController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('classes.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for classes.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         $class = ClassModel::whereNull('deleted_at')->find($id);
 
@@ -231,19 +272,16 @@ class ClassController extends Controller
 
         // Get accessible organization IDs
         $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check organization access (unless super admin)
-        if ($profile->role !== 'super_admin' && $class->organization_id !== null && !in_array($class->organization_id, $orgIds)) {
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
+        // Check organization access (all users)
+        if ($class->organization_id !== null && !in_array($class->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot delete class from different organization'], 403);
         }
 
@@ -274,6 +312,20 @@ class ClassController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('classes.assign', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for classes.assign: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         // Get class to determine organization_id
         $classModel = ClassModel::whereNull('deleted_at')->find($class);
@@ -294,19 +346,15 @@ class ClassController extends Controller
         $organizationId = $classModel->organization_id ?? $academicYear->organization_id;
 
         // Validate organization access
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        if ($profile->role !== 'super_admin' && $organizationId !== null && !in_array($organizationId, $orgIds)) {
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
+        if ($organizationId !== null && !in_array($organizationId, $orgIds)) {
             return response()->json(['error' => 'Cannot assign class to academic year from different organization'], 403);
         }
 
@@ -378,19 +426,15 @@ class ClassController extends Controller
         $organizationId = $class->organization_id ?? $academicYear->organization_id;
 
         // Validate organization access
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        if ($profile->role !== 'super_admin' && $organizationId !== null && !in_array($organizationId, $orgIds)) {
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
+        if ($organizationId !== null && !in_array($organizationId, $orgIds)) {
             return response()->json(['error' => 'Cannot assign class to academic year from different organization'], 403);
         }
 
@@ -455,6 +499,20 @@ class ClassController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('classes.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for classes.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         $request->validate([
             'section_name' => 'nullable|string|max:50',
@@ -471,19 +529,15 @@ class ClassController extends Controller
         }
 
         // Validate organization access
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        if ($profile->role !== 'super_admin' && $instance->organization_id !== null && !in_array($instance->organization_id, $orgIds)) {
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
+        if ($instance->organization_id !== null && !in_array($instance->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot update class instance from different organization'], 403);
         }
 
@@ -540,20 +594,15 @@ class ClassController extends Controller
             return response()->json(['error' => 'Class instance not found'], 404);
         }
 
-        // Validate organization access
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        if ($profile->role !== 'super_admin' && $instance->organization_id !== null && !in_array($instance->organization_id, $orgIds)) {
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
+        if ($instance->organization_id !== null && !in_array($instance->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot remove class instance from different organization'], 403);
         }
 
@@ -580,6 +629,20 @@ class ClassController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('classes.copy', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for classes.copy: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         // Get all class instances to copy
         $sourceInstances = ClassAcademicYear::where('academic_year_id', $request->from_academic_year_id)
@@ -595,7 +658,7 @@ class ClassController extends Controller
         $newInstances = [];
         foreach ($sourceInstances as $instance) {
             $sectionKey = $instance->section_name ?: '';
-            
+
             // Check for duplicates before inserting
             $existing = ClassAcademicYear::where('class_id', $instance->class_id)
                 ->where('academic_year_id', $request->to_academic_year_id)
@@ -689,7 +752,7 @@ class ClassController extends Controller
         $enriched = $instances->map(function ($instance) use ($academicYears, $rooms) {
             $academicYear = $academicYears->get($instance->academic_year_id);
             $room = $rooms->get($instance->room_id ?? '');
-            
+
             return [
                 ...$instance->toArray(),
                 'academic_year' => $academicYear ? [
@@ -754,24 +817,19 @@ class ClassController extends Controller
                     ->where('id', $request->organization_id)
                     ->whereNull('deleted_at')
                     ->exists();
-                
+
                 if (!$orgExists) {
                     return response()->json(['error' => 'Organization not found'], 404);
                 }
             }
 
-            // Get accessible organization IDs
-            $orgIds = [];
-            if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-                $orgIds = DB::table('organizations')
-                    ->whereNull('deleted_at')
-                    ->pluck('id')
-                    ->toArray();
-            } else {
-                if ($profile->organization_id) {
-                    $orgIds = [$profile->organization_id];
-                }
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
+
+            // Get accessible organization IDs (user's organization only)
+            $orgIds = [$profile->organization_id];
 
             $query = ClassAcademicYear::where('academic_year_id', $request->academic_year_id)
                 ->whereNull('deleted_at')
@@ -850,7 +908,7 @@ class ClassController extends Controller
                     if ($instance->room_id && isset($rooms[$instance->room_id])) {
                         $room = $rooms[$instance->room_id];
                     }
-                    
+
                     // Handle case where class might be null (soft-deleted)
                     $classData = null;
                     if ($instance->class) {
@@ -861,7 +919,7 @@ class ClassController extends Controller
                             'grade_level' => $instance->class->grade_level ?? null,
                         ];
                     }
-                    
+
                     // Build response manually to avoid issues with toArray() on relationships
                     return [
                         'id' => $instance->id,

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/useRooms';
 import { useBuildings } from '@/hooks/useBuildings';
 import { useStaff } from '@/hooks/useStaff';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,7 +59,6 @@ type RoomFormData = z.infer<typeof roomSchema>;
 export function RoomsManagement() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
-  const isSuperAdmin = useIsSuperAdmin();
   const hasCreatePermission = useHasPermission('rooms.create');
   const hasUpdatePermission = useHasPermission('rooms.update');
   const hasDeletePermission = useHasPermission('rooms.delete');

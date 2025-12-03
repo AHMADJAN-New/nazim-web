@@ -20,7 +20,7 @@ interface Organization {
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshAuth } = useAuth();
   const [loading, setLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -37,7 +37,7 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (user) {
-      navigate('/redirect');
+      navigate('/dashboard');
     }
     fetchOrganizations();
   }, [user, navigate]);
@@ -47,7 +47,7 @@ export default function AuthPage() {
       // Fetch organizations from Laravel API (public endpoint for signup form)
       const data = await organizationsApi.publicList() as Organization[];
       setOrganizations(data || []);
-      
+
       if (!data || data.length === 0) {
         console.warn('No organizations found in database');
       }
@@ -76,7 +76,9 @@ export default function AuthPage() {
       return;
     }
 
-    console.log('Attempting sign in for:', formData.email);
+    if (import.meta.env.DEV) {
+      console.log('Attempting sign in for:', formData.email);
+    }
     setLoading(true);
     setAuthLoading(true);
 
@@ -84,30 +86,43 @@ export default function AuthPage() {
       const response = await authApi.login(formData.email, formData.password);
 
       if (response.user && response.token) {
-        console.log('Sign in successful:', response.user.email);
-        console.log('Profile from login:', response.profile);
-        
+        if (import.meta.env.DEV) {
+          console.log('Sign in successful:', response.user.email);
+          console.log('Profile from login:', response.profile);
+        }
+
         // If profile doesn't have organization_id, it will be auto-assigned on backend
         // The profile in response should have the updated organization_id
-        if (response.profile && !response.profile.organization_id && response.profile.role !== 'super_admin') {
-          console.warn('Profile missing organization_id - backend should have assigned it');
+        if (response.profile && !response.profile.organization_id) {
+          if (import.meta.env.DEV) {
+            console.warn('Profile missing organization_id - backend should have assigned it');
+          }
         }
-        
+
+        // Refresh auth state and wait for it to complete
+        // apiClient.setToken() already dispatched 'auth-token-changed' event
+        // but we call refreshAuth() to ensure we wait for auth state to be ready
+        await refreshAuth();
+
+        // Wait a bit more to ensure auth state is fully updated
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         toast.success('Logged in successfully!');
-        // Small delay to ensure token is set, then redirect
-        // The AuthProvider will reload the profile which should have organization_id
-        // Redirect to /redirect which will handle pending approval check and send to dashboard
-        setTimeout(() => {
-          navigate('/redirect', { replace: true }); 
-        }, 100);
+
+        // Navigate to dashboard after auth is ready
+        navigate('/dashboard', { replace: true });
       } else {
-        console.warn('Sign in returned no user data');
+        if (import.meta.env.DEV) {
+          console.warn('Sign in returned no user data');
+        }
         toast.error('Sign in failed. Please try again.');
       }
     } catch (error: any) {
-      console.error('Sign in error:', error);
+      if (import.meta.env.DEV) {
+        console.error('Sign in error:', error);
+      }
       const errorMessage = error.message || 'Failed to sign in. Please check your credentials and try again.';
-      
+
       if (errorMessage.includes('credentials') || errorMessage.includes('Invalid')) {
         toast.error('Invalid email or password. Please check your credentials and try again.');
       } else {
@@ -127,7 +142,7 @@ export default function AuthPage() {
       return;
     }
 
-    if (!formData.organizationId && formData.role !== 'super_admin') {
+    if (!formData.organizationId) {
       toast.error('Please select an organization');
       return;
     }
@@ -158,11 +173,7 @@ export default function AuthPage() {
 
       if (response.user && response.token) {
         console.log('Sign up successful:', response.user.email);
-        if (formData.role === 'super_admin') {
-          toast.success('Super Admin account created! You can now sign in.');
-        } else {
-          toast.success('Registration successful! You can now sign in.');
-        }
+        toast.success('Registration successful! You can now sign in.');
         // Clear form
         setFormData({
           email: '',
@@ -182,7 +193,7 @@ export default function AuthPage() {
     } catch (error: any) {
       console.error('Sign up error:', error);
       let errorMessage = error.message || 'Failed to create account';
-      
+
       if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
         errorMessage = 'This email is already registered. Please sign in or reset your password.';
       } else if (errorMessage.includes('Invalid email')) {
@@ -286,38 +297,36 @@ export default function AuthPage() {
                       <SelectItem value="teacher">Teacher</SelectItem>
                       <SelectItem value="parent">Parent</SelectItem>
                       <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                {formData.role !== 'super_admin' && (
-                  <div>
-                    <Label htmlFor="organization">Organization</Label>
-                    <Select value={formData.organizationId} onValueChange={(value) => setFormData({ ...formData, organizationId: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your organization" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {organizations.length === 0 ? (
-                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                            No organizations available
-                          </div>
-                        ) : (
-                          organizations.map((org) => (
-                            <SelectItem key={org.id} value={org.id}>
-                              {org.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {organizations.length === 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        No organizations found. Please contact an administrator.
-                      </p>
-                    )}
-                  </div>
-                )}
+                <div>
+                  <Label htmlFor="organization">Organization</Label>
+                  <Select value={formData.organizationId} onValueChange={(value) => setFormData({ ...formData, organizationId: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your organization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {organizations.length === 0 ? (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          No organizations available
+                        </div>
+                      ) : (
+                        organizations.map((org) => (
+                          <SelectItem key={org.id} value={org.id}>
+                            {org.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {organizations.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      No organizations found. Please contact an administrator.
+                    </p>
+                  )}
+                </div>
                 <div>
                   <Label htmlFor="signup-password">Password</Label>
                   <Input

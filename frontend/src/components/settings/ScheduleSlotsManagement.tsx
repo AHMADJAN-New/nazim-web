@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useScheduleSlots, useCreateScheduleSlot, useUpdateScheduleSlot, useDeleteScheduleSlot, type ScheduleSlot } from '@/hooks/useScheduleSlots';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useSchools } from '@/hooks/useSchools';
@@ -79,7 +79,6 @@ const DAYS = [
 export function ScheduleSlotsManagement() {
     const { t } = useLanguage();
     const { data: profile } = useProfile();
-    const isSuperAdmin = useIsSuperAdmin();
     const hasCreatePermission = useHasPermission('schedule_slots.create');
     const hasUpdatePermission = useHasPermission('schedule_slots.update');
     const hasDeletePermission = useHasPermission('schedule_slots.delete');

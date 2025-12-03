@@ -187,7 +187,7 @@ export const useOrganizationStatistics = (organizationId: string) => {
   });
 };
 
-// Use accessible organizations instead - Laravel API handles super admin orgs
+// Use accessible organizations instead - Laravel API handles org access
 export const useSuperAdminOrganizations = (superAdminId?: string) => {
   const { orgIds } = useAccessibleOrganizations();
   const { data: organizations } = useOrganizations();

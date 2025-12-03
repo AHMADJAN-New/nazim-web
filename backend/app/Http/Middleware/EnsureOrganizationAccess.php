@@ -30,9 +30,9 @@ class EnsureOrganizationAccess
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Super admin can access all organizations
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            return $next($request);
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Get organization_id from route or request
@@ -45,8 +45,8 @@ class EnsureOrganizationAccess
             $organizationId = $profile->organization_id;
         }
 
-        // Check if user has access to this organization
-        if ($profile->organization_id !== $organizationId && $profile->role !== 'super_admin') {
+        // Check if user has access to this organization (all users)
+        if ($profile->organization_id !== $organizationId) {
             return response()->json(['error' => 'Access denied to this organization'], 403);
         }
 

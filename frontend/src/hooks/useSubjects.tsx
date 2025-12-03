@@ -107,15 +107,12 @@ export const useClassSubjectsForMultipleClasses = (classAcademicYearIds: string[
                     class_academic_year_id: classAcademicYearId,
                 };
 
-                // Super admin can see all or filter by org
-                const isSuperAdmin = profile.role === 'super_admin';
-                if (!isSuperAdmin) {
-                    const userOrgId = organizationId || profile.organization_id;
-                    if (userOrgId) {
-                        params.organization_id = userOrgId;
-                    } else {
-                        continue; // Skip if no org ID
-                    }
+                // All users filter by org
+                const userOrgId = organizationId || profile.organization_id;
+                if (userOrgId) {
+                    params.organization_id = userOrgId;
+                } else {
+                    continue; // Skip if no org ID
                 } else if (organizationId) {
                     params.organization_id = organizationId;
                 }
@@ -192,17 +189,15 @@ export const useCreateSubject = () => {
             // Get organization_id - use provided or user's org
             let organizationId = subjectData.organizationId;
             if (organizationId === undefined) {
-                if (profile.role === 'super_admin') {
-                    organizationId = null; // Default to global
-                } else if (profile.organization_id) {
+                if (profile.organization_id) {
                     organizationId = profile.organization_id;
                 } else {
                     throw new Error('User must be assigned to an organization');
                 }
             }
 
-            // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && organizationId !== profile.organization_id && organizationId !== null) {
+            // Validate organization access (all users)
+            if (organizationId !== profile.organization_id) {
                 throw new Error('Cannot create subject for different organization');
             }
 
@@ -247,13 +242,13 @@ export const useUpdateSubject = () => {
                 throw new Error('Subject not found');
             }
 
-            // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentSubject.organizationId !== profile.organization_id && currentSubject.organizationId !== null) {
+            // Validate organization access (all users)
+            if (currentSubject.organizationId !== profile.organization_id && currentSubject.organizationId !== null) {
                 throw new Error('Cannot update subject from different organization');
             }
 
-            // Prevent organizationId changes (unless super admin)
-            if (updates.organizationId !== undefined && profile.role !== 'super_admin') {
+            // Prevent organizationId changes (all users)
+            if (updates.organizationId !== undefined) {
                 throw new Error('Cannot change organizationId');
             }
 
@@ -276,9 +271,7 @@ export const useUpdateSubject = () => {
             if (updates.isActive !== undefined) {
                 updateData.isActive = updates.isActive;
             }
-            if (updates.organizationId !== undefined && profile.role === 'super_admin') {
-                updateData.organizationId = updates.organizationId;
-            }
+            // organizationId cannot be changed
 
             // Convert domain model to API update payload
             const apiUpdateData = mapSubjectDomainToUpdate(updateData);
@@ -316,8 +309,8 @@ export const useDeleteSubject = () => {
                 throw new Error('Subject not found');
             }
 
-            // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentSubject.organization_id !== profile.organization_id && currentSubject.organization_id !== null) {
+            // Validate organization access (all users)
+            if (currentSubject.organization_id !== profile.organization_id && currentSubject.organization_id !== null) {
                 throw new Error('Cannot delete subject from different organization');
             }
 
@@ -370,7 +363,7 @@ export const useAssignSubjectToClass = () => {
             const organizationId = (classYearData as any).organization_id;
 
             // Validate organization access
-            if (profile.role !== 'super_admin' && organizationId !== profile.organization_id && organizationId !== null) {
+            if (organizationId !== profile.organization_id && organizationId !== null) {
                 throw new Error('Cannot assign subject to class from different organization');
             }
 
@@ -430,7 +423,7 @@ export const useUpdateClassSubject = () => {
             }
 
             // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentAssignment.organizationId !== profile.organization_id && currentAssignment.organizationId !== null) {
+            if (currentAssignment.organizationId !== profile.organization_id && currentAssignment.organizationId !== null) {
                 throw new Error('Cannot update subject assignment from different organization');
             }
 
@@ -484,7 +477,7 @@ export const useRemoveSubjectFromClass = () => {
             }
 
             // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentAssignment.organizationId !== profile.organization_id && currentAssignment.organizationId !== null) {
+            if (currentAssignment.organizationId !== profile.organization_id && currentAssignment.organizationId !== null) {
                 throw new Error('Cannot remove subject assignment from different organization');
             }
 
@@ -528,7 +521,7 @@ export const useBulkAssignSubjects = () => {
             const roomId = bulkData.default_room_id || (classYearData as any).room_id || null;
 
             // Validate organization access
-            if (profile.role !== 'super_admin' && organizationId !== profile.organization_id && organizationId !== null) {
+            if (organizationId !== profile.organization_id && organizationId !== null) {
                 throw new Error('Cannot assign subjects to class from different organization');
             }
 

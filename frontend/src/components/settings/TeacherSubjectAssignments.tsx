@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTeacherSubjectAssignments, useCreateTeacherSubjectAssignment, useUpdateTeacherSubjectAssignment, useDeleteTeacherSubjectAssignment, type TeacherSubjectAssignment } from '@/hooks/useTeacherSubjectAssignments';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile } from '@/hooks/useProfiles';
 import { useStaff } from '@/hooks/useStaff';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
@@ -59,7 +59,6 @@ const steps = [
 export function TeacherSubjectAssignments() {
     const { t } = useLanguage();
     const { data: profile } = useProfile();
-    const isSuperAdmin = useIsSuperAdmin();
     const hasCreatePermission = useHasPermission('teacher_subject_assignments.create');
     const hasUpdatePermission = useHasPermission('teacher_subject_assignments.update');
     const hasDeletePermission = useHasPermission('teacher_subject_assignments.delete');
@@ -69,7 +68,6 @@ export function TeacherSubjectAssignments() {
     const [searchQuery, setSearchQuery] = useState('');
     const [teacherFilter, setTeacherFilter] = useState<string>('all');
     const [academicYearFilter, setAcademicYearFilter] = useState<string>('all');
-    const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>(profile?.organization_id);
 
     // Dialog state
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -87,10 +85,9 @@ export function TeacherSubjectAssignments() {
     const [selectedSubjectIds, setSelectedSubjectIds] = useState<Record<string, string[]>>({});
     const [notes, setNotes] = useState<string>('');
 
-    const { data: organizations } = useOrganizations();
-    const { data: academicYears } = useAcademicYears(selectedOrganizationId || profile?.organization_id);
-    const { data: schools } = useSchools(selectedOrganizationId || profile?.organization_id);
-    const { data: staff, refetch: refetchStaff, isLoading: staffLoading, error: staffError } = useStaff(selectedOrganizationId || profile?.organization_id);
+    const { data: academicYears } = useAcademicYears(profile?.organization_id);
+    const { data: schools } = useSchools(profile?.organization_id);
+    const { data: staff, refetch: refetchStaff, isLoading: staffLoading, error: staffError } = useStaff(profile?.organization_id);
     
     // Debug logging
     if (staffError) {
@@ -99,10 +96,10 @@ export function TeacherSubjectAssignments() {
     if (staffLoading) {
         console.log('TeacherSubjectAssignments: Loading staff data...');
     }
-    const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYearId || undefined, selectedOrganizationId || profile?.organization_id);
-    const { data: scheduleSlots } = useScheduleSlots(selectedOrganizationId || profile?.organization_id, selectedAcademicYearId || undefined);
+    const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYearId || undefined, profile?.organization_id);
+    const { data: scheduleSlots } = useScheduleSlots(profile?.organization_id, selectedAcademicYearId || undefined);
     const { data: assignments, isLoading, refetch: refetchAssignments } = useTeacherSubjectAssignments(
-        selectedOrganizationId || profile?.organization_id,
+        profile?.organization_id,
         teacherFilter !== 'all' ? teacherFilter : undefined,
         academicYearFilter !== 'all' ? academicYearFilter : undefined
     );
@@ -141,7 +138,7 @@ export function TeacherSubjectAssignments() {
     // Fetch subjects for all selected classes at once
     const { data: allClassSubjectsData } = useClassSubjectsForMultipleClasses(
         selectedClassIds,
-        selectedOrganizationId || profile?.organization_id
+        profile?.organization_id
     );
 
     // Create a map of class_academic_year_id -> subjects
@@ -279,8 +276,8 @@ export function TeacherSubjectAssignments() {
             return;
         }
 
-        // Try to get organization_id from selected school first
-        let organizationId = selectedOrganizationId || profile?.organization_id;
+        // Use user's organization
+        let organizationId = profile?.organization_id;
         
         // If school is selected, get organization_id from school
         if (!organizationId && selectedSchoolId && selectedSchoolId !== 'all') {
@@ -419,26 +416,6 @@ export function TeacherSubjectAssignments() {
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                            {isSuperAdmin && (
-                                <Select
-                                    value={selectedOrganizationId || 'all'}
-                                    onValueChange={(value) => {
-                                        setSelectedOrganizationId(value === 'all' ? undefined : value);
-                                    }}
-                                >
-                                    <SelectTrigger className="w-[200px]">
-                                        <SelectValue placeholder="Filter by organization" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Organizations</SelectItem>
-                                        {organizations?.map((org) => (
-                                            <SelectItem key={org.id} value={org.id}>
-                                                {org.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
                             {hasCreatePermission && (
                                 <Button onClick={handleCreateClick}>
                                     <Plus className="h-4 w-4 mr-2" />

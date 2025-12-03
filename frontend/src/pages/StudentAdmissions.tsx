@@ -4,8 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
-import { useOrganizations } from '@/hooks/useOrganizations';
+import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useStudents } from '@/hooks/useStudents';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
@@ -85,10 +84,7 @@ const statusVariant = (status: AdmissionStatus) => {
 export function StudentAdmissions() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
-  const isSuperAdmin = useIsSuperAdmin();
-  const { data: organizations } = useOrganizations();
-  const [selectedOrg, setSelectedOrg] = useState<string | undefined>(profile?.organization_id);
-  const orgIdForQuery = selectedOrg === 'all' ? undefined : selectedOrg;
+  const orgIdForQuery = profile?.organization_id;
 
   const { data: admissions, isLoading, error: admissionsError } = useStudentAdmissions(orgIdForQuery);
   
@@ -276,21 +272,6 @@ export function StudentAdmissions() {
           </p>
         </div>
         <div className="flex gap-2">
-          {isSuperAdmin && (
-            <Select value={selectedOrg || 'all'} onValueChange={(value) => setSelectedOrg(value === 'all' ? 'all' : value)}>
-              <SelectTrigger className="w-full sm:w-[220px]">
-                <SelectValue placeholder="Organization" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Organizations</SelectItem>
-                {organizations?.map((org) => (
-                  <SelectItem key={org.id} value={org.id}>
-                    {org.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
           <Dialog 
             open={isDialogOpen} 
             onOpenChange={(open) => {

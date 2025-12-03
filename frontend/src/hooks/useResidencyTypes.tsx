@@ -133,13 +133,13 @@ export const useUpdateResidencyType = () => {
         throw new Error('Residency type not found');
       }
 
-      // Validate organization access (unless super admin)
-      if (profile.role !== 'super_admin' && currentResidencyType.organization_id !== profile.organization_id && currentResidencyType.organization_id !== null) {
+      // Validate organization access (all users)
+      if (currentResidencyType.organization_id !== profile.organization_id && currentResidencyType.organization_id !== null) {
         throw new Error('Cannot update residency type from different organization');
       }
 
-      // Prevent organization_id changes (unless super admin)
-      if (updates.organization_id !== undefined && profile.role !== 'super_admin') {
+      // Prevent organization_id changes (all users)
+      if (updates.organization_id !== undefined) {
         throw new Error('Cannot change organization_id');
       }
 
@@ -204,12 +204,10 @@ export const useDeleteResidencyType = () => {
         throw new Error('Residency type not found');
       }
 
-      // Validate organization access (unless super admin)
-      // Note: Global types (organization_id = NULL) can only be deleted by super admin
-      if (profile.role !== 'super_admin') {
-        if (currentResidencyType.organization_id === null) {
-          throw new Error('Cannot delete global residency types');
-        }
+      // Validate organization access (all users)
+      // Note: Global types (organization_id = NULL) cannot be deleted
+      if (currentResidencyType.organization_id === null) {
+        throw new Error('Cannot delete global residency types');
         if (currentResidencyType.organization_id !== profile.organization_id) {
           throw new Error('Cannot delete residency type from different organization');
         }

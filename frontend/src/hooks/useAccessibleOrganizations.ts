@@ -35,11 +35,11 @@ export const useAccessibleOrganizations = () => {
           });
         }
 
-        // For super admin with null org_id, if no orgs returned, they might not have any assigned
+        // If no orgs returned, user might not have any assigned
         // This is expected behavior - they'll need to be assigned organizations
-        if (orgIds.size === 0 && profile.role === 'super_admin' && !profile.organization_id) {
+        if (orgIds.size === 0 && !profile.organization_id) {
           if (import.meta.env.DEV) {
-            console.warn('Super admin has no organizations assigned. Please assign organizations manually.');
+            console.warn('User has no organizations assigned. Please assign organizations manually.');
           }
         }
 

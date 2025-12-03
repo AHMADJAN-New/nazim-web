@@ -17,13 +17,7 @@ class StudentAdmissionController extends Controller
      */
     private function getAccessibleOrgIds($profile): array
     {
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            return DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        }
-        
+        // All users are restricted to their own organization
         if ($profile->organization_id) {
             return [$profile->organization_id];
         }
@@ -119,7 +113,7 @@ class StudentAdmissionController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('student_admissions.read')) {
+            if (!$user->hasPermissionTo('student_admissions.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -165,6 +159,20 @@ class StudentAdmissionController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_admissions.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_admissions.create: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         $orgIds = $this->getAccessibleOrgIds($profile);
 
@@ -231,6 +239,20 @@ class StudentAdmissionController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_admissions.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_admissions.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         $admission = StudentAdmission::whereNull('deleted_at')->find($id);
 
@@ -276,6 +298,20 @@ class StudentAdmissionController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_admissions.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_admissions.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         $admission = StudentAdmission::whereNull('deleted_at')->find($id);
 

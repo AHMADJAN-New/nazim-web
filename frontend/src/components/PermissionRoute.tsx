@@ -27,18 +27,17 @@ export function PermissionRoute({
   const { profile } = useAuth();
   const { data: permissions, isLoading } = useUserPermissions();
 
-  // Super admin can proceed immediately
-  const isSuperAdminUser = profile?.role === 'super_admin' && profile?.organization_id === null;
+  // Permissions are needed for all users
 
   // Permissions are ready if:
   // 1. We have a profile with a role (query can run)
   // 2. Query is not loading (has completed or is disabled)
-  // 3. We have permissions data (even if empty array) OR we're super admin
+  // 3. We have permissions data (even if empty array)
   const hasProfile = profile?.role !== undefined && profile !== null;
   const queryCanRun = hasProfile && !isLoading;
   // With placeholderData and initialData, permissions should always be an array, never undefined
   const hasPermissionsData = Array.isArray(permissions);
-  const permissionsReady = (hasProfile && queryCanRun && hasPermissionsData) || isSuperAdminUser;
+  const permissionsReady = hasProfile && queryCanRun && hasPermissionsData;
 
   // Show loading state while permissions are loading
   // CRITICAL: Return early to prevent React from evaluating children

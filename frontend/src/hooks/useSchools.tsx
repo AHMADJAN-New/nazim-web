@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { useProfile } from './useProfiles';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useHasPermission } from './usePermissions';
 import { schoolsApi } from '@/lib/api/client';
 import type * as SchoolApi from '@/types/api/school';
 import type { School } from '@/types/domain/school';
@@ -24,12 +25,12 @@ export const useSchools = (organizationId?: string) => {
       const apiSchools = await schoolsApi.list({
         organization_id: organizationId,
       });
-      
+
       // Map API models to domain models
       const schools = (apiSchools as SchoolApi.School[]).map(mapSchoolApiToDomain);
-      
+
       // Sort by schoolName
-      return schools.sort((a, b) => 
+      return schools.sort((a, b) =>
         a.schoolName.localeCompare(b.schoolName)
       );
     },
@@ -59,6 +60,7 @@ export const useCreateSchool = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
   const { orgIds } = useAccessibleOrganizations();
+  const hasPermission = useHasPermission('branding.create');
 
   return useMutation({
     mutationFn: async (schoolData: Partial<School> & { organizationId?: string }) => {
@@ -66,8 +68,7 @@ export const useCreateSchool = () => {
         throw new Error('User not authenticated');
       }
 
-      const isAdmin = profile.role === 'admin';
-      if (!isAdmin && profile.role !== 'super_admin') {
+      if (!hasPermission) {
         throw new Error('Insufficient permissions to create schools');
       }
 
@@ -87,7 +88,7 @@ export const useCreateSchool = () => {
 
       // Create school via Laravel API
       const apiSchool = await schoolsApi.create(insertData);
-      
+
       // Map API response back to domain model
       return mapSchoolApiToDomain(apiSchool as SchoolApi.School);
     },
@@ -104,6 +105,7 @@ export const useCreateSchool = () => {
 export const useUpdateSchool = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
+  const hasPermission = useHasPermission('branding.update');
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<School> & { id: string }) => {
@@ -111,10 +113,7 @@ export const useUpdateSchool = () => {
         throw new Error('User not authenticated');
       }
 
-      const isSuperAdmin = profile.role === 'super_admin';
-      const isAdmin = profile.role === 'admin';
-
-      if (!isSuperAdmin && !isAdmin) {
+      if (!hasPermission) {
         throw new Error('Insufficient permissions to update schools');
       }
 
@@ -123,7 +122,7 @@ export const useUpdateSchool = () => {
 
       // Update school via Laravel API
       const apiSchool = await schoolsApi.update(id, apiUpdateData);
-      
+
       // Map API response back to domain model
       return mapSchoolApiToDomain(apiSchool as SchoolApi.School);
     },
@@ -141,6 +140,7 @@ export const useUpdateSchool = () => {
 export const useDeleteSchool = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
+  const hasPermission = useHasPermission('branding.delete');
 
   return useMutation({
     mutationFn: async (schoolId: string) => {
@@ -148,10 +148,7 @@ export const useDeleteSchool = () => {
         throw new Error('User not authenticated');
       }
 
-      const isSuperAdmin = profile.role === 'super_admin';
-      const isAdmin = profile.role === 'admin';
-
-      if (!isSuperAdmin && !isAdmin) {
+      if (!hasPermission) {
         throw new Error('Insufficient permissions to delete schools');
       }
 

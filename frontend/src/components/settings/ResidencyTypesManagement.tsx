@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useResidencyTypes, useCreateResidencyType, useUpdateResidencyType, useDeleteResidencyType, type ResidencyType } from '@/hooks/useResidencyTypes';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { useOrganizations } from '@/hooks/useOrganizations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,7 +54,6 @@ type ResidencyTypeFormData = z.infer<typeof residencyTypeSchema>;
 export function ResidencyTypesManagement() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
-  const isSuperAdmin = useIsSuperAdmin();
   const hasCreatePermission = useHasPermission('residency_types.create');
   const hasUpdatePermission = useHasPermission('residency_types.update');
   const hasDeletePermission = useHasPermission('residency_types.delete');
@@ -64,10 +62,8 @@ export function ResidencyTypesManagement() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedResidencyType, setSelectedResidencyType] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>(profile?.organization_id);
   
-  const { data: organizations } = useOrganizations();
-  const { data: residencyTypes, isLoading } = useResidencyTypes(selectedOrganizationId);
+  const { data: residencyTypes, isLoading } = useResidencyTypes(profile?.organization_id);
   const createResidencyType = useCreateResidencyType();
   const updateResidencyType = useUpdateResidencyType();
   const deleteResidencyType = useDeleteResidencyType();
@@ -139,7 +135,7 @@ export function ResidencyTypesManagement() {
         { 
           id: selectedResidencyType, 
           ...data,
-          organization_id: selectedOrganizationId || profile?.organization_id || null,
+          organization_id: profile?.organization_id || null,
         },
         {
           onSuccess: () => {
@@ -150,7 +146,7 @@ export function ResidencyTypesManagement() {
     } else {
       createResidencyType.mutate({
         ...data,
-        organization_id: selectedOrganizationId || profile?.organization_id || null,
+        organization_id: profile?.organization_id || null,
       }, {
         onSuccess: () => {
           handleCloseDialog();
@@ -202,26 +198,6 @@ export function ResidencyTypesManagement() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              {isSuperAdmin && (
-                <Select
-                  value={selectedOrganizationId || 'all'}
-                  onValueChange={(value) => {
-                    setSelectedOrganizationId(value === 'all' ? undefined : value);
-                  }}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Filter by organization" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Organizations</SelectItem>
-                    {organizations?.map((org) => (
-                      <SelectItem key={org.id} value={org.id}>
-                        {org.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
               <Button 
                 onClick={() => handleOpenDialog()}
                 disabled={!hasCreatePermission}
@@ -253,14 +229,13 @@ export function ResidencyTypesManagement() {
                   <TableHead>{t('academic.residencyTypes.code')}</TableHead>
                   <TableHead>{t('academic.residencyTypes.description')}</TableHead>
                   <TableHead>{t('academic.residencyTypes.isActive')}</TableHead>
-                  {isSuperAdmin && <TableHead>Type</TableHead>}
                   <TableHead className="text-right">{t('students.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredResidencyTypes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isSuperAdmin ? 6 : 5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       {searchQuery 
                         ? t('academic.residencyTypes.noResidencyTypesFound')
                         : t('academic.residencyTypes.noResidencyTypesMessage')}
@@ -281,23 +256,13 @@ export function ResidencyTypesManagement() {
                           {type.is_active ? t('academic.residencyTypes.active') : t('academic.residencyTypes.inactive')}
                         </Badge>
                       </TableCell>
-                      {isSuperAdmin && (
-                        <TableCell>
-                          <Badge variant="outline">
-                            {type.organization_id === null 
-                              ? t('academic.residencyTypes.globalType')
-                              : t('academic.residencyTypes.organizationType')}
-                          </Badge>
-                        </TableCell>
-                      )}
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleOpenDialog(type.id)}
-                            disabled={!hasUpdatePermission || (type.organization_id === null && !isSuperAdmin)}
-                            title={type.organization_id === null && !isSuperAdmin ? t('academic.residencyTypes.cannotDeleteGlobal') : ''}
+                            disabled={!hasUpdatePermission}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -305,8 +270,7 @@ export function ResidencyTypesManagement() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteClick(type.id)}
-                            disabled={!hasDeletePermission || (type.organization_id === null && !isSuperAdmin)}
-                            title={type.organization_id === null && !isSuperAdmin ? t('academic.residencyTypes.cannotDeleteGlobal') : ''}
+                            disabled={!hasDeletePermission}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -338,29 +302,6 @@ export function ResidencyTypesManagement() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              {isSuperAdmin && (
-                <div className="grid gap-2">
-                  <Label htmlFor="organization_id">Organization</Label>
-                  <Select
-                    value={selectedOrganizationId || 'global'}
-                    onValueChange={(value) => {
-                      setSelectedOrganizationId(value === 'global' ? undefined : value);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select organization" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="global">Global (Available to all)</SelectItem>
-                      {organizations?.map((org) => (
-                        <SelectItem key={org.id} value={org.id}>
-                          {org.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               <div className="grid gap-2">
                 <Label htmlFor="name">
                   {t('academic.residencyTypes.name')} *

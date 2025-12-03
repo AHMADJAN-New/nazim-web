@@ -81,6 +81,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Permissions
     Route::get('/permissions', [PermissionController::class, 'index']);
     Route::get('/permissions/user', [PermissionController::class, 'userPermissions']);
+    Route::get('/permissions/roles', [PermissionController::class, 'roles']);
 
     // Buildings
     Route::apiResource('buildings', BuildingController::class);

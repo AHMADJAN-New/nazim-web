@@ -50,6 +50,11 @@ return [
          * When using the "HasPermissions" trait from this package, we need to know which
          * table should be used to retrieve the model permissions. We have chosen a
          * basic default value but you may easily change it to any table you like.
+         * 
+         * NOTE: We do NOT use direct user permissions in this application.
+         * All permissions are assigned via roles only (role_has_permissions table).
+         * Users get permissions through their roles (model_has_roles -> roles -> role_has_permissions).
+         * This table is kept in config for Spatie compatibility but is never created.
          */
 
         'model_has_permissions' => 'model_has_permissions',

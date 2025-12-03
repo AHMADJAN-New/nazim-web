@@ -1,9 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAcademicYears, useCreateAcademicYear, useUpdateAcademicYear, useDeleteAcademicYear, useSetCurrentAcademicYear, type AcademicYear } from '@/hooks/useAcademicYears';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { useOrganizations } from '@/hooks/useOrganizations';
-import { useSchools } from '@/hooks/useSchools';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -65,7 +63,6 @@ type AcademicYearFormData = z.infer<typeof academicYearSchema>;
 export function AcademicYearsManagement() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
-  const isSuperAdmin = useIsSuperAdmin();
   const hasCreatePermission = useHasPermission('academic_years.create');
   const hasUpdatePermission = useHasPermission('academic_years.update');
   const hasDeletePermission = useHasPermission('academic_years.delete');
@@ -75,29 +72,8 @@ export function AcademicYearsManagement() {
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>(profile?.organization_id);
   
-  const { data: organizations } = useOrganizations();
-  const { data: schools } = useSchools();
-  const { data: academicYears, isLoading } = useAcademicYears(selectedOrganizationId);
-  
-  // Create a map of organization_id to school name(s)
-  const organizationToSchoolMap = useMemo(() => {
-    if (!schools) return {};
-    const map: Record<string, string> = {};
-    schools.forEach((school) => {
-      if (school.organization_id) {
-        // If multiple schools per org, show first one or concatenate
-        if (!map[school.organization_id]) {
-          map[school.organization_id] = school.school_name;
-        } else {
-          // If multiple schools, show first one (or could show "School 1, School 2")
-          // For now, just keep the first one
-        }
-      }
-    });
-    return map;
-  }, [schools]);
+  const { data: academicYears, isLoading } = useAcademicYears(profile?.organization_id);
   const createAcademicYear = useCreateAcademicYear();
   const updateAcademicYear = useUpdateAcademicYear();
   const deleteAcademicYear = useDeleteAcademicYear();
@@ -187,7 +163,7 @@ export function AcademicYearsManagement() {
         { 
           id: selectedAcademicYear, 
           ...data,
-          organization_id: selectedOrganizationId || profile?.organization_id || null,
+          organization_id: profile?.organization_id || null,
         },
         {
           onSuccess: () => {
@@ -198,7 +174,7 @@ export function AcademicYearsManagement() {
     } else {
       createAcademicYear.mutate({
         ...data,
-        organization_id: selectedOrganizationId || profile?.organization_id || null,
+        organization_id: profile?.organization_id || null,
       }, {
         onSuccess: () => {
           handleCloseDialog();
@@ -280,26 +256,6 @@ export function AcademicYearsManagement() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              {isSuperAdmin && (
-                <Select
-                  value={selectedOrganizationId || 'all'}
-                  onValueChange={(value) => {
-                    setSelectedOrganizationId(value === 'all' ? undefined : value);
-                  }}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Filter by organization" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Organizations</SelectItem>
-                    {organizations?.map((org) => (
-                      <SelectItem key={org.id} value={org.id}>
-                        {org.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
               <Button 
                 onClick={() => handleOpenDialog()}
                 disabled={!hasCreatePermission}
@@ -345,14 +301,13 @@ export function AcademicYearsManagement() {
                   <TableHead>{t('academic.academicYears.endDate')}</TableHead>
                   <TableHead>{t('academic.academicYears.status')}</TableHead>
                   <TableHead>{t('academic.academicYears.isCurrent')}</TableHead>
-                  {isSuperAdmin && <TableHead>Type</TableHead>}
                   <TableHead className="text-right">{t('students.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredAcademicYears.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isSuperAdmin ? 7 : 6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
                       {searchQuery 
                         ? t('academic.academicYears.noAcademicYearsFound')
                         : t('academic.academicYears.noAcademicYearsMessage')}
@@ -391,29 +346,19 @@ export function AcademicYearsManagement() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleSetCurrent(year.id)}
-                            disabled={!hasUpdatePermission || (year.organization_id === null && !isSuperAdmin)}
+                            disabled={!hasUpdatePermission}
                           >
                             {t('academic.academicYears.setAsCurrent')}
                           </Button>
                         )}
                       </TableCell>
-                      {isSuperAdmin && (
-                        <TableCell>
-                          <Badge variant="outline">
-                            {year.organization_id === null 
-                              ? t('academic.academicYears.globalType')
-                              : organizationToSchoolMap[year.organization_id] || 'Unknown School'}
-                          </Badge>
-                        </TableCell>
-                      )}
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleOpenDialog(year.id)}
-                            disabled={!hasUpdatePermission || (year.organization_id === null && !isSuperAdmin)}
-                            title={year.organization_id === null && !isSuperAdmin ? t('academic.academicYears.cannotDeleteGlobal') : ''}
+                            disabled={!hasUpdatePermission}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -421,13 +366,11 @@ export function AcademicYearsManagement() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteClick(year.id)}
-                            disabled={!hasDeletePermission || (year.organization_id === null && !isSuperAdmin) || year.is_current}
+                            disabled={!hasDeletePermission || year.is_current}
                             title={
                               year.is_current 
                                 ? t('academic.academicYears.cannotDeleteCurrent')
-                                : year.organization_id === null && !isSuperAdmin 
-                                  ? t('academic.academicYears.cannotDeleteGlobal') 
-                                  : ''
+                                : ''
                             }
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -460,29 +403,6 @@ export function AcademicYearsManagement() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              {isSuperAdmin && (
-                <div className="grid gap-2">
-                  <Label htmlFor="organization_id">Organization</Label>
-                  <Select
-                    value={selectedOrganizationId || 'global'}
-                    onValueChange={(value) => {
-                      setSelectedOrganizationId(value === 'global' ? undefined : value);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select organization" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="global">Global (Available to all)</SelectItem>
-                      {organizations?.map((org) => (
-                        <SelectItem key={org.id} value={org.id}>
-                          {org.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               <div className="grid gap-2">
                 <Label htmlFor="name">
                   {t('academic.academicYears.name')} *

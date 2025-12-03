@@ -111,7 +111,7 @@ export const useCreateClass = () => {
             // Convert domain model to API insert payload
             const insertData = mapClassDomainToInsert({
                 ...classData,
-                organizationId: classData.organizationId ?? (profile.role === 'super_admin' ? null : profile.organization_id),
+                organizationId: classData.organizationId ?? profile.organization_id,
             });
 
             const apiClass = await classesApi.create(insertData);

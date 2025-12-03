@@ -23,18 +23,17 @@ export function PersistentLayout() {
 
   // Wait for permissions to load before rendering routes
   // This prevents the flash of "Access Denied" messages
-  // Super admin can proceed optimistically, but regular users need permissions loaded
-  const isSuperAdminUser = profile?.role === 'super_admin' && profile?.organization_id === null;
+  // All users need permissions loaded
   
   // Permissions are ready if:
   // 1. We have a profile with a role (query can run)
   // 2. Query is not loading (has completed or is disabled)
-  // 3. We have permissions data (even if empty array) OR we're super admin
+  // 3. We have permissions data (even if empty array)
   const hasProfile = profile?.role !== undefined && profile !== null;
   const queryCanRun = hasProfile && !isLoading;
   // With placeholderData and initialData, permissions should always be an array, never undefined
   const hasPermissionsData = Array.isArray(permissions);
-  const permissionsReady = (hasProfile && queryCanRun && hasPermissionsData) || isSuperAdminUser;
+  const permissionsReady = hasProfile && queryCanRun && hasPermissionsData;
   
   // Show loading state if permissions are not ready
   // This blocks ALL routes from rendering until permissions are ready

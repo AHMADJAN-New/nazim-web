@@ -1,7 +1,6 @@
 // Authentication and Role-based Access Control Types
 
 export type UserRole = 
-  | 'super_admin'
   | 'admin'
   | 'teacher'
   | 'accountant'
@@ -71,9 +70,6 @@ export interface Branch {
 
 // Role-based permissions mapping
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  super_admin: [
-    { module: '*', actions: ['read', 'create', 'update', 'delete'] }
-  ],
   admin: [
     { module: 'students', actions: ['read', 'create', 'update', 'delete'] },
     { module: 'teachers', actions: ['read', 'create', 'update', 'delete'] },

@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useBuildings, useCreateBuilding, useUpdateBuilding, useDeleteBuilding, type Building } from '@/hooks/useBuildings';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { useOrganizations } from '@/hooks/useOrganizations';
 import { useSchools, useSchool } from '@/hooks/useSchools';
 import { useReportTemplates } from '@/hooks/useReportTemplates';
 import { exportReport, type ReportDefinition } from '@/lib/reporting';
@@ -107,21 +106,18 @@ const buildingReportDefinition: ReportDefinition<BuildingReportRow> = {
 export function BuildingsManagement() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
-  const isSuperAdmin = useIsSuperAdmin();
   const hasCreatePermission = useHasPermission('buildings.create');
   const hasUpdatePermission = useHasPermission('buildings.update');
   const hasDeletePermission = useHasPermission('buildings.delete');
-  
+
   // State declarations must come before hooks that use them
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>(profile?.organization_id);
-  
-  // Now hooks can use selectedOrganizationId
-  const { data: organizations } = useOrganizations();
-  const { data: schools } = useSchools(selectedOrganizationId);
+
+  // Use user's organization
+  const { data: schools } = useSchools(profile?.organization_id);
   const { data: buildings, isLoading } = useBuildings();
   const createBuilding = useCreateBuilding();
   const updateBuilding = useUpdateBuilding();
@@ -147,17 +143,10 @@ export function BuildingsManagement() {
   const effectiveSchoolId = useMemo(() => {
     return selectedSchoolId || profile?.default_school_id || (schools && schools.length > 0 ? schools[0].id : undefined);
   }, [selectedSchoolId, profile?.default_school_id, schools]);
-  
+
   const { data: school } = useSchool(effectiveSchoolId || '');
   const { data: templates } = useReportTemplates(effectiveSchoolId);
-  
-  // Update selectedOrganizationId when profile loads
-  useEffect(() => {
-    if (profile?.organization_id && !selectedOrganizationId) {
-      setSelectedOrganizationId(profile.organization_id);
-    }
-  }, [profile?.organization_id, selectedOrganizationId]);
-  
+
   // Auto-set school_id when schools load and user has default_school_id
   useEffect(() => {
     if (!selectedBuilding && schools && schools.length > 0) {
@@ -175,7 +164,7 @@ export function BuildingsManagement() {
       }
     }
   }, [profile?.default_school_id, schools, selectedBuilding, setValue]);
-  
+
   // Schools are already filtered by useSchools hook based on selectedOrganizationId
   const filteredSchools = schools || [];
 
@@ -190,7 +179,7 @@ export function BuildingsManagement() {
   }, [isDialogOpen, selectedBuilding, filteredSchools, watch, setValue]);
 
   const filteredBuildings = buildings?.filter((building) =>
-    building.building_name?.toLowerCase().includes((searchQuery || '').toLowerCase())
+    building.buildingName?.toLowerCase().includes((searchQuery || '').toLowerCase())
   ) || [];
 
   // Find default template for buildings
@@ -204,14 +193,12 @@ export function BuildingsManagement() {
   // Transform buildings data for export
   const transformBuildingsForExport = (buildingsToTransform: Building[]): BuildingReportRow[] => {
     return buildingsToTransform.map((building) => {
-      const buildingSchool = schools?.find((s) => s.id === building.school_id);
-      const buildingOrg = organizations?.find((o) => o.id === building.organization_id);
+      const buildingSchool = schools?.find((s) => s.id === building.schoolId);
 
       return {
-        building_name: building.building_name,
-        school_name: buildingSchool?.school_name || 'Unknown School',
-        organization_name: isSuperAdmin ? (buildingOrg?.name || 'Unknown Organization') : undefined,
-        created_at: new Date(building.created_at).toLocaleDateString(),
+        building_name: building.buildingName,
+        school_name: buildingSchool?.schoolName || 'Unknown School',
+        created_at: building.createdAt.toLocaleDateString(),
       };
     });
   };
@@ -219,25 +206,18 @@ export function BuildingsManagement() {
   // Build filters summary string
   const buildFiltersSummary = (): string => {
     const parts: string[] = [];
-    
+
     if (searchQuery) {
       parts.push(`Search: ${searchQuery}`);
     }
-    
-    if (isSuperAdmin && selectedOrganizationId) {
-      const org = organizations?.find((o) => o.id === selectedOrganizationId);
-      if (org) {
-        parts.push(`Organization: ${org.name}`);
-      }
-    }
-    
+
     if (selectedSchoolId && schools && schools.length > 1) {
       const school = schools.find((s) => s.id === selectedSchoolId);
       if (school) {
-        parts.push(`School: ${school.school_name}`);
+        parts.push(`School: ${school.schoolName}`);
       }
     }
-    
+
     return parts.length > 0 ? parts.join(' | ') : '';
   };
 
@@ -308,36 +288,30 @@ export function BuildingsManagement() {
     if (buildingId) {
       const building = buildings?.find((b) => b.id === buildingId);
       if (building) {
-        reset({ 
-          building_name: building.building_name,
-          school_id: building.school_id || '',
+        reset({
+          building_name: building.buildingName,
+          school_id: building.schoolId || '',
         });
-        // Set organization based on building's school
-        const buildingSchool = schools?.find(s => s.id === building.school_id);
-        if (buildingSchool) {
-          setSelectedOrganizationId(buildingSchool.organization_id);
-        }
         setSelectedBuilding(buildingId);
       }
     } else {
       // For new building, auto-set school from user's profile
       let defaultSchoolId = profile?.default_school_id || '';
-      
+
       // If no default school but user has organization, get first school
       if (!defaultSchoolId && profile?.organization_id && schools && schools.length > 0) {
         defaultSchoolId = schools[0].id;
       }
-      
+
       // If still no school_id and only one school exists, use it
       if (!defaultSchoolId && schools && schools.length === 1) {
         defaultSchoolId = schools[0].id;
       }
-      
-      reset({ 
+
+      reset({
         building_name: '',
         school_id: defaultSchoolId,
       });
-      setSelectedOrganizationId(profile?.organization_id);
       setSelectedBuilding(null);
     }
     setIsDialogOpen(true);
@@ -346,14 +320,13 @@ export function BuildingsManagement() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setSelectedBuilding(null);
-    setSelectedOrganizationId(profile?.organization_id);
-    
+
     // Reset to user's default school or first available school
     let defaultSchoolId = profile?.default_school_id || '';
     if (!defaultSchoolId && profile?.organization_id && schools && schools.length > 0) {
       defaultSchoolId = schools[0].id;
     }
-    
+
     reset({
       building_name: '',
       school_id: defaultSchoolId,
@@ -366,15 +339,15 @@ export function BuildingsManagement() {
     if (!schoolId && filteredSchools.length === 1) {
       schoolId = filteredSchools[0].id;
     }
-    
+
     if (!schoolId) {
       toast.error('Please select a school');
       return;
     }
-    
+
     if (selectedBuilding) {
       updateBuilding.mutate(
-        { id: selectedBuilding, ...data, school_id: schoolId },
+        { id: selectedBuilding, buildingName: data.building_name, schoolId: schoolId },
         {
           onSuccess: () => {
             handleCloseDialog();
@@ -384,8 +357,8 @@ export function BuildingsManagement() {
     } else {
       // Ensure building_name is provided (zod schema validates it, but TypeScript needs explicit assertion)
       createBuilding.mutate({
-        building_name: data.building_name,
-        school_id: schoolId,
+        buildingName: data.building_name,
+        schoolId: schoolId,
       }, {
         onSuccess: () => {
           handleCloseDialog();
@@ -453,7 +426,7 @@ export function BuildingsManagement() {
                 <FileDown className="h-4 w-4 mr-2" />
                 Export PDF
               </Button>
-              <Button 
+              <Button
                 onClick={() => handleOpenDialog()}
                 disabled={!hasCreatePermission}
               >
@@ -481,7 +454,6 @@ export function BuildingsManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Building Name</TableHead>
-                  {isSuperAdmin && <TableHead>Organization</TableHead>}
                   <TableHead>Created At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -489,23 +461,17 @@ export function BuildingsManagement() {
               <TableBody>
                 {filteredBuildings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isSuperAdmin ? 4 : 3} className="text-center text-muted-foreground">
+                    <TableCell colSpan={3} className="text-center text-muted-foreground">
                       {searchQuery ? 'No buildings found matching your search' : 'No buildings found. Add your first building.'}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredBuildings.map((building) => {
-                    const org = isSuperAdmin && organizations?.find(o => o.id === building.organization_id);
                     return (
                       <TableRow key={building.id}>
-                        <TableCell className="font-medium">{building.building_name}</TableCell>
-                        {isSuperAdmin && (
-                          <TableCell>
-                            {org?.name || 'Unknown'}
-                          </TableCell>
-                        )}
+                        <TableCell className="font-medium">{building.buildingName}</TableCell>
                         <TableCell>
-                          {new Date(building.created_at).toLocaleDateString()}
+                          {building.createdAt.toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
@@ -552,40 +518,6 @@ export function BuildingsManagement() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              {isSuperAdmin && (
-                <div className="grid gap-2">
-                  <Label htmlFor="organization_id">Organization</Label>
-                  <Select
-                    value={selectedOrganizationId || ''}
-                    onValueChange={(value) => {
-                      setSelectedOrganizationId(value);
-                      setValue('school_id', ''); // Reset school when org changes
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select organization" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {organizations?.map((org) => (
-                        <SelectItem key={org.id} value={org.id}>
-                          {org.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              {!isSuperAdmin && profile?.organization_id && (
-                <div className="grid gap-2">
-                  <Label htmlFor="organization_id">Organization</Label>
-                  <Input
-                    id="organization_id"
-                    value={organizations?.find(o => o.id === profile.organization_id)?.name || 'Your Organization'}
-                    readOnly
-                    className="bg-muted"
-                  />
-                </div>
-              )}
               {filteredSchools.length > 1 ? (
                 <div className="grid gap-2">
                   <Label htmlFor="school_id">School</Label>
@@ -599,7 +531,7 @@ export function BuildingsManagement() {
                     <SelectContent>
                       {filteredSchools.map((school) => (
                         <SelectItem key={school.id} value={school.id}>
-                          {school.school_name}
+                          {school.schoolName}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -613,7 +545,7 @@ export function BuildingsManagement() {
                   <Label htmlFor="school_id">School</Label>
                   <Input
                     id="school_id"
-                    value={filteredSchools[0].school_name}
+                    value={filteredSchools[0].schoolName}
                     readOnly
                     className="bg-muted"
                   />
@@ -631,7 +563,7 @@ export function BuildingsManagement() {
                     <SelectContent>
                       {filteredSchools.map((school) => (
                         <SelectItem key={school.id} value={school.id}>
-                          {school.school_name}
+                          {school.schoolName}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -674,7 +606,7 @@ export function BuildingsManagement() {
               This action cannot be undone. This will permanently delete the building
               {selectedBuilding &&
                 buildings?.find((b) => b.id === selectedBuilding) &&
-                ` "${buildings.find((b) => b.id === selectedBuilding)?.building_name}"`}
+                ` "${buildings.find((b) => b.id === selectedBuilding)?.buildingName}"`}
               . If this building has rooms assigned, the deletion will fail.
             </AlertDialogDescription>
           </AlertDialogHeader>

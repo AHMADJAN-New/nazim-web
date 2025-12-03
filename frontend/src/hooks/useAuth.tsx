@@ -26,7 +26,7 @@ interface AuthContextType {
   loading: boolean;
   profileLoading: boolean;
   signOut: () => Promise<void>;
-  isSuperAdmin: () => boolean;
+  refreshAuth: () => Promise<void>;
   getOrganizationId: () => string | null;
   getRole: () => string | null;
 }
@@ -50,10 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (response) {
         const profileData = response as Profile;
         setProfile(profileData);
-        
-        // If profile doesn't have organization_id (and not super_admin),
-        // backend should have assigned it on login, so this is unexpected
-        if (!profileData.organization_id && profileData.role !== 'super_admin') {
+
+        // If profile doesn't have organization_id, backend should have assigned it on login
+        if (!profileData.organization_id) {
           console.warn('Profile missing organization_id - backend should have assigned it. User may need to log out and log back in.');
         }
       }
@@ -71,51 +70,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Check authentication on mount and when token changes
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = apiClient.getToken();
-        if (token) {
-          // Verify token is valid by fetching user
-          const response = await authApi.getUser();
-          if (response.user && response.profile) {
-            setUser(response.user);
-            setSession({ token });
-            
-            // If profile doesn't have organization_id (and not super_admin), 
-            // backend should have assigned it during login, so refresh profile
-            if (!response.profile.organization_id && response.profile.role !== 'super_admin') {
-              console.warn('Profile missing organization_id, refreshing...');
-              // Refresh profile to get updated organization_id
-              await loadUserProfile();
-            } else {
-              setProfile(response.profile as Profile);
-            }
-          } else {
-            // Invalid token, clear it
-            apiClient.setToken(null);
-            setUser(null);
-            setSession(null);
-            setProfile(null);
+  // Check authentication function
+  const checkAuth = async () => {
+    try {
+      const token = apiClient.getToken();
+      if (!token) {
+        // No token - user is not authenticated (expected state)
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      // Verify token is valid by fetching user
+      const response = await authApi.getUser();
+      if (response.user && response.profile) {
+        setUser(response.user);
+        setSession({ token });
+
+        // If profile doesn't have organization_id, backend should have assigned it during login, so refresh profile
+        if (!response.profile.organization_id) {
+          if (import.meta.env.DEV) {
+            console.warn('Profile missing organization_id, refreshing...');
           }
+          // Refresh profile to get updated organization_id
+          await loadUserProfile();
         } else {
-          setUser(null);
-          setSession(null);
-          setProfile(null);
+          setProfile(response.profile as Profile);
         }
-      } catch (error: any) {
-        console.error('Auth check failed:', error);
-        // Clear invalid token
+      } else {
+        // Invalid token, clear it
         apiClient.setToken(null);
         setUser(null);
         setSession(null);
         setProfile(null);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error: any) {
+      // Only log errors if we had a token (unexpected failure)
+      // If no token, 401 is expected and shouldn't be logged
+      const token = apiClient.getToken();
+      const isExpectedError = error?.expected || (!token && error?.message?.includes('401'));
 
+      if (token && !isExpectedError) {
+        // Had token but auth failed - this is unexpected, log it
+        if (import.meta.env.DEV) {
+          console.error('Auth check failed (had token):', error);
+        }
+        // Clear invalid token
+        apiClient.setToken(null);
+      }
+      // Clear auth state (whether we had token or not)
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refresh auth state (can be called after login)
+  const refreshAuth = async () => {
+    setLoading(true);
+    await checkAuth();
+  };
+
+  // Check authentication on mount and when token changes
+  useEffect(() => {
     checkAuth();
 
     // Listen for storage changes (when token is set in another tab/window)
@@ -125,8 +146,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     };
 
+    // Also listen for custom storage events (for same-tab updates)
+    const handleCustomStorageChange = () => {
+      checkAuth();
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('auth-token-changed', handleCustomStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-token-changed', handleCustomStorageChange);
+    };
   }, []);
 
   const signOut = async () => {
@@ -140,10 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setSession(null);
       setProfile(null);
     }
-  };
-
-  const isSuperAdmin = () => {
-    return profile?.role === 'super_admin' && profile?.organization_id === null;
   };
 
   const getOrganizationId = () => {
@@ -163,7 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         loading,
         profileLoading,
         signOut,
-        isSuperAdmin,
+        refreshAuth,
         getOrganizationId,
         getRole,
       }}

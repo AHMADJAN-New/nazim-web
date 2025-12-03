@@ -17,13 +17,7 @@ class StudentDisciplineRecordController extends Controller
      */
     private function getAccessibleOrgIds($profile): array
     {
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            return DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        }
-        
+        // All users are restricted to their own organization
         if ($profile->organization_id) {
             return [$profile->organization_id];
         }
@@ -41,6 +35,21 @@ class StudentDisciplineRecordController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_discipline_records.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_discipline_records.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         // Check student exists and user has access
@@ -74,6 +83,21 @@ class StudentDisciplineRecordController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_discipline_records.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_discipline_records.create: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         // Check student exists and user has access
@@ -114,6 +138,21 @@ class StudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_discipline_records.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_discipline_records.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $record = StudentDisciplineRecord::whereNull('deleted_at')->find($id);
 
         if (!$record) {
@@ -145,6 +184,21 @@ class StudentDisciplineRecordController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_discipline_records.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_discipline_records.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $record = StudentDisciplineRecord::whereNull('deleted_at')->find($id);

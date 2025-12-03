@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useHasPermission } from './usePermissions';
 import { usersApi } from '@/lib/api/client';
 import type * as UserApi from '@/types/api/user';
 import type { UserProfile, CreateUserData, UpdateUserData } from '@/types/domain/user';
@@ -26,11 +27,8 @@ export const useUsers = (filters?: {
         throw new Error('User not authenticated');
       }
 
-      // Check permissions
-      const isAdmin = currentProfile.role === 'admin' || currentProfile.role === 'super_admin';
-      if (!isAdmin) {
-        throw new Error('Insufficient permissions to view users');
-      }
+      // Check permissions (backend enforces this, this is just for UX)
+      // Frontend permission check is handled at component level
 
       if (orgIds.length === 0) {
         return [];
@@ -50,6 +48,7 @@ export const useCreateUser = () => {
   const queryClient = useQueryClient();
   const { profile: currentProfile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
+  const hasPermission = useHasPermission('users.create');
 
   return useMutation({
     mutationFn: async (userData: CreateUserData) => {
@@ -57,10 +56,7 @@ export const useCreateUser = () => {
         throw new Error('User not authenticated');
       }
 
-      const isSuperAdmin = currentProfile.role === 'super_admin';
-      const isAdmin = currentProfile.role === 'admin';
-
-      if (!isSuperAdmin && !isAdmin) {
+      if (!hasPermission) {
         throw new Error('Insufficient permissions to create users');
       }
 
@@ -103,6 +99,7 @@ export const useUpdateUser = () => {
   const queryClient = useQueryClient();
   const { profile: currentProfile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
+  const hasPermission = useHasPermission('users.update');
 
   return useMutation({
     mutationFn: async (userData: UpdateUserData) => {
@@ -110,15 +107,12 @@ export const useUpdateUser = () => {
         throw new Error('User not authenticated');
       }
 
-      const isSuperAdmin = currentProfile.role === 'super_admin';
-      const isAdmin = currentProfile.role === 'admin';
-
-      if (!isSuperAdmin && !isAdmin) {
+      if (!hasPermission) {
         throw new Error('Insufficient permissions to update users');
       }
 
-      // Validate organizationId if provided
-      if (userData.organizationId !== undefined && isSuperAdmin) {
+      // Validate organizationId if provided (admin can only assign to their org)
+      if (userData.organizationId !== undefined) {
         if (userData.organizationId && !orgIds.includes(userData.organizationId)) {
           throw new Error('Cannot assign user to a non-accessible organization');
         }
@@ -147,6 +141,7 @@ export const useUpdateUser = () => {
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
   const { profile: currentProfile } = useAuth();
+  const hasPermission = useHasPermission('users.delete');
 
   return useMutation({
     mutationFn: async (userId: string) => {
@@ -154,10 +149,7 @@ export const useDeleteUser = () => {
         throw new Error('User not authenticated');
       }
 
-      const isSuperAdmin = currentProfile.role === 'super_admin';
-      const isAdmin = currentProfile.role === 'admin';
-
-      if (!isSuperAdmin && !isAdmin) {
+      if (!hasPermission) {
         throw new Error('Insufficient permissions to delete users');
       }
 
@@ -178,6 +170,7 @@ export const useDeleteUser = () => {
 
 export const useResetUserPassword = () => {
   const { profile: currentProfile } = useAuth();
+  const hasPermission = useHasPermission('users.reset_password');
 
   return useMutation({
     mutationFn: async ({ userId, newPassword }: { userId: string; newPassword: string }) => {
@@ -185,10 +178,7 @@ export const useResetUserPassword = () => {
         throw new Error('User not authenticated');
       }
 
-      const isSuperAdmin = currentProfile.role === 'super_admin';
-      const isAdmin = currentProfile.role === 'admin';
-
-      if (!isSuperAdmin && !isAdmin) {
+      if (!hasPermission) {
         throw new Error('Insufficient permissions to reset passwords');
       }
 

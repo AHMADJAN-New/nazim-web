@@ -3,6 +3,7 @@ import { profilesApi } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useHasPermission } from './usePermissions';
 import type * as ProfileApi from '@/types/api/profile';
 import type { Profile } from '@/types/domain/profile';
 import { mapProfileApiToDomain, mapProfileDomainToUpdate } from '@/mappers/profileMapper';
@@ -26,16 +27,15 @@ export const useProfile = () => {
 export const useProfiles = (organizationId?: string) => {
   const { user, profile: currentProfile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
+  const hasPermission = useHasPermission('profiles.read');
 
   return useQuery<Profile[]>({
     queryKey: ['profiles', organizationId, orgIds.join(',')],
     queryFn: async () => {
       if (!user || !currentProfile || orgsLoading) return [];
 
-      // Super admin can see all profiles
-      // Admin can see profiles in their organization
-      // Others cannot see profiles list
-      if (currentProfile.role !== 'super_admin' && currentProfile.role !== 'admin') {
+      // Check permissions (backend enforces this, this is just for UX)
+      if (!hasPermission) {
         throw new Error('Insufficient permissions to view profiles');
       }
 
@@ -71,11 +71,10 @@ export const useUpdateProfile = () => {
       // Build update data - backend will handle authorization
       // Frontend still filters fields based on permissions for better UX
       const isOwnProfile = id === user.id;
-      const isSuperAdmin = currentProfile.role === 'super_admin';
 
       // Convert Domain → API for update payload
       const domainUpdate: Partial<Profile> = {};
-      
+
       if (isOwnProfile) {
         // Users can update: fullName, phone, avatarUrl, defaultSchoolId
         if (updates.fullName !== undefined) domainUpdate.fullName = updates.fullName;
@@ -91,14 +90,10 @@ export const useUpdateProfile = () => {
         if (updates.role !== undefined) domainUpdate.role = updates.role;
         if (updates.isActive !== undefined) domainUpdate.isActive = updates.isActive;
         if (updates.defaultSchoolId !== undefined) domainUpdate.defaultSchoolId = updates.defaultSchoolId;
-        
-        // Only super admin can change organizationId
-        if (updates.organizationId !== undefined && isSuperAdmin) {
-          // Validate organization is accessible
-          if (updates.organizationId && !orgIds.includes(updates.organizationId)) {
-            throw new Error('Cannot assign profile to a non-accessible organization');
-          }
-          domainUpdate.organizationId = updates.organizationId;
+
+        // Organization changes are not allowed (all users are organization-scoped)
+        if (updates.organizationId !== undefined && updates.organizationId !== currentProfile?.organization_id) {
+          throw new Error('Cannot change organization_id');
         }
       }
 
@@ -107,7 +102,7 @@ export const useUpdateProfile = () => {
 
       // Use Laravel API - backend handles authorization
       const apiProfile = await profilesApi.update(id, updateData);
-      
+
       // Map API → Domain
       return mapProfileApiToDomain(apiProfile as ProfileApi.Profile);
     },
@@ -136,12 +131,5 @@ export const useUserOrganization = () => {
     isLoading: false,
     error: null,
   };
-};
-
-export const useIsSuperAdmin = () => {
-  const { profile } = useAuth();
-  // Super admin is identified by role, not by organization_id
-  // (organization_id can be null or set to an organization)
-  return profile?.role === 'super_admin';
 };
 

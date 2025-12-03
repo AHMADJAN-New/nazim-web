@@ -17,9 +17,33 @@ class OrganizationController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             if (!$user) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
+            }
+
+            $profile = DB::connection('pgsql')
+                ->table('profiles')
+                ->where('id', $user->id)
+                ->first();
+
+            if (!$profile) {
+                return response()->json(['error' => 'Profile not found'], 404);
+            }
+
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            // Check permission WITH organization context
+            try {
+                if (!$user->hasPermissionTo('organizations.read', $profile->organization_id)) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Permission check failed for organizations.read: " . $e->getMessage());
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
             // Use DB facade directly to avoid Eloquent issues if table doesn't exist
@@ -27,20 +51,8 @@ class OrganizationController extends Controller
                 ->table('organizations')
                 ->whereNull('deleted_at');
 
-            $profile = DB::connection('pgsql')
-                ->table('profiles')
-                ->where('id', $user->id)
-                ->first();
-            
-            if ($profile) {
-                // Super admin can see all, others see only their organization
-                if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
-                    $query->where('id', $profile->organization_id);
-                }
-            } else {
-                // No profile found, return empty
-                return response()->json([]);
-            }
+            // All users see only their organization
+            $query->where('id', $profile->organization_id);
 
             $organizations = $query->orderBy('name')->get();
 
@@ -51,12 +63,12 @@ class OrganizationController extends Controller
                 'bindings' => $e->getBindings(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             // If table doesn't exist, return empty array instead of error
             if (str_contains($e->getMessage(), 'does not exist') || str_contains($e->getMessage(), 'relation')) {
                 return response()->json([]);
             }
-            
+
             return response()->json(['error' => 'Failed to fetch organizations'], 500);
         } catch (\Exception $e) {
             Log::error('OrganizationController::index error: ' . $e->getMessage(), [
@@ -88,12 +100,12 @@ class OrganizationController extends Controller
                 'bindings' => $e->getBindings(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             // If table doesn't exist, return empty array instead of error
             if (str_contains($e->getMessage(), 'does not exist') || str_contains($e->getMessage(), 'relation')) {
                 return response()->json([]);
             }
-            
+
             return response()->json(['error' => 'Failed to fetch organizations'], 500);
         } catch (\Exception $e) {
             Log::error('OrganizationController::publicList error: ' . $e->getMessage(), [
@@ -118,13 +130,19 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission: organizations.create
-        // For new organizations, we check if user has the permission globally (organization_id = null)
-        // Super admin can always create organizations
-        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
-            if (!$user->hasPermissionTo('organizations.create')) {
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('organizations.create', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for organizations.create: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $request->validate([
@@ -147,7 +165,38 @@ class OrganizationController extends Controller
      */
     public function show(string $id)
     {
+        $user = request()->user();
+        $profile = DB::connection('pgsql')
+            ->table('profiles')
+            ->where('id', $user->id)
+            ->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('organizations.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for organizations.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $organization = Organization::whereNull('deleted_at')->findOrFail($id);
+
+        // All users can only view their own organization
+        if ($profile->organization_id !== $organization->id) {
+            return response()->json(['error' => 'Organization not found'], 404);
+        }
+
         return response()->json($organization);
     }
 
@@ -168,17 +217,24 @@ class OrganizationController extends Controller
 
         $organization = Organization::whereNull('deleted_at')->findOrFail($id);
 
-        // Check permission: organizations.update
-        // Super admin can always update organizations
-        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
-            if (!$user->hasPermissionTo('organizations.update')) {
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('organizations.update', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
-            
-            // Regular users can only update their own organization
-            if ($profile->organization_id !== $organization->id) {
-                return response()->json(['error' => 'Cannot update organization from different organization'], 403);
-            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for organizations.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // All users can only update their own organization
+        if ($profile->organization_id !== $organization->id) {
+            return response()->json(['error' => 'Cannot update organization from different organization'], 403);
         }
 
         $request->validate([
@@ -209,17 +265,24 @@ class OrganizationController extends Controller
 
         $organization = Organization::findOrFail($id);
 
-        // Check permission: organizations.delete
-        // Super admin can always delete organizations
-        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
-            if (!$user->hasPermissionTo('organizations.delete')) {
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('organizations.delete', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
-            
-            // Regular users can only delete their own organization
-            if ($profile->organization_id !== $organization->id) {
-                return response()->json(['error' => 'Cannot delete organization from different organization'], 403);
-            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for organizations.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // All users can only delete their own organization
+        if ($profile->organization_id !== $organization->id) {
+            return response()->json(['error' => 'Cannot delete organization from different organization'], 403);
         }
 
         $organization->update(['deleted_at' => now()]);
@@ -244,17 +307,24 @@ class OrganizationController extends Controller
 
         $organization = Organization::whereNull('deleted_at')->findOrFail($id);
 
-        // Check permission: organizations.read
-        // Super admin can always view statistics
-        if ($profile->role !== 'super_admin' || $profile->organization_id !== null) {
-            if (!$user->hasPermissionTo('organizations.read')) {
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('organizations.read', $profile->organization_id)) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
-            
-            // Regular users can only view their own organization's statistics
-            if ($profile->organization_id !== $organization->id) {
-                return response()->json(['error' => 'Cannot view statistics for different organization'], 403);
-            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for organizations.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // All users can only view their own organization's statistics
+        if ($profile->organization_id !== $organization->id) {
+            return response()->json(['error' => 'Cannot view statistics for different organization'], 403);
         }
 
         // Get statistics
@@ -290,7 +360,7 @@ class OrganizationController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             if (!$user) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
@@ -304,46 +374,23 @@ class OrganizationController extends Controller
                 return response()->json([]);
             }
 
-            // Super admin can access all organizations
-            if ($profile->role === 'super_admin' && $profile->organization_id === null) {
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json([]);
+            }
+
+            // Get user's organization
+            $orgIds = [$profile->organization_id];
+
+            if (empty($orgIds)) {
+                $organizations = collect([]);
+            } else {
                 $organizations = DB::connection('pgsql')
                     ->table('organizations')
+                    ->whereIn('id', $orgIds)
                     ->whereNull('deleted_at')
                     ->orderBy('name')
                     ->get();
-            } else {
-                // Get user's organization and any organizations they're assigned to
-                $orgIds = [];
-                
-                if ($profile->organization_id) {
-                    $orgIds[] = $profile->organization_id;
-                }
-                
-                // Check super_admin_organizations table if it exists
-                try {
-                    $assignedOrgs = DB::connection('pgsql')
-                        ->table('super_admin_organizations')
-                        ->where('super_admin_id', $user->id)
-                        ->pluck('organization_id')
-                        ->toArray();
-                    
-                    $orgIds = array_merge($orgIds, $assignedOrgs);
-                } catch (\Exception $e) {
-                    // Table might not exist, ignore
-                }
-                
-                $orgIds = array_filter(array_unique($orgIds));
-
-                if (empty($orgIds)) {
-                    $organizations = collect([]);
-                } else {
-                    $organizations = DB::connection('pgsql')
-                        ->table('organizations')
-                        ->whereIn('id', $orgIds)
-                        ->whereNull('deleted_at')
-                        ->orderBy('name')
-                        ->get();
-                }
             }
 
             return response()->json($organizations);

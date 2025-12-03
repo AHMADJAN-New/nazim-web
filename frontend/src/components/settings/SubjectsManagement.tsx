@@ -3,9 +3,8 @@ import { useSubjects, useClassSubjects, useSubjectHistory, useCreateSubject, use
 import type { Subject } from '@/types/domain/subject';
 import { useClassAcademicYears, useClasses } from '@/hooks/useClasses';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { useOrganizations } from '@/hooks/useOrganizations';
 import { useRooms } from '@/hooks/useRooms';
 import { useUsers } from '@/hooks/useUsers';
 import { Button } from '@/components/ui/button';
@@ -97,7 +96,6 @@ type CopySubjectsFormData = z.infer<typeof copySubjectsSchema>;
 export function SubjectsManagement() {
     const { t } = useLanguage();
     const { data: profile } = useProfile();
-    const isSuperAdmin = useIsSuperAdmin();
     const hasCreatePermission = useHasPermission('subjects.create');
     const hasUpdatePermission = useHasPermission('subjects.update');
     const hasDeletePermission = useHasPermission('subjects.delete');
@@ -119,20 +117,19 @@ export function SubjectsManagement() {
     const [selectedClassId, setSelectedClassId] = useState<string | undefined>();
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>();
     const [selectedClassAcademicYearId, setSelectedClassAcademicYearId] = useState<string | undefined>();
-    const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>(profile?.organization_id);
     const [copyFromClassYearId, setCopyFromClassYearId] = useState<string | undefined>();
 
-    const { data: organizations } = useOrganizations();
-    const { data: academicYears } = useAcademicYears(selectedOrganizationId);
-    const { data: currentAcademicYear } = useCurrentAcademicYear(selectedOrganizationId);
-    const { data: classes } = useClasses(selectedOrganizationId);
-    const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYearId, selectedOrganizationId);
-    const { data: subjects, isLoading: subjectsLoading } = useSubjects(selectedOrganizationId);
-    const { data: classSubjectTemplates, isLoading: classSubjectTemplatesLoading } = useClassSubjectTemplates(selectedClassId, selectedOrganizationId);
-    const { data: classSubjects, isLoading: classSubjectsLoading } = useClassSubjects(selectedClassAcademicYearId, selectedOrganizationId);
-    const { data: rooms } = useRooms(undefined, selectedOrganizationId || profile?.organization_id);
+    // Data hooks - use user's organization
+    const { data: academicYears } = useAcademicYears(profile?.organization_id);
+    const { data: currentAcademicYear } = useCurrentAcademicYear(profile?.organization_id);
+    const { data: classes } = useClasses(profile?.organization_id);
+    const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYearId, profile?.organization_id);
+    const { data: subjects, isLoading: subjectsLoading } = useSubjects(profile?.organization_id);
+    const { data: classSubjectTemplates, isLoading: classSubjectTemplatesLoading } = useClassSubjectTemplates(selectedClassId, profile?.organization_id);
+    const { data: classSubjects, isLoading: classSubjectsLoading } = useClassSubjects(selectedClassAcademicYearId, profile?.organization_id);
+    const { data: rooms } = useRooms(undefined, profile?.organization_id);
     const { data: teachers } = useUsers({
-        organization_id: selectedOrganizationId || profile?.organization_id || undefined,
+        organization_id: profile?.organization_id || undefined,
         role: 'teacher'
     });
 
@@ -489,24 +486,6 @@ export function SubjectsManagement() {
                     <h1 className="text-3xl font-bold">{t('academic.subjects.title')}</h1>
                     <p className="text-muted-foreground">{t('academic.subjects.management')}</p>
                 </div>
-                {isSuperAdmin && organizations && organizations.length > 0 && (
-                    <Select
-                        value={selectedOrganizationId || 'all'}
-                        onValueChange={(value) => setSelectedOrganizationId(value === 'all' ? undefined : value)}
-                    >
-                        <SelectTrigger className="w-[200px]">
-                            <SelectValue placeholder="Select Organization" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Organizations</SelectItem>
-                            {organizations.map((org) => (
-                                <SelectItem key={org.id} value={org.id}>
-                                    {org.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )}
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">

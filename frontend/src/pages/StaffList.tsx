@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useStaff, useDeleteStaff, useStaffStats, useCreateStaff, useUpdateStaff, useStaffTypes } from '@/hooks/useStaff';
 import type { Staff } from '@/types/domain/staff';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useOrganizations } from '@/hooks/useOrganizations';
 import { useSchools } from '@/hooks/useSchools';
@@ -92,7 +92,6 @@ type StaffFormData = z.infer<typeof staffSchema>;
 export function StaffList() {
     const { t } = useLanguage();
     const { data: profile } = useProfile();
-    const isSuperAdmin = useIsSuperAdmin();
     const hasCreatePermission = useHasPermission('staff.create');
     const hasUpdatePermission = useHasPermission('staff.update');
     const hasDeletePermission = useHasPermission('staff.delete');
@@ -252,41 +251,21 @@ export function StaffList() {
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                            {isSuperAdmin && (
-                                <Select
-                                    value={selectedOrganizationId || 'all'}
-                                    onValueChange={(value) => {
-                                        setSelectedOrganizationId(value === 'all' ? undefined : value);
-                                    }}
-                                >
-                                    <SelectTrigger className="w-[200px]">
-                                        <SelectValue placeholder="Filter by organization" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Organizations</SelectItem>
-                                        {organizations?.map((org) => (
-                                            <SelectItem key={org.id} value={org.id}>
-                                                {org.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
                             {hasCreatePermission && (
                                 <Button 
                                     type="button" 
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        // For non-super-admin users, ensure profile has organization_id
-                                        if (!isSuperAdmin && !profile?.organization_id) {
+                                        // Ensure profile has organization_id
+                                        if (!profile?.organization_id) {
                                             toast.error('You are not assigned to an organization. Please log out and log back in.');
                                             return;
                                         }
                                         console.log('Create staff button clicked');
                                         setIsCreateDialogOpen(true);
                                     }}
-                                    disabled={!isSuperAdmin && !profile?.organization_id}
+                                    disabled={!profile?.organization_id}
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
                                     Add Staff
@@ -585,19 +564,14 @@ export function StaffList() {
                             : null;
 
                         // Get organization_id: 
-                        // 1. For super_admin: use selectedOrganizationId (they must select)
-                        // 2. For regular users: ALWAYS use profile.organization_id (auto-assigned, cannot be changed)
-                        let organizationId: string | undefined;
+                        // All users use profile.organization_id (auto-assigned, cannot be changed)
+                        let organizationId: string | undefined = profile?.organization_id;
                         
-                        if (isSuperAdmin) {
-                            // Super admin must select an organization
-                            organizationId = selectedOrganizationId;
-                            
-                            // If school is selected, get organization_id from school as fallback
-                            if (!organizationId && schoolId) {
-                                const selectedSchool = schools?.find(s => s.id === schoolId);
-                                if (selectedSchool) {
-                                    organizationId = selectedSchool.organization_id;
+                        // If school is selected, get organization_id from school as fallback
+                        if (!organizationId && schoolId) {
+                            const selectedSchool = schools?.find(s => s.id === schoolId);
+                            if (selectedSchool) {
+                                organizationId = selectedSchool.organization_id;
                                 }
                             }
                             

@@ -83,18 +83,15 @@ export const useCreateAcademicYear = () => {
       // Get organization_id - use provided or user's org
       let organizationId = academicYearData.organizationId;
       if (organizationId === undefined) {
-        if (profile.role === 'super_admin') {
-          // Super admin can create global years (NULL) or org-specific
-          organizationId = null; // Default to global
-        } else if (profile.organization_id) {
+        if (profile.organization_id) {
           organizationId = profile.organization_id;
         } else {
           throw new Error('User must be assigned to an organization');
         }
       }
 
-      // Validate organization access (unless super admin)
-      if (profile.role !== 'super_admin' && organizationId !== profile.organization_id && organizationId !== null) {
+      // Validate organization access (all users)
+      if (organizationId !== profile.organization_id) {
         throw new Error('Cannot create academic year for different organization');
       }
 
@@ -176,13 +173,13 @@ export const useUpdateAcademicYear = () => {
         throw new Error('Academic year not found');
       }
 
-      // Validate organization access (unless super admin)
-      if (profile.role !== 'super_admin' && currentAcademicYear.organizationId !== profile.organization_id && currentAcademicYear.organizationId !== null) {
+      // Validate organization access (all users)
+      if (currentAcademicYear.organizationId !== profile.organization_id && currentAcademicYear.organizationId !== null) {
         throw new Error('Cannot update academic year from different organization');
       }
 
-      // Prevent organizationId changes (unless super admin)
-      if (updates.organizationId !== undefined && profile.role !== 'super_admin') {
+      // Prevent organizationId changes (all users)
+      if (updates.organizationId !== undefined) {
         throw new Error('Cannot change organizationId');
       }
 
@@ -251,15 +248,13 @@ export const useDeleteAcademicYear = () => {
         throw new Error('Academic year not found');
       }
 
-      // Validate organization access (unless super admin)
-      // Note: Global years (organizationId = NULL) can only be deleted by super admin
-      if (profile.role !== 'super_admin') {
-        if (currentAcademicYear.organizationId === null) {
-          throw new Error('Cannot delete global academic years');
-        }
-        if (currentAcademicYear.organizationId !== profile.organization_id) {
-          throw new Error('Cannot delete academic year from different organization');
-        }
+      // Validate organization access (all users)
+      // Note: Global years (organizationId = NULL) cannot be deleted
+      if (currentAcademicYear.organizationId === null) {
+        throw new Error('Cannot delete global academic years');
+      }
+      if (currentAcademicYear.organizationId !== profile.organization_id) {
+        throw new Error('Cannot delete academic year from different organization');
       }
 
       // Prevent deletion of current year (warn user)
@@ -299,8 +294,8 @@ export const useSetCurrentAcademicYear = () => {
         throw new Error('Academic year not found');
       }
 
-      // Validate organization access (unless super admin)
-      if (profile.role !== 'super_admin' && academicYear.organizationId !== profile.organization_id && academicYear.organizationId !== null) {
+      // Validate organization access (all users)
+      if (academicYear.organizationId !== profile.organization_id && academicYear.organizationId !== null) {
         throw new Error('Cannot set academic year from different organization as current');
       }
 

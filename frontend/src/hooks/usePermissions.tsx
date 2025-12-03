@@ -11,9 +11,13 @@ import { mapPermissionApiToDomain, mapRolePermissionApiToDomain } from '@/mapper
 export type { Permission, RolePermission } from '@/types/domain/permission';
 
 export const usePermissions = () => {
+  const { profile } = useAuth();
+
   return useQuery<Permission[]>({
-    queryKey: ['permissions'],
+    queryKey: ['permissions', profile?.organization_id],
     queryFn: async () => {
+      // Laravel API automatically filters permissions by user's organization
+      // Returns: global permissions (organization_id = NULL) + user's org permissions
       const apiPermissions = await permissionsApi.list();
       // Laravel API returns permissions sorted, but ensure they're sorted by resource and action
       const sorted = (apiPermissions as PermissionApi.Permission[]).sort((a, b) => {
@@ -25,6 +29,7 @@ export const usePermissions = () => {
       // Map API → Domain
       return sorted.map(mapPermissionApiToDomain);
     },
+    enabled: !!profile?.organization_id, // Only fetch if user has organization
     staleTime: 30 * 60 * 1000, // 30 minutes - permissions don't change often
     gcTime: 60 * 60 * 1000, // 1 hour
   });
@@ -44,14 +49,36 @@ export const useRolePermissions = (role: string) => {
   });
 };
 
+export interface Role {
+  name: string;
+  description: string | null;
+  organization_id: string | null;
+}
+
+export const useRoles = () => {
+  const { profile } = useAuth();
+
+  return useQuery<Role[]>({
+    queryKey: ['roles', profile?.organization_id],
+    queryFn: async () => {
+      const response = await permissionsApi.roles();
+      return (response as { roles: Role[] }).roles;
+    },
+    enabled: !!profile && !!profile.organization_id,
+    staleTime: 30 * 60 * 1000, // 30 minutes - roles don't change often
+    gcTime: 60 * 60 * 1000, // 1 hour
+  });
+};
+
 export const useUserPermissions = () => {
   const { profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery({
-    queryKey: ['user-permissions', profile?.role, profile?.id, orgIds.join(',')],
+    queryKey: ['user-permissions', profile?.organization_id, profile?.id, orgIds.join(',')],
     queryFn: async () => {
-      if (!profile?.role) return [];
+      // Require organization_id - backend enforces this
+      if (!profile?.organization_id) return [];
 
       if (orgsLoading) return [];
       if (orgIds.length === 0 && profile.organization_id === null) {
@@ -61,13 +88,14 @@ export const useUserPermissions = () => {
 
       // Use Laravel API - it handles all permission logic on backend
       const response = await permissionsApi.userPermissions();
-      
+
       // Laravel returns { permissions: string[] }
       const permissions = (response as { permissions?: string[] })?.permissions || [];
-      
+
       return permissions.sort();
     },
-    enabled: !!profile?.role && !orgsLoading,
+    // FIXED: Check organization_id instead of role (role column is deprecated)
+    enabled: !!profile?.organization_id && !orgsLoading,
     staleTime: 60 * 60 * 1000, // 1 hour - permissions don't change often
     gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache longer
     refetchOnWindowFocus: false, // Don't refetch on window focus
@@ -85,19 +113,8 @@ export const useHasPermission = (permissionName: string): boolean | undefined =>
   const { profile } = useAuth();
   const { data: permissions, isLoading } = useUserPermissions();
 
-  // Super admin always has all permissions (handled by backend)
-  // Optimistically allow super admin during load since backend will enforce
-  if (profile?.role === 'super_admin' && profile.organization_id === null) {
-    // If permissions are loaded, check them
-    if (permissions && permissions.length > 0) {
-      return permissions.includes(permissionName);
-    }
-    // During loading or if no permissions yet, optimistically allow
-    // Backend will enforce the actual permissions
-    return true;
-  }
-
-  // For regular users: use cached permissions even during background refetch
+  // Check permissions for all users
+  // Use cached permissions even during background refetch
   // Only return undefined if we truly have no cached data AND we're loading
   if (permissions && permissions.length > 0) {
     // We have cached permissions, use them even if refetching in background

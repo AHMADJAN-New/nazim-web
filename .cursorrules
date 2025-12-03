@@ -464,26 +464,46 @@ CREATE POLICY "Authenticated users can read role_permissions"
 ```typescript
 // ALWAYS query permissions via Laravel API
 // Laravel backend uses Spatie to get all permissions (roles + direct permissions)
+// CRITICAL: Use organization_id, NOT role (profiles.role column is deprecated)
 export const useUserPermissions = () => {
-  const { data: profile } = useProfile();
+  const { profile } = useAuth();
+  const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery({
-    queryKey: ['user-permissions', profile?.id, profile?.organization_id],
+    queryKey: ['user-permissions', profile?.organization_id, profile?.id, orgIds.join(',')],
     queryFn: async () => {
-      if (!profile || !profile.organization_id) return [];
+      // Require organization_id - backend enforces this
+      if (!profile?.organization_id) return [];
 
-      // Fetch permissions from Laravel API
-      // Laravel backend handles: user permissions + role permissions + organization scoping
-      const permissions = await apiClient.permissions.userPermissions();
-      return permissions;
+      if (orgsLoading) return [];
+
+      // Use Laravel API - it handles all permission logic on backend
+      const response = await permissionsApi.userPermissions();
+
+      // Laravel returns { permissions: string[] }
+      const permissions = (response as { permissions?: string[] })?.permissions || [];
+
+      return permissions.sort();
     },
-    enabled: !!profile && !!profile.organization_id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    // CRITICAL: Check organization_id, NOT role (role column is deprecated)
+    enabled: !!profile?.organization_id && !orgsLoading,
+    staleTime: 60 * 60 * 1000, // 1 hour - permissions don't change often
+    gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache longer
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
+    placeholderData: (previousData) => previousData ?? [],
+    initialData: [],
   });
 };
 ```
 
-> **Note:** The `useUserPermissions` hook checks `user_permissions` first (per-user overrides), then falls back to `role_permissions`. This matches the database `has_permission_for_resource()` function behavior.
+> **Note:** 
+> - The `useUserPermissions` hook MUST use `organization_id` for the `enabled` condition, NOT `role`
+> - The `profiles.role` column is deprecated - roles are now managed via Spatie's `model_has_roles` table
+> - Laravel backend automatically handles: user permissions + role permissions + organization scoping
+> - Spatie checks direct user permissions first (per-user overrides), then role-based permissions
 
 ### Navigation Visibility Pattern
 
@@ -1325,15 +1345,27 @@ const { isRTL } = useLanguage();
 ## Authentication & Security
 
 ### User Roles
+
+**CRITICAL: Roles are managed via Spatie Laravel Permission, NOT the `profiles.role` column.**
+
+- **`profiles.role` column**: DEPRECATED - kept for backward compatibility only
+- **Role Management**: Via Spatie's `model_has_roles` table with organization scoping
+- **Default Roles**: `admin`, `staff`, `teacher` (created automatically per organization)
+- **Role Assignment**: Users are assigned roles via Spatie's `assignRole()` method
+- **Permission Assignment**: Permissions are assigned to roles via Spatie's `role_has_permissions` table
+
+#### Role Types (Organization-Scoped)
 - `admin`: School-level administration (organization-scoped)
 - `teacher`: Academic management
 - `staff`: Operational tasks
 - `student`: Personal academic access
 - `parent`: Child's academic information
 
+**Note**: All roles are organization-specific. A user can have different roles in different organizations (if multi-org support is added in the future).
+
 ### Security Practices
-- Implement proper role-based access control
-- Use JWT tokens for authentication
+- Implement proper **permission-based access control** (NOT role-based)
+- Use Laravel Sanctum tokens for authentication
 - Validate all user inputs
 - Implement audit logging
 - Follow OWASP security guidelines
@@ -1341,6 +1373,9 @@ const { isRTL } = useLanguage();
 - **ALWAYS use RLS policies** for database-level security
 - **ALWAYS validate organization_id** in all mutations
 - **NEVER trust client-side organization_id** - validate server-side
+- **ALWAYS check permissions** in controllers (create, read, update, delete)
+- **ALWAYS use Spatie's `hasPermissionTo()`** for permission checks
+- **NEVER use `profiles.role`** for access control (deprecated column)
 
 ### Development Mode Auth Bypass
 - In development, authentication can be bypassed using `VITE_DISABLE_AUTH` env variable
@@ -2123,10 +2158,12 @@ const { t, isRTL, language } = useLanguage();
 
 ### Sidebar Navigation
 - `SmartSidebar` component handles navigation
-- Navigation items are filtered by user role
+- Navigation items are filtered by **user permissions** (NOT roles)
 - All navigation items use translation keys
 - Children items should have `titleKey` for translations
 - Sidebar collapses/expands with icon-only mode
+- **CRITICAL**: Use `useHasPermission('permission.name')` to show/hide menu items
+- **CRITICAL**: The `useUserPermissions` hook must use `organization_id` (not `role`) for enabling queries
 
 ## Islamic School Specific Guidelines
 
@@ -2259,12 +2296,18 @@ const { t, isRTL, language } = useLanguage();
 **Common Causes**:
 1. **Missing permission**: User doesn't have required Spatie permission
 2. **Organization mismatch**: User trying to access different organization's data
-3. **Role insufficient**: User role doesn't have required permissions
+3. **Role insufficient**: User role doesn't have required permissions assigned
+4. **Team context not set**: `setPermissionsTeamId()` not called before permission check
+5. **Frontend hook disabled**: `useUserPermissions` hook not enabled (check `organization_id` exists)
 
 **Solutions**:
-1. **Check permissions**: Verify user has required permission via Spatie
+1. **Check permissions**: Verify user has required permission via Spatie in `role_has_permissions` table
 2. **Check organization**: Ensure user's organization_id matches resource's organization_id
-3. **Check middleware**: Verify `EnsureOrganizationAccess` middleware is applied
+3. **Check middleware**: Verify `EnsureOrganizationAccess` middleware is applied (sets team context)
+4. **Check frontend hook**: Verify `useUserPermissions` uses `organization_id` (not `role`) for `enabled` condition
+5. **Check controller**: Verify controller checks permission with `hasPermissionTo('resource.action')`
+6. **Check role assignment**: Verify user has role assigned via Spatie's `model_has_roles` table
+7. **Check permission assignment**: Verify role has permissions in `role_has_permissions` table
 
 ### Debugging
 - Use browser dev tools
@@ -2331,6 +2374,102 @@ return response()->json([
 - Validate organization_id in controllers, not just middleware
 
 ### Permission Checking (Spatie)
+
+**CRITICAL: All controllers MUST check CRUD permissions (create, read, update, delete) for their resources.**
+
+#### Standard Controller Permission Check Pattern
+```php
+public function index(Request $request)
+{
+    $user = $request->user();
+    $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+    if (!$profile) {
+        return response()->json(['error' => 'Profile not found'], 404);
+    }
+
+    // Require organization_id for all users
+    if (!$profile->organization_id) {
+        return response()->json(['error' => 'User must be assigned to an organization'], 403);
+    }
+
+    // Check permission WITH organization context
+    // CRITICAL: setPermissionsTeamId() is called in EnsureOrganizationAccess middleware
+    // So we don't need to pass organization_id as second parameter
+    try {
+        if (!$user->hasPermissionTo('your_resource.read')) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+    } catch (\Exception $e) {
+        \Log::warning("Permission check failed for your_resource.read: " . $e->getMessage());
+        return response()->json(['error' => 'This action is unauthorized'], 403);
+    }
+
+    // ... rest of controller logic
+}
+```
+
+#### Required Permission Checks for All Controllers
+**ALWAYS check permissions for ALL CRUD operations:**
+- `index()` / `show()` → Check `{resource}.read`
+- `store()` → Check `{resource}.create`
+- `update()` → Check `{resource}.update`
+- `destroy()` → Check `{resource}.delete`
+- Custom actions → Check `{resource}.{action}` (e.g., `classes.assign`, `classes.copy`)
+
+#### Middleware Organization Context
+**CRITICAL: The `EnsureOrganizationAccess` middleware sets Spatie's team context globally:**
+```php
+// In EnsureOrganizationAccess middleware
+$user->setPermissionsTeamId($profile->organization_id);
+```
+
+This means in controllers, you can call `hasPermissionTo()` without passing the organization_id:
+```php
+// ✅ CORRECT: Organization context is set by middleware
+if (!$user->hasPermissionTo('classes.read')) {
+    abort(403, 'Unauthorized');
+}
+
+// ❌ WRONG: Don't pass organization_id (it's set globally by middleware)
+if (!$user->hasPermissionTo('classes.read', $organizationId)) {
+    abort(403, 'Unauthorized');
+}
+```
+
+#### Permission Check Pattern for All Controllers
+```php
+// Standard pattern for ALL controller methods
+$user = $request->user();
+$profile = DB::table('profiles')->where('id', $user->id)->first();
+
+if (!$profile) {
+    return response()->json(['error' => 'Profile not found'], 404);
+}
+
+if (!$profile->organization_id) {
+    return response()->json(['error' => 'User must be assigned to an organization'], 403);
+}
+
+try {
+    if (!$user->hasPermissionTo('resource.action')) {
+        return response()->json(['error' => 'This action is unauthorized'], 403);
+    }
+} catch (\Exception $e) {
+    \Log::warning("Permission check failed for resource.action: " . $e->getMessage());
+    return response()->json(['error' => 'This action is unauthorized'], 403);
+}
+```
+
+#### Deprecated: profiles.role Column
+**CRITICAL: The `profiles.role` column is DEPRECATED.**
+- ❌ **DO NOT** use `profile->role` for permission checks
+- ❌ **DO NOT** use `profile?.role` in frontend hooks
+- ✅ **DO** use `organization_id` for permission query enabling
+- ✅ **DO** use Spatie's `model_has_roles` table for role management
+- ✅ **DO** use `hasPermissionTo()` for permission checks (not role checks)
+
+#### Getting User Permissions (Backend)
 ```php
 // Get user's organization_id from profile
 $profile = DB::table('profiles')->where('id', $user->id)->first();
@@ -2341,13 +2480,12 @@ if (!$organizationId) {
     abort(403, 'User must be assigned to an organization');
 }
 
-// Check permission (with organization context)
-if (!$user->hasPermissionTo('classes.read', $organizationId)) {
-    abort(403, 'Unauthorized');
-}
+// CRITICAL: Set the organization context for Spatie teams feature
+// This is done in EnsureOrganizationAccess middleware, but can be done manually if needed
+$user->setPermissionsTeamId($organizationId);
 
-// Check role (with organization context)
-if (!$user->hasRole('admin', $organizationId)) {
+// Check permission (organization context is set globally by middleware)
+if (!$user->hasPermissionTo('classes.read')) {
     abort(403, 'Unauthorized');
 }
 

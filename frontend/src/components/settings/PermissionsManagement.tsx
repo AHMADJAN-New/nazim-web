@@ -1,15 +1,17 @@
 import { useState, useMemo } from 'react';
-import { 
-  usePermissions, 
+import {
+  usePermissions,
   useRolePermissions,
-  useAssignPermissionToRole, 
+  useAssignPermissionToRole,
   useRemovePermissionFromRole,
   useCreatePermission,
   useUpdatePermission,
   useDeletePermission,
-  type Permission
+  useRoles,
+  type Permission,
+  type Role
 } from '@/hooks/usePermissions';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile } from '@/hooks/useProfiles';
 import { useCurrentOrganization } from '@/hooks/useOrganizations';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
@@ -37,50 +39,30 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Search, Shield, Edit, Save, X, Trash2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const AVAILABLE_ROLES = [
-  'super_admin',
-  'admin',
-  'teacher',
-  'accountant',
-  'librarian',
-  'parent',
-  'student',
-  'hostel_manager',
-  'asset_manager',
-  'staff',
-] as const;
-
-type Role = typeof AVAILABLE_ROLES[number];
-
 export function PermissionsManagement() {
   const { data: profile } = useProfile();
-  const isSuperAdmin = useIsSuperAdmin();
   const { data: currentOrg } = useCurrentOrganization();
+  const { data: roles = [], isLoading: rolesLoading } = useRoles();
   const hasPermissionsPermission = useHasPermission('permissions.read');
   const hasPermissionsUpdatePermission = useHasPermission('permissions.update');
-  
+
   const { data: allPermissions, isLoading: permissionsLoading } = usePermissions();
-  
+
   // Filter permissions by organization: show global (organization_id = NULL) + user's org permissions
   const permissions = useMemo(() => {
     if (!allPermissions || !profile) return [];
-    
-    if (isSuperAdmin) {
-      // Super admin sees all permissions
-      return allPermissions;
-    }
-    
-    // Regular users see: global permissions + their organization's permissions
-    return allPermissions.filter(p => 
+
+    // Users see: global permissions + their organization's permissions
+    return allPermissions.filter(p =>
       p.organizationId === null || p.organizationId === profile.organization_id
     );
-  }, [allPermissions, profile, isSuperAdmin]);
-  
+  }, [allPermissions, profile]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedResource, setSelectedResource] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingPermission, setEditingPermission] = useState<string | null>(null);
-  const [selectedRoles, setSelectedRoles] = useState<Record<string, Role[]>>({});
+  const [selectedRoles, setSelectedRoles] = useState<Record<string, string[]>>({});
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newPermission, setNewPermission] = useState({
     name: '',
@@ -90,9 +72,9 @@ export function PermissionsManagement() {
   });
 
   // Fetch role permissions for all roles
-  const rolePermissionsQueries = AVAILABLE_ROLES.map(role => ({
-    role,
-    query: useRolePermissions(role),
+  const rolePermissionsQueries = roles.map(role => ({
+    role: role.name,
+    query: useRolePermissions(role.name),
   }));
 
   const assignPermission = useAssignPermissionToRole();
@@ -117,7 +99,7 @@ export function PermissionsManagement() {
   }, [permissions]);
 
   // Get roles that have a specific permission
-  const getRolesWithPermission = (permissionId: string): Role[] => {
+  const getRolesWithPermission = (permissionId: string): string[] => {
     return rolePermissionsQueries
       .filter(({ query }) => {
         const rolePerms = query.data || [];
@@ -201,12 +183,12 @@ export function PermissionsManagement() {
     setSelectedRoles({});
   };
 
-  const toggleRoleForPermission = (permissionId: string, role: Role) => {
+  const toggleRoleForPermission = (permissionId: string, roleName: string) => {
     setSelectedRoles(prev => {
       const current = prev[permissionId] || getRolesWithPermission(permissionId);
-      const newRoles = current.includes(role)
-        ? current.filter(r => r !== role)
-        : [...current, role];
+      const newRoles = current.includes(roleName)
+        ? current.filter(r => r !== roleName)
+        : [...current, roleName];
       return {
         ...prev,
         [permissionId]: newRoles,
@@ -215,7 +197,7 @@ export function PermissionsManagement() {
   };
 
   // Check if user has permission to view permissions management
-  if (!hasPermissionsPermission && !isSuperAdmin) {
+  if (!hasPermissionsPermission) {
     return (
       <div className="container mx-auto p-6">
         <Card>
@@ -265,16 +247,14 @@ export function PermissionsManagement() {
   };
 
   const isPermissionEditable = (permission: Permission): boolean => {
-    if (isSuperAdmin) return true;
     if (!hasPermissionsUpdatePermission) return false;
-    // Regular admin can only edit permissions for their organization
+    // Users can only edit permissions for their organization
     return permission.organizationId === profile?.organization_id;
   };
 
   const isPermissionDeletable = (permission: Permission): boolean => {
-    if (isSuperAdmin) return true;
     if (!hasPermissionsUpdatePermission) return false;
-    // Regular admin can only delete permissions for their organization (not global)
+    // Users can only delete permissions for their organization (not global)
     return permission.organizationId === profile?.organization_id && permission.organizationId !== null;
   };
 
@@ -308,10 +288,7 @@ export function PermissionsManagement() {
                 Permissions Management
               </CardTitle>
               <CardDescription>
-                {isSuperAdmin 
-                  ? 'View and manage all permissions across all organizations.'
-                  : `View and manage permissions for ${currentOrg?.name || 'your organization'}. You can create organization-specific permissions.`
-                }
+                {`View and manage permissions for ${currentOrg?.name || 'your organization'}. You can create organization-specific permissions.`}
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -324,24 +301,24 @@ export function PermissionsManagement() {
                   Create Permission
                 </Button>
               )}
-            {!isEditMode && (
-              <Button
-                variant="outline"
-                onClick={() => setIsEditMode(true)}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Mode
-              </Button>
-            )}
-            {isEditMode && (
-              <Button
-                variant="outline"
-                onClick={() => handleCancelEdit()}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Cancel Edit
-              </Button>
-            )}
+              {!isEditMode && (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditMode(true)}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Mode
+                </Button>
+              )}
+              {isEditMode && (
+                <Button
+                  variant="outline"
+                  onClick={() => handleCancelEdit()}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel Edit
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -429,18 +406,18 @@ export function PermissionsManagement() {
                           <div className="flex flex-wrap gap-1">
                             {isEditing ? (
                               <div className="space-y-2">
-                                {AVAILABLE_ROLES.map(role => (
-                                  <div key={role} className="flex items-center space-x-2">
+                                {roles.map(role => (
+                                  <div key={role.name} className="flex items-center space-x-2">
                                     <Checkbox
-                                      id={`${permission.id}-${role}`}
-                                      checked={selectedRolesForPermission.includes(role)}
-                                      onCheckedChange={() => toggleRoleForPermission(permission.id, role)}
+                                      id={`${permission.id}-${role.name}`}
+                                      checked={selectedRolesForPermission.includes(role.name)}
+                                      onCheckedChange={() => toggleRoleForPermission(permission.id, role.name)}
                                     />
                                     <Label
-                                      htmlFor={`${permission.id}-${role}`}
+                                      htmlFor={`${permission.id}-${role.name}`}
                                       className="text-sm font-normal cursor-pointer"
                                     >
-                                      {role.replace('_', ' ')}
+                                      {role.name.replace(/_/g, ' ')}
                                     </Label>
                                   </div>
                                 ))}
@@ -533,7 +510,7 @@ export function PermissionsManagement() {
                 <CardTitle className="text-sm font-medium">Roles</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{AVAILABLE_ROLES.length}</div>
+                <div className="text-2xl font-bold">{roles.length}</div>
               </CardContent>
             </Card>
           </div>

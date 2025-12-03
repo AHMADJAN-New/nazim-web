@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetUserPassword, type UserProfile, type CreateUserData, type UpdateUserData } from '@/hooks/useUsers';
-import { useOrganizations } from '@/hooks/useOrganizations';
 import { useSchools } from '@/hooks/useSchools';
-import { useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfiles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -67,7 +66,6 @@ const userSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters').optional(),
   role: z.enum(['admin', 'teacher', 'accountant', 'librarian', 'parent', 'student', 'hostel_manager', 'asset_manager', 'staff']),
-  organization_id: z.string().uuid().nullable().optional(),
   default_school_id: z.string().uuid().nullable().optional(),
   phone: z.string().optional(),
 });
@@ -75,18 +73,15 @@ const userSchema = z.object({
 type UserFormData = z.infer<typeof userSchema>;
 
 export function UserManagement() {
-  const isSuperAdmin = useIsSuperAdmin();
   const hasCreatePermission = useHasPermission('users.create');
   const hasUpdatePermission = useHasPermission('users.update');
   const hasDeletePermission = useHasPermission('users.delete');
-  const hasSchoolCreatePermission = useHasPermission('school_branding.create');
-  const { data: organizations } = useOrganizations();
   const { user } = useAuth();
+  const { data: profile } = useProfile();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [organizationFilter, setOrganizationFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
@@ -104,24 +99,21 @@ export function UserManagement() {
     resolver: zodResolver(userSchema),
     defaultValues: {
       role: 'student',
-      organization_id: null,
       default_school_id: null,
     },
   });
   
-  // Watch organization_id to update schools list (must be after useForm)
-  const watchedOrgId = watch('organization_id');
+  // Watch default_school_id for school selection
   const watchedSchoolId = watch('default_school_id');
   
-  // Get schools for the selected organization
-  const { data: schools } = useSchools(undefined, watchedOrgId || undefined);
+  // Get schools for user's organization
+  const { data: schools } = useSchools(undefined, profile?.organization_id);
 
   const filters = useMemo(() => ({
     search: searchQuery || undefined,
     role: roleFilter !== 'all' ? roleFilter : undefined,
     is_active: statusFilter !== 'all' ? statusFilter === 'active' : undefined,
-    organization_id: organizationFilter !== 'all' ? (organizationFilter === 'none' ? null : organizationFilter) : undefined,
-  }), [searchQuery, roleFilter, statusFilter, organizationFilter]);
+  }), [searchQuery, roleFilter, statusFilter]);
 
   const { data: users, isLoading } = useUsers(filters);
   const createUser = useCreateUser();
@@ -131,10 +123,10 @@ export function UserManagement() {
   
   // Auto-select first school if only one exists and no school is selected
   useEffect(() => {
-    if (watchedOrgId && schools && schools.length === 1 && !watchedSchoolId) {
+    if (schools && schools.length === 1 && !watchedSchoolId) {
       setValue('default_school_id', schools[0].id);
     }
-  }, [watchedOrgId, schools, watchedSchoolId, setValue]);
+  }, [schools, watchedSchoolId, setValue]);
 
   const isEditMode = !!selectedUser;
   const watchedRole = watch('role') || 'student';
@@ -145,7 +137,6 @@ export function UserManagement() {
       setValue('full_name', user.name);
       setValue('email', user.email);
       setValue('role', user.role as any);
-      setValue('organization_id', user.organizationId || null);
       setValue('default_school_id', user.defaultSchoolId || null);
       setValue('phone', user.phone || '');
     } else {
@@ -155,7 +146,6 @@ export function UserManagement() {
         email: '',
         password: '',
         role: 'student',
-        organization_id: null,
         default_school_id: null,
         phone: '',
       });
@@ -178,7 +168,6 @@ export function UserManagement() {
           fullName: data.full_name,
           email: data.email,
           role: data.role,
-          organizationId: data.organization_id || null,
           defaultSchoolId: data.default_school_id || null,
           phone: data.phone || undefined,
         };
@@ -194,7 +183,6 @@ export function UserManagement() {
           password: data.password,
           fullName: data.full_name,
           role: data.role,
-          organizationId: data.organization_id || null,
           defaultSchoolId: data.default_school_id || null,
           phone: data.phone || undefined,
         };
@@ -242,12 +230,11 @@ export function UserManagement() {
     }
 
     const csv = [
-      ['Name', 'Email', 'Role', 'Organization', 'Phone', 'Status', 'Created At'].join(','),
+      ['Name', 'Email', 'Role', 'Phone', 'Status', 'Created At'].join(','),
       ...users.map(user => [
         user.name,
         user.email,
         user.role,
-        user.organizationId || 'None',
         user.phone || '',
         user.isActive ? 'Active' : 'Inactive',
         user.createdAt.toLocaleDateString(),
@@ -316,7 +303,7 @@ export function UserManagement() {
                 className="pl-10"
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Role</Label>
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -346,25 +333,6 @@ export function UserManagement() {
                   </SelectContent>
                 </Select>
               </div>
-              {isSuperAdmin && (
-                <div>
-                  <Label>Organization</Label>
-                  <Select value={organizationFilter} onValueChange={setOrganizationFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Organizations" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Organizations</SelectItem>
-                      <SelectItem value="none">No Organization</SelectItem>
-                      {organizations?.map(org => (
-                        <SelectItem key={org.id} value={org.id}>
-                          {org.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
             </div>
           </div>
 
@@ -376,7 +344,6 @@ export function UserManagement() {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
-                  {isSuperAdmin && <TableHead>Organization</TableHead>}
                   <TableHead>Phone</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -385,7 +352,7 @@ export function UserManagement() {
               <TableBody>
                 {users && users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isSuperAdmin ? 7 : 6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
                       No users found
                     </TableCell>
                   </TableRow>
@@ -399,17 +366,6 @@ export function UserManagement() {
                           {typeof user.role === 'string' ? user.role.replace('_', ' ') : 'N/A'}
                         </Badge>
                       </TableCell>
-                      {isSuperAdmin && (
-                        <TableCell>
-                          {user.organizationId ? (
-                            <Badge variant="secondary">
-                              {organizations?.find(o => o.id === user.organizationId)?.name || 'Unknown'}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">None</span>
-                          )}
-                        </TableCell>
-                      )}
                       <TableCell>{user.phone || '-'}</TableCell>
                       <TableCell>
                         <Badge variant={user.isActive ? 'default' : 'secondary'}>
@@ -585,33 +541,8 @@ export function UserManagement() {
                 )}
               </div>
             </div>
-            {isSuperAdmin && (
-              <div>
-                <Label htmlFor="organization_id">Organization</Label>
-                <Select
-                  value={watch('organization_id') || 'none'}
-                  onValueChange={(value) => {
-                    setValue('organization_id', value === 'none' ? null : value);
-                    // Reset school when organization changes
-                    setValue('default_school_id', null);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select organization" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Organization</SelectItem>
-                    {organizations?.map(org => (
-                      <SelectItem key={org.id} value={org.id}>
-                        {org.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {/* School Selection - Show if organization is selected and user can create schools or has multiple schools */}
-            {watchedOrgId && schools && schools.length > 0 && (
+            {/* School Selection - Show if user's organization has schools */}
+            {schools && schools.length > 0 && (
               <div>
                 <Label htmlFor="default_school_id">
                   Default School
@@ -622,7 +553,7 @@ export function UserManagement() {
                   onValueChange={(value) => setValue('default_school_id', value === 'none' ? null : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={schools.length === 1 ? schools[0].school_name : "Select school"} />
+                    <SelectValue placeholder={schools.length === 1 ? schools[0].school_name : 'Select school'} />
                   </SelectTrigger>
                   <SelectContent>
                     {schools.length > 1 && (

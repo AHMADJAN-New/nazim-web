@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from '@/components/ui/textarea';
 import { useRoleRequests } from '@/hooks/useRoleRequests';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useHasPermission } from '@/hooks/usePermissions';
 import { AlertCircle, Check, X, User, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -15,9 +16,9 @@ export const RoleRequestManager: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
 
-  const isAdmin = currentUserRole === 'super_admin' || currentUserRole === 'admin';
+  const hasPermission = useHasPermission('users.read'); // Use permission check instead of role
 
-  if (!isAdmin) {
+  if (!hasPermission) {
     return (
       <Card>
         <CardContent className="pt-6">
@@ -65,7 +66,6 @@ export const RoleRequestManager: React.FC = () => {
 
   const getRoleBadge = (role: string) => {
     const colors = {
-      'super_admin': 'bg-red-100 text-red-800 border-red-200',
       'admin': 'bg-purple-100 text-purple-800 border-purple-200',
       'teacher': 'bg-blue-100 text-blue-800 border-blue-200',
       'staff': 'bg-green-100 text-green-800 border-green-200',

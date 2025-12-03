@@ -23,30 +23,21 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('reports.read')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                // If permission doesn't exist, log but allow access (for migration period)
-                Log::warning("Permission check failed for reports.read - allowing access: " . $e->getMessage());
-                // Allow access if permission doesn't exist (during migration)
+        // Check permission (all users)
+        try {
+            if (!$user->hasPermissionTo('reports.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            // If permission doesn't exist, log but allow access (for migration period)
+            Log::warning("Permission check failed for reports.read - allowing access: " . $e->getMessage());
+            // Allow access if permission doesn't exist (during migration)
         }
 
-        // Get accessible organization IDs
+        // Get accessible organization IDs (user's organization only)
         $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        if ($profile->organization_id) {
+            $orgIds = [$profile->organization_id];
         }
 
         $query = ReportTemplate::whereNull('deleted_at');
@@ -81,31 +72,23 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('reports.read')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                // If permission doesn't exist, log but allow access (for migration period)
-                Log::warning("Permission check failed for reports.read - allowing access: " . $e->getMessage());
-                // Allow access if permission doesn't exist (during migration)
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
+        try {
+            if (!$user->hasPermissionTo('reports.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            // If permission doesn't exist, log but allow access (for migration period)
+            Log::warning("Permission check failed for reports.read - allowing access: " . $e->getMessage());
+            // Allow access if permission doesn't exist (during migration)
         }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         // Verify school belongs to accessible organization
         $school = DB::table('school_branding')
@@ -117,7 +100,7 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'School not found'], 404);
         }
 
-        if (!empty($orgIds) && !in_array($school->organization_id, $orgIds) && $profile->role !== 'super_admin') {
+        if (!in_array($school->organization_id, $orgIds)) {
             return response()->json(['error' => 'Access denied to this school'], 403);
         }
 
@@ -141,38 +124,23 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('reports.create')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                // If permission doesn't exist, log but allow access (for migration period)
-                Log::warning("Permission check failed for reports.create - allowing access: " . $e->getMessage());
-                // Allow access if permission doesn't exist (during migration)
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
+        try {
+            if (!$user->hasPermissionTo('reports.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            // If permission doesn't exist, log but allow access (for migration period)
+            Log::warning("Permission check failed for reports.create - allowing access: " . $e->getMessage());
+            // Allow access if permission doesn't exist (during migration)
         }
 
         // Determine organization_id (use user's organization)
-        $organizationId = $profile->organization_id ?? null;
-        
-        if (!$organizationId) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
-        }
+        $organizationId = $profile->organization_id;
 
         // Verify school belongs to user's organization
         $school = DB::table('school_branding')
@@ -184,7 +152,7 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'School not found'], 404);
         }
 
-        if ($school->organization_id !== $organizationId && !in_array($school->organization_id, $orgIds) && $profile->role !== 'super_admin') {
+        if ($school->organization_id !== $organizationId) {
             return response()->json(['error' => 'Cannot create template for school in different organization'], 403);
         }
 
@@ -221,17 +189,15 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('reports.read')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                // If permission doesn't exist, log but allow access (for migration period)
-                Log::warning("Permission check failed for reports.read - allowing access: " . $e->getMessage());
-                // Allow access if permission doesn't exist (during migration)
+        // Check permission (all users)
+        try {
+            if (!$user->hasPermissionTo('reports.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            // If permission doesn't exist, log but allow access (for migration period)
+            Log::warning("Permission check failed for reports.read - allowing access: " . $e->getMessage());
+            // Allow access if permission doesn't exist (during migration)
         }
 
         $template = ReportTemplate::whereNull('deleted_at')->find($id);
@@ -240,21 +206,14 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Report template not found'], 404);
         }
 
-        // Get accessible organization IDs
+        // Get accessible organization IDs (user's organization only)
         $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        if ($profile->organization_id) {
+            $orgIds = [$profile->organization_id];
         }
 
-        // Check organization access
-        if (!empty($orgIds) && !in_array($template->organization_id, $orgIds) && $profile->role !== 'super_admin') {
+        // Check organization access (all users)
+        if (!empty($orgIds) && !in_array($template->organization_id, $orgIds)) {
             return response()->json(['error' => 'Report template not found'], 404);
         }
 
@@ -273,17 +232,15 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('reports.update')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                // If permission doesn't exist, log but allow access (for migration period)
-                Log::warning("Permission check failed for reports.update - allowing access: " . $e->getMessage());
-                // Allow access if permission doesn't exist (during migration)
+        // Check permission (all users)
+        try {
+            if (!$user->hasPermissionTo('reports.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            // If permission doesn't exist, log but allow access (for migration period)
+            Log::warning("Permission check failed for reports.update - allowing access: " . $e->getMessage());
+            // Allow access if permission doesn't exist (during migration)
         }
 
         $template = ReportTemplate::whereNull('deleted_at')->find($id);
@@ -292,21 +249,14 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Report template not found'], 404);
         }
 
-        // Get accessible organization IDs
+        // Get accessible organization IDs (user's organization only)
         $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        if ($profile->organization_id) {
+            $orgIds = [$profile->organization_id];
         }
 
-        // Check organization access
-        if (!empty($orgIds) && !in_array($template->organization_id, $orgIds) && $profile->role !== 'super_admin') {
+        // Check organization access (all users)
+        if (!empty($orgIds) && !in_array($template->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot update report template from different organization'], 403);
         }
 
@@ -350,17 +300,15 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Check permission (allow super_admin to bypass)
-        if ($profile->role !== 'super_admin') {
-            try {
-                if (!$user->hasPermissionTo('reports.delete')) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                // If permission doesn't exist, log but allow access (for migration period)
-                Log::warning("Permission check failed for reports.delete - allowing access: " . $e->getMessage());
-                // Allow access if permission doesn't exist (during migration)
+        // Check permission (all users)
+        try {
+            if (!$user->hasPermissionTo('reports.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
             }
+        } catch (\Exception $e) {
+            // If permission doesn't exist, log but allow access (for migration period)
+            Log::warning("Permission check failed for reports.delete - allowing access: " . $e->getMessage());
+            // Allow access if permission doesn't exist (during migration)
         }
 
         $template = ReportTemplate::whereNull('deleted_at')->find($id);
@@ -369,21 +317,14 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Report template not found'], 404);
         }
 
-        // Get accessible organization IDs
+        // Get accessible organization IDs (user's organization only)
         $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        if ($profile->organization_id) {
+            $orgIds = [$profile->organization_id];
         }
 
-        // Check organization access
-        if (!empty($orgIds) && !in_array($template->organization_id, $orgIds) && $profile->role !== 'super_admin') {
+        // Check organization access (all users)
+        if (!empty($orgIds) && !in_array($template->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot delete report template from different organization'], 403);
         }
 

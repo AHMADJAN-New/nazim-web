@@ -6,6 +6,7 @@ use App\Models\Staff;
 use App\Models\StaffDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class StaffDocumentController extends Controller
@@ -28,21 +29,23 @@ class StaffDocumentController extends Controller
             return response()->json(['error' => 'Staff member not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check organization access
-        if (!in_array($staff->organization_id, $orgIds)) {
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('staff_documents.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for staff_documents.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Check organization access (user's organization only)
+        if ($staff->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Staff member not found'], 404);
         }
 
@@ -72,21 +75,23 @@ class StaffDocumentController extends Controller
             return response()->json(['error' => 'Staff member not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check organization access
-        if (!in_array($staff->organization_id, $orgIds)) {
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('staff_documents.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for staff_documents.create: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Check organization access (user's organization only)
+        if ($staff->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot upload document for staff from different organization'], 403);
         }
 
@@ -148,18 +153,23 @@ class StaffDocumentController extends Controller
             return response()->json(['error' => 'Document not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('staff_documents.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for staff_documents.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         // Check organization access
         if (!in_array($document->organization_id, $orgIds)) {

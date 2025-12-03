@@ -24,35 +24,25 @@ class ResidencyTypeController extends Controller
         }
 
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         $query = ResidencyType::whereNull('deleted_at');
 
         // Filter: show global types (organization_id = null) + organization-specific types
-        if (!empty($orgIds)) {
-            $query->where(function ($q) use ($orgIds) {
-                $q->whereNull('organization_id')
-                  ->orWhereIn('organization_id', $orgIds);
-            });
-        } else {
-            // If no accessible orgs, only show global types
-            $query->whereNull('organization_id');
-        }
+        $query->where(function ($q) use ($orgIds) {
+            $q->whereNull('organization_id')
+              ->orWhereIn('organization_id', $orgIds);
+        });
 
         // Filter by organization_id if provided
         if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds) || ($profile->role === 'super_admin' && $profile->organization_id === null)) {
+            if (in_array($request->organization_id, $orgIds)) {
                 $query->where(function ($q) use ($request) {
                     $q->whereNull('organization_id')
                       ->orWhere('organization_id', $request->organization_id);
@@ -80,25 +70,29 @@ class ResidencyTypeController extends Controller
         }
 
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('residency_types.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for residency_types.create: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
         // Determine organization_id
-        $organizationId = $request->organization_id ?? $profile->organization_id ?? null;
+        $organizationId = $request->organization_id ?? $profile->organization_id;
         
-        // Super admin can create global types (organization_id = null)
-        // Others can only create types for their organization
-        if ($organizationId && !in_array($organizationId, $orgIds) && $profile->role !== 'super_admin') {
+        // All users can only create types for their organization
+        if ($organizationId !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot create residency type for a non-accessible organization'], 403);
         }
 
@@ -132,21 +126,26 @@ class ResidencyTypeController extends Controller
             return response()->json(['error' => 'Residency type not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('residency_types.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for residency_types.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
         // Check organization access: users can read global types + their organization's types
-        if ($residencyType->organization_id !== null && !in_array($residencyType->organization_id, $orgIds) && $profile->role !== 'super_admin') {
+        if ($residencyType->organization_id !== null && !in_array($residencyType->organization_id, $orgIds)) {
             return response()->json(['error' => 'Residency type not found'], 404);
         }
 
@@ -165,6 +164,20 @@ class ResidencyTypeController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('residency_types.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for residency_types.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
 
         $residencyType = ResidencyType::whereNull('deleted_at')->find($id);
 
@@ -172,31 +185,21 @@ class ResidencyTypeController extends Controller
             return response()->json(['error' => 'Residency type not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
-        }
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         // Check organization access
-        // Global types (organization_id = NULL) can only be updated by super admin
-        if ($residencyType->organization_id === null && $profile->role !== 'super_admin') {
+        // Global types (organization_id = NULL) cannot be updated by regular users
+        if ($residencyType->organization_id === null) {
             return response()->json(['error' => 'Cannot update global residency types'], 403);
         }
         
-        if ($residencyType->organization_id !== null && !in_array($residencyType->organization_id, $orgIds) && $profile->role !== 'super_admin') {
+        if (!in_array($residencyType->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot update residency type from different organization'], 403);
         }
 
-        // Prevent organization_id changes (unless super admin)
-        if ($request->has('organization_id') && $request->organization_id !== $residencyType->organization_id && $profile->role !== 'super_admin') {
+        // Prevent organization_id changes (all users)
+        if ($request->has('organization_id') && $request->organization_id !== $residencyType->organization_id) {
             return response()->json(['error' => 'Cannot change organization_id'], 403);
         }
 
@@ -229,26 +232,31 @@ class ResidencyTypeController extends Controller
             return response()->json(['error' => 'Residency type not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('residency_types.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for residency_types.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
         // Check organization access
-        // Global types (organization_id = NULL) can only be deleted by super admin
-        if ($residencyType->organization_id === null && $profile->role !== 'super_admin') {
+        // Global types (organization_id = NULL) cannot be deleted by regular users
+        if ($residencyType->organization_id === null) {
             return response()->json(['error' => 'Cannot delete global residency types'], 403);
         }
         
-        if ($residencyType->organization_id !== null && !in_array($residencyType->organization_id, $orgIds) && $profile->role !== 'super_admin') {
+        if (!in_array($residencyType->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot delete residency type from different organization'], 403);
         }
 

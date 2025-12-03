@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useProfile, useProfiles, useUpdateProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile, useProfiles, useUpdateProfile } from '@/hooks/useProfiles';
 import { useOrganizations } from '@/hooks/useOrganizations';
-import { useHasPermission } from '@/hooks/usePermissions';
+import { useHasPermission, useRoles } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,7 +47,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 export function ProfileManagement() {
   const { data: currentProfile, isLoading: currentProfileLoading } = useProfile();
-  const isSuperAdmin = useIsSuperAdmin();
+  const { data: roles = [], isLoading: rolesLoading } = useRoles();
   const hasUpdatePermission = useHasPermission('profiles.update');
   const { data: organizations } = useOrganizations();
   const { data: profiles, isLoading: profilesLoading } = useProfiles();
@@ -67,7 +67,7 @@ export function ProfileManagement() {
   });
 
   const isEditingOwnProfile = selectedProfileId === currentProfile?.id;
-  const canEditRole = isSuperAdmin || (!isEditingOwnProfile && currentProfile?.role === 'admin');
+  const canEditRole = !isEditingOwnProfile && hasUpdatePermission;
 
   const handleOpenDialog = (profileId?: string) => {
     const profile = profileId 
@@ -141,9 +141,7 @@ export function ProfileManagement() {
                 Profile Management
               </CardTitle>
               <CardDescription>
-                {isSuperAdmin 
-                  ? 'View and manage all user profiles'
-                  : 'View and manage profiles in your organization'}
+                View and manage profiles in your organization
               </CardDescription>
             </div>
             <Button onClick={() => handleOpenDialog()}>
@@ -195,7 +193,6 @@ export function ProfileManagement() {
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Role</TableHead>
-                      {isSuperAdmin && <TableHead>Organization</TableHead>}
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -203,20 +200,18 @@ export function ProfileManagement() {
                   <TableBody>
                     {profilesLoading ? (
                       <TableRow>
-                        <TableCell colSpan={isSuperAdmin ? 6 : 5} className="text-center">
+                        <TableCell colSpan={5} className="text-center">
                           Loading profiles...
                         </TableCell>
                       </TableRow>
                     ) : profiles && profiles.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={isSuperAdmin ? 6 : 5} className="text-center text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center text-muted-foreground">
                           No profiles found.
                         </TableCell>
                       </TableRow>
                     ) : (
                       profiles?.map((profile) => {
-                        // profiles from useProfiles are domain format (camelCase)
-                        const org = isSuperAdmin && organizations?.find(o => o.id === profile.organizationId);
                         return (
                           <TableRow key={profile.id}>
                             <TableCell className="font-medium">
@@ -228,11 +223,6 @@ export function ProfileManagement() {
                                 {profile.role}
                               </span>
                             </TableCell>
-                            {isSuperAdmin && (
-                              <TableCell>
-                                {org?.name || (profile.organizationId === null ? 'Super Admin' : 'Unknown')}
-                              </TableCell>
-                            )}
                             <TableCell>
                               <span className={`text-xs px-2 py-1 rounded ${
                                 profile.isActive 
@@ -331,44 +321,21 @@ export function ProfileManagement() {
                             <SelectValue placeholder="Select role" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="teacher">Teacher</SelectItem>
-                            <SelectItem value="staff">Staff</SelectItem>
-                            <SelectItem value="student">Student</SelectItem>
-                            {isSuperAdmin && <SelectItem value="super_admin">Super Admin</SelectItem>}
+                            {rolesLoading ? (
+                              <SelectItem value="" disabled>Loading roles...</SelectItem>
+                            ) : (
+                              roles.map((role) => (
+                                <SelectItem key={role.name} value={role.name}>
+                                  {role.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                       )}
                     />
                   </div>
 
-                  {isSuperAdmin && (
-                    <div className="grid gap-2">
-                      <Label htmlFor="organization_id">Organization</Label>
-                      <Controller
-                        name="organization_id"
-                        control={control}
-                        render={({ field }) => (
-                          <Select 
-                            onValueChange={(value) => field.onChange(value === 'null' ? null : value)} 
-                            value={field.value || 'null'}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select organization" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="null">Super Admin (No Organization)</SelectItem>
-                              {organizations?.map((org) => (
-                                <SelectItem key={org.id} value={org.id}>
-                                  {org.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </div>
-                  )}
 
                   {!isEditingOwnProfile && (
                     <div className="grid gap-2">

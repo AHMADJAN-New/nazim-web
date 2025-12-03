@@ -5,7 +5,7 @@ import * as LucideIcons from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile, useIsSuperAdmin } from "@/hooks/useProfiles";
+import { useProfile } from "@/hooks/useProfiles";
 import { useCurrentOrganization } from "@/hooks/useOrganizations";
 import { useHasPermission, useUserPermissions } from "@/hooks/usePermissions";
 import type { UserRole } from "@/types/auth";
@@ -80,7 +80,7 @@ interface NavigationItem {
   url?: string;
   icon: LucideIcon;
   badge?: { text: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } | null;
-  roles: UserRole[];
+  roles?: UserRole[]; // Optional - deprecated, using permission-based filtering instead
   children?: NavigationChild[];
   priority?: number;
   contextual?: boolean;
@@ -149,7 +149,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const { t, isRTL } = useLanguage();
   const { user, profile } = useAuth();
   const { data: currentProfile } = useProfile();
-  const isSuperAdmin = useIsSuperAdmin();
   // Use profile role directly from useAuth (most reliable) instead of useUserRole
   const roleFromAuth = profile?.role || currentProfile?.role || null;
   const { role: roleFromHook } = useUserRole();
@@ -202,7 +201,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
         url: "/dashboard",
         icon: Home,
         badge: null,
-        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"] as UserRole[],
         priority: 1
       },
       ...(hasStaffPermission ? [{
@@ -210,7 +208,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
         url: "/staff",
         icon: Users,
         badge: null,
-        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"] as UserRole[],
         priority: 3
       }] : []),
       ...(hasStudentsPermission ? [{
@@ -218,7 +215,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
         url: "/students",
         icon: GraduationCap,
         badge: null,
-        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "hostel_manager", "asset_manager"] as UserRole[],
         priority: 3.05
       }] : []),
       ...(hasStudentAdmissionsPermission ? [{
@@ -226,14 +222,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
         url: "/admissions",
         icon: UserCheck,
         badge: null,
-        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "parent", "hostel_manager", "asset_manager"] as UserRole[],
         priority: 3.055
       }] : []),
       ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission) ? [{
         titleKey: "academicManagement",
         icon: GraduationCap,
         badge: null,
-        roles: ["super_admin", "admin", "teacher"] as UserRole[],
         priority: 3.1,
         children: [
           ...(hasClassesPermission ? [{
@@ -260,7 +254,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "timetables",
         icon: Calendar,
         badge: null,
-        roles: ["super_admin", "admin", "teacher"] as UserRole[],
         priority: 8.4,
         children: [
           ...(hasTimetablesPermission ? [{
@@ -281,7 +274,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "settings",
         icon: Settings,
         badge: null,
-        roles: ["super_admin", "admin", "teacher", "accountant", "librarian", "hostel_manager", "asset_manager"] as UserRole[],
         priority: 10,
         children: [
           // Only show child items if user has the required permission
@@ -316,7 +308,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "academicSettings",
         icon: GraduationCap,
         badge: null,
-        roles: ["super_admin", "admin", "teacher"] as UserRole[],
         priority: 8,
         children: [
           // Only show child items if user has the required permission
@@ -363,7 +354,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
         titleKey: "authentication",
         icon: Lock,
         badge: null,
-        roles: ["super_admin", "admin"] as UserRole[],
         priority: 9,
         children: [
           // Only show child items if user has the required permission
@@ -454,15 +444,11 @@ export const SmartSidebar = memo(function SmartSidebar() {
     });
   }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission]);
 
-  // Helper function to filter navigation items by role
-  const getNavigationItems = (userRole: UserRole, context: NavigationContext): NavigationItem[] => {
-    // Filter items by user role - only show items that match the user's role
-    const filtered = allNavigationItems.filter(item => {
-      return item.roles.includes(userRole);
-    });
-
-    // Sort by priority (lower number = higher priority)
-    return filtered.sort((a, b) => (a.priority || 999) - (b.priority || 999));
+  // Helper function to get navigation items (already filtered by permissions)
+  const getNavigationItems = (context: NavigationContext): NavigationItem[] => {
+    // Items are already filtered by permissions when building allNavigationItems
+    // Just sort by priority (lower number = higher priority)
+    return [...allNavigationItems].sort((a, b) => (a.priority || 999) - (b.priority || 999));
   };
 
   // Memoize current module to prevent unnecessary updates
@@ -519,27 +505,24 @@ export const SmartSidebar = memo(function SmartSidebar() {
     // If needed, implement polling or use React Query's refetchInterval
   }, [currentModule, role, user?.id]);
 
-  // Use the role from useUserRole, or fallback to profile role, or use super_admin if isSuperAdmin
+  // Use the role from useUserRole, or fallback to profile role
   const effectiveRole = useMemo(() => {
-    // Priority: 1. role from useUserRole, 2. profile role, 3. super_admin if isSuperAdmin, 4. null
+    // Priority: 1. role from useUserRole, 2. profile role, 3. null
     if (role) return role;
     if (currentProfile?.role) return currentProfile.role as UserRole;
-    if (isSuperAdmin) return 'super_admin' as UserRole;
     // Only use admin fallback in dev mode if no user at all
     if (import.meta.env.DEV && import.meta.env.VITE_DISABLE_AUTH !== 'false' && !user) {
       return 'admin' as UserRole;
     }
     return null;
-  }, [role, currentProfile?.role, isSuperAdmin, user]);
+  }, [role, currentProfile?.role, user]);
 
   // Wait for permissions to load before filtering items (prevents flash)
-  // Super admin can proceed optimistically, but regular users need permissions loaded
-  const isSuperAdminUser = profile?.role === 'super_admin' && profile?.organization_id === null;
+  // All users need permissions loaded
   // Permissions are ready if:
   // 1. We have cached permissions (even if refetching in background)
-  // 2. We're super admin (don't need to wait)
-  // 3. We're not loading (permissions already loaded or failed)
-  const permissionsReady = permissions !== undefined || isSuperAdminUser || !permissionsLoading;
+  // 2. We're not loading (permissions already loaded or failed)
+  const permissionsReady = permissions !== undefined || !permissionsLoading;
 
   // Memoize navigation items to prevent recalculation on every render
   // Always render items if we have a role, even if permissions are still loading
@@ -552,9 +535,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
     if (!effectiveRole) {
       return [];
     }
-    const items = getNavigationItems(effectiveRole as UserRole, navigationContext);
+    const items = getNavigationItems(navigationContext);
     return items;
-  }, [effectiveRole, navigationContext, allNavigationItems, permissionsReady]);
+  }, [navigationContext, allNavigationItems, permissionsReady]);
 
   // Don't show loading state - always render with available data
   // The sidebar will update when permissions are available, but won't disappear
@@ -705,16 +688,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
                 <Building2 className="h-3 w-3 text-sidebar-foreground/70" />
                 <p className="text-xs text-sidebar-foreground/70 truncate">
                   {currentOrg.name}
-                </p>
-              </div>
-            </div>
-          )}
-          {isSuperAdmin && !currentOrg && (
-            <div className="mt-2 pt-2 border-t border-sidebar-border">
-              <div className="flex items-center gap-2">
-                <Shield className="h-3 w-3 text-sidebar-foreground/70" />
-                <p className="text-xs text-sidebar-foreground/70">
-                  Super Admin
                 </p>
               </div>
             </div>

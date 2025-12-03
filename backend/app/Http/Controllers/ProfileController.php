@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProfileController extends Controller
 {
@@ -15,15 +16,31 @@ class ProfileController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('profiles.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for profiles.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $query = DB::table('profiles')
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'desc');
 
-        // Filter by organization
-        // Super admin with null org_id sees all, others see only their org
-        if ($profile->role !== 'super_admin' && $profile->organization_id !== null) {
-            $query->where('organization_id', $profile->organization_id);
-        }
+        // Filter by organization (all users see only their org)
+        $query->where('organization_id', $profile->organization_id);
 
         if ($request->has('organization_id')) {
             $query->where('organization_id', $request->organization_id);
@@ -39,12 +56,39 @@ class ProfileController extends Controller
      */
     public function show(string $id)
     {
+        $user = request()->user();
+        $currentProfile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$currentProfile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$currentProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('profiles.read', $currentProfile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for profiles.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $profile = DB::table('profiles')
             ->where('id', $id)
             ->whereNull('deleted_at')
             ->first();
 
         if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // All users can only view profiles in their organization
+        if ($profile->organization_id !== $currentProfile->organization_id) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
@@ -73,7 +117,7 @@ class ProfileController extends Controller
             'email' => 'sometimes|email|max:255',
             'phone' => 'nullable|string|max:20',
             'avatar_url' => 'nullable|url',
-            'role' => 'sometimes|string|in:super_admin,admin,teacher,staff,student,parent',
+            'role' => 'sometimes|string|in:admin,teacher,staff,student,parent',
             'is_active' => 'sometimes|boolean',
             'organization_id' => 'nullable|uuid|exists:organizations,id',
             'default_school_id' => 'nullable|uuid|exists:schools,id',
@@ -89,18 +133,27 @@ class ProfileController extends Controller
 
         // Authorization checks
         $isOwnProfile = $id === $user->id;
-        $isAdmin = in_array($currentProfile->role, ['admin', 'super_admin']);
-        $isSuperAdmin = $currentProfile->role === 'super_admin';
 
-        // Users can update their own profile (limited fields)
-        // Admins can update profiles in their organization
-        // Super admins can update any profile
-        if (!$isOwnProfile && !$isAdmin) {
-            return response()->json(['error' => 'Insufficient permissions to update this profile'], 403);
+        // Require organization_id for all users
+        if (!$currentProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // If updating another user's profile, check organization access
-        if (!$isOwnProfile && !$isSuperAdmin) {
+        // Users can update their own profile (limited fields)
+        // Users with profiles.update permission can update profiles in their organization
+        if (!$isOwnProfile) {
+            try {
+                if (!$user->hasPermissionTo('profiles.update', $currentProfile->organization_id)) {
+                    return response()->json(['error' => 'Insufficient permissions to update this profile'], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Permission check failed for profiles.update - denying access: " . $e->getMessage());
+                return response()->json(['error' => 'Insufficient permissions to update this profile'], 403);
+            }
+        }
+
+        // All users can only update profiles in their organization
+        if (!$isOwnProfile) {
             if ($targetProfile->organization_id !== $currentProfile->organization_id) {
                 return response()->json(['error' => 'Cannot update profile from different organization'], 403);
             }
@@ -108,7 +161,7 @@ class ProfileController extends Controller
 
         // Build update data based on permissions
         $updateData = [];
-        
+
         if ($isOwnProfile) {
             // Users can only update: full_name, phone, avatar_url
             if ($request->has('full_name')) $updateData['full_name'] = $request->full_name;
@@ -122,10 +175,21 @@ class ProfileController extends Controller
             if ($request->has('avatar_url')) $updateData['avatar_url'] = $request->avatar_url;
             if ($request->has('role')) $updateData['role'] = $request->role;
             if ($request->has('is_active')) $updateData['is_active'] = $request->is_active;
-            
-            // Only super admin can change organization_id
-            if ($request->has('organization_id') && $isSuperAdmin) {
-                $updateData['organization_id'] = $request->organization_id;
+
+            // Only users with profiles.update permission can change organization_id
+            // (and only within their organization)
+            if ($request->has('organization_id')) {
+                try {
+                    if ($user->hasPermissionTo('profiles.update', $currentProfile->organization_id)) {
+                        // Validate organization_id is in user's organization
+                        if ($request->organization_id !== $currentProfile->organization_id) {
+                            return response()->json(['error' => 'Cannot assign profile to different organization'], 403);
+                        }
+                        $updateData['organization_id'] = $request->organization_id;
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Permission check failed for profiles.update - denying organization_id change: " . $e->getMessage());
+                }
             }
         }
 
@@ -149,6 +213,42 @@ class ProfileController extends Controller
      */
     public function destroy(string $id)
     {
+        $user = request()->user();
+        $currentProfile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$currentProfile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$currentProfile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('profiles.delete', $currentProfile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for profiles.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $targetProfile = DB::table('profiles')
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$targetProfile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // All users can only delete profiles in their organization
+        if ($targetProfile->organization_id !== $currentProfile->organization_id) {
+            return response()->json(['error' => 'Cannot delete profile from different organization'], 403);
+        }
+
         DB::table('profiles')
             ->where('id', $id)
             ->update(['deleted_at' => now()]);

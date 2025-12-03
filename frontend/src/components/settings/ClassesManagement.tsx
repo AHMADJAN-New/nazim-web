@@ -2,9 +2,8 @@ import { useState, useMemo } from 'react';
 import { useClasses, useClassAcademicYears, useClassHistory, useCreateClass, useUpdateClass, useDeleteClass, useAssignClassToYear, useUpdateClassYearInstance, useRemoveClassFromYear, useCopyClassesBetweenYears, useBulkAssignClassSections } from '@/hooks/useClasses';
 import type { Class, ClassAcademicYear } from '@/types/domain/class';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { useOrganizations } from '@/hooks/useOrganizations';
 import { useSchools } from '@/hooks/useSchools';
 import { useRooms } from '@/hooks/useRooms';
 import { useUsers } from '@/hooks/useUsers';
@@ -97,7 +96,6 @@ type CopyClassesFormData = z.infer<typeof copyClassesSchema>;
 export function ClassesManagement() {
     const { t } = useLanguage();
     const { data: profile } = useProfile();
-    const isSuperAdmin = useIsSuperAdmin();
     const hasCreatePermission = useHasPermission('classes.create');
     const hasUpdatePermission = useHasPermission('classes.update');
     const hasDeletePermission = useHasPermission('classes.delete');
@@ -116,19 +114,18 @@ export function ClassesManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [gradeLevelFilter, setGradeLevelFilter] = useState<string>('all');
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>();
-    const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>(profile?.organization_id);
     const [viewingHistoryFor, setViewingHistoryFor] = useState<string | null>(null);
     const [copyFromYearId, setCopyFromYearId] = useState<string | undefined>();
 
-    const { data: organizations } = useOrganizations();
+    const organizationId = profile?.organization_id;
     const { data: schools } = useSchools();
-    const { data: academicYears } = useAcademicYears(selectedOrganizationId);
-    const { data: currentAcademicYear } = useCurrentAcademicYear(selectedOrganizationId);
-    const { data: classes, isLoading: classesLoading } = useClasses(selectedOrganizationId);
-    const { data: classAcademicYears, isLoading: yearClassesLoading } = useClassAcademicYears(selectedAcademicYearId, selectedOrganizationId);
+    const { data: academicYears } = useAcademicYears(organizationId);
+    const { data: currentAcademicYear } = useCurrentAcademicYear(organizationId);
+    const { data: classes, isLoading: classesLoading } = useClasses(organizationId);
+    const { data: classAcademicYears, isLoading: yearClassesLoading } = useClassAcademicYears(selectedAcademicYearId, organizationId);
     const { data: classHistory } = useClassHistory(viewingHistoryFor || '');
-    const { data: copySourceInstances } = useClassAcademicYears(copyFromYearId, selectedOrganizationId);
-    const { data: rooms } = useRooms(undefined, selectedOrganizationId || profile?.organization_id);
+    const { data: copySourceInstances } = useClassAcademicYears(copyFromYearId, organizationId);
+    const { data: rooms } = useRooms(undefined, organizationId);
 
     const createClass = useCreateClass();
     const updateClass = useUpdateClass();
@@ -267,9 +264,8 @@ export function ClassesManagement() {
             };
             if (data.grade_level !== undefined) updateData.gradeLevel = data.grade_level;
             if (data.description !== undefined) updateData.description = data.description;
-            if (isSuperAdmin) {
-                updateData.organizationId = selectedOrganizationId || profile?.organization_id || null;
-            }
+            // All users use their organization_id
+            updateData.organizationId = profile?.organization_id || null;
             updateClass.mutate(updateData, {
                 onSuccess: () => {
                     handleCloseClassDialog();
@@ -284,7 +280,7 @@ export function ClassesManagement() {
                 description: data.description,
                 defaultCapacity: data.default_capacity,
                 isActive: data.is_active,
-                organizationId: selectedOrganizationId || profile?.organization_id || null,
+                organizationId: profile?.organization_id || null,
             }, {
                 onSuccess: () => {
                     handleCloseClassDialog();
@@ -518,26 +514,6 @@ export function ClassesManagement() {
                                 {t('academic.classes.title')}
                             </CardDescription>
                         </div>
-                        {isSuperAdmin && (
-                            <Select
-                                value={selectedOrganizationId || 'all'}
-                                onValueChange={(value) => {
-                                    setSelectedOrganizationId(value === 'all' ? undefined : value);
-                                }}
-                            >
-                                <SelectTrigger className="w-[200px]">
-                                    <SelectValue placeholder="Filter by organization" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Organizations</SelectItem>
-                                    {organizations?.map((org) => (
-                                        <SelectItem key={org.id} value={org.id}>
-                                            {org.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        )}
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -593,14 +569,13 @@ export function ClassesManagement() {
                                             <TableHead>{t('academic.classes.gradeLevel')}</TableHead>
                                             <TableHead>{t('academic.classes.defaultCapacity')}</TableHead>
                                             <TableHead>{t('academic.classes.isActive')}</TableHead>
-                                            {isSuperAdmin && <TableHead>Type</TableHead>}
                                             <TableHead className="text-right">{t('students.actions')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {filteredClasses.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={isSuperAdmin ? 7 : 6} className="text-center text-muted-foreground">
+                                                <TableCell colSpan={6} className="text-center text-muted-foreground">
                                                     {searchQuery
                                                         ? t('academic.classes.noClassesFound')
                                                         : t('academic.classes.noClassesMessage')}
@@ -618,15 +593,6 @@ export function ClassesManagement() {
                                                             {cls.isActive ? t('academic.classes.active') : t('academic.classes.inactive')}
                                                         </Badge>
                                                     </TableCell>
-                                                    {isSuperAdmin && (
-                                                        <TableCell>
-                                                            <Badge variant="outline">
-                                                                {cls.organizationId === null
-                                                                    ? t('academic.classes.globalType')
-                                                                    : 'Organization'}
-                                                            </Badge>
-                                                        </TableCell>
-                                                    )}
                                                     <TableCell className="text-right">
                                                         <div className="flex justify-end gap-2">
                                                             <Button
@@ -641,7 +607,7 @@ export function ClassesManagement() {
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 onClick={() => handleOpenClassDialog(cls.id)}
-                                                                disabled={!hasUpdatePermission || (cls.organizationId === null && !isSuperAdmin)}
+                                                                disabled={!hasUpdatePermission}
                                                             >
                                                                 <Pencil className="h-4 w-4" />
                                                             </Button>
@@ -649,7 +615,7 @@ export function ClassesManagement() {
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 onClick={() => handleDeleteClick(cls.id)}
-                                                                disabled={!hasDeletePermission || (cls.organizationId === null && !isSuperAdmin)}
+                                                                disabled={!hasDeletePermission}
                                                             >
                                                                 <Trash2 className="h-4 w-4 text-destructive" />
                                                             </Button>
@@ -868,29 +834,6 @@ export function ClassesManagement() {
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
-                            {isSuperAdmin && (
-                                <div className="grid gap-2">
-                                    <Label htmlFor="organization_id">Organization</Label>
-                                    <Select
-                                        value={selectedOrganizationId || 'global'}
-                                        onValueChange={(value) => {
-                                            setSelectedOrganizationId(value === 'global' ? undefined : value);
-                                        }}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select organization" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="global">Global (Available to all)</SelectItem>
-                                            {organizations?.map((org) => (
-                                                <SelectItem key={org.id} value={org.id}>
-                                                    {org.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
                             <div className="grid gap-2">
                                 <Label htmlFor="name">
                                     {t('academic.classes.name')} *

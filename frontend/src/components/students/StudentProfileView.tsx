@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { useSchools } from '@/hooks/useSchools';
 import { useProfile } from '@/hooks/useProfiles';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useHasPermission } from '@/hooks/usePermissions';
 import {
   useStudentDocuments,
   useStudentEducationalHistory,
@@ -80,8 +81,8 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
   const { isRTL, t } = useLanguage();
   const yesText = isRTL ? 'هو' : 'Yes';
   const noText = isRTL ? 'نه' : 'No';
-  const isSuperAdmin = profile?.role === 'super_admin';
-  const orgIdForQuery = isSuperAdmin ? undefined : profile?.organization_id;
+  const hasStudentsPermission = useHasPermission('students.read');
+  const orgIdForQuery = profile?.organization_id;
   const { data: schools } = useSchools(orgIdForQuery);
   
   // Fetch documents, history, and discipline records - only when dialog is open

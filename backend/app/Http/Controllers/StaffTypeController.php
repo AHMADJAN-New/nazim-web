@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\StaffType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class StaffTypeController extends Controller
 {
@@ -20,35 +21,25 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
 
         $query = StaffType::whereNull('deleted_at');
 
         // Filter: show global types (organization_id = null) + organization-specific types
-        if (!empty($orgIds)) {
-            $query->where(function ($q) use ($orgIds) {
-                $q->whereNull('organization_id')
-                  ->orWhereIn('organization_id', $orgIds);
-            });
-        } else {
-            // If no accessible orgs, only show global types
-            $query->whereNull('organization_id');
-        }
+        $query->where(function ($q) use ($orgIds) {
+            $q->whereNull('organization_id')
+              ->orWhereIn('organization_id', $orgIds);
+        });
 
         // Filter by organization_id if provided
         if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds) || $profile->role === 'super_admin') {
+            if (in_array($request->organization_id, $orgIds)) {
                 $query->where(function ($q) use ($request) {
                     $q->whereNull('organization_id')
                       ->orWhere('organization_id', $request->organization_id);
@@ -68,9 +59,37 @@ class StaffTypeController extends Controller
      */
     public function show(string $id)
     {
+        $user = request()->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('staff_types.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for staff_types.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $staffType = StaffType::whereNull('deleted_at')->find($id);
 
         if (!$staffType) {
+            return response()->json(['error' => 'Staff type not found'], 404);
+        }
+
+        // Check organization access (allow global types)
+        $orgIds = [$profile->organization_id];
+        if ($staffType->organization_id !== null && !in_array($staffType->organization_id, $orgIds)) {
             return response()->json(['error' => 'Staff type not found'], 404);
         }
 
@@ -98,25 +117,29 @@ class StaffTypeController extends Controller
             'display_order' => 'nullable|integer',
         ]);
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('staff_types.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for staff_types.create: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
         // Determine organization_id
-        $organizationId = $request->organization_id ?? $profile->organization_id ?? null;
+        $organizationId = $request->organization_id ?? $profile->organization_id;
         
-        // Super admin can create global types (organization_id = null)
-        // Others can only create types for their organization
-        if ($organizationId && !in_array($organizationId, $orgIds) && $profile->role !== 'super_admin') {
+        // All users can only create types for their organization
+        if ($organizationId !== $profile->organization_id) {
             return response()->json(['error' => 'Cannot create staff type for a non-accessible organization'], 403);
         }
 
@@ -166,21 +189,26 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'Staff type not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check organization access
-        if ($staffType->organization_id !== null && !in_array($staffType->organization_id, $orgIds) && $profile->role !== 'super_admin') {
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('staff_types.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for staff_types.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
+        // Check organization access (all users)
+        if ($staffType->organization_id !== null && !in_array($staffType->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot update staff type from different organization'], 403);
         }
 
@@ -240,21 +268,26 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'Staff type not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            $orgIds = DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        } else {
-            if ($profile->organization_id) {
-                $orgIds = [$profile->organization_id];
-            }
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check organization access
-        if ($staffType->organization_id !== null && !in_array($staffType->organization_id, $orgIds) && $profile->role !== 'super_admin') {
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('staff_types.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for staff_types.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Get accessible organization IDs (user's organization only)
+        $orgIds = [$profile->organization_id];
+
+        // Check organization access (all users)
+        if ($staffType->organization_id !== null && !in_array($staffType->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot delete staff type from different organization'], 403);
         }
 

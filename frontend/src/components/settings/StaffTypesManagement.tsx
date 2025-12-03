@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useStaffTypes, useCreateStaffType, useUpdateStaffType, useDeleteStaffType } from '@/hooks/useStaff';
 import type { StaffType } from '@/types/domain/staff';
-import { useProfile, useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { useOrganizations } from '@/hooks/useOrganizations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,7 +56,6 @@ type StaffTypeFormData = z.infer<typeof staffTypeSchema>;
 export function StaffTypesManagement() {
     const { t } = useLanguage();
     const { data: profile } = useProfile();
-    const isSuperAdmin = useIsSuperAdmin();
     const hasCreatePermission = useHasPermission('staff_types.create');
     const hasUpdatePermission = useHasPermission('staff_types.update');
     const hasDeletePermission = useHasPermission('staff_types.delete');
@@ -66,10 +64,9 @@ export function StaffTypesManagement() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedStaffType, setSelectedStaffType] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>(profile?.organization_id);
 
-    const { data: organizations } = useOrganizations();
-    const { data: staffTypes, isLoading } = useStaffTypes(selectedOrganizationId);
+    const organizationId = profile?.organization_id;
+    const { data: staffTypes, isLoading } = useStaffTypes(organizationId);
     const createStaffType = useCreateStaffType();
     const updateStaffType = useUpdateStaffType();
     const deleteStaffType = useDeleteStaffType();
@@ -164,7 +161,7 @@ export function StaffTypesManagement() {
                 code: data.code,
                 description: data.description || null,
                 displayOrder: data.display_order,
-                organizationId: selectedOrganizationId || profile?.organization_id || null,
+                organizationId: profile?.organization_id || null,
             }, {
                 onSuccess: () => {
                     handleCloseDialog();
@@ -216,26 +213,6 @@ export function StaffTypesManagement() {
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                            {isSuperAdmin && (
-                                <Select
-                                    value={selectedOrganizationId || 'all'}
-                                    onValueChange={(value) => {
-                                        setSelectedOrganizationId(value === 'all' ? undefined : value);
-                                    }}
-                                >
-                                    <SelectTrigger className="w-[200px]">
-                                        <SelectValue placeholder="Filter by organization" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Organizations</SelectItem>
-                                        {organizations?.map((org) => (
-                                            <SelectItem key={org.id} value={org.id}>
-                                                {org.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
                             <Button
                                 onClick={() => handleOpenDialog()}
                                 disabled={!hasCreatePermission}
@@ -268,14 +245,13 @@ export function StaffTypesManagement() {
                                     <TableHead>Description</TableHead>
                                     <TableHead>Order</TableHead>
                                     <TableHead>Status</TableHead>
-                                    {isSuperAdmin && <TableHead>Type</TableHead>}
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredStaffTypes.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={isSuperAdmin ? 7 : 6} className="text-center text-muted-foreground">
+                                        <TableCell colSpan={6} className="text-center text-muted-foreground">
                                             {searchQuery
                                                 ? 'No staff types found'
                                                 : 'No staff types available'}
@@ -297,22 +273,13 @@ export function StaffTypesManagement() {
                                                     {type.isActive ? 'Active' : 'Inactive'}
                                                 </Badge>
                                             </TableCell>
-                                            {isSuperAdmin && (
-                                                <TableCell>
-                                                    <Badge variant="outline">
-                                                        {type.organizationId === null
-                                                            ? 'Global'
-                                                            : 'Organization'}
-                                                    </Badge>
-                                                </TableCell>
-                                            )}
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => handleOpenDialog(type.id)}
-                                                        disabled={!hasUpdatePermission || (type.organizationId === null && !isSuperAdmin)}
+                                                        disabled={!hasUpdatePermission}
                                                     >
                                                         <Pencil className="h-4 w-4" />
                                                     </Button>
@@ -320,7 +287,7 @@ export function StaffTypesManagement() {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => handleDeleteClick(type.id)}
-                                                        disabled={!hasDeletePermission || (type.organizationId === null && !isSuperAdmin)}
+                                                        disabled={!hasDeletePermission}
                                                     >
                                                         <Trash2 className="h-4 w-4 text-destructive" />
                                                     </Button>
@@ -352,29 +319,6 @@ export function StaffTypesManagement() {
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
-                            {isSuperAdmin && !selectedStaffType && (
-                                <div className="grid gap-2">
-                                    <Label htmlFor="organization_id">Organization</Label>
-                                    <Select
-                                        value={selectedOrganizationId || 'global'}
-                                        onValueChange={(value) => {
-                                            setSelectedOrganizationId(value === 'global' ? undefined : value);
-                                        }}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select organization" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="global">Global (Available to all)</SelectItem>
-                                            {organizations?.map((org) => (
-                                                <SelectItem key={org.id} value={org.id}>
-                                                    {org.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
                             <div className="grid gap-2">
                                 <Label htmlFor="name">
                                     Name *

@@ -41,14 +41,6 @@ export async function getUserOrganization(): Promise<string | null> {
   return profile?.organization_id || null;
 }
 
-/**
- * Check if current user is super admin
- */
-export async function isSuperAdmin(): Promise<boolean> {
-  const user = await requireAuth();
-  const profile = await getUserProfile(user.id);
-  return profile?.role === 'super_admin';
-}
 
 /**
  * Require user to have a specific role
@@ -57,15 +49,15 @@ export async function isSuperAdmin(): Promise<boolean> {
 export async function requireRole(requiredRole: string): Promise<Profile> {
   const user = await requireAuth();
   const profile = await getUserProfile(user.id);
-  
+
   if (!profile) {
     throw new Error('Profile not found');
   }
-  
-  if (profile.role !== requiredRole && profile.role !== 'super_admin') {
+
+  if (profile.role !== requiredRole) {
     throw new Error(`Role '${requiredRole}' required`);
   }
-  
+
   return profile;
 }
 
@@ -75,16 +67,11 @@ export async function requireRole(requiredRole: string): Promise<Profile> {
 export async function userHasPermission(permissionName: string): Promise<boolean> {
   const user = await requireAuth();
   const profile = await getUserProfile(user.id);
-  
+
   if (!profile) {
     return false;
   }
-  
-  // Super admin has all permissions
-  if (profile.role === 'super_admin') {
-    return true;
-  }
-  
+
   // TODO: Migrate to Laravel API - use permissionsApi.userPermissions() instead
   throw new Error('userHasPermission needs to be migrated to Laravel API. Use useHasPermission hook instead.');
 }
@@ -95,7 +82,7 @@ export async function userHasPermission(permissionName: string): Promise<boolean
  */
 export async function requirePermission(permissionName: string): Promise<void> {
   const hasPermission = await userHasPermission(permissionName);
-  
+
   if (!hasPermission) {
     throw new Error(`Permission '${permissionName}' required`);
   }
@@ -107,17 +94,12 @@ export async function requirePermission(permissionName: string): Promise<void> {
 export async function canAccessOrganization(orgId: string): Promise<boolean> {
   const user = await requireAuth();
   const profile = await getUserProfile(user.id);
-  
+
   if (!profile) {
     return false;
   }
-  
-  // Super admin can access all organizations
-  if (profile.role === 'super_admin') {
-    return true;
-  }
-  
-  // Regular users can only access their own organization
+
+  // All users can only access their own organization
   return profile.organization_id === orgId;
 }
 
@@ -127,7 +109,7 @@ export async function canAccessOrganization(orgId: string): Promise<boolean> {
  */
 export async function requireOrganizationAccess(orgId: string): Promise<void> {
   const canAccess = await canAccessOrganization(orgId);
-  
+
   if (!canAccess) {
     throw new Error('Access denied to this organization');
   }

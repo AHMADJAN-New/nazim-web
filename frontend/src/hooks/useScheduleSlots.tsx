@@ -88,15 +88,13 @@ export const useCreateScheduleSlot = () => {
             if (organizationId === undefined || organizationId === null) {
                 if (profile.organization_id) {
                     organizationId = profile.organization_id;
-                } else if (profile.role === 'super_admin') {
-                    organizationId = null; // Global slot
                 } else {
                     throw new Error('User must be assigned to an organization');
                 }
             }
 
-            // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && organizationId !== profile.organization_id && organizationId !== null) {
+            // Validate organization access (all users)
+            if (organizationId !== profile.organization_id) {
                 throw new Error('Cannot create slot for different organization');
             }
 
@@ -153,13 +151,13 @@ export const useUpdateScheduleSlot = () => {
                 throw new Error('Schedule slot not found');
             }
 
-            // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentSlot.organizationId !== profile.organization_id && currentSlot.organizationId !== null) {
+            // Validate organization access (all users)
+            if (currentSlot.organizationId !== profile.organization_id && currentSlot.organizationId !== null) {
                 throw new Error('Cannot update slot from different organization');
             }
 
-            // Prevent organizationId changes (unless super admin)
-            if (updates.organizationId && profile.role !== 'super_admin') {
+            // Prevent organizationId changes (all users)
+            if (updates.organizationId) {
                 throw new Error('Cannot change organizationId');
             }
 
@@ -217,8 +215,8 @@ export const useDeleteScheduleSlot = () => {
                 throw new Error('Schedule slot not found');
             }
 
-            // Validate organization access (unless super admin)
-            if (profile.role !== 'super_admin' && currentSlot.organizationId !== profile.organization_id && currentSlot.organizationId !== null) {
+            // Validate organization access (all users)
+            if (currentSlot.organizationId !== profile.organization_id && currentSlot.organizationId !== null) {
                 throw new Error('Cannot delete slot from different organization');
             }
 

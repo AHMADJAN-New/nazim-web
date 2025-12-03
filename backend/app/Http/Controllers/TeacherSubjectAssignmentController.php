@@ -16,17 +16,11 @@ class TeacherSubjectAssignmentController extends Controller
      */
     private function getAccessibleOrgIds($profile): array
     {
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            return DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        }
-        
+        // All users are restricted to their own organization
         if ($profile->organization_id) {
             return [$profile->organization_id];
         }
-        
+
         return [];
     }
 
@@ -40,6 +34,21 @@ class TeacherSubjectAssignmentController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for teacher_subject_assignments.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $orgIds = $this->getAccessibleOrgIds($profile);
@@ -96,6 +105,21 @@ class TeacherSubjectAssignmentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for teacher_subject_assignments.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $assignment = TeacherSubjectAssignment::with([
             'teacher:id,employee_id,first_name,father_name,grandfather_name,email,staff_type_id',
             'teacher.staffType:id,name,code',
@@ -134,6 +158,21 @@ class TeacherSubjectAssignmentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for teacher_subject_assignments.create: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $orgIds = $this->getAccessibleOrgIds($profile);
 
         // Get organization_id from request or class_academic_year
@@ -144,7 +183,7 @@ class TeacherSubjectAssignmentController extends Controller
                 ->where('id', $request->class_academic_year_id)
                 ->whereNull('deleted_at')
                 ->first();
-            
+
             if ($classAcademicYear) {
                 $organizationId = $classAcademicYear->organization_id;
             }
@@ -169,7 +208,7 @@ class TeacherSubjectAssignmentController extends Controller
 
         try {
             $assignment = TeacherSubjectAssignment::create($validated);
-            
+
             // Load relations
             $assignment->load([
                 'teacher:id,employee_id,first_name,father_name,grandfather_name,email,staff_type_id',
@@ -201,6 +240,21 @@ class TeacherSubjectAssignmentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for teacher_subject_assignments.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $assignment = TeacherSubjectAssignment::whereNull('deleted_at')->find($id);
 
         if (!$assignment) {
@@ -222,7 +276,7 @@ class TeacherSubjectAssignmentController extends Controller
 
         try {
             $assignment->update($validated);
-            
+
             // Load relations
             $assignment->load([
                 'teacher:id,employee_id,first_name,father_name,grandfather_name,email,staff_type_id',
@@ -252,6 +306,21 @@ class TeacherSubjectAssignmentController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for teacher_subject_assignments.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $assignment = TeacherSubjectAssignment::whereNull('deleted_at')->find($id);

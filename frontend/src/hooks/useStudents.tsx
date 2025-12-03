@@ -232,7 +232,7 @@ export const useDeleteStudentDocument = () => {
 
   return useMutation({
     mutationFn: async ({ documentId, studentId }: { documentId: string; studentId: string }) => {
-      if (!profile?.organization_id && profile?.role !== 'super_admin') {
+      if (!profile?.organization_id) {
         throw new Error('Organization is required');
       }
 
@@ -310,7 +310,7 @@ export const useUpdateStudentEducationalHistory = () => {
 
   return useMutation({
     mutationFn: async ({ id, studentId, data }: { id: string; studentId: string; data: Partial<StudentApi.StudentEducationalHistoryInsert> }) => {
-      if (!profile?.organization_id && profile?.role !== 'super_admin') {
+      if (!profile?.organization_id) {
         throw new Error('Organization is required');
       }
 
@@ -333,7 +333,7 @@ export const useDeleteStudentEducationalHistory = () => {
 
   return useMutation({
     mutationFn: async ({ id, studentId }: { id: string; studentId: string }) => {
-      if (!profile?.organization_id && profile?.role !== 'super_admin') {
+      if (!profile?.organization_id) {
         throw new Error('Organization is required');
       }
 
@@ -411,7 +411,7 @@ export const useUpdateStudentDisciplineRecord = () => {
 
   return useMutation({
     mutationFn: async ({ id, studentId, data }: { id: string; studentId: string; data: Partial<StudentApi.StudentDisciplineRecordInsert> }) => {
-      if (!profile?.organization_id && profile?.role !== 'super_admin') {
+      if (!profile?.organization_id) {
         throw new Error('Organization is required');
       }
 
@@ -434,7 +434,7 @@ export const useDeleteStudentDisciplineRecord = () => {
 
   return useMutation({
     mutationFn: async ({ id, studentId }: { id: string; studentId: string }) => {
-      if (!profile?.organization_id && profile?.role !== 'super_admin') {
+      if (!profile?.organization_id) {
         throw new Error('Organization is required');
       }
 
@@ -458,7 +458,7 @@ export const useResolveStudentDisciplineRecord = () => {
   return useMutation({
     mutationFn: async ({ id, studentId }: { id: string; studentId: string }) => {
       if (!user) throw new Error('User not authenticated');
-      if (!profile?.organization_id && profile?.role !== 'super_admin') {
+      if (!profile?.organization_id) {
         throw new Error('Organization is required');
       }
 

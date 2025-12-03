@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useReportTemplates, useCreateReportTemplate, useUpdateReportTemplate, useDeleteReportTemplate, type ReportTemplate, type CreateReportTemplateData } from '@/hooks/useReportTemplates';
 import { useSchools } from '@/hooks/useSchools';
-import { useIsSuperAdmin } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,7 +77,6 @@ const TEMPLATE_TYPES = [
 ];
 
 export function ReportTemplatesManagement() {
-    const isSuperAdmin = useIsSuperAdmin();
     const hasCreatePermission = useHasPermission('reports.create');
     const hasUpdatePermission = useHasPermission('reports.update');
     const hasDeletePermission = useHasPermission('reports.delete');

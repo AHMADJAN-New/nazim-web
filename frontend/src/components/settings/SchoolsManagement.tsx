@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { useSchools, useCreateSchool, useUpdateSchool, useDeleteSchool, type School, type CreateSchoolData } from '@/hooks/useSchools';
-import { useOrganizations } from '@/hooks/useOrganizations';
-import { useIsSuperAdmin } from '@/hooks/useProfiles';
+import { useSchools, useCreateSchool, useUpdateSchool, useDeleteSchool, type School } from '@/hooks/useSchools';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,7 +40,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Search, School, Shield, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, School as SchoolIcon, Shield, Eye } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -71,11 +69,9 @@ const schoolSchema = z.object({
 type SchoolFormData = z.infer<typeof schoolSchema>;
 
 export function SchoolsManagement() {
-  const isSuperAdmin = useIsSuperAdmin();
   const hasCreatePermission = useHasPermission('branding.create');
   const hasUpdatePermission = useHasPermission('branding.update');
   const hasDeletePermission = useHasPermission('branding.delete');
-  const { data: organizations } = useOrganizations();
   const { data: schools, isLoading } = useSchools();
   const createSchool = useCreateSchool();
   const updateSchool = useUpdateSchool();
@@ -116,14 +112,16 @@ export function SchoolsManagement() {
   const filteredSchools = schools?.filter((school) => {
     const query = (searchQuery || '').toLowerCase();
     const matchesSearch =
-      school.school_name?.toLowerCase().includes(query) ||
-      school.school_name_arabic?.toLowerCase().includes(query) ||
-      school.school_name_pashto?.toLowerCase().includes(query) ||
-      school.school_email?.toLowerCase().includes(query);
-    
-    const matchesOrg = organizationFilter === 'all' || school.organization_id === organizationFilter;
-    
-    return matchesSearch && matchesOrg;
+      school.schoolName?.toLowerCase().includes(query) ||
+      (school.schoolNameArabic && school.schoolNameArabic.toLowerCase().includes(query)) ||
+      (school.schoolNamePashto && school.schoolNamePashto.toLowerCase().includes(query)) ||
+      (school.schoolEmail && school.schoolEmail.toLowerCase().includes(query)) ||
+      (school.schoolPhone && school.schoolPhone.toLowerCase().includes(query)) ||
+      (school.schoolWebsite && school.schoolWebsite.toLowerCase().includes(query));
+
+
+    // All users only see their organization's schools (backend filters by organization_id)
+    return matchesSearch;
   }) || [];
 
   const handleOpenDialog = (schoolId?: string) => {
@@ -131,23 +129,23 @@ export function SchoolsManagement() {
       const school = schools?.find((s) => s.id === schoolId);
       if (school) {
         reset({
-          school_name: school.school_name,
-          school_name_arabic: school.school_name_arabic || '',
-          school_name_pashto: school.school_name_pashto || '',
-          school_address: school.school_address || '',
-          school_phone: school.school_phone || '',
-          school_email: school.school_email || '',
-          school_website: school.school_website || '',
-          organization_id: school.organization_id,
-          primary_color: school.primary_color,
-          secondary_color: school.secondary_color,
-          accent_color: school.accent_color,
-          font_family: school.font_family,
-          calendar_preference: school.calendar_preference,
-          primary_logo_usage: school.primary_logo_usage,
-          secondary_logo_usage: school.secondary_logo_usage,
-          ministry_logo_usage: school.ministry_logo_usage,
-          is_active: school.is_active,
+          school_name: school.schoolName,
+          school_name_arabic: school.schoolNameArabic || '',
+          school_name_pashto: school.schoolNamePashto || '',
+          school_address: school.schoolAddress || '',
+          school_phone: school.schoolPhone || '',
+          school_email: school.schoolEmail || '',
+          school_website: school.schoolWebsite || '',
+          organization_id: school.organizationId,
+          primary_color: school.primaryColor,
+          secondary_color: school.secondaryColor,
+          accent_color: school.accentColor,
+          font_family: school.fontFamily,
+          calendar_preference: school.calendarPreference,
+          primary_logo_usage: school.primaryLogoUsage,
+          secondary_logo_usage: school.secondaryLogoUsage,
+          ministry_logo_usage: school.ministryLogoUsage,
+          is_active: school.isActive,
         });
         setSelectedSchool(schoolId);
       }
@@ -187,7 +185,7 @@ export function SchoolsManagement() {
 
   const convertFileToBinary = async (file: File): Promise<{ binary: Uint8Array; mimeType: string; filename: string; size: number } | null> => {
     if (!file) return null;
-    
+
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -212,25 +210,42 @@ export function SchoolsManagement() {
       const secondaryLogoData = secondaryLogoFile ? await convertFileToBinary(secondaryLogoFile) : null;
       const ministryLogoData = ministryLogoFile ? await convertFileToBinary(ministryLogoFile) : null;
 
-      const schoolData: CreateSchoolData = {
-        ...data,
+      // Convert form data (snake_case) to domain format (camelCase)
+      const schoolData: Partial<School> = {
+        schoolName: data.school_name,
+        schoolNameArabic: data.school_name_arabic || null,
+        schoolNamePashto: data.school_name_pashto || null,
+        schoolAddress: data.school_address || null,
+        schoolPhone: data.school_phone || null,
+        schoolEmail: data.school_email || null,
+        schoolWebsite: data.school_website || null,
+        organizationId: data.organization_id || undefined,
+        primaryColor: data.primary_color,
+        secondaryColor: data.secondary_color,
+        accentColor: data.accent_color,
+        fontFamily: data.font_family,
+        calendarPreference: data.calendar_preference,
+        primaryLogoUsage: data.primary_logo_usage,
+        secondaryLogoUsage: data.secondary_logo_usage,
+        ministryLogoUsage: data.ministry_logo_usage,
+        isActive: data.is_active ?? true,
         ...(primaryLogoData && {
-          primary_logo_binary: primaryLogoData.binary,
-          primary_logo_mime_type: primaryLogoData.mimeType,
-          primary_logo_filename: primaryLogoData.filename,
-          primary_logo_size: primaryLogoData.size,
+          primaryLogoBinary: primaryLogoData.binary,
+          primaryLogoMimeType: primaryLogoData.mimeType,
+          primaryLogoFilename: primaryLogoData.filename,
+          primaryLogoSize: primaryLogoData.size,
         }),
         ...(secondaryLogoData && {
-          secondary_logo_binary: secondaryLogoData.binary,
-          secondary_logo_mime_type: secondaryLogoData.mimeType,
-          secondary_logo_filename: secondaryLogoData.filename,
-          secondary_logo_size: secondaryLogoData.size,
+          secondaryLogoBinary: secondaryLogoData.binary,
+          secondaryLogoMimeType: secondaryLogoData.mimeType,
+          secondaryLogoFilename: secondaryLogoData.filename,
+          secondaryLogoSize: secondaryLogoData.size,
         }),
         ...(ministryLogoData && {
-          ministry_logo_binary: ministryLogoData.binary,
-          ministry_logo_mime_type: ministryLogoData.mimeType,
-          ministry_logo_filename: ministryLogoData.filename,
-          ministry_logo_size: ministryLogoData.size,
+          ministryLogoBinary: ministryLogoData.binary,
+          ministryLogoMimeType: ministryLogoData.mimeType,
+          ministryLogoFilename: ministryLogoData.filename,
+          ministryLogoSize: ministryLogoData.size,
         }),
       };
 
@@ -282,7 +297,7 @@ export function SchoolsManagement() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <School className="h-5 w-5" />
+              <SchoolIcon className="h-5 w-5" />
               Schools Management
             </CardTitle>
             <CardDescription>Manage schools and branding for organizations</CardDescription>
@@ -302,7 +317,7 @@ export function SchoolsManagement() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <School className="h-5 w-5" />
+                <SchoolIcon className="h-5 w-5" />
                 Schools Management
               </CardTitle>
               <CardDescription>Manage schools and branding for organizations</CardDescription>
@@ -327,24 +342,6 @@ export function SchoolsManagement() {
                 className="pl-10"
               />
             </div>
-            {isSuperAdmin && (
-              <div>
-                <Label>Organization</Label>
-                <Select value={organizationFilter} onValueChange={setOrganizationFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All Organizations" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Organizations</SelectItem>
-                    {organizations?.map(org => (
-                      <SelectItem key={org.id} value={org.id}>
-                        {org.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
 
           {/* Schools Table */}
@@ -355,7 +352,6 @@ export function SchoolsManagement() {
                   <TableHead>School Name</TableHead>
                   <TableHead>Arabic Name</TableHead>
                   <TableHead>Pashto Name</TableHead>
-                  {isSuperAdmin && <TableHead>Organization</TableHead>}
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Status</TableHead>
@@ -365,32 +361,22 @@ export function SchoolsManagement() {
               <TableBody>
                 {filteredSchools.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isSuperAdmin ? 8 : 7} className="text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
                       {searchQuery ? 'No schools found matching your search' : 'No schools found. Add your first school.'}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredSchools.map((school) => {
-                    const org = isSuperAdmin && organizations?.find(o => o.id === school.organization_id);
                     return (
                       <TableRow key={school.id}>
-                        <TableCell className="font-medium">{school.school_name}</TableCell>
-                        <TableCell>{school.school_name_arabic || '-'}</TableCell>
-                        <TableCell>{school.school_name_pashto || '-'}</TableCell>
-                        {isSuperAdmin && (
-                          <TableCell>
-                            {org ? (
-                              <Badge variant="secondary">{org.name}</Badge>
-                            ) : (
-                              <span className="text-muted-foreground">Unknown</span>
-                            )}
-                          </TableCell>
-                        )}
-                        <TableCell>{school.school_email || '-'}</TableCell>
-                        <TableCell>{school.school_phone || '-'}</TableCell>
+                        <TableCell className="font-medium">{school.schoolName}</TableCell>
+                        <TableCell>{school.schoolNameArabic || '-'}</TableCell>
+                        <TableCell>{school.schoolNamePashto || '-'}</TableCell>
+                        <TableCell>{school.schoolEmail || '-'}</TableCell>
+                        <TableCell>{school.schoolPhone || '-'}</TableCell>
                         <TableCell>
-                          <Badge variant={school.is_active ? 'default' : 'secondary'}>
-                            {school.is_active ? 'Active' : 'Inactive'}
+                          <Badge variant={school.isActive ? 'default' : 'secondary'}>
+                            {school.isActive ? 'Active' : 'Inactive'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -465,29 +451,6 @@ export function SchoolsManagement() {
                     <p className="text-sm text-destructive">{errors.school_name.message}</p>
                   )}
                 </div>
-                {isSuperAdmin && (
-                  <div className="grid gap-2">
-                    <Label htmlFor="organization_id">Organization</Label>
-                    <Controller
-                      name="organization_id"
-                      control={control}
-                      render={({ field }) => (
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select organization" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {organizations?.map((org) => (
-                              <SelectItem key={org.id} value={org.id}>
-                                {org.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
@@ -767,11 +730,11 @@ export function SchoolsManagement() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <School className="h-5 w-5" />
+              <SchoolIcon className="h-5 w-5" />
               School Details
             </DialogTitle>
             <DialogDescription>
-              View complete information about {selectedSchoolData?.school_name}
+              View complete information about {selectedSchoolData?.schoolName}
             </DialogDescription>
           </DialogHeader>
           {selectedSchoolData && (
@@ -779,56 +742,48 @@ export function SchoolsManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">School Name</Label>
-                  <p className="font-medium">{selectedSchoolData.school_name}</p>
+                  <p className="font-medium">{selectedSchoolData.schoolName}</p>
                 </div>
-                {isSuperAdmin && (
-                  <div>
-                    <Label className="text-muted-foreground">Organization</Label>
-                    <p>
-                      {organizations?.find(o => o.id === selectedSchoolData.organization_id)?.name || 'Unknown'}
-                    </p>
-                  </div>
-                )}
-                {selectedSchoolData.school_name_arabic && (
+                {selectedSchoolData.schoolNameArabic && (
                   <div>
                     <Label className="text-muted-foreground">Arabic Name</Label>
-                    <p>{selectedSchoolData.school_name_arabic}</p>
+                    <p>{selectedSchoolData.schoolNameArabic}</p>
                   </div>
                 )}
-                {selectedSchoolData.school_name_pashto && (
+                {selectedSchoolData.schoolNamePashto && (
                   <div>
                     <Label className="text-muted-foreground">Pashto Name</Label>
-                    <p>{selectedSchoolData.school_name_pashto}</p>
+                    <p>{selectedSchoolData.schoolNamePashto}</p>
                   </div>
                 )}
-                {selectedSchoolData.school_address && (
+                {selectedSchoolData.schoolAddress && (
                   <div className="col-span-2">
                     <Label className="text-muted-foreground">Address</Label>
-                    <p>{selectedSchoolData.school_address}</p>
+                    <p>{selectedSchoolData.schoolAddress}</p>
                   </div>
                 )}
-                {selectedSchoolData.school_phone && (
+                {selectedSchoolData.schoolPhone && (
                   <div>
                     <Label className="text-muted-foreground">Phone</Label>
-                    <p>{selectedSchoolData.school_phone}</p>
+                    <p>{selectedSchoolData.schoolPhone}</p>
                   </div>
                 )}
-                {selectedSchoolData.school_email && (
+                {selectedSchoolData.schoolEmail && (
                   <div>
                     <Label className="text-muted-foreground">Email</Label>
-                    <p>{selectedSchoolData.school_email}</p>
+                    <p>{selectedSchoolData.schoolEmail}</p>
                   </div>
                 )}
-                {selectedSchoolData.school_website && (
+                {selectedSchoolData.schoolWebsite && (
                   <div>
                     <Label className="text-muted-foreground">Website</Label>
-                    <p>{selectedSchoolData.school_website}</p>
+                    <p>{selectedSchoolData.schoolWebsite}</p>
                   </div>
                 )}
                 <div>
                   <Label className="text-muted-foreground">Status</Label>
-                  <Badge variant={selectedSchoolData.is_active ? 'default' : 'secondary'}>
-                    {selectedSchoolData.is_active ? 'Active' : 'Inactive'}
+                  <Badge variant={selectedSchoolData.isActive ? 'default' : 'secondary'}>
+                    {selectedSchoolData.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
               </div>
@@ -836,42 +791,42 @@ export function SchoolsManagement() {
                 <div>
                   <Label className="text-muted-foreground">Primary Color</Label>
                   <div className="flex items-center gap-2">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded border"
-                      style={{ backgroundColor: selectedSchoolData.primary_color }}
+                      style={{ backgroundColor: selectedSchoolData.primaryColor }}
                     />
-                    <code className="text-sm">{selectedSchoolData.primary_color}</code>
+                    <code className="text-sm">{selectedSchoolData.primaryColor}</code>
                   </div>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Secondary Color</Label>
                   <div className="flex items-center gap-2">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded border"
-                      style={{ backgroundColor: selectedSchoolData.secondary_color }}
+                      style={{ backgroundColor: selectedSchoolData.secondaryColor }}
                     />
-                    <code className="text-sm">{selectedSchoolData.secondary_color}</code>
+                    <code className="text-sm">{selectedSchoolData.secondaryColor}</code>
                   </div>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Accent Color</Label>
                   <div className="flex items-center gap-2">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded border"
-                      style={{ backgroundColor: selectedSchoolData.accent_color }}
+                      style={{ backgroundColor: selectedSchoolData.accentColor }}
                     />
-                    <code className="text-sm">{selectedSchoolData.accent_color}</code>
+                    <code className="text-sm">{selectedSchoolData.accentColor}</code>
                   </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">Font Family</Label>
-                  <p>{selectedSchoolData.font_family}</p>
+                  <p>{selectedSchoolData.fontFamily}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Report Font Size</Label>
-                  <p>{selectedSchoolData.report_font_size}</p>
+                  <p>{selectedSchoolData.reportFontSize}</p>
                 </div>
               </div>
             </div>
@@ -900,7 +855,7 @@ export function SchoolsManagement() {
               This action will soft delete the school
               {selectedSchool &&
                 schools?.find((s) => s.id === selectedSchool) &&
-                ` "${schools.find((s) => s.id === selectedSchool)?.school_name}"`}
+                ` "${schools.find((s) => s.id === selectedSchool)?.schoolName}"`}
               . The school will be hidden but can be restored if needed.
             </AlertDialogDescription>
           </AlertDialogHeader>

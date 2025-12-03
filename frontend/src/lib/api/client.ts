@@ -56,8 +56,12 @@ class ApiClient {
     this.token = token;
     if (token && typeof window !== 'undefined') {
       localStorage.setItem('api_token', token);
+      // Dispatch custom event to notify AuthProvider
+      window.dispatchEvent(new Event('auth-token-changed'));
     } else if (typeof window !== 'undefined') {
       localStorage.removeItem('api_token');
+      // Dispatch custom event to notify AuthProvider
+      window.dispatchEvent(new Event('auth-token-changed'));
     }
   }
 
@@ -110,6 +114,7 @@ class ApiClient {
       headers['Content-Type'] = 'application/json';
     }
 
+    const hasToken = !!this.token;
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
@@ -123,6 +128,10 @@ class ApiClient {
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: response.statusText }));
         
+        // Suppress console errors for expected 401 when no token (user not logged in)
+        // This is normal behavior, not an error
+        const isExpectedUnauth = response.status === 401 && !hasToken && endpoint.includes('/auth/');
+        
         // For validation errors (400), include details if available
         if (response.status === 400 && error.details) {
           const details = Object.entries(error.details)
@@ -131,7 +140,13 @@ class ApiClient {
           throw new Error(error.message || 'Validation failed' + (details ? ` - ${details}` : ''));
         }
         
-        throw new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
+        // Create error but don't log expected 401s
+        const errorObj = new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
+        if (isExpectedUnauth) {
+          // Mark as expected so useAuth can handle it silently
+          (errorObj as any).expected = true;
+        }
+        throw errorObj;
       }
 
       return response.json();
@@ -339,6 +354,10 @@ export const permissionsApi = {
 
   userPermissions: async () => {
     return apiClient.get('/permissions/user');
+  },
+
+  roles: async () => {
+    return apiClient.get('/permissions/roles');
   },
 };
 

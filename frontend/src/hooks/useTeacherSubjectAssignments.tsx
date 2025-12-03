@@ -154,8 +154,6 @@ export const useCreateTeacherSubjectAssignment = () => {
             if (!organizationId) {
                 if (profile.organization_id) {
                     organizationId = profile.organization_id;
-                } else if (profile.role === 'super_admin') {
-                    throw new Error('Organization ID is required for super admin');
                 } else {
                     throw new Error('User must be assigned to an organization');
                 }

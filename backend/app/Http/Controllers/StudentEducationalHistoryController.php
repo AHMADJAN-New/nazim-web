@@ -17,17 +17,11 @@ class StudentEducationalHistoryController extends Controller
      */
     private function getAccessibleOrgIds($profile): array
     {
-        if ($profile->role === 'super_admin' && $profile->organization_id === null) {
-            return DB::table('organizations')
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->toArray();
-        }
-        
+        // All users are restricted to their own organization
         if ($profile->organization_id) {
             return [$profile->organization_id];
         }
-        
+
         return [];
     }
 
@@ -41,6 +35,21 @@ class StudentEducationalHistoryController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_educational_history.read', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_educational_history.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         // Check student exists and user has access
@@ -98,6 +107,21 @@ class StudentEducationalHistoryController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_educational_history.create', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_educational_history.create: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         // Check student exists and user has access
         $student = Student::whereNull('deleted_at')->find($studentId);
         if (!$student) {
@@ -117,7 +141,7 @@ class StudentEducationalHistoryController extends Controller
         $validated['created_by'] = $user->id;
 
         $history = StudentEducationalHistory::create($validated);
-        
+
         // Enrich with created_by profile data
         $createdByProfile = DB::table('profiles')
             ->where('id', $user->id)
@@ -146,6 +170,21 @@ class StudentEducationalHistoryController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_educational_history.update', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_educational_history.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $history = StudentEducationalHistory::whereNull('deleted_at')->find($id);
 
         if (!$history) {
@@ -162,7 +201,7 @@ class StudentEducationalHistoryController extends Controller
         unset($validated['organization_id']);
 
         $history->update($validated);
-        
+
         // Enrich with created_by profile data
         $createdByProfile = DB::table('profiles')
             ->where('id', $history->created_by)
@@ -189,6 +228,21 @@ class StudentEducationalHistoryController extends Controller
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_educational_history.delete', $profile->organization_id)) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_educational_history.delete: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
         $history = StudentEducationalHistory::whereNull('deleted_at')->find($id);

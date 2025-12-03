@@ -25,7 +25,7 @@ class OrganizationSeeder extends Seeder
 
         if (!$existingOrg) {
             $orgId = (string) Str::uuid();
-            
+
             DB::table('organizations')->insert([
                 'id' => $orgId,
                 'name' => 'ناظم',
@@ -36,14 +36,13 @@ class OrganizationSeeder extends Seeder
             ]);
 
             $this->command->info('Organization "ناظم" created with ID: ' . $orgId);
-            
+
             // Clear cache after creating organization
             OrganizationHelper::clearCache();
-            
+
             // Assign this organization to all users who don't have an organization
             $updated = DB::table('profiles')
                 ->whereNull('organization_id')
-                ->where('role', '!=', 'super_admin') // Don't assign to super_admin
                 ->update([
                     'organization_id' => $orgId,
                     'updated_at' => now(),
@@ -54,11 +53,10 @@ class OrganizationSeeder extends Seeder
             }
         } else {
             $this->command->info('Organization "ناظم" already exists.');
-            
+
             // Still assign organization to users who don't have one
             $updated = DB::table('profiles')
                 ->whereNull('organization_id')
-                ->where('role', '!=', 'super_admin')
                 ->update([
                     'organization_id' => $existingOrg->id,
                     'updated_at' => now(),
