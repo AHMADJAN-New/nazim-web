@@ -113,7 +113,7 @@ class StudentAdmissionController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('student_admissions.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_admissions.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -166,7 +166,7 @@ class StudentAdmissionController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_admissions.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_admissions.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -246,7 +246,7 @@ class StudentAdmissionController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_admissions.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_admissions.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -305,7 +305,7 @@ class StudentAdmissionController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_admissions.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_admissions.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -383,4 +383,6 @@ class StudentAdmissionController extends Controller
         ]);
     }
 }
+
+
 

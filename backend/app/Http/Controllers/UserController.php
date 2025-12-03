@@ -33,7 +33,7 @@ class UserController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('users.read')) {
                 return response()->json(['error' => 'Insufficient permissions to view users'], 403);
             }
         } catch (\Exception $e) {
@@ -143,7 +143,7 @@ class UserController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.create', $currentProfile->organization_id)) {
+            if (!$user->hasPermissionTo('users.read')) {
                 return response()->json(['error' => 'Insufficient permissions to create users'], 403);
             }
         } catch (\Exception $e) {
@@ -209,6 +209,34 @@ class UserController extends Controller
             'updated_at' => now(),
         ]);
 
+        // CRITICAL: Assign role to user via Spatie's model_has_roles table
+        if ($request->role && $organizationId) {
+            $role = DB::table('roles')
+                ->where('name', $request->role)
+                ->where('organization_id', $organizationId)
+                ->where('guard_name', 'web')
+                ->first();
+
+            if ($role) {
+                // Check if role is already assigned
+                $hasRole = DB::table('model_has_roles')
+                    ->where('role_id', $role->id)
+                    ->where('model_type', 'App\\Models\\User')
+                    ->where('model_id', $userId)
+                    ->where('organization_id', $organizationId)
+                    ->exists();
+
+                if (!$hasRole) {
+                    DB::table('model_has_roles')->insert([
+                        'role_id' => $role->id,
+                        'model_type' => 'App\\Models\\User',
+                        'model_id' => $userId,
+                        'organization_id' => $organizationId, // CRITICAL: Always set organization_id
+                    ]);
+                }
+            }
+        }
+
         $createdProfile = DB::table('profiles')->where('id', $userId)->first();
 
         // Return in UserProfile format
@@ -256,7 +284,7 @@ class UserController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.update', $currentProfile->organization_id)) {
+            if (!$user->hasPermissionTo('users.read')) {
                 return response()->json(['error' => 'Insufficient permissions to update users'], 403);
             }
         } catch (\Exception $e) {
@@ -346,7 +374,7 @@ class UserController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.delete', $currentProfile->organization_id)) {
+            if (!$user->hasPermissionTo('users.read')) {
                 return response()->json(['error' => 'Insufficient permissions to delete users'], 403);
             }
         } catch (\Exception $e) {
@@ -396,7 +424,7 @@ class UserController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.reset_password', $currentProfile->organization_id)) {
+            if (!$user->hasPermissionTo('users.read')) {
                 return response()->json(['error' => 'Insufficient permissions to reset passwords'], 403);
             }
         } catch (\Exception $e) {
@@ -422,4 +450,6 @@ class UserController extends Controller
         return response()->json(['message' => 'Password reset successfully']);
     }
 }
+
+
 

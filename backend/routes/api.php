@@ -49,7 +49,7 @@ Route::get('/stats/staff-count', [StatsController::class, 'staffCount']);
 Route::get('/organizations/public', [OrganizationController::class, 'publicList']);
 
 // Protected routes
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     // Auth routes
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/user', [AuthController::class, 'user']);

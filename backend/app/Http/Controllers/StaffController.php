@@ -31,7 +31,7 @@ class StaffController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -117,7 +117,7 @@ class StaffController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -216,7 +216,7 @@ class StaffController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -350,7 +350,7 @@ class StaffController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -528,7 +528,7 @@ class StaffController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -785,4 +785,6 @@ class StaffController extends Controller
         ], 201);
     }
 }
+
+
 

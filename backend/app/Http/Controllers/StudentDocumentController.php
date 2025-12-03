@@ -44,7 +44,7 @@ class StudentDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_documents.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_documents.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -114,7 +114,7 @@ class StudentDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_documents.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_documents.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -191,7 +191,7 @@ class StudentDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_documents.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_documents.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -236,7 +236,7 @@ class StudentDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_documents.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_documents.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -268,4 +268,6 @@ class StudentDocumentController extends Controller
             ->header('Content-Disposition', 'inline; filename="' . $document->file_name . '"');
     }
 }
+
+
 

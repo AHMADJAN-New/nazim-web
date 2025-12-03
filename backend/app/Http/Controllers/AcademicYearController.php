@@ -36,7 +36,7 @@ class AcademicYearController extends Controller
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.read', $profile->organization_id)) {
+                if (!$user->hasPermissionTo('academic_years.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
@@ -138,7 +138,7 @@ class AcademicYearController extends Controller
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.create', $profile->organization_id)) {
+                if (!$user->hasPermissionTo('academic_years.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
@@ -221,7 +221,7 @@ class AcademicYearController extends Controller
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.read', $profile->organization_id)) {
+                if (!$user->hasPermissionTo('academic_years.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
@@ -274,7 +274,7 @@ class AcademicYearController extends Controller
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.update', $profile->organization_id)) {
+                if (!$user->hasPermissionTo('academic_years.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
@@ -366,7 +366,7 @@ class AcademicYearController extends Controller
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.delete', $profile->organization_id)) {
+                if (!$user->hasPermissionTo('academic_years.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
@@ -410,3 +410,5 @@ class AcademicYearController extends Controller
         }
     }
 }
+
+

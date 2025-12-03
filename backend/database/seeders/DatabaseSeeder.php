@@ -33,6 +33,10 @@ class DatabaseSeeder extends Seeder
         $org1 = $this->createOrganization('Organization One', 'org-one', 'First test organization');
         $org2 = $this->createOrganization('Organization Two', 'org-two', 'Second test organization');
 
+        // Step 2b: Ensure role permissions for all organizations (idempotent)
+        $this->command->info('Step 2b: Ensuring role permissions for all organizations...');
+        $this->assignPermissionsForAllOrganizations();
+
         // Step 3: Create users for Organization 1
         $this->command->info('Step 3: Creating users for Organization One...');
         $this->createUsersForOrganization($org1, [
@@ -66,6 +70,17 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
+     * Assign permissions to roles for all organizations (idempotent)
+     */
+    protected function assignPermissionsForAllOrganizations(): void
+    {
+        $organizations = DB::table('organizations')->whereNull('deleted_at')->get();
+        foreach ($organizations as $organization) {
+            $this->ensureRolesForOrganization($organization);
+        }
+    }
+
+    /**
      * Create an organization
      */
     protected function createOrganization(string $name, string $slug, string $description = ''): object
@@ -77,13 +92,17 @@ class DatabaseSeeder extends Seeder
             ->first();
 
         if ($existing) {
-            $this->command->info("Organization '{$name}' already exists. Skipping creation.");
+            $this->command->info("Organization '{$name}' already exists. Ensuring roles exist...");
             // Ensure roles exist for existing organization
             $this->ensureRolesForOrganization((object) [
                 'id' => $existing->id,
                 'name' => $existing->name,
             ]);
-            return $existing;
+            return (object) [
+                'id' => $existing->id,
+                'name' => $existing->name,
+                'slug' => $existing->slug,
+            ];
         }
 
         // Use Eloquent model to trigger observer
@@ -139,6 +158,9 @@ class DatabaseSeeder extends Seeder
                 $this->command->info("  ✓ Created role '{$roleData['name']}' for {$organization->name}");
 
                 // Assign permissions to role
+                $this->assignPermissionsToRole($organization->id, $roleData['name']);
+            } else {
+                // Role exists, but ensure permissions are assigned
                 $this->assignPermissionsToRole($organization->id, $roleData['name']);
             }
         }
@@ -234,6 +256,7 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Create a single user with profile and role assignment
+     * CRITICAL: Always ensures profile has correct organization_id and role assignment matches
      */
     protected function createUser(object $organization, array $userData): void
     {
@@ -243,67 +266,121 @@ class DatabaseSeeder extends Seeder
                 ->where('email', $userData['email'])
                 ->first();
 
-            if ($existingUser) {
-                $this->command->info("User {$userData['email']} already exists. Skipping creation.");
-                return;
+            $userId = $existingUser ? $existingUser->id : (string) Str::uuid();
+            $isNewUser = !$existingUser;
+
+            if ($isNewUser) {
+                // Create new user
+                DB::table('users')->insert([
+                    'id' => $userId,
+                    'email' => $userData['email'],
+                    'encrypted_password' => Hash::make($userData['password']),
+                    'email_confirmed_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Create profile with correct organization_id
+                DB::table('profiles')->insert([
+                    'id' => $userId,
+                    'email' => $userData['email'],
+                    'full_name' => $userData['name'],
+                    'role' => $userData['role'], // Keep for backward compatibility
+                    'organization_id' => $organization->id, // CRITICAL: Always set organization_id
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                $this->command->info("  ✓ Created user: {$userData['email']}");
+            } else {
+                // User exists - ensure profile has correct organization_id
+                $profile = DB::table('profiles')->where('id', $userId)->first();
+                
+                if (!$profile) {
+                    // Profile missing - create it
+                    DB::table('profiles')->insert([
+                        'id' => $userId,
+                        'email' => $userData['email'],
+                        'full_name' => $userData['name'],
+                        'role' => $userData['role'],
+                        'organization_id' => $organization->id, // CRITICAL: Set organization_id
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $this->command->info("  ✓ Created missing profile for {$userData['email']}");
+                } else {
+                    // Profile exists - update organization_id if it's wrong or NULL
+                    if ($profile->organization_id !== $organization->id) {
+                        DB::table('profiles')
+                            ->where('id', $userId)
+                            ->update([
+                                'organization_id' => $organization->id, // CRITICAL: Fix organization_id
+                                'role' => $userData['role'], // Update role field for backward compatibility
+                                'updated_at' => now(),
+                            ]);
+                        $this->command->info("  ✓ Updated profile organization_id for {$userData['email']}");
+                    }
+                }
             }
 
-            $userId = (string) Str::uuid();
+            // CRITICAL: Ensure roles exist for this organization before assigning
+            $this->ensureRolesForOrganization($organization);
 
-            // Create user in auth.users table
-            DB::table('users')->insert([
-                'id' => $userId,
-                'email' => $userData['email'],
-                'encrypted_password' => Hash::make($userData['password']),
-                'email_confirmed_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Create profile
-            DB::table('profiles')->insert([
-                'id' => $userId,
-                'email' => $userData['email'],
-                'full_name' => $userData['name'],
-                'role' => $userData['role'], // Keep for backward compatibility
-                'organization_id' => $organization->id, // CRITICAL: Assign to organization
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Assign role to user via Spatie's model_has_roles table
+            // Get the role for this organization
             $role = DB::table('roles')
                 ->where('name', $userData['role'])
                 ->where('organization_id', $organization->id)
                 ->where('guard_name', 'web')
                 ->first();
 
-            if ($role) {
-                // Check if role is already assigned
-                $hasRole = DB::table('model_has_roles')
-                    ->where('role_id', $role->id)
+            if (!$role) {
+                $this->command->error("  ❌ Role '{$userData['role']}' not found for organization {$organization->name} (ID: {$organization->id})");
+                $this->command->error("     User {$userData['email']} will NOT have permissions!");
+                return;
+            }
+
+            // Check if role is already correctly assigned
+            $hasCorrectRole = DB::table('model_has_roles')
+                ->where('role_id', $role->id)
+                ->where('model_type', 'App\\Models\\User')
+                ->where('model_id', $userId)
+                ->where('organization_id', $organization->id) // CRITICAL: Must match organization
+                ->exists();
+
+            if ($hasCorrectRole) {
+                $this->command->info("  ✓ User {$userData['email']} already has {$userData['role']} role with correct organization_id");
+            } else {
+                // Check if user has ANY role assignment (might be wrong or NULL)
+                $existingRoleAssignment = DB::table('model_has_roles')
                     ->where('model_type', 'App\\Models\\User')
                     ->where('model_id', $userId)
-                    ->where('organization_id', $organization->id)
-                    ->exists();
+                    ->first();
 
-                if (!$hasRole) {
-                    DB::table('model_has_roles')->insert([
-                        'role_id' => $role->id,
-                        'model_type' => 'App\\Models\\User',
-                        'model_id' => $userId,
-                        'organization_id' => $organization->id,
-                    ]);
-                    $this->command->info("  ✓ Created {$userData['email']} with {$userData['role']} role");
-                } else {
-                    $this->command->info("  ✓ User {$userData['email']} already has {$userData['role']} role");
+                if ($existingRoleAssignment) {
+                    // Delete incorrect role assignment(s)
+                    DB::table('model_has_roles')
+                        ->where('model_type', 'App\\Models\\User')
+                        ->where('model_id', $userId)
+                        ->delete();
+                    
+                    $this->command->info("  ✓ Removed incorrect role assignment(s) for {$userData['email']}");
                 }
-            } else {
-                $this->command->warn("  ⚠ Role '{$userData['role']}' not found for organization {$organization->name}. User created but role not assigned.");
+
+                // Insert correct role assignment
+                DB::table('model_has_roles')->insert([
+                    'role_id' => $role->id,
+                    'model_type' => 'App\\Models\\User',
+                    'model_id' => $userId,
+                    'organization_id' => $organization->id, // CRITICAL: Always set organization_id
+                ]);
+
+                $this->command->info("  ✓ Assigned {$userData['role']} role to {$userData['email']} (org: {$organization->id})");
             }
         } catch (\Exception $e) {
-            $this->command->error("Error creating user {$userData['email']}: " . $e->getMessage());
+            $this->command->error("  ❌ Error processing user {$userData['email']}: " . $e->getMessage());
+            $this->command->error("     Stack trace: " . $e->getTraceAsString());
         }
     }
 }

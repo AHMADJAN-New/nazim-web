@@ -572,7 +572,6 @@ export function StaffList() {
                             const selectedSchool = schools?.find(s => s.id === schoolId);
                             if (selectedSchool) {
                                 organizationId = selectedSchool.organization_id;
-                                }
                             }
                             
                             if (!organizationId) {

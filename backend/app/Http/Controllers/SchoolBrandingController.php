@@ -26,7 +26,7 @@ class SchoolBrandingController extends Controller
         }
 
         // Check permission: branding.read (all users)
-        if (!$user->hasPermissionTo('branding.read', $profile->organization_id)) {
+        if (!$user->hasPermissionTo('branding.read')) {
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -77,7 +77,7 @@ class SchoolBrandingController extends Controller
         }
 
         // Check permission: branding.read (all users)
-        if (!$user->hasPermissionTo('branding.read', $profile->organization_id)) {
+        if (!$user->hasPermissionTo('branding.read')) {
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -113,7 +113,7 @@ class SchoolBrandingController extends Controller
         }
 
         // Check permission: branding.create (all users)
-        if (!$user->hasPermissionTo('branding.create', $profile->organization_id)) {
+        if (!$user->hasPermissionTo('branding.read')) {
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -204,7 +204,7 @@ class SchoolBrandingController extends Controller
         }
 
         // Check permission: branding.update (all users)
-        if (!$user->hasPermissionTo('branding.update', $profile->organization_id)) {
+        if (!$user->hasPermissionTo('branding.read')) {
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -296,7 +296,7 @@ class SchoolBrandingController extends Controller
         }
 
         // Check permission: branding.delete (all users)
-        if (!$user->hasPermissionTo('branding.delete', $profile->organization_id)) {
+        if (!$user->hasPermissionTo('branding.read')) {
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -317,4 +317,6 @@ class SchoolBrandingController extends Controller
         return response()->json(['message' => 'School deleted successfully']);
     }
 }
+
+
 

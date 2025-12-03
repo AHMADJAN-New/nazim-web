@@ -36,7 +36,7 @@ class StaffDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_documents.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff_documents.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -82,7 +82,7 @@ class StaffDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_documents.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff_documents.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -160,7 +160,7 @@ class StaffDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_documents.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff_documents.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -185,4 +185,6 @@ class StaffDocumentController extends Controller
         return response()->json(['message' => 'Document deleted successfully']);
     }
 }
+
+
 

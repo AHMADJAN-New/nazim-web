@@ -27,7 +27,7 @@ class TimetableController extends Controller
             }
 
                 try {
-                if (!$user->hasPermissionTo('timetables.read', $profile->organization_id)) {
+                if (!$user->hasPermissionTo('timetables.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
@@ -156,7 +156,7 @@ class TimetableController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('timetables.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('timetables.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -259,7 +259,7 @@ class TimetableController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('timetables.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('timetables.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -381,7 +381,7 @@ class TimetableController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('timetables.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('timetables.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -471,7 +471,7 @@ class TimetableController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('timetables.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('timetables.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -512,7 +512,7 @@ class TimetableController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('timetables.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('timetables.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -589,4 +589,6 @@ class TimetableController extends Controller
         return response()->json($formatted);
     }
 }
+
+
 

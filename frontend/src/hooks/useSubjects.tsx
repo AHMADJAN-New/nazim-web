@@ -113,8 +113,6 @@ export const useClassSubjectsForMultipleClasses = (classAcademicYearIds: string[
                     params.organization_id = userOrgId;
                 } else {
                     continue; // Skip if no org ID
-                } else if (organizationId) {
-                    params.organization_id = organizationId;
                 }
 
                 try {

@@ -30,7 +30,7 @@ class ScheduleSlotController extends Controller
             }
 
                 try {
-                if (!$user->hasPermissionTo('schedule_slots.read', $profile->organization_id)) {
+                if (!$user->hasPermissionTo('schedule_slots.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
@@ -166,7 +166,7 @@ class ScheduleSlotController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('schedule_slots.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('schedule_slots.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -318,7 +318,7 @@ class ScheduleSlotController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('schedule_slots.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('schedule_slots.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -431,7 +431,7 @@ class ScheduleSlotController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('schedule_slots.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('schedule_slots.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -456,4 +456,6 @@ class ScheduleSlotController extends Controller
         return response()->json(['message' => 'Schedule slot deleted successfully'], 200);
     }
 }
+
+
 

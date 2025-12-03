@@ -43,7 +43,7 @@ class TeacherSubjectAssignmentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('teacher_subject_assignments.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -112,7 +112,7 @@ class TeacherSubjectAssignmentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('teacher_subject_assignments.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -165,7 +165,7 @@ class TeacherSubjectAssignmentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('teacher_subject_assignments.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -247,7 +247,7 @@ class TeacherSubjectAssignmentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('teacher_subject_assignments.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -315,7 +315,7 @@ class TeacherSubjectAssignmentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('teacher_subject_assignments.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -345,4 +345,6 @@ class TeacherSubjectAssignmentController extends Controller
         }
     }
 }
+
+
 

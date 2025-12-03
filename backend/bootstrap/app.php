@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth' => \App\Http\Middleware\Authenticate::class,
             'auth.sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'organization' => \App\Http\Middleware\EnsureOrganizationAccess::class,
+            'org.context' => \App\Http\Middleware\SetOrganizationContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

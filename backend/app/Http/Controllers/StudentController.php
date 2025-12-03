@@ -41,14 +41,13 @@ class StudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission WITH organization context
-        try {
-            if (!$user->hasPermissionTo('students.read', $profile->organization_id)) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.read: " . $e->getMessage());
-            return response()->json(['error' => 'This action is unauthorized'], 403);
+        // Check permission - context already set by middleware
+        if (!$user->hasPermissionTo('students.read')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'students.read'
+            ], 403);
         }
 
         $orgIds = $this->getAccessibleOrgIds($profile);
@@ -123,14 +122,13 @@ class StudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission WITH organization context
-        try {
-            if (!$user->hasPermissionTo('students.read', $profile->organization_id)) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.read: " . $e->getMessage());
-            return response()->json(['error' => 'This action is unauthorized'], 403);
+        // Check permission - context already set by middleware
+        if (!$user->hasPermissionTo('students.read')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'students.read'
+            ], 403);
         }
 
         $student = Student::with(['organization', 'school'])
@@ -167,14 +165,13 @@ class StudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission WITH organization context
-        try {
-            if (!$user->hasPermissionTo('students.create', $profile->organization_id)) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.create: " . $e->getMessage());
-            return response()->json(['error' => 'This action is unauthorized'], 403);
+        // Check permission - context already set by middleware
+        if (!$user->hasPermissionTo('students.create')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'students.create'
+            ], 403);
         }
 
         $orgIds = $this->getAccessibleOrgIds($profile);
@@ -222,14 +219,13 @@ class StudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission WITH organization context
-        try {
-            if (!$user->hasPermissionTo('students.update', $profile->organization_id)) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.update: " . $e->getMessage());
-            return response()->json(['error' => 'This action is unauthorized'], 403);
+        // Check permission - context already set by middleware
+        if (!$user->hasPermissionTo('students.update')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'students.update'
+            ], 403);
         }
 
         $student = Student::whereNull('deleted_at')->find($id);
@@ -272,14 +268,13 @@ class StudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission WITH organization context
-        try {
-            if (!$user->hasPermissionTo('students.delete', $profile->organization_id)) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for students.delete: " . $e->getMessage());
-            return response()->json(['error' => 'This action is unauthorized'], 403);
+        // Check permission - context already set by middleware
+        if (!$user->hasPermissionTo('students.delete')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'students.delete'
+            ], 403);
         }
 
         $student = Student::whereNull('deleted_at')->find($id);
@@ -728,4 +723,6 @@ class StudentController extends Controller
         }
     }
 }
+
+
 

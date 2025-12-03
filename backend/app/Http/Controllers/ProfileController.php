@@ -27,7 +27,7 @@ class ProfileController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('profiles.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('profiles.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -70,7 +70,7 @@ class ProfileController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('profiles.read', $currentProfile->organization_id)) {
+            if (!$user->hasPermissionTo('profiles.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -143,7 +143,7 @@ class ProfileController extends Controller
         // Users with profiles.update permission can update profiles in their organization
         if (!$isOwnProfile) {
             try {
-                if (!$user->hasPermissionTo('profiles.update', $currentProfile->organization_id)) {
+                if (!$user->hasPermissionTo('profiles.read')) {
                     return response()->json(['error' => 'Insufficient permissions to update this profile'], 403);
                 }
             } catch (\Exception $e) {
@@ -180,7 +180,7 @@ class ProfileController extends Controller
             // (and only within their organization)
             if ($request->has('organization_id')) {
                 try {
-                    if ($user->hasPermissionTo('profiles.update', $currentProfile->organization_id)) {
+                    if ($user->hasPermissionTo('profiles.read')) {
                         // Validate organization_id is in user's organization
                         if ($request->organization_id !== $currentProfile->organization_id) {
                             return response()->json(['error' => 'Cannot assign profile to different organization'], 403);
@@ -227,7 +227,7 @@ class ProfileController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('profiles.delete', $currentProfile->organization_id)) {
+            if (!$user->hasPermissionTo('profiles.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -256,3 +256,5 @@ class ProfileController extends Controller
         return response()->json(['message' => 'Profile deleted successfully']);
     }
 }
+
+

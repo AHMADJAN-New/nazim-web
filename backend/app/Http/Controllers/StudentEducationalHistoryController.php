@@ -44,7 +44,7 @@ class StudentEducationalHistoryController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_educational_history.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_educational_history.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -114,7 +114,7 @@ class StudentEducationalHistoryController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_educational_history.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_educational_history.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -177,7 +177,7 @@ class StudentEducationalHistoryController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_educational_history.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_educational_history.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -237,7 +237,7 @@ class StudentEducationalHistoryController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_educational_history.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('student_educational_history.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -262,4 +262,6 @@ class StudentEducationalHistoryController extends Controller
         return response()->json(['message' => 'Educational history deleted successfully']);
     }
 }
+
+
 

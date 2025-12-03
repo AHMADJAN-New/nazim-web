@@ -36,14 +36,18 @@ class OrganizationController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
-            // Check permission WITH organization context
-            try {
-                if (!$user->hasPermissionTo('organizations.read', $profile->organization_id)) {
-                    return response()->json(['error' => 'This action is unauthorized'], 403);
-                }
-            } catch (\Exception $e) {
-                Log::warning("Permission check failed for organizations.read: " . $e->getMessage());
-                return response()->json(['error' => 'This action is unauthorized'], 403);
+            // Check permission - context already set by middleware
+            if (!$user->hasPermissionTo('organizations.read')) {
+                Log::warning("Permission denied for organizations.read", [
+                    'user_id' => $user->id,
+                    'organization_id' => $profile->organization_id,
+                    'team_id' => getPermissionsTeamId(),
+                ]);
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'organizations.read'
+                ], 403);
             }
 
             // Use DB facade directly to avoid Eloquent issues if table doesn't exist
@@ -135,14 +139,13 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission WITH organization context
-        try {
-            if (!$user->hasPermissionTo('organizations.create', $profile->organization_id)) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for organizations.create: " . $e->getMessage());
-            return response()->json(['error' => 'This action is unauthorized'], 403);
+        // Check permission - context already set by middleware
+        if (!$user->hasPermissionTo('organizations.create')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'organizations.create'
+            ], 403);
         }
 
         $request->validate([
@@ -180,14 +183,13 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission WITH organization context
-        try {
-            if (!$user->hasPermissionTo('organizations.read', $profile->organization_id)) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for organizations.read: " . $e->getMessage());
-            return response()->json(['error' => 'This action is unauthorized'], 403);
+        // Check permission - context already set by middleware
+        if (!$user->hasPermissionTo('organizations.read')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'organizations.read'
+            ], 403);
         }
 
         $organization = Organization::whereNull('deleted_at')->findOrFail($id);
@@ -222,14 +224,13 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission WITH organization context
-        try {
-            if (!$user->hasPermissionTo('organizations.update', $profile->organization_id)) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for organizations.update: " . $e->getMessage());
-            return response()->json(['error' => 'This action is unauthorized'], 403);
+        // Check permission - context already set by middleware
+        if (!$user->hasPermissionTo('organizations.update')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'organizations.update'
+            ], 403);
         }
 
         // All users can only update their own organization
@@ -270,14 +271,13 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission WITH organization context
-        try {
-            if (!$user->hasPermissionTo('organizations.delete', $profile->organization_id)) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for organizations.delete: " . $e->getMessage());
-            return response()->json(['error' => 'This action is unauthorized'], 403);
+        // Check permission - context already set by middleware
+        if (!$user->hasPermissionTo('organizations.delete')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'organizations.delete'
+            ], 403);
         }
 
         // All users can only delete their own organization
@@ -312,14 +312,13 @@ class OrganizationController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission WITH organization context
-        try {
-            if (!$user->hasPermissionTo('organizations.read', $profile->organization_id)) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for organizations.read: " . $e->getMessage());
-            return response()->json(['error' => 'This action is unauthorized'], 403);
+        // Check permission - context already set by middleware
+        if (!$user->hasPermissionTo('organizations.read')) {
+            return response()->json([
+                'error' => 'Access Denied',
+                'message' => 'You do not have permission to access this resource.',
+                'required_permission' => 'organizations.read'
+            ], 403);
         }
 
         // All users can only view their own organization's statistics
@@ -402,3 +401,4 @@ class OrganizationController extends Controller
         }
     }
 }
+

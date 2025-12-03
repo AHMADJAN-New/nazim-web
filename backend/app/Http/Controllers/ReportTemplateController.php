@@ -25,7 +25,7 @@ class ReportTemplateController extends Controller
 
         // Check permission (all users)
         try {
-            if (!$user->hasPermissionTo('reports.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('reports.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -78,7 +78,7 @@ class ReportTemplateController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('reports.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('reports.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -130,7 +130,7 @@ class ReportTemplateController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('reports.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('reports.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -191,7 +191,7 @@ class ReportTemplateController extends Controller
 
         // Check permission (all users)
         try {
-            if (!$user->hasPermissionTo('reports.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('reports.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -234,7 +234,7 @@ class ReportTemplateController extends Controller
 
         // Check permission (all users)
         try {
-            if (!$user->hasPermissionTo('reports.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('reports.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -302,7 +302,7 @@ class ReportTemplateController extends Controller
 
         // Check permission (all users)
         try {
-            if (!$user->hasPermissionTo('reports.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('reports.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -334,4 +334,6 @@ class ReportTemplateController extends Controller
         return response()->json(['message' => 'Report template deleted successfully'], 204);
     }
 }
+
+
 

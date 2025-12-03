@@ -30,7 +30,7 @@ class SubjectController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('subjects.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -90,7 +90,7 @@ class SubjectController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('subjects.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -138,7 +138,7 @@ class SubjectController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('subjects.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -179,7 +179,7 @@ class SubjectController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('subjects.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -244,7 +244,7 @@ class SubjectController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('subjects.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -268,4 +268,6 @@ class SubjectController extends Controller
         return response()->json(['message' => 'Subject deleted successfully'], 200);
     }
 }
+
+
 

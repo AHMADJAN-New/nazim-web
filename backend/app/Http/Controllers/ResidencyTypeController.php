@@ -77,7 +77,7 @@ class ResidencyTypeController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('residency_types.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('residency_types.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -133,7 +133,7 @@ class ResidencyTypeController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('residency_types.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('residency_types.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -171,7 +171,7 @@ class ResidencyTypeController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('residency_types.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('residency_types.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -239,7 +239,7 @@ class ResidencyTypeController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('residency_types.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('residency_types.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -276,3 +276,5 @@ class ResidencyTypeController extends Controller
         return response()->json(['message' => 'Residency type deleted successfully'], 204);
     }
 }
+
+

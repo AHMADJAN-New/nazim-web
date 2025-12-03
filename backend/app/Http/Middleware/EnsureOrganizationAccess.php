@@ -50,6 +50,11 @@ class EnsureOrganizationAccess
             return response()->json(['error' => 'Access denied to this organization'], 403);
         }
 
+        // CRITICAL: Set the organization context for Spatie teams feature
+        // This tells Spatie to only check permissions for this organization
+        // Note: setPermissionsTeamId() is a global helper function, not a method on User
+        setPermissionsTeamId($organizationId);
+
         // Add organization context to request
         $request->merge(['current_organization_id' => $organizationId]);
 

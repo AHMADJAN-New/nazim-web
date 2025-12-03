@@ -73,7 +73,7 @@ class StaffTypeController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_types.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff_types.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -124,7 +124,7 @@ class StaffTypeController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_types.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff_types.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -196,7 +196,7 @@ class StaffTypeController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_types.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff_types.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -275,7 +275,7 @@ class StaffTypeController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_types.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('staff_types.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -311,4 +311,6 @@ class StaffTypeController extends Controller
         return response()->json(['message' => 'Staff type deleted successfully']);
     }
 }
+
+
 

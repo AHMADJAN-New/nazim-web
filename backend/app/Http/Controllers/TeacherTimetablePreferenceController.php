@@ -31,7 +31,7 @@ class TeacherTimetablePreferenceController extends Controller
 
             // Check permission (all users)
             try {
-                if (!$user->hasPermissionTo('teacher_timetable_preferences.read', $profile->organization_id)) {
+                if (!$user->hasPermissionTo('teacher_timetable_preferences.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
@@ -153,7 +153,7 @@ class TeacherTimetablePreferenceController extends Controller
 
         // Check permission (all users)
         try {
-            if (!$user->hasPermissionTo('teacher_timetable_preferences.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('teacher_timetable_preferences.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -281,7 +281,7 @@ class TeacherTimetablePreferenceController extends Controller
 
         // Check permission (all users)
         try {
-            if (!$user->hasPermissionTo('teacher_timetable_preferences.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('teacher_timetable_preferences.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -355,7 +355,7 @@ class TeacherTimetablePreferenceController extends Controller
 
         // Check permission (all users)
         try {
-            if (!$user->hasPermissionTo('teacher_timetable_preferences.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('teacher_timetable_preferences.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -397,7 +397,7 @@ class TeacherTimetablePreferenceController extends Controller
 
         // Check permission (all users)
         try {
-            if (!$user->hasPermissionTo('teacher_timetable_preferences.create', $profile->organization_id) && !$user->hasPermissionTo('teacher_timetable_preferences.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('teacher_timetable_preferences.read') && !$user->hasPermissionTo('teacher_timetable_preferences.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -489,4 +489,6 @@ class TeacherTimetablePreferenceController extends Controller
         }
     }
 }
+
+
 

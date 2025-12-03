@@ -29,7 +29,7 @@ class BuildingController extends Controller
 
         try {
             $organizationId = $profile->organization_id;
-            if (!$user->hasPermissionTo('buildings.read', $organizationId)) {
+            if (!$user->hasPermissionTo('buildings.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -114,7 +114,7 @@ class BuildingController extends Controller
         // Check permission (all users)
         try {
             $organizationId = $profile->organization_id;
-            if (!$user->hasPermissionTo('buildings.create', $organizationId)) {
+            if (!$user->hasPermissionTo('buildings.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -169,7 +169,7 @@ class BuildingController extends Controller
         // Check permission (all users)
         try {
             $organizationId = $profile->organization_id;
-            if (!$user->hasPermissionTo('buildings.read', $organizationId)) {
+            if (!$user->hasPermissionTo('buildings.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -225,7 +225,7 @@ class BuildingController extends Controller
         // Check permission (all users)
         try {
             $organizationId = $profile->organization_id;
-            if (!$user->hasPermissionTo('buildings.update', $organizationId)) {
+            if (!$user->hasPermissionTo('buildings.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -302,7 +302,7 @@ class BuildingController extends Controller
         // Check permission (all users)
         try {
             $organizationId = $profile->organization_id;
-            if (!$user->hasPermissionTo('buildings.delete', $organizationId)) {
+            if (!$user->hasPermissionTo('buildings.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -351,3 +351,5 @@ class BuildingController extends Controller
         return response()->json(['message' => 'Building deleted successfully'], 200);
     }
 }
+
+

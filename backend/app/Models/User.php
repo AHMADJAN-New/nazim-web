@@ -17,6 +17,21 @@ class User extends Authenticatable
     protected $keyType = 'string';
     public $incrementing = false;
     protected $primaryKey = 'id';
+    
+    /**
+     * The guard name for Spatie permissions
+     * This is CRITICAL for Sanctum authentication to work with permissions
+     */
+    protected $guard_name = 'web';
+
+    /**
+     * Get the name of the guard used by this model
+     * Required for Spatie permissions to work correctly
+     */
+    public function getGuardNames()
+    {
+        return ['web'];
+    }
 
     protected $fillable = [
         'email',

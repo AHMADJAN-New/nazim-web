@@ -69,7 +69,8 @@ class PermissionController extends Controller
 
         // CRITICAL: Set the organization context for Spatie teams feature
         // This tells Spatie to only get permissions for this organization
-        $user->setPermissionsTeamId($profile->organization_id);
+        // Note: setPermissionsTeamId() is a global helper function, not a method on User
+        setPermissionsTeamId($profile->organization_id);
 
         // Get all permissions for the user (via roles and direct permissions)
         // Spatie will now only return permissions scoped to this organization

@@ -34,7 +34,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('classes.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -96,7 +96,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.create', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('classes.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -144,7 +144,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.read', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('classes.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -193,7 +193,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('classes.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -256,7 +256,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.delete', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('classes.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -319,7 +319,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.assign', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('classes.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -506,7 +506,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.update', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('classes.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -636,7 +636,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.copy', $profile->organization_id)) {
+            if (!$user->hasPermissionTo('classes.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -981,3 +981,5 @@ class ClassController extends Controller
         }
     }
 }
+
+
