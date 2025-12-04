@@ -233,14 +233,15 @@ export function ProfileManagement() {
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenDialog(profile.id)}
-                                disabled={!hasUpdatePermission}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                              {hasUpdatePermission && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleOpenDialog(profile.id)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         );
@@ -367,9 +368,11 @@ export function ProfileManagement() {
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateProfile.isPending || !hasUpdatePermission}>
-                Update
-              </Button>
+              {hasUpdatePermission && (
+                <Button type="submit" disabled={updateProfile.isPending}>
+                  Update
+                </Button>
+              )}
             </DialogFooter>
           </form>
         </DialogContent>

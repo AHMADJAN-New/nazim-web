@@ -44,7 +44,9 @@ This is a comprehensive Islamic school management system built with React, TypeS
 
      - Only use `// @ts-expect-error` **above the minimal line** that triggers TS2589
      - Add a clear comment explaining it is a React Query type depth workaround
-     - Do **not** use `@ts-ignore` for this; prefer `@ts-expect-error` so the compiler verifies it
+     - Do **not** use `@ts-ignore` for this;
+
+prefer `@ts-expect-error` so the compiler verifies it
 
   3. Do **not** refactor working logic just to appease TS depth if the runtime code is correct and the types are already explicit at the hook boundary.
 
@@ -176,7 +178,6 @@ const updated = await apiClient.organizations.update(id, data);
 // DELETE request
 await apiClient.organizations.delete(id);
 ```
-
 
 ### Query Patterns
 ```typescript
@@ -610,36 +611,39 @@ FROM public.permissions p
 WHERE p.organization_id = 'org-uuid-here'::UUID -- Permissions from user's organization
   AND p.name IN ('attendance.read', 'attendance.create', 'attendance.update')
 ON CONFLICT (user_id, permission_id, organization_id) DO NOTHING;
+
 ```
 
 #### RLS Policy Pattern with Permission Checks
-```sql
+``` sql
 -- ALWAYS use has_permission_for_resource() function for permission checks
 -- This function checks user_permissions first, then role_permissions
-CREATE POLICY "Users can read your_table" ON public.your_table
-    FOR SELECT TO authenticated
-    USING (
+CREATE POLICY "Users can read your_table" ON public.your_table FOR
+SELECT TO authenticated USING (
         deleted_at IS NULL
-        AND organization_id = public.get_current_user_organization_id()
-        AND public.has_permission_for_resource('your_table', 'read')
+        AND organization_id = public.get_current_user_organization_id ()
+        AND public.has_permission_for_resource ('your_table', 'read')
     );
 
-CREATE POLICY "Users can create your_table" ON public.your_table
-    FOR INSERT TO authenticated
-    WITH CHECK (
+CREATE POLICY "Users can create your_table" ON public.your_table FOR
+INSERT
+    TO authenticated
+WITH
+    CHECK (
         deleted_at IS NULL
-        AND organization_id = public.get_current_user_organization_id()
-        AND public.has_permission_for_resource('your_table', 'create')
+        AND organization_id = public.get_current_user_organization_id ()
+        AND public.has_permission_for_resource ('your_table', 'create')
     );
+
 ```
 
 **Key Points:**
-- In Laravel, use Spatie's `hasPermissionTo()` method with organization context
+- In Laravel, use Spatie's ` hasPermissionTo () ` method with organization context
 - Spatie automatically checks:
   1. Direct user permissions first (per-user overrides)
   2. Role-based permissions second
-- Resource name must match the permission's `resource` column (e.g., `'classes'`, `'subjects'`, `'timetables'`)
-- Action name must match the permission's `action` column (e.g., `'read'`, `'create'`, `'update'`, `'delete'`)
+- Resource name must match the permission's ` resource ` column (e.g., ` 'classes' `, ` 'subjects' `, ` 'timetables' `)
+- Action name must match the permission's ` action ` column (e.g., ` 'read' `, ` 'create' `, ` 'update' `, ` 'delete' `)
 - All permission checks are organization-scoped - users can only have permissions for their organization
 
 ### Organization-Scoped Permissions Management
@@ -648,15 +652,20 @@ CREATE POLICY "Users can create your_table" ON public.your_table
 
 #### RLS Policies for Write Operations
 
-```sql
+``` sql
 -- Permissions table: Users can only modify their organization's permissions
 -- Note: Laravel middleware handles this, but if using RLS:
-CREATE POLICY "Authenticated users can insert their organization's permissions"
-    ON public.permissions
-    FOR INSERT
+CREATE POLICY "Authenticated users can insert their organization's permissions" ON public.permissions FOR
+INSERT
     TO authenticated
-    WITH CHECK (
-        organization_id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
+WITH
+    CHECK (
+        organization_id = (
+            SELECT organization_id
+            FROM public.profiles
+            WHERE
+                id = auth.uid ()
+        )
     );
 
 -- Similar policies for UPDATE and DELETE on permissions and role_permissions
@@ -669,41 +678,62 @@ CREATE POLICY "Authenticated users can insert their organization's permissions"
 // ALWAYS use organization context in permission management hooks
 export const useCreatePermission = () => {
   const { data: profile } = useProfile();
-  
-  return useMutation({
-    mutationFn: async (permissionData: { name: string; resource: string; action: string; description?: string }) => {
+
+return useMutation({
+    mutationFn: async (permissionData: { name: string;
+
+resource: string;
+
+action: string;
+
+description?: string }) => {
       if (!profile?.organization_id) {
         throw new Error('User must be assigned to an organization');
-      }
-      
-      // Users can only create permissions for their organization
+
+}
+
+/
+/
+Users can only create permissions for their organization
       return await apiClient.permissions.create({
         ...permissionData,
         organization_id: profile.organization_id,
       });
-    },
-  });
+
+}, });
+
 };
 
-// ALWAYS validate organization scope when assigning permissions to roles
+/
+/
+ALWAYS validate organization scope when assigning permissions to roles
 export const useAssignPermissionToRole = () => {
   const { data: profile } = useProfile();
-  
-  return useMutation({
-    mutationFn: async ({ role, permissionId }: { role: string; permissionId: string }) => {
+
+return useMutation({
+    mutationFn: async ({ role, permissionId }: { role: string;
+
+permissionId: string }) => {
       if (!profile?.organization_id) {
         throw new Error('User must be assigned to an organization');
-      }
 
-      // Get permission to validate organization scope
-      const permission = await apiClient.permissions.get(permissionId);
-      
-      // Users can only assign permissions from their organization
+}
+
+/
+/
+Get permission to validate organization scope const permission = await apiClient.permissions.get (permissionId);
+
+/
+/
+Users can only assign permissions from their organization
       if (permission.organization_id !== profile.organization_id) {
         throw new Error('Cannot assign permission from different organization');
-      }
-      
-      // Assign permission to role within user's organization
+
+}
+
+/
+/
+Assign permission to role within user 's organization
       return await apiClient.permissions.assignToRole({
         role,
         permission_id: permissionId,
@@ -721,7 +751,7 @@ export const useAssignPermissionToUser = () => {
   return useMutation({
     mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
       if (!profile?.organization_id) {
-        throw new Error('User must be assigned to an organization');
+        throw new Error(' User must be assigned to an organization ');
       }
       
       // Get permission to validate organization scope
@@ -732,10 +762,12 @@ export const useAssignPermissionToUser = () => {
       
       // Users can only assign permissions within their organization
       if (userProfile.organization_id !== profile.organization_id) {
-        throw new Error('Cannot assign permissions to users in different organization');
+        throw new Error(' Cannot assign permissions to users in different organization ');
       }
       if (permission.organization_id !== profile.organization_id) {
-        throw new Error('Cannot assign permission from different organization');
+        throw new Error(' Cannot assign permission
+from
+    different organization ');
       }
       
       // Assign permission to user within same organization
@@ -746,7 +778,7 @@ export const useAssignPermissionToUser = () => {
       });
       
       // Invalidate user permissions query
-      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+      queryClient.invalidateQueries({ queryKey: [' user - permissions '] });
       
       return result;
     },
@@ -761,7 +793,7 @@ export const useRemovePermissionFromUser = () => {
   return useMutation({
     mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
       if (!profile?.organization_id) {
-        throw new Error('User must be assigned to an organization');
+        throw new Error(' User must be assigned to an organization ');
       }
       
       // Users can only remove permissions within their organization
@@ -772,7 +804,7 @@ export const useRemovePermissionFromUser = () => {
       });
       
       // Invalidate user permissions query
-      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+      queryClient.invalidateQueries({ queryKey: [' user - permissions '] });
     },
   });
 };
@@ -785,13 +817,16 @@ export const useRemovePermissionFromUser = () => {
 const permissions = useMemo(() => {
   if (!allPermissions || !profile || !profile.organization_id) return [];
   
-  // Users only see their organization's permissions
-  return allPermissions.filter(p => 
-    p.organization_id === profile.organization_id
-  );
+  // Users only see their organization' s permissions
+return allPermissions.filter (
+    p = > p.organization_id = = = profile.organization_id
+);
+
 }, [allPermissions, profile]);
 
-// ALWAYS show organization context
+/
+/
+ALWAYS show organization context
 {profile?.organization_id && (
   <Card className="bg-blue-50">
     <CardContent>
@@ -801,15 +836,21 @@ const permissions = useMemo(() => {
   </Card>
 )}
 
-// ALWAYS validate edit/delete permissions
+/
+/
+ALWAYS validate edit/delete permissions
 const isPermissionEditable = (permission: Permission): boolean => {
   return permission.organization_id === profile?.organization_id;
+
 };
 
 const isPermissionDeletable = (permission: Permission): boolean => {
   // Users can only delete permissions from their organization
   return permission.organization_id === profile?.organization_id;
+
 };
+
+
 ```
 
 #### Key Rules for Organization-Scoped Permissions
@@ -843,25 +884,39 @@ export const useUploadFile = () => {
       file, 
       fileType 
     }: { 
-      resourceId: string; 
-      organizationId: string; 
-      file: File; 
-      fileType: string;
-    }) => {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${resourceId}/${fileType}/${Date.now()}.${fileExt}`;
-      const filePath = `${organizationId}/${fileName}`; // ALWAYS prefix with organization_id
+      resourceId: string;
 
-      // Upload via Laravel API endpoint
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('path', filePath);
+organizationId: string;
 
-      const result = await apiClient.files.upload(formData);
-      return result.path;
-    },
-  });
+file: File;
+
+fileType: string;
+
+}) => { const fileExt = file.name.split('.').pop();
+
+const fileName = `${resourceId}/${fileType}/${Date.now()}.${fileExt}`;
+
+const filePath = `${organizationId}/${fileName}`;
+/
+/
+ALWAYS prefix with organization_id
+
+/
+/
+Upload via Laravel API endpoint const formData = new FormData ();
+
+formData.append ('file', file);
+
+formData.append ('path', filePath);
+
+const result = await apiClient.files.upload (formData);
+
+return result.path;
+
+}, });
+
 };
+
 ```
 
 #### Laravel Storage Configuration
@@ -876,7 +931,9 @@ export const useUploadFile = () => {
 // ALWAYS use Laravel API endpoints for organization-related queries
 // Laravel backend enforces security server-side
 
-// Get user's organization_id (from profile)
+/
+/
+Get user's organization_id (from profile)
 const { data: profile } = useProfile();
 const organizationId = profile?.organization_id;
 
@@ -887,6 +944,7 @@ if (!organizationId) {
 
 // Get user's organization
 const { data: organization } = await apiClient.organizations.get(organizationId);
+
 ```
 
 ### Components - Multi-Tenancy Pattern
@@ -894,26 +952,34 @@ const { data: organization } = await apiClient.organizations.get(organizationId)
 #### Component Organization Context
 ```typescript
 import { useProfile } from '@/hooks/useProfiles';
+
 import { useCurrentOrganization } from '@/hooks/useOrganizations';
 
 export function YourComponent() {
   const { data: profile } = useProfile();
-  const { data: organization } = useCurrentOrganization();
-  
-  // ALWAYS check organization context
+
+const { data: organization } = useCurrentOrganization();
+
+/
+/
+ALWAYS check organization context
   if (!profile?.organization_id) {
     return <div>No organization assigned. Please contact administrator.</div>;
-  }
 
-  // Use organization context in data fetching
+}
+
+/
+/
+Use organization context in data fetching
   const { data: resources } = useYourResources();
 
-  return (
+return (
     <div>
       {organization && <h1>{organization.name}</h1>}
       {/* Component content */}
     </div>
   );
+
 }
 ```
 
@@ -924,23 +990,29 @@ export function YourComponent() {
 -- Migration: YYYYMMDDHHMMSS_add_organization_to_your_table.sql
 
 -- Step 1: Add organization_id column
-ALTER TABLE public.your_table 
-    ADD COLUMN IF NOT EXISTS organization_id UUID NULL 
-    REFERENCES public.organizations(id) ON DELETE CASCADE;
+ALTER TABLE public.your_table
+ADD COLUMN IF NOT EXISTS organization_id UUID NULL REFERENCES public.organizations (id) ON DELETE CASCADE;
 
 -- Step 2: Create index
-CREATE INDEX IF NOT EXISTS idx_your_table_organization_id 
-    ON public.your_table(organization_id);
+CREATE INDEX IF NOT EXISTS idx_your_table_organization_id ON public.your_table (organization_id);
 
 -- Step 3: Update existing data (if any)
 -- For new tables, this step is not needed
-UPDATE public.your_table 
-SET organization_id = (SELECT id FROM public.organizations LIMIT 1)
-WHERE organization_id IS NULL;
+UPDATE public.your_table
+SET
+    organization_id = (
+        SELECT id
+        FROM public.organizations
+        LIMIT 1
+    )
+WHERE
+    organization_id IS NULL;
 
 -- Step 4: Make NOT NULL (after data migration)
-ALTER TABLE public.your_table 
-    ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE public.your_table
+ALTER COLUMN organization_id
+SET
+    NOT NULL;
 
 -- Step 5: Enable RLS
 ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
@@ -949,21 +1021,24 @@ ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
 ```
 
 #### New Table Migration Pattern (with UUID - REQUIRED)
-```sql
+``` sql
 -- Migration: YYYYMMDDHHMMSS_create_your_table.sql
 
 -- REQUIRED: ALL tables MUST use UUID primary keys
 CREATE TABLE IF NOT EXISTS public.your_table (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  -- REQUIRED: UUID primary key
-    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (), -- REQUIRED: UUID primary key
+    organization_id UUID NOT NULL REFERENCES public.organizations (id) ON DELETE CASCADE,
     -- other columns...
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+    created_at TIMESTAMP
+    WITH
+        TIME ZONE DEFAULT now(),
+        updated_at TIMESTAMP
+    WITH
+        TIME ZONE DEFAULT now()
 );
 
 -- ALWAYS create index on organization_id
-CREATE INDEX IF NOT EXISTS idx_your_table_organization_id 
-    ON public.your_table(organization_id);
+CREATE INDEX IF NOT EXISTS idx_your_table_organization_id ON public.your_table (organization_id);
 
 -- ALWAYS enable RLS
 ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
@@ -975,25 +1050,37 @@ ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
 ```php
 // Migration: YYYY_MM_DD_HHMMSS_create_your_table.php
 use Illuminate\Database\Migrations\Migration;
+
 use Illuminate\Database\Schema\Blueprint;
+
 use Illuminate\Support\Facades\Schema;
+
 use Illuminate\Support\Facades\DB;
 
 Schema::create('your_table', function (Blueprint $table) {
     // REQUIRED: UUID primary key
     $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
-    
-    // REQUIRED: organization_id for multi-tenancy
+
+/
+/
+REQUIRED: organization_id for multi-tenancy
     $table->uuid('organization_id')->nullable();
-    $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
-    
-    // other columns...
-    $table->timestamps();
-    $table->timestamp('deleted_at')->nullable();
-    
-    // ALWAYS create index on organization_id
-    $table->index('organization_id');
+
+$table -> foreign ('organization_id') -> references ('id') -> on ('organizations') -> onDelete ('cascade');
+
+/
+/
+other columns... $table->timestamps();
+
+$table -> timestamp('deleted_at') -> nullable ();
+
+/
+/
+ALWAYS
+create index on organization_id $table -> index ('organization_id');
+
 });
+
 ```
 
 #### Migration Security & Performance Best Practices
@@ -1002,19 +1089,22 @@ Schema::create('your_table', function (Blueprint $table) {
 
 ##### Function Security - SET search_path
 
-**ALWAYS** set `search_path = public` on all functions to prevent search_path injection attacks:
+**ALWAYS** set ` search_path = public ` on all functions to prevent search_path injection attacks:
 
-```sql
+``` sql
 -- ✅ CORRECT: Function with secure search_path
-CREATE OR REPLACE FUNCTION public.your_function()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SET search_path = public  -- REQUIRED for security
-AS $$
-BEGIN
+CREATE
+OR
+REPLACE
+    FUNCTION public.your_function () RETURNS TRIGGER LANGUAGE plpgsql
+SET
+    search_path = public -- REQUIRED for security
+    AS $$ BEGIN
     -- function body
-    RETURN NEW;
+RETURN NEW;
+
 END;
+
 $$;
 
 -- ❌ WRONG: Function without search_path (security vulnerability)
@@ -1025,6 +1115,7 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
 ```
 
 **Required for:**
@@ -1047,6 +1138,7 @@ CREATE POLICY "Users can insert org role_permissions" ON public.role_permissions
 CREATE POLICY "Authenticated users can insert their organization's role_permissions" ON public.role_permissions
     FOR INSERT TO authenticated
     WITH CHECK (...);
+
 ```
 
 **Guidelines:**
@@ -1058,27 +1150,33 @@ CREATE POLICY "Authenticated users can insert their organization's role_permissi
 
 **ALWAYS** consolidate multiple permissive policies for the same action into a single policy:
 
-```sql
+``` sql
 -- ✅ CORRECT: Single consolidated policy
-CREATE POLICY "Users can read profiles" ON public.profiles
-    FOR SELECT TO authenticated
-    USING (
+CREATE POLICY "Users can read profiles" ON public.profiles FOR
+SELECT TO authenticated USING (
         deleted_at IS NULL
         AND (
-            id = (SELECT auth.uid())
-            OR organization_id = public.get_current_user_organization_id()
-            OR public.get_current_user_organization_id() IS NULL
+            id = (
+                SELECT auth.uid ()
+            )
+            OR organization_id = public.get_current_user_organization_id ()
+            OR public.get_current_user_organization_id () IS NULL
         )
     );
 
 -- ❌ WRONG: Multiple permissive policies (causes security warnings)
-CREATE POLICY "Users can read their own profile" ON public.profiles
-    FOR SELECT TO authenticated
-    USING (id = (SELECT auth.uid()));
+CREATE POLICY "Users can read their own profile" ON public.profiles FOR
+SELECT TO authenticated USING (
+        id = (
+            SELECT auth.uid ()
+        )
+    );
 
-CREATE POLICY "Users can read profiles in their organization" ON public.profiles
-    FOR SELECT TO authenticated
-    USING (organization_id = public.get_current_user_organization_id());
+CREATE POLICY "Users can read profiles in their organization" ON public.profiles FOR
+SELECT TO authenticated USING (
+        organization_id = public.get_current_user_organization_id ()
+    );
+
 ```
 
 **Benefits:**
@@ -1104,15 +1202,18 @@ CREATE POLICY "Users can read your_table" ON public.your_table
 
 -- ❌ WRONG: Unnecessary DROP statements (causes NOTICE noise)
 DROP TRIGGER IF EXISTS update_your_table_updated_at ON public.your_table;
+
 CREATE TRIGGER update_your_table_updated_at
     BEFORE UPDATE ON public.your_table
     FOR EACH ROW
     EXECUTE FUNCTION public.update_updated_at_column();
 
 DROP POLICY IF EXISTS "Users can read your_table" ON public.your_table;
+
 CREATE POLICY "Users can read your_table" ON public.your_table
     FOR SELECT TO authenticated
     USING (...);
+
 ```
 
 **When to use DROP IF EXISTS:**
@@ -1144,6 +1245,7 @@ BEGIN
     -- function body
 END;
 $$;
+
 ```
 
 **Key points:**
@@ -1179,10 +1281,13 @@ describe('useYourResources', () => {
     // Test that users cannot access other organizations' data
   });
 
-  it('should require organization_id for all operations', async () => {
+it('should require organization_id for all operations', async () => {
     // Test that users without organization_id cannot perform operations
   });
+
 });
+
+
 ```
 
 ### Security Checklist - Multi-Tenancy
@@ -1243,6 +1348,7 @@ export function ComponentName({ prop1, prop2 }: ComponentProps) {
       {/* JSX content */}
     </div>
   );
+
 }
 ```
 
@@ -1271,13 +1377,14 @@ import { useLanguage } from '@/hooks/useLanguage';
 
 function MyComponent() {
   const { t, isRTL, language } = useLanguage();
-  
-  return (
+
+return (
     <div>
       <h1>{t('students.title')}</h1>
       <p>{t('students.searchPlaceholder')}</p>
     </div>
   );
+
 }
 ```
 
@@ -1312,12 +1419,16 @@ function MyComponent() {
 // In components, use isRTL from useLanguage hook
 const { isRTL } = useLanguage();
 
-// Apply conditional classes
+/
+/
+Apply conditional classes
 <div className={isRTL ? 'mr-4 border-r' : 'ml-4 border-l'}>
   {/* Content */}
 </div>
 
-// Sidebar component
+/
+/
+Sidebar component
 <Sidebar side={isRTL ? "right" : "left"} dir={isRTL ? 'rtl' : 'ltr'}>
   {/* Sidebar content */}
 </Sidebar>
@@ -1416,23 +1527,33 @@ frontend/src/
 // frontend/src/types/api/student.ts
 export interface Student {
   id: string;
-  organization_id: string;
-  school_id: string | null;
-  admission_no: string;
-  full_name: string;
-  father_name: string;
-  // ... all fields match API response exactly (snake_case)
-  created_at: string;
-  updated_at: string;
-}
 
-export interface StudentInsert {
-  admission_no: string;
-  full_name: string;
-  // ... fields for API insert payload
+organization_id: string;
+
+school_id: string | null;
+
+admission_no: string;
+
+full_name: string;
+
+father_name: string;
+/
+/
+... all fields match API response exactly (snake_case)
+  created_at: string;
+
+updated_at: string;
+
+} export interface StudentInsert { admission_no: string;
+
+full_name: string;
+/
+/
+... fields for API insert payload
 }
 
 export type StudentUpdate = Partial<StudentInsert>;
+
 ```
 
 **Rules**:
@@ -1451,29 +1572,46 @@ export type StudentUpdate = Partial<StudentInsert>;
 // frontend/src/types/domain/student.ts
 export interface Student {
   id: string;
-  organizationId: string;  // camelCase
-  schoolId: string | null;
-  admissionNumber: string;
-  fullName: string;
-  fatherName: string;
-  // ... nested structures
-  address: Address;
-  guardians: Guardian[];
-  healthInfo: HealthInfo;
-  previousSchools: PreviousSchool[];
-  documents: StudentDocument[];
-  // ... Date objects (not strings)
-  createdAt: Date;
-  updatedAt: Date;
-}
 
-export interface Address {
-  street: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
-  landmark?: string;
+organizationId: string;
+/
+/
+camelCase schoolId: string | null;
+
+admissionNumber: string;
+
+fullName: string;
+
+fatherName: string;
+/
+/
+... nested structures address: Address;
+
+guardians: Guardian[];
+
+healthInfo: HealthInfo;
+
+previousSchools: PreviousSchool[];
+
+documents: StudentDocument[];
+/
+/
+... Date objects (not strings) createdAt: Date;
+
+updatedAt: Date;
+
+} export interface Address { street: string;
+
+city: string;
+
+state: string;
+
+country: string;
+
+postalCode: string;
+
+landmark?: string;
+
 }
 ```
 
@@ -1491,6 +1629,7 @@ export interface Address {
 ```typescript
 // frontend/src/mappers/studentMapper.ts
 import type * as StudentApi from '@/types/api/student';
+
 import type { Student } from '@/types/domain/student';
 
 /**
@@ -1520,6 +1659,7 @@ export function mapStudentApiToDomain(api: StudentApi.Student): Student {
     createdAt: api.created_at ? new Date(api.created_at) : new Date(),
     updatedAt: api.updated_at ? new Date(api.updated_at) : new Date(),
   };
+
 }
 
 /**
@@ -1543,6 +1683,7 @@ export function mapStudentDomainToInsert(domain: Partial<Student>): StudentApi.S
     // Convert dates to ISO strings
     birth_date: domain.dateOfBirth?.toISOString() || null,
   };
+
 }
 
 /**
@@ -1550,6 +1691,7 @@ export function mapStudentDomainToInsert(domain: Partial<Student>): StudentApi.S
  */
 export function mapStudentDomainToUpdate(domain: Partial<Student>): StudentApi.StudentUpdate {
   return mapStudentDomainToInsert(domain);
+
 }
 ```
 
@@ -1568,45 +1710,57 @@ export function mapStudentDomainToUpdate(domain: Partial<Student>): StudentApi.S
 ```typescript
 // frontend/src/hooks/useStudents.tsx
 import type * as StudentApi from '@/types/api/student';
+
 import type { Student } from '@/types/domain/student';
+
 import { mapStudentApiToDomain, mapStudentDomainToInsert } from '@/mappers/studentMapper';
 
-// Re-export domain types for convenience
+/
+/
+Re-export domain types for convenience
 export type { Student, StudentStatus } from '@/types/domain/student';
 
 export const useStudents = (organizationId?: string) => {
   const { user, profile } = useAuth();
 
-  return useQuery<Student[]>({
+return useQuery<Student[]>({
     queryKey: ['students', organizationId ?? profile?.organization_id ?? null],
     queryFn: async () => {
       if (!user || !profile) {
         if (import.meta.env.DEV) {
           console.log('[useStudents] No user or profile');
-        }
-        return [];
-      }
 
-      // Fetch API data
+} return [];
+
+}
+
+/
+/
+Fetch API data
       const apiStudents = await studentsApi.list({
         organization_id: organizationId || profile.organization_id,
       });
 
-      // Map to domain models
+/
+/
+Map to domain models
       return (apiStudents as StudentApi.Student[]).map(mapStudentApiToDomain);
-    },
+
+},
     enabled: !!user && !!profile,
     staleTime: 5 * 60 * 1000,        // 5 minutes
     refetchOnWindowFocus: false,     // Performance optimization
     refetchOnReconnect: false,        // Performance optimization
   });
+
 };
 
 export const useCreateStudent = () => {
   const queryClient = useQueryClient();
-  const { profile } = useAuth();
 
-  return useMutation({
+const { profile } = useAuth();
+
+return useMutation({
     mutationFn: async (payload: Partial<Student>) => {
       // Convert domain to API payload
       const insertData = mapStudentDomainToInsert({
@@ -1614,18 +1768,27 @@ export const useCreateStudent = () => {
         organizationId: payload.organizationId || profile?.organization_id,
       });
 
-      // Call API
-      const apiStudent = await studentsApi.create(insertData);
-      
-      // Map response back to domain
-      return mapStudentApiToDomain(apiStudent as StudentApi.Student);
-    },
+/
+/
+Call API const apiStudent = await studentsApi.create (insertData);
+
+/
+/
+Map response back to domain
+return mapStudentApiToDomain (
+    apiStudent as StudentApi.Student
+);
+
+},
     onSuccess: () => {
       toast.success('Student created successfully');
-      void queryClient.invalidateQueries({ queryKey: ['students'] });
-    },
-  });
+
+void queryClient.invalidateQueries({ queryKey: ['students'] });
+
+}, });
+
 };
+
 ```
 
 **Rules**:
@@ -1644,21 +1807,29 @@ export const useCreateStudent = () => {
 ```typescript
 // frontend/src/pages/Students.tsx
 import { useStudents, useCreateStudent } from '@/hooks/useStudents';
-import type { Student } from '@/types/domain/student';  // Import domain type
+
+import type { Student } from '@/types/domain/student';
+/
+/
+Import domain type
 
 export function Students() {
-  const { data: students } = useStudents();  // Returns Student[] (domain)
+  const { data: students } = useStudents();
+/
+/
+Returns Student[] (domain)
   const createStudent = useCreateStudent();
 
-  const handleCreate = (data: Partial<Student>) => {
+const handleCreate = (data: Partial<Student>) => {
     // Work with domain model
     createStudent.mutate({
       ...data,
       organizationId: profile?.organization_id,
     });
-  };
 
-  return (
+};
+
+return (
     <div>
       {students?.map(student => (
         <div key={student.id}>
@@ -1670,6 +1841,7 @@ export function Students() {
       ))}
     </div>
   );
+
 }
 ```
 
@@ -1762,6 +1934,7 @@ return useQuery({
   refetchOnWindowFocus: false,     // REQUIRED: Prevent refetch on tab switch
   refetchOnReconnect: false,       // OPTIONAL: Prevent refetch on reconnect
 });
+
 ```
 
 #### Performance Settings
@@ -1778,15 +1951,22 @@ return useQuery({
 // ✅ CORRECT: Guarded console.log
 if (import.meta.env.DEV) {
   console.log('[useStudents] Fetched', students.length, 'students');
+
 }
 
-// ✅ CORRECT: Guarded console.error (keep errors in production)
+/
+/
+✅ CORRECT: Guarded console.error (keep errors in production)
 if (import.meta.env.DEV) {
   console.error('[useStudents] Error:', error);
+
 }
 
-// ❌ WRONG: Unconditional console.log (adds overhead in production)
+/
+/
+❌ WRONG: Unconditional console.log (adds overhead in production)
 console.log('[useStudents] Fetched', students.length, 'students');
+
 ```
 
 **Rules**:
@@ -1842,11 +2022,13 @@ describe('ComponentName', () => {
   it('should render correctly', () => {
     // Test implementation
   });
-  
-  it('should handle user interactions', () => {
+
+it('should handle user interactions', () => {
     // Test implementation
   });
+
 });
+
 ```
 
 ## Error Handling
@@ -1914,14 +2096,17 @@ describe('ComponentName', () => {
 // ALWAYS use this pattern for tenant-scoped resources
 export const useStudents = (params: StudentParams) => {
   const { user } = useAuth();
-  const { data: profile } = useProfile();
 
-  return useQuery({
+const { data: profile } = useProfile();
+
+return useQuery({
     queryKey: ['students', profile?.organization_id, params],
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) return [];
 
-      // Multi-tenancy: Users can only see their organization's data
+/
+/
+Multi-tenancy: Users can only see their organization's data
       // Fetch from Laravel API (server handles organization filtering)
       return await apiClient.students.list({
         organizationId: profile.organization_id,
@@ -2416,6 +2601,163 @@ public function index(Request $request)
 - `update()` → Check `{resource}.update`
 - `destroy()` → Check `{resource}.delete`
 - Custom actions → Check `{resource}.{action}` (e.g., `classes.assign`, `classes.copy`)
+
+#### Deletion Pattern (CRITICAL)
+
+**CRITICAL: ALL delete operations MUST follow this pattern for proper UI updates and error handling.**
+
+##### Backend Controller `destroy()` Method Pattern
+
+**ALWAYS use this pattern for delete operations:**
+
+```php
+public function destroy(string $id)
+{
+    $user = request()->user();
+    $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+    if (!$profile) {
+        return response()->json(['error' => 'Profile not found'], 404);
+    }
+
+    $resource = YourModel::whereNull('deleted_at')->find($id);
+
+    if (!$resource) {
+        return response()->json(['error' => 'Resource not found'], 404);
+    }
+
+    // Require organization_id for all users
+    if (!$profile->organization_id) {
+        return response()->json(['error' => 'User must be assigned to an organization'], 403);
+    }
+
+    // Check permission WITH organization context
+    try {
+        if (!$user->hasPermissionTo('your_resource.delete')) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+    } catch (\Exception $e) {
+        \Log::warning("Permission check failed for your_resource.delete: " . $e->getMessage());
+        return response()->json(['error' => 'This action is unauthorized'], 403);
+    }
+
+    // Get accessible organization IDs (user's organization only)
+    $orgIds = [$profile->organization_id];
+
+    // Check organization access
+    // If resource is organization-specific, user can only delete resources from their organization
+    // If resource is global (organization_id = NULL), user with delete permission can delete it
+    if ($resource->organization_id !== null && !in_array($resource->organization_id, $orgIds)) {
+        return response()->json(['error' => 'Cannot delete resource from different organization'], 403);
+    }
+
+    // Check if resource is in use (if applicable)
+    // Example: Check if residency type is used by student_admissions
+    $inUse = DB::table('related_table')
+        ->where('resource_id', $id)
+        ->whereNull('deleted_at')
+        ->exists();
+
+    if ($inUse) {
+        return response()->json(['error' => 'This resource is in use and cannot be deleted'], 409);
+    }
+
+    // Soft delete
+    $resource->delete();
+
+    // CRITICAL: Return 204 No Content with NO body (not JSON)
+    return response()->noContent();
+}
+```
+
+**Key Points:**
+- ✅ **ALWAYS** return `response()->noContent()` for successful deletions (204 status, no body)
+- ❌ **NEVER** return `response()->json(['message' => '...'], 204)` (204 should have no body)
+- ✅ **ALWAYS** check permissions before deletion
+- ✅ **ALWAYS** validate organization access
+- ✅ **ALWAYS** check if resource is in use before deletion (if applicable)
+- ✅ **ALWAYS** use soft delete (`$resource->delete()`) unless hard delete is explicitly required
+
+##### Frontend API Client Pattern
+
+**CRITICAL: The API client MUST handle 204 No Content responses correctly:**
+
+```typescript
+// In frontend/src/lib/api/client.ts - request() method
+async request<T>(endpoint: string, options: RequestOptions): Promise<T> {
+  // ... existing code ...
+
+  if (!response.ok) {
+    // ... error handling ...
+  }
+
+  // Handle 204 No Content responses (no body)
+  if (response.status === 204) {
+    return null as T;
+  }
+
+  return response.json();
+}
+```
+
+**Key Points:**
+- ✅ **ALWAYS** check for `response.status === 204` before calling `response.json()`
+- ✅ **ALWAYS** return `null` for 204 responses (no body to parse)
+- ❌ **NEVER** try to parse JSON from a 204 response (will cause errors)
+
+##### Frontend Delete Hook Pattern
+
+**CRITICAL: ALL delete hooks MUST use this pattern for immediate UI updates:**
+
+```typescript
+export const useDeleteYourResource = () => {
+  const queryClient = useQueryClient();
+  const { user, profile } = useAuth();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!user || !profile) {
+        throw new Error('User not authenticated');
+      }
+
+      // Delete resource via Laravel API (soft delete)
+      // Backend handles all validation: permission check, organization access, and "in use" check
+      await yourResourceApi.delete(id);
+    },
+    onSuccess: async () => {
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['your-resources'] });
+      await queryClient.refetchQueries({ queryKey: ['your-resources'] });
+      toast.success('Resource deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to delete resource');
+    },
+  });
+};
+```
+
+**Key Points:**
+- ✅ **ALWAYS** use `async` for `onSuccess` callback
+- ✅ **ALWAYS** use both `invalidateQueries` AND `refetchQueries` for immediate UI updates
+- ✅ **ALWAYS** await both operations to ensure they complete
+- ❌ **NEVER** only use `invalidateQueries` (UI won't update until next refetch)
+- ❌ **NEVER** fetch the resource before deleting (backend handles all validation)
+- ✅ **ALWAYS** let the backend handle validation (permission, organization access, "in use" check)
+
+##### Why This Pattern is Critical
+
+**Without proper deletion pattern:**
+- ❌ Frontend shows 404 errors even when delete succeeds
+- ❌ UI doesn't update until page refresh
+- ❌ Users see stale data after deletion
+- ❌ Poor user experience
+
+**With proper deletion pattern:**
+- ✅ Backend returns proper 204 No Content (no body)
+- ✅ Frontend handles 204 correctly (returns null, no JSON parsing)
+- ✅ UI updates immediately after deletion
+- ✅ No errors, smooth user experience
 
 #### Middleware Organization Context
 **CRITICAL: The `EnsureOrganizationAccess` middleware sets Spatie's team context globally:**

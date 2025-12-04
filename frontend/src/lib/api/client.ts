@@ -132,9 +132,10 @@ class ApiClient {
         // This is normal behavior, not an error
         const isExpectedUnauth = response.status === 401 && !hasToken && endpoint.includes('/auth/');
         
-        // For validation errors (400), include details if available
-        if (response.status === 400 && error.details) {
-          const details = Object.entries(error.details)
+        // For validation errors (400 or 422), include details if available
+        if ((response.status === 400 || response.status === 422) && (error.details || error.errors)) {
+          const validationErrors = error.details || error.errors;
+          const details = Object.entries(validationErrors)
             .map(([key, messages]) => `${key}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
             .join('; ');
           throw new Error(error.message || 'Validation failed' + (details ? ` - ${details}` : ''));
@@ -147,6 +148,11 @@ class ApiClient {
           (errorObj as any).expected = true;
         }
         throw errorObj;
+      }
+
+      // Handle 204 No Content responses (no body)
+      if (response.status === 204) {
+        return null as T;
       }
 
       return response.json();
@@ -352,12 +358,100 @@ export const permissionsApi = {
     return apiClient.get('/permissions');
   },
 
+  create: async (data: {
+    name: string;
+    resource: string;
+    action: string;
+    description?: string | null;
+  }) => {
+    return apiClient.post('/permissions', data);
+  },
+
+  update: async (id: string, data: {
+    name?: string;
+    resource?: string;
+    action?: string;
+    description?: string | null;
+  }) => {
+    return apiClient.put(`/permissions/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/permissions/${id}`);
+  },
+
   userPermissions: async () => {
     return apiClient.get('/permissions/user');
   },
 
+  userPermissionsForUser: async (userId: string) => {
+    return apiClient.get(`/permissions/user/${userId}`);
+  },
+
   roles: async () => {
     return apiClient.get('/permissions/roles');
+  },
+
+  rolePermissions: async (roleName: string) => {
+    return apiClient.get(`/permissions/roles/${roleName}`);
+  },
+
+  assignPermissionToRole: async (data: { role: string; permission_id: string | number }) => {
+    return apiClient.post('/permissions/roles/assign', data);
+  },
+
+  removePermissionFromRole: async (data: { role: string; permission_id: string | number }) => {
+    return apiClient.post('/permissions/roles/remove', data);
+  },
+
+  assignRoleToUser: async (data: { user_id: string; role: string }) => {
+    return apiClient.post('/permissions/users/assign-role', data);
+  },
+
+  removeRoleFromUser: async (data: { user_id: string; role: string }) => {
+    return apiClient.post('/permissions/users/remove-role', data);
+  },
+
+  assignPermissionToUser: async (data: { user_id: string; permission_id: string | number }) => {
+    return apiClient.post('/permissions/users/assign-permission', data);
+  },
+
+  removePermissionFromUser: async (data: { user_id: string; permission_id: string | number }) => {
+    return apiClient.post('/permissions/users/remove-permission', data);
+  },
+
+  userRoles: async (userId: string) => {
+    return apiClient.get(`/permissions/users/${userId}/roles`);
+  },
+};
+
+// Roles API
+export const rolesApi = {
+  list: async () => {
+    return apiClient.get('/roles');
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/roles/${id}`);
+  },
+
+  create: async (data: {
+    name: string;
+    description?: string | null;
+    guard_name?: string;
+  }) => {
+    return apiClient.post('/roles', data);
+  },
+
+  update: async (id: string, data: {
+    name?: string;
+    description?: string | null;
+  }) => {
+    return apiClient.put(`/roles/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/roles/${id}`);
   },
 };
 

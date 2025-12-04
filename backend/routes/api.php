@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\BuildingController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\StaffController;
@@ -80,8 +81,23 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Permissions
     Route::get('/permissions', [PermissionController::class, 'index']);
+    Route::post('/permissions', [PermissionController::class, 'store']);
+    Route::put('/permissions/{id}', [PermissionController::class, 'update']);
+    Route::delete('/permissions/{id}', [PermissionController::class, 'destroy']);
     Route::get('/permissions/user', [PermissionController::class, 'userPermissions']);
+    Route::get('/permissions/user/{userId}', [PermissionController::class, 'userPermissionsForUser']);
     Route::get('/permissions/roles', [PermissionController::class, 'roles']);
+    Route::get('/permissions/roles/{roleName}', [PermissionController::class, 'rolePermissions']);
+    Route::post('/permissions/roles/assign', [PermissionController::class, 'assignPermissionToRole']);
+    Route::post('/permissions/roles/remove', [PermissionController::class, 'removePermissionFromRole']);
+    Route::get('/permissions/users/{userId}/roles', [PermissionController::class, 'userRoles']);
+    Route::post('/permissions/users/assign-role', [PermissionController::class, 'assignRoleToUser']);
+    Route::post('/permissions/users/remove-role', [PermissionController::class, 'removeRoleFromUser']);
+    Route::post('/permissions/users/assign-permission', [PermissionController::class, 'assignPermissionToUser']);
+    Route::post('/permissions/users/remove-permission', [PermissionController::class, 'removePermissionFromUser']);
+
+    // Roles
+    Route::apiResource('roles', RoleController::class);
 
     // Buildings
     Route::apiResource('buildings', BuildingController::class);
@@ -94,17 +110,17 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/staff/{id}/picture', [StaffController::class, 'uploadPicture']);
     Route::post('/staff/{id}/document', [StaffController::class, 'uploadDocument']);
     Route::apiResource('staff', StaffController::class);
-    
+
     // Staff Types
     Route::apiResource('staff-types', StaffTypeController::class);
-    
+
     // Residency Types
     Route::apiResource('residency-types', ResidencyTypeController::class);
-    
+
     // Report Templates
     Route::get('/report-templates/school/{schoolId}', [ReportTemplateController::class, 'bySchool']);
     Route::apiResource('report-templates', ReportTemplateController::class);
-    
+
     // Staff Documents
     Route::get('/staff/{id}/documents', [StaffDocumentController::class, 'index']);
     Route::post('/staff/{id}/documents', [StaffDocumentController::class, 'store']);
@@ -119,26 +135,26 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/students/{id}/picture', [StudentController::class, 'getPicture']);
     Route::post('/students/{id}/picture', [StudentController::class, 'uploadPicture']);
     Route::apiResource('students', StudentController::class);
-    
+
     // Student Documents
     Route::get('/students/{id}/documents', [StudentDocumentController::class, 'index']);
     Route::post('/students/{id}/documents', [StudentDocumentController::class, 'store']);
     Route::get('/student-documents/{id}/download', [StudentDocumentController::class, 'download']);
     Route::delete('/student-documents/{id}', [StudentDocumentController::class, 'destroy']);
-    
+
     // Student Educational History
     Route::get('/students/{id}/educational-history', [StudentEducationalHistoryController::class, 'index']);
     Route::post('/students/{id}/educational-history', [StudentEducationalHistoryController::class, 'store']);
     Route::put('/student-educational-history/{id}', [StudentEducationalHistoryController::class, 'update']);
     Route::delete('/student-educational-history/{id}', [StudentEducationalHistoryController::class, 'destroy']);
-    
+
     // Student Discipline Records
     Route::get('/students/{id}/discipline-records', [StudentDisciplineRecordController::class, 'index']);
     Route::post('/students/{id}/discipline-records', [StudentDisciplineRecordController::class, 'store']);
     Route::put('/student-discipline-records/{id}', [StudentDisciplineRecordController::class, 'update']);
     Route::delete('/student-discipline-records/{id}', [StudentDisciplineRecordController::class, 'destroy']);
     Route::post('/student-discipline-records/{id}/resolve', [StudentDisciplineRecordController::class, 'resolve']);
-    
+
     // Student Admissions
     Route::get('/student-admissions/stats', [StudentAdmissionController::class, 'stats']);
     Route::apiResource('student-admissions', StudentAdmissionController::class);

@@ -4,7 +4,12 @@ import {
   useUserPermissionsForUser,
   useAssignPermissionToUser,
   useRemovePermissionFromUser,
-  type Permission
+  useAssignRoleToUser,
+  useRemoveRoleFromUser,
+  useUserRoles,
+  useRoles,
+  type Permission,
+  type Role
 } from '@/hooks/usePermissions';
 import { useProfile, useProfiles } from '@/hooks/useProfiles';
 import { useCurrentOrganization } from '@/hooks/useOrganizations';
@@ -38,7 +43,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Shield, User, X, Building2 } from 'lucide-react';
+import { Search, Shield, User, X, Building2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function UserPermissionsManagement() {
@@ -49,6 +54,7 @@ export function UserPermissionsManagement() {
   
   const { data: allPermissions, isLoading: permissionsLoading } = usePermissions();
   const { data: allUsers, isLoading: usersLoading } = useProfiles();
+  const { data: roles = [], isLoading: rolesLoading } = useRoles();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -58,17 +64,40 @@ export function UserPermissionsManagement() {
   // Get permissions for selected user
   const { data: userPermissionsData, isLoading: userPermissionsLoading } = useUserPermissionsForUser(selectedUserId || '');
   
+  // Get roles for selected user
+  const { data: userRolesData, isLoading: userRolesLoading } = useUserRoles(selectedUserId || '');
+  
   const assignPermission = useAssignPermissionToUser();
   const removePermission = useRemovePermissionFromUser();
+  const assignRole = useAssignRoleToUser();
+  const removeRole = useRemoveRoleFromUser();
   
   // Filter permissions by organization: show global (organization_id = NULL) + user's org permissions
+  // Also ensure all permissions have valid UUID IDs
   const permissions = useMemo(() => {
-    if (!allPermissions || !profile) return [];
+    if (!allPermissions || !profile) {
+      if (import.meta.env.DEV && !allPermissions) {
+        console.warn('[UserPermissionsManagement] allPermissions is empty or undefined');
+      }
+      return [];
+    }
     
     // Users see: global permissions + their organization's permissions
-    return allPermissions.filter(p => 
-      p.organizationId === null || p.organizationId === profile.organization_id
-    );
+    // Permissions use integer IDs (not UUIDs) - filter out any without valid IDs
+    const filtered = allPermissions.filter(p => {
+      // Check organization scope
+      const orgMatch = p.organizationId === null || p.organizationId === profile.organization_id;
+      // Check ID is valid (integer or UUID - permissions use integers)
+      const validId = p.id && (typeof p.id === 'number' || typeof p.id === 'string');
+      
+      return orgMatch && validId;
+    });
+    
+    if (import.meta.env.DEV && filtered.length === 0 && allPermissions.length > 0) {
+      console.warn('[UserPermissionsManagement] All permissions filtered out. Total permissions:', allPermissions.length, 'Sample:', allPermissions[0]);
+    }
+    
+    return filtered;
   }, [allPermissions, profile]);
   
   // Filter users
@@ -125,11 +154,12 @@ export function UserPermissionsManagement() {
   }, [userPermissionsData, permissions]);
   
   // Get user-specific permission IDs (for visual distinction)
+  // Permission IDs can be numbers (integer) or strings
   const userSpecificPermissionIds = useMemo(() => {
-    if (!userPermissionsData) return new Set<string>();
+    if (!userPermissionsData) return new Set<string | number>();
     
     return new Set(
-      userPermissionsData.userPermissions.map((up: { permission_id: string }) => up.permission_id)
+      userPermissionsData.userPermissions.map((up: { permission_id: string | number }) => up.permission_id)
     );
   }, [userPermissionsData]);
   
@@ -158,6 +188,15 @@ export function UserPermissionsManagement() {
   const handleTogglePermission = async (permission: Permission) => {
     if (!selectedUserId) return;
     
+    // Validate permission has a valid ID (permissions use integer IDs, not UUIDs)
+    if (!permission.id || (typeof permission.id !== 'number' && typeof permission.id !== 'string')) {
+      if (import.meta.env.DEV) {
+        console.error('[UserPermissionsManagement] Invalid permission ID:', permission);
+      }
+      toast.error(`Permission "${permission.name}" has an invalid ID. Please refresh the page.`);
+      return;
+    }
+    
     const hasPermission = userEffectivePermissions.has(permission.name);
     const isUserSpecific = userSpecificPermissionIds.has(permission.id);
     
@@ -182,6 +221,36 @@ export function UserPermissionsManagement() {
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to update permission');
+    }
+  };
+
+  const handleAssignRole = async (roleName: string) => {
+    if (!selectedUserId) return;
+    
+    try {
+      await assignRole.mutateAsync({
+        userId: selectedUserId,
+        role: roleName,
+      });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to assign role');
+    }
+  };
+
+  const handleRemoveRole = async (roleName: string) => {
+    if (!selectedUserId) return;
+    
+    if (!confirm(`Are you sure you want to remove the "${roleName}" role from this user?`)) {
+      return;
+    }
+    
+    try {
+      await removeRole.mutateAsync({
+        userId: selectedUserId,
+        role: roleName,
+      });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to remove role');
     }
   };
   
@@ -314,15 +383,16 @@ export function UserPermissionsManagement() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenPermissionsDialog(user.id)}
-                          disabled={!hasPermissionsUpdatePermission}
-                        >
-                          <Shield className="h-4 w-4 mr-2" />
-                          Manage Permissions
-                        </Button>
+                        {hasPermissionsUpdatePermission && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenPermissionsDialog(user.id)}
+                          >
+                            <Shield className="h-4 w-4 mr-2" />
+                            Manage Permissions
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -345,10 +415,85 @@ export function UserPermissionsManagement() {
             </DialogDescription>
           </DialogHeader>
           
-          {userPermissionsLoading ? (
-            <div className="text-center py-8">Loading permissions...</div>
+          {userPermissionsLoading || userRolesLoading || permissionsLoading || permissions.length === 0 ? (
+            <div className="text-center py-8">
+              {permissionsLoading ? 'Loading permissions...' : permissions.length === 0 ? 'No permissions available. Please refresh the page.' : 'Loading user permissions...'}
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* User Roles Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">User Roles</CardTitle>
+                  <CardDescription>
+                    Manage roles assigned to this user. Roles provide a set of permissions.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {/* Current Roles */}
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Current Roles</Label>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {userRolesData?.roles && userRolesData.roles.length > 0 ? (
+                          userRolesData.roles.map((roleName) => (
+                            <Badge key={roleName} variant="default" className="flex items-center gap-2">
+                              {roleName}
+                              {hasPermissionsUpdatePermission && (
+                                <button
+                                  onClick={() => handleRemoveRole(roleName)}
+                                  className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                                  disabled={assignRole.isPending || removeRole.isPending}
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              )}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-sm text-muted-foreground">No roles assigned</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Available Roles to Assign */}
+                    {hasPermissionsUpdatePermission && (
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">Assign Role</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {roles
+                            .filter(role => !userRolesData?.roles?.includes(role.name))
+                            .map((role) => (
+                              <Button
+                                key={role.name}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAssignRole(role.name)}
+                                disabled={assignRole.isPending || removeRole.isPending}
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                {role.name}
+                              </Button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Permissions Section */}
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Direct Permissions</CardTitle>
+                    <CardDescription>
+                      Assign specific permissions directly to this user. These override role-based permissions.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </div>
+              
               {Object.entries(permissionsByResource).map(([resource, resourcePermissions]) => (
                 <Card key={resource}>
                   <CardHeader>

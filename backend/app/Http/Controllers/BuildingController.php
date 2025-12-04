@@ -45,12 +45,8 @@ class BuildingController extends Controller
         // Get accessible organization IDs (user's organization only)
         $orgIds = [$profile->organization_id];
 
-        // Get schools for accessible organizations
-        $schoolIds = DB::table('school_branding')
-            ->whereIn('organization_id', $orgIds)
-            ->whereNull('deleted_at')
-            ->pluck('id')
-            ->toArray();
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
 
         if (empty($schoolIds)) {
             return response()->json([]);
@@ -84,15 +80,46 @@ class BuildingController extends Controller
 
         $buildings = $query->orderBy('building_name', 'asc')->get();
 
-        // Enrich with organization_id from schools
-        $schoolsMap = DB::table('school_branding')
-            ->whereIn('id', $schoolIds)
-            ->pluck('organization_id', 'id')
+        // Get building IDs for room count query
+        $buildingIds = $buildings->pluck('id')->toArray();
+
+        // Get room counts for each building - filter by accessible schools
+        $roomCounts = DB::table('rooms')
+            ->whereIn('building_id', $buildingIds)
+            ->whereIn('school_id', $schoolIds) // CRITICAL: Only count rooms from accessible schools
+            ->whereNull('deleted_at')
+            ->select('building_id', DB::raw('count(*) as room_count'))
+            ->groupBy('building_id')
+            ->pluck('room_count', 'building_id')
             ->toArray();
 
-        $buildings = $buildings->map(function ($building) use ($schoolsMap) {
+        // Enrich with organization_id and school information from schools
+        $schoolsData = DB::table('school_branding')
+            ->whereIn('id', $schoolIds)
+            ->select('id', 'organization_id', 'school_name', 'school_name_arabic', 'school_name_pashto')
+            ->get()
+            ->keyBy('id');
+
+        $buildings = $buildings->map(function ($building) use ($schoolsData, $roomCounts) {
             $buildingArray = $building->toArray();
-            $buildingArray['organization_id'] = $schoolsMap[$building->school_id] ?? null;
+            $school = $schoolsData->get($building->school_id);
+            
+            if ($school) {
+                $buildingArray['organization_id'] = $school->organization_id;
+                $buildingArray['school'] = [
+                    'id' => $school->id,
+                    'school_name' => $school->school_name,
+                    'school_name_arabic' => $school->school_name_arabic,
+                    'school_name_pashto' => $school->school_name_pashto,
+                ];
+            } else {
+                $buildingArray['organization_id'] = null;
+                $buildingArray['school'] = null;
+            }
+
+            // Add room count
+            $buildingArray['rooms_count'] = $roomCounts[$building->id] ?? 0;
+            
             return $buildingArray;
         });
 
@@ -147,9 +174,22 @@ class BuildingController extends Controller
             'school_id' => $request->school_id,
         ]);
 
-        // Enrich with organization_id
+        // Get room count for this building
+        $roomsCount = DB::table('rooms')
+            ->where('building_id', $building->id)
+            ->whereNull('deleted_at')
+            ->count();
+
+        // Enrich with organization_id and school information
         $buildingArray = $building->toArray();
         $buildingArray['organization_id'] = $school->organization_id;
+        $buildingArray['school'] = [
+            'id' => $school->id,
+            'school_name' => $school->school_name,
+            'school_name_arabic' => $school->school_name_arabic ?? null,
+            'school_name_pashto' => $school->school_name_pashto ?? null,
+        ];
+        $buildingArray['rooms_count'] = $roomsCount;
 
         return response()->json($buildingArray, 201);
     }
@@ -182,9 +222,21 @@ class BuildingController extends Controller
             // Allow access if permission doesn't exist (during migration)
         }
 
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
+        if (empty($schoolIds)) {
+            return response()->json(['error' => 'No accessible schools'], 403);
+        }
+
         $building = Building::whereNull('deleted_at')->find($id);
 
         if (!$building) {
+            return response()->json(['error' => 'Building not found'], 404);
+        }
+
+        // Validate building belongs to accessible school
+        if (!in_array($building->school_id, $schoolIds)) {
             return response()->json(['error' => 'Building not found'], 404);
         }
 
@@ -203,9 +255,23 @@ class BuildingController extends Controller
             return response()->json(['error' => 'Building not found'], 404);
         }
 
-        // Enrich with organization_id
+        // Get room count for this building - filter by accessible schools
+        $roomsCount = DB::table('rooms')
+            ->where('building_id', $building->id)
+            ->whereIn('school_id', $schoolIds) // CRITICAL: Only count rooms from accessible schools
+            ->whereNull('deleted_at')
+            ->count();
+
+        // Enrich with organization_id and school information
         $buildingArray = $building->toArray();
         $buildingArray['organization_id'] = $school->organization_id;
+        $buildingArray['school'] = [
+            'id' => $school->id,
+            'school_name' => $school->school_name,
+            'school_name_arabic' => $school->school_name_arabic ?? null,
+            'school_name_pashto' => $school->school_name_pashto ?? null,
+        ];
+        $buildingArray['rooms_count'] = $roomsCount;
 
         return response()->json($buildingArray);
     }
@@ -238,11 +304,23 @@ class BuildingController extends Controller
             // Allow access if permission doesn't exist (during migration)
         }
 
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
+        if (empty($schoolIds)) {
+            return response()->json(['error' => 'No accessible schools'], 403);
+        }
+
         $building = Building::whereNull('deleted_at')->find($id);
 
         if (!$building) {
             return response()->json(['error' => 'Building not found'], 404);
-    }
+        }
+
+        // Validate building belongs to accessible school
+        if (!in_array($building->school_id, $schoolIds)) {
+            return response()->json(['error' => 'Building not found'], 404);
+        }
 
         // Validate organization access via school
         $school = DB::table('school_branding')
@@ -274,15 +352,34 @@ class BuildingController extends Controller
 
         $building->update($updateData);
 
-        // Get updated school for organization_id
+        // Get updated school for organization_id and school information
         $updatedSchool = DB::table('school_branding')
             ->where('id', $building->school_id)
             ->whereNull('deleted_at')
             ->first();
 
-        // Enrich with organization_id
+        // Get room count for this building - filter by accessible schools
+        $roomsCount = DB::table('rooms')
+            ->where('building_id', $building->id)
+            ->whereIn('school_id', $schoolIds) // CRITICAL: Only count rooms from accessible schools
+            ->whereNull('deleted_at')
+            ->count();
+
+        // Enrich with organization_id and school information
         $buildingArray = $building->toArray();
-        $buildingArray['organization_id'] = $updatedSchool->organization_id ?? null;
+        if ($updatedSchool) {
+            $buildingArray['organization_id'] = $updatedSchool->organization_id;
+            $buildingArray['school'] = [
+                'id' => $updatedSchool->id,
+                'school_name' => $updatedSchool->school_name,
+                'school_name_arabic' => $updatedSchool->school_name_arabic ?? null,
+                'school_name_pashto' => $updatedSchool->school_name_pashto ?? null,
+            ];
+        } else {
+            $buildingArray['organization_id'] = null;
+            $buildingArray['school'] = null;
+        }
+        $buildingArray['rooms_count'] = $roomsCount;
 
         return response()->json($buildingArray);
     }
@@ -315,9 +412,21 @@ class BuildingController extends Controller
             // Allow access if permission doesn't exist (during migration)
         }
 
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
+        if (empty($schoolIds)) {
+            return response()->json(['error' => 'No accessible schools'], 403);
+        }
+
         $building = Building::whereNull('deleted_at')->find($id);
 
         if (!$building) {
+            return response()->json(['error' => 'Building not found'], 404);
+        }
+
+        // Validate building belongs to accessible school
+        if (!in_array($building->school_id, $schoolIds)) {
             return response()->json(['error' => 'Building not found'], 404);
         }
 

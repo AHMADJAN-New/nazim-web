@@ -191,7 +191,15 @@ export const useAssignClassToYear = () => {
             // Convert domain model to API insert payload
             const insertData = mapClassAcademicYearDomainToInsert(assignmentData);
 
-            const { classId, ...rest } = insertData;
+            // Extract class_id from insertData (it's mapped as class_id, not classId)
+            const classId = assignmentData.classId || insertData.class_id;
+            
+            if (!classId) {
+                throw new Error('Class ID is required');
+            }
+
+            // Remove class_id from rest data since it's passed as URL parameter
+            const { class_id, ...rest } = insertData;
             const apiClassYear = await classesApi.assignToYear(classId, rest);
             // Map API response back to domain model
             return mapClassAcademicYearApiToDomain(apiClassYear as ClassApi.ClassAcademicYear);

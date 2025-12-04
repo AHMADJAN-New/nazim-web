@@ -57,28 +57,6 @@ return new class extends Migration
         DB::statement("
             COMMENT ON TABLE public.staff_types IS 'Lookup table for staff roles/types. NULL organization_id = global types available to all organizations.';
         ");
-
-        // Insert default global staff types
-        DB::statement("
-            INSERT INTO public.staff_types (organization_id, name, code, description, display_order, is_active)
-            SELECT * FROM (VALUES
-                (NULL::uuid, 'Teacher'::varchar, 'teacher'::varchar, 'Teaching staff'::text, 1::integer, true::boolean),
-                (NULL::uuid, 'Administrator'::varchar, 'admin'::varchar, 'Administrative staff'::text, 2::integer, true::boolean),
-                (NULL::uuid, 'Accountant'::varchar, 'accountant'::varchar, 'Financial staff'::text, 3::integer, true::boolean),
-                (NULL::uuid, 'Librarian'::varchar, 'librarian'::varchar, 'Library staff'::text, 4::integer, true::boolean),
-                (NULL::uuid, 'Hostel Manager'::varchar, 'hostel_manager'::varchar, 'Hostel management staff'::text, 5::integer, true::boolean),
-                (NULL::uuid, 'Asset Manager'::varchar, 'asset_manager'::varchar, 'Asset management staff'::text, 6::integer, true::boolean),
-                (NULL::uuid, 'Security'::varchar, 'security'::varchar, 'Security staff'::text, 7::integer, true::boolean),
-                (NULL::uuid, 'Maintenance'::varchar, 'maintenance'::varchar, 'Maintenance staff'::text, 8::integer, true::boolean),
-                (NULL::uuid, 'Other'::varchar, 'other'::varchar, 'Other staff types'::text, 9::integer, true::boolean)
-            ) AS v(org_id, name_val, code_val, desc_val, order_val, active_val)
-            WHERE NOT EXISTS (
-                SELECT 1 FROM public.staff_types st
-                WHERE st.code = v.code_val
-                AND (st.organization_id IS NULL AND v.org_id IS NULL)
-                AND st.deleted_at IS NULL
-            );
-        ");
     }
 
     /**

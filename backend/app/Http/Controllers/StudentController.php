@@ -65,9 +65,19 @@ class StudentController extends Controller
             return response()->json([]);
         }
 
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
+        // Filter by accessible schools
+        if (empty($schoolIds)) {
+            // If no accessible schools, return empty
+            return response()->json([]);
+        }
+
         $query = Student::with(['organization', 'school'])
             ->whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds);
+            ->whereIn('organization_id', $orgIds)
+            ->whereIn('school_id', $schoolIds);
 
         // Apply filters
         if ($request->has('organization_id') && $request->organization_id) {
@@ -78,8 +88,13 @@ class StudentController extends Controller
             }
         }
 
+        // Validate school_id filter against accessible schools
         if ($request->has('school_id') && $request->school_id) {
-            $query->where('school_id', $request->school_id);
+            if (in_array($request->school_id, $schoolIds)) {
+                $query->where('school_id', $request->school_id);
+            } else {
+                return response()->json(['error' => 'School not accessible'], 403);
+            }
         }
 
         if ($request->has('student_status') && $request->student_status) {

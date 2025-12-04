@@ -60,7 +60,7 @@ export const useCreateSchool = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
   const { orgIds } = useAccessibleOrganizations();
-  const hasPermission = useHasPermission('branding.create');
+  const hasPermission = useHasPermission('school_branding.create');
 
   return useMutation({
     mutationFn: async (schoolData: Partial<School> & { organizationId?: string }) => {
@@ -105,7 +105,7 @@ export const useCreateSchool = () => {
 export const useUpdateSchool = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
-  const hasPermission = useHasPermission('branding.update');
+  const hasPermission = useHasPermission('school_branding.update');
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<School> & { id: string }) => {
@@ -140,7 +140,7 @@ export const useUpdateSchool = () => {
 export const useDeleteSchool = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
-  const hasPermission = useHasPermission('branding.delete');
+  const hasPermission = useHasPermission('school_branding.delete');
 
   return useMutation({
     mutationFn: async (schoolId: string) => {
@@ -153,11 +153,14 @@ export const useDeleteSchool = () => {
       }
 
       // Delete school via Laravel API (soft delete)
+      // Backend handles all validation: permission check, organization access, and "in use" check
       await schoolsApi.delete(schoolId);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['schools'] });
-      queryClient.invalidateQueries({ queryKey: ['school'] });
+    onSuccess: async () => {
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['schools'] });
+      await queryClient.refetchQueries({ queryKey: ['schools'] });
+      await queryClient.invalidateQueries({ queryKey: ['school'] });
       toast.success('School deleted successfully');
     },
     onError: (error: Error) => {

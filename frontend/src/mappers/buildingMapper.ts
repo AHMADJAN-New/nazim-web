@@ -12,6 +12,13 @@ export function mapBuildingApiToDomain(api: BuildingApi.Building): Building {
         buildingName: api.building_name,
         schoolId: api.school_id,
         organizationId: api.organization_id,
+        school: api.school ? {
+            id: api.school.id,
+            schoolName: api.school.school_name,
+            schoolNameArabic: api.school.school_name_arabic ?? null,
+            schoolNamePashto: api.school.school_name_pashto ?? null,
+        } : null,
+        roomsCount: api.rooms_count ?? 0,
         createdAt: api.created_at ? new Date(api.created_at) : new Date(),
         updatedAt: api.updated_at ? new Date(api.updated_at) : new Date(),
         deletedAt: api.deleted_at ? new Date(api.deleted_at) : null,

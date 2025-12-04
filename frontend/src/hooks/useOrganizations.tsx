@@ -168,6 +168,10 @@ export const useOrganizationStatistics = (organizationId: string) => {
       if (!organizationId) {
         return {
           userCount: 0,
+          schoolCount: 0,
+          studentCount: 0,
+          classCount: 0,
+          staffCount: 0,
           buildingCount: 0,
           roomCount: 0,
         };
@@ -176,8 +180,12 @@ export const useOrganizationStatistics = (organizationId: string) => {
       const stats = await organizationsApi.statistics(organizationId);
       return stats as {
         userCount: number;
+        schoolCount: number;
+        studentCount: number;
+        classCount: number;
+        staffCount: number;
         buildingCount: number;
-        roomCount: 0;
+        roomCount: number;
       };
     },
     enabled: !!organizationId,

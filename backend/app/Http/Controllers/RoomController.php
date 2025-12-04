@@ -42,12 +42,8 @@ class RoomController extends Controller
         // Get accessible organization IDs (user's organization only)
         $orgIds = [$profile->organization_id];
 
-        // Get schools for accessible organizations
-        $schoolIds = DB::table('school_branding')
-            ->whereIn('organization_id', $orgIds)
-            ->whereNull('deleted_at')
-            ->pluck('id')
-            ->toArray();
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
 
         if (empty($schoolIds)) {
             return response()->json([]);
@@ -65,8 +61,23 @@ class RoomController extends Controller
             }
     }
 
-        // Filter by building_id if provided
+        // Filter by building_id if provided - validate building belongs to accessible school
         if ($request->has('building_id') && $request->building_id) {
+            // Validate building belongs to an accessible school
+            $building = DB::table('buildings')
+                ->where('id', $request->building_id)
+                ->whereNull('deleted_at')
+                ->first();
+            
+            if (!$building) {
+                return response()->json(['error' => 'Building not found'], 404);
+            }
+            
+            // Check if building's school_id is in accessible schools
+            if (!in_array($building->school_id, $schoolIds)) {
+                return response()->json(['error' => 'Building not accessible'], 403);
+            }
+            
             $query->where('building_id', $request->building_id);
         }
 
@@ -90,11 +101,12 @@ class RoomController extends Controller
         $buildingIds = $rooms->pluck('building_id')->filter()->unique()->toArray();
         $staffIds = $rooms->pluck('staff_id')->filter()->unique()->toArray();
 
-        // Fetch buildings
+        // Fetch buildings - filter by accessible schools
         $buildings = [];
         if (!empty($buildingIds)) {
             $buildings = DB::table('buildings')
                 ->whereIn('id', $buildingIds)
+                ->whereIn('school_id', $schoolIds) // CRITICAL: Only fetch buildings from accessible schools
                 ->whereNull('deleted_at')
                 ->get()
                 ->keyBy('id')
@@ -189,6 +201,13 @@ class RoomController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
+        if (empty($schoolIds)) {
+            return response()->json(['error' => 'No accessible schools'], 403);
+        }
+
         // Get building to verify school and get school_id
         $building = DB::table('buildings')
             ->where('id', $request->building_id)
@@ -200,6 +219,11 @@ class RoomController extends Controller
         }
 
         // Validate building belongs to accessible school
+        if (!in_array($building->school_id, $schoolIds)) {
+            return response()->json(['error' => 'Building does not belong to an accessible school'], 403);
+        }
+
+        // Validate building belongs to user's organization (double-check)
         $school = DB::table('school_branding')
             ->where('id', $building->school_id)
             ->whereNull('deleted_at')
@@ -287,9 +311,21 @@ class RoomController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
+        if (empty($schoolIds)) {
+            return response()->json(['error' => 'No accessible schools'], 403);
+        }
+
         $room = Room::whereNull('deleted_at')->find($id);
 
         if (!$room) {
+            return response()->json(['error' => 'Room not found'], 404);
+        }
+
+        // Validate room belongs to accessible school
+        if (!in_array($room->school_id, $schoolIds)) {
             return response()->json(['error' => 'Room not found'], 404);
         }
 
@@ -381,11 +417,23 @@ class RoomController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
+        if (empty($schoolIds)) {
+            return response()->json(['error' => 'No accessible schools'], 403);
+        }
+
         $room = Room::whereNull('deleted_at')->find($id);
 
         if (!$room) {
             return response()->json(['error' => 'Room not found'], 404);
-    }
+        }
+
+        // Validate room belongs to accessible school
+        if (!in_array($room->school_id, $schoolIds)) {
+            return response()->json(['error' => 'Room not found'], 404);
+        }
 
         // Validate organization access via school
         $school = DB::table('school_branding')
@@ -415,6 +463,11 @@ class RoomController extends Controller
             }
 
             // Validate new building belongs to accessible school
+            if (!in_array($newBuilding->school_id, $schoolIds)) {
+                return response()->json(['error' => 'Building does not belong to an accessible school'], 403);
+            }
+
+            // Validate new building belongs to user's organization
             $newBuildingSchool = DB::table('school_branding')
                 ->where('id', $newBuilding->school_id)
                 ->whereNull('deleted_at')
@@ -522,9 +575,21 @@ class RoomController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
+        if (empty($schoolIds)) {
+            return response()->json(['error' => 'No accessible schools'], 403);
+        }
+
         $room = Room::whereNull('deleted_at')->find($id);
 
         if (!$room) {
+            return response()->json(['error' => 'Room not found'], 404);
+        }
+
+        // Validate room belongs to accessible school
+        if (!in_array($room->school_id, $schoolIds)) {
             return response()->json(['error' => 'Room not found'], 404);
         }
 

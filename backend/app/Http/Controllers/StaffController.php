@@ -42,9 +42,24 @@ class StaffController extends Controller
         // Get accessible organization IDs (user's organization only)
         $orgIds = [$profile->organization_id];
 
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
         $query = Staff::with(['staffType', 'organization', 'school', 'profile'])
             ->whereNull('deleted_at')
             ->whereIn('organization_id', $orgIds);
+
+        // Filter by accessible schools if staff table has school_id column
+        if (!empty($schoolIds)) {
+            // Only filter if school_id column exists and is not null
+            $query->where(function($q) use ($schoolIds) {
+                $q->whereIn('school_id', $schoolIds)
+                  ->orWhereNull('school_id'); // Include staff without school assignment
+            });
+        } else {
+            // If no accessible schools, return empty
+            return response()->json([]);
+        }
 
         // Apply filters
         if ($request->has('organization_id') && $request->organization_id) {
@@ -61,6 +76,15 @@ class StaffController extends Controller
 
         if ($request->has('status') && $request->status) {
             $query->where('status', $request->status);
+        }
+
+        // Validate school_id filter against accessible schools
+        if ($request->has('school_id') && $request->school_id) {
+            if (in_array($request->school_id, $schoolIds)) {
+                $query->where('school_id', $request->school_id);
+            } else {
+                return response()->json(['error' => 'School not accessible'], 403);
+            }
         }
 
         if ($request->has('search') && $request->search) {

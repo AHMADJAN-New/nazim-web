@@ -28,6 +28,14 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 1: Seeding permissions...');
         $this->call(PermissionSeeder::class);
 
+        // Step 1b: Seed residency types (lookup table)
+        $this->command->info('Step 1b: Seeding residency types...');
+        $this->call(ResidencyTypeSeeder::class);
+
+        // Step 1c: Seed staff types (lookup table)
+        $this->command->info('Step 1c: Seeding staff types...');
+        $this->call(StaffTypeSeeder::class);
+
         // Step 2: Create 2 organizations
         $this->command->info('Step 2: Creating organizations...');
         $org1 = $this->createOrganization('Organization One', 'org-one', 'First test organization');
@@ -52,6 +60,22 @@ class DatabaseSeeder extends Seeder
             ['email' => 'staff2@test.com', 'name' => 'Staff Two', 'role' => 'staff', 'password' => 'staff123'],
             ['email' => 'teacher2@test.com', 'name' => 'Teacher Two', 'role' => 'teacher', 'password' => 'teacher123'],
         ]);
+
+        // Step 5: Create schools for organizations
+        $this->command->info('Step 5: Creating schools...');
+        $this->call(SchoolBrandingSeeder::class);
+
+        // Step 6: Create buildings for schools
+        $this->command->info('Step 6: Creating buildings...');
+        $this->call(BuildingSeeder::class);
+
+        // Step 7: Create rooms for buildings
+        $this->command->info('Step 7: Creating rooms...');
+        $this->call(RoomSeeder::class);
+
+        // Step 8: Create academic years for organizations
+        $this->command->info('Step 8: Creating academic years...');
+        $this->call(AcademicYearSeeder::class);
 
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');
@@ -296,7 +320,7 @@ class DatabaseSeeder extends Seeder
             } else {
                 // User exists - ensure profile has correct organization_id
                 $profile = DB::table('profiles')->where('id', $userId)->first();
-                
+
                 if (!$profile) {
                     // Profile missing - create it
                     DB::table('profiles')->insert([
@@ -364,7 +388,7 @@ class DatabaseSeeder extends Seeder
                         ->where('model_type', 'App\\Models\\User')
                         ->where('model_id', $userId)
                         ->delete();
-                    
+
                     $this->command->info("  ✓ Removed incorrect role assignment(s) for {$userData['email']}");
                 }
 

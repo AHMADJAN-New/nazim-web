@@ -334,61 +334,127 @@ class OrganizationController extends Controller
      */
     public function statistics(Request $request, string $id)
     {
-        $user = $request->user();
-        $profile = DB::connection('pgsql')
-            ->table('profiles')
-            ->where('id', $user->id)
-            ->first();
+        try {
+            $user = $request->user();
+            $profile = DB::connection('pgsql')
+                ->table('profiles')
+                ->where('id', $user->id)
+                ->first();
 
-        if (!$profile) {
-            return response()->json(['error' => 'Profile not found'], 404);
-        }
+            if (!$profile) {
+                return response()->json(['error' => 'Profile not found'], 404);
+            }
 
-        $organization = Organization::whereNull('deleted_at')->findOrFail($id);
+            $organization = Organization::whereNull('deleted_at')->findOrFail($id);
 
-        // Require organization_id for all users
-        if (!$profile->organization_id) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
-        }
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
 
-        // Check permission - context already set by middleware
-        if (!$user->hasPermissionTo('organizations.read')) {
+            // Check permission - context already set by middleware
+            try {
+                if (!$user->hasPermissionTo('organizations.read')) {
+                    return response()->json([
+                        'error' => 'Access Denied',
+                        'message' => 'You do not have permission to access this resource.',
+                        'required_permission' => 'organizations.read'
+                    ], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Permission check failed for organizations.read in statistics: " . $e->getMessage());
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                ], 403);
+            }
+
+            // All users can only view their own organization's statistics
+            if ($profile->organization_id !== $organization->id) {
+                return response()->json(['error' => 'Cannot view statistics for different organization'], 403);
+            }
+
+            // Get statistics
+            $userCount = DB::connection('pgsql')
+                ->table('profiles')
+                ->where('organization_id', $id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Schools count (direct organization_id)
+            $schoolCount = DB::connection('pgsql')
+                ->table('school_branding')
+                ->where('organization_id', $id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Students count (direct organization_id)
+            $studentCount = DB::connection('pgsql')
+                ->table('students')
+                ->where('organization_id', $id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Classes count (direct organization_id)
+            $classCount = DB::connection('pgsql')
+                ->table('classes')
+                ->where('organization_id', $id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Staff count (direct organization_id)
+            $staffCount = DB::connection('pgsql')
+                ->table('staff')
+                ->where('organization_id', $id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Buildings are linked to organizations through schools
+            // Get school IDs for this organization first
+            $schoolIds = DB::connection('pgsql')
+                ->table('school_branding')
+                ->where('organization_id', $id)
+                ->whereNull('deleted_at')
+                ->pluck('id')
+                ->toArray();
+
+            $buildingCount = 0;
+            if (!empty($schoolIds)) {
+                $buildingCount = DB::connection('pgsql')
+                    ->table('buildings')
+                    ->whereIn('school_id', $schoolIds)
+                    ->whereNull('deleted_at')
+                    ->count();
+            }
+
+            // Rooms are linked to organizations through schools
+            $roomCount = 0;
+            if (!empty($schoolIds)) {
+                $roomCount = DB::connection('pgsql')
+                    ->table('rooms')
+                    ->whereIn('school_id', $schoolIds)
+                    ->whereNull('deleted_at')
+                    ->count();
+            }
+
             return response()->json([
-                'error' => 'Access Denied',
-                'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'organizations.read'
-            ], 403);
+                'userCount' => $userCount,
+                'schoolCount' => $schoolCount,
+                'studentCount' => $studentCount,
+                'classCount' => $classCount,
+                'staffCount' => $staffCount,
+                'buildingCount' => $buildingCount,
+                'roomCount' => $roomCount,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Organization not found'], 404);
+        } catch (\Exception $e) {
+            Log::error('OrganizationController::statistics error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'organization_id' => $id,
+            ]);
+            return response()->json(['error' => 'Failed to fetch organization statistics'], 500);
         }
-
-        // All users can only view their own organization's statistics
-        if ($profile->organization_id !== $organization->id) {
-            return response()->json(['error' => 'Cannot view statistics for different organization'], 403);
-        }
-
-        // Get statistics
-        $userCount = DB::connection('pgsql')
-            ->table('profiles')
-            ->where('organization_id', $id)
-            ->whereNull('deleted_at')
-            ->count();
-
-        $buildingCount = DB::connection('pgsql')
-            ->table('buildings')
-            ->where('organization_id', $id)
-            ->whereNull('deleted_at')
-            ->count();
-
-        $roomCount = DB::connection('pgsql')
-            ->table('rooms')
-            ->where('organization_id', $id)
-            ->whereNull('deleted_at')
-            ->count();
-
-        return response()->json([
-            'userCount' => $userCount,
-            'buildingCount' => $buildingCount,
-            'roomCount' => $roomCount,
-        ]);
     }
 
     /**

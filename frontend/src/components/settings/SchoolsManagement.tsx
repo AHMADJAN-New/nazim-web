@@ -69,9 +69,9 @@ const schoolSchema = z.object({
 type SchoolFormData = z.infer<typeof schoolSchema>;
 
 export function SchoolsManagement() {
-  const hasCreatePermission = useHasPermission('branding.create');
-  const hasUpdatePermission = useHasPermission('branding.update');
-  const hasDeletePermission = useHasPermission('branding.delete');
+  const hasCreatePermission = useHasPermission('school_branding.create');
+  const hasUpdatePermission = useHasPermission('school_branding.update');
+  const hasDeletePermission = useHasPermission('school_branding.delete');
   const { data: schools, isLoading } = useSchools();
   const createSchool = useCreateSchool();
   const updateSchool = useUpdateSchool();

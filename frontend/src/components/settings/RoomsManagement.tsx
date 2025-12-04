@@ -92,9 +92,9 @@ export function RoomsManagement() {
   const filteredRooms = rooms?.filter((room) => {
     const query = (searchQuery || '').toLowerCase();
     const matchesSearch =
-      room.room_number?.toLowerCase().includes(query) ||
-      room.building?.building_name?.toLowerCase().includes(query) ||
-      room.staff?.profile?.full_name?.toLowerCase().includes(query);
+      room.roomNumber?.toLowerCase().includes(query) ||
+      room.building?.buildingName?.toLowerCase().includes(query) ||
+      room.staff?.profile?.fullName?.toLowerCase().includes(query);
     return matchesSearch;
   }) || [];
 
@@ -103,9 +103,9 @@ export function RoomsManagement() {
       const room = rooms?.find((r) => r.id === roomId);
       if (room) {
         reset({
-          room_number: room.room_number,
-          building_id: room.building_id,
-          staff_id: room.staff_id || null,
+          room_number: room.roomNumber,
+          building_id: room.buildingId,
+          staff_id: room.staffId || null,
         });
         setSelectedRoom(roomId);
       }
@@ -131,9 +131,9 @@ export function RoomsManagement() {
       updateRoom.mutate(
         {
           id: selectedRoom,
-          room_number: data.room_number,
-          building_id: data.building_id,
-          staff_id: data.staff_id || null,
+          roomNumber: data.room_number,
+          buildingId: data.building_id,
+          staffId: data.staff_id || null,
         },
         {
           onSuccess: () => {
@@ -144,9 +144,9 @@ export function RoomsManagement() {
     } else {
       createRoom.mutate(
         {
-          room_number: data.room_number,
-          building_id: data.building_id,
-          staff_id: data.staff_id || null,
+          roomNumber: data.room_number,
+          buildingId: data.building_id,
+          staffId: data.staff_id || null,
         },
         {
           onSuccess: () => {
@@ -204,13 +204,12 @@ export function RoomsManagement() {
               </CardTitle>
               <CardDescription>Manage rooms, assign buildings and staff</CardDescription>
             </div>
-            <Button 
-              onClick={() => handleOpenDialog()}
-              disabled={!hasCreatePermission}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Room
-            </Button>
+            {hasCreatePermission && (
+              <Button onClick={() => handleOpenDialog()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Room
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -247,34 +246,38 @@ export function RoomsManagement() {
                 ) : (
                   filteredRooms.map((room) => (
                     <TableRow key={room.id}>
-                      <TableCell className="font-medium">{room.room_number}</TableCell>
-                      <TableCell>{room.building?.building_name || 'N/A'}</TableCell>
+                      <TableCell className="font-medium">{room.roomNumber}</TableCell>
+                      <TableCell>{room.building?.buildingName || 'N/A'}</TableCell>
                       <TableCell>
-                        {room.staff?.profile?.full_name || (
+                        {room.staff?.profile?.fullName || (
                           <span className="text-muted-foreground">No staff assigned</span>
                         )}
                       </TableCell>
                       <TableCell>
-                        {new Date(room.created_at).toLocaleDateString()}
+                        {room.createdAt instanceof Date
+                          ? room.createdAt.toLocaleDateString()
+                          : new Date(room.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenDialog(room.id)}
-                            disabled={!hasUpdatePermission}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(room.id)}
-                            disabled={!hasDeletePermission}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {hasUpdatePermission && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenDialog(room.id)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {hasDeletePermission && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(room.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -325,7 +328,7 @@ export function RoomsManagement() {
                       <SelectContent>
                         {buildings?.map((building) => (
                           <SelectItem key={building.id} value={building.id}>
-                            {building.building_name}
+                            {building.buildingName}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -353,7 +356,7 @@ export function RoomsManagement() {
                         <SelectItem value="none">No staff assigned</SelectItem>
                         {staff?.map((staffMember) => (
                           <SelectItem key={staffMember.id} value={staffMember.id}>
-                            {staffMember.profile?.full_name || `Staff ${staffMember.employee_id}`}
+                            {staffMember.profile?.fullName || `Staff ${staffMember.employeeId}`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -383,7 +386,7 @@ export function RoomsManagement() {
               This action cannot be undone. This will permanently delete the room
               {selectedRoom &&
                 rooms?.find((r) => r.id === selectedRoom) &&
-                ` "${rooms.find((r) => r.id === selectedRoom)?.room_number}"`}
+                ` "${rooms.find((r) => r.id === selectedRoom)?.roomNumber}"`}
               . If this room is in use, the deletion will fail.
             </AlertDialogDescription>
           </AlertDialogHeader>

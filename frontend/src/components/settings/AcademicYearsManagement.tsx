@@ -116,9 +116,13 @@ export function AcademicYearsManagement() {
     if (academicYearId) {
       const year = academicYears?.find((y) => y.id === academicYearId);
       if (year) {
-        // Safely extract date part, handling undefined/null values
-        const startDate = year.start_date ? (year.start_date.includes('T') ? year.start_date.split('T')[0] : year.start_date) : '';
-        const endDate = year.end_date ? (year.end_date.includes('T') ? year.end_date.split('T')[0] : year.end_date) : '';
+        // Convert Date objects to YYYY-MM-DD format for date inputs
+        const startDate = year.startDate instanceof Date 
+          ? year.startDate.toISOString().split('T')[0] 
+          : year.startDate ? new Date(year.startDate).toISOString().split('T')[0] : '';
+        const endDate = year.endDate instanceof Date
+          ? year.endDate.toISOString().split('T')[0]
+          : year.endDate ? new Date(year.endDate).toISOString().split('T')[0] : '';
         
         reset({
           name: year.name || '',
@@ -126,7 +130,7 @@ export function AcademicYearsManagement() {
           end_date: endDate,
           description: year.description || '',
           status: year.status as 'active' | 'archived' | 'planned',
-          is_current: year.is_current,
+          is_current: year.isCurrent, // Use camelCase from domain model
         });
         setSelectedAcademicYear(academicYearId);
       }
@@ -162,8 +166,13 @@ export function AcademicYearsManagement() {
       updateAcademicYear.mutate(
         { 
           id: selectedAcademicYear, 
-          ...data,
-          organization_id: profile?.organization_id || null,
+          name: data.name,
+          startDate: data.start_date, // Map snake_case to camelCase
+          endDate: data.end_date, // Map snake_case to camelCase
+          description: data.description,
+          status: data.status,
+          isCurrent: data.is_current,
+          organizationId: profile?.organization_id || null,
         },
         {
           onSuccess: () => {
@@ -173,8 +182,13 @@ export function AcademicYearsManagement() {
       );
     } else {
       createAcademicYear.mutate({
-        ...data,
-        organization_id: profile?.organization_id || null,
+        name: data.name,
+        startDate: data.start_date, // Map snake_case to camelCase
+        endDate: data.end_date, // Map snake_case to camelCase
+        description: data.description,
+        status: data.status,
+        isCurrent: data.is_current,
+        organizationId: profile?.organization_id || null,
       }, {
         onSuccess: () => {
           handleCloseDialog();
@@ -256,13 +270,12 @@ export function AcademicYearsManagement() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                onClick={() => handleOpenDialog()}
-                disabled={!hasCreatePermission}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {t('academic.academicYears.addAcademicYear')}
-              </Button>
+              {hasCreatePermission && (
+                <Button onClick={() => handleOpenDialog()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('academic.academicYears.addAcademicYear')}
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -319,7 +332,7 @@ export function AcademicYearsManagement() {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           {year.name}
-                          {year.is_current && (
+                          {year.isCurrent && (
                             <Badge variant="default" className="gap-1">
                               <Star className="h-3 w-3" />
                               {t('academic.academicYears.current')}
@@ -328,10 +341,14 @@ export function AcademicYearsManagement() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {new Date(year.start_date).toLocaleDateString()}
+                        {year.startDate instanceof Date 
+                          ? year.startDate.toLocaleDateString()
+                          : new Date(year.startDate).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        {new Date(year.end_date).toLocaleDateString()}
+                        {year.endDate instanceof Date
+                          ? year.endDate.toLocaleDateString()
+                          : new Date(year.endDate).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(year.status)}>
@@ -339,42 +356,41 @@ export function AcademicYearsManagement() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {year.is_current ? (
+                        {year.isCurrent ? (
                           <Badge variant="default">{t('academic.academicYears.current')}</Badge>
                         ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSetCurrent(year.id)}
-                            disabled={!hasUpdatePermission}
-                          >
-                            {t('academic.academicYears.setAsCurrent')}
-                          </Button>
+                          hasUpdatePermission && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSetCurrent(year.id)}
+                            >
+                              {t('academic.academicYears.setAsCurrent')}
+                            </Button>
+                          )
                         )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenDialog(year.id)}
-                            disabled={!hasUpdatePermission}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(year.id)}
-                            disabled={!hasDeletePermission || year.is_current}
-                            title={
-                              year.is_current 
-                                ? t('academic.academicYears.cannotDeleteCurrent')
-                                : ''
-                            }
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {hasUpdatePermission && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenDialog(year.id)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {hasDeletePermission && !year.isCurrent && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(year.id)}
+                              title="Delete academic year"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

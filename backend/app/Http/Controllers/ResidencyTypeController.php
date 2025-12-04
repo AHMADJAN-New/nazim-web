@@ -133,7 +133,7 @@ class ResidencyTypeController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('residency_types.create')) {
+            if (!$user->hasPermissionTo('residency_types.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -239,7 +239,7 @@ class ResidencyTypeController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('residency_types.create')) {
+            if (!$user->hasPermissionTo('residency_types.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -251,12 +251,9 @@ class ResidencyTypeController extends Controller
         $orgIds = [$profile->organization_id];
 
         // Check organization access
-        // Global types (organization_id = NULL) cannot be deleted by regular users
-        if ($residencyType->organization_id === null) {
-            return response()->json(['error' => 'Cannot delete global residency types'], 403);
-        }
-        
-        if (!in_array($residencyType->organization_id, $orgIds)) {
+        // If type is organization-specific, user can only delete types from their organization
+        // If type is global (organization_id = NULL), user with delete permission can delete it
+        if ($residencyType->organization_id !== null && !in_array($residencyType->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot delete residency type from different organization'], 403);
         }
 
@@ -273,7 +270,7 @@ class ResidencyTypeController extends Controller
         // Soft delete
         $residencyType->delete();
 
-        return response()->json(['message' => 'Residency type deleted successfully'], 204);
+        return response()->noContent();
     }
 }
 

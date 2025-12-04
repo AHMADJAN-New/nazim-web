@@ -48,56 +48,80 @@ class UserController extends Controller
             return response()->json([]);
         }
 
+        // Join with users table to get email (email is stored in auth.users table)
+        // Left join with staff to get staff information and avatar
         $query = DB::table('profiles')
+            ->join('users', 'profiles.id', '=', 'users.id')
+            ->leftJoin('staff', 'profiles.staff_id', '=', 'staff.id')
             ->select(
-                'id',
-                'full_name',
-                'email',
-                'role',
-                'organization_id',
-                'default_school_id',
-                'phone',
-                'avatar_url',
-                'is_active',
-                'created_at',
-                'updated_at'
+                'profiles.id',
+                'profiles.full_name',
+                'users.email', // Get email from users table (auth schema)
+                'profiles.role',
+                'profiles.organization_id',
+                'profiles.default_school_id',
+                'profiles.staff_id',
+                'profiles.phone',
+                'profiles.avatar_url',
+                'profiles.is_active',
+                'profiles.created_at',
+                'profiles.updated_at',
+                // Staff information
+                'staff.picture_url as staff_picture_url',
+                'staff.full_name as staff_full_name',
+                'staff.employee_id as staff_employee_id'
             )
-            ->whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds);
+            ->whereNull('profiles.deleted_at')
+            ->whereIn('profiles.organization_id', $orgIds);
 
         // Apply filters
         if ($request->has('role') && $request->role) {
-            $query->where('role', $request->role);
+            $query->where('profiles.role', $request->role);
         }
 
         if ($request->has('organization_id') && $request->organization_id) {
             if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
+                $query->where('profiles.organization_id', $request->organization_id);
             } else {
                 return response()->json([]);
             }
         }
 
         if ($request->has('is_active') && $request->is_active !== null) {
-            $query->where('is_active', $request->is_active);
+            $query->where('profiles.is_active', $request->is_active);
         }
 
-        $profiles = $query->orderBy('created_at', 'desc')->get();
+        $profiles = $query->orderBy('profiles.created_at', 'desc')->get();
 
         // Transform to UserProfile format
         $users = $profiles->map(function ($p) {
+            // Ensure we have valid data - check if full_name or email exist
+            $name = !empty($p->full_name) ? $p->full_name : (!empty($p->email) ? $p->email : 'No name');
+            $email = !empty($p->email) ? $p->email : 'No email';
+            
+            // Use staff picture if available, otherwise use profile avatar
+            $avatar = $p->staff_picture_url ?? $p->avatar_url ?? null;
+            
             return [
                 'id' => $p->id,
-                'name' => $p->full_name || $p->email || '',
-                'email' => $p->email || '',
+                'name' => $name,
+                'email' => $email,
                 'role' => (string)($p->role ?? ''),
                 'organization_id' => $p->organization_id,
                 'default_school_id' => $p->default_school_id ?? null,
-                'phone' => $p->phone,
-                'avatar' => $p->avatar_url ?? null,
+                'staff_id' => $p->staff_id ?? null,
+                'phone' => $p->phone ?? null,
+                'avatar' => $avatar,
                 'is_active' => $p->is_active ?? true,
                 'created_at' => $p->created_at,
                 'updated_at' => $p->updated_at,
+                // Staff information
+                'staff' => $p->staff_id ? [
+                    'id' => $p->staff_id,
+                    'full_name' => $p->staff_full_name,
+                    'employee_id' => $p->staff_employee_id,
+                    'picture_url' => $p->staff_picture_url,
+                ] : null,
             ];
         });
 
@@ -126,7 +150,9 @@ class UserController extends Controller
             'role' => 'required|string|in:admin,teacher,staff,student,parent',
             'organization_id' => 'nullable|uuid|exists:organizations,id',
             'default_school_id' => 'nullable|uuid',
+            'staff_id' => 'nullable|uuid|exists:staff,id',
             'phone' => 'nullable|string|max:20',
+            'schools_access_all' => 'nullable|boolean',
         ]);
 
         $user = $request->user();
@@ -195,6 +221,19 @@ class UserController extends Controller
             'updated_at' => now(),
         ]);
 
+        // Validate staff_id belongs to the same organization if provided
+        if ($request->has('staff_id') && $request->staff_id) {
+            $staff = DB::table('staff')
+                ->where('id', $request->staff_id)
+                ->where('organization_id', $organizationId)
+                ->whereNull('deleted_at')
+                ->first();
+            
+            if (!$staff) {
+                return response()->json(['error' => 'Staff member not found or does not belong to your organization'], 422);
+            }
+        }
+
         // Create profile
         DB::table('profiles')->insert([
             'id' => $userId,
@@ -203,6 +242,7 @@ class UserController extends Controller
             'role' => $request->role,
             'organization_id' => $organizationId,
             'default_school_id' => $defaultSchoolId,
+            'staff_id' => $request->staff_id ?? null,
             'phone' => $request->phone ?? null,
             'is_active' => true,
             'created_at' => now(),
@@ -237,7 +277,36 @@ class UserController extends Controller
             }
         }
 
+        // Assign schools.access_all permission if checkbox is checked
+        if ($request->boolean('schools_access_all') && $organizationId) {
+            // Get User model instance (Spatie needs Eloquent model)
+            $userModel = \App\Models\User::find($userId);
+            if ($userModel) {
+                // Organization context is already set by middleware, but ensure it's set
+                // Spatie will use the organization context from EnsureOrganizationAccess middleware
+                $userModel->givePermissionTo('schools.access_all');
+            }
+        }
+
         $createdProfile = DB::table('profiles')->where('id', $userId)->first();
+
+        // Get staff information if staff_id is set
+        $staffInfo = null;
+        if ($createdProfile->staff_id) {
+            $staff = DB::table('staff')
+                ->where('id', $createdProfile->staff_id)
+                ->whereNull('deleted_at')
+                ->first();
+            
+            if ($staff) {
+                $staffInfo = [
+                    'id' => $staff->id,
+                    'full_name' => $staff->full_name,
+                    'employee_id' => $staff->employee_id,
+                    'picture_url' => $staff->picture_url,
+                ];
+            }
+        }
 
         // Return in UserProfile format
         return response()->json([
@@ -247,11 +316,13 @@ class UserController extends Controller
             'role' => (string)($createdProfile->role ?? ''),
             'organization_id' => $createdProfile->organization_id,
             'default_school_id' => $createdProfile->default_school_id ?? null,
+            'staff_id' => $createdProfile->staff_id ?? null,
             'phone' => $createdProfile->phone,
-            'avatar' => $createdProfile->avatar_url ?? null,
+            'avatar' => ($staffInfo && isset($staffInfo['picture_url'])) ? $staffInfo['picture_url'] : ($createdProfile->avatar_url ?? null),
             'is_active' => $createdProfile->is_active ?? true,
             'created_at' => $createdProfile->created_at,
             'updated_at' => $createdProfile->updated_at,
+            'staff' => $staffInfo,
         ], 201);
     }
 
@@ -268,6 +339,7 @@ class UserController extends Controller
             'default_school_id' => 'nullable|uuid',
             'phone' => 'nullable|string|max:20',
             'is_active' => 'sometimes|boolean',
+            'schools_access_all' => 'nullable|boolean',
         ]);
 
         $user = $request->user();
@@ -309,6 +381,19 @@ class UserController extends Controller
             return response()->json(['error' => 'Cannot update user from different organization'], 403);
         }
 
+        // Validate staff_id belongs to the same organization if provided
+        if ($request->has('staff_id') && $request->staff_id !== null) {
+            $staff = DB::table('staff')
+                ->where('id', $request->staff_id)
+                ->where('organization_id', $targetProfile->organization_id)
+                ->whereNull('deleted_at')
+                ->first();
+            
+            if (!$staff) {
+                return response()->json(['error' => 'Staff member not found or does not belong to your organization'], 422);
+            }
+        }
+
         // Build update data
         $updateData = [];
         if ($request->has('full_name')) $updateData['full_name'] = $request->full_name;
@@ -316,6 +401,7 @@ class UserController extends Controller
         if ($request->has('role')) $updateData['role'] = $request->role;
         if ($request->has('is_active')) $updateData['is_active'] = $request->is_active;
         if ($request->has('default_school_id')) $updateData['default_school_id'] = $request->default_school_id;
+        if ($request->has('staff_id')) $updateData['staff_id'] = $request->staff_id;
 
         // Prevent organization_id changes (all users)
         if ($request->has('organization_id') && $request->organization_id !== $targetProfile->organization_id) {
@@ -347,11 +433,74 @@ class UserController extends Controller
             ->where('id', $id)
             ->update($updateData);
 
+        // Handle schools.access_all permission assignment/removal
+        if ($request->has('schools_access_all')) {
+            $userModel = \App\Models\User::find($id);
+            if ($userModel) {
+                // Ensure organization context is set
+                if (function_exists('setPermissionsTeamId')) {
+                    setPermissionsTeamId($targetProfile->organization_id);
+                }
+                
+                if ($request->boolean('schools_access_all')) {
+                    // Grant permission
+                    try {
+                        $userModel->givePermissionTo('schools.access_all');
+                    } catch (\Exception $e) {
+                        Log::warning("Failed to grant schools.access_all permission", [
+                            'user_id' => $id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                } else {
+                    // Revoke permission
+                    try {
+                        $userModel->revokePermissionTo('schools.access_all');
+                    } catch (\Exception $e) {
+                        Log::warning("Failed to revoke schools.access_all permission", [
+                            'user_id' => $id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+        }
+
         $updatedProfile = DB::table('profiles')->where('id', $id)->first();
 
+        // Get staff information if staff_id is set
+        $staffInfo = null;
+        if ($updatedProfile->staff_id) {
+            $staff = DB::table('staff')
+                ->where('id', $updatedProfile->staff_id)
+                ->whereNull('deleted_at')
+                ->first();
+            
+            if ($staff) {
+                $staffInfo = [
+                    'id' => $staff->id,
+                    'full_name' => $staff->full_name,
+                    'employee_id' => $staff->employee_id,
+                    'picture_url' => $staff->picture_url,
+                ];
+            }
+        }
+
+        // Return in UserProfile format
         return response()->json([
             'id' => $id,
-            'profile' => $updatedProfile,
+            'name' => $updatedProfile->full_name || $updatedProfile->email || '',
+            'email' => $updatedProfile->email || '',
+            'role' => (string)($updatedProfile->role ?? ''),
+            'organization_id' => $updatedProfile->organization_id,
+            'default_school_id' => $updatedProfile->default_school_id ?? null,
+            'staff_id' => $updatedProfile->staff_id ?? null,
+            'phone' => $updatedProfile->phone,
+            'avatar' => $staffInfo['picture_url'] ?? $updatedProfile->avatar_url ?? null,
+            'is_active' => $updatedProfile->is_active ?? true,
+            'created_at' => $updatedProfile->created_at,
+            'updated_at' => $updatedProfile->updated_at,
+            'staff' => $staffInfo,
         ]);
     }
 
@@ -402,7 +551,7 @@ class UserController extends Controller
     }
 
     /**
-     * Reset user password
+     * Reset password for a user
      */
     public function resetPassword(Request $request, string $id)
     {
@@ -424,7 +573,7 @@ class UserController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('users.read')) {
+            if (!$user->hasPermissionTo('users.reset_password')) {
                 return response()->json(['error' => 'Insufficient permissions to reset passwords'], 403);
             }
         } catch (\Exception $e) {

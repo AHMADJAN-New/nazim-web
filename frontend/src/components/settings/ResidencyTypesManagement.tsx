@@ -198,13 +198,12 @@ export function ResidencyTypesManagement() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                onClick={() => handleOpenDialog()}
-                disabled={!hasCreatePermission}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {t('academic.residencyTypes.addResidencyType')}
-              </Button>
+              {hasCreatePermission && (
+                <Button onClick={() => handleOpenDialog()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('academic.residencyTypes.addResidencyType')}
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -258,22 +257,24 @@ export function ResidencyTypesManagement() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenDialog(type.id)}
-                            disabled={!hasUpdatePermission}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(type.id)}
-                            disabled={!hasDeletePermission}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {hasUpdatePermission && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenDialog(type.id)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {hasDeletePermission && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(type.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

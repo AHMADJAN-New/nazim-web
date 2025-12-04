@@ -14,11 +14,18 @@ export function mapUserProfileApiToDomain(api: UserApi.UserProfile): UserProfile
     role: api.role,
     organizationId: api.organization_id,
     defaultSchoolId: api.default_school_id,
+    staffId: api.staff_id,
     phone: api.phone,
     avatar: api.avatar,
     isActive: api.is_active,
     createdAt: new Date(api.created_at),
     updatedAt: new Date(api.updated_at),
+    staff: api.staff ? {
+      id: api.staff.id,
+      fullName: api.staff.full_name,
+      employeeId: api.staff.employee_id,
+      pictureUrl: api.staff.picture_url,
+    } : null,
   };
 }
 
@@ -33,6 +40,8 @@ export function mapCreateUserDataDomainToApi(domain: CreateUserData): UserApi.Cr
     role: domain.role,
     organization_id: domain.organizationId,
     default_school_id: domain.defaultSchoolId,
+    staff_id: domain.staffId,
+    schools_access_all: domain.schoolsAccessAll,
     phone: domain.phone,
   };
 }
@@ -50,6 +59,7 @@ export function mapUpdateUserDataDomainToApi(domain: UpdateUserData): UserApi.Up
   if (domain.role !== undefined) update.role = domain.role;
   if (domain.organizationId !== undefined) update.organization_id = domain.organizationId;
   if (domain.defaultSchoolId !== undefined) update.default_school_id = domain.defaultSchoolId;
+  if (domain.staffId !== undefined) update.staff_id = domain.staffId;
   if (domain.phone !== undefined) update.phone = domain.phone;
   if (domain.isActive !== undefined) update.is_active = domain.isActive;
   

@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Search, Building2, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Building2, Eye, Users, Building, DoorOpen, Calendar, Settings as SettingsIcon, GraduationCap, BookOpen, UserCheck } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -169,13 +169,12 @@ export function OrganizationsManagement() {
               </CardTitle>
               <CardDescription>Manage organizations for multi-tenant SaaS</CardDescription>
             </div>
-            <Button 
-              onClick={() => handleOpenDialog()}
-              disabled={!hasCreatePermission}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Organization
-            </Button>
+            {hasCreatePermission && (
+              <Button onClick={() => handleOpenDialog()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Organization
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -254,24 +253,26 @@ export function OrganizationsManagement() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenDialog(org.id)}
-                              disabled={!hasUpdatePermission}
-                              title="Edit"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(org.id)}
-                              disabled={!hasDeletePermission}
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            {hasUpdatePermission && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenDialog(org.id)}
+                                title="Edit"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {hasDeletePermission && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteClick(org.id)}
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -384,7 +385,7 @@ export function OrganizationsManagement() {
               {orgStats && (
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg">Statistics</h3>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <Card>
                       <CardContent className="p-4">
                         <div className="flex items-center gap-2">
@@ -392,6 +393,50 @@ export function OrganizationsManagement() {
                           <div>
                             <p className="text-2xl font-bold">{orgStats.userCount}</p>
                             <p className="text-sm text-muted-foreground">Users</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="text-2xl font-bold">{orgStats.schoolCount}</p>
+                            <p className="text-sm text-muted-foreground">Schools</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="text-2xl font-bold">{orgStats.studentCount}</p>
+                            <p className="text-sm text-muted-foreground">Students</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="text-2xl font-bold">{orgStats.classCount}</p>
+                            <p className="text-sm text-muted-foreground">Classes</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="text-2xl font-bold">{orgStats.staffCount}</p>
+                            <p className="text-sm text-muted-foreground">Staff</p>
                           </div>
                         </div>
                       </CardContent>

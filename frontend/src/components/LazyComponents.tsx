@@ -11,6 +11,7 @@ export const RoomsManagement = lazy(() => import('@/components/settings/RoomsMan
 export const OrganizationsManagement = lazy(() => import('@/components/settings/OrganizationsManagement').then(module => ({ default: module.OrganizationsManagement })));
 export const ProfileManagement = lazy(() => import('@/components/settings/ProfileManagement').then(module => ({ default: module.ProfileManagement })));
 export const PermissionsManagement = lazy(() => import('@/components/settings/PermissionsManagement').then(module => ({ default: module.PermissionsManagement })));
+export const RolesManagement = lazy(() => import('@/components/settings/RolesManagement').then(module => ({ default: module.RolesManagement })));
 export const UserPermissionsManagement = lazy(() => import('@/components/settings/UserPermissionsManagement').then(module => ({ default: module.UserPermissionsManagement })));
 export const SchoolsManagement = lazy(() => import('@/components/settings/SchoolsManagement').then(module => ({ default: module.SchoolsManagement })));
 export const ReportTemplatesManagement = lazy(() => import('@/components/settings/ReportTemplatesManagement').then(module => ({ default: module.ReportTemplatesManagement })));

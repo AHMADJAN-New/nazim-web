@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetUserPassword, type UserProfile, type CreateUserData, type UpdateUserData } from '@/hooks/useUsers';
 import { useSchools } from '@/hooks/useSchools';
-import { useHasPermission } from '@/hooks/usePermissions';
+import { useHasPermission, useRoles } from '@/hooks/usePermissions';
+import { useStaff } from '@/hooks/useStaff';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfiles';
 import { Button } from '@/components/ui/button';
@@ -43,30 +44,21 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Search, UserCog, KeyRound, Download } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { Plus, Pencil, Trash2, Search, UserCog, Download, KeyRound } from 'lucide-react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-
-const AVAILABLE_ROLES = [
-  'admin',
-  'teacher',
-  'accountant',
-  'librarian',
-  'parent',
-  'student',
-  'hostel_manager',
-  'asset_manager',
-  'staff',
-] as const;
+import { Checkbox } from '@/components/ui/checkbox';
 
 const userSchema = z.object({
   full_name: z.string().min(1, 'Full name is required').max(255, 'Full name must be 255 characters or less'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters').optional(),
-  role: z.enum(['admin', 'teacher', 'accountant', 'librarian', 'parent', 'student', 'hostel_manager', 'asset_manager', 'staff']),
+  role: z.string().min(1, 'Role is required'),
   default_school_id: z.string().uuid().nullable().optional(),
+  staff_id: z.string().uuid().nullable().optional(),
+  schools_access_all: z.boolean().optional().default(false),
   phone: z.string().optional(),
 });
 
@@ -76,6 +68,7 @@ export function UserManagement() {
   const hasCreatePermission = useHasPermission('users.create');
   const hasUpdatePermission = useHasPermission('users.update');
   const hasDeletePermission = useHasPermission('users.delete');
+  const hasResetPasswordPermission = useHasPermission('users.reset_password');
   const { user } = useAuth();
   const { data: profile } = useProfile();
 
@@ -94,12 +87,14 @@ export function UserManagement() {
     reset,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
       role: 'student',
       default_school_id: null,
+      schools_access_all: false,
     },
   });
   
@@ -107,7 +102,13 @@ export function UserManagement() {
   const watchedSchoolId = watch('default_school_id');
   
   // Get schools for user's organization
-  const { data: schools } = useSchools(undefined, profile?.organization_id);
+  const { data: schools } = useSchools(profile?.organization_id);
+  
+  // Get roles from API
+  const { data: roles } = useRoles();
+  
+  // Get staff for user's organization
+  const { data: staff } = useStaff(profile?.organization_id);
 
   const filters = useMemo(() => ({
     search: searchQuery || undefined,
@@ -138,6 +139,8 @@ export function UserManagement() {
       setValue('email', user.email);
       setValue('role', user.role as any);
       setValue('default_school_id', user.defaultSchoolId || null);
+      setValue('staff_id', user.staffId || null);
+      setValue('schools_access_all', false); // Will be checked via permissions API if needed
       setValue('phone', user.phone || '');
     } else {
       setSelectedUser(null);
@@ -147,6 +150,8 @@ export function UserManagement() {
         password: '',
         role: 'student',
         default_school_id: null,
+        staff_id: null,
+        schools_access_all: false,
         phone: '',
       });
     }
@@ -159,6 +164,29 @@ export function UserManagement() {
     reset();
   };
 
+  const handleClosePasswordDialog = () => {
+    setIsPasswordDialogOpen(false);
+    setNewPassword('');
+    setSelectedUser(null);
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedUser || !newPassword) {
+      toast.error('Please enter a new password');
+      return;
+    }
+    try {
+      await resetPassword.mutateAsync({
+        userId: selectedUser.id,
+        newPassword,
+      });
+      // Only close dialog and reset state on success
+      handleClosePasswordDialog();
+    } catch (error: any) {
+      // Error is already handled by the mutation's onError
+    }
+  };
+
   const onSubmit = async (data: UserFormData) => {
     try {
       if (isEditMode && selectedUser) {
@@ -169,6 +197,7 @@ export function UserManagement() {
           email: data.email,
           role: data.role,
           defaultSchoolId: data.default_school_id || null,
+          staffId: data.staff_id || null,
           phone: data.phone || undefined,
         };
         await updateUser.mutateAsync(updateData);
@@ -184,6 +213,8 @@ export function UserManagement() {
           fullName: data.full_name,
           role: data.role,
           defaultSchoolId: data.default_school_id || null,
+          staffId: data.staff_id || null,
+          schoolsAccessAll: data.schools_access_all || false,
           phone: data.phone || undefined,
         };
         await createUser.mutateAsync(createData);
@@ -199,24 +230,6 @@ export function UserManagement() {
     try {
       await deleteUser.mutateAsync(selectedUser.id);
       setIsDeleteDialogOpen(false);
-      setSelectedUser(null);
-    } catch (error: any) {
-      // Error is handled by the mutation
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!selectedUser || !newPassword) {
-      toast.error('Please enter a new password');
-      return;
-    }
-    try {
-      await resetPassword.mutateAsync({
-        userId: selectedUser.id,
-        newPassword,
-      });
-      setIsPasswordDialogOpen(false);
-      setNewPassword('');
       setSelectedUser(null);
     } catch (error: any) {
       // Error is handled by the mutation
@@ -250,6 +263,19 @@ export function UserManagement() {
     window.URL.revokeObjectURL(url);
     toast.success('Users exported successfully');
   };
+
+  // Debug: Log users data if in development (only when data changes, not on every render)
+  useEffect(() => {
+    if (import.meta.env.DEV && users) {
+      console.log('[UserManagement] Users data:', users);
+      console.log('[UserManagement] First user details:', users[0] ? {
+        id: users[0].id,
+        name: users[0].name,
+        email: users[0].email,
+        role: users[0].role,
+      } : 'No users');
+    }
+  }, [users]);
 
   if (isLoading) {
     return (
@@ -312,9 +338,9 @@ export function UserManagement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
-                    {AVAILABLE_ROLES.map(role => (
-                      <SelectItem key={role} value={role}>
-                        {role.replace('_', ' ')}
+                    {roles?.map(role => (
+                      <SelectItem key={role.name} value={role.name}>
+                        {role.name.replace('_', ' ')}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -359,8 +385,26 @@ export function UserManagement() {
                 ) : (
                   users?.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {user.avatar || user.staff?.pictureUrl ? (
+                            <img
+                              src={user.avatar || user.staff?.pictureUrl || ''}
+                              alt={user.name || user.email}
+                              className="w-8 h-8 rounded-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                              {(user.name || user.email || 'U')[0].toUpperCase()}
+                            </div>
+                          )}
+                          <span>{user.name || user.email || 'No name'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{user.email || 'No email'}</TableCell>
                       <TableCell>
                         <Badge variant="outline">
                           {typeof user.role === 'string' ? user.role.replace('_', ' ') : 'N/A'}
@@ -383,16 +427,18 @@ export function UserManagement() {
                               <Pencil className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setIsPasswordDialogOpen(true);
-                            }}
-                          >
-                            <KeyRound className="h-4 w-4" />
-                          </Button>
+                          {hasResetPasswordPermission && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setIsPasswordDialogOpen(true);
+                              }}
+                            >
+                              <KeyRound className="h-4 w-4" />
+                            </Button>
+                          )}
                           {hasDeletePermission && (
                             <Button
                               size="sm"
@@ -460,7 +506,7 @@ export function UserManagement() {
 
       {/* Create/Edit User Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto z-50">
           <DialogHeader>
             <DialogTitle>{isEditMode ? 'Edit User' : 'Create User'}</DialogTitle>
             <DialogDescription>
@@ -518,9 +564,10 @@ export function UserManagement() {
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {AVAILABLE_ROLES.map(role => (
-                      <SelectItem key={role} value={role}>
-                        {role.replace('_', ' ')}
+                    {roles?.map(role => (
+                      <SelectItem key={role.name} value={role.name}>
+                        {role.name.replace('_', ' ')}
+                        {role.description && ` - ${role.description}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -553,15 +600,15 @@ export function UserManagement() {
                   onValueChange={(value) => setValue('default_school_id', value === 'none' ? null : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={schools.length === 1 ? schools[0].school_name : 'Select school'} />
+                    <SelectValue placeholder={schools && schools.length === 1 ? schools[0].schoolName : 'Select school'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {schools.length > 1 && (
+                    {schools && schools.length > 1 && (
                       <SelectItem value="none">No Default School</SelectItem>
                     )}
-                    {schools.map(school => (
+                    {schools?.map(school => (
                       <SelectItem key={school.id} value={school.id}>
-                        {school.school_name}
+                        {school.schoolName}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -578,6 +625,67 @@ export function UserManagement() {
                 )}
               </div>
             )}
+            {/* Staff Selection - Link user to staff member */}
+            {staff && staff.length > 0 && (
+              <div>
+                <Label htmlFor="staff_id">
+                  Staff Member (Optional)
+                </Label>
+                <Select
+                  value={watch('staff_id') || 'none'}
+                  onValueChange={(value) => setValue('staff_id', value === 'none' ? null : value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select staff member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Staff Member</SelectItem>
+                    {staff.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        <div className="flex items-center gap-2">
+                          {s.pictureUrl && (
+                            <img
+                              src={s.pictureUrl}
+                              alt={s.fullName}
+                              className="w-5 h-5 rounded-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <span>{s.fullName} ({s.employeeId})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Link this user to a staff member. The staff member's avatar will be displayed in the user table.
+                </p>
+              </div>
+            )}
+            {/* Schools Access All Checkbox */}
+            <div>
+              <div className="flex items-center space-x-2">
+                <Controller
+                  control={control}
+                  name="schools_access_all"
+                  render={({ field }) => (
+                    <Checkbox
+                      id="schools_access_all"
+                      checked={field.value || false}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+                <Label htmlFor="schools_access_all">
+                  Allow access to all schools in organization
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                If checked, user can access all schools. Otherwise, access is restricted to default school.
+              </p>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
                 Cancel
@@ -592,11 +700,11 @@ export function UserManagement() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-50">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedUser?.name}? This action cannot be undone.
+              Are you sure you want to delete {selectedUser?.name || selectedUser?.email || 'this user'}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -609,12 +717,22 @@ export function UserManagement() {
       </AlertDialog>
 
       {/* Password Reset Dialog */}
-      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent>
+      <Dialog open={isPasswordDialogOpen} onOpenChange={(open) => {
+        // Only allow closing if not pending
+        if (!open && !resetPassword.isPending) {
+          handleClosePasswordDialog();
+        }
+      }}>
+        <DialogContent className="z-50" onInteractOutside={(e) => {
+          // Prevent closing when clicking outside during reset
+          if (resetPassword.isPending) {
+            e.preventDefault();
+          }
+        }}>
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
-              Enter a new password for {selectedUser?.name}
+              Enter a new password for {selectedUser?.name || selectedUser?.email || 'this user'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -626,19 +744,22 @@ export function UserManagement() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Minimum 8 characters"
+                disabled={resetPassword.isPending}
+                autoFocus
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => {
-              setIsPasswordDialogOpen(false);
-              setNewPassword('');
-              setSelectedUser(null);
-            }}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleClosePasswordDialog}
+              disabled={resetPassword.isPending}
+            >
               Cancel
             </Button>
             <Button onClick={handleResetPassword} disabled={!newPassword || resetPassword.isPending}>
-              Reset Password
+              {resetPassword.isPending ? 'Resetting...' : 'Reset Password'}
             </Button>
           </DialogFooter>
         </DialogContent>

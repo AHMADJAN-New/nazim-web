@@ -14,8 +14,9 @@ export function mapPermissionApiToDomain(api: PermissionApi.Permission): Permiss
     action: api.action,
     description: api.description,
     organizationId: api.organization_id,
-    createdAt: api.created_at ? new Date(api.created_at) : undefined,
-    updatedAt: api.updated_at ? new Date(api.updated_at) : undefined,
+    // Always return Date objects or null, never undefined (prevents getTime() errors)
+    createdAt: api.created_at ? new Date(api.created_at) : null,
+    updatedAt: api.updated_at ? new Date(api.updated_at) : null,
   };
 }
 
@@ -48,8 +49,9 @@ export function mapRolePermissionApiToDomain(api: PermissionApi.RolePermission):
     role: api.role,
     permissionId: api.permission_id,
     organizationId: api.organization_id,
-    createdAt: api.created_at ? new Date(api.created_at) : undefined,
-    updatedAt: api.updated_at ? new Date(api.updated_at) : undefined,
+    // Always return Date objects or null, never undefined (prevents getTime() errors)
+    createdAt: api.created_at ? new Date(api.created_at) : null,
+    updatedAt: api.updated_at ? new Date(api.updated_at) : null,
     permission: api.permission ? mapPermissionApiToDomain(api.permission) : undefined,
   };
 }

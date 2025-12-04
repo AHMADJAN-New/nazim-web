@@ -7,11 +7,18 @@ export interface UserProfile {
   role: string;
   organizationId: string | null;
   defaultSchoolId?: string | null;
+  staffId?: string | null;
   phone: string | null;
   avatar?: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  staff?: {
+    id: string;
+    fullName: string;
+    employeeId: string;
+    pictureUrl: string | null;
+  } | null;
 }
 
 export interface CreateUserData {
@@ -21,6 +28,8 @@ export interface CreateUserData {
   role: string;
   organizationId?: string | null;
   defaultSchoolId?: string | null;
+  staffId?: string | null;
+  schoolsAccessAll?: boolean;
   phone?: string;
 }
 
@@ -31,6 +40,7 @@ export interface UpdateUserData {
   role?: string;
   organizationId?: string | null;
   defaultSchoolId?: string | null;
+  staffId?: string | null;
   phone?: string;
   isActive?: boolean;
 }

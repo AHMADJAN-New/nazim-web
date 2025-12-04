@@ -426,13 +426,12 @@ export function BuildingsManagement() {
                 <FileDown className="h-4 w-4 mr-2" />
                 Export PDF
               </Button>
-              <Button
-                onClick={() => handleOpenDialog()}
-                disabled={!hasCreatePermission}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Building
-              </Button>
+              {hasCreatePermission && (
+                <Button onClick={() => handleOpenDialog()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Building
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -454,6 +453,8 @@ export function BuildingsManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Building Name</TableHead>
+                  <TableHead>School</TableHead>
+                  <TableHead>Rooms</TableHead>
                   <TableHead>Created At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -461,7 +462,7 @@ export function BuildingsManagement() {
               <TableBody>
                 {filteredBuildings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       {searchQuery ? 'No buildings found matching your search' : 'No buildings found. Add your first building.'}
                     </TableCell>
                   </TableRow>
@@ -471,26 +472,37 @@ export function BuildingsManagement() {
                       <TableRow key={building.id}>
                         <TableCell className="font-medium">{building.buildingName}</TableCell>
                         <TableCell>
+                          {building.school?.schoolName || 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium">{building.roomsCount ?? 0}</span>
+                          <span className="text-muted-foreground text-sm ml-1">
+                            {building.roomsCount === 1 ? 'room' : 'rooms'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
                           {building.createdAt.toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenDialog(building.id)}
-                              disabled={!hasUpdatePermission}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(building.id)}
-                              disabled={!hasDeletePermission}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            {hasUpdatePermission && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenDialog(building.id)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {hasDeletePermission && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteClick(building.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

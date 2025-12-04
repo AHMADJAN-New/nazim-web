@@ -551,13 +551,12 @@ export function ClassesManagement() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <Button
-                                    onClick={() => handleOpenClassDialog()}
-                                    disabled={!hasCreatePermission}
-                                >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    {t('academic.classes.addClass')}
-                                </Button>
+                                {hasCreatePermission && (
+                                    <Button onClick={() => handleOpenClassDialog()}>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        {t('academic.classes.addClass')}
+                                    </Button>
+                                )}
                             </div>
 
                             <div className="rounded-md border">
@@ -603,22 +602,24 @@ export function ClassesManagement() {
                                                             >
                                                                 <History className="h-4 w-4" />
                                                             </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleOpenClassDialog(cls.id)}
-                                                                disabled={!hasUpdatePermission}
-                                                            >
-                                                                <Pencil className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleDeleteClick(cls.id)}
-                                                                disabled={!hasDeletePermission}
-                                                            >
-                                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                                            </Button>
+                                                            {hasUpdatePermission && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => handleOpenClassDialog(cls.id)}
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                            {hasDeletePermission && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => handleDeleteClick(cls.id)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                                </Button>
+                                                            )}
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
@@ -648,21 +649,25 @@ export function ClassesManagement() {
                                     </SelectContent>
                                 </Select>
                                 <div className="flex gap-2">
-                                    <Button
-                                        onClick={() => handleOpenAssignDialog()}
-                                        disabled={!hasAssignPermission || !selectedAcademicYearId}
-                                        variant="outline"
-                                    >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        {t('academic.classes.assignToYear')}
-                                    </Button>
-                                    <Button
-                                        onClick={() => handleOpenBulkSectionsDialog()}
-                                        disabled={!hasAssignPermission || !selectedAcademicYearId}
-                                    >
-                                        <Users className="h-4 w-4 mr-2" />
-                                        {t('academic.classes.bulkCreateSections')}
-                                    </Button>
+                                    {hasAssignPermission && (
+                                        <Button
+                                            onClick={() => handleOpenAssignDialog()}
+                                            disabled={!selectedAcademicYearId}
+                                            variant="outline"
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            {t('academic.classes.assignToYear')}
+                                        </Button>
+                                    )}
+                                    {hasAssignPermission && (
+                                        <Button
+                                            onClick={() => handleOpenBulkSectionsDialog()}
+                                            disabled={!selectedAcademicYearId}
+                                        >
+                                            <Users className="h-4 w-4 mr-2" />
+                                            {t('academic.classes.bulkCreateSections')}
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
 
@@ -707,22 +712,24 @@ export function ClassesManagement() {
                                                             <TableCell>{instance.currentStudentCount}</TableCell>
                                                             <TableCell className="text-right">
                                                                 <div className="flex justify-end gap-2">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => handleEditInstance(instance)}
-                                                                        disabled={!hasUpdatePermission}
-                                                                    >
-                                                                        <Pencil className="h-4 w-4" />
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => handleRemoveClick(instance.id)}
-                                                                        disabled={!hasAssignPermission}
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                                    </Button>
+                                                                    {hasUpdatePermission && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => handleEditInstance(instance)}
+                                                                        >
+                                                                            <Pencil className="h-4 w-4" />
+                                                                        </Button>
+                                                                    )}
+                                                                    {hasAssignPermission && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => handleRemoveClick(instance.id)}
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                                        </Button>
+                                                                    )}
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
@@ -742,13 +749,15 @@ export function ClassesManagement() {
                         {/* Copy Classes Tab */}
                         <TabsContent value="copy" className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <Button
-                                    onClick={handleOpenCopyDialog}
-                                    disabled={!hasCopyPermission || !selectedAcademicYearId}
-                                >
-                                    <Copy className="h-4 w-4 mr-2" />
-                                    {t('academic.classes.copyClasses')}
-                                </Button>
+                                {hasCopyPermission && (
+                                    <Button
+                                        onClick={handleOpenCopyDialog}
+                                        disabled={!selectedAcademicYearId}
+                                    >
+                                        <Copy className="h-4 w-4 mr-2" />
+                                        {t('academic.classes.copyClasses')}
+                                    </Button>
+                                )}
                             </div>
 
                             <Card>
@@ -1038,7 +1047,7 @@ export function ClassesManagement() {
                                                 <SelectItem value="none">None</SelectItem>
                                                 {rooms?.map((room) => (
                                                     <SelectItem key={room.id} value={room.id}>
-                                                        {room.room_number} {room.building && `(${room.building.building_name})`}
+                                                        {room.roomNumber} {room.building && `(${room.building.buildingName})`}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -1193,7 +1202,7 @@ export function ClassesManagement() {
                                                 <SelectItem value="none">None</SelectItem>
                                                 {rooms?.map((room) => (
                                                     <SelectItem key={room.id} value={room.id}>
-                                                        {room.room_number} {room.building && `(${room.building.building_name})`}
+                                                        {room.roomNumber} {room.building && `(${room.building.buildingName})`}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>

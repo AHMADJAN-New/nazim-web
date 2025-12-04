@@ -28,6 +28,7 @@ import {
   OrganizationsManagement,
   ProfileManagement,
   PermissionsManagement,
+  RolesManagement,
   UserPermissionsManagement,
   SchoolsManagement,
   ReportTemplatesManagement,
@@ -138,6 +139,13 @@ const App = () => (
                         <PermissionsManagement />
                       </Suspense>
                     } />
+                    <Route path="/settings/roles" element={
+                      <PermissionRoute permission="roles.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <RolesManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     <Route path="/settings/user-permissions" element={
                       <PermissionRoute permission="permissions.read">
                         <Suspense fallback={<PageSkeleton />}>
@@ -146,7 +154,7 @@ const App = () => (
                       </PermissionRoute>
                     } />
                     <Route path="/settings/schools" element={
-                      <PermissionRoute permission="branding.read">
+                      <PermissionRoute permission="school_branding.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <SchoolsManagement />
                         </Suspense>
@@ -226,16 +234,6 @@ const App = () => (
                       <PermissionRoute permission="student_admissions.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <StudentAdmissions />
-                        </Suspense>
-                      </PermissionRoute>
-                    } />
-                    <Route path="/settings/backup" element={
-                      <PermissionRoute permission="backup.read">
-                        <Suspense fallback={<PageSkeleton />}>
-                          <div className="p-6">
-                            <h1 className="text-2xl font-bold mb-4">Backup & Restore</h1>
-                            <p className="text-muted-foreground">Backup and restore functionality will be implemented here.</p>
-                          </div>
                         </Suspense>
                       </PermissionRoute>
                     } />

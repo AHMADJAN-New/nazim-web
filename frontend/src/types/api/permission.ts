@@ -1,7 +1,7 @@
 // Permission API Types - Match Laravel API response (snake_case, DB columns)
 
 export interface Permission {
-  id: string;
+  id: string | number; // Permissions use integer IDs (bigIncrements), not UUIDs
   name: string;
   resource: string;
   action: string;
@@ -16,9 +16,9 @@ export type PermissionUpdate = Partial<PermissionInsert>;
 
 // Role permission type
 export interface RolePermission {
-  id: string;
+  id: string | number;
   role: string;
-  permission_id: string;
+  permission_id: string | number; // Permissions use integer IDs
   organization_id?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -30,9 +30,9 @@ export type RolePermissionUpdate = Partial<RolePermissionInsert>;
 
 // User permission type
 export interface UserPermission {
-  id: string;
+  id: string | number;
   user_id: string;
-  permission_id: string;
+  permission_id: string | number; // Permissions use integer IDs
   organization_id: string | null;
   created_at: string;
   deleted_at: string | null;

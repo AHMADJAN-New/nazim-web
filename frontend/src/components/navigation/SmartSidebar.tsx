@@ -24,7 +24,6 @@ import {
   Building,
   Building2,
   DoorOpen,
-  Package,
   Shield,
   MessageSquare,
   BarChart3,
@@ -40,8 +39,6 @@ import {
   UserCog,
   Lock,
   AlertTriangle,
-  KeyRound,
-  UserPlus,
   User
 } from "lucide-react";
 
@@ -164,9 +161,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasUsersPermission = useHasPermission('users.read');
   const hasAuthMonitoringPermission = useHasPermission('auth_monitoring.read');
   const hasSecurityMonitoringPermission = useHasPermission('security_monitoring.read');
-  const hasBrandingPermission = useHasPermission('branding.read');
+  const hasBrandingPermission = useHasPermission('school_branding.read');
   const hasReportsPermission = useHasPermission('reports.read');
-  const hasBackupPermission = useHasPermission('backup.read');
   const hasResidencyTypesPermission = useHasPermission('residency_types.read');
   const hasAcademicYearsPermission = useHasPermission('academic_years.read');
   const hasClassesPermission = useHasPermission('classes.read');
@@ -192,6 +188,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
   // Permission checks for specific child items
   const hasPermissionsPermission = useHasPermission('permissions.read'); // Assuming this permission exists for permissions management
+  const hasRolesPermission = useHasPermission('roles.read'); // Permission for roles management
 
   // Context-aware navigation items - computed with useMemo to avoid hook order issues
   const allNavigationItems = useMemo((): NavigationItem[] => {
@@ -277,11 +274,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
         priority: 10,
         children: [
           // Only show child items if user has the required permission
-          ...(hasBackupPermission ? [{
-            title: "Backup & Restore",
-            url: "/settings/backup",
-            icon: Package,
-          }] : []),
           ...(hasOrganizationsPermission ? [{
             title: "Organizations Management",
             url: "/settings/organizations",
@@ -297,10 +289,20 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/settings/permissions",
             icon: Shield,
           }] : []),
+          ...(hasRolesPermission ? [{
+            title: "Roles Management",
+            url: "/settings/roles",
+            icon: Shield,
+          }] : []),
           ...(hasPermissionsPermission ? [{
             title: "User Permissions",
             url: "/settings/user-permissions",
             icon: User,
+          }] : []),
+          ...(hasUsersPermission ? [{
+            title: "User Management",
+            url: "/admin/users",
+            icon: Users,
           }] : []),
         ],
       },
@@ -350,40 +352,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
         ],
       },
-      {
-        titleKey: "authentication",
-        icon: Lock,
-        badge: null,
-        priority: 9,
-        children: [
-          // Only show child items if user has the required permission
-          ...(hasUsersPermission ? [{
-            title: "User Management",
-            url: "/admin/users",
-            icon: UserCog,
-          }] : []),
-          ...(hasProfilesPermission ? [{
-            title: "Role Requests",
-            url: "/admin/role-requests",
-            icon: UserPlus,
-          }] : []),
-          ...(hasAuthMonitoringPermission ? [{
-            title: "Auth Monitoring",
-            url: "/admin/auth-monitoring",
-            icon: AlertTriangle,
-          }] : []),
-          ...(hasSecurityMonitoringPermission ? [{
-            title: "Security Monitoring",
-            url: "/admin/security-monitoring",
-            icon: Shield,
-          }] : []),
-          ...(hasUsersPermission ? [{
-            title: "Password Management",
-            url: "/admin/password-management",
-            icon: KeyRound,
-          }] : []),
-        ],
-      }
     ];
 
     // Filter children and calculate visible children count
@@ -435,14 +403,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
         return hasTimetablesPermission || hasScheduleSlotsPermission;
       }
 
-      if (item.titleKey === 'authentication') {
-        // Show if user has any auth-related permission
-        return hasUsersPermission || hasAuthMonitoringPermission || hasSecurityMonitoringPermission;
-      }
-
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasAuthMonitoringPermission, hasSecurityMonitoringPermission, hasBrandingPermission, hasReportsPermission, hasBackupPermission, hasPermissionsPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {

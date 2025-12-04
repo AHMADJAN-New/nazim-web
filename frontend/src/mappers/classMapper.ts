@@ -102,9 +102,16 @@ export function mapClassAcademicYearApiToDomain(api: ClassApi.ClassAcademicYear)
  * Convert Domain ClassAcademicYear model to API ClassAcademicYearInsert payload
  */
 export function mapClassAcademicYearDomainToInsert(domain: Partial<ClassAcademicYear>): ClassApi.ClassAcademicYearInsert {
+    if (!domain.classId) {
+        throw new Error('Class ID is required');
+    }
+    if (!domain.academicYearId) {
+        throw new Error('Academic Year ID is required');
+    }
+    
     return {
-        class_id: domain.classId || '',
-        academic_year_id: domain.academicYearId || '',
+        class_id: domain.classId,
+        academic_year_id: domain.academicYearId,
         organization_id: domain.organizationId || null,
         section_name: domain.sectionName || null,
         teacher_id: domain.teacherId || null,

@@ -25,8 +25,13 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission: branding.read (all users)
-        if (!$user->hasPermissionTo('branding.read')) {
+        // Check permission: school_branding.read (all users)
+        try {
+            if (!$user->hasPermissionTo('school_branding.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.read: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -37,8 +42,15 @@ class SchoolBrandingController extends Controller
             return response()->json([]);
         }
 
+        // Get accessible school IDs based on permission and default_school_id
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
+        if (empty($schoolIds)) {
+            return response()->json([]);
+        }
+
         $query = SchoolBranding::whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds);
+            ->whereIn('id', $schoolIds);
 
         // Filter by organization_id if provided
         if ($request->has('organization_id') && $request->organization_id) {
@@ -76,8 +88,13 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission: branding.read (all users)
-        if (!$user->hasPermissionTo('branding.read')) {
+        // Check permission: school_branding.read (all users)
+        try {
+            if (!$user->hasPermissionTo('school_branding.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.read: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -112,8 +129,13 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission: branding.create (all users)
-        if (!$user->hasPermissionTo('branding.read')) {
+        // Check permission: school_branding.create (all users)
+        try {
+            if (!$user->hasPermissionTo('school_branding.create')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.create: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -203,8 +225,13 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission: branding.update (all users)
-        if (!$user->hasPermissionTo('branding.read')) {
+        // Check permission: school_branding.update (all users)
+        try {
+            if (!$user->hasPermissionTo('school_branding.update')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.update: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -295,8 +322,13 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Check permission: branding.delete (all users)
-        if (!$user->hasPermissionTo('branding.read')) {
+        // Check permission: school_branding.delete (all users)
+        try {
+            if (!$user->hasPermissionTo('school_branding.delete')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("Permission check failed for school_branding.delete: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -311,10 +343,21 @@ class SchoolBrandingController extends Controller
             return response()->json(['error' => 'Cannot delete school from different organization'], 403);
         }
 
-        // Soft delete
-        $school->update(['deleted_at' => now()]);
+        // Check if school is in use (e.g., by buildings, rooms, students, etc.)
+        $inUse = DB::table('buildings')
+            ->where('school_id', $id)
+            ->whereNull('deleted_at')
+            ->exists();
 
-        return response()->json(['message' => 'School deleted successfully']);
+        if ($inUse) {
+            return response()->json(['error' => 'This school is in use and cannot be deleted'], 409);
+        }
+
+        // Soft delete
+        $school->delete();
+
+        // CRITICAL: Return 204 No Content with NO body (not JSON)
+        return response()->noContent();
     }
 }
 

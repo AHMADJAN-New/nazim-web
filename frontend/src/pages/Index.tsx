@@ -143,7 +143,7 @@ const Index = () => {
     {
       icon: Cloud,
       title: "Cloud-Based",
-      description: "Access your data anywhere, anytime with automatic backups"
+      description: "Access your data anywhere, anytime from any device"
     },
     {
       icon: HeadphonesIcon,

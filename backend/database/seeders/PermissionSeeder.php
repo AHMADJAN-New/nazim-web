@@ -18,20 +18,21 @@ class PermissionSeeder extends Seeder
     {
         return [
             'buildings' => ['read', 'create', 'update', 'delete'],
-            'subjects' => ['read', 'create', 'update', 'delete'],
+            'subjects' => ['read', 'create', 'update', 'delete', 'assign', 'copy'],
             'report_templates' => ['read', 'create', 'update', 'delete'],
             'rooms' => ['read', 'create', 'update', 'delete'],
             'teachers' => ['read', 'create', 'update', 'delete'],
             'staff' => ['read', 'create', 'update', 'delete'],
             'students' => ['read', 'create', 'update', 'delete'],
-            'classes' => ['read', 'create', 'update', 'delete'],
+            'classes' => ['read', 'create', 'update', 'delete', 'assign', 'copy'],
             'academic_years' => ['read', 'create', 'update', 'delete'],
             'schedule_slots' => ['read', 'create', 'update', 'delete'],
             'timetables' => ['read', 'create', 'update', 'delete', 'export'],
             'residency_types' => ['read', 'create', 'update', 'delete'],
             'school_branding' => ['read', 'create', 'update', 'delete'],
+            'schools' => ['read', 'create', 'update', 'delete', 'access_all'],
             'profiles' => ['read', 'create', 'update', 'delete'],
-            'users' => ['read', 'create', 'update', 'delete'],
+            'users' => ['read', 'create', 'update', 'delete', 'reset_password'],
             'organizations' => ['read', 'create', 'update', 'delete'],
             'staff_types' => ['read', 'create', 'update', 'delete'],
             'staff_documents' => ['read', 'create', 'update', 'delete'],
@@ -43,7 +44,6 @@ class PermissionSeeder extends Seeder
             'teacher_timetable_preferences' => ['read', 'create', 'update', 'delete'],
             'roles' => ['read', 'create', 'update', 'delete'],
             'permissions' => ['read', 'create', 'update', 'delete'],
-            'backup' => ['read'],
         ];
     }
 
@@ -76,6 +76,12 @@ class PermissionSeeder extends Seeder
                 'academic_years.read',
                 'profiles.read', 'profiles.update',
                 'teacher_subject_assignments.read', 'teacher_subject_assignments.create',
+                // Basic read permissions for dashboard and navigation
+                'organizations.read', // Needed to view organization info
+                'rooms.read', // Needed for dashboard stats
+                'buildings.read', // Needed for dashboard stats
+                'staff.read', // Needed to view staff members
+                'school_branding.read', // Needed to view schools
             ],
         ];
     }

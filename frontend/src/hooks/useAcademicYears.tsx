@@ -100,6 +100,14 @@ export const useCreateAcademicYear = () => {
         throw new Error('Name must be 100 characters or less');
       }
 
+      // Validate dates are provided
+      if (!academicYearData.startDate) {
+        throw new Error('Start date is required');
+      }
+      if (!academicYearData.endDate) {
+        throw new Error('End date is required');
+      }
+
       // Convert dates to Date objects if strings
       const startDate = typeof academicYearData.startDate === 'string' 
         ? new Date(academicYearData.startDate) 
@@ -108,11 +116,12 @@ export const useCreateAcademicYear = () => {
         ? new Date(academicYearData.endDate)
         : academicYearData.endDate;
       
-      if (isNaN(startDate.getTime())) {
+      // Validate dates are valid Date objects
+      if (!startDate || !(startDate instanceof Date) || isNaN(startDate.getTime())) {
         throw new Error('Invalid start date');
       }
       
-      if (isNaN(endDate.getTime())) {
+      if (!endDate || !(endDate instanceof Date) || isNaN(endDate.getTime())) {
         throw new Error('Invalid end date');
       }
       
@@ -192,8 +201,13 @@ export const useUpdateAcademicYear = () => {
       const startDate = updates.startDate || currentAcademicYear.startDate;
       const endDate = updates.endDate || currentAcademicYear.endDate;
       
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        throw new Error('Invalid date format');
+      // Validate dates are valid Date objects
+      if (!startDate || !(startDate instanceof Date) || isNaN(startDate.getTime())) {
+        throw new Error('Invalid start date format');
+      }
+      
+      if (!endDate || !(endDate instanceof Date) || isNaN(endDate.getTime())) {
+        throw new Error('Invalid end date format');
       }
       
       if (endDate <= startDate) {
@@ -305,9 +319,13 @@ export const useSetCurrentAcademicYear = () => {
       // Map API response back to domain model
       return mapAcademicYearApiToDomain(apiAcademicYear as AcademicYearApi.AcademicYear);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['academic-years'] });
-      queryClient.invalidateQueries({ queryKey: ['current-academic-year'] });
+    onSuccess: async () => {
+      // Invalidate and refetch to ensure UI updates immediately
+      await queryClient.invalidateQueries({ queryKey: ['academic-years'] });
+      await queryClient.invalidateQueries({ queryKey: ['current-academic-year'] });
+      // Force refetch to update the UI
+      await queryClient.refetchQueries({ queryKey: ['academic-years'] });
+      await queryClient.refetchQueries({ queryKey: ['current-academic-year'] });
       toast.success('Academic year set as current successfully');
     },
     onError: (error: Error) => {

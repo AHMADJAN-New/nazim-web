@@ -37,8 +37,20 @@ export const useUsers = (filters?: {
       // Fetch users from Laravel API
       const apiUsers = await usersApi.list(filters);
       
+      // Debug: Log raw API response in development
+      if (import.meta.env.DEV) {
+        console.log('[useUsers] Raw API response:', apiUsers);
+      }
+      
       // Map API → Domain
-      return (apiUsers as UserApi.UserProfile[]).map(mapUserProfileApiToDomain);
+      const mappedUsers = (apiUsers as UserApi.UserProfile[]).map(mapUserProfileApiToDomain);
+      
+      // Debug: Log mapped users in development
+      if (import.meta.env.DEV) {
+        console.log('[useUsers] Mapped users:', mappedUsers);
+      }
+      
+      return mappedUsers;
     },
     enabled: !!currentProfile && !orgsLoading,
   });

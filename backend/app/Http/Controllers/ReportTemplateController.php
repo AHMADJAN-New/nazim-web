@@ -331,7 +331,7 @@ class ReportTemplateController extends Controller
         // Soft delete
         $template->delete();
 
-        return response()->json(['message' => 'Report template deleted successfully'], 204);
+        return response()->noContent();
     }
 }
 

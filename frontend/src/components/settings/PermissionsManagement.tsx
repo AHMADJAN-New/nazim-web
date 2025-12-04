@@ -72,10 +72,35 @@ export function PermissionsManagement() {
   });
 
   // Fetch role permissions for all roles
-  const rolePermissionsQueries = roles.map(role => ({
-    role: role.name,
-    query: useRolePermissions(role.name),
-  }));
+  // We'll fetch for the main roles (admin, staff, teacher) and handle others dynamically
+  const adminRolePerms = useRolePermissions('admin');
+  const staffRolePerms = useRolePermissions('staff');
+  const teacherRolePerms = useRolePermissions('teacher');
+
+  // Create a map of role permissions for easy lookup
+  const rolePermissionsMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+
+    // Add permissions for main roles
+    if (adminRolePerms.data) {
+      map['admin'] = adminRolePerms.data.permissions || [];
+    }
+    if (staffRolePerms.data) {
+      map['staff'] = staffRolePerms.data.permissions || [];
+    }
+    if (teacherRolePerms.data) {
+      map['teacher'] = teacherRolePerms.data.permissions || [];
+    }
+
+    // Initialize other roles with empty arrays (they'll be populated when needed)
+    roles.forEach(role => {
+      if (!map[role.name]) {
+        map[role.name] = [];
+      }
+    });
+
+    return map;
+  }, [adminRolePerms.data, staffRolePerms.data, teacherRolePerms.data, roles]);
 
   const assignPermission = useAssignPermissionToRole();
   const removePermission = useRemovePermissionFromRole();
@@ -100,12 +125,20 @@ export function PermissionsManagement() {
 
   // Get roles that have a specific permission
   const getRolesWithPermission = (permissionId: string): string[] => {
-    return rolePermissionsQueries
-      .filter(({ query }) => {
-        const rolePerms = query.data || [];
-        return rolePerms.some(rp => rp.permissionId === permissionId);
-      })
-      .map(({ role }) => role);
+    // Find the permission by ID to get its name
+    const permission = permissions?.find(p => p.id === permissionId);
+    if (!permission) return [];
+
+    const permissionName = permission.name;
+    const rolesWithPerm: string[] = [];
+
+    Object.entries(rolePermissionsMap).forEach(([roleName, permNames]) => {
+      if (permNames.includes(permissionName)) {
+        rolesWithPerm.push(roleName);
+      }
+    });
+
+    return rolesWithPerm;
   };
 
   // Filter permissions based on search and resource filter

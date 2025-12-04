@@ -303,7 +303,7 @@ class ClassController extends Controller
     /**
      * Assign class to academic year
      */
-    public function assignToYear(AssignClassToYearRequest $request, string $class)
+    public function assignToYear(AssignClassToYearRequest $request, string $class = null)
     {
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
@@ -319,7 +319,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.read')) {
+            if (!$user->hasPermissionTo('classes.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -327,8 +327,36 @@ class ClassController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        // Get class ID from route parameter or request body
+        $classId = $class;
+        if (empty($classId) || $classId === 'undefined' || $classId === 'null') {
+            // Try to get from request body
+            $classId = $request->input('class_id');
+        }
+
+        // Validate class ID
+        if (empty($classId) || $classId === 'undefined' || $classId === 'null') {
+            Log::error('[ClassController::assignToYear] Missing class ID', [
+                'route_param' => $class,
+                'request_body' => $request->all(),
+                'user_id' => $user->id ?? 'unknown'
+            ]);
+            return response()->json(['error' => 'Class ID is required'], 400);
+        }
+
+        // Validate UUID format
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+        if (!preg_match($uuidPattern, $classId)) {
+            Log::error('[ClassController::assignToYear] Invalid class ID format', [
+                'class_id' => $classId,
+                'route_param' => $class,
+                'user_id' => $user->id ?? 'unknown'
+            ]);
+            return response()->json(['error' => 'Invalid class ID format'], 400);
+        }
+
         // Get class to determine organization_id
-        $classModel = ClassModel::whereNull('deleted_at')->find($class);
+        $classModel = ClassModel::whereNull('deleted_at')->find($classId);
         if (!$classModel) {
             return response()->json(['error' => 'Class not found'], 404);
         }
@@ -360,7 +388,7 @@ class ClassController extends Controller
 
         // Check for duplicate (same class, year, and section)
         $sectionKey = $request->section_name ?: '';
-        $existing = ClassAcademicYear::where('class_id', $class)
+        $existing = ClassAcademicYear::where('class_id', $classId)
             ->where('academic_year_id', $request->academic_year_id)
             ->whereNull('deleted_at')
             ->where(function ($q) use ($sectionKey) {
@@ -377,7 +405,7 @@ class ClassController extends Controller
         }
 
         $instance = ClassAcademicYear::create([
-            'class_id' => $class,
+            'class_id' => $classId,
             'academic_year_id' => $request->academic_year_id,
             'organization_id' => $organizationId,
             'section_name' => $request->section_name,
@@ -724,21 +752,44 @@ class ClassController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        // Validate class ID is a valid UUID format
+        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $class)) {
+            Log::warning('[ClassController::academicYears] Invalid class ID format', ['class_id' => $class]);
+            return response()->json([]);
+        }
 
-        $instances = ClassAcademicYear::where('class_id', $class)
+        // Get instances first (without JOIN to avoid UUID parsing errors with corrupted data)
+        $instances = DB::table('class_academic_years')
+            ->where('class_id', $class)
             ->whereNull('deleted_at')
-            ->with(['class'])
             ->get();
 
-        // Enrich with academic year data
-        $academicYearIds = $instances->pluck('academic_year_id')->unique();
-        $academicYears = DB::table('academic_years')
-            ->whereIn('id', $academicYearIds)
-            ->whereNull('deleted_at')
-            ->get()
-            ->keyBy('id');
+        if ($instances->isEmpty()) {
+            return response()->json([]);
+        }
 
-        // Enrich with room data if needed
+        // Load class data separately
+        $classData = DB::table('classes')
+            ->where('id', $class)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$classData) {
+            return response()->json([]);
+        }
+
+        // Enrich with academic year data
+        $academicYearIds = $instances->pluck('academic_year_id')->filter()->unique();
+        $academicYears = [];
+        if ($academicYearIds->isNotEmpty()) {
+            $academicYears = DB::table('academic_years')
+                ->whereIn('id', $academicYearIds)
+                ->whereNull('deleted_at')
+                ->get()
+                ->keyBy('id');
+        }
+
+        // Enrich with room data
         $roomIds = $instances->pluck('room_id')->filter()->unique();
         $rooms = [];
         if ($roomIds->isNotEmpty()) {
@@ -749,12 +800,30 @@ class ClassController extends Controller
                 ->keyBy('id');
         }
 
-        $enriched = $instances->map(function ($instance) use ($academicYears, $rooms) {
-            $academicYear = $academicYears->get($instance->academic_year_id);
-            $room = $rooms->get($instance->room_id ?? '');
+        $enriched = $instances->map(function ($instance) use ($academicYears, $rooms, $classData) {
+            $academicYear = $academicYears[$instance->academic_year_id] ?? null;
+            $room = $rooms[$instance->room_id ?? ''] ?? null;
 
             return [
-                ...$instance->toArray(),
+                'id' => $instance->id,
+                'class_id' => $instance->class_id,
+                'academic_year_id' => $instance->academic_year_id,
+                'organization_id' => $instance->organization_id,
+                'section_name' => $instance->section_name,
+                'teacher_id' => $instance->teacher_id,
+                'room_id' => $instance->room_id,
+                'capacity' => $instance->capacity,
+                'current_student_count' => $instance->current_student_count,
+                'is_active' => $instance->is_active,
+                'notes' => $instance->notes,
+                'created_at' => $instance->created_at,
+                'updated_at' => $instance->updated_at,
+                'class' => $classData ? [
+                    'id' => $classData->id,
+                    'name' => $classData->name,
+                    'code' => $classData->code,
+                    'grade_level' => $classData->grade_level,
+                ] : null,
                 'academic_year' => $academicYear ? [
                     'id' => $academicYear->id,
                     'name' => $academicYear->name,
@@ -783,14 +852,12 @@ class ClassController extends Controller
         try {
             $user = $request->user();
             if (!$user) {
-                Log::warning('[ClassController::byAcademicYear] User not authenticated');
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
             $profile = DB::table('profiles')->where('id', $user->id)->first();
 
             if (!$profile) {
-                Log::warning('[ClassController::byAcademicYear] Profile not found for user', ['user_id' => $user->id]);
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
@@ -800,27 +867,14 @@ class ClassController extends Controller
                 'organization_id' => 'nullable|uuid',
             ]);
 
-            // Verify academic year exists and is not deleted
+            // Verify academic year exists
             $academicYear = DB::table('academic_years')
                 ->where('id', $request->academic_year_id)
                 ->whereNull('deleted_at')
                 ->first();
 
             if (!$academicYear) {
-                Log::warning('[ClassController::byAcademicYear] Academic year not found', ['academic_year_id' => $request->academic_year_id]);
-                return response()->json(['error' => 'Academic year not found'], 404);
-            }
-
-            // Validate organization_id if provided
-            if ($request->has('organization_id') && $request->organization_id) {
-                $orgExists = DB::table('organizations')
-                    ->where('id', $request->organization_id)
-                    ->whereNull('deleted_at')
-                    ->exists();
-
-                if (!$orgExists) {
-                    return response()->json(['error' => 'Organization not found'], 404);
-                }
+                return response()->json([]);
             }
 
             // Require organization_id for all users
@@ -828,70 +882,84 @@ class ClassController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
-            // Get accessible organization IDs (user's organization only)
             $orgIds = [$profile->organization_id];
 
-            $query = ClassAcademicYear::where('academic_year_id', $request->academic_year_id)
-                ->whereNull('deleted_at')
-                ->with(['class' => function($q) {
-                    $q->whereNull('deleted_at');
-                }, 'organization']);
-
-            // Filter by organization
-            if ($request->has('organization_id') && $request->organization_id) {
-                if (in_array($request->organization_id, $orgIds)) {
-                    $query->where(function($q) use ($request) {
-                        $q->where('organization_id', $request->organization_id)
-                          ->orWhereNull('organization_id');
-                    });
-                } else {
-                    return response()->json([]);
-                }
-            } else {
-                if (!empty($orgIds)) {
-                    $query->where(function($q) use ($orgIds) {
-                        $q->whereIn('organization_id', $orgIds)
-                          ->orWhereNull('organization_id');
-                    });
-                } else {
-                    // No org access, only show global instances
-                    $query->whereNull('organization_id');
-                }
-            }
-
+            // Use raw SQL to filter out invalid UUIDs at database level
+            // CRITICAL: Wrap in try-catch and use a subquery approach to safely filter invalid UUIDs
+            // PostgreSQL will fail if we try to cast invalid UUIDs, so we need to catch and filter in PHP
             try {
-                $instances = $query->orderBy('section_name', 'asc')
+                // First, get all instances without filtering class_id (to avoid UUID parsing errors)
+                $allInstances = DB::table('class_academic_years')
+                    ->where('academic_year_id', $request->academic_year_id)
+                    ->whereNull('deleted_at')
                     ->get();
+
+                // Filter invalid UUIDs in PHP (safer than PostgreSQL casting)
+                $instances = $allInstances->filter(function($instance) {
+                    if (empty($instance->class_id)) {
+                        return false;
+                    }
+                    // Check if it's a valid UUID format using regex
+                    return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $instance->class_id);
+                });
+
+                // Filter by organization
+                if ($request->has('organization_id') && $request->organization_id) {
+                    if (in_array($request->organization_id, $orgIds)) {
+                        $instances = $instances->filter(function($instance) use ($request) {
+                            return $instance->organization_id === $request->organization_id || $instance->organization_id === null;
+                        });
+                    } else {
+                        return response()->json([]);
+                    }
+                } else {
+                    $instances = $instances->filter(function($instance) use ($orgIds) {
+                        return in_array($instance->organization_id, $orgIds) || $instance->organization_id === null;
+                    });
+                }
+
+                // Sort by section_name
+                $instances = $instances->sortBy('section_name')->values();
             } catch (\Exception $e) {
                 Log::error('[ClassController::byAcademicYear] Error fetching instances', [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
-                    'academic_year_id' => $request->academic_year_id
                 ]);
-                // Return empty array instead of throwing to prevent 500 error
                 return response()->json([]);
             }
 
-            // Filter out instances where class doesn't exist (soft-deleted or missing)
-            $instances = $instances->filter(function ($instance) {
-                try {
-                    // Check if class relationship exists and is not soft-deleted
-                    if (!$instance->class) {
-                        return false;
-                    }
-                    // The with() clause already filters for non-deleted classes, so if class exists, it's valid
-                    return true;
-                } catch (\Exception $e) {
-                    // If accessing class relationship fails, filter out this instance
-                    Log::warning('[ClassController::byAcademicYear] Error accessing class relationship', [
-                        'instance_id' => $instance->id ?? 'unknown',
-                        'error' => $e->getMessage()
-                    ]);
-                    return false;
-                }
+            if ($instances->isEmpty()) {
+                return response()->json([]);
+            }
+
+            // Now get class IDs and load classes separately (only valid UUIDs will be queried)
+            $classIds = $instances->pluck('class_id')->unique()->filter(function($id) {
+                // Double-check UUID format in PHP as well
+                return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id);
             });
 
-            // Enrich with academic year and room data
+            if ($classIds->isEmpty()) {
+                return response()->json([]);
+            }
+
+            // Load classes using only valid UUIDs
+            $classes = DB::table('classes')
+                ->whereIn('id', $classIds)
+                ->whereNull('deleted_at')
+                ->get()
+                ->keyBy('id');
+
+            // Filter instances to only those with valid classes
+            $instances = $instances->filter(function($instance) use ($classes) {
+                return isset($classes[$instance->class_id]);
+            });
+
+            if ($instances->isEmpty()) {
+                return response()->json([]);
+            }
+
+
+            // Get room data
             $roomIds = $instances->pluck('room_id')->filter()->unique();
             $rooms = [];
             if ($roomIds->isNotEmpty()) {
@@ -902,82 +970,51 @@ class ClassController extends Controller
                     ->keyBy('id');
             }
 
-            $enriched = $instances->map(function ($instance) use ($academicYear, $rooms) {
-                try {
-                    $room = null;
-                    if ($instance->room_id && isset($rooms[$instance->room_id])) {
-                        $room = $rooms[$instance->room_id];
-                    }
+            $enriched = $instances->map(function ($instance) use ($academicYear, $rooms, $classes) {
+                $class = $classes[$instance->class_id] ?? null;
+                $room = $rooms[$instance->room_id ?? ''] ?? null;
 
-                    // Handle case where class might be null (soft-deleted)
-                    $classData = null;
-                    if ($instance->class) {
-                        $classData = [
-                            'id' => $instance->class->id ?? null,
-                            'name' => $instance->class->name ?? null,
-                            'code' => $instance->class->code ?? null,
-                            'grade_level' => $instance->class->grade_level ?? null,
-                        ];
-                    }
-
-                    // Build response manually to avoid issues with toArray() on relationships
-                    return [
-                        'id' => $instance->id,
-                        'class_id' => $instance->class_id,
-                        'academic_year_id' => $instance->academic_year_id,
-                        'organization_id' => $instance->organization_id,
-                        'section_name' => $instance->section_name,
-                        'teacher_id' => $instance->teacher_id,
-                        'room_id' => $instance->room_id,
-                        'capacity' => $instance->capacity,
-                        'current_student_count' => $instance->current_student_count,
-                        'is_active' => $instance->is_active,
-                        'notes' => $instance->notes,
-                        'created_at' => $instance->created_at,
-                        'updated_at' => $instance->updated_at,
-                        'class' => $classData,
-                        'academic_year' => $academicYear ? [
-                            'id' => $academicYear->id ?? null,
-                            'name' => $academicYear->name ?? null,
-                            'start_date' => $academicYear->start_date ?? null,
-                            'end_date' => $academicYear->end_date ?? null,
-                        ] : null,
-                        'room' => $room ? [
-                            'id' => $room->id ?? null,
-                            'room_number' => $room->room_number ?? null,
-                        ] : null,
-                    ];
-                } catch (\Exception $e) {
-                    Log::error('[ClassController::byAcademicYear] Error enriching instance', [
-                        'instance_id' => $instance->id ?? 'unknown',
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                    // Return instance data without enrichment on error
-                    return $instance->toArray();
-                }
+                return [
+                    'id' => $instance->id,
+                    'class_id' => $instance->class_id,
+                    'academic_year_id' => $instance->academic_year_id,
+                    'organization_id' => $instance->organization_id,
+                    'section_name' => $instance->section_name,
+                    'teacher_id' => $instance->teacher_id,
+                    'room_id' => $instance->room_id,
+                    'capacity' => $instance->capacity,
+                    'current_student_count' => $instance->current_student_count,
+                    'is_active' => $instance->is_active,
+                    'notes' => $instance->notes,
+                    'created_at' => $instance->created_at,
+                    'updated_at' => $instance->updated_at,
+                    'class' => $class ? [
+                        'id' => $class->id,
+                        'name' => $class->name,
+                        'code' => $class->code,
+                        'grade_level' => $class->grade_level,
+                    ] : null,
+                    'academic_year' => [
+                        'id' => $academicYear->id,
+                        'name' => $academicYear->name,
+                        'start_date' => $academicYear->start_date,
+                        'end_date' => $academicYear->end_date,
+                    ],
+                    'room' => $room ? [
+                        'id' => $room->id,
+                        'room_number' => $room->room_number,
+                    ] : null,
+                ];
             });
 
             return response()->json($enriched);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::warning('[ClassController::byAcademicYear] Validation error', ['errors' => $e->errors()]);
-            // Return 422 with validation errors instead of throwing
-            return response()->json([
-                'error' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
+
         } catch (\Exception $e) {
-            Log::error('[ClassController::byAcademicYear] Unexpected error', [
+            Log::error('[ClassController::byAcademicYear] Error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'request' => $request->all(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
             ]);
-            return response()->json([
-                'error' => 'An error occurred while fetching classes for academic year',
-                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
-            ], 500);
+            return response()->json([]);
         }
     }
 }

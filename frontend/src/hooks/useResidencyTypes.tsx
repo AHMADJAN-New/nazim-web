@@ -106,8 +106,9 @@ export const useCreateResidencyType = () => {
 
       return data as ResidencyType;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['residency-types'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['residency-types'] });
+      await queryClient.refetchQueries({ queryKey: ['residency-types'] });
       toast.success('Residency type created successfully');
     },
     onError: (error: Error) => {
@@ -126,19 +127,8 @@ export const useUpdateResidencyType = () => {
         throw new Error('User not authenticated');
       }
 
-      // Get current residency type to check organization
-      const currentResidencyType = await residencyTypesApi.get(id);
-
-      if (!currentResidencyType) {
-        throw new Error('Residency type not found');
-      }
-
-      // Validate organization access (all users)
-      if (currentResidencyType.organization_id !== profile.organization_id && currentResidencyType.organization_id !== null) {
-        throw new Error('Cannot update residency type from different organization');
-      }
-
       // Prevent organization_id changes (all users)
+      // Backend handles organization access validation
       if (updates.organization_id !== undefined) {
         throw new Error('Cannot change organization_id');
       }
@@ -177,8 +167,9 @@ export const useUpdateResidencyType = () => {
 
       return data as ResidencyType;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['residency-types'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['residency-types'] });
+      await queryClient.refetchQueries({ queryKey: ['residency-types'] });
       toast.success('Residency type updated successfully');
     },
     onError: (error: Error) => {
@@ -197,27 +188,13 @@ export const useDeleteResidencyType = () => {
         throw new Error('User not authenticated');
       }
 
-      // Get current residency type to check organization
-      const currentResidencyType = await residencyTypesApi.get(id);
-
-      if (!currentResidencyType) {
-        throw new Error('Residency type not found');
-      }
-
-      // Validate organization access (all users)
-      // Note: Global types (organization_id = NULL) cannot be deleted
-      if (currentResidencyType.organization_id === null) {
-        throw new Error('Cannot delete global residency types');
-        if (currentResidencyType.organization_id !== profile.organization_id) {
-          throw new Error('Cannot delete residency type from different organization');
-        }
-      }
-
       // Delete residency type via Laravel API (soft delete)
+      // Backend handles all validation: permission check, organization access, and "in use" check
       await residencyTypesApi.delete(id);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['residency-types'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['residency-types'] });
+      await queryClient.refetchQueries({ queryKey: ['residency-types'] });
       toast.success('Residency type deleted successfully');
     },
     onError: (error: Error) => {

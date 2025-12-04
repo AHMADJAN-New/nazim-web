@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { permissionsApi } from '@/lib/api/client';
+import { permissionsApi, rolesApi } from '@/lib/api/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
@@ -36,23 +36,30 @@ export const usePermissions = () => {
 };
 
 export const useRolePermissions = (role: string) => {
+  const { profile } = useAuth();
+
   return useQuery({
-    queryKey: ['role-permissions', role],
+    queryKey: ['role-permissions', role, profile?.organization_id],
     queryFn: async () => {
-      // TODO: Implement Laravel API endpoint for role permissions
-      // For now, return empty array - this functionality needs to be migrated to Laravel API
-      throw new Error('Role permissions endpoint not yet implemented in Laravel API. Please use user permissions instead.');
+      if (!role || !profile?.organization_id) return { role, permissions: [] };
+
+      const response = await permissionsApi.rolePermissions(role);
+      return response as { role: string; permissions: string[] };
     },
-    enabled: false, // Disabled until Laravel API endpoint is available
+    enabled: !!role && !!profile?.organization_id,
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });
 };
 
 export interface Role {
+  id: string;
   name: string;
   description: string | null;
   organization_id: string | null;
+  guard_name?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const useRoles = () => {
@@ -61,12 +68,127 @@ export const useRoles = () => {
   return useQuery<Role[]>({
     queryKey: ['roles', profile?.organization_id],
     queryFn: async () => {
-      const response = await permissionsApi.roles();
-      return (response as { roles: Role[] }).roles;
+      const roles = await rolesApi.list();
+      return (roles as Role[]);
     },
     enabled: !!profile && !!profile.organization_id,
     staleTime: 30 * 60 * 1000, // 30 minutes - roles don't change often
     gcTime: 60 * 60 * 1000, // 1 hour
+  });
+};
+
+export const useCreateRole = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const canCreateRoles = useHasPermission('roles.create');
+
+  return useMutation({
+    mutationFn: async (roleData: {
+      name: string;
+      description?: string | null;
+      guard_name?: string;
+    }) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      if (!canCreateRoles) {
+        throw new Error('You do not have permission to create roles');
+      }
+
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      return await rolesApi.create({
+        name: roleData.name,
+        description: roleData.description || null,
+        guard_name: roleData.guard_name || 'web',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      toast.success('Role created successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to create role');
+    },
+  });
+};
+
+export const useUpdateRole = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const canUpdateRoles = useHasPermission('roles.update');
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...updates
+    }: {
+      id: string;
+      name?: string;
+      description?: string | null;
+    }) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      if (!canUpdateRoles) {
+        throw new Error('You do not have permission to update roles');
+      }
+
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      return await rolesApi.update(id, {
+        name: updates.name,
+        description: updates.description,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      toast.success('Role updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update role');
+    },
+  });
+};
+
+export const useDeleteRole = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const canDeleteRoles = useHasPermission('roles.delete');
+
+  return useMutation({
+    mutationFn: async (roleId: string) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      if (!canDeleteRoles) {
+        throw new Error('You do not have permission to delete roles');
+      }
+
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      // Delete role via Laravel API (soft delete)
+      // Backend handles all validation: permission check, organization access, and "in use" check
+      await rolesApi.delete(roleId);
+    },
+    onSuccess: async () => {
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['roles'] });
+      await queryClient.refetchQueries({ queryKey: ['roles'] });
+      toast.success('Role deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to delete role');
+    },
   });
 };
 
@@ -99,13 +221,11 @@ export const useUserPermissions = () => {
     staleTime: 60 * 60 * 1000, // 1 hour - permissions don't change often
     gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache longer
     refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: false, // Don't refetch on mount if data is fresh
+    refetchOnMount: true, // FIXED: Must refetch on mount to get permissions!
     refetchOnReconnect: false, // Don't refetch on reconnect
     refetchInterval: false, // Never auto-refetch
-    // CRITICAL: Always return an initial value to prevent undefined state
-    placeholderData: (previousData) => previousData ?? [],
-    // Ensure we always have a value, even if query is disabled
-    initialData: [],
+    // Use placeholderData instead of initialData to allow fetching
+    placeholderData: [],
   });
 };
 
@@ -146,8 +266,14 @@ export const useAssignPermissionToRole = () => {
         throw new Error('You do not have permission to assign permissions');
       }
 
-      // TODO: Implement Laravel API endpoint for assigning permissions to roles
-      throw new Error('Assign permission to role endpoint not yet implemented in Laravel API. Please use user permissions management instead.');
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      return await permissionsApi.assignPermissionToRole({
+        role,
+        permission_id: permissionId,
+      });
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['role-permissions', variables.role] });
@@ -175,8 +301,14 @@ export const useRemovePermissionFromRole = () => {
         throw new Error('You do not have permission to remove permissions');
       }
 
-      // TODO: Implement Laravel API endpoint for removing permissions from roles
-      throw new Error('Remove permission from role endpoint not yet implemented in Laravel API. Please use user permissions management instead.');
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      return await permissionsApi.removePermissionFromRole({
+        role,
+        permission_id: permissionId,
+      });
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['role-permissions', variables.role] });
@@ -209,8 +341,16 @@ export const useCreatePermission = () => {
         throw new Error('You do not have permission to create permissions');
       }
 
-      // TODO: Implement Laravel API endpoint for creating permissions
-      throw new Error('Create permission endpoint not yet implemented in Laravel API.');
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      return await permissionsApi.create({
+        name: permissionData.name,
+        resource: permissionData.resource,
+        action: permissionData.action,
+        description: permissionData.description || null,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
@@ -247,8 +387,16 @@ export const useUpdatePermission = () => {
         throw new Error('You do not have permission to update permissions');
       }
 
-      // TODO: Implement Laravel API endpoint for updating permissions
-      throw new Error('Update permission endpoint not yet implemented in Laravel API.');
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      return await permissionsApi.update(id, {
+        name: updates.name,
+        resource: updates.resource,
+        action: updates.action,
+        description: updates.description,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
@@ -276,8 +424,11 @@ export const useDeletePermission = () => {
         throw new Error('You do not have permission to delete permissions');
       }
 
-      // TODO: Implement Laravel API endpoint for deleting permissions
-      throw new Error('Delete permission endpoint not yet implemented in Laravel API.');
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      return await permissionsApi.delete(permissionId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
@@ -297,19 +448,51 @@ export const useDeletePermission = () => {
 
 export const useUserPermissionsForUser = (userId: string) => {
   const { profile } = useAuth();
+  const { data: allPermissions } = usePermissions();
 
   return useQuery({
-    queryKey: ['user-permissions-for-user', userId],
+    queryKey: ['user-permissions-for-user', userId, profile?.organization_id],
     queryFn: async () => {
       if (!userId) {
-        return { userPermissions: [], rolePermissions: [] };
+        return { userPermissions: [], rolePermissions: [], allPermissions: [] };
       }
 
-      // TODO: Implement Laravel API endpoint for getting user permissions for a specific user
-      // This should return both user-specific and role-based permissions
-      throw new Error('Get user permissions for user endpoint not yet implemented in Laravel API.');
+      if (!profile?.organization_id) {
+        return { userPermissions: [], rolePermissions: [], allPermissions: [] };
+      }
+
+      const response = await permissionsApi.userPermissionsForUser(userId);
+      const data = response as {
+        user_id: string;
+        all_permissions: string[];
+        direct_permissions: Array<{ id: string; name: string }>;
+        role_permissions: Array<{ id: string; name: string }>;
+      };
+
+      // Map permission objects from backend response to component format
+      const directPerms = (data.direct_permissions || []).map(permData => {
+        const perm = allPermissions?.find(p => p.id === permData.id || p.name === permData.name);
+        return {
+          permission_id: permData.id, // Use ID directly from backend
+          permission: perm || null,
+        };
+      });
+
+      const rolePerms = (data.role_permissions || []).map(permData => {
+        const perm = allPermissions?.find(p => p.id === permData.id || p.name === permData.name);
+        return {
+          permission_id: permData.id, // Use ID directly from backend
+          permission: perm || null,
+        };
+      });
+
+      return {
+        userPermissions: directPerms,
+        rolePermissions: rolePerms,
+        allPermissions: data.all_permissions || [],
+      };
     },
-    enabled: !!userId && !!profile,
+    enabled: !!userId && !!profile && !!allPermissions,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -330,8 +513,19 @@ export const useAssignPermissionToUser = () => {
         throw new Error('You do not have permission to assign user permissions');
       }
 
-      // TODO: Implement Laravel API endpoint for assigning permissions to users
-      throw new Error('Assign permission to user endpoint not yet implemented in Laravel API.');
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      // Validate permission ID is valid (permissions use integer IDs, not UUIDs)
+      if (!permissionId || (typeof permissionId !== 'number' && typeof permissionId !== 'string')) {
+        throw new Error('Invalid permission ID. Please refresh the page and try again.');
+      }
+
+      return await permissionsApi.assignPermissionToUser({
+        user_id: userId,
+        permission_id: permissionId,
+      });
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user-permissions-for-user', variables.userId] });
@@ -359,8 +553,19 @@ export const useRemovePermissionFromUser = () => {
         throw new Error('You do not have permission to remove user permissions');
       }
 
-      // TODO: Implement Laravel API endpoint for removing permissions from users
-      throw new Error('Remove permission from user endpoint not yet implemented in Laravel API.');
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      // Validate permission ID is valid (permissions use integer IDs, not UUIDs)
+      if (!permissionId || (typeof permissionId !== 'number' && typeof permissionId !== 'string')) {
+        throw new Error('Invalid permission ID. Please refresh the page and try again.');
+      }
+
+      return await permissionsApi.removePermissionFromUser({
+        user_id: userId,
+        permission_id: permissionId,
+      });
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user-permissions-for-user', variables.userId] });
@@ -370,5 +575,102 @@ export const useRemovePermissionFromUser = () => {
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to remove permission from user');
     },
+  });
+};
+
+// ============================================================================
+// User Role Management Hooks
+// ============================================================================
+
+export const useAssignRoleToUser = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const canUpdatePermissions = useHasPermission('permissions.update');
+
+  return useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      if (!canUpdatePermissions) {
+        throw new Error('You do not have permission to assign roles');
+      }
+
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      return await permissionsApi.assignRoleToUser({
+        user_id: userId,
+        role,
+      });
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['user-permissions-for-user', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: ['user-roles', variables.userId] });
+      toast.success(`Role ${variables.role} assigned to user`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to assign role to user');
+    },
+  });
+};
+
+export const useRemoveRoleFromUser = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const canUpdatePermissions = useHasPermission('permissions.update');
+
+  return useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      if (!canUpdatePermissions) {
+        throw new Error('You do not have permission to remove roles');
+      }
+
+      if (!profile.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      return await permissionsApi.removeRoleFromUser({
+        user_id: userId,
+        role,
+      });
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['user-permissions-for-user', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: ['user-roles', variables.userId] });
+      toast.success(`Role ${variables.role} removed from user`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to remove role from user');
+    },
+  });
+};
+
+export const useUserRoles = (userId: string) => {
+  const { profile } = useAuth();
+
+  return useQuery({
+    queryKey: ['user-roles', userId, profile?.organization_id],
+    queryFn: async () => {
+      if (!userId || !profile?.organization_id) {
+        return { user_id: userId, roles: [] };
+      }
+
+      const response = await permissionsApi.userRoles(userId);
+      return response as { user_id: string; roles: string[] };
+    },
+    enabled: !!userId && !!profile?.organization_id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 };
