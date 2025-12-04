@@ -11,8 +11,69 @@ import type { Student } from '@/types/domain/student';
 try {
   if (pdfFonts && typeof pdfFonts === 'object') {
     (pdfMake as any).vfs = pdfFonts;
+    
+    // Register Roboto fonts from vfs_fonts (default pdfmake fonts)
+    // vfs_fonts typically includes: Roboto-Regular.ttf, Roboto-Medium.ttf, Roboto-Bold.ttf
+    if (!(pdfMake as any).fonts) {
+      (pdfMake as any).fonts = {};
+    }
+    
+    // Check if Roboto fonts exist in VFS and register them
+    const vfs = (pdfMake as any).vfs;
+    if (vfs) {
+      // Register Roboto if available (vfs_fonts includes these by default)
+      if (vfs['Roboto-Regular.ttf'] || vfs['roboto/Roboto-Regular.ttf']) {
+        (pdfMake as any).fonts['Roboto'] = {
+          normal: vfs['Roboto-Regular.ttf'] ? 'Roboto-Regular.ttf' : 'roboto/Roboto-Regular.ttf',
+          bold: vfs['Roboto-Medium.ttf'] ? 'Roboto-Medium.ttf' : (vfs['Roboto-Bold.ttf'] ? 'Roboto-Bold.ttf' : (vfs['roboto/Roboto-Medium.ttf'] ? 'roboto/Roboto-Medium.ttf' : (vfs['roboto/Roboto-Bold.ttf'] ? 'roboto/Roboto-Bold.ttf' : 'Roboto-Regular.ttf'))),
+          italics: vfs['Roboto-Italic.ttf'] ? 'Roboto-Italic.ttf' : (vfs['roboto/Roboto-Italic.ttf'] ? 'roboto/Roboto-Italic.ttf' : 'Roboto-Regular.ttf'),
+          bolditalics: vfs['Roboto-MediumItalic.ttf'] ? 'Roboto-MediumItalic.ttf' : (vfs['roboto/Roboto-MediumItalic.ttf'] ? 'roboto/Roboto-MediumItalic.ttf' : 'Roboto-Regular.ttf'),
+        };
+      } else {
+        // Fallback: use default Roboto registration if vfs_fonts structure is different
+        // pdfmake's vfs_fonts usually has Roboto registered by default, but pdfmake-arabic might need explicit registration
+        const robotoKeys = Object.keys(vfs).filter(key => key.toLowerCase().includes('roboto'));
+        if (robotoKeys.length > 0) {
+          const regularKey = robotoKeys.find(k => k.toLowerCase().includes('regular')) || robotoKeys[0];
+          const boldKey = robotoKeys.find(k => k.toLowerCase().includes('bold') || k.toLowerCase().includes('medium')) || regularKey;
+          
+          (pdfMake as any).fonts['Roboto'] = {
+            normal: regularKey,
+            bold: boldKey,
+            italics: robotoKeys.find(k => k.toLowerCase().includes('italic')) || regularKey,
+            bolditalics: robotoKeys.find(k => k.toLowerCase().includes('bold') && k.toLowerCase().includes('italic')) || boldKey,
+          };
+        } else {
+          // Last resort: register with default pdfmake font names
+          // pdfmake-arabic should handle this, but ensure Roboto is available
+          (pdfMake as any).fonts['Roboto'] = {
+            normal: 'Roboto-Regular.ttf',
+            bold: 'Roboto-Medium.ttf',
+            italics: 'Roboto-Italic.ttf',
+            bolditalics: 'Roboto-MediumItalic.ttf',
+          };
+        }
+      }
+    }
   } else if ((pdfMake as any).vfs) {
-    // Already initialized
+    // Already initialized, ensure fonts are registered
+    if (!(pdfMake as any).fonts) {
+      (pdfMake as any).fonts = {};
+    }
+    if (!(pdfMake as any).fonts['Roboto']) {
+      const vfs = (pdfMake as any).vfs;
+      const robotoKeys = Object.keys(vfs).filter(key => key.toLowerCase().includes('roboto'));
+      if (robotoKeys.length > 0) {
+        const regularKey = robotoKeys.find(k => k.toLowerCase().includes('regular')) || robotoKeys[0];
+        const boldKey = robotoKeys.find(k => k.toLowerCase().includes('bold') || k.toLowerCase().includes('medium')) || regularKey;
+        (pdfMake as any).fonts['Roboto'] = {
+          normal: regularKey,
+          bold: boldKey,
+          italics: robotoKeys.find(k => k.toLowerCase().includes('italic')) || regularKey,
+          bolditalics: robotoKeys.find(k => k.toLowerCase().includes('bold') && k.toLowerCase().includes('italic')) || boldKey,
+        };
+      }
+    }
   }
 } catch (error) {
   console.error('[studentProfilePdf] Failed to initialize pdfmake vfs fonts:', error);

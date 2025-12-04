@@ -20,6 +20,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { useDataTable } from '@/hooks/use-data-table';
+import { ColumnDef } from '@tanstack/react-table';
 import {
     Dialog,
     DialogContent,
@@ -121,7 +124,15 @@ export function ClassesManagement() {
     const { data: schools } = useSchools();
     const { data: academicYears } = useAcademicYears(organizationId);
     const { data: currentAcademicYear } = useCurrentAcademicYear(organizationId);
-    const { data: classes, isLoading: classesLoading } = useClasses(organizationId);
+    const { 
+      classes, 
+      isLoading: classesLoading, 
+      pagination: classesPagination,
+      page: classesPage,
+      pageSize: classesPageSize,
+      setPage: setClassesPage,
+      setPageSize: setClassesPageSize,
+    } = useClasses(organizationId, true);
     const { data: classAcademicYears, isLoading: yearClassesLoading } = useClassAcademicYears(selectedAcademicYearId, organizationId);
     const { data: classHistory } = useClassHistory(viewingHistoryFor || '');
     const { data: copySourceInstances } = useClassAcademicYears(copyFromYearId, organizationId);
@@ -194,6 +205,7 @@ export function ClassesManagement() {
         },
     });
 
+    // Client-side filtering for search
     const filteredClasses = useMemo(() => {
         if (!classes) return [];
         const query = (searchQuery || '').toLowerCase();
@@ -210,6 +222,91 @@ export function ClassesManagement() {
 
         return filtered;
     }, [classes, searchQuery, gradeLevelFilter]);
+
+    // Define columns for DataTable (base classes tab)
+    const baseClassesColumns: ColumnDef<Class>[] = [
+        {
+            accessorKey: 'name',
+            header: t('academic.classes.name'),
+            cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+        },
+        {
+            accessorKey: 'code',
+            header: t('academic.classes.code'),
+            cell: ({ row }) => row.original.code,
+        },
+        {
+            accessorKey: 'gradeLevel',
+            header: t('academic.classes.gradeLevel'),
+            cell: ({ row }) => row.original.gradeLevel !== null ? `Grade ${row.original.gradeLevel}` : '-',
+        },
+        {
+            accessorKey: 'defaultCapacity',
+            header: t('academic.classes.defaultCapacity'),
+            cell: ({ row }) => row.original.default_capacity,
+        },
+        {
+            accessorKey: 'isActive',
+            header: t('academic.classes.isActive'),
+            cell: ({ row }) => (
+                <Badge variant={row.original.isActive ? 'default' : 'secondary'}>
+                    {row.original.isActive ? t('academic.classes.active') : t('academic.classes.inactive')}
+                </Badge>
+            ),
+        },
+        {
+            id: 'actions',
+            header: () => <div className="text-right">{t('students.actions')}</div>,
+            cell: ({ row }) => (
+                <div className="flex justify-end gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setViewingHistoryFor(row.original.id)}
+                        title={t('academic.classes.viewHistory')}
+                    >
+                        <History className="h-4 w-4" />
+                    </Button>
+                    {hasUpdatePermission && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenClassDialog(row.original.id)}
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                    )}
+                    {hasDeletePermission && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(row.original.id)}
+                        >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                    )}
+                </div>
+            ),
+        },
+    ];
+
+    // Use DataTable hook for pagination integration (base classes)
+    const { table: baseClassesTable } = useDataTable({
+        data: filteredClasses,
+        columns: baseClassesColumns,
+        pageCount: classesPagination?.last_page,
+        paginationMeta: classesPagination ?? null,
+        initialState: {
+            pagination: {
+                pageIndex: classesPage - 1,
+                pageSize: classesPageSize,
+            },
+        },
+        onPaginationChange: (newPagination) => {
+            setClassesPage(newPagination.pageIndex + 1);
+            setClassesPageSize(newPagination.pageSize);
+        },
+    });
 
     const handleOpenClassDialog = (classId?: string) => {
         if (classId) {
@@ -562,72 +659,55 @@ export function ClassesManagement() {
                             <div className="rounded-md border">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow>
-                                            <TableHead>{t('academic.classes.name')}</TableHead>
-                                            <TableHead>{t('academic.classes.code')}</TableHead>
-                                            <TableHead>{t('academic.classes.gradeLevel')}</TableHead>
-                                            <TableHead>{t('academic.classes.defaultCapacity')}</TableHead>
-                                            <TableHead>{t('academic.classes.isActive')}</TableHead>
-                                            <TableHead className="text-right">{t('students.actions')}</TableHead>
-                                        </TableRow>
+                                        {baseClassesTable.getHeaderGroups().map((headerGroup) => (
+                                            <TableRow key={headerGroup.id}>
+                                                {headerGroup.headers.map((header) => (
+                                                    <TableHead key={header.id}>
+                                                        {header.isPlaceholder
+                                                            ? null
+                                                            : typeof header.column.columnDef.header === 'function'
+                                                            ? header.column.columnDef.header({ column: header.column })
+                                                            : header.column.columnDef.header}
+                                                    </TableHead>
+                                                ))}
+                                            </TableRow>
+                                        ))}
                                     </TableHeader>
                                     <TableBody>
-                                        {filteredClasses.length === 0 ? (
+                                        {baseClassesTable.getRowModel().rows.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                                                <TableCell colSpan={baseClassesColumns.length} className="text-center text-muted-foreground">
                                                     {searchQuery
                                                         ? t('academic.classes.noClassesFound')
                                                         : t('academic.classes.noClassesMessage')}
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
-                                            filteredClasses.map((cls) => (
-                                                <TableRow key={cls.id}>
-                                                    <TableCell className="font-medium">{cls.name}</TableCell>
-                                                    <TableCell>{cls.code}</TableCell>
-                                                    <TableCell>{cls.gradeLevel !== null ? `Grade ${cls.gradeLevel}` : '-'}</TableCell>
-                                                    <TableCell>{cls.default_capacity}</TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={cls.isActive ? 'default' : 'secondary'}>
-                                                            {cls.isActive ? t('academic.classes.active') : t('academic.classes.inactive')}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <div className="flex justify-end gap-2">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => setViewingHistoryFor(cls.id)}
-                                                                title={t('academic.classes.viewHistory')}
-                                                            >
-                                                                <History className="h-4 w-4" />
-                                                            </Button>
-                                                            {hasUpdatePermission && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => handleOpenClassDialog(cls.id)}
-                                                                >
-                                                                    <Pencil className="h-4 w-4" />
-                                                                </Button>
-                                                            )}
-                                                            {hasDeletePermission && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => handleDeleteClick(cls.id)}
-                                                                >
-                                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
+                                            baseClassesTable.getRowModel().rows.map((row) => (
+                                                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                                                    {row.getVisibleCells().map((cell) => (
+                                                        <TableCell key={cell.id}>
+                                                            {cell.column.columnDef.cell
+                                                                ? cell.column.columnDef.cell({ row })
+                                                                : null}
+                                                        </TableCell>
+                                                    ))}
                                                 </TableRow>
                                             ))
                                         )}
                                     </TableBody>
                                 </Table>
                             </div>
+
+                            {/* Pagination for base classes */}
+                            <DataTablePagination
+                                table={baseClassesTable}
+                                paginationMeta={classesPagination ?? null}
+                                onPageChange={setClassesPage}
+                                onPageSizeChange={setClassesPageSize}
+                                showPageSizeSelector={true}
+                                showTotalCount={true}
+                            />
                         </TabsContent>
 
                         {/* Academic Year Classes Tab */}

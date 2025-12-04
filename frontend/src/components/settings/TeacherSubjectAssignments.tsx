@@ -135,26 +135,38 @@ export function TeacherSubjectAssignments() {
         });
     }, [classAcademicYears, selectedSchoolId]);
 
-    // Fetch subjects for all selected classes at once
+    // Fetch subjects from class_subjects table (Step 2) for the selected class academic years
+    // This gets subjects that are already assigned to the specific class academic year instances
     const { data: allClassSubjectsData } = useClassSubjectsForMultipleClasses(
         selectedClassIds,
         profile?.organization_id
     );
 
-    // Create a map of class_academic_year_id -> subjects
+    // Create a map of class_academic_year_id -> subjects (from class_subjects)
     const allClassSubjects: Record<string, any[]> = useMemo(() => {
         const map: Record<string, any[]> = {};
-        if (allClassSubjectsData) {
-            allClassSubjectsData.forEach((cs) => {
-                const classId = cs.class_academic_year_id;
-                if (!map[classId]) {
-                    map[classId] = [];
-                }
-                map[classId].push(cs);
+        if (!allClassSubjectsData || selectedClassIds.length === 0) return map;
+
+        // Group subjects by class_academic_year_id
+        allClassSubjectsData.forEach((cs) => {
+            const classAcademicYearId = cs.classAcademicYearId;
+            if (!map[classAcademicYearId]) {
+                map[classAcademicYearId] = [];
+            }
+            map[classAcademicYearId].push({
+                id: cs.id,
+                subject_id: cs.subjectId,
+                class_academic_year_id: classAcademicYearId,
+                subject: cs.subject,
+                is_required: cs.isRequired,
+                credits: cs.credits,
+                hours_per_week: cs.hoursPerWeek,
+                notes: cs.notes,
             });
-        }
+        });
+
         return map;
-    }, [allClassSubjectsData]);
+    }, [allClassSubjectsData, selectedClassIds]);
 
     // Filter schedule slots by school if selected
     const filteredSlots = useMemo(() => {
@@ -180,6 +192,17 @@ export function TeacherSubjectAssignments() {
                 .filter(Boolean),
         }));
     }, [assignments, scheduleSlots]);
+
+    // Create a map of academic_year_id -> academic year name for quick lookup
+    const academicYearMap = useMemo(() => {
+        const map = new Map<string, string>();
+        if (academicYears) {
+            academicYears.forEach(year => {
+                map.set(year.id, year.name);
+            });
+        }
+        return map;
+    }, [academicYears]);
 
     // Filter assignments by search query
     const filteredAssignments = useMemo(() => {
@@ -453,8 +476,8 @@ export function TeacherSubjectAssignments() {
                                             key={staffMember.id} 
                                             value={staffMember.id}
                                         >
-                                            {staffMember.employee_id} - {staffMember.full_name} 
-                                            {staffMember.staff_type && ` (${staffMember.staff_type.name})`}
+                                            {staffMember.employeeId} - {staffMember.fullName || `${staffMember.firstName} ${staffMember.fatherName}`}
+                                            {staffMember.staffTypeRelation && ` (${staffMember.staffTypeRelation.name})`}
                                         </SelectItem>
                                     ))
                                 )}
@@ -527,7 +550,11 @@ export function TeacherSubjectAssignments() {
                                                     : assignment.teacher?.full_name || 'Unknown'}
                                             </TableCell>
                                             <TableCell>
-                                                {assignment.class_academic_year?.academic_year?.name || 'Unknown'}
+                                                {assignment.academic_year_id 
+                                                    ? (academicYearMap.get(assignment.academic_year_id) || 
+                                                       assignment.class_academic_year?.academic_year?.name || 
+                                                       'Unknown Year')
+                                                    : (assignment.class_academic_year?.academic_year?.name || 'Unknown Year')}
                                             </TableCell>
                                             <TableCell>
                                                 {assignment.class_academic_year?.class?.name || assignment.class_academic_year?.class?.code || 'Unknown'}
@@ -714,8 +741,8 @@ export function TeacherSubjectAssignments() {
                                                                         key={staffMember.id} 
                                                                         value={staffMember.id}
                                                                     >
-                                                                        {staffMember.employee_id} - {staffMember.full_name} 
-                                                                        {staffMember.staff_type && ` (${staffMember.staff_type.name})`}
+                                                                        {staffMember.employeeId} - {staffMember.fullName || `${staffMember.firstName} ${staffMember.fatherName}`}
+                                                                        {staffMember.staffTypeRelation && ` (${staffMember.staffTypeRelation.name})`}
                                                                     </SelectItem>
                                                                 ))
                                                             )}
@@ -1042,7 +1069,16 @@ export function TeacherSubjectAssignments() {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>Academic Year</Label>
-                                                    <Input value={editingAssignment.class_academic_year?.academic_year?.name || 'Unknown'} disabled />
+                                                    <Input 
+                                                        value={
+                                                            editingAssignment.academic_year_id 
+                                                                ? (academicYearMap.get(editingAssignment.academic_year_id) || 
+                                                                   editingAssignment.class_academic_year?.academic_year?.name || 
+                                                                   'Unknown Year')
+                                                                : (editingAssignment.class_academic_year?.academic_year?.name || 'Unknown Year')
+                                                        } 
+                                                        disabled 
+                                                    />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>Class</Label>

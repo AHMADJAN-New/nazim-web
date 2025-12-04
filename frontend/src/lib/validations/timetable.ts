@@ -9,8 +9,8 @@ export const timetableEntrySchema = z.object({
   subject_id: z.string().uuid('Invalid subject'),
   teacher_id: z.string().uuid('Invalid teacher'),
   schedule_slot_id: z.string().uuid('Invalid schedule slot'),
-  day_name: z.enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']),
-  period_order: z.number().int().min(1),
+  day_name: z.enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'all_year']),
+  period_order: z.number().int().min(0),
 });
 
 /**

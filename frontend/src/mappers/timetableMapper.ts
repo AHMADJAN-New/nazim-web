@@ -81,6 +81,7 @@ export function mapTimetableEntryApiToDomain(api: TimetableApi.TimetableEntry): 
         teacher: api.teacher ? {
             id: api.teacher.id,
             fullName: api.teacher.full_name,
+            employeeId: api.teacher.employee_id || null,
         } : null,
         scheduleSlot: api.schedule_slot ? {
             id: api.schedule_slot.id,

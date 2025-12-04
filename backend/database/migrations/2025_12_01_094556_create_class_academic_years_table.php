@@ -25,18 +25,12 @@ return new class extends Migration
                 $table->uuid('teacher_id')->nullable();
                 $table->foreign('teacher_id')->references('id')->on('profiles')->onDelete('set null');
                 $table->uuid('room_id')->nullable();
-                // Foreign key to rooms will be added later when rooms table exists
-                // $table->foreign('room_id')->references('id')->on('rooms')->onDelete('set null');
                 $table->integer('capacity')->nullable();
                 $table->integer('current_student_count')->default(0);
                 $table->boolean('is_active')->default(true);
                 $table->text('notes')->nullable();
             $table->timestamps();
                 $table->softDeletes();
-
-                // Unique constraint: one section per class per academic year
-                // Note: Laravel doesn't support COALESCE in unique, so we'll handle this in application logic
-                $table->unique(['class_id', 'academic_year_id', 'section_name'], 'idx_class_academic_years_unique_section');
                 
                 // Indexes
                 $table->index('class_id');
@@ -47,7 +41,23 @@ return new class extends Migration
                 $table->index('is_active');
                 $table->index('deleted_at');
         });
+
+        // Create a unique index that properly handles NULL section_name
+        // PostgreSQL treats NULL as distinct, so we use a partial unique index
+        // This ensures: one NULL section per class+year, and unique non-NULL sections
+        DB::statement('
+            CREATE UNIQUE INDEX idx_class_academic_years_unique_section 
+            ON class_academic_years (class_id, academic_year_id, section_name)
+            WHERE deleted_at IS NULL
+        ');
+
+        // Add room_id foreign key constraint if rooms table exists
+        if (Schema::hasTable('rooms')) {
+            Schema::table('class_academic_years', function (Blueprint $table) {
+                $table->foreign('room_id')->references('id')->on('rooms')->onDelete('set null');
+            });
         }
+    }
     }
 
     /**

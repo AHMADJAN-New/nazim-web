@@ -210,8 +210,18 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
-      <Card className="w-full max-w-md">
+    <div 
+      className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4" 
+      dir="ltr"
+      style={{ 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        minHeight: '100vh'
+      }}
+    >
+      <Card className="w-full max-w-md shrink-0" style={{ margin: '0 auto' }}>
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
             School Management System

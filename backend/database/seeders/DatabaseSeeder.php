@@ -77,6 +77,30 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 8: Creating academic years...');
         $this->call(AcademicYearSeeder::class);
 
+        // Step 8b: Create schedule slots for organizations
+        $this->command->info('Step 8b: Creating schedule slots...');
+        $this->call(ScheduleSlotSeeder::class);
+
+        // Step 9: Create classes for organizations
+        $this->command->info('Step 9: Creating classes...');
+        $this->call(ClassSeeder::class);
+
+        // Step 10: Create subjects for organizations
+        $this->command->info('Step 10: Creating subjects...');
+        $this->call(SubjectSeeder::class);
+
+        // Step 11: Create staff members for organizations
+        $this->command->info('Step 11: Creating staff members...');
+        $this->call(StaffSeeder::class);
+
+        // Step 12: Create students for organizations
+        $this->command->info('Step 12: Creating students...');
+        $this->call(StudentSeeder::class);
+
+        // Step 13: Admit students to classes
+        $this->command->info('Step 13: Admitting students to classes...');
+        $this->call(StudentAdmissionSeeder::class);
+
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');
         $this->command->info('');

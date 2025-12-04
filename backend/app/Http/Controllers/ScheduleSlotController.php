@@ -431,7 +431,7 @@ class ScheduleSlotController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('schedule_slots.read')) {
+            if (!$user->hasPermissionTo('schedule_slots.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -453,7 +453,7 @@ class ScheduleSlotController extends Controller
 
         $slot->delete();
 
-        return response()->json(['message' => 'Schedule slot deleted successfully'], 200);
+        return response()->noContent();
     }
 }
 

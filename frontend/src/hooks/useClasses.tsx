@@ -12,23 +12,61 @@ import {
     mapClassAcademicYearDomainToInsert,
     mapClassAcademicYearDomainToUpdate,
 } from '@/mappers/classMapper';
+import type { PaginatedResponse } from '@/types/pagination';
+import { usePagination } from './usePagination';
+import { useEffect } from 'react';
 
 // Re-export domain types for convenience
 export type { Class, ClassAcademicYear } from '@/types/domain/class';
 
-export const useClasses = (organizationId?: string) => {
+export const useClasses = (organizationId?: string, usePaginated?: boolean) => {
     const { user, profile } = useAuth();
+    const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
+        initialPage: 1,
+        initialPageSize: 25,
+    });
 
-    return useQuery<Class[]>({
-        queryKey: ['classes', organizationId || profile?.organization_id],
+    const { data, isLoading, error } = useQuery<Class[] | PaginatedResponse<ClassApi.Class>>({
+        queryKey: ['classes', organizationId || profile?.organization_id, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
         queryFn: async () => {
             if (!user || !profile) return [];
 
-            const apiClasses = await classesApi.list({
+            const params: { organization_id?: string; page?: number; per_page?: number } = {
                 organization_id: organizationId || profile.organization_id,
-            });
+            };
 
-            // Map API models to domain models
+            // Add pagination params if using pagination
+            if (usePaginated) {
+                params.page = page;
+                params.per_page = pageSize;
+            }
+
+            const apiClasses = await classesApi.list(params);
+
+            // Check if response is paginated (Laravel returns meta fields directly, not nested)
+            if (usePaginated && apiClasses && typeof apiClasses === 'object' && 'data' in apiClasses && 'current_page' in apiClasses) {
+                // Laravel's paginated response has data and meta fields at the same level
+                const paginatedResponse = apiClasses as any;
+                // Map API models to domain models
+                const classes = (paginatedResponse.data as ClassApi.Class[]).map(mapClassApiToDomain);
+                // Extract meta from Laravel's response structure
+                const meta: PaginationMeta = {
+                    current_page: paginatedResponse.current_page,
+                    from: paginatedResponse.from,
+                    last_page: paginatedResponse.last_page,
+                    per_page: paginatedResponse.per_page,
+                    to: paginatedResponse.to,
+                    total: paginatedResponse.total,
+                    path: paginatedResponse.path,
+                    first_page_url: paginatedResponse.first_page_url,
+                    last_page_url: paginatedResponse.last_page_url,
+                    next_page_url: paginatedResponse.next_page_url,
+                    prev_page_url: paginatedResponse.prev_page_url,
+                };
+                return { data: classes, meta } as PaginatedResponse<ClassApi.Class>;
+            }
+
+            // Map API models to domain models (non-paginated)
             return (apiClasses as ClassApi.Class[]).map(mapClassApiToDomain);
         },
         enabled: !!user && !!profile,
@@ -36,6 +74,35 @@ export const useClasses = (organizationId?: string) => {
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
     });
+
+    // Update pagination state from API response
+    useEffect(() => {
+        if (usePaginated && data && typeof data === 'object' && 'meta' in data) {
+            updateFromMeta((data as PaginatedResponse<ClassApi.Class>).meta);
+        }
+    }, [data, usePaginated, updateFromMeta]);
+
+    // Return appropriate format based on pagination mode
+    if (usePaginated) {
+        const paginatedData = data as PaginatedResponse<ClassApi.Class> | undefined;
+        return {
+            classes: paginatedData?.data || [],
+            isLoading,
+            error,
+            pagination: paginatedData?.meta ?? null,
+            paginationState,
+            page,
+            pageSize,
+            setPage,
+            setPageSize,
+        };
+    }
+
+    return {
+        data: data as Class[] | undefined,
+        isLoading,
+        error,
+    };
 };
 
 export const useClassAcademicYears = (academicYearId?: string, organizationId?: string) => {

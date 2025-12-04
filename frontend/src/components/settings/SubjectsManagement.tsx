@@ -20,6 +20,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { useDataTable } from '@/hooks/use-data-table';
+import { ColumnDef } from '@tanstack/react-table';
 import {
     Dialog,
     DialogContent,
@@ -59,7 +62,6 @@ const subjectSchema = z.object({
 const assignSubjectToClassSchema = z.object({
     class_id: z.string().uuid('Invalid class'),
     subject_id: z.string().uuid('Invalid subject'),
-    notes: z.string().max(500, 'Notes must be 500 characters or less').optional().nullable(),
 });
 
 const bulkAssignToClassSchema = z.object({
@@ -124,8 +126,27 @@ export function SubjectsManagement() {
     const { data: currentAcademicYear } = useCurrentAcademicYear(profile?.organization_id);
     const { data: classes } = useClasses(profile?.organization_id);
     const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYearId, profile?.organization_id);
-    const { data: subjects, isLoading: subjectsLoading } = useSubjects(profile?.organization_id);
-    const { data: classSubjectTemplates, isLoading: classSubjectTemplatesLoading } = useClassSubjectTemplates(selectedClassId, profile?.organization_id);
+    // Use paginated version of the hook
+    const { 
+        subjects, 
+        isLoading: subjectsLoading,
+        pagination,
+        page,
+        pageSize,
+        setPage,
+        setPageSize,
+    } = useSubjects(profile?.organization_id, true);
+    
+    // Get class_id from selectedClassAcademicYearId for Step 2, or use selectedClassId for Step 1
+    const classIdForTemplates = useMemo(() => {
+        if (selectedClassAcademicYearId && classAcademicYears) {
+            const selectedClassAcademicYear = classAcademicYears.find(cay => cay.id === selectedClassAcademicYearId);
+            return selectedClassAcademicYear?.classId || selectedClassId;
+        }
+        return selectedClassId;
+    }, [selectedClassAcademicYearId, classAcademicYears, selectedClassId]);
+    
+    const { data: classSubjectTemplates, isLoading: classSubjectTemplatesLoading } = useClassSubjectTemplates(classIdForTemplates, profile?.organization_id);
     const { data: classSubjects, isLoading: classSubjectsLoading } = useClassSubjects(selectedClassAcademicYearId, profile?.organization_id);
     const { data: rooms } = useRooms(undefined, profile?.organization_id);
     const { data: teachers } = useUsers({
@@ -196,6 +217,9 @@ export function SubjectsManagement() {
         formState: { errors: bulkToClassErrors },
     } = useForm<BulkAssignToClassFormData>({
         resolver: zodResolver(bulkAssignToClassSchema),
+        defaultValues: {
+            subject_ids: [],
+        },
     });
 
     const {
@@ -235,6 +259,7 @@ export function SubjectsManagement() {
         },
     });
 
+    // Client-side filtering for search
     const filteredSubjects = useMemo(() => {
         if (!subjects) return [];
         let filtered = subjects;
@@ -252,9 +277,88 @@ export function SubjectsManagement() {
         return filtered;
     }, [subjects, searchQuery]);
 
+    // Define columns for DataTable
+    const columns: ColumnDef<Subject>[] = [
+        {
+            accessorKey: 'code',
+            header: t('academic.subjects.code'),
+            cell: ({ row }) => <span className="font-mono">{row.original.code}</span>,
+        },
+        {
+            accessorKey: 'name',
+            header: t('academic.subjects.name'),
+            cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+        },
+        {
+            accessorKey: 'description',
+            header: t('academic.subjects.description'),
+            cell: ({ row }) => (
+                <span className="max-w-xs truncate">
+                    {row.original.description || '-'}
+                </span>
+            ),
+        },
+        {
+            accessorKey: 'isActive',
+            header: t('academic.subjects.isActive'),
+            cell: ({ row }) => {
+                const isActive = row.original.isActive ?? row.original.is_active ?? true;
+                return (
+                    <Badge variant={isActive ? 'default' : 'secondary'}>
+                        {isActive ? t('academic.subjects.active') : t('academic.subjects.inactive')}
+                    </Badge>
+                );
+            },
+        },
+        {
+            id: 'actions',
+            header: () => <div className="text-right">{t('common.actions')}</div>,
+            cell: ({ row }) => (
+                <div className="flex items-center justify-end space-x-2">
+                    {hasUpdatePermission && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenSubjectDialog(row.original)}
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                    )}
+                    {hasDeletePermission && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(row.original.id)}
+                        >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                    )}
+                </div>
+            ),
+        },
+    ];
+
+    // Use DataTable hook for pagination integration
+    const { table } = useDataTable({
+        data: filteredSubjects,
+        columns,
+        pageCount: pagination?.last_page,
+        paginationMeta: pagination ?? null,
+        initialState: {
+            pagination: {
+                pageIndex: page - 1,
+                pageSize,
+            },
+        },
+        onPaginationChange: (newPagination) => {
+            setPage(newPagination.pageIndex + 1);
+            setPageSize(newPagination.pageSize);
+        },
+    });
+
     const filteredTeachers = useMemo(() => {
         if (!teachers) return [];
-        return teachers.filter(u => u.role === 'teacher' && u.is_active);
+        return teachers.filter(u => u.role === 'teacher' && u.isActive);
     }, [teachers]);
 
     const handleOpenSubjectDialog = (subject?: Subject) => {
@@ -285,14 +389,14 @@ export function SubjectsManagement() {
                     name: data.name,
                     code: data.code,
                     description: data.description,
-                    is_active: data.is_active
+                    isActive: data.is_active
                 });
             } else {
                 await createSubject.mutateAsync({
                     name: data.name,
                     code: data.code,
                     description: data.description,
-                    is_active: data.is_active
+                    isActive: data.is_active
                 });
             }
             handleCloseSubjectDialog();
@@ -337,9 +441,8 @@ export function SubjectsManagement() {
                 throw new Error('Class and subject are required');
             }
             await assignSubjectToClass.mutateAsync({
-                class_id: data.class_id,
-                subject_id: data.subject_id,
-                notes: data.notes
+                classId: data.class_id,
+                subjectId: data.subject_id
             });
             handleCloseAssignToClassDialog();
         } catch (error) {
@@ -362,12 +465,13 @@ export function SubjectsManagement() {
 
     const onSubmitBulkAssignToClass = async (data: BulkAssignToClassFormData) => {
         try {
-            if (!data.class_id || !data.subject_ids || data.subject_ids.length === 0) {
+            const subjectIds = Array.isArray(data.subject_ids) ? data.subject_ids : [];
+            if (!data.class_id || subjectIds.length === 0) {
                 throw new Error('Class and at least one subject are required');
             }
             await bulkAssignSubjectsToClass.mutateAsync({
-                class_id: data.class_id,
-                subject_ids: data.subject_ids
+                classId: data.class_id,
+                subjectIds: subjectIds
             });
             handleCloseBulkAssignToClassDialog();
         } catch (error) {
@@ -414,12 +518,13 @@ export function SubjectsManagement() {
 
     const onSubmitBulkAssign = async (data: BulkAssignFormData) => {
         try {
-            if (!data.class_academic_year_id || !data.subject_ids || data.subject_ids.length === 0) {
+            const subjectIds = Array.isArray(data.subject_ids) ? data.subject_ids : [];
+            if (!data.class_academic_year_id || subjectIds.length === 0) {
                 throw new Error('Class and at least one subject are required');
             }
             await bulkAssignSubjects.mutateAsync({
                 class_academic_year_id: data.class_academic_year_id,
-                subject_ids: data.subject_ids,
+                subject_ids: subjectIds,
                 default_room_id: data.default_room_id
             });
             handleCloseBulkAssignDialog();
@@ -472,7 +577,7 @@ export function SubjectsManagement() {
         }
     };
 
-    const handleEditClassSubject = (classSubject: ClassSubject) => {
+    const handleEditClassSubject = (classSubject: any) => {
         setSelectedClassSubject(classSubject.id);
         setValueSubject('name', classSubject.subject?.name || '');
         // Note: We'll need a separate form for editing class subjects
@@ -537,55 +642,58 @@ export function SubjectsManagement() {
                                     <p className="text-sm">{t('academic.subjects.noSubjectsMessage')}</p>
                                 </div>
                             ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>{t('academic.subjects.code')}</TableHead>
-                                            <TableHead>{t('academic.subjects.name')}</TableHead>
-                                            <TableHead>{t('academic.subjects.description')}</TableHead>
-                                            <TableHead>{t('academic.subjects.isActive')}</TableHead>
-                                            <TableHead className="text-right">{t('common.actions')}</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {filteredSubjects.map((subject) => (
-                                            <TableRow key={subject.id}>
-                                                <TableCell className="font-mono">{subject.code}</TableCell>
-                                                <TableCell className="font-medium">{subject.name}</TableCell>
-                                                <TableCell className="max-w-xs truncate">
-                                                    {subject.description || '-'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant={subject.isActive ? 'default' : 'secondary'}>
-                                                        {subject.isActive ? t('academic.subjects.active') : t('academic.subjects.inactive')}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end space-x-2">
-                                                        {hasUpdatePermission && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleOpenSubjectDialog(subject)}
-                                                            >
-                                                                <Pencil className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
-                                                        {hasDeletePermission && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleDeleteClick(subject.id)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                <>
+                                    <div className="rounded-md border">
+                                        <Table>
+                                            <TableHeader>
+                                                {table.getHeaderGroups().map((headerGroup) => (
+                                                    <TableRow key={headerGroup.id}>
+                                                        {headerGroup.headers.map((header) => (
+                                                            <TableHead key={header.id}>
+                                                                {header.isPlaceholder
+                                                                    ? null
+                                                                    : typeof header.column.columnDef.header === 'function'
+                                                                    ? header.column.columnDef.header({ column: header.column, header, table })
+                                                                    : header.column.columnDef.header}
+                                                            </TableHead>
+                                                        ))}
+                                                    </TableRow>
+                                                ))}
+                                            </TableHeader>
+                                            <TableBody>
+                                                {table.getRowModel().rows.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
+                                                            {t('academic.subjects.noSubjectsFound')}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : (
+                                                    table.getRowModel().rows.map((row) => (
+                                                        <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                                                            {row.getVisibleCells().map((cell) => (
+                                                                <TableCell key={cell.id}>
+                                                                    {cell.column.columnDef.cell
+                                                                        ? cell.column.columnDef.cell({ row })
+                                                                        : null}
+                                                                </TableCell>
+                                                            ))}
+                                                        </TableRow>
+                                                    ))
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+
+                                    {/* Pagination */}
+                                    <DataTablePagination
+                                        table={table}
+                                        paginationMeta={pagination ?? null}
+                                        onPageChange={setPage}
+                                        onPageSizeChange={setPageSize}
+                                        showPageSizeSelector={true}
+                                        showTotalCount={true}
+                                    />
+                                </>
                             )}
                         </CardContent>
                     </Card>
@@ -620,7 +728,7 @@ export function SubjectsManagement() {
                         <CardContent>
                             <div className="flex items-center space-x-4 mb-4">
                                 <Select
-                                    value={selectedClassId || ''}
+                                    value={selectedClassId || undefined}
                                     onValueChange={(value) => {
                                         setSelectedClassId(value);
                                     }}
@@ -700,11 +808,11 @@ export function SubjectsManagement() {
                                 </div>
                                 {hasAssignPermission && selectedClassAcademicYearId && (
                                     <div className="flex items-center space-x-2">
-                                        <Button variant="outline" onClick={handleOpenBulkAssignDialog}>
+                                        <Button variant="outline" onClick={handleOpenBulkAssignDialog} disabled={!subjects || subjects.length === 0}>
                                             <Plus className="mr-2 h-4 w-4" />
                                             {t('academic.subjects.bulkAssignSubjects')}
                                         </Button>
-                                        <Button onClick={handleOpenAssignDialog}>
+                                        <Button onClick={handleOpenAssignDialog} disabled={!subjects || subjects.length === 0}>
                                             <Plus className="mr-2 h-4 w-4" />
                                             {t('academic.subjects.assignToClass')}
                                         </Button>
@@ -713,61 +821,86 @@ export function SubjectsManagement() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex items-center space-x-4 mb-4">
-                                <Select
-                                    value={selectedAcademicYearId || ''}
-                                    onValueChange={(value) => {
-                                        setSelectedAcademicYearId(value);
-                                        setSelectedClassAcademicYearId(undefined);
-                                    }}
-                                >
-                                    <SelectTrigger className="w-[250px]">
-                                        <SelectValue placeholder={t('academic.subjects.selectAcademicYear')} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {academicYears?.map((year) => (
-                                            <SelectItem key={year.id} value={year.id}>
-                                                {year.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {selectedAcademicYearId && (
+                            <div className="flex flex-wrap items-center gap-4 mb-4">
+                                <div className="flex-1 min-w-[200px]">
+                                    <Label className="mb-2 block">{t('academic.subjects.selectAcademicYear')}</Label>
                                     <Select
-                                        value={selectedClassAcademicYearId || ''}
-                                        onValueChange={setSelectedClassAcademicYearId}
+                                        value={selectedAcademicYearId || undefined}
+                                        onValueChange={(value) => {
+                                            setSelectedAcademicYearId(value);
+                                            setSelectedClassAcademicYearId(undefined);
+                                        }}
                                     >
-                                        <SelectTrigger className="w-[250px]">
-                                            <SelectValue placeholder={t('academic.subjects.selectClass')} />
+                                        <SelectTrigger>
+                                            <SelectValue placeholder={t('academic.subjects.selectAcademicYear')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {classAcademicYears?.map((cay) => (
-                                                <SelectItem key={cay.id} value={cay.id}>
-                                                    {cay.class?.name} {cay.section_name ? `- ${cay.section_name}` : ''}
+                                            {academicYears?.map((year) => (
+                                                <SelectItem key={year.id} value={year.id}>
+                                                    {year.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                </div>
+                                {selectedAcademicYearId && (
+                                    <div className="flex-1 min-w-[200px]">
+                                        <Label className="mb-2 block">{t('academic.subjects.selectClass')}</Label>
+                                        <Select
+                                            value={selectedClassAcademicYearId || undefined}
+                                            onValueChange={setSelectedClassAcademicYearId}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder={t('academic.subjects.selectClass')} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {classAcademicYears && classAcademicYears.length > 0 ? (
+                                                    classAcademicYears.map((cay) => (
+                                                        <SelectItem key={cay.id} value={cay.id}>
+                                                            {cay.class?.name} {cay.sectionName ? `- ${cay.sectionName}` : ''}
+                                                        </SelectItem>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                                        No classes available for this year
+                                                    </div>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 )}
                                 {selectedClassAcademicYearId && hasCopyPermission && (
-                                    <Button variant="outline" onClick={handleOpenCopyDialog}>
-                                        <Copy className="mr-2 h-4 w-4" />
-                                        {t('academic.subjects.copyBetweenYears')}
-                                    </Button>
+                                    <div className="flex items-end">
+                                        <Button variant="outline" onClick={handleOpenCopyDialog}>
+                                            <Copy className="mr-2 h-4 w-4" />
+                                            {t('academic.subjects.copyBetweenYears')}
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
 
                             {!selectedClassAcademicYearId ? (
                                 <div className="text-center py-8 text-muted-foreground">
-                                    <p>Please select an academic year and class instance to view year-specific customizations</p>
+                                    <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-30" />
+                                    <p className="text-base font-medium mb-2">Select Academic Year and Class</p>
+                                    <p className="text-sm">Choose an academic year and class instance above to view and manage year-specific subject assignments.</p>
                                 </div>
                             ) : classSubjectsLoading ? (
-                                <div className="text-center py-8">{t('common.loading')}</div>
+                                <div className="text-center py-8">
+                                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                    <p className="mt-2 text-muted-foreground">{t('common.loading')}</p>
+                                </div>
                             ) : !classSubjects || classSubjects.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
-                                    <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                                    <p className="text-lg font-medium">{t('academic.subjects.noSubjectsAssigned')}</p>
-                                    <p className="text-sm">Subjects assigned to the class will appear here. You can customize teacher, room, and hours per academic year.</p>
+                                    <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-30" />
+                                    <p className="text-lg font-medium mb-2">{t('academic.subjects.noSubjectsAssigned')}</p>
+                                    <p className="text-sm mb-4">Subjects assigned to the class will appear here. You can customize teacher, room, and hours per academic year.</p>
+                                    {hasAssignPermission && (
+                                        <Button onClick={handleOpenAssignDialog} variant="outline">
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            Assign Subject
+                                        </Button>
+                                    )}
                                 </div>
                             ) : (
                                 <Table>
@@ -786,8 +919,8 @@ export function SubjectsManagement() {
                                             <TableRow key={cs.id}>
                                                 <TableCell className="font-mono">{cs.subject?.code}</TableCell>
                                                 <TableCell className="font-medium">{cs.subject?.name}</TableCell>
-                                                <TableCell>{cs.teacher?.full_name || '-'}</TableCell>
-                                                <TableCell>{cs.room?.room_number || '-'}</TableCell>
+                                                <TableCell>{cs.teacher?.fullName || '-'}</TableCell>
+                                                <TableCell>{cs.room?.roomNumber || '-'}</TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex items-center justify-end space-x-2">
                                                         {hasUpdatePermission && (
@@ -908,23 +1041,94 @@ export function SubjectsManagement() {
                             <Controller
                                 name="subject_id"
                                 control={controlAssign}
-                                render={({ field }) => (
-                                    <Select value={field.value} onValueChange={field.onChange}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder={t('academic.subjects.selectSubject')} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {subjects?.filter(s => s.is_active).map((subject) => (
-                                                <SelectItem key={subject.id} value={subject.id}>
-                                                    {subject.code} - {subject.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
+                                render={({ field }) => {
+                                    // Get class_id from selectedClassAcademicYearId
+                                    const selectedClassAcademicYear = classAcademicYears?.find(cay => cay.id === selectedClassAcademicYearId);
+                                    const classIdForStep2 = selectedClassAcademicYear?.classId;
+                                    
+                                    // Get subjects assigned to this class in Step 1 (from class-subject-templates)
+                                    const classTemplateSubjectIds = classSubjectTemplates
+                                        ?.filter(template => template.classId === classIdForStep2)
+                                        .map(template => template.subjectId) || [];
+                                    
+                                    // Filter out already assigned subjects (from class-subjects)
+                                    const assignedSubjectIds = classSubjects?.map(cs => cs.subjectId) || [];
+                                    
+                                    // Only show subjects that:
+                                    // 1. Are active
+                                    // 2. Are assigned to the class in Step 1 (class-subject-templates)
+                                    // 3. Are not already assigned to this class instance (class-subjects)
+                                    const availableSubjects = subjects?.filter(s => 
+                                        s.isActive && 
+                                        classTemplateSubjectIds.includes(s.id) &&
+                                        !assignedSubjectIds.includes(s.id)
+                                    ) || [];
+                                    
+                                    // Debug logging
+                                    if (import.meta.env.DEV) {
+                                        console.log('Subjects for dropdown (Step 2):', {
+                                            classIdForStep2,
+                                            classTemplateSubjectIds: classTemplateSubjectIds.length,
+                                            assignedSubjectIds: assignedSubjectIds.length,
+                                            availableSubjects: availableSubjects.length
+                                        });
+                                    }
+                                    
+                                    return (
+                                        <Select value={field.value || undefined} onValueChange={field.onChange} disabled={subjectsLoading || !subjects || subjects.length === 0 || !classIdForStep2}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder={
+                                                    !classIdForStep2
+                                                        ? "Select a class first"
+                                                        : subjectsLoading 
+                                                        ? "Loading subjects..." 
+                                                        : !subjects || subjects.length === 0
+                                                        ? "No subjects available"
+                                                        : classTemplateSubjectIds.length === 0
+                                                        ? "No subjects assigned to this class in Step 1"
+                                                        : availableSubjects.length === 0 
+                                                        ? "All subjects assigned" 
+                                                        : t('academic.subjects.selectSubject')
+                                                } />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {!classIdForStep2 ? (
+                                                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                                        Please select a class first
+                                                    </div>
+                                                ) : subjectsLoading ? (
+                                                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                                        Loading subjects...
+                                                    </div>
+                                                ) : !subjects || subjects.length === 0 ? (
+                                                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                                        No subjects available. Please create subjects first.
+                                                    </div>
+                                                ) : classTemplateSubjectIds.length === 0 ? (
+                                                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                                        No subjects assigned to this class in Step 1. Please assign subjects to the class first.
+                                                    </div>
+                                                ) : availableSubjects.length === 0 ? (
+                                                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                                        All subjects are already assigned to this class instance
+                                                    </div>
+                                                ) : (
+                                                    availableSubjects.map((subject) => (
+                                                        <SelectItem key={subject.id} value={subject.id}>
+                                                            {subject.code} - {subject.name}
+                                                        </SelectItem>
+                                                    ))
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    );
+                                }}
                             />
                             {assignErrors.subject_id && (
                                 <p className="text-sm text-destructive">{assignErrors.subject_id.message}</p>
+                            )}
+                            {subjectsLoading && (
+                                <p className="text-xs text-muted-foreground">Loading subjects...</p>
                             )}
                         </div>
                         <div className="space-y-2">
@@ -941,7 +1145,7 @@ export function SubjectsManagement() {
                                             <SelectItem value="none">Use Class Room</SelectItem>
                                             {rooms?.map((room) => (
                                                 <SelectItem key={room.id} value={room.id}>
-                                                    {room.room_number}
+                                                    {room.roomNumber}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -984,32 +1188,95 @@ export function SubjectsManagement() {
                     <form onSubmit={handleSubmitBulk(onSubmitBulkAssign)} className="space-y-4">
                         <div className="space-y-2">
                             <Label>{t('academic.subjects.selectSubjects')} *</Label>
-                            <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-                                {subjects?.filter(s => s.is_active).map((subject) => {
-                                    const selectedSubjects = watchBulk('subject_ids') || [];
-                                    const isSelected = selectedSubjects.includes(subject.id);
-                                    return (
-                                        <div key={subject.id} className="flex items-center space-x-2 py-2">
-                                            <Checkbox
-                                                checked={isSelected}
-                                                onCheckedChange={(checked) => {
-                                                    const current = watchBulk('subject_ids') || [];
-                                                    if (checked) {
-                                                        setValueBulk('subject_ids', [...current, subject.id]);
-                                                    } else {
-                                                        setValueBulk('subject_ids', current.filter(id => id !== subject.id));
-                                                    }
-                                                }}
-                                            />
-                                            <Label className="cursor-pointer">
-                                                {subject.code} - {subject.name}
-                                            </Label>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            {bulkErrors.subject_ids && (
-                                <p className="text-sm text-destructive">{bulkErrors.subject_ids.message}</p>
+                            {subjectsLoading ? (
+                                <div className="border rounded-md p-4 text-center text-muted-foreground">
+                                    Loading subjects...
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
+                                        {(() => {
+                                            // Get class_id from selectedClassAcademicYearId
+                                            const selectedClassAcademicYear = classAcademicYears?.find(cay => cay.id === selectedClassAcademicYearId);
+                                            const classIdForStep2 = selectedClassAcademicYear?.classId;
+                                            
+                                            // Get subjects assigned to this class in Step 1 (from class-subject-templates)
+                                            const classTemplateSubjectIds = classSubjectTemplates
+                                                ?.filter(template => template.classId === classIdForStep2)
+                                                .map(template => template.subjectId) || [];
+                                            
+                                            // Filter out already assigned subjects (from class-subjects)
+                                            const assignedSubjectIds = classSubjects?.map(cs => cs.subjectId) || [];
+                                            
+                                            // Only show subjects that:
+                                            // 1. Are active
+                                            // 2. Are assigned to the class in Step 1 (class-subject-templates)
+                                            // 3. Are not already assigned to this class instance (class-subjects)
+                                            const availableSubjects = subjects?.filter(s => 
+                                                s.isActive && 
+                                                classTemplateSubjectIds.includes(s.id) &&
+                                                !assignedSubjectIds.includes(s.id)
+                                            ) || [];
+                                            
+                                            if (!classIdForStep2) {
+                                                return (
+                                                    <div className="text-center py-4 text-muted-foreground">
+                                                        Please select a class first
+                                                    </div>
+                                                );
+                                            }
+                                            
+                                            if (classTemplateSubjectIds.length === 0) {
+                                                return (
+                                                    <div className="text-center py-4 text-muted-foreground">
+                                                        No subjects assigned to this class in Step 1. Please assign subjects to the class first.
+                                                    </div>
+                                                );
+                                            }
+                                            
+                                            if (availableSubjects.length === 0) {
+                                                return (
+                                                    <div className="text-center py-4 text-muted-foreground">
+                                                        {subjects && subjects.length > 0 
+                                                            ? 'All subjects are already assigned to this class instance'
+                                                            : 'No active subjects available'}
+                                                    </div>
+                                                );
+                                            }
+                                            
+                                            return availableSubjects.map((subject) => {
+                                                const selectedSubjects = watchBulk('subject_ids') || [];
+                                                const isSelected = selectedSubjects.includes(subject.id);
+                                                return (
+                                                    <div key={subject.id} className="flex items-center space-x-2 py-2">
+                                                        <Checkbox
+                                                            checked={isSelected}
+                                                            onCheckedChange={(checked) => {
+                                                                const current = watchBulk('subject_ids') || [];
+                                                                if (checked) {
+                                                                    setValueBulk('subject_ids', [...current, subject.id]);
+                                                                } else {
+                                                                    setValueBulk('subject_ids', current.filter(id => id !== subject.id));
+                                                                }
+                                                            }}
+                                                        />
+                                                        <Label className="cursor-pointer flex-1">
+                                                            {subject.code} - {subject.name}
+                                                        </Label>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                    {bulkErrors.subject_ids && (
+                                        <p className="text-sm text-destructive">{bulkErrors.subject_ids.message}</p>
+                                    )}
+                                    {classSubjects && classSubjects.length > 0 && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {classSubjects.length} subject{classSubjects.length !== 1 ? 's' : ''} already assigned. Only unassigned subjects are shown.
+                                        </p>
+                                    )}
+                                </>
                             )}
                         </div>
                         <div className="space-y-2">
@@ -1026,7 +1293,7 @@ export function SubjectsManagement() {
                                             <SelectItem value="none">Use Class Room</SelectItem>
                                             {rooms?.map((room) => (
                                                 <SelectItem key={room.id} value={room.id}>
-                                                    {room.room_number}
+                                                    {room.roomNumber}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -1064,7 +1331,7 @@ export function SubjectsManagement() {
                                 name="class_id"
                                 control={controlAssignToClass}
                                 render={({ field }) => (
-                                    <Select value={field.value} onValueChange={field.onChange}>
+                                    <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select a class" />
                                         </SelectTrigger>
@@ -1088,12 +1355,12 @@ export function SubjectsManagement() {
                                 name="subject_id"
                                 control={controlAssignToClass}
                                 render={({ field }) => (
-                                    <Select value={field.value} onValueChange={field.onChange}>
+                                    <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
                                             <SelectValue placeholder={t('academic.subjects.selectSubject')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {subjects?.filter(s => s.is_active).map((subject) => (
+                                            {subjects?.filter(s => s.isActive).map((subject) => (
                                                 <SelectItem key={subject.id} value={subject.id}>
                                                     {subject.code} - {subject.name}
                                                 </SelectItem>
@@ -1105,15 +1372,6 @@ export function SubjectsManagement() {
                             {assignToClassErrors.subject_id && (
                                 <p className="text-sm text-destructive">{assignToClassErrors.subject_id.message}</p>
                             )}
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="notes_template">{t('academic.subjects.notes')}</Label>
-                            <Textarea
-                                id="notes_template"
-                                {...registerAssignToClass('notes')}
-                                placeholder="Optional notes"
-                                rows={3}
-                            />
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseAssignToClassDialog}>
@@ -1143,7 +1401,7 @@ export function SubjectsManagement() {
                                 name="class_id"
                                 control={controlBulkToClass}
                                 render={({ field }) => (
-                                    <Select value={field.value} onValueChange={field.onChange}>
+                                    <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select a class" />
                                         </SelectTrigger>
@@ -1164,7 +1422,7 @@ export function SubjectsManagement() {
                         <div className="space-y-2">
                             <Label>{t('academic.subjects.selectSubjects')} *</Label>
                             <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-                                {subjects?.filter(s => s.is_active).map((subject) => {
+                                {subjects?.filter(s => s.isActive).map((subject) => {
                                     const selectedSubjects = watchBulkToClass('subject_ids') || [];
                                     const isSelected = selectedSubjects.includes(subject.id);
                                     return (
@@ -1223,14 +1481,14 @@ export function SubjectsManagement() {
                                 name="from_class_academic_year_id"
                                 control={controlCopy}
                                 render={({ field }) => (
-                                    <Select value={field.value} onValueChange={field.onChange}>
+                                    <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
                                             <SelectValue placeholder={t('academic.subjects.fromYear')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {classAcademicYears?.map((cay) => (
                                                 <SelectItem key={cay.id} value={cay.id}>
-                                                    {cay.class?.name} {cay.section_name ? `- ${cay.section_name}` : ''} ({cay.academic_year?.name})
+                                                    {cay.class?.name} {cay.sectionName ? `- ${cay.sectionName}` : ''} ({cay.academicYear?.name})
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -1247,14 +1505,14 @@ export function SubjectsManagement() {
                                 name="to_class_academic_year_id"
                                 control={controlCopy}
                                 render={({ field }) => (
-                                    <Select value={field.value} onValueChange={field.onChange}>
+                                    <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
                                             <SelectValue placeholder={t('academic.subjects.toYear')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {classAcademicYears?.map((cay) => (
                                                 <SelectItem key={cay.id} value={cay.id}>
-                                                    {cay.class?.name} {cay.section_name ? `- ${cay.section_name}` : ''} ({cay.academic_year?.name})
+                                                    {cay.class?.name} {cay.sectionName ? `- ${cay.sectionName}` : ''} ({cay.academicYear?.name})
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

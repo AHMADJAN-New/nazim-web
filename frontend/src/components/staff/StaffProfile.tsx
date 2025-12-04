@@ -62,25 +62,31 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="p-6">
+      <Dialog open={true} onOpenChange={(open) => !open && onClose?.()}>
+        <DialogContent className="max-w-6xl">
+          <DialogHeader>
+            <DialogTitle>Loading Staff Profile</DialogTitle>
+          </DialogHeader>
+          <div className="p-6">
             <LoadingSpinner text="Loading staff profile..." />
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   if (!staff) {
     return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center text-muted-foreground">Staff member not found</div>
-          </CardContent>
-        </Card>
-      </div>
+      <Dialog open={true} onOpenChange={(open) => !open && onClose?.()}>
+        <DialogContent className="max-w-6xl">
+          <DialogHeader>
+            <DialogTitle>Staff Member Not Found</DialogTitle>
+          </DialogHeader>
+          <div className="p-6 text-center text-muted-foreground">
+            Staff member not found
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
@@ -173,21 +179,25 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
   const pictureUrl = getPictureUrl();
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Employee Profile Card */}
-      <Card>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose?.()}>
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Employee Profile
+          </DialogTitle>
+          <DialogDescription>
+            View and manage staff member details
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-6">
+          {/* Employee Profile Card */}
+          <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Employee Profile
-            </CardTitle>
-            {onClose && (
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                <X className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Employee Profile
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-6">
@@ -851,7 +861,9 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

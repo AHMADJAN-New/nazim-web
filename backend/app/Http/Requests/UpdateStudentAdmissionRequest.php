@@ -44,9 +44,9 @@ class UpdateStudentAdmissionRequest extends FormRequest
                     }
                 },
             ],
-            // Prevent organization_id changes
+            // Prevent organization_id and school_id changes
             'organization_id' => 'prohibited',
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
+            'school_id' => 'prohibited',
             'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
             'class_id' => 'nullable|uuid|exists:classes,id',
             'class_academic_year_id' => 'nullable|uuid|exists:class_academic_years,id',
@@ -69,8 +69,9 @@ class UpdateStudentAdmissionRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Convert empty strings to null for optional fields
+        // Note: school_id is excluded as it's prohibited from updates
         $fieldsToClean = [
-            'school_id', 'academic_year_id', 'class_id', 'class_academic_year_id',
+            'academic_year_id', 'class_id', 'class_academic_year_id',
             'residency_type_id', 'room_id', 'admission_year', 'enrollment_type',
             'shift', 'fee_status', 'placement_notes',
         ];

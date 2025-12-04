@@ -3,6 +3,9 @@ import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
 import { teacherSubjectAssignmentsApi } from '@/lib/api/client';
+import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
+import { usePagination } from './usePagination';
+import { useEffect } from 'react';
 
 // Type definition for teacher subject assignment
 export type TeacherSubjectAssignment = {
@@ -89,25 +92,72 @@ export type TeacherSubjectAssignmentUpdate = {
     notes?: string | null;
 };
 
-export const useTeacherSubjectAssignments = (organizationId?: string, teacherId?: string, academicYearId?: string) => {
+export const useTeacherSubjectAssignments = (organizationId?: string, teacherId?: string, academicYearId?: string, usePaginated?: boolean) => {
     const { user } = useAuth();
     const { data: profile } = useProfile();
+    const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
+        initialPage: 1,
+        initialPageSize: 25,
+    });
 
-    return useQuery({
-        queryKey: ['teacher-subject-assignments', organizationId || profile?.organization_id, teacherId, academicYearId],
+    const { data, isLoading, error } = useQuery<TeacherSubjectAssignment[] | PaginatedResponse<any>>({
+        queryKey: ['teacher-subject-assignments', organizationId || profile?.organization_id, teacherId, academicYearId, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
         queryFn: async () => {
             if (!user || !profile) return [];
 
-            // Fetch assignments from Laravel API
-            const assignments = await teacherSubjectAssignmentsApi.list({
+            const params: { organization_id?: string; teacher_id?: string; academic_year_id?: string; page?: number; per_page?: number } = {
                 organization_id: organizationId || profile.organization_id || undefined,
                 teacher_id: teacherId,
                 academic_year_id: academicYearId,
-            });
+            };
+
+            // Add pagination params if using pagination
+            if (usePaginated) {
+                params.page = page;
+                params.per_page = pageSize;
+            }
+
+            // Fetch assignments from Laravel API
+            const assignments = await teacherSubjectAssignmentsApi.list(params);
+
+            // Check if response is paginated (Laravel returns meta fields directly, not nested)
+            if (usePaginated && assignments && typeof assignments === 'object' && 'data' in assignments && 'current_page' in assignments) {
+                // Laravel's paginated response has data and meta fields at the same level
+                const paginatedResponse = assignments as any;
+                // Map assignments with schedule slots and teacher full_name
+                const mapped = (paginatedResponse.data as any[]).map((assignment: any) => ({
+                    ...assignment,
+                    schedule_slots: [],
+                    teacher: assignment.teacher ? {
+                        ...assignment.teacher,
+                        full_name: [
+                            assignment.teacher.first_name,
+                            assignment.teacher.father_name,
+                            assignment.teacher.grandfather_name,
+                        ].filter(Boolean).join(' '),
+                    } : undefined,
+                })) as TeacherSubjectAssignment[];
+                
+                // Extract meta from Laravel's response structure
+                const meta: PaginationMeta = {
+                    current_page: paginatedResponse.current_page,
+                    from: paginatedResponse.from,
+                    last_page: paginatedResponse.last_page,
+                    per_page: paginatedResponse.per_page,
+                    to: paginatedResponse.to,
+                    total: paginatedResponse.total,
+                    path: paginatedResponse.path,
+                    first_page_url: paginatedResponse.first_page_url,
+                    last_page_url: paginatedResponse.last_page_url,
+                    next_page_url: paginatedResponse.next_page_url,
+                    prev_page_url: paginatedResponse.prev_page_url,
+                };
+                return { data: mapped, meta } as PaginatedResponse<TeacherSubjectAssignment>;
+            }
 
             // Note: Schedule slots are fetched separately by the component using useScheduleSlots hook
             // We just return the assignments with schedule_slot_ids array
-            return assignments.map((assignment: any) => ({
+            return (assignments as any[]).map((assignment: any) => ({
                 ...assignment,
                 // schedule_slots will be populated by the component using useScheduleSlots hook
                 schedule_slots: [], // Empty array - component will populate this
@@ -126,6 +176,35 @@ export const useTeacherSubjectAssignments = (organizationId?: string, teacherId?
         staleTime: 10 * 60 * 1000,
         gcTime: 30 * 60 * 1000,
     });
+
+    // Update pagination state from API response
+    useEffect(() => {
+        if (usePaginated && data && typeof data === 'object' && 'meta' in data) {
+            updateFromMeta((data as PaginatedResponse<any>).meta);
+        }
+    }, [data, usePaginated, updateFromMeta]);
+
+    // Return appropriate format based on pagination mode
+    if (usePaginated) {
+        const paginatedData = data as PaginatedResponse<TeacherSubjectAssignment> | undefined;
+        return {
+            assignments: paginatedData?.data || [],
+            isLoading,
+            error,
+            pagination: paginatedData?.meta ?? null,
+            paginationState,
+            page,
+            pageSize,
+            setPage,
+            setPageSize,
+        };
+    }
+
+    return {
+        data: data as TeacherSubjectAssignment[] | undefined,
+        isLoading,
+        error,
+    };
 };
 
 export const useCreateTeacherSubjectAssignment = () => {

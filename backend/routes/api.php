@@ -13,6 +13,8 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\ClassSubjectController;
+use App\Http\Controllers\ClassSubjectTemplateController;
 use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\ScheduleSlotController;
@@ -159,18 +161,25 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/student-admissions/stats', [StudentAdmissionController::class, 'stats']);
     Route::apiResource('student-admissions', StudentAdmissionController::class);
 
-    // Classes
-    Route::apiResource('classes', ClassController::class);
-    Route::post('/classes/{class}/assign-to-year', [ClassController::class, 'assignToYear']);
+    // Classes - Specific routes must come BEFORE resource route to avoid route conflicts
+    Route::get('/classes/academic-years', [ClassController::class, 'byAcademicYear']);
     Route::post('/classes/bulk-assign-sections', [ClassController::class, 'bulkAssignSections']);
+    Route::post('/classes/copy-between-years', [ClassController::class, 'copyBetweenYears']);
+    Route::get('/class-academic-years/{id}', [ClassController::class, 'getClassAcademicYear']);
     Route::put('/classes/academic-years/{id}', [ClassController::class, 'updateInstance']);
     Route::delete('/classes/academic-years/{id}', [ClassController::class, 'removeFromYear']);
-    Route::post('/classes/copy-between-years', [ClassController::class, 'copyBetweenYears']);
     Route::get('/classes/{class}/academic-years', [ClassController::class, 'academicYears']);
-    Route::get('/classes/academic-years', [ClassController::class, 'byAcademicYear']);
+    Route::post('/classes/{class}/assign-to-year', [ClassController::class, 'assignToYear']);
+    Route::apiResource('classes', ClassController::class);
 
     // Subjects
     Route::apiResource('subjects', SubjectController::class);
+    
+    // Class Subject Templates
+    Route::apiResource('class-subject-templates', ClassSubjectTemplateController::class);
+    
+    // Class Subjects
+    Route::apiResource('class-subjects', ClassSubjectController::class);
 
     // Academic Years
     Route::apiResource('academic-years', AcademicYearController::class);

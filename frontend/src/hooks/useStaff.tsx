@@ -14,18 +14,25 @@ import {
   mapStaffTypeDomainToUpdate,
   mapStaffDocumentApiToDomain,
 } from '@/mappers/staffMapper';
+import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
+import { usePagination } from './usePagination';
+import { useEffect } from 'react';
 
 // Re-export domain types for convenience
 export type { Staff, StaffType, StaffDocument, StaffStats, StaffStatus } from '@/types/domain/staff';
 
 // Hook to fetch all staff with organization filtering
-export const useStaff = (organizationId?: string) => {
+export const useStaff = (organizationId?: string, usePaginated?: boolean) => {
   const { user, profile } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
   const orgId = organizationId || profile?.organization_id || null;
+  const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
+    initialPage: 1,
+    initialPageSize: 25,
+  });
 
-  return useQuery<Staff[]>({
-    queryKey: ['staff', orgId, orgIds.join(',')],
+  const { data, isLoading, error, refetch } = useQuery<Staff[] | PaginatedResponse<StaffApi.Staff>>({
+    queryKey: ['staff', orgId, orgIds.join(','), usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
     queryFn: async () => {
       if (!user || !profile) return [];
       if (orgsLoading) return [];
@@ -46,8 +53,38 @@ export const useStaff = (organizationId?: string) => {
         params.organization_id = organizationId;
       }
 
+      // Add pagination params if using pagination
+      if (usePaginated) {
+        params.page = page;
+        params.per_page = pageSize;
+      }
+
       const apiStaff = await staffApi.list(params);
-      // Map API models to domain models
+
+      // Check if response is paginated (Laravel returns meta fields directly, not nested)
+      if (usePaginated && apiStaff && typeof apiStaff === 'object' && 'data' in apiStaff && 'current_page' in apiStaff) {
+        // Laravel's paginated response has data and meta fields at the same level
+        const paginatedResponse = apiStaff as any;
+        // Map API models to domain models
+        const staff = (paginatedResponse.data as StaffApi.Staff[]).map(mapStaffApiToDomain);
+        // Extract meta from Laravel's response structure
+        const meta: PaginationMeta = {
+          current_page: paginatedResponse.current_page,
+          from: paginatedResponse.from,
+          last_page: paginatedResponse.last_page,
+          per_page: paginatedResponse.per_page,
+          to: paginatedResponse.to,
+          total: paginatedResponse.total,
+          path: paginatedResponse.path,
+          first_page_url: paginatedResponse.first_page_url,
+          last_page_url: paginatedResponse.last_page_url,
+          next_page_url: paginatedResponse.next_page_url,
+          prev_page_url: paginatedResponse.prev_page_url,
+        };
+        return { data: staff, meta } as PaginatedResponse<StaffApi.Staff>;
+      }
+
+      // Map API models to domain models (non-paginated)
       return (apiStaff as StaffApi.Staff[]).map(mapStaffApiToDomain);
     },
     enabled: !!user && !!profile,
@@ -55,6 +92,37 @@ export const useStaff = (organizationId?: string) => {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  // Update pagination state from API response
+  useEffect(() => {
+    if (usePaginated && data && typeof data === 'object' && 'meta' in data) {
+      updateFromMeta((data as PaginatedResponse<StaffApi.Staff>).meta);
+    }
+  }, [data, usePaginated, updateFromMeta]);
+
+  // Return appropriate format based on pagination mode
+  if (usePaginated) {
+    const paginatedData = data as PaginatedResponse<StaffApi.Staff> | undefined;
+    return {
+      data: paginatedData?.data || [],
+      isLoading,
+      error,
+      pagination: paginatedData?.meta ?? null,
+      paginationState,
+      page,
+      pageSize,
+      setPage,
+      setPageSize,
+      refetch,
+    };
+  }
+
+  return {
+    data: data as Staff[] | undefined,
+    isLoading,
+    error,
+    refetch,
+  };
 };
 
 // Hook to fetch a single staff member
@@ -171,13 +239,16 @@ export const useCreateStaff = () => {
       // Map API response back to domain model
       return mapStaffApiToDomain(apiStaff as StaffApi.Staff);
     },
-    onSuccess: (data, variables) => {
-      // Invalidate all staff queries
-      queryClient.invalidateQueries({ queryKey: ['staff'] });
+    onSuccess: async (data, variables) => {
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['staff'] });
+      await queryClient.refetchQueries({ queryKey: ['staff'] });
       if (variables.organizationId) {
-        queryClient.invalidateQueries({ queryKey: ['staff', variables.organizationId] });
+        await queryClient.invalidateQueries({ queryKey: ['staff', variables.organizationId] });
+        await queryClient.refetchQueries({ queryKey: ['staff', variables.organizationId] });
       }
-      queryClient.invalidateQueries({ queryKey: ['staff-stats'] });
+      await queryClient.invalidateQueries({ queryKey: ['staff-stats'] });
+      await queryClient.refetchQueries({ queryKey: ['staff-stats'] });
       toast.success('Staff member created successfully');
     },
     onError: (error: Error) => {
@@ -200,9 +271,12 @@ export const useUpdateStaff = () => {
       // Map API response back to domain model
       return mapStaffApiToDomain(apiStaff as StaffApi.Staff);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff'] });
-      queryClient.invalidateQueries({ queryKey: ['staff-stats'] });
+    onSuccess: async () => {
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['staff'] });
+      await queryClient.refetchQueries({ queryKey: ['staff'] });
+      await queryClient.invalidateQueries({ queryKey: ['staff-stats'] });
+      await queryClient.refetchQueries({ queryKey: ['staff-stats'] });
       toast.success('Staff member updated successfully');
     },
     onError: (error: Error) => {
@@ -219,9 +293,12 @@ export const useDeleteStaff = () => {
     mutationFn: async (id: string) => {
       await staffApi.delete(id);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff'] });
-      queryClient.invalidateQueries({ queryKey: ['staff-stats'] });
+    onSuccess: async () => {
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['staff'] });
+      await queryClient.refetchQueries({ queryKey: ['staff'] });
+      await queryClient.invalidateQueries({ queryKey: ['staff-stats'] });
+      await queryClient.refetchQueries({ queryKey: ['staff-stats'] });
       toast.success('Staff member deleted successfully');
     },
     onError: (error: Error) => {

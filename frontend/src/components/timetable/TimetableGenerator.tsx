@@ -140,8 +140,22 @@ export function TimetableGenerator() {
 	// Derived lists
 	const availableSlots: ScheduleSlot[] = useMemo(() => {
 		const map = new Map<string, ScheduleSlot>();
-		(scheduleSlots || []).forEach((s) => map.set(s.id, { id: s.id, name: s.name, start_time: s.start_time, end_time: s.end_time }));
-		return Array.from(map.values()).sort((a, b) => a.start_time.localeCompare(b.start_time));
+		(scheduleSlots || []).forEach((s) => {
+			if (s && s.id) {
+				map.set(s.id, { 
+					id: s.id, 
+					name: s.name || '', 
+					start_time: s.startTime || '', 
+					end_time: s.endTime || '' 
+				});
+			}
+		});
+		return Array.from(map.values()).sort((a, b) => {
+			if (!a || !b) return 0;
+			const aTime = (a.start_time || '').toString();
+			const bTime = (b.start_time || '').toString();
+			return aTime.localeCompare(bTime);
+		});
 	}, [scheduleSlots]);
 
 	const filteredAssignments = useMemo(() => {
@@ -169,7 +183,11 @@ export function TimetableGenerator() {
 
 	const teacherMap = useMemo(() => {
 		const m = new Map<string, string>();
-		(staff || []).forEach((s) => m.set(s.id, s.full_name || s.employee_id || ''));
+		(staff || []).forEach((s) => {
+			// Use camelCase properties from domain model
+			const displayName = s.fullName || s.employeeId || '';
+			m.set(s.id, displayName);
+		});
 		return m;
 	}, [staff]);
 
@@ -285,10 +303,16 @@ export function TimetableGenerator() {
 				return;
 			}
 
-			const chosenSlots = availableSlots.filter((s) => selectedSlotIds.includes(s.id));
+			const chosenSlots = availableSlots.filter((s) => 
+				selectedSlotIds.includes(s.id) && 
+				s.start_time && 
+				s.end_time &&
+				s.start_time.trim() !== '' &&
+				s.end_time.trim() !== ''
+			);
 
 			if (chosenSlots.length === 0) {
-				toast.error('No valid schedule slots found');
+				toast.error('No valid schedule slots found. Please ensure all selected slots have start and end times configured.');
 				return;
 			}
 
@@ -388,13 +412,23 @@ export function TimetableGenerator() {
 		// If we have entries but no selected slots, use slots from entries
 		if (entries.length > 0 && selectedSlotIds.length === 0) {
 			const entrySlotIds = new Set(entries.map(e => e.slot_id));
-			return availableSlots
-				.filter((s) => entrySlotIds.has(s.id))
-				.sort((a, b) => a.start_time.localeCompare(b.start_time));
-		}
 		return availableSlots
-			.filter((s) => selectedSlotIds.includes(s.id))
-			.sort((a, b) => a.start_time.localeCompare(b.start_time));
+			.filter((s) => s && s.id && entrySlotIds.has(s.id))
+			.sort((a, b) => {
+				if (!a || !b) return 0;
+				const aTime = (a.start_time || '').toString();
+				const bTime = (b.start_time || '').toString();
+				return aTime.localeCompare(bTime);
+			});
+	}
+	return availableSlots
+		.filter((s) => s && s.id && selectedSlotIds.includes(s.id))
+		.sort((a, b) => {
+			if (!a || !b) return 0;
+			const aTime = (a.start_time || '').toString();
+			const bTime = (b.start_time || '').toString();
+			return aTime.localeCompare(bTime);
+		});
 	}, [availableSlots, selectedSlotIds, entries]);
 
 	// Check if moving an entry would cause conflicts (exclude the moving entry by index)
@@ -871,26 +905,27 @@ export function TimetableGenerator() {
 		}
 		
 		// Map loaded entries to display rows
+		// Use teacher data from backend API response (fullName or employeeId)
 		const entryRows = (tt.entries || []).map((e) => ({
-			class_id: e.class_academic_year_id,
-			class_name: e.class_academic_year?.class?.name || classMap.get(e.class_academic_year_id) || '',
+			class_id: e.classAcademicYearId,
+			class_name: e.classAcademicYear?.class?.name || classMap.get(e.classAcademicYearId) || '',
 			subject_name: e.subject?.name || '',
-			teacher_name: e.teacher?.full_name || teacherMap.get(e.teacher_id) || '',
-			teacher_id: e.teacher_id,
-			slot_id: e.schedule_slot_id,
-			day: e.day_name,
-			period_order: e.period_order,
+			teacher_name: e.teacher?.fullName || e.teacher?.employeeId || teacherMap.get(e.teacherId) || '',
+			teacher_id: e.teacherId,
+			slot_id: e.scheduleSlotId,
+			day: e.dayName,
+			period_order: e.periodOrder,
 		}));
 		setEntries(entryRows);
 		
 		// Prepare save entries aligned by index
 		const saveRows: SaveEntryInput[] = (tt.entries || []).map((e) => ({
-			class_academic_year_id: e.class_academic_year_id,
-			subject_id: e.subject_id,
-			teacher_id: e.teacher_id,
-			schedule_slot_id: e.schedule_slot_id,
-			day_name: e.day_name,
-			period_order: e.period_order,
+			class_academic_year_id: e.classAcademicYearId,
+			subject_id: e.subjectId,
+			teacher_id: e.teacherId,
+			schedule_slot_id: e.scheduleSlotId,
+			day_name: e.dayName,
+			period_order: e.periodOrder,
 		}));
 		setSaveEntries(saveRows);
 		setUnscheduledCount(0);

@@ -38,6 +38,8 @@ class StudentDisciplineRecord extends Model
         'incident_date' => 'date',
         'resolved_date' => 'date',
         'resolved' => 'boolean',
+        'created_by' => 'string',
+        'resolved_by' => 'string',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

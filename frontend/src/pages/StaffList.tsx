@@ -20,6 +20,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { useDataTable } from '@/hooks/use-data-table';
+import { ColumnDef } from '@tanstack/react-table';
 import {
     Dialog,
     DialogContent,
@@ -131,7 +134,26 @@ export function StaffList() {
     const orgIdForQuery = selectedOrganizationId === 'all' ? undefined : selectedOrganizationId;
     const { data: schools } = useSchools(orgIdForQuery);
     const { data: staffTypes } = useStaffTypes(orgIdForQuery);
-    const { data: staff, isLoading, refetch: refetchStaff } = useStaff(orgIdForQuery);
+    // Use paginated version of the hook
+    const { 
+        data: staff, 
+        isLoading, 
+        refetch: refetchStaff,
+        pagination,
+        page,
+        pageSize,
+        setPage,
+        setPageSize,
+    } = useStaff(orgIdForQuery, true) as {
+        data: Staff[];
+        isLoading: boolean;
+        refetch: () => void;
+        pagination: any;
+        page: number;
+        pageSize: number;
+        setPage: (page: number) => void;
+        setPageSize: (pageSize: number) => void;
+    };
     const { data: stats } = useStaffStats(orgIdForQuery);
     const deleteStaff = useDeleteStaff();
     const createStaff = useCreateStaff();
@@ -151,6 +173,7 @@ export function StaffList() {
         },
     });
 
+    // Client-side filtering for search
     const filteredStaff = useMemo(() => {
         if (!staff) return [];
 
@@ -169,6 +192,174 @@ export function StaffList() {
             return matchesSearch && matchesStatus && matchesType && matchesSchool;
         });
     }, [staff, searchQuery, statusFilter, typeFilter, schoolFilter]);
+
+    // Helper function to get picture URL (defined later, removing duplicate)
+
+    // Define columns for DataTable
+    const columns: ColumnDef<Staff>[] = [
+        {
+            accessorKey: 'photo',
+            header: 'Photo',
+            cell: ({ row }) => {
+                const pictureUrl = row.original.pictureUrl 
+                    ? (row.original.pictureUrl.startsWith('http') 
+                        ? row.original.pictureUrl 
+                        : `${import.meta.env.VITE_API_URL || ''}/storage/${row.original.pictureUrl}`)
+                    : null;
+                return (
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                        {pictureUrl ? (
+                            <img src={pictureUrl} alt={row.original.fullName} className="w-full h-full object-cover" />
+                        ) : (
+                            <Users className="w-6 h-6 text-muted-foreground" />
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: 'fullName',
+            header: 'Name',
+            cell: ({ row }) => <span className="font-medium">{row.original.fullName}</span>,
+        },
+        {
+            accessorKey: 'employeeId',
+            header: 'Employee ID',
+            cell: ({ row }) => row.original.employeeId,
+        },
+        {
+            accessorKey: 'staffType',
+            header: 'Type',
+            cell: ({ row }) => {
+                const type = staffTypes?.find(t => t.id === row.original.staffTypeId);
+                return type ? <Badge variant="outline">{type.name}</Badge> : '-';
+            },
+        },
+        {
+            accessorKey: 'status',
+            header: 'Status',
+            cell: ({ row }) => {
+                const statusColors: Record<string, string> = {
+                    active: 'default',
+                    inactive: 'secondary',
+                    on_leave: 'outline',
+                    terminated: 'destructive',
+                    suspended: 'destructive',
+                };
+                return (
+                    <Badge variant={statusColors[row.original.status] as any || 'secondary'}>
+                        {row.original.status}
+                    </Badge>
+                );
+            },
+        },
+        {
+            accessorKey: 'school',
+            header: 'School',
+            cell: ({ row }) => {
+                const school = schools?.find(s => s.id === row.original.schoolId);
+                return school ? (school.schoolName || (school as any).school_name) : '-';
+            },
+        },
+        {
+            accessorKey: 'contact',
+            header: 'Contact',
+            cell: ({ row }) => (
+                <div className="text-sm">
+                    {row.original.email && <div>{row.original.email}</div>}
+                    {row.original.phoneNumber && <div className="text-muted-foreground">{row.original.phoneNumber}</div>}
+                </div>
+            ),
+        },
+        {
+            id: 'actions',
+            header: () => <div className="text-right">Actions</div>,
+            cell: ({ row }) => (
+                <div className="flex justify-end gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setViewingProfile(row.original.id)}
+                    >
+                        <Eye className="w-4 h-4" />
+                    </Button>
+                    {hasUpdatePermission && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                setEditingStaff(row.original);
+                                reset({
+                                    employee_id: row.original.employeeId,
+                                    staff_type_id: row.original.staffTypeId,
+                                    school_id: row.original.schoolId || null,
+                                    first_name: row.original.firstName,
+                                    father_name: row.original.fatherName,
+                                    grandfather_name: row.original.grandfatherName || null,
+                                    tazkira_number: row.original.tazkiraNumber || null,
+                                    birth_year: row.original.birthYear || null,
+                                    birth_date: row.original.birthDate || null,
+                                    phone_number: row.original.phoneNumber || null,
+                                    email: row.original.email || null,
+                                    home_address: row.original.homeAddress || null,
+                                    origin_province: row.original.originLocation?.province || null,
+                                    origin_district: row.original.originLocation?.district || null,
+                                    origin_village: row.original.originLocation?.village || null,
+                                    current_province: row.original.currentLocation?.province || null,
+                                    current_district: row.original.currentLocation?.district || null,
+                                    current_village: row.original.currentLocation?.village || null,
+                                    religious_education: row.original.religiousEducation?.level || null,
+                                    religious_university: row.original.religiousEducation?.institution || null,
+                                    religious_graduation_year: row.original.religiousEducation?.graduationYear || null,
+                                    religious_department: row.original.religiousEducation?.department || null,
+                                    modern_education: row.original.modernEducation?.level || null,
+                                    modern_school_university: row.original.modernEducation?.institution || null,
+                                    modern_graduation_year: row.original.modernEducation?.graduationYear || null,
+                                    modern_department: row.original.modernEducation?.department || null,
+                                    teaching_section: row.original.teachingSection || null,
+                                    position: row.original.position || null,
+                                    duty: row.original.duty || null,
+                                    salary: row.original.salary || null,
+                                    status: row.original.status,
+                                    notes: row.original.notes || null,
+                                });
+                                setIsEditDialogOpen(true);
+                            }}
+                        >
+                            <Pencil className="w-4 h-4" />
+                        </Button>
+                    )}
+                    {hasDeletePermission && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(row.original.id)}
+                        >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                    )}
+                </div>
+            ),
+        },
+    ];
+
+    // Use DataTable hook for pagination integration
+    const { table } = useDataTable({
+        data: filteredStaff,
+        columns,
+        pageCount: pagination?.last_page,
+        paginationMeta: pagination ?? null,
+        initialState: {
+            pagination: {
+                pageIndex: page - 1,
+                pageSize,
+            },
+        },
+        onPaginationChange: (newPagination) => {
+            setPage(newPagination.pageIndex + 1);
+            setPageSize(newPagination.pageSize);
+        },
+    });
 
     const handleDeleteClick = (staffId: string) => {
         setSelectedStaff(staffId);
@@ -226,14 +417,7 @@ export function StaffList() {
         );
     }
 
-    if (viewingProfile) {
-        return (
-            <StaffProfile
-                staffId={viewingProfile}
-                onClose={() => setViewingProfile(null)}
-            />
-        );
-    }
+    // StaffProfile is now a Dialog, so it can be rendered alongside the list
 
     return (
         <div className="container mx-auto p-6 space-y-6">
@@ -357,7 +541,7 @@ export function StaffList() {
                                     <SelectItem value="all">All Schools</SelectItem>
                                     {schools.map((school) => (
                                         <SelectItem key={school.id} value={school.id}>
-                                            {school.school_name}
+                                            {school.schoolName}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -399,137 +583,55 @@ export function StaffList() {
                         <div className="rounded-md border">
                             <Table>
                                 <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Photo</TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Employee ID</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>School</TableHead>
-                                        <TableHead>Contact</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
+                                    {table.getHeaderGroups().map((headerGroup) => (
+                                        <TableRow key={headerGroup.id}>
+                                            {headerGroup.headers.map((header) => (
+                                                <TableHead key={header.id}>
+                                                    {header.isPlaceholder
+                                                        ? null
+                                                        : typeof header.column.columnDef.header === 'function'
+                                                        ? header.column.columnDef.header({ column: header.column, header, table })
+                                                        : header.column.columnDef.header}
+                                                </TableHead>
+                                            ))}
+                                        </TableRow>
+                                    ))}
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredStaff.map((staffMember) => {
-                                        const pictureUrl = getPictureUrl(staffMember);
-                                        return (
-                                            <TableRow key={staffMember.id}>
-                                                <TableCell>
-                                                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-                                                        {pictureUrl ? (
-                                                            <img src={pictureUrl} alt={staffMember.fullName} className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <Users className="w-6 h-6 text-muted-foreground" />
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="font-medium">{staffMember.fullName}</TableCell>
-                                                <TableCell>
-                                                    <code className="px-2 py-1 bg-muted rounded text-sm">{staffMember.employeeId}</code>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="outline">{staffMember.staffTypeRelation?.name || 'Unknown'}</Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant={getStatusBadgeVariant(staffMember.status)}>
-                                                        {staffMember.status.replace('_', ' ').toUpperCase()}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {staffMember.school ? (
-                                                        <span className="text-sm">{staffMember.school.schoolName}</span>
-                                                    ) : (
-                                                        <span className="text-sm text-muted-foreground">-</span>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="space-y-1">
-                                                        {staffMember.email && (
-                                                            <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                                                {staffMember.email}
-                                                            </div>
-                                                        )}
-                                                        {staffMember.phoneNumber && (
-                                                            <div className="text-xs text-muted-foreground">
-                                                                {staffMember.phoneNumber}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => setViewingProfile(staffMember.id)}
-                                                        >
-                                                            <Eye className="w-4 h-4" />
-                                                        </Button>
-                                                        {hasUpdatePermission && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => {
-                                                                    setEditingStaff(staffMember);
-                                                                    setIsEditDialogOpen(true);
-                                                                    setCurrentStep(1);
-                                                                    reset({
-                                                                        employee_id: staffMember.employeeId,
-                                                                        staff_type_id: staffMember.staffTypeId,
-                                                                        school_id: staffMember.schoolId || null,
-                                                                        first_name: staffMember.firstName,
-                                                                        father_name: staffMember.fatherName,
-                                                                        grandfather_name: staffMember.grandfatherName || null,
-                                                                        tazkira_number: staffMember.tazkiraNumber || null,
-                                                                        birth_year: staffMember.birthYear || null,
-                                                                        birth_date: staffMember.birthDate || null,
-                                                                        phone_number: staffMember.phoneNumber || null,
-                                                                        email: staffMember.email || null,
-                                                                        home_address: staffMember.homeAddress || null,
-                                                                        origin_province: staffMember.originLocation.province || null,
-                                                                        origin_district: staffMember.originLocation.district || null,
-                                                                        origin_village: staffMember.originLocation.village || null,
-                                                                        current_province: staffMember.currentLocation.province || null,
-                                                                        current_district: staffMember.currentLocation.district || null,
-                                                                        current_village: staffMember.currentLocation.village || null,
-                                                                        religious_education: staffMember.religiousEducation.level || null,
-                                                                        religious_university: staffMember.religiousEducation.institution || null,
-                                                                        religious_graduation_year: staffMember.religiousEducation.graduationYear || null,
-                                                                        religious_department: staffMember.religiousEducation.department || null,
-                                                                        modern_education: staffMember.modernEducation.level || null,
-                                                                        modern_school_university: staffMember.modernEducation.institution || null,
-                                                                        modern_graduation_year: staffMember.modernEducation.graduationYear || null,
-                                                                        modern_department: staffMember.modernEducation.department || null,
-                                                                        teaching_section: staffMember.teachingSection || null,
-                                                                        position: staffMember.position || null,
-                                                                        duty: staffMember.duty || null,
-                                                                        salary: staffMember.salary || null,
-                                                                        status: staffMember.status,
-                                                                        notes: staffMember.notes || null,
-                                                                    });
-                                                                }}
-                                                            >
-                                                                <Pencil className="w-4 h-4" />
-                                                            </Button>
-                                                        )}
-                                                        {hasDeletePermission && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleDeleteClick(staffMember.id)}
-                                                            >
-                                                                <Trash2 className="w-4 h-4 text-destructive" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
+                                    {table.getRowModel().rows.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
+                                                {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || schoolFilter !== 'all'
+                                                    ? 'No staff members found matching your filters'
+                                                    : 'No staff members available'}
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        table.getRowModel().rows.map((row) => (
+                                            <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                                                {row.getVisibleCells().map((cell) => (
+                                                    <TableCell key={cell.id}>
+                                                        {cell.column.columnDef.cell
+                                                            ? cell.column.columnDef.cell({ row })
+                                                            : null}
+                                                    </TableCell>
+                                                ))}
                                             </TableRow>
-                                        );
-                                    })}
+                                        ))
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
+
+                        {/* Pagination */}
+                        <DataTablePagination
+                            table={table}
+                            paginationMeta={pagination ?? null}
+                            onPageChange={setPage}
+                            onPageSizeChange={setPageSize}
+                            showPageSizeSelector={true}
+                            showTotalCount={true}
+                        />
                     )}
                 </CardContent>
             </Card>
@@ -571,7 +673,7 @@ export function StaffList() {
                         if (!organizationId && schoolId) {
                             const selectedSchool = schools?.find(s => s.id === schoolId);
                             if (selectedSchool) {
-                                organizationId = selectedSchool.organization_id;
+                                organizationId = selectedSchool.organizationId;
                             }
                             
                             if (!organizationId) {
@@ -593,7 +695,7 @@ export function StaffList() {
                             // If school is selected, validate it belongs to user's organization
                             if (schoolId) {
                                 const selectedSchool = schools?.find(s => s.id === schoolId);
-                                if (selectedSchool && selectedSchool.organization_id !== organizationId) {
+                                if (selectedSchool && selectedSchool.organizationId !== organizationId) {
                                     toast.error('Selected school does not belong to your organization.');
                                     return;
                                 }
@@ -766,7 +868,7 @@ export function StaffList() {
                                                                         <SelectTrigger><SelectValue placeholder="Select school (optional)" /></SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="none">No school</SelectItem>
-                                                                            {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.school_name}</SelectItem>)}
+                                                                            {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
                                                                         </SelectContent>
                                                                     </Select>
                                                                 )}
@@ -1235,7 +1337,7 @@ export function StaffList() {
                                                                         <SelectTrigger><SelectValue placeholder="Select school (optional)" /></SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="none">No school</SelectItem>
-                                                                            {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.school_name}</SelectItem>)}
+                                                                            {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
                                                                         </SelectContent>
                                                                     </Select>
                                                                 )}
@@ -1539,6 +1641,14 @@ export function StaffList() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Staff Profile Dialog */}
+            {viewingProfile && (
+                <StaffProfile
+                    staffId={viewingProfile}
+                    onClose={() => setViewingProfile(null)}
+                />
+            )}
         </div>
     );
 }

@@ -1,6 +1,13 @@
 /**
  * Laravel API Client
+ * 
+ * Pagination Support:
+ * - Add `page?: number` and `per_page?: number` to list method params
+ * - Backend should return PaginatedResponse<T> structure when pagination params are provided
+ * - Example: studentsApi.list({ organization_id: '...', page: 1, per_page: 25 })
  */
+
+import type { PaginationParams, PaginatedResponse } from '@/types/pagination';
 
 // Use relative path in dev (via Vite proxy) or full URL in production
 // In development, Vite proxy handles /api -> http://localhost:8000/api
@@ -920,6 +927,8 @@ export const buildingsApi = {
   list: async (params?: {
     school_id?: string;
     organization_id?: string;
+    page?: number;
+    per_page?: number;
   }) => {
     return apiClient.get('/buildings', params);
   },
@@ -952,6 +961,8 @@ export const roomsApi = {
     school_id?: string;
     building_id?: string;
     organization_id?: string;
+    page?: number;
+    per_page?: number;
   }) => {
     return apiClient.get('/rooms', params);
   },
@@ -1091,6 +1102,8 @@ export const studentsApi = {
     is_orphan?: boolean;
     admission_fee_status?: string;
     search?: string;
+    page?: number;
+    per_page?: number;
   }) => {
     return apiClient.get('/students', params);
   },
@@ -1335,6 +1348,8 @@ export const studentAdmissionsApi = {
     is_boarder?: boolean;
     residency_type_id?: string;
     school_id?: string;
+    page?: number;
+    per_page?: number;
   }) => {
     return apiClient.get('/student-admissions', params);
   },
@@ -1401,6 +1416,8 @@ export const teacherSubjectAssignmentsApi = {
     organization_id?: string;
     teacher_id?: string;
     academic_year_id?: string;
+    page?: number;
+    per_page?: number;
   }) => {
     return apiClient.get('/teacher-subject-assignments', params);
   },
@@ -1595,6 +1612,8 @@ export const teacherTimetablePreferencesApi = {
 export const subjectsApi = {
   list: async (params?: {
     organization_id?: string;
+    page?: number;
+    per_page?: number;
   }) => {
     return apiClient.get('/subjects', params);
   },

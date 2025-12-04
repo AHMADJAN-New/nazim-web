@@ -34,7 +34,6 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -127,10 +126,10 @@ export function ScheduleSlotsManagement() {
             if (selectedSchoolId) {
                 if (selectedSchoolId === 'none') {
                     // "Organization-wide Only" - show only slots with null school_id
-                    matchesSchool = slot.school_id === null;
+                    matchesSchool = slot.schoolId === null;
                 } else if (selectedSchoolId !== 'all') {
                     // Specific school - show slots for that school OR organization-wide (null school_id)
-                    matchesSchool = slot.school_id === null || slot.school_id === selectedSchoolId;
+                    matchesSchool = slot.schoolId === null || slot.schoolId === selectedSchoolId;
                 }
                 // "All Schools" (selectedSchoolId === 'all') - show all slots, no filter needed
             }
@@ -140,19 +139,29 @@ export function ScheduleSlotsManagement() {
     }, [slots, searchQuery, selectedSchoolId]);
 
     const openDialog = (slot?: ScheduleSlot) => {
+        // Convert time format from H:i:s to HH:MM for form display
+        const convertTimeForForm = (time: string): string => {
+            if (!time) return '08:00';
+            // If in H:i:s format, extract HH:MM
+            if (time.length >= 5) {
+                return time.substring(0, 5);
+            }
+            return time;
+        };
+
         if (slot) {
             setEditingSlot(slot);
             form.reset({
                 name: slot.name,
                 code: slot.code,
-                start_time: slot.start_time,
-                end_time: slot.end_time,
-                days_of_week: slot.days_of_week || [],
-                default_duration_minutes: slot.default_duration_minutes || 45,
-                academic_year_id: slot.academic_year_id || null,
-                school_id: slot.school_id || null,
-                sort_order: slot.sort_order,
-                is_active: slot.is_active,
+                start_time: convertTimeForForm(slot.startTime),
+                end_time: convertTimeForForm(slot.endTime),
+                days_of_week: slot.daysOfWeek || [],
+                default_duration_minutes: slot.defaultDurationMinutes || 45,
+                academic_year_id: slot.academicYearId || null,
+                school_id: slot.schoolId || null,
+                sort_order: slot.sortOrder,
+                is_active: slot.isActive,
                 description: slot.description,
             });
         } else {
@@ -182,12 +191,35 @@ export function ScheduleSlotsManagement() {
 
     const onSubmit = form.handleSubmit(async (values) => {
         try {
+            // Convert time format from HH:MM to H:i:s (add seconds)
+            const convertTimeFormat = (time: string): string => {
+                if (!time) return '';
+                // If already in H:i:s format, return as is
+                if (time.length === 8 && time.includes(':')) {
+                    return time;
+                }
+                // If in HH:MM format, add :00 seconds
+                if (time.length === 5 && time.includes(':')) {
+                    return `${time}:00`;
+                }
+                return time;
+            };
+
             if (editingSlot) {
                 await updateSlot.mutateAsync({
                     id: editingSlot.id,
-                    ...values,
-                    academic_year_id: values.academic_year_id || null,
-                    school_id: values.school_id || null,
+                    name: values.name,
+                    code: values.code,
+                    startTime: convertTimeFormat(values.start_time),
+                    endTime: convertTimeFormat(values.end_time),
+                    daysOfWeek: values.days_of_week || [],
+                    defaultDurationMinutes: values.default_duration_minutes || 45,
+                    academicYearId: values.academic_year_id || null,
+                    schoolId: values.school_id || null,
+                    sortOrder: values.sort_order || 1,
+                    isActive: values.is_active ?? true,
+                    description: values.description || null,
+                    organizationId: profile?.organization_id || undefined,
                 });
             } else {
                 // Ensure all required fields are present
@@ -198,16 +230,16 @@ export function ScheduleSlotsManagement() {
                 await createSlot.mutateAsync({
                     name: values.name,
                     code: values.code,
-                    start_time: values.start_time,
-                    end_time: values.end_time,
-                    days_of_week: values.days_of_week || [],
-                    default_duration_minutes: values.default_duration_minutes || 45,
-                    academic_year_id: values.academic_year_id || null,
-                    school_id: values.school_id || null,
-                    sort_order: values.sort_order || 1,
-                    is_active: values.is_active ?? true,
+                    startTime: convertTimeFormat(values.start_time),
+                    endTime: convertTimeFormat(values.end_time),
+                    daysOfWeek: values.days_of_week || [],
+                    defaultDurationMinutes: values.default_duration_minutes || 45,
+                    academicYearId: values.academic_year_id || null,
+                    schoolId: values.school_id || null,
+                    sortOrder: values.sort_order || 1,
+                    isActive: values.is_active ?? true,
                     description: values.description || null,
-                    organization_id: profile?.organization_id || undefined,
+                    organizationId: profile?.organization_id || undefined,
                 });
             }
             // Refetch slots to ensure the new slot appears
@@ -232,7 +264,56 @@ export function ScheduleSlotsManagement() {
     };
 
     const formatTimeRange = (slot: ScheduleSlot) => {
-        return `${slot.start_time} - ${slot.end_time} (${slot.default_duration_minutes || 45} min)`;
+        // Convert H:i:s to HH:MM for display
+        const formatTime = (time: string) => time.length >= 5 ? time.substring(0, 5) : time;
+        return `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)} (${slot.defaultDurationMinutes || 45} min)`;
+    };
+
+    // Get badge color for academic year based on its ID (stable hash-based)
+    const academicYearColorMap = useMemo(() => {
+        if (!academicYears || academicYears.length === 0) return new Map<string, string>();
+
+        // Create a map of academic year IDs to colors for consistency
+        const colorMap = new Map<string, string>();
+        const colorClasses = [
+            'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
+            'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
+            'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200',
+            'bg-pink-100 text-pink-800 border-pink-200 hover:bg-pink-200',
+            'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200',
+            'bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-200',
+            'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200',
+            'bg-cyan-100 text-cyan-800 border-cyan-200 hover:bg-cyan-200',
+            'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200',
+            'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200',
+        ];
+
+        // Assign colors to academic years based on their sorted order (stable)
+        const sortedYears = [...academicYears].sort((a, b) => a.name.localeCompare(b.name));
+        sortedYears.forEach((year, index) => {
+            colorMap.set(year.id, colorClasses[index % colorClasses.length]);
+        });
+
+        return colorMap;
+    }, [academicYears]);
+
+    const getAcademicYearBadgeColor = (academicYearId: string | null | undefined): string => {
+        if (!academicYearId) return '';
+        return academicYearColorMap.get(academicYearId) || '';
+    };
+
+    // Get badge color for day of week (consistent color per day)
+    const getDayBadgeColor = (day: string): string => {
+        const dayColorMap: Record<string, string> = {
+            monday: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
+            tuesday: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
+            wednesday: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200',
+            thursday: 'bg-pink-100 text-pink-800 border-pink-200 hover:bg-pink-200',
+            friday: 'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200',
+            saturday: 'bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-200',
+            sunday: 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200',
+        };
+        return dayColorMap[day.toLowerCase()] || 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200';
     };
 
     const formatDays = (days: string[]) => {
@@ -298,7 +379,7 @@ export function ScheduleSlotsManagement() {
                                         <SelectItem value="none">Organization-wide Only</SelectItem>
                                         {schools.map((school) => (
                                             <SelectItem key={school.id} value={school.id}>
-                                                {school.school_name}
+                                                {school.schoolName}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -347,13 +428,22 @@ export function ScheduleSlotsManagement() {
                                             <TableRow key={slot.id}>
                                                 <TableCell className="font-mono">{slot.code}</TableCell>
                                                 <TableCell className="font-medium">{slot.name}</TableCell>
-                                                <TableCell>{slot.start_time} - {slot.end_time}</TableCell>
-                                                <TableCell>{slot.default_duration_minutes || 45} min</TableCell>
                                                 <TableCell>
-                                                    {slot.days_of_week && slot.days_of_week.length > 0 ? (
+                                                    {(() => {
+                                                        const formatTime = (time: string) => time.length >= 5 ? time.substring(0, 5) : time;
+                                                        return `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`;
+                                                    })()}
+                                                </TableCell>
+                                                <TableCell>{slot.defaultDurationMinutes || 45} min</TableCell>
+                                                <TableCell>
+                                                    {slot.daysOfWeek && slot.daysOfWeek.length > 0 ? (
                                                         <div className="flex flex-wrap gap-1">
-                                                            {slot.days_of_week.map((day) => (
-                                                                <Badge key={day} variant="outline" className="text-xs">
+                                                            {slot.daysOfWeek.map((day) => (
+                                                                <Badge 
+                                                                    key={day} 
+                                                                    variant="outline" 
+                                                                    className={`text-xs ${getDayBadgeColor(day)}`}
+                                                                >
                                                                     {t(`academic.timetable.days.${day}`)}
                                                                 </Badge>
                                                             ))}
@@ -363,23 +453,28 @@ export function ScheduleSlotsManagement() {
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {slot.academic_year ? (
-                                                        <Badge variant="secondary">{slot.academic_year.name}</Badge>
+                                                    {slot.academicYear ? (
+                                                        <Badge 
+                                                            variant="outline" 
+                                                            className={getAcademicYearBadgeColor(slot.academicYear.id)}
+                                                        >
+                                                            {slot.academicYear.name}
+                                                        </Badge>
                                                     ) : (
                                                         <Badge variant="outline">Global</Badge>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
                                                     {slot.school ? (
-                                                        <Badge variant="outline" className="text-xs">{slot.school.school_name}</Badge>
+                                                        <Badge variant="outline" className="text-xs">{slot.school.schoolName}</Badge>
                                                     ) : (
                                                         <span className="text-muted-foreground">Organization-wide</span>
                                                     )}
                                                 </TableCell>
-                                                <TableCell>{slot.sort_order}</TableCell>
+                                                <TableCell>{slot.sortOrder}</TableCell>
                                                 <TableCell>
-                                                    <Badge variant={slot.is_active ? 'default' : 'secondary'}>
-                                                        {slot.is_active ? 'Active' : 'Inactive'}
+                                                    <Badge variant={slot.isActive ? 'default' : 'secondary'}>
+                                                        {slot.isActive ? 'Active' : 'Inactive'}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">
@@ -394,35 +489,35 @@ export function ScheduleSlotsManagement() {
                                                             </Button>
                                                         )}
                                                         {hasDeletePermission && (
-                                                            <AlertDialog open={deletingSlot?.id === slot.id} onOpenChange={(open) => {
-                                                                if (!open) {
-                                                                    setDeletingSlot(null);
-                                                                }
-                                                            }}>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => setDeletingSlot(slot)}
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                                    </Button>
-                                                                </AlertDialogTrigger>
-                                                                <AlertDialogContent>
-                                                                    <AlertDialogHeader>
-                                                                        <AlertDialogTitle>Delete Schedule Slot</AlertDialogTitle>
-                                                                        <AlertDialogDescription>
-                                                                            Are you sure you want to delete "{slot.name}"? This action cannot be undone.
-                                                                        </AlertDialogDescription>
-                                                                    </AlertDialogHeader>
-                                                                    <AlertDialogFooter>
-                                                                        <AlertDialogCancel onClick={() => setDeletingSlot(null)}>Cancel</AlertDialogCancel>
-                                                                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                                                                            Delete
-                                                                        </AlertDialogAction>
-                                                                    </AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
+                                                            <>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => setDeletingSlot(slot)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                                </Button>
+                                                                <AlertDialog open={deletingSlot?.id === slot.id} onOpenChange={(open) => {
+                                                                    if (!open) {
+                                                                        setDeletingSlot(null);
+                                                                    }
+                                                                }}>
+                                                                    <AlertDialogContent>
+                                                                        <AlertDialogHeader>
+                                                                            <AlertDialogTitle>Delete Schedule Slot</AlertDialogTitle>
+                                                                            <AlertDialogDescription>
+                                                                                Are you sure you want to delete "{slot.name}"? This action cannot be undone.
+                                                                            </AlertDialogDescription>
+                                                                        </AlertDialogHeader>
+                                                                        <AlertDialogFooter>
+                                                                            <AlertDialogCancel onClick={() => setDeletingSlot(null)}>Cancel</AlertDialogCancel>
+                                                                            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+                                                                                Delete
+                                                                            </AlertDialogAction>
+                                                                        </AlertDialogFooter>
+                                                                    </AlertDialogContent>
+                                                                </AlertDialog>
+                                                            </>
                                                         )}
                                                     </div>
                                                 </TableCell>
@@ -454,54 +549,63 @@ export function ScheduleSlotsManagement() {
                                                             </Button>
                                                         )}
                                                         {hasDeletePermission && (
-                                                            <AlertDialog open={deletingSlot?.id === slot.id} onOpenChange={(open) => {
-                                                                if (!open) {
-                                                                    setDeletingSlot(null);
-                                                                }
-                                                            }}>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => setDeletingSlot(slot)}
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                                    </Button>
-                                                                </AlertDialogTrigger>
-                                                                <AlertDialogContent>
-                                                                    <AlertDialogHeader>
-                                                                        <AlertDialogTitle>Delete Schedule Slot</AlertDialogTitle>
-                                                                        <AlertDialogDescription>
-                                                                            Are you sure you want to delete "{slot.name}"? This action cannot be undone.
-                                                                        </AlertDialogDescription>
-                                                                    </AlertDialogHeader>
-                                                                    <AlertDialogFooter>
-                                                                        <AlertDialogCancel onClick={() => setDeletingSlot(null)}>Cancel</AlertDialogCancel>
-                                                                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                                                                            Delete
-                                                                        </AlertDialogAction>
-                                                                    </AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
+                                                            <>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => setDeletingSlot(slot)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                                </Button>
+                                                                <AlertDialog open={deletingSlot?.id === slot.id} onOpenChange={(open) => {
+                                                                    if (!open) {
+                                                                        setDeletingSlot(null);
+                                                                    }
+                                                                }}>
+                                                                    <AlertDialogContent>
+                                                                        <AlertDialogHeader>
+                                                                            <AlertDialogTitle>Delete Schedule Slot</AlertDialogTitle>
+                                                                            <AlertDialogDescription>
+                                                                                Are you sure you want to delete "{slot.name}"? This action cannot be undone.
+                                                                            </AlertDialogDescription>
+                                                                        </AlertDialogHeader>
+                                                                        <AlertDialogFooter>
+                                                                            <AlertDialogCancel onClick={() => setDeletingSlot(null)}>Cancel</AlertDialogCancel>
+                                                                            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+                                                                                Delete
+                                                                            </AlertDialogAction>
+                                                                        </AlertDialogFooter>
+                                                                    </AlertDialogContent>
+                                                                </AlertDialog>
+                                                            </>
                                                         )}
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-2 text-sm">
                                                     <div>
                                                         <span className="text-muted-foreground">Time:</span>
-                                                        <div className="font-medium">{slot.start_time} - {slot.end_time}</div>
+                                                        <div className="font-medium">
+                                                            {(() => {
+                                                                const formatTime = (time: string) => time.length >= 5 ? time.substring(0, 5) : time;
+                                                                return `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`;
+                                                            })()}
+                                                        </div>
                                                     </div>
                                                     <div>
                                                         <span className="text-muted-foreground">Duration:</span>
-                                                        <div className="font-medium">{slot.default_duration_minutes || 45} min</div>
+                                                        <div className="font-medium">{slot.defaultDurationMinutes || 45} min</div>
                                                     </div>
                                                     <div>
                                                         <span className="text-muted-foreground">Days:</span>
                                                         <div>
-                                                            {slot.days_of_week && slot.days_of_week.length > 0 ? (
+                                                            {slot.daysOfWeek && slot.daysOfWeek.length > 0 ? (
                                                                 <div className="flex flex-wrap gap-1 mt-1">
-                                                                    {slot.days_of_week.map((day) => (
-                                                                        <Badge key={day} variant="outline" className="text-xs">
+                                                                    {slot.daysOfWeek.map((day) => (
+                                                                        <Badge 
+                                                                            key={day} 
+                                                                            variant="outline" 
+                                                                            className={`text-xs ${getDayBadgeColor(day)}`}
+                                                                        >
                                                                             {t(`academic.timetable.days.${day}`)}
                                                                         </Badge>
                                                                     ))}
@@ -514,16 +618,21 @@ export function ScheduleSlotsManagement() {
                                                     <div>
                                                         <span className="text-muted-foreground">Status:</span>
                                                         <div className="mt-1">
-                                                            <Badge variant={slot.is_active ? 'default' : 'secondary'}>
-                                                                {slot.is_active ? 'Active' : 'Inactive'}
+                                                            <Badge variant={slot.isActive ? 'default' : 'secondary'}>
+                                                                {slot.isActive ? 'Active' : 'Inactive'}
                                                             </Badge>
                                                         </div>
                                                     </div>
                                                     <div>
                                                         <span className="text-muted-foreground">Academic Year:</span>
                                                         <div className="mt-1">
-                                                            {slot.academic_year ? (
-                                                                <Badge variant="secondary" className="text-xs">{slot.academic_year.name}</Badge>
+                                                            {slot.academicYear ? (
+                                                                <Badge 
+                                                                    variant="outline" 
+                                                                    className={`text-xs ${getAcademicYearBadgeColor(slot.academicYear.id)}`}
+                                                                >
+                                                                    {slot.academicYear.name}
+                                                                </Badge>
                                                             ) : (
                                                                 <Badge variant="outline" className="text-xs">Global</Badge>
                                                             )}
@@ -533,7 +642,7 @@ export function ScheduleSlotsManagement() {
                                                         <span className="text-muted-foreground">School:</span>
                                                         <div className="mt-1">
                                                             {slot.school ? (
-                                                                <Badge variant="outline" className="text-xs">{slot.school.school_name}</Badge>
+                                                                <Badge variant="outline" className="text-xs">{slot.school.schoolName}</Badge>
                                                             ) : (
                                                                 <span className="text-muted-foreground text-xs">Organization-wide</span>
                                                             )}
@@ -704,7 +813,7 @@ export function ScheduleSlotsManagement() {
                                                     <SelectItem value="all">{t('academic.scheduleSlots.allSchools')}</SelectItem>
                                                     {schools.map((school) => (
                                                         <SelectItem key={school.id} value={school.id}>
-                                                            {school.school_name}
+                                                            {school.schoolName}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>

@@ -45,6 +45,7 @@ import { FileText, Upload, Trash2, Download, Eye, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { toast } from 'sonner';
+import { apiClient } from '@/lib/api/client';
 
 interface StudentDocumentsDialogProps {
   open: boolean;
@@ -116,9 +117,39 @@ export function StudentDocumentsDialog({
   };
 
   const handleDownload = async (doc: StudentDocument) => {
-    // Use Laravel API endpoint for document download
-    const downloadUrl = `/api/student-documents/${doc.id}/download`;
-    window.open(downloadUrl, '_blank');
+    try {
+      // Fetch the file with authentication headers using apiClient's token
+      const token = apiClient.getToken();
+      const response = await fetch(`/api/student-documents/${doc.id}/download`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Accept': '*/*',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error(t('common.unauthorized') || 'Unauthorized. Please log in again.');
+          return;
+        }
+        throw new Error(`Failed to download: ${response.statusText}`);
+      }
+
+      // Get the blob and create a download link
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      toast.error(t('students.downloadDocumentError') || 'Failed to download document');
+    }
   };
 
   const formatFileSize = (bytes: number | null) => {
@@ -153,13 +184,34 @@ export function StudentDocumentsDialog({
     setViewerDocument(doc);
     
     try {
-      // Use Laravel API endpoint for document viewing
-      const viewUrl = `/api/student-documents/${doc.id}/download`;
-      setViewerUrl(viewUrl);
+      // Fetch the file with authentication headers and create a blob URL for viewing
+      const token = apiClient.getToken();
+      const response = await fetch(`/api/student-documents/${doc.id}/download`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Accept': '*/*',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error(t('common.unauthorized') || 'Unauthorized. Please log in again.');
+          setIsViewerOpen(false);
+          return;
+        }
+        throw new Error(`Failed to load document: ${response.statusText}`);
+      }
+
+      // Create blob URL for viewing
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      setViewerUrl(blobUrl);
       setIsViewerOpen(true);
     } catch (error) {
       console.error('Error viewing document:', error);
       toast.error(t('students.viewDocumentError') || 'Failed to load document');
+      setIsViewerOpen(false);
     } finally {
       setIsLoadingViewer(false);
     }
@@ -379,7 +431,14 @@ export function StudentDocumentsDialog({
       </AlertDialog>
 
       {/* Document Viewer Dialog */}
-      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
+      <Dialog open={isViewerOpen} onOpenChange={(open) => {
+        setIsViewerOpen(open);
+        // Clean up blob URL when closing viewer
+        if (!open && viewerUrl && viewerUrl.startsWith('blob:')) {
+          window.URL.revokeObjectURL(viewerUrl);
+          setViewerUrl(null);
+        }
+      }}>
         <DialogContent className="max-w-6xl max-h-[95vh] w-[95vw] p-0">
           <DialogHeader className="px-6 pt-6 pb-4">
             <div className="flex items-center justify-between">
@@ -389,11 +448,11 @@ export function StudentDocumentsDialog({
                   {viewerDocument?.file_name || t('students.viewDocument') || 'View Document'}
                 </DialogTitle>
                 {viewerDocument?.document_type && (
-                  <DialogDescription>
-                    <Badge variant="outline" className="mt-1">
+                  <div className="mt-1">
+                    <Badge variant="outline">
                       {viewerDocument.document_type}
                     </Badge>
-                  </DialogDescription>
+                  </div>
                 )}
               </div>
               <Button

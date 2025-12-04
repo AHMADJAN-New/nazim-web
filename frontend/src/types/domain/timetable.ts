@@ -36,7 +36,7 @@ export interface TimetableEntry {
         academicYear?: { id: string; name: string } | null;
     } | null;
     subject?: { id: string; name: string; code: string } | null;
-    teacher?: { id: string; fullName: string } | null;
+    teacher?: { id: string; fullName: string; employeeId: string | null } | null;
     scheduleSlot?: { id: string; name: string; startTime: string; endTime: string } | null;
 }
 

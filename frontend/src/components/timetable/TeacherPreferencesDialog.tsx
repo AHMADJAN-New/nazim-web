@@ -71,7 +71,10 @@ export function TeacherPreferencesDialog({ open, onOpenChange, organizationId, a
 	const teacherOptions = useMemo(() => {
 		return (staff || [])
 			.filter((s) => s.status === 'active')
-			.map((s) => ({ id: s.id, name: s.full_name || s.employee_id || 'Unknown' }));
+			.map((s) => ({ 
+				id: s.id, 
+				name: s.fullName || s.employeeId || 'Unknown' 
+			}));
 	}, [staff]);
 
 	const handleToggleSlot = (slotId: string, checked: boolean | string) => {

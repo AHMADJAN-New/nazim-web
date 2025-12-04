@@ -57,7 +57,10 @@ export interface SolveResult {
   unscheduled: Assignment[]; // assignments that could not be scheduled (if any)
 }
 
-function timeToMinutes(hhmm: string): number {
+function timeToMinutes(hhmm: string | undefined | null): number {
+  if (!hhmm || typeof hhmm !== 'string') {
+    return 0; // Default to midnight if time is missing
+  }
   const [h, m] = hhmm.split(':').map((x) => parseInt(x, 10));
   return h * 60 + m;
 }

@@ -120,9 +120,10 @@ export const useCreateScheduleSlot = () => {
             // Map API response back to domain model
             return mapScheduleSlotApiToDomain(apiSlot as ScheduleSlotApi.ScheduleSlot);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
-            queryClient.invalidateQueries({ queryKey: ['schedule-slot'] });
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
+            await queryClient.invalidateQueries({ queryKey: ['schedule-slot'] });
+            await queryClient.refetchQueries({ queryKey: ['schedule-slots'] });
             toast.success('Schedule slot created successfully');
         },
         onError: (error: Error) => {
@@ -184,9 +185,10 @@ export const useUpdateScheduleSlot = () => {
             // Map API response back to domain model
             return mapScheduleSlotApiToDomain(apiSlot as ScheduleSlotApi.ScheduleSlot);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
-            queryClient.invalidateQueries({ queryKey: ['schedule-slot'] });
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
+            await queryClient.invalidateQueries({ queryKey: ['schedule-slot'] });
+            await queryClient.refetchQueries({ queryKey: ['schedule-slots'] });
             toast.success('Schedule slot updated successfully');
         },
         onError: (error: Error) => {
@@ -223,9 +225,10 @@ export const useDeleteScheduleSlot = () => {
             // Delete schedule slot via Laravel API (soft delete)
             await scheduleSlotsApi.delete(id);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
-            queryClient.invalidateQueries({ queryKey: ['schedule-slot'] });
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
+            await queryClient.invalidateQueries({ queryKey: ['schedule-slot'] });
+            await queryClient.refetchQueries({ queryKey: ['schedule-slots'] });
             toast.success('Schedule slot deleted successfully');
         },
         onError: (error: Error) => {

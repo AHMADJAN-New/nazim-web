@@ -16,6 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { useDataTable } from '@/hooks/use-data-table';
+import { ColumnDef } from '@tanstack/react-table';
 import {
   Dialog,
   DialogContent,
@@ -118,7 +121,16 @@ export function BuildingsManagement() {
 
   // Use user's organization
   const { data: schools } = useSchools(profile?.organization_id);
-  const { data: buildings, isLoading } = useBuildings();
+  // Use paginated version of the hook
+  const { 
+    buildings, 
+    isLoading, 
+    pagination,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+  } = useBuildings(undefined, profile?.organization_id, true);
   const createBuilding = useCreateBuilding();
   const updateBuilding = useUpdateBuilding();
   const deleteBuilding = useDeleteBuilding();
@@ -178,9 +190,86 @@ export function BuildingsManagement() {
     }
   }, [isDialogOpen, selectedBuilding, filteredSchools, watch, setValue]);
 
-  const filteredBuildings = buildings?.filter((building) =>
-    building.buildingName?.toLowerCase().includes((searchQuery || '').toLowerCase())
-  ) || [];
+  // Client-side filtering for search
+  const filteredBuildings = buildings?.filter((building) => {
+    if (!searchQuery) return true;
+    return building.buildingName?.toLowerCase().includes((searchQuery || '').toLowerCase());
+  }) || [];
+
+  // Define columns for DataTable
+  const columns: ColumnDef<Building>[] = [
+    {
+      accessorKey: 'buildingName',
+      header: 'Building Name',
+      cell: ({ row }) => <span className="font-medium">{row.original.buildingName}</span>,
+    },
+    {
+      accessorKey: 'school',
+      header: 'School',
+      cell: ({ row }) => row.original.school?.schoolName || 'N/A',
+    },
+    {
+      accessorKey: 'roomsCount',
+      header: 'Rooms',
+      cell: ({ row }) => (
+        <>
+          <span className="font-medium">{row.original.roomsCount ?? 0}</span>
+          <span className="text-muted-foreground text-sm ml-1">
+            {row.original.roomsCount === 1 ? 'room' : 'rooms'}
+          </span>
+        </>
+      ),
+    },
+    {
+      accessorKey: 'createdAt',
+      header: 'Created At',
+      cell: ({ row }) => row.original.createdAt.toLocaleDateString(),
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          {hasUpdatePermission && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleOpenDialog(row.original.id)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {hasDeletePermission && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDeleteClick(row.original.id)}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  // Use DataTable hook for pagination integration
+  const { table } = useDataTable({
+    data: filteredBuildings,
+    columns,
+    pageCount: pagination?.last_page,
+    paginationMeta: pagination ?? null,
+    initialState: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
+    },
+    onPaginationChange: (newPagination) => {
+      setPage(newPagination.pageIndex + 1);
+      setPageSize(newPagination.pageSize);
+    },
+  });
 
   // Find default template for buildings
   const defaultTemplate = useMemo(() => {
@@ -451,67 +540,53 @@ export function BuildingsManagement() {
           <div className="rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Building Name</TableHead>
-                  <TableHead>School</TableHead>
-                  <TableHead>Rooms</TableHead>
-                  <TableHead>Created At</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : typeof header.column.columnDef.header === 'function'
+                          ? header.column.columnDef.header({ column: header.column })
+                          : header.column.columnDef.header}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
               </TableHeader>
               <TableBody>
-                {filteredBuildings.length === 0 ? (
+                {table.getRowModel().rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
                       {searchQuery ? 'No buildings found matching your search' : 'No buildings found. Add your first building.'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredBuildings.map((building) => {
-                    return (
-                      <TableRow key={building.id}>
-                        <TableCell className="font-medium">{building.buildingName}</TableCell>
-                        <TableCell>
-                          {building.school?.schoolName || 'N/A'}
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {cell.column.columnDef.cell
+                            ? cell.column.columnDef.cell({ row })
+                            : null}
                         </TableCell>
-                        <TableCell>
-                          <span className="font-medium">{building.roomsCount ?? 0}</span>
-                          <span className="text-muted-foreground text-sm ml-1">
-                            {building.roomsCount === 1 ? 'room' : 'rooms'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {building.createdAt.toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {hasUpdatePermission && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenDialog(building.id)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {hasDeletePermission && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteClick(building.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                      ))}
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination */}
+          <DataTablePagination
+            table={table}
+            paginationMeta={pagination ?? null}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            showPageSizeSelector={true}
+            showTotalCount={true}
+          />
         </CardContent>
       </Card>
 

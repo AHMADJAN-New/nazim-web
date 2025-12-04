@@ -19,22 +19,45 @@ export function LoadTimetableDialog({ open, onOpenChange, organizationId, academ
 	const { data: profile } = useProfile();
 	const orgId = organizationId || profile?.organization_id || undefined;
 
-	// Load all timetables (don't filter by academic year in the dialog - show all)
-	const { data: timetables, isLoading, error } = useTimetables(orgId);
+	// Load ALL timetables for the organization (don't filter by academic year in the dialog)
+	// This allows users to see all their saved timetables regardless of academic year
+	const { data: timetables, isLoading, error, refetch } = useTimetables(orgId, undefined);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	// Preload detail when selection changes
 	const { data: previewTimetable } = useTimetable(selectedId || undefined);
 	
-	// Reset selection when dialog closes
+	// Reset selection when dialog closes and refetch when dialog opens
 	useEffect(() => {
 		if (!open) {
 			setSelectedId(null);
+		} else {
+			// Refetch timetables when dialog opens to ensure fresh data
+			refetch();
 		}
-	}, [open]);
+	}, [open, refetch]);
 
 	const sorted = useMemo(() => {
-		return (timetables || []).slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
+		return (timetables || [])
+			.filter(t => t && t.created_at)
+			.slice()
+			.sort((a, b) => {
+				if (!a || !b || !a.created_at || !b.created_at) return 0;
+				return (b.created_at || '').toString().localeCompare((a.created_at || '').toString());
+			});
 	}, [timetables]);
+
+	// Debug logging to help troubleshoot
+	useEffect(() => {
+		if (open && !isLoading) {
+			console.log('LoadTimetableDialog - Timetables loaded:', {
+				count: timetables?.length || 0,
+				timetables: timetables,
+				orgId,
+				academicYearId,
+				error
+			});
+		}
+	}, [open, timetables, isLoading, orgId, academicYearId, error]);
 
 	const handleLoad = () => {
 		if (!selectedId) return;
@@ -58,7 +81,7 @@ export function LoadTimetableDialog({ open, onOpenChange, organizationId, academ
 						<div className="text-center py-8 text-muted-foreground">Loading timetables...</div>
 					) : sorted.length === 0 ? (
 						<div className="text-center py-8 text-muted-foreground">
-							No saved timetables found{academicYearId ? ' for this academic year' : ''}
+							No saved timetables found for this organization.
 						</div>
 					) : (
 						<ScrollArea className="h-80 border rounded-md p-2">

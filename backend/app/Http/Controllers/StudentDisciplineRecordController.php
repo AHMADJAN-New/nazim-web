@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Student;
 use App\Models\StudentDisciplineRecord;
+use App\Models\Profile;
 use App\Http\Requests\StoreStudentDisciplineRecordRequest;
 use App\Http\Requests\UpdateStudentDisciplineRecordRequest;
 use Illuminate\Http\Request;
@@ -31,7 +32,7 @@ class StudentDisciplineRecordController extends Controller
     public function index(Request $request, string $studentId)
     {
         $user = $request->user();
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $profile = DB::table('profiles')->where('id', (string) $user->id)->first();
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
@@ -64,11 +65,75 @@ class StudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $records = StudentDisciplineRecord::with(['createdBy', 'resolvedBy'])
-            ->where('student_id', $studentId)
+        // Load records without eager loading to avoid UUID type mismatch errors
+        $records = StudentDisciplineRecord::where('student_id', $studentId)
             ->whereNull('deleted_at')
             ->orderBy('incident_date', 'desc')
             ->get();
+
+        // Manually load relationships, filtering out invalid UUIDs
+        $createdByIds = $records->pluck('created_by')
+            ->filter(function($id) {
+                if (empty($id)) return false;
+                // Validate UUID format - filter out integers and invalid UUIDs
+                return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', (string) $id);
+            })
+            ->unique()
+            ->values();
+
+        $resolvedByIds = $records->pluck('resolved_by')
+            ->filter(function($id) {
+                if (empty($id)) return false;
+                // Validate UUID format - filter out integers and invalid UUIDs
+                return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', (string) $id);
+            })
+            ->unique()
+            ->values();
+
+        // Load profiles for valid UUIDs only using Profile model
+        $createdByProfiles = collect();
+        $resolvedByProfiles = collect();
+
+        if ($createdByIds->isNotEmpty()) {
+            try {
+                $createdByProfiles = Profile::whereIn('id', $createdByIds->toArray())
+                    ->get()
+                    ->keyBy('id');
+            } catch (\Exception $e) {
+                Log::warning('[StudentDisciplineRecordController] Error loading createdBy profiles', [
+                    'error' => $e->getMessage(),
+                    'ids' => $createdByIds->toArray(),
+                ]);
+            }
+        }
+
+        if ($resolvedByIds->isNotEmpty()) {
+            try {
+                $resolvedByProfiles = Profile::whereIn('id', $resolvedByIds->toArray())
+                    ->get()
+                    ->keyBy('id');
+            } catch (\Exception $e) {
+                Log::warning('[StudentDisciplineRecordController] Error loading resolvedBy profiles', [
+                    'error' => $e->getMessage(),
+                    'ids' => $resolvedByIds->toArray(),
+                ]);
+            }
+        }
+
+        // Attach relationships to records
+        $records->each(function($record) use ($createdByProfiles, $resolvedByProfiles) {
+            if ($record->created_by && $createdByProfiles->has($record->created_by)) {
+                $record->setRelation('createdBy', $createdByProfiles[$record->created_by]);
+            } else {
+                $record->setRelation('createdBy', null);
+            }
+
+            if ($record->resolved_by && $resolvedByProfiles->has($record->resolved_by)) {
+                $record->setRelation('resolvedBy', $resolvedByProfiles[$record->resolved_by]);
+            } else {
+                $record->setRelation('resolvedBy', null);
+            }
+        });
 
         return response()->json($records);
     }
@@ -79,7 +144,7 @@ class StudentDisciplineRecordController extends Controller
     public function store(StoreStudentDisciplineRecordRequest $request, string $studentId)
     {
         $user = $request->user();
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $profile = DB::table('profiles')->where('id', (string) $user->id)->first();
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
@@ -118,10 +183,32 @@ class StudentDisciplineRecordController extends Controller
         $validated['school_id'] = $validated['school_id'] ?? $student->school_id;
         $validated['severity'] = $validated['severity'] ?? 'minor';
         $validated['resolved'] = $validated['resolved'] ?? false;
-        $validated['created_by'] = $user->id;
+        $validated['created_by'] = (string) $user->id;
 
         $record = StudentDisciplineRecord::create($validated);
-        $record->load(['createdBy', 'resolvedBy']);
+        
+        // Manually load relationships to avoid UUID type mismatch
+        if ($record->created_by && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', (string) $record->created_by)) {
+            try {
+                $createdBy = Profile::find($record->created_by);
+                $record->setRelation('createdBy', $createdBy);
+            } catch (\Exception $e) {
+                $record->setRelation('createdBy', null);
+            }
+        } else {
+            $record->setRelation('createdBy', null);
+        }
+
+        if ($record->resolved_by && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', (string) $record->resolved_by)) {
+            try {
+                $resolvedBy = Profile::find($record->resolved_by);
+                $record->setRelation('resolvedBy', $resolvedBy);
+            } catch (\Exception $e) {
+                $record->setRelation('resolvedBy', null);
+            }
+        } else {
+            $record->setRelation('resolvedBy', null);
+        }
 
         return response()->json($record, 201);
     }
@@ -132,7 +219,7 @@ class StudentDisciplineRecordController extends Controller
     public function update(UpdateStudentDisciplineRecordRequest $request, string $id)
     {
         $user = $request->user();
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $profile = DB::table('profiles')->where('id', (string) $user->id)->first();
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
@@ -169,7 +256,29 @@ class StudentDisciplineRecordController extends Controller
         unset($validated['organization_id']);
 
         $record->update($validated);
-        $record->load(['createdBy', 'resolvedBy']);
+        
+        // Manually load relationships to avoid UUID type mismatch
+        if ($record->created_by && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', (string) $record->created_by)) {
+            try {
+                $createdBy = Profile::find($record->created_by);
+                $record->setRelation('createdBy', $createdBy);
+            } catch (\Exception $e) {
+                $record->setRelation('createdBy', null);
+            }
+        } else {
+            $record->setRelation('createdBy', null);
+        }
+
+        if ($record->resolved_by && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', (string) $record->resolved_by)) {
+            try {
+                $resolvedBy = Profile::find($record->resolved_by);
+                $record->setRelation('resolvedBy', $resolvedBy);
+            } catch (\Exception $e) {
+                $record->setRelation('resolvedBy', null);
+            }
+        } else {
+            $record->setRelation('resolvedBy', null);
+        }
 
         return response()->json($record);
     }
@@ -180,7 +289,7 @@ class StudentDisciplineRecordController extends Controller
     public function destroy(string $id)
     {
         $user = request()->user();
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $profile = DB::table('profiles')->where('id', (string) $user->id)->first();
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
@@ -224,7 +333,7 @@ class StudentDisciplineRecordController extends Controller
     public function resolve(Request $request, string $id)
     {
         $user = $request->user();
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $profile = DB::table('profiles')->where('id', (string) $user->id)->first();
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
@@ -245,10 +354,31 @@ class StudentDisciplineRecordController extends Controller
         $record->update([
             'resolved' => true,
             'resolved_date' => now()->toDateString(),
-            'resolved_by' => $user->id,
+            'resolved_by' => (string) $user->id,
         ]);
 
-        $record->load(['createdBy', 'resolvedBy']);
+        // Manually load relationships to avoid UUID type mismatch
+        if ($record->created_by && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', (string) $record->created_by)) {
+            try {
+                $createdBy = Profile::find($record->created_by);
+                $record->setRelation('createdBy', $createdBy);
+            } catch (\Exception $e) {
+                $record->setRelation('createdBy', null);
+            }
+        } else {
+            $record->setRelation('createdBy', null);
+        }
+
+        if ($record->resolved_by && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', (string) $record->resolved_by)) {
+            try {
+                $resolvedBy = Profile::find($record->resolved_by);
+                $record->setRelation('resolvedBy', $resolvedBy);
+            } catch (\Exception $e) {
+                $record->setRelation('resolvedBy', null);
+            }
+        } else {
+            $record->setRelation('resolvedBy', null);
+        }
 
         return response()->json($record);
     }

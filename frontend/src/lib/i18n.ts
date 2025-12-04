@@ -36,11 +36,23 @@ export interface TranslationKeys {
     actions: string;
   };
 
+  // Pagination
+  pagination: {
+    showing: string;
+    to: string;
+    of: string;
+    entries: string;
+    total: string;
+    noEntries: string;
+    rowsPerPage: string;
+  };
+
   // Navigation
   nav: {
     dashboard: string;
     students: string;
     admissions: string;
+    studentManagement: string;
     attendance: string;
     classes: string;
     exams: string;
@@ -676,10 +688,20 @@ const en: TranslationKeys = {
     all: 'All',
     years: 'years',
   },
+  pagination: {
+    showing: 'Showing',
+    to: 'to',
+    of: 'of',
+    entries: 'entries',
+    total: 'Total',
+    noEntries: 'No entries',
+    rowsPerPage: 'Rows per page',
+  },
   nav: {
     dashboard: 'Dashboard',
     students: 'Students',
     admissions: 'Admissions',
+    studentManagement: 'Student Management',
     attendance: 'Attendance',
     classes: 'Classes',
     exams: 'Exams',
@@ -1300,10 +1322,20 @@ const ps: TranslationKeys = {
     all: 'ټول',
     years: 'کلونه',
   },
+  pagination: {
+    showing: 'ښودل کیږي',
+    to: 'تر',
+    of: 'د',
+    entries: 'ریکارډونه',
+    total: 'ټول',
+    noEntries: 'هیڅ ریکارډونه نشته',
+    rowsPerPage: 'قطارونه په پاڼه',
+  },
   nav: {
     dashboard: 'کنټرول پینل',
     students: 'زده کوونکي',
     admissions: 'داخلې',
+    studentManagement: 'د زده کوونکو مدیریت',
     attendance: 'حاضري',
     classes: 'ټولګۍ',
     exams: 'ازموینې',
@@ -1925,10 +1957,20 @@ const fa: TranslationKeys = {
     all: 'همه',
     years: 'سال',
   },
+  pagination: {
+    showing: 'نمایش',
+    to: 'تا',
+    of: 'از',
+    entries: 'رکورد',
+    total: 'مجموع',
+    noEntries: 'رکوردی وجود ندارد',
+    rowsPerPage: 'ردیف در صفحه',
+  },
   nav: {
     dashboard: 'داشبورد',
     students: 'دانش‌آموزان',
     admissions: 'پذیرش',
+    studentManagement: 'مدیریت دانش‌آموزان',
     attendance: 'حاضری',
     classes: 'کلاس‌ها',
     exams: 'امتحانات',
@@ -2550,10 +2592,20 @@ const ar: TranslationKeys = {
     all: 'الكل',
     years: 'سنوات',
   },
+  pagination: {
+    showing: 'عرض',
+    to: 'إلى',
+    of: 'من',
+    entries: 'إدخال',
+    total: 'المجموع',
+    noEntries: 'لا توجد إدخالات',
+    rowsPerPage: 'صفوف في الصفحة',
+  },
   nav: {
     dashboard: 'لوحة التحكم',
     students: 'الطلاب',
     admissions: 'القبول',
+    studentManagement: 'إدارة الطلاب',
     attendance: 'الحضور',
     classes: 'الفصول',
     exams: 'الامتحانات',

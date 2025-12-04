@@ -10,6 +10,9 @@ import {
 import type * as StudentApi from '@/types/api/student';
 import type { Student } from '@/types/domain/student';
 import { mapStudentApiToDomain, mapStudentDomainToInsert, mapStudentDomainToUpdate } from '@/mappers/studentMapper';
+import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
+import { usePagination } from './usePagination';
+import { useEffect } from 'react';
 
 // Re-export domain types for convenience
 export type { Student, StudentStatus, AdmissionFeeStatus, Gender } from '@/types/domain/student';
@@ -25,11 +28,15 @@ export type {
   StudentStats,
 } from '@/types/api/student';
 
-export const useStudents = (organizationId?: string) => {
+export const useStudents = (organizationId?: string, usePaginated?: boolean) => {
   const { user, profile } = useAuth();
+  const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
+    initialPage: 1,
+    initialPageSize: 25,
+  });
 
-  return useQuery<Student[]>({
-    queryKey: ['students', organizationId ?? profile?.organization_id ?? null],
+  const { data, isLoading, error } = useQuery<Student[] | PaginatedResponse<StudentApi.Student>>({
+    queryKey: ['students', organizationId ?? profile?.organization_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
     queryFn: async () => {
       if (!user || !profile) {
         return [];
@@ -38,13 +45,43 @@ export const useStudents = (organizationId?: string) => {
       try {
         const effectiveOrgId = organizationId || profile.organization_id;
 
-        const apiStudents = await studentsApi.list({
+        const params: { organization_id?: string; page?: number; per_page?: number } = {
           organization_id: effectiveOrgId || undefined,
-        });
+        };
 
-        // Map API models to domain models
+        // Add pagination params if using pagination
+        if (usePaginated) {
+          params.page = page;
+          params.per_page = pageSize;
+        }
+
+        const apiStudents = await studentsApi.list(params);
+
+        // Check if response is paginated (Laravel returns meta fields directly, not nested)
+        if (usePaginated && apiStudents && typeof apiStudents === 'object' && 'data' in apiStudents && 'current_page' in apiStudents) {
+          // Laravel's paginated response has data and meta fields at the same level
+          const paginatedResponse = apiStudents as any;
+          // Map API models to domain models
+          const students = (paginatedResponse.data as StudentApi.Student[]).map(mapStudentApiToDomain);
+          // Extract meta from Laravel's response structure
+          const meta: PaginationMeta = {
+            current_page: paginatedResponse.current_page,
+            from: paginatedResponse.from,
+            last_page: paginatedResponse.last_page,
+            per_page: paginatedResponse.per_page,
+            to: paginatedResponse.to,
+            total: paginatedResponse.total,
+            path: paginatedResponse.path,
+            first_page_url: paginatedResponse.first_page_url,
+            last_page_url: paginatedResponse.last_page_url,
+            next_page_url: paginatedResponse.next_page_url,
+            prev_page_url: paginatedResponse.prev_page_url,
+          };
+          return { data: students, meta } as PaginatedResponse<StudentApi.Student>;
+        }
+
+        // Map API models to domain models (non-paginated)
         const domainStudents = (apiStudents as StudentApi.Student[]).map(mapStudentApiToDomain);
-
         return domainStudents;
       } catch (error) {
         if (import.meta.env.DEV) {
@@ -58,6 +95,35 @@ export const useStudents = (organizationId?: string) => {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  // Update pagination state from API response
+  useEffect(() => {
+    if (usePaginated && data && typeof data === 'object' && 'meta' in data) {
+      updateFromMeta((data as PaginatedResponse<StudentApi.Student>).meta);
+    }
+  }, [data, usePaginated, updateFromMeta]);
+
+  // Return appropriate format based on pagination mode
+  if (usePaginated) {
+    const paginatedData = data as PaginatedResponse<StudentApi.Student> | undefined;
+    return {
+      data: paginatedData?.data || [],
+      isLoading,
+      error,
+      pagination: paginatedData?.meta ?? null,
+      paginationState,
+      page,
+      pageSize,
+      setPage,
+      setPageSize,
+    };
+  }
+
+  return {
+    data: data as Student[] | undefined,
+    isLoading,
+    error,
+  };
 };
 
 export const useCreateStudent = () => {

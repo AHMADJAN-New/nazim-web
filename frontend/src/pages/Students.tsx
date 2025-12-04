@@ -25,6 +25,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { useDataTable } from '@/hooks/use-data-table';
+import { ColumnDef } from '@tanstack/react-table';
 import {
   Dialog,
   DialogContent,
@@ -90,7 +93,17 @@ export function Students() {
   const { data: profile } = useProfile();
   const orgIdForQuery = profile?.organization_id;
 
-  const { data: students, isLoading, error } = useStudents(orgIdForQuery);
+  // Use paginated version of the hook
+  const { 
+    data: students, 
+    isLoading, 
+    error,
+    pagination,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+  } = useStudents(orgIdForQuery, true);
   const { data: stats } = useStudentStats(orgIdForQuery);
   const { data: schools } = useSchools(orgIdForQuery);
 
@@ -318,7 +331,7 @@ export function Students() {
     }
   };
 
-  // Filter and sort students for display
+  // Client-side filtering for search
   const filteredStudents = useMemo(() => {
     const list = students || [];
     const searchLower = (searchQuery || '').toLowerCase().trim();
@@ -347,6 +360,151 @@ export function Students() {
       })
       .sort((a, b) => a.admissionNumber.localeCompare(b.admissionNumber));
   }, [students, statusFilter, genderFilter, schoolFilter, searchQuery]);
+
+  // Define columns for DataTable
+  const columns: ColumnDef<Student>[] = [
+    {
+      accessorKey: 'admissionNumber',
+      header: t('students.admissionNumber') || 'Admission #',
+      cell: ({ row }) => <span className="font-medium">{row.original.admissionNumber}</span>,
+    },
+    {
+      accessorKey: 'student',
+      header: t('students.student') || 'Student',
+      cell: ({ row }) => {
+        const student = row.original;
+        return (
+          <div className="space-y-1 min-w-[200px]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold break-words">{student.fullName}</span>
+              <Badge variant={statusBadge(student.status)} className="shrink-0">
+                {student.status === 'applied' ? t('students.applied') :
+                 student.status === 'admitted' ? t('students.admitted') :
+                 student.status === 'active' ? t('students.active') :
+                 student.status === 'withdrawn' ? t('students.withdrawn') :
+                 student.status}
+              </Badge>
+              {student.isOrphan && (
+                <Badge variant="destructive" className="shrink-0">
+                  {t('students.orphan') || 'Orphan'}
+                </Badge>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground flex flex-wrap gap-2 items-center">
+              <span className="break-words">{t('students.father') || 'Father'}: {student.fatherName}</span>
+              {student.guardianPhone && (
+                <span className="break-words">{t('students.guardian') || 'Guardian'}: {student.guardianPhone}</span>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'school',
+      header: t('students.school') || 'School',
+      cell: ({ row }) => {
+        const school = schools?.find((s) => s.id === row.original.schoolId);
+        return school?.school_name || row.original.school?.schoolName || '—';
+      },
+    },
+    {
+      accessorKey: 'gender',
+      header: t('students.gender') || 'Gender',
+      cell: ({ row }) => (
+        <Badge variant="outline">
+          {row.original.gender === 'male' ? t('students.male') : t('students.female')}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: 'applyingGrade',
+      header: t('students.applyingGrade') || 'Applying Grade',
+      cell: ({ row }) => row.original.applyingGrade || '—',
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">{t('students.actions') || 'Actions'}</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-1 flex-wrap">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handleView(row.original)}
+            title={t('students.viewProfile') || 'View Profile'}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handlePrint(row.original)}
+            title={t('students.printProfile') || 'Print Profile'}
+          >
+            <Printer className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setDocumentsDialogStudent(row.original)}
+            title={t('students.studentDocuments') || 'Documents'}
+          >
+            <FileText className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setHistoryDialogStudent(row.original)}
+            title={t('students.educationalHistory') || 'History'}
+          >
+            <BookOpen className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setDisciplineDialogStudent(row.original)}
+            title={t('students.disciplineRecords') || 'Discipline'}
+          >
+            <AlertTriangle className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handleEdit(row.original)}
+            title={t('common.edit') || 'Edit'}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handleDelete(row.original)}
+            title={t('common.delete') || 'Delete'}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  // Use DataTable hook for pagination integration
+  const { table } = useDataTable({
+    data: filteredStudents,
+    columns,
+    pageCount: pagination?.last_page,
+    paginationMeta: pagination ?? null,
+    initialState: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
+    },
+    onPaginationChange: (newPagination) => {
+      setPage(newPagination.pageIndex + 1);
+      setPageSize(newPagination.pageSize);
+    },
+  });
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
@@ -445,7 +603,7 @@ export function Students() {
                       <SelectItem value="all">{t('students.allSchools') || 'All Schools'}</SelectItem>
                       {schools?.map((school) => (
                         <SelectItem key={school.id} value={school.id}>
-                          {school.school_name}
+                          {school.schoolName}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -597,6 +755,16 @@ export function Students() {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Pagination */}
+                <DataTablePagination
+                  table={table}
+                  paginationMeta={pagination ?? null}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                  showPageSizeSelector={true}
+                  showTotalCount={true}
+                />
               </div>
             </div>
           )}

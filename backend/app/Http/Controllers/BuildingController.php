@@ -78,6 +78,61 @@ class BuildingController extends Controller
             }
         }
 
+        // Support pagination if page and per_page parameters are provided
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = $request->input('per_page', 25);
+            // Validate per_page is one of allowed values
+            $allowedPerPage = [10, 25, 50, 100];
+            if (!in_array((int)$perPage, $allowedPerPage)) {
+                $perPage = 25; // Default to 25 if invalid
+            }
+            
+            $buildings = $query->orderBy('building_name', 'asc')->paginate((int)$perPage);
+            
+            // Get building IDs for room count query
+            $buildingIds = $buildings->getCollection()->pluck('id')->toArray();
+
+            // Get room counts for each building - filter by accessible schools
+            $roomCounts = DB::table('rooms')
+                ->whereIn('building_id', $buildingIds)
+                ->whereIn('school_id', $schoolIds) // CRITICAL: Only count rooms from accessible schools
+                ->whereNull('deleted_at')
+                ->select('building_id', DB::raw('count(*) as room_count'))
+                ->groupBy('building_id')
+                ->pluck('room_count', 'building_id')
+                ->toArray();
+
+            // Enrich with organization_id and school information from schools
+            $schoolsData = DB::table('school_branding')
+                ->whereIn('id', $schoolIds)
+                ->select('id', 'organization_id', 'school_name', 'school_name_arabic', 'school_name_pashto')
+                ->get()
+                ->keyBy('id');
+
+            $buildings->getCollection()->transform(function ($building) use ($schoolsData, $roomCounts) {
+                $buildingArray = $building->toArray();
+                $school = $schoolsData->get($building->school_id);
+                
+                if ($school) {
+                    $buildingArray['organization_id'] = $school->organization_id;
+                    $buildingArray['school'] = [
+                        'id' => $school->id,
+                        'school_name' => $school->school_name,
+                        'school_name_arabic' => $school->school_name_arabic,
+                        'school_name_pashto' => $school->school_name_pashto,
+                    ];
+                }
+                
+                $buildingArray['room_count'] = $roomCounts[$building->id] ?? 0;
+                
+                return $buildingArray;
+            });
+            
+            // Return paginated response in Laravel's standard format
+            return response()->json($buildings);
+        }
+
+        // Return all results if no pagination requested (backward compatibility)
         $buildings = $query->orderBy('building_name', 'asc')->get();
 
         // Get building IDs for room count query

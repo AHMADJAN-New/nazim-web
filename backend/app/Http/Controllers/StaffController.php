@@ -552,7 +552,7 @@ class StaffController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff.read')) {
+            if (!$user->hasPermissionTo('staff.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -569,9 +569,10 @@ class StaffController extends Controller
         }
 
         // Soft delete
-        $staff->update(['deleted_at' => now()]);
+        $staff->delete();
 
-        return response()->json(['message' => 'Staff member deleted successfully']);
+        // CRITICAL: Return 204 No Content with NO body (not JSON)
+        return response()->noContent();
     }
 
     /**

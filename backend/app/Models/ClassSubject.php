@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class ClassAcademicYear extends Model
+class ClassSubject extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $connection = 'pgsql';
-    protected $table = 'class_academic_years';
+    protected $table = 'class_subjects';
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -20,22 +20,22 @@ class ClassAcademicYear extends Model
 
     protected $fillable = [
         'id',
-        'class_id',
-        'academic_year_id',
+        'class_subject_template_id',
+        'class_academic_year_id',
+        'subject_id',
         'organization_id',
-        'section_name',
         'teacher_id',
         'room_id',
-        'capacity',
-        'current_student_count',
-        'is_active',
+        'credits',
+        'hours_per_week',
+        'is_required',
         'notes',
     ];
 
     protected $casts = [
-        'capacity' => 'integer',
-        'current_student_count' => 'integer',
-        'is_active' => 'boolean',
+        'credits' => 'integer',
+        'hours_per_week' => 'integer',
+        'is_required' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -56,19 +56,19 @@ class ClassAcademicYear extends Model
     }
 
     /**
-     * Get the class
+     * Get the class academic year
      */
-    public function class()
+    public function classAcademicYear()
     {
-        return $this->belongsTo(ClassModel::class, 'class_id');
+        return $this->belongsTo(ClassAcademicYear::class, 'class_academic_year_id');
     }
 
     /**
-     * Get the academic year
+     * Get the subject
      */
-    public function academicYear()
+    public function subject()
     {
-        return $this->belongsTo(AcademicYear::class, 'academic_year_id');
+        return $this->belongsTo(Subject::class, 'subject_id');
     }
 
     /**
@@ -93,29 +93,5 @@ class ClassAcademicYear extends Model
     public function room()
     {
         return $this->belongsTo(Room::class, 'room_id');
-    }
-
-    /**
-     * Scope to filter by organization
-     */
-    public function scopeForOrganization($query, $organizationId)
-    {
-        return $query->where('organization_id', $organizationId);
-    }
-
-    /**
-     * Scope to filter by academic year
-     */
-    public function scopeForAcademicYear($query, $academicYearId)
-    {
-        return $query->where('academic_year_id', $academicYearId);
-    }
-
-    /**
-     * Scope to filter active instances
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
     }
 }

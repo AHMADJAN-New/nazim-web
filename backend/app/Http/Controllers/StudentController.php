@@ -124,6 +124,22 @@ class StudentController extends Controller
             });
         }
 
+        // Support pagination if page and per_page parameters are provided
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = $request->input('per_page', 25);
+            // Validate per_page is one of allowed values
+            $allowedPerPage = [10, 25, 50, 100];
+            if (!in_array((int)$perPage, $allowedPerPage)) {
+                $perPage = 25; // Default to 25 if invalid
+            }
+            
+            $students = $query->orderBy('created_at', 'desc')->paginate((int)$perPage);
+            
+            // Return paginated response in Laravel's standard format
+            return response()->json($students);
+        }
+
+        // Return all results if no pagination requested (backward compatibility)
         $students = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json($students);

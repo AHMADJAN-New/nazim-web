@@ -30,11 +30,16 @@ export const useTimetables = (organizationId?: string, academicYearId?: string) 
 		queryFn: async () => {
 			if (!user || !profile || orgsLoading) return [];
 
-			// Fetch timetables from Laravel API
-			const apiTimetables = await timetablesApi.list({
+			// Build query params - only include academic_year_id if it's provided
+			const params: { organization_id?: string; academic_year_id?: string } = {
 				organization_id: organizationId || profile.organization_id || undefined,
-				academic_year_id: academicYearId,
-			});
+			};
+			if (academicYearId) {
+				params.academic_year_id = academicYearId;
+			}
+
+			// Fetch timetables from Laravel API
+			const apiTimetables = await timetablesApi.list(params);
 
 			// Map API models to domain models
 			return (apiTimetables as TimetableApi.Timetable[]).map(mapTimetableApiToDomain);
@@ -135,7 +140,9 @@ export const useCreateTimetable = () => {
 			return mapTimetableApiToDomain(apiTimetable as TimetableApi.Timetable);
 		},
 		onSuccess: () => {
+			// Invalidate all timetable queries to ensure fresh data
 			queryClient.invalidateQueries({ queryKey: ['timetables'] });
+			queryClient.invalidateQueries({ queryKey: ['timetable'] });
 			toast.success('Timetable created successfully');
 		},
 		onError: (error: Error) => {

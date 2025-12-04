@@ -102,26 +102,45 @@ export function SaveTimetableDialog({
 				return;
 			}
 
+			console.log('Saving timetable with entries:', data.entries.length);
+			
 			await createTimetable({
 				name: data.name.trim(),
 				description: data.description?.trim() || null,
-				timetable_type: data.timetable_type,
-				organization_id: data.organization_id,
-				academic_year_id: data.academic_year_id,
-				school_id: data.school_id,
+				timetableType: data.timetable_type,
+				organizationId: data.organization_id,
+				academicYearId: data.academic_year_id,
+				schoolId: data.school_id,
 				entries: data.entries.map((e) => ({
-					class_academic_year_id: e.class_academic_year_id,
-					subject_id: e.subject_id,
-					teacher_id: e.teacher_id,
-					schedule_slot_id: e.schedule_slot_id,
-					day_name: e.day_name,
-					period_order: e.period_order,
+					classAcademicYearId: e.class_academic_year_id,
+					subjectId: e.subject_id,
+					teacherId: e.teacher_id,
+					scheduleSlotId: e.schedule_slot_id,
+					dayName: e.day_name,
+					periodOrder: e.period_order,
 				})),
 			});
+			
+			// Close dialog on success (success toast is shown by the hook)
 			onOpenChange(false);
-		} catch (error) {
-			// Error is already handled by the mutation's onError
+		} catch (error: any) {
+			// Log detailed error for debugging
 			console.error('Failed to save timetable:', error);
+			console.error('Error details:', {
+				message: error?.message,
+				response: error?.response,
+				stack: error?.stack
+			});
+			
+			// Extract error message from various possible locations
+			const errorMessage = 
+				error?.response?.data?.message || 
+				error?.response?.data?.error || 
+				error?.message || 
+				'Unknown error occurred';
+			
+			toast.error(`Failed to save timetable: ${errorMessage}`);
+			// Don't close dialog on error so user can retry
 		}
 	};
 

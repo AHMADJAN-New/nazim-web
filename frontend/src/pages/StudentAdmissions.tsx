@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -40,6 +41,9 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { useDataTable } from '@/hooks/use-data-table';
+import { ColumnDef } from '@tanstack/react-table';
 
 const admissionSchema = z.object({
   organization_id: z.string().uuid().optional(),
@@ -86,7 +90,16 @@ export function StudentAdmissions() {
   const { data: profile } = useProfile();
   const orgIdForQuery = profile?.organization_id;
 
-  const { data: admissions, isLoading, error: admissionsError } = useStudentAdmissions(orgIdForQuery);
+  const { 
+    admissions, 
+    isLoading, 
+    error: admissionsError,
+    pagination,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+  } = useStudentAdmissions(orgIdForQuery, true);
   
   // Debug logging
   useEffect(() => {
@@ -154,7 +167,7 @@ export function StudentAdmissions() {
   const admittedStudentIds = new Set((admissions || []).map((adm) => adm.student_id));
   const availableStudents = (students || []).filter((student) => !admittedStudentIds.has(student.id));
 
-  // Filter admissions for display
+  // Client-side filtering for search
   const filteredAdmissions = useMemo(() => {
     const list = admissions || [];
     const searchLower = (searchQuery || '').toLowerCase().trim();
@@ -162,17 +175,17 @@ export function StudentAdmissions() {
     return list
       .filter((admission) => {
         // Apply filters
-        if (schoolFilter !== 'all' && admission.school_id !== schoolFilter) return false;
-        if (statusFilter !== 'all' && admission.enrollment_status !== statusFilter) return false;
-        if (residencyFilter !== 'all' && admission.residency_type_id !== residencyFilter) return false;
+        if (schoolFilter !== 'all' && admission.schoolId !== schoolFilter) return false;
+        if (statusFilter !== 'all' && admission.enrollmentStatus !== statusFilter) return false;
+        if (residencyFilter !== 'all' && admission.residencyTypeId !== residencyFilter) return false;
         
         // Apply search query
         if (searchLower) {
-          const matchesStudentName = admission.student?.full_name?.toLowerCase().includes(searchLower);
-          const matchesAdmissionNo = admission.student?.admission_no?.toLowerCase().includes(searchLower);
-          const matchesAdmissionYear = admission.admission_year?.toLowerCase().includes(searchLower);
+          const matchesStudentName = admission.student?.fullName?.toLowerCase().includes(searchLower);
+          const matchesAdmissionNo = admission.student?.admissionNumber?.toLowerCase().includes(searchLower);
+          const matchesAdmissionYear = admission.admissionYear?.toLowerCase().includes(searchLower);
           const matchesClass = admission.class?.name?.toLowerCase().includes(searchLower);
-          const matchesSection = admission.class_academic_year?.section_name?.toLowerCase().includes(searchLower);
+          const matchesSection = admission.classAcademicYear?.sectionName?.toLowerCase().includes(searchLower);
           
           if (!matchesStudentName && !matchesAdmissionNo && !matchesAdmissionYear && !matchesClass && !matchesSection) {
             return false;
@@ -183,35 +196,200 @@ export function StudentAdmissions() {
       })
       .sort((a, b) => {
         // Sort by student name
-        const nameA = a.student?.full_name || '';
-        const nameB = b.student?.full_name || '';
+        const nameA = a.student?.fullName || '';
+        const nameB = b.student?.fullName || '';
         return nameA.localeCompare(nameB);
       });
   }, [admissions, schoolFilter, statusFilter, residencyFilter, searchQuery]);
 
+  // Define columns for DataTable
+  const columns: ColumnDef<StudentAdmission>[] = [
+    {
+      accessorKey: 'student',
+      header: t('admissions.student') || 'Student',
+      cell: ({ row }) => {
+        const admission = row.original;
+        return (
+          <div className="space-y-1 min-w-[200px]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold break-words">{admission.student?.fullName || 'Unassigned'}</span>
+              {admission.enrollmentStatus && (
+                <Badge variant={statusVariant(admission.enrollmentStatus)} className="shrink-0">
+                  {admission.enrollmentStatus === 'pending' ? t('admissions.pending') :
+                   admission.enrollmentStatus === 'admitted' ? t('admissions.admitted') :
+                   admission.enrollmentStatus === 'active' ? t('admissions.active') :
+                   admission.enrollmentStatus === 'inactive' ? t('admissions.inactive') :
+                   admission.enrollmentStatus === 'suspended' ? t('admissions.suspended') :
+                   admission.enrollmentStatus === 'withdrawn' ? t('admissions.withdrawn') :
+                   admission.enrollmentStatus === 'graduated' ? t('admissions.graduated') :
+                   admission.enrollmentStatus}
+                </Badge>
+              )}
+              {admission.isBoarder && (
+                <Badge variant="secondary" className="shrink-0">
+                  {t('admissions.boarder') || 'Boarder'}
+                </Badge>
+              )}
+            </div>
+            {admission.student?.admissionNumber && (
+              <div className="text-xs text-muted-foreground">
+                {t('admissions.admissionNumber') || 'Admission #'}: {admission.student.admissionNumber}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'school',
+      header: t('admissions.school') || 'School',
+      cell: ({ row }) => {
+        const school = schools?.find((s) => s.id === row.original.schoolId);
+        return school?.schoolName || '—';
+      },
+    },
+    {
+      accessorKey: 'class',
+      header: t('admissions.class') || 'Class / Shift',
+      cell: ({ row }) => {
+        const admission = row.original;
+        const classInfo = admission.classAcademicYear;
+        if (classInfo) {
+          return (
+            <div className="space-y-1">
+              <div className="font-medium">{admission.class?.name || 'Unknown'}</div>
+              {classInfo.sectionName && (
+                <Badge variant="outline" className="text-xs">
+                  {classInfo.sectionName}
+                </Badge>
+              )}
+              {admission.shift && (
+                <div className="text-xs text-muted-foreground">{admission.shift}</div>
+              )}
+            </div>
+          );
+        }
+        return '—';
+      },
+    },
+    {
+      accessorKey: 'residency',
+      header: t('admissions.residency') || 'Residency',
+      cell: ({ row }) => {
+        const type = residencyTypes?.find((t) => t.id === row.original.residencyTypeId);
+        return type ? type.name : '—';
+      },
+    },
+    {
+      accessorKey: 'room',
+      header: t('admissions.room') || 'Room',
+      cell: ({ row }) => {
+        const room = rooms?.find((r) => r.id === row.original.roomId);
+        return room ? room.roomNumber : '—';
+      },
+    },
+    {
+      accessorKey: 'status',
+      header: t('admissions.status') || 'Status',
+      cell: ({ row }) => {
+        const status = row.original.enrollmentStatus;
+        return status ? (
+          <Badge variant={statusVariant(status)}>
+            {status === 'pending' ? t('admissions.pending') :
+             status === 'admitted' ? t('admissions.admitted') :
+             status === 'active' ? t('admissions.active') :
+             status === 'inactive' ? t('admissions.inactive') :
+             status === 'suspended' ? t('admissions.suspended') :
+             status === 'withdrawn' ? t('admissions.withdrawn') :
+             status === 'graduated' ? t('admissions.graduated') :
+             status}
+          </Badge>
+        ) : '—';
+      },
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">{t('admissions.actions') || 'Actions'}</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-1 flex-wrap">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleEdit(row.original)}
+            title={t('common.edit') || 'Edit'}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleDelete(row.original)}
+            title={t('common.delete') || 'Delete'}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  // Use DataTable hook for pagination integration
+  const { table } = useDataTable({
+    data: filteredAdmissions,
+    columns,
+    pageCount: pagination?.last_page,
+    paginationMeta: pagination ?? null,
+    initialState: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
+    },
+    onPaginationChange: (newPagination) => {
+      setPage(newPagination.pageIndex + 1);
+      setPageSize(newPagination.pageSize);
+    },
+  });
+
   const onSubmit = (data: z.infer<typeof admissionSchema>) => {
     const payload: StudentAdmissionInsert = {
-      ...data,
-      organization_id: data.organization_id || profile?.organization_id,
+      studentId: data.student_id,
+      organizationId: data.organization_id || profile?.organization_id,
+      schoolId: data.school_id,
+      academicYearId: data.academic_year_id,
+      classId: data.class_id,
+      classAcademicYearId: data.class_academic_year_id,
+      residencyTypeId: data.residency_type_id,
+      roomId: data.room_id,
+      admissionYear: data.admission_year,
+      admissionDate: data.admission_date,
+      enrollmentStatus: data.enrollment_status,
+      enrollmentType: data.enrollment_type,
+      shift: data.shift,
+      isBoarder: data.is_boarder,
+      feeStatus: data.fee_status,
+      placementNotes: data.placement_notes,
     };
 
     const selectedStudent = students?.find((student) => student.id === data.student_id);
-    if (!payload.school_id && selectedStudent?.school_id) {
-      payload.school_id = selectedStudent.school_id;
+    if (!payload.schoolId && selectedStudent?.schoolId) {
+      payload.schoolId = selectedStudent.schoolId;
     }
 
     const selectedCay = classAcademicYears?.find((cay) => cay.id === data.class_academic_year_id);
     if (selectedCay) {
-      payload.class_id = selectedCay.class_id;
-      payload.academic_year_id = selectedCay.academic_year_id;
-      if (!payload.room_id && selectedCay.room_id) {
-        payload.room_id = selectedCay.room_id;
+      payload.classId = selectedCay.class_id;
+      payload.academicYearId = selectedCay.academic_year_id;
+      if (!payload.roomId && selectedCay.room_id) {
+        payload.roomId = selectedCay.room_id;
       }
     }
 
     if (selectedAdmission && isEdit) {
+      // Remove organizationId and schoolId from update payload as they cannot be updated
+      const { organizationId, schoolId, ...updatePayload } = payload;
       updateAdmission.mutate(
-        { id: selectedAdmission.id, data: payload },
+        { id: selectedAdmission.id, data: updatePayload },
         {
           onSuccess: () => {
             setIsDialogOpen(false);
@@ -239,14 +417,27 @@ export function StudentAdmissions() {
     setAdmissionToDelete(null);
     
     // Set academic year first so classes load
-    if (admission.academic_year_id) {
-      setSelectedAcademicYear(admission.academic_year_id);
+    if (admission.academicYearId) {
+      setSelectedAcademicYear(admission.academicYearId);
     }
     
     reset({
-      ...admission,
-      admission_date: admission.admission_date?.toString().slice(0, 10),
-      organization_id: admission.organization_id,
+      organization_id: admission.organizationId,
+      school_id: admission.schoolId,
+      student_id: admission.studentId,
+      academic_year_id: admission.academicYearId,
+      class_id: admission.classId,
+      class_academic_year_id: admission.classAcademicYearId,
+      residency_type_id: admission.residencyTypeId,
+      room_id: admission.roomId,
+      admission_year: admission.admissionYear,
+      admission_date: admission.admissionDate ? new Date(admission.admissionDate).toISOString().slice(0, 10) : undefined,
+      enrollment_status: admission.enrollmentStatus,
+      enrollment_type: admission.enrollmentType,
+      shift: admission.shift,
+      is_boarder: admission.isBoarder,
+      fee_status: admission.feeStatus,
+      placement_notes: admission.placementNotes,
     });
   };
 
@@ -321,7 +512,7 @@ export function StudentAdmissions() {
                         <SelectContent>
                           {schools?.map((school) => (
                             <SelectItem key={school.id} value={school.id}>
-                              {school.school_name}
+                              {school.schoolName}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -335,20 +526,24 @@ export function StudentAdmissions() {
                 <Controller
                       control={control}
                       name="student_id"
-                      render={({ field }) => (
-                        <Select value={field.value || ''} onValueChange={field.onChange} disabled={isEdit}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('admissions.chooseStudent') || 'Choose student'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(isEdit ? students : availableStudents)?.map((student) => (
-                              <SelectItem key={student.id} value={student.id}>
-                                {student.full_name} ({student.admission_no})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
+                      render={({ field }) => {
+                        const studentOptions: ComboboxOption[] = (isEdit ? students : availableStudents)?.map((student) => ({
+                          value: student.id,
+                          label: `${student.fullName} (${student.admissionNumber})`,
+                        })) || [];
+                        
+                        return (
+                          <Combobox
+                            options={studentOptions}
+                            value={field.value || ''}
+                            onValueChange={field.onChange}
+                            placeholder={t('admissions.chooseStudent') || 'Choose student'}
+                            searchPlaceholder={t('admissions.searchStudent') || 'Search by name or admission number...'}
+                            emptyText={t('admissions.noStudentsFound') || 'No students found.'}
+                            disabled={isEdit}
+                          />
+                        );
+                      }}
                     />
                     {errors.student_id && <p className="text-destructive text-sm mt-1">{errors.student_id.message}</p>}
                   </div>
@@ -474,20 +669,25 @@ export function StudentAdmissions() {
                     <Controller
                       control={control}
                       name="room_id"
-                      render={({ field }) => (
-                        <Select value={field.value || ''} onValueChange={field.onChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('admissions.assignRoom') || 'Assign room'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {rooms?.map((room) => (
-                              <SelectItem key={room.id} value={room.id}>
-                                {room.room_number}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
+                      render={({ field }) => {
+                        const roomOptions: ComboboxOption[] = rooms?.map((room) => ({
+                          value: room.id,
+                          label: room.roomNumber || room.building?.buildingName ? 
+                            `${room.roomNumber}${room.building?.buildingName ? ` - ${room.building.buildingName}` : ''}` : 
+                            room.id,
+                        })) || [];
+                        
+                        return (
+                          <Combobox
+                            options={roomOptions}
+                            value={field.value || ''}
+                            onValueChange={field.onChange}
+                            placeholder={t('admissions.assignRoom') || 'Assign room'}
+                            searchPlaceholder={t('admissions.searchRoom') || 'Search rooms...'}
+                            emptyText={t('admissions.noRoomsFound') || 'No rooms found.'}
+                          />
+                        );
+                      }}
                     />
                   </div>
                   <div>
@@ -694,117 +894,53 @@ export function StudentAdmissions() {
                 <div className="border rounded-lg">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('admissions.student') || 'Student'}</TableHead>
-                        <TableHead>{t('admissions.school') || 'School'}</TableHead>
-                        <TableHead>{t('admissions.class') || 'Class / Shift'}</TableHead>
-                        <TableHead>{t('admissions.residency') || 'Residency'}</TableHead>
-                        <TableHead>{t('admissions.room') || 'Room'}</TableHead>
-                        <TableHead>{t('admissions.status') || 'Status'}</TableHead>
-                        <TableHead className="text-right">{t('admissions.actions') || 'Actions'}</TableHead>
-                      </TableRow>
+                      {table.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                          {headerGroup.headers.map((header) => (
+                            <TableHead key={header.id}>
+                              {header.isPlaceholder
+                                ? null
+                                : typeof header.column.columnDef.header === 'function'
+                                ? header.column.columnDef.header({ column: header.column, header, table })
+                                : header.column.columnDef.header}
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      ))}
                     </TableHeader>
                     <TableBody>
-                      {filteredAdmissions.length > 0 ? (
-                        filteredAdmissions.map((admission) => (
-                          <TableRow key={admission.id}>
-                            <TableCell>
-                              <div className="space-y-1 min-w-[200px]">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-semibold break-words">{admission.student?.full_name || 'Unassigned'}</span>
-                                  {admission.enrollment_status && (
-                                    <Badge variant={statusVariant(admission.enrollment_status)} className="shrink-0">
-                                      {admission.enrollment_status === 'pending' ? t('admissions.pending') :
-                                       admission.enrollment_status === 'admitted' ? t('admissions.admitted') :
-                                       admission.enrollment_status === 'active' ? t('admissions.active') :
-                                       admission.enrollment_status === 'inactive' ? t('admissions.inactive') :
-                                       admission.enrollment_status === 'suspended' ? t('admissions.suspended') :
-                                       admission.enrollment_status === 'withdrawn' ? t('admissions.withdrawn') :
-                                       admission.enrollment_status === 'graduated' ? t('admissions.graduated') :
-                                       admission.enrollment_status}
-                                    </Badge>
-                                  )}
-                                  {admission.is_boarder && (
-                                    <Badge variant="secondary" className="shrink-0">
-                                      {t('admissions.boarder') || 'Boarder'}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="text-xs text-muted-foreground flex flex-wrap gap-2 items-center">
-                                  {admission.student?.admission_no && (
-                                    <span className="break-words">{t('admissions.admissionNo') || 'Adm'}: #{admission.student.admission_no}</span>
-                                  )}
-                                  {admission.admission_year && (
-                                    <span>{t('admissions.year') || 'Year'}: {admission.admission_year}</span>
-                                  )}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {schools?.find((s) => s.id === admission.school_id)?.school_name || '—'}
-                            </TableCell>
-                            <TableCell>
-                              {(() => {
-                                const className = admission.class?.name;
-                                const sectionName = admission.class_academic_year?.section_name;
-                                if (className) {
-                                  return sectionName ? `${className} - ${sectionName}` : className;
-                                }
-                                return '—';
-                              })()}
-                            </TableCell>
-                            <TableCell>
-                              {admission.residency_type?.name || 
-                               residencyTypes?.find((r) => r.id === admission.residency_type_id)?.name || 
-                               '—'}
-                            </TableCell>
-                            <TableCell>
-                              {admission.room?.room_number || '—'}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={statusVariant(admission.enrollment_status)}>
-                                {admission.enrollment_status === 'pending' ? t('admissions.pending') :
-                                 admission.enrollment_status === 'admitted' ? t('admissions.admitted') :
-                                 admission.enrollment_status === 'active' ? t('admissions.active') :
-                                 admission.enrollment_status === 'inactive' ? t('admissions.inactive') :
-                                 admission.enrollment_status === 'suspended' ? t('admissions.suspended') :
-                                 admission.enrollment_status === 'withdrawn' ? t('admissions.withdrawn') :
-                                 admission.enrollment_status === 'graduated' ? t('admissions.graduated') :
-                                 admission.enrollment_status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-1 flex-wrap">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEdit(admission)}
-                                  title={t('common.edit') || 'Edit'}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDelete(admission)}
-                                  title={t('common.delete') || 'Delete'}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
+                      {table.getRowModel().rows.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
+                          <TableCell colSpan={columns.length} className="h-24 text-center">
                             {t('admissions.noDataFound') || 'No data found.'}
                           </TableCell>
                         </TableRow>
+                      ) : (
+                        table.getRowModel().rows.map((row) => (
+                          <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                            {row.getVisibleCells().map((cell) => (
+                              <TableCell key={cell.id}>
+                                {cell.column.columnDef.cell
+                                  ? cell.column.columnDef.cell({ row })
+                                  : null}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))
                       )}
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Pagination */}
+                <DataTablePagination
+                  table={table}
+                  paginationMeta={pagination ?? null}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                  showPageSizeSelector={true}
+                  showTotalCount={true}
+                />
               </div>
             </div>
           )}

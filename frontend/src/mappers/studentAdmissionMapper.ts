@@ -86,13 +86,13 @@ export function mapStudentAdmissionDomainToInsert(domain: StudentAdmissionInsert
 
 /**
  * Convert Domain StudentAdmissionUpdate model to API StudentAdmissionUpdate payload
+ * Note: organizationId and schoolId are excluded as they cannot be updated
  */
 export function mapStudentAdmissionDomainToUpdate(domain: StudentAdmissionUpdate): StudentAdmissionApi.StudentAdmissionUpdate {
   const update: StudentAdmissionApi.StudentAdmissionUpdate = {};
   
   if (domain.studentId !== undefined) update.student_id = domain.studentId;
-  if (domain.organizationId !== undefined) update.organization_id = domain.organizationId;
-  if (domain.schoolId !== undefined) update.school_id = domain.schoolId;
+  // organizationId and schoolId are excluded - they cannot be updated
   if (domain.academicYearId !== undefined) update.academic_year_id = domain.academicYearId;
   if (domain.classId !== undefined) update.class_id = domain.classId;
   if (domain.classAcademicYearId !== undefined) update.class_academic_year_id = domain.classAcademicYearId;

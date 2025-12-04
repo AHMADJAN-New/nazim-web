@@ -5,29 +5,65 @@ import { roomsApi } from '@/lib/api/client';
 import type * as RoomApi from '@/types/api/room';
 import type { Room } from '@/types/domain/room';
 import { mapRoomApiToDomain, mapRoomDomainToInsert, mapRoomDomainToUpdate } from '@/mappers/roomMapper';
+import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
+import { usePagination } from './usePagination';
+import { useEffect } from 'react';
 
 // Re-export domain types for convenience
 export type { Room } from '@/types/domain/room';
 
-export const useRooms = (schoolId?: string, organizationId?: string) => {
+export const useRooms = (schoolId?: string, organizationId?: string, usePaginated?: boolean) => {
   const { user, profile } = useAuth();
+  const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
+    initialPage: 1,
+    initialPageSize: 25,
+  });
 
-  return useQuery<Room[]>({
-    queryKey: ['rooms', schoolId, organizationId || profile?.organization_id],
+  const { data, isLoading, error } = useQuery<Room[] | PaginatedResponse<RoomApi.Room>>({
+    queryKey: ['rooms', schoolId, organizationId || profile?.organization_id, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
     queryFn: async () => {
       if (!user || !profile) return [];
 
       // Fetch rooms via Laravel API (relationships included)
-      const params: { school_id?: string; building_id?: string; organization_id?: string } = {};
+      const params: { school_id?: string; building_id?: string; organization_id?: string; page?: number; per_page?: number } = {};
       if (schoolId) {
         params.school_id = schoolId;
       } else if (organizationId || profile.organization_id) {
         params.organization_id = organizationId || profile.organization_id || undefined;
       }
 
+      // Add pagination params if using pagination
+      if (usePaginated) {
+        params.page = page;
+        params.per_page = pageSize;
+      }
+
       const apiRooms = await roomsApi.list(params);
       
-      // Map API models to domain models
+      // Check if response is paginated (Laravel returns meta fields directly, not nested)
+      if (usePaginated && apiRooms && typeof apiRooms === 'object' && 'data' in apiRooms && 'current_page' in apiRooms) {
+        // Laravel's paginated response has data and meta fields at the same level
+        const paginatedResponse = apiRooms as any;
+        // Map API models to domain models
+        const rooms = (paginatedResponse.data as RoomApi.Room[]).map(mapRoomApiToDomain);
+        // Extract meta from Laravel's response structure
+        const meta: PaginationMeta = {
+          current_page: paginatedResponse.current_page,
+          from: paginatedResponse.from,
+          last_page: paginatedResponse.last_page,
+          per_page: paginatedResponse.per_page,
+          to: paginatedResponse.to,
+          total: paginatedResponse.total,
+          path: paginatedResponse.path,
+          first_page_url: paginatedResponse.first_page_url,
+          last_page_url: paginatedResponse.last_page_url,
+          next_page_url: paginatedResponse.next_page_url,
+          prev_page_url: paginatedResponse.prev_page_url,
+        };
+        return { data: rooms, meta } as PaginatedResponse<RoomApi.Room>;
+      }
+      
+      // Map API models to domain models (non-paginated)
       return (apiRooms as RoomApi.Room[]).map(mapRoomApiToDomain);
     },
     enabled: !!user && !!profile,
@@ -35,6 +71,35 @@ export const useRooms = (schoolId?: string, organizationId?: string) => {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  // Update pagination state from API response
+  useEffect(() => {
+    if (usePaginated && data && typeof data === 'object' && 'meta' in data) {
+      updateFromMeta((data as PaginatedResponse<RoomApi.Room>).meta);
+    }
+  }, [data, usePaginated, updateFromMeta]);
+
+  // Return appropriate format based on pagination mode
+  if (usePaginated) {
+    const paginatedData = data as PaginatedResponse<RoomApi.Room> | undefined;
+    return {
+      rooms: paginatedData?.data || [],
+      isLoading,
+      error,
+      pagination: paginatedData?.meta ?? null,
+      paginationState,
+      page,
+      pageSize,
+      setPage,
+      setPageSize,
+    };
+  }
+
+  return {
+    data: data as Room[] | undefined,
+    isLoading,
+    error,
+  };
 };
 
 export const useCreateRoom = () => {

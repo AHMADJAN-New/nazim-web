@@ -207,19 +207,25 @@ export const SmartSidebar = memo(function SmartSidebar() {
         badge: null,
         priority: 3
       }] : []),
-      ...(hasStudentsPermission ? [{
-        titleKey: "students",
-        url: "/students",
+      ...((hasStudentsPermission || hasStudentAdmissionsPermission) ? [{
+        titleKey: "studentManagement",
         icon: GraduationCap,
         badge: null,
-        priority: 3.05
-      }] : []),
-      ...(hasStudentAdmissionsPermission ? [{
-        titleKey: "admissions",
-        url: "/admissions",
-        icon: UserCheck,
-        badge: null,
-        priority: 3.055
+        priority: 3.05,
+        children: [
+          ...(hasStudentsPermission ? [{
+            title: "Students",
+            titleKey: "students",
+            url: "/students",
+            icon: GraduationCap,
+          }] : []),
+          ...(hasStudentAdmissionsPermission ? [{
+            title: "Admissions",
+            titleKey: "admissions",
+            url: "/admissions",
+            icon: UserCheck,
+          }] : []),
+        ],
       }] : []),
       ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission) ? [{
         titleKey: "academicManagement",

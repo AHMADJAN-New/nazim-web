@@ -86,6 +86,45 @@ prefer `@ts-expect-error` so the compiler verifies it
 - Follow naming conventions: snake_case for tables/columns
 - **ALWAYS create index on `organization_id`** for performance
 
+### Academic Data Architecture - Subject Assignment Flow
+
+**CRITICAL: The application uses a two-step subject assignment workflow:**
+
+1. **Step 1: Assign Subjects to Classes** (`class_subject_templates` table)
+   - Defines which subjects are available for a class
+   - Acts as a template/blueprint for subject offerings
+   - Used to filter available subjects in Step 2
+
+2. **Step 2: Assign Subjects to Class Academic Years** (`class_subjects` table)
+   - Links subjects to specific class instances in academic years
+   - Represents actual subject assignments for a class in a specific academic year
+   - Includes additional details like teacher assignment, room, schedule, etc.
+
+**Future Features Must Use `class_subjects` Table:**
+- **Exams**: When creating exams, use subjects from `class_subjects` table (not `subjects` directly)
+- **Grades/Assessments**: Link to `class_subjects` to ensure grades are for subjects actually taught
+- **Attendance**: Track attendance per `class_subjects` (subject + class + academic year combination)
+- **Timetables**: Build timetables using `class_subjects` entries
+- **Reports**: Generate reports based on `class_subjects` to show actual subject offerings
+
+**Key Rules:**
+- ✅ **ALWAYS** query subjects from `class_subjects` for academic year-specific features
+- ✅ **ALWAYS** filter by `class_academic_year_id` when working with subject assignments
+- ✅ **ALWAYS** validate that subjects exist in `class_subject_templates` before allowing assignment in Step 2
+- ❌ **NEVER** directly link exams/grades/attendance to `subjects` table without going through `class_subjects`
+- ❌ **NEVER** bypass the two-step workflow (Step 1: templates → Step 2: actual assignments)
+
+**Example Pattern:**
+```typescript
+// ✅ CORRECT: Get subjects for a class academic year
+const { data: classSubjects } = useClassSubjects(classAcademicYearId, organizationId);
+// Returns subjects from class_subjects table for this specific class instance
+
+// ❌ WRONG: Getting all subjects without class academic year context
+const { data: subjects } = useSubjects(organizationId);
+// This returns all subjects, not the ones assigned to this class instance
+```
+
 ### UUID Primary Keys - REQUIRED FOR ALL TABLES
 
 **CRITICAL: ALL tables MUST use UUID primary keys. This is mandatory for the entire application.**

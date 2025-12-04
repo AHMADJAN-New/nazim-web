@@ -16,27 +16,64 @@ import {
     mapClassSubjectTemplateDomainToInsert,
     mapClassSubjectTemplateDomainToUpdate,
 } from '@/mappers/subjectMapper';
+import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
+import { usePagination } from './usePagination';
+import { useEffect } from 'react';
 
 // Re-export domain types for convenience
 export type { Subject, ClassSubject, ClassSubjectTemplate } from '@/types/domain/subject';
 
-export const useSubjects = (organizationId?: string) => {
+export const useSubjects = (organizationId?: string, usePaginated?: boolean) => {
     const { user, profile } = useAuth();
     const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
+    const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
+        initialPage: 1,
+        initialPageSize: 25,
+    });
 
-    return useQuery<Subject[]>({
-        queryKey: ['subjects', organizationId || profile?.organization_id, orgIds.join(',')],
+    const { data, isLoading, error } = useQuery<Subject[] | PaginatedResponse<SubjectApi.Subject>>({
+        queryKey: ['subjects', organizationId || profile?.organization_id, orgIds.join(','), usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
         queryFn: async () => {
             if (!user || !profile || orgsLoading) return [];
 
             // Use Laravel API
-            const params: { organization_id?: string } = {};
+            const params: { organization_id?: string; page?: number; per_page?: number } = {};
             if (organizationId) {
                 params.organization_id = organizationId;
             }
 
+            // Add pagination params if using pagination
+            if (usePaginated) {
+                params.page = page;
+                params.per_page = pageSize;
+            }
+
             const apiSubjects = await subjectsApi.list(params);
-            // Map API models to domain models
+
+            // Check if response is paginated (Laravel returns meta fields directly, not nested)
+            if (usePaginated && apiSubjects && typeof apiSubjects === 'object' && 'data' in apiSubjects && 'current_page' in apiSubjects) {
+                // Laravel's paginated response has data and meta fields at the same level
+                const paginatedResponse = apiSubjects as any;
+                // Map API models to domain models
+                const subjects = (paginatedResponse.data as SubjectApi.Subject[]).map(mapSubjectApiToDomain);
+                // Extract meta from Laravel's response structure
+                const meta: PaginationMeta = {
+                    current_page: paginatedResponse.current_page,
+                    from: paginatedResponse.from,
+                    last_page: paginatedResponse.last_page,
+                    per_page: paginatedResponse.per_page,
+                    to: paginatedResponse.to,
+                    total: paginatedResponse.total,
+                    path: paginatedResponse.path,
+                    first_page_url: paginatedResponse.first_page_url,
+                    last_page_url: paginatedResponse.last_page_url,
+                    next_page_url: paginatedResponse.next_page_url,
+                    prev_page_url: paginatedResponse.prev_page_url,
+                };
+                return { data: subjects, meta } as PaginatedResponse<SubjectApi.Subject>;
+            }
+
+            // Map API models to domain models (non-paginated)
             return (apiSubjects as SubjectApi.Subject[]).map(mapSubjectApiToDomain);
         },
         enabled: !!user && !!profile,
@@ -44,6 +81,35 @@ export const useSubjects = (organizationId?: string) => {
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
     });
+
+    // Update pagination state from API response
+    useEffect(() => {
+        if (usePaginated && data && typeof data === 'object' && 'meta' in data) {
+            updateFromMeta((data as PaginatedResponse<SubjectApi.Subject>).meta);
+        }
+    }, [data, usePaginated, updateFromMeta]);
+
+    // Return appropriate format based on pagination mode
+    if (usePaginated) {
+        const paginatedData = data as PaginatedResponse<SubjectApi.Subject> | undefined;
+        return {
+            subjects: paginatedData?.data || [],
+            isLoading,
+            error,
+            pagination: paginatedData?.meta ?? null,
+            paginationState,
+            page,
+            pageSize,
+            setPage,
+            setPageSize,
+        };
+    }
+
+    return {
+        data: data as Subject[] | undefined,
+        isLoading,
+        error,
+    };
 };
 
 export const useClassSubjects = (classAcademicYearId?: string, organizationId?: string) => {
@@ -662,7 +728,6 @@ export const useCopySubjectsBetweenYears = () => {
 // Class Subject Templates (Subjects assigned to Classes)
 // ============================================================================
 
-// TODO: Migrate to Laravel API - class_subject_templates not yet migrated
 export const useClassSubjectTemplates = (classId?: string, organizationId?: string) => {
     const { user, profile } = useAuth();
     const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
@@ -670,16 +735,32 @@ export const useClassSubjectTemplates = (classId?: string, organizationId?: stri
     return useQuery({
         queryKey: ['class-subject-templates', classId, organizationId, orgIds.join(',')],
         queryFn: async () => {
-            // Temporarily disabled - class_subject_templates not yet migrated to Laravel
-            return [] as ClassSubjectTemplate[];
+            if (!user || !profile) {
+                throw new Error('User not authenticated');
+            }
+
+            const finalOrgId = organizationId || profile.organization_id;
+            if (!finalOrgId) {
+                return [] as ClassSubjectTemplate[];
+            }
+
+            const params: { class_id?: string; organization_id?: string } = {};
+            if (classId) {
+                params.class_id = classId;
+            }
+            if (finalOrgId) {
+                params.organization_id = finalOrgId;
+            }
+
+            const apiTemplates = await classSubjectTemplatesApi.list(params);
+            return (apiTemplates as SubjectApi.ClassSubjectTemplate[]).map(mapClassSubjectTemplateApiToDomain);
         },
-        enabled: false, // Disabled until migrated
+        enabled: !!user && !!profile && (!!classId || !!organizationId || !!profile.organization_id),
         staleTime: 10 * 60 * 1000,
         gcTime: 30 * 60 * 1000,
     });
 };
 
-// TODO: Migrate to Laravel API - class_subject_templates not yet migrated
 export const useAssignSubjectToClassTemplate = () => {
     const queryClient = useQueryClient();
     const { user, profile } = useAuth();
@@ -721,7 +802,6 @@ export const useAssignSubjectToClassTemplate = () => {
     });
 };
 
-// TODO: Migrate to Laravel API - class_subject_templates not yet migrated
 export const useRemoveSubjectFromClassTemplate = () => {
     const queryClient = useQueryClient();
     const { user, profile } = useAuth();
@@ -745,7 +825,6 @@ export const useRemoveSubjectFromClassTemplate = () => {
     });
 };
 
-// TODO: Migrate to Laravel API - class_subject_templates not yet migrated
 export const useBulkAssignSubjectsToClassTemplate = () => {
     const queryClient = useQueryClient();
     const { user, profile } = useAuth();

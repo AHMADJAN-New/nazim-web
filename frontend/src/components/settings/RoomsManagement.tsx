@@ -47,6 +47,10 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { useDataTable } from '@/hooks/use-data-table';
+import { ColumnDef } from '@tanstack/react-table';
+import type { Room } from '@/types/domain/room';
 
 const roomSchema = z.object({
   room_number: z.string().min(1, 'Room number is required').max(100, 'Room number must be 100 characters or less'),
@@ -62,7 +66,16 @@ export function RoomsManagement() {
   const hasCreatePermission = useHasPermission('rooms.create');
   const hasUpdatePermission = useHasPermission('rooms.update');
   const hasDeletePermission = useHasPermission('rooms.delete');
-  const { data: rooms, isLoading: roomsLoading } = useRooms();
+  // Use paginated version of the hook
+  const { 
+    rooms, 
+    isLoading: roomsLoading, 
+    pagination,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+  } = useRooms(undefined, profile?.organization_id, true);
   const { data: buildings, isLoading: buildingsLoading } = useBuildings();
   const { data: staff, isLoading: staffLoading } = useStaff();
   const createRoom = useCreateRoom();
@@ -89,7 +102,11 @@ export function RoomsManagement() {
 
   const isLoading = roomsLoading || buildingsLoading || staffLoading;
 
+  // Client-side filtering for search
+  // Note: When search is active, we filter the current page's results
+  // For full search across all pages, consider implementing server-side search
   const filteredRooms = rooms?.filter((room) => {
+    if (!searchQuery) return true; // Show all if no search query
     const query = (searchQuery || '').toLowerCase();
     const matchesSearch =
       room.roomNumber?.toLowerCase().includes(query) ||
@@ -97,6 +114,81 @@ export function RoomsManagement() {
       room.staff?.profile?.fullName?.toLowerCase().includes(query);
     return matchesSearch;
   }) || [];
+
+  // Define columns for DataTable
+  const columns: ColumnDef<Room>[] = [
+    {
+      accessorKey: 'roomNumber',
+      header: 'Room Number',
+      cell: ({ row }) => <span className="font-medium">{row.original.roomNumber}</span>,
+    },
+    {
+      accessorKey: 'building',
+      header: 'Building',
+      cell: ({ row }) => row.original.building?.buildingName || 'N/A',
+    },
+    {
+      accessorKey: 'staff',
+      header: 'Staff/Warden',
+      cell: ({ row }) => row.original.staff?.profile?.fullName || (
+        <span className="text-muted-foreground">No staff assigned</span>
+      ),
+    },
+    {
+      accessorKey: 'createdAt',
+      header: 'Created At',
+      cell: ({ row }) => {
+        const date = row.original.createdAt;
+        return date instanceof Date
+          ? date.toLocaleDateString()
+          : new Date(date).toLocaleDateString();
+      },
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          {hasUpdatePermission && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleOpenDialog(row.original.id)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {hasDeletePermission && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDeleteClick(row.original.id)}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  // Use DataTable hook for pagination integration
+  const { table } = useDataTable({
+    data: filteredRooms,
+    columns,
+    pageCount: pagination?.last_page,
+    paginationMeta: pagination ?? null,
+    initialState: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
+    },
+    onPaginationChange: (newPagination) => {
+      setPage(newPagination.pageIndex + 1);
+      setPageSize(newPagination.pageSize);
+    },
+  });
 
   const handleOpenDialog = (roomId?: string) => {
     if (roomId) {
@@ -118,6 +210,22 @@ export function RoomsManagement() {
       setSelectedRoom(null);
     }
     setIsDialogOpen(true);
+  };
+
+  const handleDeleteClick = (roomId: string) => {
+    setSelectedRoom(roomId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (selectedRoom) {
+      deleteRoom.mutate(selectedRoom, {
+        onSuccess: () => {
+          setIsDeleteDialogOpen(false);
+          setSelectedRoom(null);
+        },
+      });
+    }
   };
 
   const handleCloseDialog = () => {
@@ -154,22 +262,6 @@ export function RoomsManagement() {
           },
         }
       );
-    }
-  };
-
-  const handleDeleteClick = (roomId: string) => {
-    setSelectedRoom(roomId);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    if (selectedRoom) {
-      deleteRoom.mutate(selectedRoom, {
-        onSuccess: () => {
-          setIsDeleteDialogOpen(false);
-          setSelectedRoom(null);
-        },
-      });
     }
   };
 
@@ -228,64 +320,53 @@ export function RoomsManagement() {
           <div className="rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Room Number</TableHead>
-                  <TableHead>Building</TableHead>
-                  <TableHead>Staff/Warden</TableHead>
-                  <TableHead>Created At</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : typeof header.column.columnDef.header === 'function'
+                          ? header.column.columnDef.header({ column: header.column })
+                          : header.column.columnDef.header}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
               </TableHeader>
               <TableBody>
-                {filteredRooms.length === 0 ? (
+                {table.getRowModel().rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
                       {searchQuery ? 'No rooms found matching your search' : 'No rooms found. Add your first room.'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRooms.map((room) => (
-                    <TableRow key={room.id}>
-                      <TableCell className="font-medium">{room.roomNumber}</TableCell>
-                      <TableCell>{room.building?.buildingName || 'N/A'}</TableCell>
-                      <TableCell>
-                        {room.staff?.profile?.fullName || (
-                          <span className="text-muted-foreground">No staff assigned</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {room.createdAt instanceof Date
-                          ? room.createdAt.toLocaleDateString()
-                          : new Date(room.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          {hasUpdatePermission && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenDialog(room.id)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {hasDeletePermission && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(room.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {cell.column.columnDef.cell
+                            ? cell.column.columnDef.cell({ row })
+                            : null}
+                        </TableCell>
+                      ))}
                     </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination - Always show when using paginated mode */}
+          <DataTablePagination
+            table={table}
+            paginationMeta={pagination ?? null}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            showPageSizeSelector={true}
+            showTotalCount={true}
+          />
         </CardContent>
       </Card>
 

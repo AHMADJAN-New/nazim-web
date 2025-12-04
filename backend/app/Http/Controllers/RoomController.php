@@ -95,6 +95,22 @@ class RoomController extends Controller
             }
         }
 
+        // Support pagination if page and per_page parameters are provided
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = $request->input('per_page', 25);
+            // Validate per_page is one of allowed values
+            $allowedPerPage = [10, 25, 50, 100];
+            if (!in_array((int)$perPage, $allowedPerPage)) {
+                $perPage = 25; // Default to 25 if invalid
+            }
+            
+            $rooms = $query->orderBy('room_number', 'asc')->paginate((int)$perPage);
+            
+            // Return paginated response in Laravel's standard format
+            return response()->json($rooms);
+        }
+
+        // Return all results if no pagination requested (backward compatibility)
         $rooms = $query->orderBy('room_number', 'asc')->get();
 
         // Get building IDs and staff IDs for relationships

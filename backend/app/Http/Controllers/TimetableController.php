@@ -47,8 +47,10 @@ class TimetableController extends Controller
             $query = GeneratedTimetable::whereNull('deleted_at');
 
             // Try to eager load relationships, but don't fail if they don't exist
+            // Note: createdBy is excluded because some records have integer created_by values
+            // instead of UUIDs, which causes PostgreSQL type mismatch errors
             try {
-                $query->with(['academicYear', 'school', 'createdBy']);
+                $query->with(['academicYear', 'school']);
             } catch (\Exception $e) {
                 Log::warning("Failed to eager load relationships for timetables: " . $e->getMessage());
             }
@@ -85,10 +87,62 @@ class TimetableController extends Controller
             }
 
             $timetables = $query->orderBy('created_at', 'desc')->get();
+            
+            // Ensure relationships are loaded safely
+            foreach ($timetables as $timetable) {
+                try {
+                    if ($timetable->academic_year_id && !$timetable->relationLoaded('academicYear')) {
+                        $timetable->load('academicYear');
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Could not load academicYear for timetable {$timetable->id}: " . $e->getMessage());
+                }
+                
+                try {
+                    if ($timetable->school_id && !$timetable->relationLoaded('school')) {
+                        $timetable->load('school');
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Could not load school for timetable {$timetable->id}: " . $e->getMessage());
+                }
+            }
 
-            // Format response
+            // Format response - use array access to avoid lazy loading issues
             $formatted = $timetables->map(function ($timetable) {
                 try {
+                    $academicYear = null;
+                    $school = null;
+                    
+                    // Safely get academic year - only if relation is loaded
+                    try {
+                        if ($timetable->relationLoaded('academicYear')) {
+                            $academicYearRelation = $timetable->getRelation('academicYear');
+                            if ($academicYearRelation && isset($academicYearRelation->id)) {
+                                $academicYear = [
+                                    'id' => $academicYearRelation->id,
+                                    'name' => $academicYearRelation->name ?? '',
+                                ];
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning("Error accessing academicYear for timetable {$timetable->id}: " . $e->getMessage());
+                    }
+                    
+                    // Safely get school - only if relation is loaded
+                    try {
+                        if ($timetable->relationLoaded('school')) {
+                            $schoolRelation = $timetable->getRelation('school');
+                            if ($schoolRelation && isset($schoolRelation->id)) {
+                                $school = [
+                                    'id' => $schoolRelation->id,
+                                    'school_name' => $schoolRelation->school_name ?? '',
+                                ];
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning("Error accessing school for timetable {$timetable->id}: " . $e->getMessage());
+                    }
+                    
                     return [
                         'id' => $timetable->id,
                         'organization_id' => $timetable->organization_id,
@@ -99,31 +153,27 @@ class TimetableController extends Controller
                         'description' => $timetable->description,
                         'is_active' => $timetable->is_active,
                         'created_by' => $timetable->created_by,
-                        'created_at' => $timetable->created_at,
-                        'updated_at' => $timetable->updated_at,
-                        'academic_year' => $timetable->relationLoaded('academicYear') && $timetable->academicYear ? [
-                            'id' => $timetable->academicYear->id,
-                            'name' => $timetable->academicYear->name,
-                        ] : null,
-                        'school' => $timetable->relationLoaded('school') && $timetable->school ? [
-                            'id' => $timetable->school->id,
-                            'school_name' => $timetable->school->school_name,
-                        ] : null,
+                        'created_at' => $timetable->created_at ? $timetable->created_at->toIso8601String() : null,
+                        'updated_at' => $timetable->updated_at ? $timetable->updated_at->toIso8601String() : null,
+                        'academic_year' => $academicYear,
+                        'school' => $school,
                     ];
                 } catch (\Exception $e) {
-                    Log::warning("Failed to format timetable: " . $e->getMessage());
+                    Log::error("Failed to format timetable {$timetable->id}: " . $e->getMessage());
+                    Log::error("Stack trace: " . $e->getTraceAsString());
+                    // Return minimal safe data
                     return [
-                        'id' => $timetable->id,
-                        'organization_id' => $timetable->organization_id,
-                        'academic_year_id' => $timetable->academic_year_id,
-                        'school_id' => $timetable->school_id,
-                        'name' => $timetable->name,
-                        'timetable_type' => $timetable->timetable_type,
-                        'description' => $timetable->description,
-                        'is_active' => $timetable->is_active,
-                        'created_by' => $timetable->created_by,
-                        'created_at' => $timetable->created_at,
-                        'updated_at' => $timetable->updated_at,
+                        'id' => $timetable->id ?? '',
+                        'organization_id' => $timetable->organization_id ?? null,
+                        'academic_year_id' => $timetable->academic_year_id ?? null,
+                        'school_id' => $timetable->school_id ?? null,
+                        'name' => $timetable->name ?? '',
+                        'timetable_type' => $timetable->timetable_type ?? 'teaching',
+                        'description' => $timetable->description ?? null,
+                        'is_active' => $timetable->is_active ?? true,
+                        'created_by' => $timetable->created_by ?? null,
+                        'created_at' => $timetable->created_at ? ($timetable->created_at instanceof \Carbon\Carbon ? $timetable->created_at->toIso8601String() : $timetable->created_at) : null,
+                        'updated_at' => $timetable->updated_at ? ($timetable->updated_at instanceof \Carbon\Carbon ? $timetable->updated_at->toIso8601String() : $timetable->updated_at) : null,
                         'academic_year' => null,
                         'school' => null,
                     ];
@@ -133,8 +183,13 @@ class TimetableController extends Controller
             return response()->json($formatted);
         } catch (\Exception $e) {
             Log::error('Error fetching timetables: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
-            return response()->json(['error' => 'Failed to fetch timetables: ' . $e->getMessage()], 500);
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Request params: ' . json_encode($request->all()));
+            return response()->json([
+                'error' => 'Failed to fetch timetables',
+                'message' => $e->getMessage(),
+                'details' => config('app.debug') ? $e->getTraceAsString() : null
+            ], 500);
         }
     }
 
@@ -156,7 +211,7 @@ class TimetableController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('timetables.read')) {
+            if (!$user->hasPermissionTo('timetables.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -211,33 +266,65 @@ class TimetableController extends Controller
 
             DB::commit();
 
-            $timetable->load(['academicYear', 'school', 'createdBy', 'entries']);
+            // Try to load relationships, but don't fail if they don't exist
+            // Note: createdBy is excluded because some records have integer created_by values
+            // instead of UUIDs, which causes PostgreSQL type mismatch errors
+            try {
+                $timetable->load(['academicYear', 'school', 'entries']);
+            } catch (\Exception $e) {
+                Log::warning("Failed to load relationships for timetable: " . $e->getMessage());
+            }
 
-            return response()->json([
-                'id' => $timetable->id,
-                'organization_id' => $timetable->organization_id,
-                'academic_year_id' => $timetable->academic_year_id,
-                'school_id' => $timetable->school_id,
-                'name' => $timetable->name,
-                'timetable_type' => $timetable->timetable_type,
-                'description' => $timetable->description,
-                'is_active' => $timetable->is_active,
-                'created_by' => $timetable->created_by,
-                'created_at' => $timetable->created_at,
-                'updated_at' => $timetable->updated_at,
-                'academic_year' => $timetable->academicYear ? [
-                    'id' => $timetable->academicYear->id,
-                    'name' => $timetable->academicYear->name,
-                ] : null,
-                'school' => $timetable->school ? [
-                    'id' => $timetable->school->id,
-                    'school_name' => $timetable->school->school_name,
-                ] : null,
-            ], 201);
+            // Format response safely
+            try {
+                return response()->json([
+                    'id' => $timetable->id,
+                    'organization_id' => $timetable->organization_id,
+                    'academic_year_id' => $timetable->academic_year_id,
+                    'school_id' => $timetable->school_id,
+                    'name' => $timetable->name,
+                    'timetable_type' => $timetable->timetable_type,
+                    'description' => $timetable->description,
+                    'is_active' => $timetable->is_active,
+                    'created_by' => $timetable->created_by,
+                    'created_at' => $timetable->created_at,
+                    'updated_at' => $timetable->updated_at,
+                    'academic_year' => $timetable->relationLoaded('academicYear') && $timetable->academicYear ? [
+                        'id' => $timetable->academicYear->id,
+                        'name' => $timetable->academicYear->name,
+                    ] : null,
+                    'school' => $timetable->relationLoaded('school') && $timetable->school ? [
+                        'id' => $timetable->school->id,
+                        'school_name' => $timetable->school->school_name,
+                    ] : null,
+                ], 201);
+            } catch (\Exception $e) {
+                Log::error('Error formatting timetable response: ' . $e->getMessage());
+                // Return basic response if formatting fails
+                return response()->json([
+                    'id' => $timetable->id,
+                    'organization_id' => $timetable->organization_id,
+                    'academic_year_id' => $timetable->academic_year_id,
+                    'school_id' => $timetable->school_id,
+                    'name' => $timetable->name,
+                    'timetable_type' => $timetable->timetable_type,
+                    'description' => $timetable->description,
+                    'is_active' => $timetable->is_active,
+                    'created_by' => $timetable->created_by,
+                    'created_at' => $timetable->created_at,
+                    'updated_at' => $timetable->updated_at,
+                ], 201);
+            }
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating timetable: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to create timetable'], 500);
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Request data: ' . json_encode($request->all()));
+            return response()->json([
+                'error' => 'Failed to create timetable',
+                'message' => $e->getMessage(),
+                'details' => config('app.debug') ? $e->getTraceAsString() : null
+            ], 500);
         }
     }
 
@@ -266,8 +353,10 @@ class TimetableController extends Controller
             Log::warning("Permission check failed for timetables.read - allowing access: " . $e->getMessage());
         }
 
+        // Note: createdBy is excluded because some records have integer created_by values
+        // instead of UUIDs, which causes PostgreSQL type mismatch errors
         $timetable = GeneratedTimetable::whereNull('deleted_at')
-            ->with(['academicYear', 'school', 'createdBy'])
+            ->with(['academicYear', 'school'])
             ->find($id);
 
         if (!$timetable) {
@@ -327,6 +416,7 @@ class TimetableController extends Controller
                 'teacher' => $entry->teacher ? [
                     'id' => $entry->teacher->id,
                     'full_name' => $entry->teacher->full_name,
+                    'employee_id' => $entry->teacher->employee_id ?? null,
                 ] : null,
                 'schedule_slot' => $entry->scheduleSlot ? [
                     'id' => $entry->scheduleSlot->id,
@@ -428,7 +518,9 @@ class TimetableController extends Controller
         // organization_id cannot be changed
 
         $timetable->save();
-        $timetable->load(['academicYear', 'school', 'createdBy']);
+        // Note: createdBy is excluded because some records have integer created_by values
+        // instead of UUIDs, which causes PostgreSQL type mismatch errors
+        $timetable->load(['academicYear', 'school']);
 
         return response()->json([
             'id' => $timetable->id,

@@ -70,6 +70,24 @@ class ClassController extends Controller
             }
         }
 
+        // Support pagination if page and per_page parameters are provided
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = $request->input('per_page', 25);
+            // Validate per_page is one of allowed values
+            $allowedPerPage = [10, 25, 50, 100];
+            if (!in_array((int)$perPage, $allowedPerPage)) {
+                $perPage = 25; // Default to 25 if invalid
+            }
+            
+            $classes = $query->orderBy('grade_level', 'asc')
+                ->orderBy('name', 'asc')
+                ->paginate((int)$perPage);
+            
+            // Return paginated response in Laravel's standard format
+            return response()->json($classes);
+        }
+
+        // Return all results if no pagination requested (backward compatibility)
         $classes = $query->orderBy('grade_level', 'asc')
             ->orderBy('name', 'asc')
             ->get();
@@ -404,12 +422,26 @@ class ClassController extends Controller
             return response()->json(['error' => 'This class section is already assigned to this academic year'], 422);
         }
 
+        // Convert empty strings to NULL for nullable UUID fields
+        $roomId = !empty($request->room_id) ? $request->room_id : null;
+        $teacherId = !empty($request->teacher_id) ? $request->teacher_id : null;
+        
+        // Validate UUID format if provided
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+        if ($roomId && !preg_match($uuidPattern, $roomId)) {
+            return response()->json(['error' => 'Invalid room ID format'], 400);
+        }
+        if ($teacherId && !preg_match($uuidPattern, $teacherId)) {
+            return response()->json(['error' => 'Invalid teacher ID format'], 400);
+        }
+
         $instance = ClassAcademicYear::create([
             'class_id' => $classId,
             'academic_year_id' => $request->academic_year_id,
             'organization_id' => $organizationId,
-            'section_name' => $request->section_name,
-            'room_id' => $request->room_id,
+            'section_name' => $request->section_name ?: null,
+            'room_id' => $roomId,
+            'teacher_id' => $teacherId,
             'capacity' => $request->capacity,
             'notes' => $request->notes,
             'is_active' => true,
@@ -485,15 +517,24 @@ class ClassController extends Controller
             return response()->json(['error' => 'All specified sections already exist for this class in this academic year'], 422);
         }
 
+        // Convert empty strings to NULL for nullable UUID fields
+        $roomId = !empty($request->default_room_id) ? $request->default_room_id : null;
+        
+        // Validate UUID format if provided
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+        if ($roomId && !preg_match($uuidPattern, $roomId)) {
+            return response()->json(['error' => 'Invalid room ID format'], 400);
+        }
+
         // Prepare bulk insert data
-        $insertData = array_map(function ($section) use ($request, $class, $organizationId) {
+        $insertData = array_map(function ($section) use ($request, $class, $organizationId, $roomId) {
             return [
                 'id' => (string) \Illuminate\Support\Str::uuid(),
                 'class_id' => $request->class_id,
                 'academic_year_id' => $request->academic_year_id,
                 'organization_id' => $organizationId,
-                'section_name' => trim($section),
-                'room_id' => $request->default_room_id,
+                'section_name' => trim($section) ?: null,
+                'room_id' => $roomId,
                 'capacity' => $request->default_capacity ?? $class->default_capacity,
                 'is_active' => true,
                 'current_student_count' => 0,
@@ -590,14 +631,28 @@ class ClassController extends Controller
             }
         }
 
-        $instance->update($request->only([
+        // Convert empty strings to NULL for nullable UUID fields
+        $updateData = $request->only([
             'section_name',
             'room_id',
             'capacity',
             'teacher_id',
             'is_active',
             'notes',
-        ]));
+        ]);
+        
+        // Convert empty strings to null
+        if (isset($updateData['room_id']) && $updateData['room_id'] === '') {
+            $updateData['room_id'] = null;
+        }
+        if (isset($updateData['teacher_id']) && $updateData['teacher_id'] === '') {
+            $updateData['teacher_id'] = null;
+        }
+        if (isset($updateData['section_name']) && $updateData['section_name'] === '') {
+            $updateData['section_name'] = null;
+        }
+
+        $instance->update($updateData);
 
         $instance->load(['class', 'organization']);
 
@@ -845,6 +900,48 @@ class ClassController extends Controller
     }
 
     /**
+     * Get a single class academic year by ID
+     */
+    public function getClassAcademicYear(string $id)
+    {
+        $user = request()->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission
+        try {
+            if (!$user->hasPermissionTo('classes.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for classes.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $classAcademicYear = ClassAcademicYear::with(['class', 'academicYear', 'teacher', 'room'])
+            ->whereNull('deleted_at')
+            ->find($id);
+
+        if (!$classAcademicYear) {
+            return response()->json(['error' => 'Class academic year not found'], 404);
+        }
+
+        // Check organization access
+        if ($classAcademicYear->organization_id !== $profile->organization_id) {
+            return response()->json(['error' => 'Access denied to this class academic year'], 403);
+        }
+
+        return response()->json($classAcademicYear);
+    }
+
+    /**
      * Get class academic years by academic year
      */
     public function byAcademicYear(Request $request)
@@ -933,21 +1030,33 @@ class ClassController extends Controller
             }
 
             // Now get class IDs and load classes separately (only valid UUIDs will be queried)
-            $classIds = $instances->pluck('class_id')->unique()->filter(function($id) {
-                // Double-check UUID format in PHP as well
-                return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id);
-            });
+            $classIds = $instances->pluck('class_id')
+                ->unique()
+                ->filter(function($id) {
+                    if (empty($id)) return false;
+                    // Double-check UUID format in PHP as well
+                    return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id);
+                })
+                ->values();
 
             if ($classIds->isEmpty()) {
                 return response()->json([]);
             }
 
-            // Load classes using only valid UUIDs
-            $classes = DB::table('classes')
-                ->whereIn('id', $classIds)
-                ->whereNull('deleted_at')
-                ->get()
-                ->keyBy('id');
+            // Load classes using only valid UUIDs - wrap in try-catch to handle any DB errors
+            try {
+                $classes = DB::table('classes')
+                    ->whereIn('id', $classIds->toArray())
+                    ->whereNull('deleted_at')
+                    ->get()
+                    ->keyBy('id');
+            } catch (\Exception $e) {
+                Log::error('[ClassController::byAcademicYear] Error loading classes', [
+                    'error' => $e->getMessage(),
+                    'class_ids' => $classIds->toArray(),
+                ]);
+                return response()->json([]);
+            }
 
             // Filter instances to only those with valid classes
             $instances = $instances->filter(function($instance) use ($classes) {
@@ -959,8 +1068,14 @@ class ClassController extends Controller
             }
 
 
-            // Get room data
-            $roomIds = $instances->pluck('room_id')->filter()->unique();
+            // Get room data - filter out NULL and invalid UUIDs
+            $roomIds = $instances->pluck('room_id')
+                ->filter(function($id) {
+                    if (empty($id)) return false;
+                    // Validate UUID format
+                    return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id);
+                })
+                ->unique();
             $rooms = [];
             if ($roomIds->isNotEmpty()) {
                 $rooms = DB::table('rooms')

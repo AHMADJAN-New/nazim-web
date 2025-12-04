@@ -5,29 +5,65 @@ import { buildingsApi, schoolsApi } from '@/lib/api/client';
 import type * as BuildingApi from '@/types/api/building';
 import type { Building } from '@/types/domain/building';
 import { mapBuildingApiToDomain, mapBuildingDomainToInsert, mapBuildingDomainToUpdate } from '@/mappers/buildingMapper';
+import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
+import { usePagination } from './usePagination';
+import { useEffect } from 'react';
 
 // Re-export domain types for convenience
 export type { Building } from '@/types/domain/building';
 
-export const useBuildings = (schoolId?: string, organizationId?: string) => {
+export const useBuildings = (schoolId?: string, organizationId?: string, usePaginated?: boolean) => {
   const { user, profile } = useAuth();
+  const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
+    initialPage: 1,
+    initialPageSize: 25,
+  });
 
-  return useQuery<Building[]>({
-    queryKey: ['buildings', schoolId, organizationId || profile?.organization_id],
+  const { data, isLoading, error } = useQuery<Building[] | PaginatedResponse<BuildingApi.Building>>({
+    queryKey: ['buildings', schoolId, organizationId || profile?.organization_id, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
     queryFn: async () => {
       if (!user || !profile) return [];
 
       // Fetch buildings via Laravel API
-      const params: { school_id?: string; organization_id?: string } = {};
+      const params: { school_id?: string; organization_id?: string; page?: number; per_page?: number } = {};
       if (schoolId) {
         params.school_id = schoolId;
       } else if (organizationId || profile.organization_id) {
         params.organization_id = organizationId || profile.organization_id || undefined;
       }
 
+      // Add pagination params if using pagination
+      if (usePaginated) {
+        params.page = page;
+        params.per_page = pageSize;
+      }
+
       const apiBuildings = await buildingsApi.list(params);
       
-      // Map API models to domain models
+      // Check if response is paginated (Laravel returns meta fields directly, not nested)
+      if (usePaginated && apiBuildings && typeof apiBuildings === 'object' && 'data' in apiBuildings && 'current_page' in apiBuildings) {
+        // Laravel's paginated response has data and meta fields at the same level
+        const paginatedResponse = apiBuildings as any;
+        // Map API models to domain models
+        const buildings = (paginatedResponse.data as BuildingApi.Building[]).map(mapBuildingApiToDomain);
+        // Extract meta from Laravel's response structure
+        const meta: PaginationMeta = {
+          current_page: paginatedResponse.current_page,
+          from: paginatedResponse.from,
+          last_page: paginatedResponse.last_page,
+          per_page: paginatedResponse.per_page,
+          to: paginatedResponse.to,
+          total: paginatedResponse.total,
+          path: paginatedResponse.path,
+          first_page_url: paginatedResponse.first_page_url,
+          last_page_url: paginatedResponse.last_page_url,
+          next_page_url: paginatedResponse.next_page_url,
+          prev_page_url: paginatedResponse.prev_page_url,
+        };
+        return { data: buildings, meta } as PaginatedResponse<BuildingApi.Building>;
+      }
+      
+      // Map API models to domain models (non-paginated)
       return (apiBuildings as BuildingApi.Building[]).map(mapBuildingApiToDomain);
     },
     enabled: !!user && !!profile,
@@ -35,6 +71,35 @@ export const useBuildings = (schoolId?: string, organizationId?: string) => {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  // Update pagination state from API response
+  useEffect(() => {
+    if (usePaginated && data && typeof data === 'object' && 'meta' in data) {
+      updateFromMeta((data as PaginatedResponse<BuildingApi.Building>).meta);
+    }
+  }, [data, usePaginated, updateFromMeta]);
+
+  // Return appropriate format based on pagination mode
+  if (usePaginated) {
+    const paginatedData = data as PaginatedResponse<BuildingApi.Building> | undefined;
+    return {
+      buildings: paginatedData?.data || [],
+      isLoading,
+      error,
+      pagination: paginatedData?.meta ?? null,
+      paginationState,
+      page,
+      pageSize,
+      setPage,
+      setPageSize,
+    };
+  }
+
+  return {
+    data: data as Building[] | undefined,
+    isLoading,
+    error,
+  };
 };
 
 export const useCreateBuilding = () => {
