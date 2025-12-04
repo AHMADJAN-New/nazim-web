@@ -47,11 +47,12 @@ class PermissionController extends Controller
     }
 
     /**
-     * Get user permissions using Spatie
+     * Get user permissions via roles
      * Returns permissions scoped to the user's organization:
      * - Permissions from roles assigned to the user in their organization
-     * - Direct permissions assigned to the user in their organization
-     * - Global permissions (organization_id = NULL) available to all organizations
+     *
+     * This method queries directly via roles instead of using model_has_permissions
+     * Flow: user -> model_has_roles -> role_has_permissions -> permissions
      */
     public function userPermissions(Request $request)
     {
@@ -67,22 +68,40 @@ class PermissionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // CRITICAL: Set the organization context for Spatie teams feature
-        // This tells Spatie to only get permissions for this organization
-        // Note: setPermissionsTeamId() is a global helper function, not a method on User
-        setPermissionsTeamId($profile->organization_id);
+        $organizationId = $profile->organization_id;
 
-        // Get all permissions for the user (via roles and direct permissions)
-        // Spatie will now only return permissions scoped to this organization
-        $permissions = $user->getAllPermissions();
-        
-        // Additional filter to ensure we only return global permissions + user's org permissions
-        $permissions = $permissions->filter(function ($permission) use ($profile) {
-            return $permission->organization_id === null || $permission->organization_id === $profile->organization_id;
-        });
+        // Get permissions via roles (bypasses model_has_permissions)
+        // Flow: model_has_roles -> role_has_permissions -> permissions
+        $permissions = DB::table('permissions')
+            ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
+            ->join('model_has_roles', function ($join) use ($user) {
+                $join->on('role_has_permissions.role_id', '=', 'model_has_roles.role_id')
+                     ->where('model_has_roles.model_id', '=', $user->id)
+                     ->where('model_has_roles.model_type', '=', 'App\\Models\\User');
+            })
+            ->where(function ($query) use ($organizationId) {
+                // Match organization context in role assignments
+                $query->where('model_has_roles.organization_id', $organizationId);
+            })
+            ->where(function ($query) use ($organizationId) {
+                // Match organization context in role-permission assignments
+                $query->where('role_has_permissions.organization_id', $organizationId)
+                      ->orWhereNull('role_has_permissions.organization_id');
+            })
+            ->where(function ($query) use ($organizationId) {
+                // Get global permissions OR organization-specific permissions
+                $query->whereNull('permissions.organization_id')
+                      ->orWhere('permissions.organization_id', $organizationId);
+            })
+            ->distinct()
+            ->pluck('permissions.name')
+            ->toArray();
+
+        // Sort permissions alphabetically
+        sort($permissions);
 
         return response()->json([
-            'permissions' => $permissions->pluck('name')->toArray()
+            'permissions' => $permissions
         ]);
     }
 

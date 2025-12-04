@@ -99,13 +99,11 @@ export const useUserPermissions = () => {
     staleTime: 60 * 60 * 1000, // 1 hour - permissions don't change often
     gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache longer
     refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: false, // Don't refetch on mount if data is fresh
+    refetchOnMount: true, // FIXED: Must refetch on mount to get permissions!
     refetchOnReconnect: false, // Don't refetch on reconnect
     refetchInterval: false, // Never auto-refetch
-    // CRITICAL: Always return an initial value to prevent undefined state
-    placeholderData: (previousData) => previousData ?? [],
-    // Ensure we always have a value, even if query is disabled
-    initialData: [],
+    // Use placeholderData instead of initialData to allow fetching
+    placeholderData: [],
   });
 };
 
