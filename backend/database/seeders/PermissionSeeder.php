@@ -82,20 +82,27 @@ class PermissionSeeder extends Seeder
 
     /**
      * Run the database seeds.
+     * Creates permissions in two ways:
+     * 1. Global permissions (organization_id = NULL) - available to all organizations
+     * 2. Organization-specific permissions - copies for each organization
      */
     public function run(): void
     {
         Log::info('Starting permission seeding from central PermissionSeeder');
 
         $permissions = self::getPermissions();
-        $createdCount = 0;
-        $skippedCount = 0;
+        $globalCreatedCount = 0;
+        $globalSkippedCount = 0;
+        $orgCreatedCount = 0;
+        $orgSkippedCount = 0;
 
+        // Step 1: Create global permissions (organization_id = NULL)
+        Log::info('Step 1: Creating global permissions...');
         foreach ($permissions as $resource => $actions) {
             foreach ($actions as $action) {
                 $permissionName = "{$resource}.{$action}";
 
-                // Check if permission already exists
+                // Check if global permission already exists
                 $exists = DB::table('permissions')
                     ->where('name', $permissionName)
                     ->where('guard_name', 'web')
@@ -113,15 +120,66 @@ class PermissionSeeder extends Seeder
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
-                    $createdCount++;
-                    Log::info("Created permission: {$permissionName}");
+                    $globalCreatedCount++;
+                    Log::info("Created global permission: {$permissionName}");
                 } else {
-                    $skippedCount++;
+                    $globalSkippedCount++;
                 }
             }
         }
 
-        Log::info("Permission seeding completed. Created: {$createdCount}, Skipped: {$skippedCount}");
+        Log::info("Global permissions: Created: {$globalCreatedCount}, Skipped: {$globalSkippedCount}");
+
+        // Step 2: Create organization-specific permissions for each organization
+        Log::info('Step 2: Creating organization-specific permissions...');
+        $organizations = DB::table('organizations')
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($organizations->isEmpty()) {
+            Log::info('No organizations found. Skipping organization-specific permission creation.');
+        } else {
+            Log::info("Found {$organizations->count()} organization(s). Creating permissions for each...");
+
+            foreach ($organizations as $organization) {
+                Log::info("Creating permissions for organization: {$organization->name} (ID: {$organization->id})");
+
+                foreach ($permissions as $resource => $actions) {
+                    foreach ($actions as $action) {
+                        $permissionName = "{$resource}.{$action}";
+
+                        // Check if organization-specific permission already exists
+                        $exists = DB::table('permissions')
+                            ->where('name', $permissionName)
+                            ->where('guard_name', 'web')
+                            ->where('organization_id', $organization->id)
+                            ->exists();
+
+                        if (!$exists) {
+                            DB::table('permissions')->insert([
+                                'name' => $permissionName,
+                                'guard_name' => 'web',
+                                'organization_id' => $organization->id, // Organization-specific permissions
+                                'resource' => $resource,
+                                'action' => $action,
+                                'description' => ucfirst($action) . ' ' . str_replace('_', ' ', $resource),
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                            $orgCreatedCount++;
+                        } else {
+                            $orgSkippedCount++;
+                        }
+                    }
+                }
+
+                Log::info("  ✓ Completed permissions for {$organization->name}");
+            }
+        }
+
+        Log::info("Permission seeding completed:");
+        Log::info("  Global permissions - Created: {$globalCreatedCount}, Skipped: {$globalSkippedCount}");
+        Log::info("  Organization permissions - Created: {$orgCreatedCount}, Skipped: {$orgSkippedCount}");
 
         // Clear permission cache
         if (function_exists('app')) {

@@ -168,38 +168,77 @@ class OrganizationController extends Controller
      */
     public function show(string $id)
     {
-        $user = request()->user();
-        $profile = DB::connection('pgsql')
-            ->table('profiles')
-            ->where('id', $user->id)
-            ->first();
+        try {
+            $user = request()->user();
 
-        if (!$profile) {
-            return response()->json(['error' => 'Profile not found'], 404);
-        }
+            if (!$user) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
 
-        // Require organization_id for all users
-        if (!$profile->organization_id) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
-        }
+            $profile = DB::connection('pgsql')
+                ->table('profiles')
+                ->where('id', $user->id)
+                ->first();
 
-        // Check permission - context already set by middleware
-        if (!$user->hasPermissionTo('organizations.read')) {
+            if (!$profile) {
+                return response()->json(['error' => 'Profile not found'], 404);
+            }
+
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            // Check permission - context already set by middleware
+            try {
+                if (!$user->hasPermissionTo('organizations.read')) {
+                    return response()->json([
+                        'error' => 'Access Denied',
+                        'message' => 'You do not have permission to access this resource.',
+                        'required_permission' => 'organizations.read'
+                    ], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Permission check failed for organizations.read: " . $e->getMessage());
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'organizations.read'
+                ], 403);
+            }
+
+            $organization = Organization::whereNull('deleted_at')->find($id);
+
+            if (!$organization) {
+                return response()->json(['error' => 'Organization not found'], 404);
+            }
+
+            // All users can only view their own organization
+            if ($profile->organization_id !== $organization->id) {
+                return response()->json(['error' => 'Organization not found'], 404);
+            }
+
+            return response()->json($organization);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('OrganizationController::show database error: ' . $e->getMessage(), [
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'trace' => $e->getTraceAsString(),
+                'id' => $id
+            ]);
+
+            return response()->json(['error' => 'Failed to fetch organization'], 500);
+        } catch (\Exception $e) {
+            Log::error('OrganizationController::show error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'id' => $id
+            ]);
+
             return response()->json([
-                'error' => 'Access Denied',
-                'message' => 'You do not have permission to access this resource.',
-                'required_permission' => 'organizations.read'
-            ], 403);
+                'error' => 'Failed to fetch organization',
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
         }
-
-        $organization = Organization::whereNull('deleted_at')->findOrFail($id);
-
-        // All users can only view their own organization
-        if ($profile->organization_id !== $organization->id) {
-            return response()->json(['error' => 'Organization not found'], 404);
-        }
-
-        return response()->json($organization);
     }
 
     /**

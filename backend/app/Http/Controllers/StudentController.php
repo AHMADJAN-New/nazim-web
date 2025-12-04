@@ -42,7 +42,16 @@ class StudentController extends Controller
         }
 
         // Check permission - context already set by middleware
-        if (!$user->hasPermissionTo('students.read')) {
+        try {
+            if (!$user->hasPermissionTo('students.read')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'students.read'
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for students.read: " . $e->getMessage());
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
@@ -123,7 +132,16 @@ class StudentController extends Controller
         }
 
         // Check permission - context already set by middleware
-        if (!$user->hasPermissionTo('students.read')) {
+        try {
+            if (!$user->hasPermissionTo('students.read')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'students.read'
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for students.read: " . $e->getMessage());
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
@@ -166,7 +184,16 @@ class StudentController extends Controller
         }
 
         // Check permission - context already set by middleware
-        if (!$user->hasPermissionTo('students.create')) {
+        try {
+            if (!$user->hasPermissionTo('students.create')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'students.create'
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for students.create: " . $e->getMessage());
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
@@ -220,7 +247,16 @@ class StudentController extends Controller
         }
 
         // Check permission - context already set by middleware
-        if (!$user->hasPermissionTo('students.update')) {
+        try {
+            if (!$user->hasPermissionTo('students.update')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'students.update'
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for students.update: " . $e->getMessage());
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',
@@ -269,7 +305,16 @@ class StudentController extends Controller
         }
 
         // Check permission - context already set by middleware
-        if (!$user->hasPermissionTo('students.delete')) {
+        try {
+            if (!$user->hasPermissionTo('students.delete')) {
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'students.delete'
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for students.delete: " . $e->getMessage());
             return response()->json([
                 'error' => 'Access Denied',
                 'message' => 'You do not have permission to access this resource.',

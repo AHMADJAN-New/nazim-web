@@ -1,0 +1,64 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Frontend: Start Dev Server",
+            "type": "shell",
+            "command": "npm run dev",
+            "options": {
+                "cwd": "${workspaceFolder}/frontend"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "focus": false,
+                "clear": true,
+                "group": "dev-servers"
+            },
+            "isBackground": true,
+            "runOptions": {
+                "runOn": "default"
+            }
+        },
+        {
+            "label": "Backend: Start Laravel Server",
+            "type": "shell",
+            "command": "php artisan serve",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "focus": false,
+                "clear": true,
+                "group": "dev-servers"
+            },
+            "isBackground": true,
+            "runOptions": {
+                "runOn": "default"
+            }
+        },
+        {
+            "label": "Start All Servers",
+            "dependsOn": [
+                "Frontend: Start Dev Server",
+                "Backend: Start Laravel Server"
+            ],
+            "dependsOrder": "parallel",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "focus": true,
+                "clear": true,
+                "group": "dev-servers"
+            },
+            "runOptions": {
+                "runOn": "default"
+            }
+        }
+    ]
+}

@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureOrganizationAccess
@@ -17,6 +18,7 @@ class EnsureOrganizationAccess
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
+
         if (!$user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
@@ -27,35 +29,50 @@ class EnsureOrganizationAccess
             ->first();
 
         if (!$profile) {
+            Log::error('Profile not found for authenticated user', [
+                'user_id' => $user->id,
+                'email' => $user->email ?? null,
+            ]);
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
         if (!$profile->organization_id) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            Log::warning('User has no organization assigned', [
+                'user_id' => $user->id,
+                'profile_id' => $profile->id,
+            ]);
+            return response()->json([
+                'error' => 'User must be assigned to an organization',
+                'message' => 'Please contact your administrator to assign you to an organization.'
+            ], 403);
         }
 
-        // Get organization_id from route or request
-        $organizationId = $request->route('organization') 
-            ?? $request->input('organization_id')
-            ?? $request->header('X-Organization-ID');
+        // Always use the user's organization_id for all users
+        // No need to check route/request/header organization - users can only access their own org
+        $organizationId = $profile->organization_id;
 
-        // If no organization specified, use user's organization
-        if (!$organizationId) {
-            $organizationId = $profile->organization_id;
+        // 🎯 CRITICAL FIX: Set organization context for Spatie permissions
+        // This tells Spatie which organization to check permissions in
+        // Without this, hasPermissionTo() will always return false for org-scoped permissions
+        try {
+            setPermissionsTeamId($organizationId);
+
+            Log::debug('Organization context set for permissions', [
+                'user_id' => $user->id,
+                'organization_id' => $organizationId,
+                'team_id' => getPermissionsTeamId(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to set permissions team ID', [
+                'user_id' => $user->id,
+                'organization_id' => $organizationId,
+                'error' => $e->getMessage(),
+            ]);
+            // Continue anyway - controllers will handle permission errors
         }
 
-        // Check if user has access to this organization (all users)
-        if ($profile->organization_id !== $organizationId) {
-            return response()->json(['error' => 'Access denied to this organization'], 403);
-        }
-
-        // CRITICAL: Set the organization context for Spatie teams feature
-        // This tells Spatie to only check permissions for this organization
-        // Note: setPermissionsTeamId() is a global helper function, not a method on User
-        setPermissionsTeamId($organizationId);
-
-        // Add organization context to request
+        // Add organization context to request for easy access in controllers
         $request->merge(['current_organization_id' => $organizationId]);
 
         return $next($request);
