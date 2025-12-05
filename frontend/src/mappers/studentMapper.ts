@@ -81,6 +81,7 @@ export function mapStudentApiToDomain(api: StudentApi.Student): Student {
     organizationId: api.organization_id,
     schoolId: api.school_id,
     admissionNumber: api.admission_no,
+    studentCode: api.student_code,
     cardNumber: api.card_number,
     rollNumber: undefined,
     
@@ -174,6 +175,7 @@ export function mapStudentApiToDomain(api: StudentApi.Student): Student {
 export function mapStudentDomainToInsert(domain: Partial<Student>): StudentApi.StudentInsert {
   return {
     admission_no: domain.admissionNumber || '',
+    student_code: domain.studentCode || null,
     full_name: domain.fullName || `${domain.firstName || ''} ${domain.lastName || ''}`.trim(),
     father_name: domain.fatherName || '',
     gender: domain.gender || 'male',

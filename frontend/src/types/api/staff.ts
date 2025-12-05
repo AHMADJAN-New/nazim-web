@@ -46,6 +46,7 @@ export interface Staff {
   profile_id: string | null;
   organization_id: string;
   employee_id: string;
+  staff_code: string | null;
   staff_type: string;
   staff_type_id: string | null;
   school_id: string | null;
@@ -106,7 +107,9 @@ export interface Staff {
   };
 }
 
-export type StaffInsert = Omit<Staff, 'id' | 'full_name' | 'created_at' | 'updated_at' | 'deleted_at' | 'staff_type' | 'profile' | 'organization' | 'school'>;
+export type StaffInsert = Omit<Staff, 'id' | 'full_name' | 'created_at' | 'updated_at' | 'deleted_at' | 'staff_type' | 'profile' | 'organization' | 'school'> & {
+  staff_code?: string | null;
+};
 export type StaffUpdate = Partial<StaffInsert>;
 
 export interface StaffStats {

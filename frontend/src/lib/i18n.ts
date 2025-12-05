@@ -52,6 +52,7 @@ export interface TranslationKeys {
     dashboard: string;
     students: string;
     admissions: string;
+    studentReports: string;
     studentManagement: string;
     attendance: string;
     classes: string;
@@ -701,6 +702,7 @@ const en: TranslationKeys = {
     dashboard: 'Dashboard',
     students: 'Students',
     admissions: 'Admissions',
+    studentReports: 'Student Reports',
     studentManagement: 'Student Management',
     attendance: 'Attendance',
     classes: 'Classes',
@@ -1335,6 +1337,7 @@ const ps: TranslationKeys = {
     dashboard: 'کنټرول پینل',
     students: 'زده کوونکي',
     admissions: 'داخلې',
+    studentReports: 'د زده کوونکو راپورونه',
     studentManagement: 'د زده کوونکو مدیریت',
     attendance: 'حاضري',
     classes: 'ټولګۍ',
@@ -1970,6 +1973,7 @@ const fa: TranslationKeys = {
     dashboard: 'داشبورد',
     students: 'دانش‌آموزان',
     admissions: 'پذیرش',
+    studentReports: 'گزارش‌های دانش‌آموزان',
     studentManagement: 'مدیریت دانش‌آموزان',
     attendance: 'حاضری',
     classes: 'کلاس‌ها',
@@ -2605,6 +2609,7 @@ const ar: TranslationKeys = {
     dashboard: 'لوحة التحكم',
     students: 'الطلاب',
     admissions: 'القبول',
+    studentReports: 'تقارير الطلاب',
     studentManagement: 'إدارة الطلاب',
     attendance: 'الحضور',
     classes: 'الفصول',

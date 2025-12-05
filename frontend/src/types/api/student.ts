@@ -11,6 +11,7 @@ export interface Student {
   school_id: string | null;
   card_number: string | null;
   admission_no: string;
+  student_code: string | null;
   full_name: string;
   father_name: string;
   grandfather_name: string | null;
@@ -63,6 +64,7 @@ export interface Student {
 
 export interface StudentInsert {
   admission_no: string;
+  student_code?: string | null;
   full_name: string;
   father_name: string;
   gender: string;

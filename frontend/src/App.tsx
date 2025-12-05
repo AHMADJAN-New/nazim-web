@@ -232,7 +232,7 @@ const App = () => (
                       </PermissionRoute>
                     } />
                     <Route path="/reports/student-registrations" element={
-                      <PermissionRoute permission="students.read">
+                      <PermissionRoute permission="student_reports.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <StudentReport />
                         </Suspense>

@@ -197,6 +197,23 @@ class StaffController extends Controller
             'profile_id' => 'nullable|uuid|exists:profiles,id',
             'organization_id' => 'required|uuid|exists:organizations,id',
             'employee_id' => 'required|string|max:50',
+            'staff_code' => [
+                'nullable',
+                'string',
+                'max:32',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value && $request->organization_id) {
+                        $exists = DB::table('staff')
+                            ->where('staff_code', $value)
+                            ->where('organization_id', $request->organization_id)
+                            ->whereNull('deleted_at')
+                            ->exists();
+                        if ($exists) {
+                            $fail('A staff member with this code already exists in this organization.');
+                        }
+                    }
+                },
+            ],
             'staff_type' => 'nullable|string|in:teacher,admin,accountant,librarian,hostel_manager,asset_manager,security,maintenance,other',
             'staff_type_id' => 'nullable|uuid|exists:staff_types,id',
             'school_id' => 'nullable|uuid|exists:school_branding,id',
@@ -294,6 +311,7 @@ class StaffController extends Controller
             'profile_id' => $request->profile_id ?? null,
             'organization_id' => $request->organization_id,
             'employee_id' => $request->employee_id,
+            'staff_code' => $request->staff_code ?? null, // Will be auto-generated if null
             'staff_type' => $request->staff_type ?? 'teacher',
             'staff_type_id' => $staffTypeId,
             'school_id' => $request->school_id ?? null,
@@ -393,6 +411,24 @@ class StaffController extends Controller
         $request->validate([
             'profile_id' => 'nullable|uuid|exists:profiles,id',
             'employee_id' => 'sometimes|string|max:50',
+            'staff_code' => [
+                'nullable',
+                'string',
+                'max:32',
+                function ($attribute, $value, $fail) use ($staff) {
+                    if ($value && $staff->organization_id) {
+                        $exists = DB::table('staff')
+                            ->where('staff_code', $value)
+                            ->where('organization_id', $staff->organization_id)
+                            ->where('id', '!=', $staff->id)
+                            ->whereNull('deleted_at')
+                            ->exists();
+                        if ($exists) {
+                            $fail('A staff member with this code already exists in this organization.');
+                        }
+                    }
+                },
+            ],
             'staff_type' => 'nullable|string|in:teacher,admin,accountant,librarian,hostel_manager,asset_manager,security,maintenance,other',
             'staff_type_id' => 'nullable|uuid|exists:staff_types,id',
             'school_id' => 'nullable|uuid|exists:school_branding,id',
@@ -471,6 +507,7 @@ class StaffController extends Controller
         $updateData = $request->only([
             'profile_id',
             'employee_id',
+            'staff_code',
             'staff_type',
             'staff_type_id',
             'school_id',

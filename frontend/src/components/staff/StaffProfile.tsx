@@ -226,6 +226,12 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                   )}
                 </div>
               </div>
+              {staff.staffCode && (
+                <div>
+                  <Label className="text-muted-foreground text-sm">Staff ID</Label>
+                  <p className="font-mono font-medium text-primary">{staff.staffCode}</p>
+                </div>
+              )}
               <div>
                 <Label className="text-muted-foreground text-sm">Employee ID</Label>
                 <p className="font-medium text-primary">{staff.employeeId}</p>
@@ -642,6 +648,12 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 <CardTitle>Employment Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {staff.staffCode && (
+                  <div>
+                    <Label className="text-muted-foreground">Staff ID</Label>
+                    <p className="font-mono font-medium">{staff.staffCode}</p>
+                  </div>
+                )}
                 <div>
                   <Label className="text-muted-foreground">Employee ID</Label>
                   <p className="font-medium">{staff.employeeId}</p>

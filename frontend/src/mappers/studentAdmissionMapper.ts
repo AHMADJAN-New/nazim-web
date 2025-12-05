@@ -32,6 +32,7 @@ export function mapStudentAdmissionApiToDomain(api: StudentAdmissionApi.StudentA
       id: api.student.id,
       fullName: api.student.full_name,
       admissionNumber: api.student.admission_no,
+      studentCode: api.student.student_code || null,
       gender: api.student.gender,
       admissionYear: api.student.admission_year,
       guardianPhone: api.student.guardian_phone,

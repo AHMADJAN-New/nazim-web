@@ -95,6 +95,7 @@ export interface Student {
   organizationId: string;
   schoolId: string | null;
   admissionNumber: string;
+  studentCode?: string | null;
   cardNumber?: string | null;
   rollNumber?: string;
   

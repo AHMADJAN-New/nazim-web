@@ -27,6 +27,7 @@ export interface StudentAdmission {
     id: string;
     full_name: string;
     admission_no: string;
+    student_code: string | null;
     gender: string | null;
     admission_year: string | null;
     guardian_phone: string | null;

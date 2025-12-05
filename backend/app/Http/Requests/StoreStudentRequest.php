@@ -44,6 +44,23 @@ class StoreStudentRequest extends FormRequest
                     }
                 },
             ],
+            'student_code' => [
+                'nullable',
+                'string',
+                'max:32',
+                function ($attribute, $value, $fail) use ($organizationId) {
+                    if ($value && $organizationId) {
+                        $exists = DB::table('students')
+                            ->where('student_code', $value)
+                            ->where('organization_id', $organizationId)
+                            ->whereNull('deleted_at')
+                            ->exists();
+                        if ($exists) {
+                            $fail('A student with this code already exists in this organization.');
+                        }
+                    }
+                },
+            ],
             'full_name' => 'required|string|max:150',
             'father_name' => 'required|string|max:150',
             'gender' => 'required|string|in:male,female',

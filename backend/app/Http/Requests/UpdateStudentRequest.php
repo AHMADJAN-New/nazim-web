@@ -50,6 +50,24 @@ class UpdateStudentRequest extends FormRequest
                     }
                 },
             ],
+            'student_code' => [
+                'nullable',
+                'string',
+                'max:32',
+                function ($attribute, $value, $fail) use ($organizationId, $studentId) {
+                    if ($value && $organizationId) {
+                        $exists = DB::table('students')
+                            ->where('student_code', $value)
+                            ->where('organization_id', $organizationId)
+                            ->where('id', '!=', $studentId)
+                            ->whereNull('deleted_at')
+                            ->exists();
+                        if ($exists) {
+                            $fail('A student with this code already exists in this organization.');
+                        }
+                    }
+                },
+            ],
             'full_name' => 'sometimes|string|max:150',
             'father_name' => 'sometimes|string|max:150',
             'gender' => 'sometimes|string|in:male,female',

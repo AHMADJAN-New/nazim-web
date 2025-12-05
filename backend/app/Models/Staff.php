@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use App\Services\CodeGenerator;
 
 class Staff extends Model
 {
@@ -23,6 +24,7 @@ class Staff extends Model
         'profile_id',
         'organization_id',
         'employee_id',
+        'staff_code',
         'staff_type',
         'staff_type_id',
         'school_id',
@@ -79,6 +81,11 @@ class Staff extends Model
         static::creating(function ($model) {
             if (empty($model->id)) {
                 $model->id = (string) Str::uuid();
+            }
+            
+            // Generate staff_code if not provided and organization_id exists
+            if (empty($model->staff_code) && !empty($model->organization_id)) {
+                $model->staff_code = CodeGenerator::generateStaffCode($model->organization_id);
             }
         });
     }

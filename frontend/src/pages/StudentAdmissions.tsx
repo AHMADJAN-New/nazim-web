@@ -205,6 +205,18 @@ export function StudentAdmissions() {
   // Define columns for DataTable
   const columns: ColumnDef<StudentAdmission>[] = [
     {
+      accessorKey: 'studentCode',
+      header: 'ID',
+      cell: ({ row }) => {
+        const admission = row.original;
+        return (
+          <div className="font-mono text-sm font-medium">
+            {admission.student?.studentCode || admission.student?.admissionNumber || '—'}
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: 'student',
       header: t('admissions.student') || 'Student',
       cell: ({ row }) => {

@@ -65,6 +65,7 @@ export interface Staff {
   profileId: string | null;
   organizationId: string;
   employeeId: string;
+  staffCode: string | null;
   staffType: string;
   staffTypeId: string | null;
   schoolId: string | null;

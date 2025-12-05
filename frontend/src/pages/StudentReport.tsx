@@ -1,8 +1,16 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useMemo, useState, useEffect } from 'react';
+import { ColumnDef } from '@tanstack/react-table';
+import { Eye, FileSpreadsheet, FileText, Download, Search, Filter, X, User } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useProfile } from '@/hooks/useProfiles';
+import { useSchools } from '@/hooks/useSchools';
+import { useStudents } from '@/hooks/useStudents';
+import type { Student } from '@/types/domain/student';
+import { studentsApi } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -10,55 +18,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { useDataTable } from '@/hooks/use-data-table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { studentsApi } from '@/lib/api/client';
-import { useStudents } from '@/hooks/useStudents';
-import { useSchools } from '@/hooks/useSchools';
-import type { Student } from '@/types/domain/student';
-import { useLanguage } from '@/hooks/useLanguage';
-import { format } from 'date-fns';
-import {
-  FileSpreadsheet,
-  FileText,
-  Filter,
-  GraduationCap,
-  MapPin,
-  ShieldCheck,
-  Search,
-  UserRound,
-} from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-
-interface StudentReportRow {
-  admissionNumber: string;
-  cardNumber: string;
-  status: string;
-  fullName: string;
-  gender: string;
-  age: string;
-  dateOfBirth: string;
-  nationality: string;
-  religion: string;
-  bloodGroup: string;
-  school: string;
-  applyingGrade: string;
-  admissionYear: string;
-  admissionFeeStatus: string;
-  guardianName: string;
-  guardianPhone: string;
-  contactPhone: string;
-  email: string;
-  address: string;
-  originLocation: string;
-  currentLocation: string;
-  previousSchool: string;
-  isOrphan: string;
-  disabilityStatus: string;
-  emergencyContact: string;
-}
+import { format } from 'date-fns';
 
 const statusBadgeVariant = (status?: string) => {
   switch (status) {
@@ -66,8 +47,10 @@ const statusBadgeVariant = (status?: string) => {
       return 'default';
     case 'admitted':
       return 'secondary';
-    case 'withdrawn':
+    case 'applied':
       return 'outline';
+    case 'withdrawn':
+      return 'destructive';
     default:
       return 'outline';
   }
@@ -83,8 +66,13 @@ const formatStatus = (value?: string) => {
 
 const formatDate = (date?: Date | string | null) => {
   if (!date) return '—';
-  const parsed = typeof date === 'string' ? new Date(date) : date;
-  return Number.isNaN(parsed.getTime()) ? '—' : format(parsed, 'yyyy-MM-dd');
+  try {
+    const parsed = typeof date === 'string' ? new Date(date) : date;
+    if (Number.isNaN(parsed.getTime())) return '—';
+    return format(parsed, 'yyyy-MM-dd');
+  } catch {
+    return '—';
+  }
 };
 
 const buildLocation = (province?: string | null, district?: string | null, village?: string | null) => {
@@ -92,70 +80,41 @@ const buildLocation = (province?: string | null, district?: string | null, villa
   return parts.length ? parts.join(', ') : '—';
 };
 
-const buildAddress = (student: Student) => {
-  if (student.homeAddress) return student.homeAddress;
-  const { address } = student;
-  const parts = [address?.street, address?.city, address?.state, address?.country, address?.postalCode]
-    .filter(Boolean)
-    .join(', ');
-  return parts || '—';
-};
-
-const toReportRow = (student: Student): StudentReportRow => {
-  return {
-    admissionNumber: student.admissionNumber || '—',
-    cardNumber: student.cardNumber || '—',
-    status: formatStatus(student.status),
-    fullName: student.fullName,
-    gender: student.gender === 'male' ? 'Male' : 'Female',
-    age: student.age != null ? `${student.age}` : '—',
-    dateOfBirth: formatDate(student.dateOfBirth ?? student.birthDate ?? null),
-    nationality: student.nationality || '—',
-    religion: student.religion || '—',
-    bloodGroup: student.bloodGroup || '—',
-    school: student.school?.schoolName || '—',
-    applyingGrade: student.applyingGrade || '—',
-    admissionYear: student.admissionYear || '—',
-    admissionFeeStatus: formatStatus(student.admissionFeeStatus),
-    guardianName: student.guardianName || student.fatherName || '—',
-    guardianPhone: student.guardianPhone || '—',
-    contactPhone: student.phone || '—',
-    email: student.email || '—',
-    address: buildAddress(student),
-    originLocation: buildLocation(student.origProvince, student.origDistrict, student.origVillage),
-    currentLocation: buildLocation(student.currProvince, student.currDistrict, student.currVillage),
-    previousSchool: student.previousSchool || '—',
-    isOrphan: student.isOrphan ? 'Yes' : 'No',
-    disabilityStatus: student.disabilityStatus || '—',
-    emergencyContact:
-      student.emergencyContactName || student.emergencyContactPhone
-        ? `${student.emergencyContactName || ''} ${student.emergencyContactPhone || ''}`.trim()
-        : '—',
-  };
-};
-
-const highlight = (label: string, value: string) => (
-  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-    <span className="rounded-full bg-muted px-2 py-1 text-xs font-medium text-foreground">{label}</span>
-    <span className="text-foreground">{value || '—'}</span>
-  </div>
-);
-
 const StudentReport = () => {
-  const { t } = useLanguage();
-  const { data: students, isLoading } = useStudents();
-  const { data: schools } = useSchools();
+  const { t, isRTL } = useLanguage();
+  const { data: profile } = useProfile();
+  const orgIdForQuery = profile?.organization_id;
+  const { data: studentsData, isLoading } = useStudents(orgIdForQuery);
+  const { data: schools } = useSchools(orgIdForQuery);
+
+  // Ensure students is always an array of domain Student type
+  const students: Student[] = useMemo(() => {
+    if (!studentsData) return [];
+    if (Array.isArray(studentsData)) {
+      // TypeScript should infer this is Student[] from useStudents hook
+      return studentsData as Student[];
+    }
+    // If it's a paginated response, extract the data
+    if (typeof studentsData === 'object' && 'data' in studentsData) {
+      return ((studentsData as any).data || []) as Student[];
+    }
+    return [];
+  }, [studentsData]);
 
   const [statusFilter, setStatusFilter] = useState<'all' | string>('all');
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
   const [schoolFilter, setSchoolFilter] = useState<'all' | string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
-  const filteredStudents = useMemo(() => {
-    const list = students || [];
+  const filteredStudents = useMemo((): Student[] => {
+    const list: Student[] = students || [];
     const query = searchQuery.toLowerCase();
 
-    return list.filter(student => {
+    return list.filter((student: Student) => {
       if (statusFilter !== 'all' && student.status !== statusFilter) return false;
       if (genderFilter !== 'all' && student.gender !== genderFilter) return false;
       if (schoolFilter !== 'all' && student.schoolId !== schoolFilter) return false;
@@ -172,34 +131,25 @@ const StudentReport = () => {
     });
   }, [students, statusFilter, genderFilter, schoolFilter, searchQuery]);
 
-  const stats = useMemo(() => {
-    const total = filteredStudents.length;
-    const male = filteredStudents.filter(s => s.gender === 'male').length;
-    const female = filteredStudents.filter(s => s.gender === 'female').length;
-    const orphans = filteredStudents.filter(s => s.isOrphan).length;
+  // Pagination
+  const paginatedStudents = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredStudents.slice(start, end);
+  }, [filteredStudents, page, pageSize]);
 
-    return { total, male, female, orphans };
-  }, [filteredStudents]);
+  const totalPages = Math.ceil(filteredStudents.length / pageSize);
 
-  const reportRows = useMemo(() => filteredStudents.map(toReportRow), [filteredStudents]);
+  const handleViewDetails = (student: Student) => {
+    setSelectedStudent(student);
+    setIsSheetOpen(true);
+  };
 
-  const selectedSchool = useMemo(
-    () => (schoolFilter !== 'all' ? schools?.find(s => s.id === schoolFilter) : null),
-    [schoolFilter, schools]
-  );
+  const handleExport = async (format: 'csv' | 'pdf' | 'xlsx') => {
+    const exportSchool = schoolFilter !== 'all' 
+      ? schools?.find(s => s.id === schoolFilter) 
+      : schools?.[0];
 
-  const exportSchool = selectedSchool || schools?.[0];
-
-  const filtersSummary = useMemo(() => {
-    const summaries: string[] = [];
-    if (statusFilter !== 'all') summaries.push(`Status: ${statusFilter}`);
-    if (genderFilter !== 'all') summaries.push(`Gender: ${genderFilter}`);
-    if (schoolFilter !== 'all') summaries.push(`School: ${selectedSchool?.schoolName || schoolFilter}`);
-    if (searchQuery) summaries.push(`Search: ${searchQuery}`);
-    return summaries.join(' | ');
-  }, [genderFilter, schoolFilter, searchQuery, selectedSchool, statusFilter]);
-
-  const handleExport = async (format: 'csv' | 'pdf') => {
     if (!exportSchool) {
       toast.error('A school is required to export the report.');
       return;
@@ -207,7 +157,7 @@ const StudentReport = () => {
 
     try {
       const { blob, filename } = await studentsApi.exportReport({
-        format,
+        format: format === 'xlsx' ? 'xlsx' : format,
         school_id: exportSchool.id,
         student_status: statusFilter !== 'all' ? statusFilter : undefined,
         gender: genderFilter !== 'all' ? genderFilter : undefined,
@@ -217,79 +167,217 @@ const StudentReport = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = filename || `student-registration-report.${format === 'pdf' ? 'pdf' : 'csv'}`;
+      link.download = filename || `student-registration-report.${format === 'pdf' ? 'pdf' : format === 'xlsx' ? 'xlsx' : 'csv'}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
       toast.success(`Report exported as ${format.toUpperCase()}`);
     } catch (error) {
-      console.error(error);
+      if (import.meta.env.DEV) {
+        console.error(error);
+      }
       toast.error('Failed to export the report. Please try again.');
     }
   };
 
+  const columns: ColumnDef<Student, any>[] = [
+    {
+      id: 'avatar',
+      header: '',
+      cell: ({ row }) => {
+        const student = row.original;
+        return (
+          <div className="flex items-center justify-center">
+            {student.picturePath ? (
+              <img
+                src={`/api/students/${student.id}/picture`}
+                alt={student.fullName}
+                className="w-10 h-10 rounded-full object-cover border-2 border-border"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  if (target.nextElementSibling) {
+                    (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                  }
+                }}
+              />
+            ) : null}
+            <div 
+              className={`w-10 h-10 rounded-full bg-muted flex items-center justify-center border-2 border-border ${student.picturePath ? 'hidden' : 'flex'}`}
+            >
+              <User className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'studentCode',
+      header: 'ID',
+      cell: ({ row }) => (
+        <div className="font-mono text-sm font-medium">
+          {row.original.studentCode || row.original.admissionNumber || '—'}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'admissionNumber',
+      header: 'Admission #',
+      cell: ({ row }) => (
+        <div className="font-medium">{row.original.admissionNumber || '—'}</div>
+      ),
+    },
+    {
+      accessorKey: 'fullName',
+      header: 'Name',
+      cell: ({ row }) => (
+        <div className="font-semibold">{row.original.fullName}</div>
+      ),
+    },
+    {
+      accessorKey: 'cardNumber',
+      header: 'Card #',
+      cell: ({ row }) => (
+        <div className="text-sm">{row.original.cardNumber || '—'}</div>
+      ),
+    },
+    {
+      accessorKey: 'originLocation',
+      header: 'Origin Location',
+      cell: ({ row }) => (
+        <div className="text-sm">
+          {buildLocation(row.original.origProvince, row.original.origDistrict, row.original.origVillage)}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'birthYear',
+      header: 'Birth Year',
+      cell: ({ row }) => (
+        <div className="text-sm">{row.original.birthYear || '—'}</div>
+      ),
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => (
+        <Badge variant={statusBadgeVariant(row.original.status)} className="capitalize">
+          {formatStatus(row.original.status)}
+        </Badge>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleViewDetails(row.original)}
+          className="h-8 w-8 p-0"
+        >
+          <Eye className="h-4 w-4" />
+          <span className="sr-only">View details</span>
+        </Button>
+      ),
+    },
+  ];
+
+  const { table } = useDataTable<Student>({
+    data: paginatedStudents,
+    columns,
+    pageCount: totalPages,
+    initialState: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
+    },
+    onPaginationChange: (newPagination) => {
+      setPage(newPagination.pageIndex + 1);
+      setPageSize(newPagination.pageSize);
+    },
+  });
+
+  const paginationMeta = useMemo(() => ({
+    current_page: page,
+    per_page: pageSize,
+    total: filteredStudents.length,
+    last_page: totalPages,
+    from: (page - 1) * pageSize + 1,
+    to: Math.min(page * pageSize, filteredStudents.length),
+  }), [page, pageSize, filteredStudents.length, totalPages]);
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+      {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm uppercase tracking-wide text-muted-foreground">
-            <ShieldCheck className="h-4 w-4" />
-            <span>{t('reports.studentReport.title') || 'Student Registration Report'}</span>
-          </div>
-          <h1 className="text-3xl font-bold leading-tight">Insightful reporting for every registered student</h1>
-          <p className="max-w-3xl text-muted-foreground">
-            Review the complete registration footprint of each student with personal, academic, guardian, and location
-            details. Export polished PDF or Excel summaries that mirror the on-screen table design.
+          <h1 className="text-3xl font-bold leading-tight">Student Registration Report</h1>
+          <p className="text-muted-foreground">
+            View and export student registration data with detailed information
           </p>
-          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1"><UserRound className="h-4 w-4" /> Total {stats.total}</span>
-            <span className="flex items-center gap-1"><ShieldCheck className="h-4 w-4" /> Male {stats.male}</span>
-            <span className="flex items-center gap-1"><ShieldCheck className="h-4 w-4" /> Female {stats.female}</span>
-            <span className="flex items-center gap-1"><GraduationCap className="h-4 w-4" /> Orphans {stats.orphans}</span>
-          </div>
         </div>
-        <div className="flex flex-wrap gap-2 justify-end">
-          <Button variant="outline" asChild>
-            <Link to="/students">Back to registrations</Link>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleExport('csv')}
+            disabled={filteredStudents.length === 0}
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            CSV
           </Button>
-          <Button variant="secondary" onClick={() => handleExport('csv')} disabled={!reportRows.length}>
-            <FileSpreadsheet className="mr-2 h-4 w-4" /> CSV / Excel
+          <Button
+            variant="outline"
+            onClick={() => handleExport('xlsx')}
+            disabled={filteredStudents.length === 0}
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Excel
           </Button>
-          <Button variant="default" onClick={() => handleExport('pdf')} disabled={!reportRows.length}>
-            <FileText className="mr-2 h-4 w-4" /> PDF
+          <Button
+            variant="default"
+            onClick={() => handleExport('pdf')}
+            disabled={filteredStudents.length === 0}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            PDF
           </Button>
         </div>
       </div>
 
+      {/* Filters */}
       <Card>
-        <CardHeader className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <CardTitle>Registration overview</CardTitle>
-              <CardDescription>Search, filter, and export every registration detail in one place.</CardDescription>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Filter className="h-4 w-4" />
-              {filtersSummary || 'No filters applied'}
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-4 sm:grid-cols-2">
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-4">
             <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by name, admission number, guardian phone..."
+                placeholder="Search by name, admission number..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
                 className="pl-10"
               />
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             </div>
-            <Select value={schoolFilter} onValueChange={(value) => setSchoolFilter(value as typeof schoolFilter)}>
+            <Select
+              value={schoolFilter}
+              onValueChange={(value) => {
+                setSchoolFilter(value as typeof schoolFilter);
+                setPage(1);
+              }}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="School" />
+                <SelectValue placeholder="All Schools" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All schools</SelectItem>
+                <SelectItem value="all">All Schools</SelectItem>
                 {schools?.map((school) => (
                   <SelectItem key={school.id} value={school.id}>
                     {school.schoolName}
@@ -297,155 +385,316 @@ const StudentReport = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value as typeof statusFilter);
+                setPage(1);
+              }}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="applied">Applied</SelectItem>
                 <SelectItem value="admitted">Admitted</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="withdrawn">Withdrawn</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={genderFilter} onValueChange={(value) => setGenderFilter(value as typeof genderFilter)}>
+            <Select
+              value={genderFilter}
+              onValueChange={(value) => {
+                setGenderFilter(value as typeof genderFilter);
+                setPage(1);
+              }}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Gender" />
+                <SelectValue placeholder="All Genders" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All genders</SelectItem>
+                <SelectItem value="all">All Genders</SelectItem>
                 <SelectItem value="male">Male</SelectItem>
                 <SelectItem value="female">Female</SelectItem>
               </SelectContent>
             </Select>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Students ({filteredStudents.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="py-12 flex justify-center">
-              <LoadingSpinner text="Loading student registrations..." />
+              <LoadingSpinner text="Loading students..." />
             </div>
           ) : (
-            <ScrollArea className="w-full">
-              <div className="min-w-[1400px]">
+            <>
+              <div className="rounded-md border">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="w-44">Admission</TableHead>
-                      <TableHead className="w-72">Student</TableHead>
-                      <TableHead className="w-64">Guardian & Contact</TableHead>
-                      <TableHead className="w-80">Locations</TableHead>
-                      <TableHead className="w-72">School & Academics</TableHead>
-                      <TableHead className="w-72">Health & Safety</TableHead>
-                    </TableRow>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                          {headerGroup.headers.map((header) => {
+                            const headerContent = header.isPlaceholder
+                              ? null
+                              : typeof header.column.columnDef.header === 'string'
+                              ? header.column.columnDef.header
+                              : typeof header.column.columnDef.header === 'function'
+                              ? header.column.columnDef.header(header.getContext())
+                              : header.column.columnDef.header;
+                            return (
+                              <TableHead key={header.id}>
+                                {headerContent}
+                              </TableHead>
+                            );
+                          })}
+                      </TableRow>
+                    ))}
                   </TableHeader>
                   <TableBody>
-                    {filteredStudents.length === 0 && (
+                    {table.getRowModel().rows?.length ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow
+                          key={row.id}
+                          data-state={row.getIsSelected() && 'selected'}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id}>
+                              {typeof cell.column.columnDef.cell === 'function'
+                                ? cell.column.columnDef.cell(cell.getContext())
+                                : cell.getValue() as React.ReactNode}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          No student registrations match the selected filters.
+                        <TableCell
+                          colSpan={columns.length}
+                          className="h-24 text-center"
+                        >
+                          No students found.
                         </TableCell>
                       </TableRow>
                     )}
-                    {filteredStudents.map((student) => (
-                      <TableRow key={student.id} className="align-top">
-                        <TableCell>
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="px-2 py-1 text-xs">
-                                {student.admissionNumber || '—'}
-                              </Badge>
-                              <Badge variant={statusBadgeVariant(student.status)} className="text-xs capitalize">
-                                {formatStatus(student.status)}
-                              </Badge>
-                            </div>
-                            {highlight('Card', student.cardNumber || '—')}
-                            {highlight('Admission Year', student.admissionYear || '—')}
-                            {highlight('Fee', student.admissionFeeStatus || '—')}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            <div>
-                              <p className="font-semibold text-lg leading-tight">{student.fullName}</p>
-                              <p className="text-sm text-muted-foreground">Father: {student.fatherName || '—'}</p>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              <Badge variant="outline" className="text-xs">{student.gender === 'male' ? 'Male' : 'Female'}</Badge>
-                              <Badge variant="outline" className="text-xs">Age: {student.age ?? '—'}</Badge>
-                              <Badge variant="outline" className="text-xs">{formatDate(student.dateOfBirth)}</Badge>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              {highlight('Nationality', student.nationality || '—')}
-                              {highlight('Religion', student.religion || '—')}
-                              {highlight('Blood', student.bloodGroup || '—')}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            <div className="space-y-1">
-                              <p className="font-semibold">{student.guardianName || student.fatherName || '—'}</p>
-                              <p className="text-sm text-muted-foreground">{student.guardianRelation || 'Guardian'}</p>
-                            </div>
-                            {highlight('Guardian Phone', student.guardianPhone || '—')}
-                            {highlight('Contact Phone', student.phone || '—')}
-                            {highlight('Email', student.email || '—')}
-                            {highlight('Address', buildAddress(student))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <div>
-                                <p className="text-xs uppercase text-muted-foreground">Origin</p>
-                                <p className="font-medium">{buildLocation(student.origProvince, student.origDistrict, student.origVillage)}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <div>
-                                <p className="text-xs uppercase text-muted-foreground">Current</p>
-                                <p className="font-medium">{buildLocation(student.currProvince, student.currDistrict, student.currVillage)}</p>
-                              </div>
-                            </div>
-                            {highlight('Previous School', student.previousSchool || '—')}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            <p className="font-semibold">{student.school?.schoolName || '—'}</p>
-                            {highlight('Applying Grade', student.applyingGrade || '—')}
-                            {highlight('Nationality', student.nationality || '—')}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap gap-2">
-                              {student.isOrphan && <Badge variant="secondary">Orphan</Badge>}
-                              {student.disabilityStatus && (
-                                <Badge variant="outline" className="text-xs">{student.disabilityStatus}</Badge>
-                              )}
-                            </div>
-                            {highlight('Emergency',
-                              student.emergencyContactName || student.emergencyContactPhone
-                                ? `${student.emergencyContactName || ''} ${student.emergencyContactPhone || ''}`.trim()
-                                : '—'
-                            )}
-                            {highlight('Health', student.healthInfo?.medicalConditions?.join(', ') || '—')}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
                   </TableBody>
                 </Table>
               </div>
-            </ScrollArea>
+              <DataTablePagination
+                table={table}
+                paginationMeta={paginationMeta}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                showPageSizeSelector={true}
+                showTotalCount={true}
+              />
+            </>
           )}
         </CardContent>
       </Card>
+
+      {/* Detail Sheet */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent 
+          className={`w-full sm:max-w-2xl overflow-y-auto ${isRTL ? 'rtl' : 'ltr'}`}
+          side={isRTL ? 'left' : 'right'}
+          dir={isRTL ? 'rtl' : 'ltr'}
+        >
+          {selectedStudent && (
+            <>
+              <SheetHeader className="pb-4 border-b">
+                <div className="flex items-start gap-4">
+                  {/* Student Image */}
+                  <div className="relative">
+                    {selectedStudent.picturePath ? (
+                      <img
+                        src={`/api/students/${selectedStudent.id}/picture`}
+                        alt={selectedStudent.fullName}
+                        className="w-20 h-20 rounded-full object-cover border-2 border-border"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          if (target.nextElementSibling) {
+                            (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className={`w-20 h-20 rounded-full bg-muted flex items-center justify-center border-2 border-border ${selectedStudent.picturePath ? 'hidden' : 'flex'}`}
+                    >
+                      <User className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <SheetTitle className="text-2xl mb-1">{selectedStudent.fullName}</SheetTitle>
+                    <SheetDescription className="text-base">
+                      {selectedStudent.studentCode && (
+                        <span className="font-mono font-medium">ID: {selectedStudent.studentCode}</span>
+                      )}
+                      {selectedStudent.studentCode && selectedStudent.admissionNumber && ' • '}
+                      {selectedStudent.admissionNumber && `Admission #${selectedStudent.admissionNumber}`}
+                      {selectedStudent.cardNumber && ` • Card #${selectedStudent.cardNumber}`}
+                    </SheetDescription>
+                  </div>
+                </div>
+              </SheetHeader>
+              <ScrollArea className="h-[calc(100vh-12rem)] mt-6">
+                <div className={`space-y-6 ${isRTL ? 'pl-4' : 'pr-4'}`}>
+                  {/* Personal Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Personal Information</h3>
+                    <div className="space-y-3">
+                      {selectedStudent.studentCode && (
+                        <div className="flex items-center justify-between py-2 border-b">
+                          <span className="text-sm font-medium text-muted-foreground">Student ID</span>
+                          <span className="text-sm font-mono font-medium">{selectedStudent.studentCode}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Full Name</span>
+                        <span className="text-sm font-medium">{selectedStudent.fullName}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Father Name</span>
+                        <span className="text-sm">{selectedStudent.fatherName || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Gender</span>
+                        <Badge variant="outline" className="capitalize">
+                          {selectedStudent.gender === 'male' ? 'Male' : 'Female'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Age</span>
+                        <span className="text-sm">{selectedStudent.age ?? '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Birth Date</span>
+                        <span className="text-sm">{formatDate(selectedStudent.dateOfBirth ?? selectedStudent.birthDate)}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Nationality</span>
+                        <span className="text-sm">{selectedStudent.nationality || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Status</span>
+                        <Badge variant={statusBadgeVariant(selectedStudent.status)} className="capitalize">
+                          {formatStatus(selectedStudent.status)}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Guardian Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Guardian Information</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Guardian Name</span>
+                        <span className="text-sm">{selectedStudent.guardianName || selectedStudent.fatherName || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Relation</span>
+                        <span className="text-sm">{selectedStudent.guardianRelation || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Guardian Phone</span>
+                        <span className="text-sm">{selectedStudent.guardianPhone || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Contact Phone</span>
+                        <span className="text-sm">{selectedStudent.phone || '—'}</span>
+                      </div>
+                      <div className="flex items-start justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Home Address</span>
+                        <span className="text-sm text-right max-w-[60%]">{selectedStudent.homeAddress || selectedStudent.address?.street || '—'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Academic Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Academic Information</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">School</span>
+                        <span className="text-sm">{selectedStudent.school?.schoolName || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Applying Grade</span>
+                        <span className="text-sm">{selectedStudent.applyingGrade || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Admission Year</span>
+                        <span className="text-sm">{selectedStudent.admissionYear || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Admission Fee Status</span>
+                        <Badge variant="outline">{formatStatus(selectedStudent.admissionFeeStatus)}</Badge>
+                      </div>
+                      <div className="flex items-start justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Previous School</span>
+                        <span className="text-sm text-right max-w-[60%]">{selectedStudent.previousSchool || '—'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Location Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Location Information</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Origin Location</span>
+                        <span className="text-sm text-right max-w-[60%]">
+                          {buildLocation(selectedStudent.origProvince, selectedStudent.origDistrict, selectedStudent.origVillage)}
+                        </span>
+                      </div>
+                      <div className="flex items-start justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Current Location</span>
+                        <span className="text-sm text-right max-w-[60%]">
+                          {buildLocation(selectedStudent.currProvince, selectedStudent.currDistrict, selectedStudent.currVillage)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Additional Information</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Is Orphan</span>
+                        <Badge variant={selectedStudent.isOrphan ? 'secondary' : 'outline'}>
+                          {selectedStudent.isOrphan ? 'Yes' : 'No'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Disability Status</span>
+                        <span className="text-sm">{selectedStudent.disabilityStatus || '—'}</span>
+                      </div>
+                      <div className="flex items-start justify-between py-2 border-b">
+                        <span className="text-sm font-medium text-muted-foreground">Emergency Contact</span>
+                        <span className="text-sm text-right max-w-[60%]">
+                          {selectedStudent.emergencyContactName || selectedStudent.emergencyContactPhone
+                            ? `${selectedStudent.emergencyContactName || ''} ${selectedStudent.emergencyContactPhone || ''}`.trim()
+                            : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

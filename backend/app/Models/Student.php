@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use App\Services\CodeGenerator;
 
 class Student extends Model
 {
@@ -24,6 +25,7 @@ class Student extends Model
         'school_id',
         'card_number',
         'admission_no',
+        'student_code',
         'full_name',
         'father_name',
         'grandfather_name',
@@ -82,6 +84,11 @@ class Student extends Model
         static::creating(function ($model) {
             if (empty($model->id)) {
                 $model->id = (string) Str::uuid();
+            }
+            
+            // Generate student_code if not provided and organization_id exists
+            if (empty($model->student_code) && !empty($model->organization_id)) {
+                $model->student_code = CodeGenerator::generateStudentCode($model->organization_id);
             }
         });
     }

@@ -175,13 +175,14 @@ export function StaffList() {
 
     // Client-side filtering for search
     const filteredStaff = useMemo(() => {
-        if (!staff) return [];
+        if (!staff || !Array.isArray(staff)) return [];
 
         return staff.filter((s) => {
             const query = (searchQuery || '').toLowerCase();
             const matchesSearch =
                 s.fullName?.toLowerCase().includes(query) ||
                 s.employeeId?.toLowerCase().includes(query) ||
+                s.staffCode?.toLowerCase().includes(query) ||
                 s.email?.toLowerCase().includes(query) ||
                 s.phoneNumber?.toLowerCase().includes(query);
 
@@ -221,6 +222,15 @@ export function StaffList() {
             accessorKey: 'fullName',
             header: 'Name',
             cell: ({ row }) => <span className="font-medium">{row.original.fullName}</span>,
+        },
+        {
+            accessorKey: 'staffCode',
+            header: 'ID',
+            cell: ({ row }) => (
+                <div className="font-mono text-sm font-medium">
+                    {row.original.staffCode || row.original.employeeId || '—'}
+                </div>
+            ),
         },
         {
             accessorKey: 'employeeId',
@@ -573,65 +583,69 @@ export function StaffList() {
                         <div className="p-6">
                             <LoadingSpinner text="Loading staff..." />
                         </div>
-                    ) : filteredStaff.length === 0 ? (
+                    ) : !staff || (Array.isArray(staff) && filteredStaff.length === 0) ? (
                         <div className="p-6 text-center text-muted-foreground">
                             {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || schoolFilter !== 'all'
                                 ? 'No staff members found matching your filters'
-                                : 'No staff members available'}
+                                : !staff || staff.length === 0
+                                ? 'No staff members available'
+                                : 'No staff members found matching your filters'}
                         </div>
                     ) : (
-                        <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    {table.getHeaderGroups().map((headerGroup) => (
-                                        <TableRow key={headerGroup.id}>
-                                            {headerGroup.headers.map((header) => (
-                                                <TableHead key={header.id}>
-                                                    {header.isPlaceholder
-                                                        ? null
-                                                        : typeof header.column.columnDef.header === 'function'
-                                                        ? header.column.columnDef.header({ column: header.column, header, table })
-                                                        : header.column.columnDef.header}
-                                                </TableHead>
-                                            ))}
-                                        </TableRow>
-                                    ))}
-                                </TableHeader>
-                                <TableBody>
-                                    {table.getRowModel().rows.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
-                                                {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || schoolFilter !== 'all'
-                                                    ? 'No staff members found matching your filters'
-                                                    : 'No staff members available'}
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        table.getRowModel().rows.map((row) => (
-                                            <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                                                {row.getVisibleCells().map((cell) => (
-                                                    <TableCell key={cell.id}>
-                                                        {cell.column.columnDef.cell
-                                                            ? cell.column.columnDef.cell({ row })
-                                                            : null}
-                                                    </TableCell>
+                        <>
+                            <div className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        {table.getHeaderGroups().map((headerGroup) => (
+                                            <TableRow key={headerGroup.id}>
+                                                {headerGroup.headers.map((header) => (
+                                                    <TableHead key={header.id}>
+                                                        {header.isPlaceholder
+                                                            ? null
+                                                            : typeof header.column.columnDef.header === 'function'
+                                                            ? header.column.columnDef.header({ column: header.column, header, table })
+                                                            : header.column.columnDef.header}
+                                                    </TableHead>
                                                 ))}
                                             </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                        ))}
+                                    </TableHeader>
+                                    <TableBody>
+                                        {table.getRowModel().rows.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
+                                                    {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || schoolFilter !== 'all'
+                                                        ? 'No staff members found matching your filters'
+                                                        : 'No staff members available'}
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            table.getRowModel().rows.map((row) => (
+                                                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                                                    {row.getVisibleCells().map((cell) => (
+                                                        <TableCell key={cell.id}>
+                                                            {typeof cell.column.columnDef.cell === 'function'
+                                                                ? cell.column.columnDef.cell(cell.getContext())
+                                                                : cell.getValue() as React.ReactNode}
+                                                        </TableCell>
+                                                    ))}
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
 
-                        {/* Pagination */}
-                        <DataTablePagination
-                            table={table}
-                            paginationMeta={pagination ?? null}
-                            onPageChange={setPage}
-                            onPageSizeChange={setPageSize}
-                            showPageSizeSelector={true}
-                            showTotalCount={true}
-                        />
+                            {/* Pagination */}
+                            <DataTablePagination
+                                table={table}
+                                paginationMeta={pagination ?? null}
+                                onPageChange={setPage}
+                                onPageSizeChange={setPageSize}
+                                showPageSizeSelector={true}
+                                showTotalCount={true}
+                            />
+                        </>
                     )}
                 </CardContent>
             </Card>
