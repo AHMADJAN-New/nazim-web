@@ -24,6 +24,7 @@ import {
   Building,
   Building2,
   DoorOpen,
+  BedDouble,
   Shield,
   MessageSquare,
   BarChart3,
@@ -156,6 +157,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasSettingsPermission = useHasPermission('settings.read');
   const hasBuildingsPermission = useHasPermission('buildings.read');
   const hasRoomsPermission = useHasPermission('rooms.read');
+  const hasHostelPermission = useHasPermission('hostel.read');
   const hasOrganizationsPermission = useHasPermission('organizations.read');
   const hasProfilesPermission = useHasPermission('profiles.read');
   const hasUsersPermission = useHasPermission('users.read');
@@ -238,6 +240,26 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "admissionsReport",
             url: "/admissions/report",
             icon: FileText,
+          }] : []),
+        ],
+      }] : []),
+      ...(hasHostelPermission ? [{
+        titleKey: "hostel",
+        icon: BedDouble,
+        badge: null,
+        priority: 3.06,
+        children: [
+          {
+            title: "Hostel overview",
+            titleKey: "hostel.overview",
+            url: "/hostel",
+            icon: BedDouble,
+          },
+          ...(hasReportsPermission ? [{
+            title: "Hostel reports",
+            titleKey: "hostel.reports",
+            url: "/hostel/reports",
+            icon: BarChart3,
           }] : []),
         ],
       }] : []),

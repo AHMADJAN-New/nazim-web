@@ -150,6 +150,7 @@ export const useCreateStudentAdmission = () => {
     onSuccess: () => {
       toast.success('Student admitted');
       void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to admit student');
@@ -176,6 +177,7 @@ export const useUpdateStudentAdmission = () => {
     onSuccess: () => {
       toast.success('Admission updated');
       void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update admission');
@@ -199,6 +201,7 @@ export const useDeleteStudentAdmission = () => {
     onSuccess: () => {
       toast.success('Admission removed');
       void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to remove admission');

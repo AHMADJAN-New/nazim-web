@@ -28,6 +28,8 @@ class PermissionSeeder extends Seeder
             'academic_years' => ['read', 'create', 'update', 'delete'],
             'schedule_slots' => ['read', 'create', 'update', 'delete'],
             'timetables' => ['read', 'create', 'update', 'delete', 'export'],
+            'hostel' => ['read', 'create', 'update', 'delete'],
+            'reports' => ['read'],
             'residency_types' => ['read', 'create', 'update', 'delete'],
             'school_branding' => ['read', 'create', 'update', 'delete'],
             'schools' => ['read', 'create', 'update', 'delete', 'access_all'],
@@ -83,6 +85,12 @@ class PermissionSeeder extends Seeder
                 'buildings.read', // Needed for dashboard stats
                 'staff.read', // Needed to view staff members
                 'school_branding.read', // Needed to view schools
+            ],
+            'hostel_manager' => [
+                'hostel.read',
+                'rooms.read', 'rooms.create', 'rooms.update',
+                'student_admissions.read', 'student_admissions.update',
+                'reports.read',
             ],
         ];
     }

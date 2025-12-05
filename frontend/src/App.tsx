@@ -44,6 +44,8 @@ import {
   StudentAdmissions,
   StudentReport,
   StudentAdmissionsReport,
+  HostelManagement,
+  HostelReports,
   UserManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -237,6 +239,22 @@ const App = () => (
                         <Suspense fallback={<PageSkeleton />}>
                           <StudentReport />
                         </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/hostel" element={
+                      <PermissionRoute permission="rooms.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <HostelManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/hostel/reports" element={
+                      <PermissionRoute permission="reports.read">
+                        <PermissionGuard permission="rooms.read">
+                          <Suspense fallback={<PageSkeleton />}>
+                            <HostelReports />
+                          </Suspense>
+                        </PermissionGuard>
                       </PermissionRoute>
                     } />
                     <Route path="/admissions" element={

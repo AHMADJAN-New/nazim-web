@@ -32,6 +32,7 @@ use App\Http\Controllers\StudentEducationalHistoryController;
 use App\Http\Controllers\StudentDisciplineRecordController;
 use App\Http\Controllers\TeacherTimetablePreferenceController;
 use App\Http\Controllers\StudentReportController;
+use App\Http\Controllers\HostelController;
 
 /*
 |--------------------------------------------------------------------------
@@ -163,6 +164,9 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/student-admissions/stats', [StudentAdmissionController::class, 'stats']);
     Route::get('/student-admissions/report', [StudentAdmissionController::class, 'report']);
     Route::apiResource('student-admissions', StudentAdmissionController::class);
+
+    // Hostel aggregation
+    Route::get('/hostel/overview', [HostelController::class, 'overview']);
 
     // Classes - Specific routes must come BEFORE resource route to avoid route conflicts
     Route::get('/classes/academic-years', [ClassController::class, 'byAcademicYear']);

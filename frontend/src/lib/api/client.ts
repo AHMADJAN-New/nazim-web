@@ -1031,6 +1031,12 @@ export const roomsApi = {
   },
 };
 
+export const hostelApi = {
+  overview: async (params?: { organization_id?: string }) => {
+    return apiClient.get('/hostel/overview', params);
+  },
+};
+
 // Residency Types API
 export const residencyTypesApi = {
   list: async (params?: {

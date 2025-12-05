@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { staffApi, studentsApi, classesApi, roomsApi, buildingsApi } from '@/lib/api/client';
+import { staffApi, studentsApi, classesApi, roomsApi, buildingsApi, hostelApi } from '@/lib/api/client';
 import { useProfile } from './useProfiles';
 import { useAuth } from './useAuth';
 
@@ -75,12 +75,17 @@ export const useDashboardStats = () => {
       const organizationId = profile.organization_id || undefined;
 
       // Fetch all stats in parallel
-      const [staffStats, studentStats, classes, rooms, buildings] = await Promise.all([
+      const [staffStats, studentStats, classes, rooms, buildings, hostelOverview] = await Promise.all([
         staffApi.stats({ organization_id: organizationId }).catch(() => ({ total: 0 })),
         studentsApi.stats({ organization_id: organizationId }).catch(() => ({ total: 0, male: 0, female: 0 })),
         classesApi.list({ organization_id: organizationId }).catch(() => []),
         roomsApi.list({ organization_id: organizationId }).catch(() => []),
         buildingsApi.list({ organization_id: organizationId }).catch(() => []),
+        hostelApi
+          .overview({ organization_id: organizationId })
+          .catch(() => ({
+            summary: { total_rooms: 0, occupied_rooms: 0, total_students_in_rooms: 0 },
+          })),
       ]);
 
       const studentStatsData = studentStats as any;
@@ -109,9 +114,16 @@ export const useDashboardStats = () => {
           currency: '₹'
         },
         hostelOccupancy: {
-          percentage: 0,
-          occupied: 0,
-          total: 0
+          percentage:
+            (hostelOverview as any)?.summary?.total_rooms
+              ? Math.round(
+                  (((hostelOverview as any).summary.occupied_rooms || 0) /
+                    (hostelOverview as any).summary.total_rooms) *
+                    100
+                )
+              : 0,
+          occupied: (hostelOverview as any)?.summary?.occupied_rooms || 0,
+          total: (hostelOverview as any)?.summary?.total_rooms || 0,
         }
       };
     },

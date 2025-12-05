@@ -27,6 +27,8 @@ export const Students = lazy(() => import('@/pages/Students').then(module => ({ 
 export const StudentAdmissions = lazy(() => import('@/pages/StudentAdmissions').then(module => ({ default: module.StudentAdmissions })));
 export const StudentReport = lazy(() => import('@/pages/StudentReport'));
 export const StudentAdmissionsReport = lazy(() => import('@/pages/StudentAdmissionsReport'));
+export const HostelManagement = lazy(() => import('@/pages/HostelManagement').then(module => ({ default: module.HostelManagement })));
+export const HostelReports = lazy(() => import('@/pages/HostelReports').then(module => ({ default: module.HostelReports })));
 export const UserManagement = lazy(() => import('@/components/admin/UserManagement').then(module => ({ default: module.UserManagement })));
 
 // Re-export loading components for backward compatibility
