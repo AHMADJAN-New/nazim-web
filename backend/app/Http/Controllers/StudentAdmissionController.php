@@ -9,6 +9,8 @@ use App\Http\Requests\UpdateStudentAdmissionRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class StudentAdmissionController extends Controller
 {
@@ -53,7 +55,7 @@ class StudentAdmissionController extends Controller
         }
 
         $query = StudentAdmission::with([
-            'student:id,full_name,admission_no,gender,admission_year,guardian_phone',
+            'student:id,full_name,admission_no,gender,admission_year,guardian_phone,guardian_name,card_number,father_name',
             'organization',
             'school',
             'academicYear',
@@ -361,6 +363,236 @@ class StudentAdmissionController extends Controller
         $admission->delete();
 
         return response()->json(['message' => 'Student admission deleted successfully']);
+    }
+
+    /**
+     * Build a standardized empty report response.
+     */
+    private function buildEmptyReport(): array
+    {
+        return [
+            'totals' => [
+                'total' => 0,
+                'active' => 0,
+                'pending' => 0,
+                'boarders' => 0,
+            ],
+            'status_breakdown' => [],
+            'school_breakdown' => [],
+            'academic_year_breakdown' => [],
+            'residency_breakdown' => [],
+            'recent_admissions' => [],
+        ];
+    }
+
+    /**
+     * Generate report data for student admissions.
+     */
+    public function report(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        if (function_exists('setPermissionsTeamId')) {
+            setPermissionsTeamId($profile->organization_id);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('student_admissions.report')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for student_admissions.report: ' . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $orgIds = $this->getAccessibleOrgIds($profile);
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
+        if (empty($orgIds) || empty($schoolIds)) {
+            return response()->json($this->buildEmptyReport());
+        }
+
+        $validator = Validator::make($request->all(), [
+            'organization_id' => 'nullable|string',
+            'school_id' => 'nullable|string',
+            'academic_year_id' => 'nullable|string',
+            'class_id' => 'nullable|string',
+            'enrollment_status' => 'nullable|string',
+            'residency_type_id' => 'nullable|string',
+            'is_boarder' => 'nullable|boolean',
+            'from_date' => 'nullable|date',
+            'to_date' => 'nullable|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Invalid filters provided',
+                'details' => $validator->errors(),
+            ], 422);
+        }
+
+        $filters = $validator->validated();
+
+        if (!empty($filters['from_date']) && !empty($filters['to_date'])) {
+            $fromDate = Carbon::parse($filters['from_date']);
+            $toDate = Carbon::parse($filters['to_date']);
+
+            if ($fromDate->gt($toDate)) {
+                return response()->json([
+                    'error' => 'Invalid date range',
+                    'details' => ['from_date' => ['Start date must be before end date']],
+                ], 422);
+            }
+        }
+
+        $query = StudentAdmission::query()
+            ->whereNull('student_admissions.deleted_at')
+            ->whereIn('student_admissions.organization_id', $orgIds)
+            ->whereIn('student_admissions.school_id', $schoolIds);
+
+        if (!empty($filters['organization_id'])) {
+            if (in_array($filters['organization_id'], $orgIds, true)) {
+                $query->where('student_admissions.organization_id', $filters['organization_id']);
+            } else {
+                return response()->json($this->buildEmptyReport());
+            }
+        }
+
+        if (!empty($filters['school_id'])) {
+            if (in_array($filters['school_id'], $schoolIds, true)) {
+                $query->where('student_admissions.school_id', $filters['school_id']);
+            } else {
+                return response()->json(['error' => 'School not accessible'], 403);
+            }
+        }
+
+        if (!empty($filters['academic_year_id'])) {
+            $query->where('student_admissions.academic_year_id', $filters['academic_year_id']);
+        }
+
+        if (!empty($filters['class_id'])) {
+            $query->where('student_admissions.class_id', $filters['class_id']);
+        }
+
+        if (!empty($filters['enrollment_status'])) {
+            $query->where('student_admissions.enrollment_status', $filters['enrollment_status']);
+        }
+
+        if (array_key_exists('is_boarder', $filters) && $filters['is_boarder'] !== null) {
+            $query->where('student_admissions.is_boarder', filter_var($filters['is_boarder'], FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if (!empty($filters['residency_type_id'])) {
+            $query->where('student_admissions.residency_type_id', $filters['residency_type_id']);
+        }
+
+        if (!empty($filters['from_date'])) {
+            try {
+                $parsedFrom = Carbon::parse($filters['from_date'])->toDateString();
+                $query->whereDate('student_admissions.admission_date', '>=', $parsedFrom);
+            } catch (\Exception $e) {
+                Log::info('Invalid from_date provided for admissions report', ['value' => $filters['from_date']]);
+            }
+        }
+
+        if (!empty($filters['to_date'])) {
+            try {
+                $parsedTo = Carbon::parse($filters['to_date'])->toDateString();
+                $query->whereDate('student_admissions.admission_date', '<=', $parsedTo);
+            } catch (\Exception $e) {
+                Log::info('Invalid to_date provided for admissions report', ['value' => $filters['to_date']]);
+            }
+        }
+
+        $totalsQuery = clone $query;
+        $total = (clone $totalsQuery)->count();
+        $active = (clone $totalsQuery)->where('student_admissions.enrollment_status', 'active')->count();
+        $pending = (clone $totalsQuery)->whereIn('student_admissions.enrollment_status', ['pending', 'admitted'])->count();
+        $boarders = (clone $totalsQuery)->where('student_admissions.is_boarder', true)->count();
+
+        $statusBreakdown = (clone $query)
+            ->select('student_admissions.enrollment_status', DB::raw('COUNT(*) as total'))
+            ->groupBy('student_admissions.enrollment_status')
+            ->orderByDesc('total')
+            ->get();
+
+        $schoolBreakdown = (clone $query)
+            ->leftJoin('school_branding as schools', 'schools.id', '=', 'student_admissions.school_id')
+            ->select(
+                'student_admissions.school_id',
+                'schools.school_name',
+                DB::raw('COUNT(*) as total'),
+                DB::raw("SUM(CASE WHEN student_admissions.enrollment_status = 'active' THEN 1 ELSE 0 END) as active_count"),
+                DB::raw('SUM(CASE WHEN student_admissions.is_boarder = true THEN 1 ELSE 0 END) as boarder_count')
+            )
+            ->groupBy('student_admissions.school_id', 'schools.school_name')
+            ->orderByDesc('total')
+            ->get();
+
+        $academicYearBreakdown = (clone $query)
+            ->leftJoin('academic_years', 'academic_years.id', '=', 'student_admissions.academic_year_id')
+            ->select(
+                'student_admissions.academic_year_id',
+                'academic_years.name as academic_year_name',
+                DB::raw('COUNT(*) as total'),
+                DB::raw("SUM(CASE WHEN student_admissions.enrollment_status = 'active' THEN 1 ELSE 0 END) as active_count"),
+                DB::raw('SUM(CASE WHEN student_admissions.is_boarder = true THEN 1 ELSE 0 END) as boarder_count')
+            )
+            ->groupBy('student_admissions.academic_year_id', 'academic_years.name')
+            ->orderByDesc('total')
+            ->get();
+
+        $residencyBreakdown = (clone $query)
+            ->leftJoin('residency_types', 'residency_types.id', '=', 'student_admissions.residency_type_id')
+            ->select(
+                'student_admissions.residency_type_id',
+                'residency_types.name as residency_type_name',
+                DB::raw('COUNT(*) as total'),
+                DB::raw('SUM(CASE WHEN student_admissions.is_boarder = true THEN 1 ELSE 0 END) as boarder_count'),
+                DB::raw("SUM(CASE WHEN student_admissions.enrollment_status = 'active' THEN 1 ELSE 0 END) as active_count")
+            )
+            ->groupBy('student_admissions.residency_type_id', 'residency_types.name')
+            ->orderByDesc('total')
+            ->get();
+
+        $recentAdmissions = (clone $query)
+            ->with([
+                'student:id,full_name,admission_no,gender,admission_year,guardian_phone,guardian_name,card_number,father_name',
+                'organization:id,name',
+                'school:id,school_name',
+                'academicYear:id,name,start_date,end_date',
+                'class:id,name,grade_level',
+                'classAcademicYear:id,section_name',
+                'residencyType:id,name',
+                'room:id,room_number',
+            ])
+            ->orderBy('student_admissions.admission_date', 'desc')
+            ->orderBy('student_admissions.created_at', 'desc')
+            ->limit(15)
+            ->get();
+
+        return response()->json([
+            'totals' => [
+                'total' => $total,
+                'active' => $active,
+                'pending' => $pending,
+                'boarders' => $boarders,
+            ],
+            'status_breakdown' => $statusBreakdown,
+            'school_breakdown' => $schoolBreakdown,
+            'academic_year_breakdown' => $academicYearBreakdown,
+            'residency_breakdown' => $residencyBreakdown,
+            'recent_admissions' => $recentAdmissions,
+        ]);
     }
 
     /**

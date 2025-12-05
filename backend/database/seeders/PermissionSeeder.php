@@ -36,7 +36,7 @@ class PermissionSeeder extends Seeder
             'organizations' => ['read', 'create', 'update', 'delete'],
             'staff_types' => ['read', 'create', 'update', 'delete'],
             'staff_documents' => ['read', 'create', 'update', 'delete'],
-            'student_admissions' => ['read', 'create', 'update', 'delete'],
+            'student_admissions' => ['read', 'create', 'update', 'delete', 'report'],
             'student_discipline_records' => ['read', 'create', 'update', 'delete'],
             'student_documents' => ['read', 'create', 'update', 'delete'],
             'student_educational_history' => ['read', 'create', 'update', 'delete'],
@@ -65,7 +65,7 @@ class PermissionSeeder extends Seeder
                 'subjects.read',
                 'academic_years.read',
                 'profiles.read', 'profiles.update',
-                'student_admissions.read', 'student_admissions.create',
+                'student_admissions.read', 'student_admissions.create', 'student_admissions.report',
             ],
             'teacher' => [
                 // Teachers can read and manage academic content

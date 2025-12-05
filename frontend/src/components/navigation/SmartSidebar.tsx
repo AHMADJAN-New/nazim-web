@@ -170,7 +170,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasStaffPermission = useHasPermission('staff.read');
   const hasStudentsPermission = useHasPermission('students.read');
   const hasStudentAdmissionsPermission = useHasPermission('student_admissions.read');
-  const hasStudentReportsPermission = useHasPermission('student_reports.read');
   const hasStaffTypesPermission = useHasPermission('staff_types.read');
   const hasScheduleSlotsPermission = useHasPermission('schedule_slots.read');
   const hasTeacherSubjectAssignmentsPermission = useHasPermission('teacher_subject_assignments.read');
@@ -208,7 +207,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         badge: null,
         priority: 3
       }] : []),
-      ...((hasStudentsPermission || hasStudentAdmissionsPermission || hasStudentReportsPermission) ? [{
+      ...((hasStudentsPermission || hasStudentAdmissionsPermission) ? [{
         titleKey: "studentManagement",
         icon: GraduationCap,
         badge: null,
@@ -225,12 +224,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "admissions",
             url: "/admissions",
             icon: UserCheck,
-          }] : []),
-          ...(hasStudentReportsPermission ? [{
-            title: "Student Reports",
-            titleKey: "studentReports",
-            url: "/reports/student-registrations",
-            icon: FileText,
           }] : []),
         ],
       }] : []),
@@ -418,7 +411,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {

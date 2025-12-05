@@ -33,6 +33,7 @@ export interface TranslationKeys {
     upload: string;
     uploading: string;
     download: string;
+    refresh: string;
     actions: string;
   };
 
@@ -64,6 +65,7 @@ export interface TranslationKeys {
     assets: string;
     communication: string;
     reports: string;
+    admissionsReport: string;
     settings: string;
     authentication: string;
     academicSettings: string;
@@ -318,10 +320,36 @@ export interface TranslationKeys {
     room: string;
     class: string;
     actions: string;
+    totalAdmissions: string;
     noDataFound: string;
     admissionNo: string;
     year: string;
     boarder: string;
+    filtersTitle: string;
+    reportFilters: string;
+    statusBreakdown: string;
+    schoolBreakdown: string;
+    academicYearBreakdown: string;
+    residencyBreakdown: string;
+    recentAdmissions: string;
+    recentAdmissionsSubtitle: string;
+    records: string;
+    admissionDetails: string;
+    schoolClass: string;
+    guardian: string;
+    guardianPhone: string;
+    contact: string;
+    callGuardian: string;
+    cardNumber: string;
+    fromDate: string;
+    toDate: string;
+    resetFilters: string;
+    boarderOnly: string;
+    boarderOnlyHint: string;
+    invalidDateRangeTitle: string;
+    invalidDateRangeDescription: string;
+    reportTitle: string;
+    reportSubtitle: string;
     // Dialog
     admitStudentFromRegistration: string;
     updateAdmission: string;
@@ -685,6 +713,7 @@ const en: TranslationKeys = {
     upload: 'Upload',
     uploading: 'Uploading...',
     download: 'Download',
+    refresh: 'Refresh',
     actions: 'Actions',
     all: 'All',
     years: 'years',
@@ -703,6 +732,7 @@ const en: TranslationKeys = {
     students: 'Students',
     admissions: 'Admissions',
     studentReports: 'Student Reports',
+    admissionsReport: 'Admissions Report',
     studentManagement: 'Student Management',
     attendance: 'Attendance',
     classes: 'Classes',
@@ -1237,9 +1267,35 @@ const en: TranslationKeys = {
   admissions: {
     title: 'Student Admissions',
     subtitle: 'Admit registered students into classes with residency and year tracking.',
+    reportTitle: 'Admissions Report',
+    reportSubtitle: 'Analyze admissions performance across schools and years.',
     add: 'Admit Student',
     list: 'Admissions',
     listDescription: 'Overview of class placements and residency tracking.',
+    filtersTitle: 'Filters',
+    reportFilters: 'Report filters',
+    totalAdmissions: 'Total admissions',
+    statusBreakdown: 'Status breakdown',
+    schoolBreakdown: 'By school',
+    academicYearBreakdown: 'By academic year',
+    residencyBreakdown: 'Residency breakdown',
+    recentAdmissions: 'Recent admissions',
+    recentAdmissionsSubtitle: 'Latest 15 admissions',
+    records: 'records',
+    admissionDetails: 'Admission',
+    schoolClass: 'School / Class',
+    guardian: 'Guardian',
+    guardianPhone: 'Guardian phone',
+    contact: 'Contact',
+    callGuardian: 'Call guardian',
+    cardNumber: 'Card',
+    fromDate: 'From date',
+    toDate: 'To date',
+    resetFilters: 'Reset filters',
+    boarderOnly: 'Boarders only',
+    boarderOnlyHint: 'Show only boarding students',
+    invalidDateRangeTitle: 'Invalid date range',
+    invalidDateRangeDescription: 'The start date must be before the end date.',
     school: 'School',
     allSchools: 'All Schools',
     status: 'Status',
@@ -1320,6 +1376,7 @@ const ps: TranslationKeys = {
     upload: 'پورته کول',
     uploading: 'پورته کول کیږي...',
     download: 'ډاونلوډ',
+    refresh: 'تازه کول',
     actions: 'کړنې',
     all: 'ټول',
     years: 'کلونه',
@@ -1338,6 +1395,7 @@ const ps: TranslationKeys = {
     students: 'زده کوونکي',
     admissions: 'داخلې',
     studentReports: 'د زده کوونکو راپورونه',
+    admissionsReport: 'د داخلې راپور',
     studentManagement: 'د زده کوونکو مدیریت',
     attendance: 'حاضري',
     classes: 'ټولګۍ',
@@ -1872,9 +1930,35 @@ const ps: TranslationKeys = {
   admissions: {
     title: 'د زده کوونکو داخلې',
     subtitle: 'د ثبت شویو زده کوونکو د ټولګیو، کورنۍ او کال د تعقیب سره داخلول.',
+    reportTitle: 'د داخلې راپور',
+    reportSubtitle: 'د ښوونځیو او کلونو په اوږدو کې د داخلې فعالیت وڅارئ.',
     add: 'زده کوونکی داخل کړئ',
     list: 'داخلې',
     listDescription: 'د ټولګیو د ځای پرځای کولو او د کورنۍ د تعقیب عمومي کتنه.',
+    filtersTitle: 'فلټرونه',
+    reportFilters: 'د راپور فلټرونه',
+    totalAdmissions: 'ټولې داخلې',
+    statusBreakdown: 'د حالت وېش',
+    schoolBreakdown: 'د ښوونځي له مخې',
+    academicYearBreakdown: 'د تعلیمي کال له مخې',
+    residencyBreakdown: 'د استوګنې وېش',
+    recentAdmissions: 'وروستۍ داخلې',
+    recentAdmissionsSubtitle: 'اوسنۍ ۱۵ داخلې',
+    records: 'ریکارډونه',
+    admissionDetails: 'داخلې',
+    schoolClass: 'ښوونځی / ټولګی',
+    guardian: 'سرپرست',
+    guardianPhone: 'د سرپرست تلیفون',
+    contact: 'اړیکه',
+    callGuardian: 'سرپرست ته زنګ',
+    cardNumber: 'کارت',
+    fromDate: 'د نېټې څخه',
+    toDate: 'تر نېټې پورې',
+    resetFilters: 'فلټرونه پاک کړئ',
+    boarderOnly: 'یوازې لیلیه والو زده کوونکو',
+    boarderOnlyHint: 'یوازې د لیلیې زده کوونکي وښایئ',
+    invalidDateRangeTitle: 'د نېټې ناسم حد',
+    invalidDateRangeDescription: 'پیل نېټه باید د پای نېټې نه مخکې وي.',
     school: 'ښوونځی',
     allSchools: 'ټول ښوونځي',
     status: 'حالت',
@@ -1956,6 +2040,7 @@ const fa: TranslationKeys = {
     upload: 'آپلود',
     uploading: 'در حال آپلود...',
     download: 'دانلود',
+    refresh: 'تازه‌سازی',
     actions: 'اقدامات',
     all: 'همه',
     years: 'سال',
@@ -1974,6 +2059,7 @@ const fa: TranslationKeys = {
     students: 'دانش‌آموزان',
     admissions: 'پذیرش',
     studentReports: 'گزارش‌های دانش‌آموزان',
+    admissionsReport: 'گزارش پذیرش',
     studentManagement: 'مدیریت دانش‌آموزان',
     attendance: 'حاضری',
     classes: 'کلاس‌ها',
@@ -2508,9 +2594,35 @@ const fa: TranslationKeys = {
   admissions: {
     title: 'پذیرش دانش‌آموزان',
     subtitle: 'دانش‌آموزان ثبت‌شده را در کلاس‌ها با ردیابی اقامت و سال پذیرش کنید.',
+    reportTitle: 'گزارش پذیرش',
+    reportSubtitle: 'عملکرد پذیرش را در مدارس و سال‌ها بررسی کنید.',
     add: 'پذیرش دانش‌آموز',
     list: 'پذیرش‌ها',
     listDescription: 'نمای کلی از قرارگیری کلاس و ردیابی اقامت.',
+    filtersTitle: 'فیلترها',
+    reportFilters: 'فیلترهای گزارش',
+    totalAdmissions: 'کل پذیرش‌ها',
+    statusBreakdown: 'تفکیک وضعیت',
+    schoolBreakdown: 'بر اساس مدرسه',
+    academicYearBreakdown: 'بر اساس سال تحصیلی',
+    residencyBreakdown: 'تفکیک اقامت',
+    recentAdmissions: 'پذیرش‌های اخیر',
+    recentAdmissionsSubtitle: 'آخرین ۱۵ پذیرش',
+    records: 'رکورد',
+    admissionDetails: 'پذیرش',
+    schoolClass: 'مدرسه / کلاس',
+    guardian: 'سرپرست',
+    guardianPhone: 'تلفن سرپرست',
+    contact: 'ارتباط',
+    callGuardian: 'تماس با سرپرست',
+    cardNumber: 'کارت',
+    fromDate: 'از تاریخ',
+    toDate: 'تا تاریخ',
+    resetFilters: 'تنظیم مجدد فیلترها',
+    boarderOnly: 'فقط خوابگاهی‌ها',
+    boarderOnlyHint: 'تنها دانش‌آموزان خوابگاهی را نشان بدهید',
+    invalidDateRangeTitle: 'بازهٔ تاریخی نامعتبر',
+    invalidDateRangeDescription: 'تاریخ شروع باید قبل از تاریخ پایان باشد.',
     school: 'مدرسه',
     allSchools: 'همه مدارس',
     status: 'وضعیت',
@@ -2592,6 +2704,7 @@ const ar: TranslationKeys = {
     upload: 'رفع',
     uploading: 'جاري الرفع...',
     download: 'تنزيل',
+    refresh: 'تحديث',
     actions: 'الإجراءات',
     all: 'الكل',
     years: 'سنوات',
@@ -2610,6 +2723,7 @@ const ar: TranslationKeys = {
     students: 'الطلاب',
     admissions: 'القبول',
     studentReports: 'تقارير الطلاب',
+    admissionsReport: 'تقرير القبول',
     studentManagement: 'إدارة الطلاب',
     attendance: 'الحضور',
     classes: 'الفصول',
@@ -3144,9 +3258,35 @@ const ar: TranslationKeys = {
   admissions: {
     title: 'قبول الطلاب',
     subtitle: 'قبول الطلاب المسجلين في الفصول مع تتبع الإقامة والسنة.',
+    reportTitle: 'تقرير القبول',
+    reportSubtitle: 'تحليل أداء القبول عبر المدارس والسنوات.',
     add: 'قبول طالب',
     list: 'القبولات',
     listDescription: 'نظرة عامة على مواضع الفصول وتتبع الإقامة.',
+    filtersTitle: 'عوامل التصفية',
+    reportFilters: 'مرشحات التقرير',
+    totalAdmissions: 'إجمالي القبولات',
+    statusBreakdown: 'توزيع الحالة',
+    schoolBreakdown: 'حسب المدرسة',
+    academicYearBreakdown: 'حسب السنة الأكاديمية',
+    residencyBreakdown: 'توزيع الإقامة',
+    recentAdmissions: 'أحدث القبولات',
+    recentAdmissionsSubtitle: 'آخر 15 قبولًا',
+    records: 'سجلات',
+    admissionDetails: 'القبول',
+    schoolClass: 'المدرسة / الفصل',
+    guardian: 'الوصي',
+    guardianPhone: 'هاتف الوصي',
+    contact: 'التواصل',
+    callGuardian: 'الاتصال بالوصي',
+    cardNumber: 'البطاقة',
+    fromDate: 'من التاريخ',
+    toDate: 'إلى التاريخ',
+    resetFilters: 'إعادة تعيين عوامل التصفية',
+    boarderOnly: 'الداخليون فقط',
+    boarderOnlyHint: 'عرض الطلاب الداخليين فقط',
+    invalidDateRangeTitle: 'نطاق تواريخ غير صالح',
+    invalidDateRangeDescription: 'يجب أن يكون تاريخ البدء قبل تاريخ الانتهاء.',
     school: 'المدرسة',
     allSchools: 'جميع المدارس',
     status: 'الحالة',

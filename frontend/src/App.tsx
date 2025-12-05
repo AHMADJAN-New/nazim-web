@@ -43,6 +43,7 @@ import {
   Students,
   StudentAdmissions,
   StudentReport,
+  StudentAdmissionsReport,
   UserManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -242,6 +243,13 @@ const App = () => (
                       <PermissionRoute permission="student_admissions.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <StudentAdmissions />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/admissions/report" element={
+                      <PermissionRoute permission="student_admissions.report">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <StudentAdmissionsReport />
                         </Suspense>
                       </PermissionRoute>
                     } />

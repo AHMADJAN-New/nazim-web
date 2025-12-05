@@ -1460,6 +1460,20 @@ export const studentAdmissionsApi = {
   }) => {
     return apiClient.get('/student-admissions/stats', params);
   },
+
+  report: async (params?: {
+    organization_id?: string;
+    school_id?: string;
+    academic_year_id?: string;
+    class_id?: string;
+    enrollment_status?: string;
+    residency_type_id?: string;
+    is_boarder?: boolean;
+    from_date?: string;
+    to_date?: string;
+  }) => {
+    return apiClient.get('/student-admissions/report', params);
+  },
 };
 
 // Teacher Subject Assignments API

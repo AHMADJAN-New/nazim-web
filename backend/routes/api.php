@@ -161,6 +161,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Student Admissions
     Route::get('/student-admissions/stats', [StudentAdmissionController::class, 'stats']);
+    Route::get('/student-admissions/report', [StudentAdmissionController::class, 'report']);
     Route::apiResource('student-admissions', StudentAdmissionController::class);
 
     // Classes - Specific routes must come BEFORE resource route to avoid route conflicts

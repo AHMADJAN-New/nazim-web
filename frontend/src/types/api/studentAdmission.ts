@@ -28,8 +28,11 @@ export interface StudentAdmission {
     full_name: string;
     admission_no: string;
     student_code: string | null;
+    card_number: string | null;
+    father_name: string | null;
     gender: string | null;
     admission_year: string | null;
+    guardian_name: string | null;
     guardian_phone: string | null;
   };
   organization?: {
