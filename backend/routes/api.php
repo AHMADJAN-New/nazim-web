@@ -31,6 +31,7 @@ use App\Http\Controllers\StudentDocumentController;
 use App\Http\Controllers\StudentEducationalHistoryController;
 use App\Http\Controllers\StudentDisciplineRecordController;
 use App\Http\Controllers\TeacherTimetablePreferenceController;
+use App\Http\Controllers\StudentReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -136,6 +137,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     // Picture routes must come before resource route to avoid conflicts
     Route::get('/students/{id}/picture', [StudentController::class, 'getPicture']);
     Route::post('/students/{id}/picture', [StudentController::class, 'uploadPicture']);
+    Route::get('/students/report/export', [StudentReportController::class, 'export']);
     Route::apiResource('students', StudentController::class);
 
     // Student Documents

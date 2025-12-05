@@ -1,7 +1,7 @@
 {
-  "name": "Green Valley School Management System",
+  "name": "Nazim Management System",
   "short_name": "GVS Portal",
-  "description": "Complete school management system for Green Valley School",
+  "description": "Complete school management system for Nazim",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -210,7 +210,7 @@ const Index = () => {
   const testimonials = [
     {
       name: "Dr. Ahmad Hassan",
-      role: "Principal, Green Valley School",
+      role: "Principal, Nazim",
       content: "This system has revolutionized how we manage our school. The efficiency gains are remarkable, and parents love the transparency.",
       rating: 5,
       image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop"
@@ -654,7 +654,7 @@ const Index = () => {
 
                   <div>
                     <Label htmlFor="schoolName">School Name</Label>
-                    <Input id="schoolName" name="schoolName" placeholder="Green Valley School" required />
+                    <Input id="schoolName" name="schoolName" placeholder="Nazim" required />
                   </div>
 
                   <div>

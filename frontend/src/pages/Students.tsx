@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { studentSchema, type StudentFormData } from '@/lib/validations';
@@ -508,18 +509,24 @@ export function Students() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">{t('students.title') || 'Students'}</h1>
-          <p className="text-muted-foreground">
-            {t('students.subtitle') || 'Manage admissions with complete Afghan student records'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsCreateOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            {t('students.add') || 'Register Student'}
-          </Button>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">{t('students.title') || 'Students'}</h1>
+            <p className="text-muted-foreground">
+              {t('students.subtitle') || 'Manage admissions with complete Afghan student records'}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/reports/student-registrations">
+                <FileText className="w-4 h-4 mr-2" />
+                Registration Report
+              </Link>
+            </Button>
+            <Button onClick={() => setIsCreateOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              {t('students.add') || 'Register Student'}
+            </Button>
           <StudentFormDialog
             open={isCreateOpen}
             onOpenChange={setIsCreateOpen}

@@ -214,6 +214,45 @@ class ApiClient {
     }
   }
 
+  async requestFile(
+    endpoint: string,
+    options: RequestOptions = {}
+  ): Promise<{ blob: Blob; filename: string | null }> {
+    const { params, ...fetchOptions } = options;
+    const url = this.buildUrl(endpoint, params);
+
+    const headers: HeadersInit = {
+      Accept: '*/*',
+      ...fetchOptions.headers,
+    };
+
+    if (!(fetchOptions.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(url, {
+      ...fetchOptions,
+      headers,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
+    }
+
+    const contentDisposition = response.headers.get('content-disposition');
+    const filename = contentDisposition
+      ? contentDisposition.split('filename=')[1]?.replace(/["']/g, '') || null
+      : null;
+
+    const blob = await response.blob();
+    return { blob, filename };
+  }
+
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     return this.request<T>(endpoint, { method: 'GET', params });
   }
@@ -1106,6 +1145,19 @@ export const studentsApi = {
     per_page?: number;
   }) => {
     return apiClient.get('/students', params);
+  },
+
+  exportReport: async (params: {
+    format: 'csv' | 'pdf' | 'xlsx';
+    organization_id?: string;
+    school_id?: string;
+    student_status?: string;
+    gender?: string;
+    is_orphan?: boolean;
+    admission_fee_status?: string;
+    search?: string;
+  }) => {
+    return apiClient.requestFile('/students/report/export', { method: 'GET', params });
   },
 
   get: async (id: string) => {

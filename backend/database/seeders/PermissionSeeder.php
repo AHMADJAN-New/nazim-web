@@ -44,6 +44,7 @@ class PermissionSeeder extends Seeder
             'teacher_timetable_preferences' => ['read', 'create', 'update', 'delete'],
             'roles' => ['read', 'create', 'update', 'delete'],
             'permissions' => ['read', 'create', 'update', 'delete'],
+            'student_reports' => ['read', 'export'],
         ];
     }
 
