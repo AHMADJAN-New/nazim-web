@@ -67,6 +67,7 @@ class HostelController extends Controller
                 ],
                 'rooms' => [],
                 'buildings' => [],
+                'unassigned_boarders' => [],
             ]);
         }
 

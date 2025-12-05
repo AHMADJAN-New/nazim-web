@@ -46,10 +46,13 @@ import {
   StudentAdmissionsReport,
   HostelManagement,
   HostelReports,
+  AttendancePage,
+  AttendanceReports,
   UserManagement
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
+import { HostelPermissionGuard } from "@/components/HostelPermissionGuard";
 
 // Optimized QueryClient with better caching and performance settings
 const queryClient = new QueryClient({
@@ -242,19 +245,33 @@ const App = () => (
                       </PermissionRoute>
                     } />
                     <Route path="/hostel" element={
-                      <PermissionRoute permission="rooms.read">
+                      <HostelPermissionGuard>
                         <Suspense fallback={<PageSkeleton />}>
                           <HostelManagement />
                         </Suspense>
-                      </PermissionRoute>
+                      </HostelPermissionGuard>
                     } />
                     <Route path="/hostel/reports" element={
                       <PermissionRoute permission="reports.read">
-                        <PermissionGuard permission="rooms.read">
+                        <HostelPermissionGuard>
                           <Suspense fallback={<PageSkeleton />}>
                             <HostelReports />
                           </Suspense>
-                        </PermissionGuard>
+                        </HostelPermissionGuard>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/attendance" element={
+                      <PermissionRoute permission="attendance_sessions.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AttendancePage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/attendance/reports" element={
+                      <PermissionRoute permission="attendance_sessions.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AttendanceReports />
+                        </Suspense>
                       </PermissionRoute>
                     } />
                     <Route path="/admissions" element={

@@ -76,6 +76,13 @@ const navigationItems: NavigationItem[] = [
     roles: ["admin", "teacher", "accountant", "librarian", "parent", "student", "hostel_manager", "asset_manager"]
   },
   {
+    titleKey: "attendance",
+    url: "/attendance",
+    icon: UserCheck,
+    badge: null,
+    roles: ["admin", "teacher", "staff"]
+  },
+  {
     titleKey: "settings",
     icon: Settings,
     badge: null,

@@ -35,6 +35,8 @@ export interface TranslationKeys {
     download: string;
     refresh: string;
     actions: string;
+    error: string;
+    success: string;
   };
 
   // Pagination
@@ -70,6 +72,51 @@ export interface TranslationKeys {
     authentication: string;
     academicSettings: string;
     academicManagement: string;
+  };
+
+  attendancePage: {
+    title: string;
+    subtitle: string;
+    classLabel: string;
+    dateLabel: string;
+    methodLabel: string;
+    schoolLabel: string;
+    notesLabel: string;
+    createButton: string;
+    recentSessions: string;
+    recentSessionsDescription: string;
+    noSessions: string;
+    manualTab: string;
+    barcodeTab: string;
+    markAllPresent: string;
+    markAllAbsent: string;
+    saveButton: string;
+    studentHeader: string;
+    admissionHeader: string;
+    cardHeader: string;
+    statusHeader: string;
+    emptyRoster: string;
+    cardNumberLabel: string;
+    noteLabel: string;
+    recordScan: string;
+    selectSessionForScan: string;
+    scanFeedTitle: string;
+    timeHeader: string;
+    focusScanner: string;
+    scanInProgress: string;
+    saveInProgress: string;
+    noScansYet: string;
+    sessionHint: string;
+    sessionRequired: string;
+    recordsRequired: string;
+    scanPrompt: string;
+    createSuccess: string;
+    saveSuccess: string;
+    scanSuccess: string;
+    statusPresent: string;
+    statusAbsent: string;
+    statusLate: string;
+    statusExcused: string;
   };
 
   // Dashboard
@@ -717,6 +764,8 @@ const en: TranslationKeys = {
     actions: 'Actions',
     all: 'All',
     years: 'years',
+    error: 'Something went wrong',
+    success: 'Success',
   },
   pagination: {
     showing: 'Showing',
@@ -735,6 +784,7 @@ const en: TranslationKeys = {
     admissionsReport: 'Admissions Report',
     studentManagement: 'Student Management',
     attendance: 'Attendance',
+    attendanceReports: 'Attendance Reports',
     classes: 'Classes',
     exams: 'Exams',
     finance: 'Finance',
@@ -748,6 +798,54 @@ const en: TranslationKeys = {
     authentication: 'Authentication',
     academicSettings: 'Academic Settings',
     academicManagement: 'Academic Management',
+  },
+  attendancePage: {
+    title: 'Attendance',
+    subtitle: 'Track daily attendance with manual marking or barcode scans.',
+    classLabel: 'Class',
+    dateLabel: 'Date',
+    methodLabel: 'Method',
+    schoolLabel: 'School',
+    notesLabel: 'Notes',
+    createButton: 'Create attendance session',
+    recentSessions: 'Recent sessions',
+    recentSessionsDescription: 'Pick a session to start marking students.',
+    noSessions: 'No sessions yet. Create one to begin.',
+    manualTab: 'Manual',
+    barcodeTab: 'Barcode',
+    markAllPresent: 'Mark all present',
+    markAllAbsent: 'Mark all absent',
+    saveButton: 'Save attendance',
+    studentHeader: 'Student',
+    admissionHeader: 'Admission',
+    cardHeader: 'Card',
+    statusHeader: 'Status',
+    emptyRoster: 'Select a session with an assigned class to see students.',
+    cardNumberLabel: 'Card number',
+    noteLabel: 'Note',
+    recordScan: 'Record scan',
+    selectSessionForScan: 'Select a session to enable barcode scanning.',
+    scanFeedTitle: 'Live scans',
+    timeHeader: 'Time',
+    focusScanner: 'Focus scanner',
+    scanInProgress: 'Recording…',
+    saveInProgress: 'Saving…',
+    noScansYet: 'No scans yet for this session.',
+    sessionHint: 'Class and date are required',
+    sessionRequired: 'Please select a session to continue',
+    recordsRequired: 'Add at least one attendance record',
+    scanPrompt: 'Enter or scan a card number',
+    createSuccess: 'Attendance session created',
+    saveSuccess: 'Attendance saved',
+    scanSuccess: 'Attendance recorded',
+    closeSession: 'Close session',
+    sessionClosed: 'Session closed',
+    statusPresent: 'Present',
+    statusAbsent: 'Absent',
+    statusLate: 'Late',
+    statusExcused: 'Excused',
+    statusSick: 'Sick',
+    statusLeave: 'Leave (رخصت)',
   },
   dashboard: {
     title: 'Dashboard',
@@ -1380,6 +1478,8 @@ const ps: TranslationKeys = {
     actions: 'کړنې',
     all: 'ټول',
     years: 'کلونه',
+    error: 'تیر پیښ شو',
+    success: 'بریالیتوب',
   },
   pagination: {
     showing: 'ښودل کیږي',
@@ -1411,6 +1511,50 @@ const ps: TranslationKeys = {
     authentication: 'د تصدیق مدیریت',
     academicSettings: 'د علمي ترتیباتو',
     academicManagement: 'د علمي مدیریت',
+  },
+  attendancePage: {
+    title: 'حاضري',
+    subtitle: 'د لاسي یا بارکوډ سکین له لارې ورځنۍ حاضري تعقیب کړئ.',
+    classLabel: 'صنف',
+    dateLabel: 'نیټه',
+    methodLabel: 'طریقه',
+    schoolLabel: 'ښوونځی',
+    notesLabel: 'یادښتونه',
+    createButton: 'د حاضري ناسته جوړه کړئ',
+    recentSessions: 'وروستۍ ناستې',
+    recentSessionsDescription: 'ناسته وټاکئ تر څو حاضري پیل کړئ.',
+    noSessions: 'تر اوسه ناستې نشته. یوه ناسته جوړه کړئ.',
+    manualTab: 'لاسې',
+    barcodeTab: 'بارکوډ',
+    markAllPresent: 'ټول حاضر وښایئ',
+    markAllAbsent: 'ټول غایب وښایئ',
+    saveButton: 'حاضري خوندي کړئ',
+    studentHeader: 'زده کوونکی',
+    admissionHeader: 'شمولیت',
+    cardHeader: 'کارت',
+    statusHeader: 'حالت',
+    emptyRoster: 'د زده کوونکو د کتلو لپاره ناسته او صنف غوره کړئ.',
+    cardNumberLabel: 'د کارت نمبر',
+    noteLabel: 'یادښت',
+    recordScan: 'سکین ثبت کړئ',
+    selectSessionForScan: 'د بارکوډ لپاره ناسته غوره کړئ.',
+    scanFeedTitle: 'ژوندۍ سکینونه',
+    timeHeader: 'وخت',
+    focusScanner: 'سکینر ته تمرکز',
+    scanInProgress: 'ریکارډیږي…',
+    saveInProgress: 'خوندي کېږي…',
+    noScansYet: 'د دې ناستې لپاره لا سکین نشته.',
+    sessionHint: 'صنف او نیټه اړین دي',
+    sessionRequired: 'مهرباني وکړئ یوه ناسته وټاکئ',
+    recordsRequired: 'لږ تر لږه یو د حاضري ریکارډ اضافه کړئ',
+    scanPrompt: 'د کارت نمبر داخل یا سکین کړئ',
+    createSuccess: 'د حاضري ناسته جوړه شوه',
+    saveSuccess: 'حاضري خوندي شوه',
+    scanSuccess: 'حاضري ثبت شوه',
+    statusPresent: 'حاضر',
+    statusAbsent: 'غایب',
+    statusLate: 'ناوخته',
+    statusExcused: 'معاف',
   },
   dashboard: {
     title: 'کنټرول پینل',
@@ -2044,6 +2188,8 @@ const fa: TranslationKeys = {
     actions: 'اقدامات',
     all: 'همه',
     years: 'سال',
+    error: 'خطا رخ داد',
+    success: 'موفقیت',
   },
   pagination: {
     showing: 'نمایش',
@@ -2075,6 +2221,58 @@ const fa: TranslationKeys = {
     authentication: 'مدیریت احراز هویت',
     academicSettings: 'تنظیمات آکادمیک',
     academicManagement: 'مدیریت آکادمیک',
+  },
+  attendancePage: {
+    title: 'حاضری',
+    subtitle: 'حاضری روزانه را با علامه دستی یا بارکد ثبت کنید.',
+    classLabel: 'صنف',
+    dateLabel: 'تاریخ',
+    methodLabel: 'روش',
+    schoolLabel: 'مکتب',
+    notesLabel: 'یادداشت‌ها',
+    createButton: 'ایجاد جلسه حاضری',
+    recentSessions: 'جلسات اخیر',
+    recentSessionsDescription: 'برای شروع حاضری یک جلسه انتخاب کنید.',
+    noSessions: 'هیچ جلسه‌ای موجود نیست. لطفاً ایجاد کنید.',
+    manualTab: 'دستی',
+    barcodeTab: 'بارکد',
+    markAllPresent: 'همه حاضر',
+    markAllAbsent: 'همه غایب',
+    saveButton: 'ذخیره حاضری',
+    studentHeader: 'دانش‌آموز',
+    admissionHeader: 'پذیرش',
+    cardHeader: 'کارت',
+    statusHeader: 'وضعیت',
+    emptyRoster: 'برای دیدن دانش‌آموزان یک جلسه و صنف انتخاب کنید.',
+    cardNumberLabel: 'شماره کارت',
+    noteLabel: 'یادداشت',
+    recordScan: 'ثبت اسکن',
+    selectSessionForScan: 'برای بارکد یک جلسه انتخاب کنید.',
+    scanFeedTitle: 'اسکن‌های زنده',
+    timeHeader: 'زمان',
+    focusScanner: 'تمرکز روی اسکنر',
+    scanInProgress: 'در حال ثبت…',
+    saveInProgress: 'در حال ذخیره…',
+    noScansYet: 'هنوز برای این جلسه اسکن نشده است.',
+    closeSession: 'بستن جلسه',
+    sessionClosed: 'جلسه بسته شد',
+    statusPresent: 'حاضر',
+    statusAbsent: 'غایب',
+    statusLate: 'دیر',
+    statusExcused: 'معذور',
+    statusSick: 'بیمار',
+    statusLeave: 'رخصت',
+    sessionHint: 'صنف و تاریخ ضروری است',
+    sessionRequired: 'لطفاً یک جلسه انتخاب کنید',
+    recordsRequired: 'حداقل یک ریکارد حاضری اضافه کنید',
+    scanPrompt: 'نمبر کارت را وارد یا اسکن کنید',
+    createSuccess: 'جلسه حاضری ایجاد شد',
+    saveSuccess: 'حاضری ذخیره شد',
+    scanSuccess: 'حاضری ثبت شد',
+    statusPresent: 'حاضر',
+    statusAbsent: 'غایب',
+    statusLate: 'دیر',
+    statusExcused: 'معذور',
   },
   dashboard: {
     title: 'داشبورد',
@@ -2708,6 +2906,8 @@ const ar: TranslationKeys = {
     actions: 'الإجراءات',
     all: 'الكل',
     years: 'سنوات',
+    error: 'حدث خطأ',
+    success: 'تم بنجاح',
   },
   pagination: {
     showing: 'عرض',
@@ -2739,6 +2939,58 @@ const ar: TranslationKeys = {
     authentication: 'إدارة المصادقة',
     academicSettings: 'الإعدادات الأكاديمية',
     academicManagement: 'الإدارة الأكاديمية',
+  },
+  attendancePage: {
+    title: 'الحضور',
+    subtitle: 'تتبع الحضور اليومي بالتسجيل اليدوي أو مسح الباركود.',
+    classLabel: 'الصف',
+    dateLabel: 'التاريخ',
+    methodLabel: 'الطريقة',
+    schoolLabel: 'المدرسة',
+    notesLabel: 'ملاحظات',
+    createButton: 'إنشاء جلسة حضور',
+    recentSessions: 'الجلسات الحديثة',
+    recentSessionsDescription: 'اختر جلسة لبدء تسجيل الحضور.',
+    noSessions: 'لا توجد جلسات بعد. أنشئ جلسة للبدء.',
+    manualTab: 'يدوي',
+    barcodeTab: 'باركود',
+    markAllPresent: 'تعيين الجميع حاضر',
+    markAllAbsent: 'تعيين الجميع غائب',
+    saveButton: 'حفظ الحضور',
+    studentHeader: 'الطالب',
+    admissionHeader: 'القبول',
+    cardHeader: 'البطاقة',
+    statusHeader: 'الحالة',
+    emptyRoster: 'اختر جلسة وصفًا لعرض الطلاب.',
+    cardNumberLabel: 'رقم البطاقة',
+    noteLabel: 'ملاحظة',
+    recordScan: 'تسجيل المسح',
+    selectSessionForScan: 'اختر جلسة لتمكين المسح.',
+    scanFeedTitle: 'عمليات مسح مباشرة',
+    timeHeader: 'الوقت',
+    focusScanner: 'تركيز على جهاز المسح',
+    scanInProgress: 'جارٍ التسجيل…',
+    saveInProgress: 'جارٍ الحفظ…',
+    noScansYet: 'لا توجد مسوحات لهذه الجلسة بعد.',
+    closeSession: 'إغلاق الجلسة',
+    sessionClosed: 'تم إغلاق الجلسة',
+    statusPresent: 'حاضر',
+    statusAbsent: 'غائب',
+    statusLate: 'متأخر',
+    statusExcused: 'معذور',
+    statusSick: 'مريض',
+    statusLeave: 'إجازة',
+    sessionHint: 'الصف والتاريخ مطلوبان',
+    sessionRequired: 'يرجى اختيار جلسة للمتابعة',
+    recordsRequired: 'أضف سجلاً واحداً على الأقل للحضور',
+    scanPrompt: 'أدخل أو امسح رقم البطاقة',
+    createSuccess: 'تم إنشاء جلسة الحضور',
+    saveSuccess: 'تم حفظ الحضور',
+    scanSuccess: 'تم تسجيل الحضور',
+    statusPresent: 'حاضر',
+    statusAbsent: 'غائب',
+    statusLate: 'متأخر',
+    statusExcused: 'معذور',
   },
   dashboard: {
     title: 'لوحة التحكم',

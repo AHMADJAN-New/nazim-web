@@ -87,10 +87,11 @@ class ApiClient {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (Array.isArray(value)) {
+            // Laravel expects array parameters in format: key[]=value1&key[]=value2
             value.forEach(v => {
               // Convert booleans to 1/0 for better Laravel compatibility
               const paramValue = typeof v === 'boolean' ? (v ? '1' : '0') : String(v);
-              url.searchParams.append(key, paramValue);
+              url.searchParams.append(`${key}[]`, paramValue);
             });
           } else {
             // Convert booleans to 1/0 for better Laravel compatibility
@@ -1800,5 +1801,67 @@ export const classSubjectsApi = {
 
   delete: async (id: string) => {
     return apiClient.delete(`/class-subjects/${id}`);
+  },
+};
+
+// Attendance Sessions API
+export const attendanceSessionsApi = {
+  list: async (params?: {
+    class_id?: string;
+    method?: string;
+    status?: string;
+    date_from?: string;
+    date_to?: string;
+    school_id?: string;
+    page?: number;
+    per_page?: number;
+  }) => {
+    return apiClient.get('/attendance-sessions', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/attendance-sessions/${id}`);
+  },
+
+  create: async (data: any) => {
+    return apiClient.post('/attendance-sessions', data);
+  },
+
+  update: async (id: string, data: any) => {
+    return apiClient.put(`/attendance-sessions/${id}`, data);
+  },
+
+  markRecords: async (id: string, data: any) => {
+    return apiClient.post(`/attendance-sessions/${id}/records`, data);
+  },
+
+  scan: async (id: string, data: any) => {
+    return apiClient.post(`/attendance-sessions/${id}/scan`, data);
+  },
+
+  scanFeed: async (id: string, params?: { limit?: number }) => {
+    return apiClient.get(`/attendance-sessions/${id}/scans`, params);
+  },
+
+  roster: async (params: { class_id?: string; class_ids?: string[]; academic_year_id?: string }) => {
+    return apiClient.get('/attendance-sessions/roster', params);
+  },
+  close: async (id: string) => {
+    return apiClient.post(`/attendance-sessions/${id}/close`);
+  },
+  report: async (params?: {
+    organization_id?: string;
+    student_id?: string;
+    class_id?: string;
+    class_ids?: string[];
+    school_id?: string;
+    academic_year_id?: string;
+    date_from?: string;
+    date_to?: string;
+    status?: string;
+    page?: number;
+    per_page?: number;
+  }) => {
+    return apiClient.get('/attendance-sessions/report', params);
   },
 };

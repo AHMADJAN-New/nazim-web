@@ -33,6 +33,7 @@ use App\Http\Controllers\StudentDisciplineRecordController;
 use App\Http\Controllers\TeacherTimetablePreferenceController;
 use App\Http\Controllers\StudentReportController;
 use App\Http\Controllers\HostelController;
+use App\Http\Controllers\AttendanceSessionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -204,4 +205,13 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Teacher Subject Assignments
     Route::apiResource('teacher-subject-assignments', TeacherSubjectAssignmentController::class);
+
+    // Attendance Sessions
+    Route::get('/attendance-sessions/roster', [AttendanceSessionController::class, 'roster']);
+    Route::get('/attendance-sessions/report', [AttendanceSessionController::class, 'report']);
+    Route::post('/attendance-sessions/{id}/close', [AttendanceSessionController::class, 'close']);
+    Route::post('/attendance-sessions/{id}/records', [AttendanceSessionController::class, 'markRecords']);
+    Route::post('/attendance-sessions/{id}/scan', [AttendanceSessionController::class, 'scan']);
+    Route::get('/attendance-sessions/{id}/scans', [AttendanceSessionController::class, 'scanFeed']);
+    Route::apiResource('attendance-sessions', AttendanceSessionController::class);
 });

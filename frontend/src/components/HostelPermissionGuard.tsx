@@ -1,0 +1,68 @@
+import { ReactNode } from 'react';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useUserPermissions } from '@/hooks/usePermissions';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Shield } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading';
+
+interface HostelPermissionGuardProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+  showError?: boolean;
+}
+
+/**
+ * Permission guard for hostel routes that requires:
+ * (hostel.read OR rooms.read) AND student_admissions.read
+ * 
+ * This matches the backend permission requirements in HostelController.
+ */
+export function HostelPermissionGuard({ 
+  children, 
+  fallback,
+  showError = true 
+}: HostelPermissionGuardProps) {
+  const { data: permissions, isLoading } = useUserPermissions();
+  const hasHostelRead = useHasPermission('hostel.read');
+  const hasRoomsRead = useHasPermission('rooms.read');
+  const hasAdmissionsRead = useHasPermission('student_admissions.read');
+
+  // Show loading state while permissions are being fetched
+  const isInitialLoad = isLoading && permissions === undefined;
+  
+  if (hasHostelRead === undefined || hasRoomsRead === undefined || hasAdmissionsRead === undefined || isInitialLoad) {
+    return <LoadingSpinner size="lg" text="Checking permissions..." />;
+  }
+
+  // Check: (hostel.read OR rooms.read) AND student_admissions.read
+  const hasHostelOrRooms = hasHostelRead || hasRoomsRead;
+  const hasAllRequired = hasHostelOrRooms && hasAdmissionsRead;
+
+  if (hasAllRequired) {
+    return <>{children}</>;
+  }
+
+  if (fallback) {
+    return <>{fallback}</>;
+  }
+
+  if (!showError) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="text-center text-muted-foreground">
+          <Shield className="h-12 w-12 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
+          <p>You do not have permission to access this resource.</p>
+          <p className="text-sm mt-2">
+            Required permissions: <code className="bg-muted px-2 py-1 rounded">(hostel.read OR rooms.read) AND student_admissions.read</code>
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
