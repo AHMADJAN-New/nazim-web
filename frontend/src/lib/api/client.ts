@@ -1471,6 +1471,8 @@ export const studentAdmissionsApi = {
     is_boarder?: boolean;
     from_date?: string;
     to_date?: string;
+    page?: number;
+    per_page?: number;
   }) => {
     return apiClient.get('/student-admissions/report', params);
   },

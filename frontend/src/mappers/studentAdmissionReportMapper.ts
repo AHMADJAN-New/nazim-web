@@ -32,4 +32,19 @@ export const mapStudentAdmissionReportApiToDomain = (
     active: Number(item.active_count),
   })),
   recentAdmissions: (apiReport.recent_admissions || []).map(mapStudentAdmissionApiToDomain),
+  pagination: apiReport.pagination ? {
+    currentPage: apiReport.pagination.current_page,
+    perPage: apiReport.pagination.per_page,
+    total: apiReport.pagination.total,
+    lastPage: apiReport.pagination.last_page,
+    from: apiReport.pagination.from,
+    to: apiReport.pagination.to,
+  } : {
+    currentPage: 1,
+    perPage: 25,
+    total: 0,
+    lastPage: 1,
+    from: 0,
+    to: 0,
+  },
 });

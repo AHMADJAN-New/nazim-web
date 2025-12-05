@@ -41,6 +41,14 @@ export interface StudentAdmissionReport {
   academicYearBreakdown: StudentAdmissionAcademicYearSummary[];
   residencyBreakdown: StudentAdmissionResidencySummary[];
   recentAdmissions: StudentAdmission[];
+  pagination: {
+    currentPage: number;
+    perPage: number;
+    total: number;
+    lastPage: number;
+    from: number;
+    to: number;
+  };
 }
 
 export interface StudentAdmissionReportFilters {
@@ -52,4 +60,6 @@ export interface StudentAdmissionReportFilters {
   isBoarder?: boolean;
   fromDate?: string;
   toDate?: string;
+  page?: number;
+  perPage?: number;
 }

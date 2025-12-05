@@ -382,6 +382,14 @@ class StudentAdmissionController extends Controller
             'academic_year_breakdown' => [],
             'residency_breakdown' => [],
             'recent_admissions' => [],
+            'pagination' => [
+                'current_page' => 1,
+                'per_page' => 25,
+                'total' => 0,
+                'last_page' => 1,
+                'from' => 0,
+                'to' => 0,
+            ],
         ];
     }
 
@@ -431,6 +439,8 @@ class StudentAdmissionController extends Controller
             'is_boarder' => 'nullable|boolean',
             'from_date' => 'nullable|date',
             'to_date' => 'nullable|date',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -564,7 +574,12 @@ class StudentAdmissionController extends Controller
             ->orderByDesc('total')
             ->get();
 
-        $recentAdmissions = (clone $query)
+        // Pagination for admissions list
+        $page = (int) ($request->input('page', 1));
+        $perPage = (int) ($request->input('per_page', 25));
+        $perPage = min(max($perPage, 1), 100); // Clamp between 1 and 100
+
+        $admissionsQuery = (clone $query)
             ->with([
                 'student:id,full_name,admission_no,gender,admission_year,guardian_phone,guardian_name,card_number,father_name',
                 'organization:id,name',
@@ -576,9 +591,15 @@ class StudentAdmissionController extends Controller
                 'room:id,room_number',
             ])
             ->orderBy('student_admissions.admission_date', 'desc')
-            ->orderBy('student_admissions.created_at', 'desc')
-            ->limit(15)
+            ->orderBy('student_admissions.created_at', 'desc');
+
+        $totalAdmissions = $admissionsQuery->count();
+        $admissions = $admissionsQuery
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
             ->get();
+
+        $lastPage = (int) ceil($totalAdmissions / $perPage);
 
         return response()->json([
             'totals' => [
@@ -591,7 +612,15 @@ class StudentAdmissionController extends Controller
             'school_breakdown' => $schoolBreakdown,
             'academic_year_breakdown' => $academicYearBreakdown,
             'residency_breakdown' => $residencyBreakdown,
-            'recent_admissions' => $recentAdmissions,
+            'recent_admissions' => $admissions,
+            'pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $totalAdmissions,
+                'last_page' => $lastPage,
+                'from' => $totalAdmissions > 0 ? (($page - 1) * $perPage) + 1 : 0,
+                'to' => min($page * $perPage, $totalAdmissions),
+            ],
         ]);
     }
 

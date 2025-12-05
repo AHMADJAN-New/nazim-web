@@ -20,7 +20,7 @@ export const useStudentAdmissionReport = (
   }, [filters, profile?.organization_id]);
 
   const query = useQuery<StudentAdmissionReport>({
-    queryKey: ['student-admissions-report', normalizedFilters],
+    queryKey: ['student-admissions-report', normalizedFilters, normalizedFilters.page, normalizedFilters.perPage],
     queryFn: async () => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
@@ -35,6 +35,8 @@ export const useStudentAdmissionReport = (
         is_boarder: normalizedFilters.isBoarder,
         from_date: normalizedFilters.fromDate,
         to_date: normalizedFilters.toDate,
+        page: normalizedFilters.page || 1,
+        per_page: normalizedFilters.perPage || 25,
       };
 
       const apiReport = await studentAdmissionsApi.report(params);

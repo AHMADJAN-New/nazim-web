@@ -41,4 +41,12 @@ export interface StudentAdmissionReport {
   academic_year_breakdown: StudentAdmissionAcademicYearBreakdown[];
   residency_breakdown: StudentAdmissionResidencyBreakdown[];
   recent_admissions: StudentAdmission[];
+  pagination: {
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+    from: number;
+    to: number;
+  };
 }
