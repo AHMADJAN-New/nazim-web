@@ -17,6 +17,22 @@ export function RootBootstrap({ children }: { children: ReactNode }) {
     setTimeout(() => {
       initializeAccessibility();
     }, 1000);
+
+    // Suppress ResizeObserver loop warnings (benign browser warnings)
+    const resizeObserverErrorHandler = (e: ErrorEvent) => {
+      if (e.message === 'ResizeObserver loop completed with undelivered notifications.' || 
+          e.message === 'ResizeObserver loop limit exceeded') {
+        e.stopImmediatePropagation();
+        return false;
+      }
+      return true;
+    };
+
+    window.addEventListener('error', resizeObserverErrorHandler, true);
+
+    return () => {
+      window.removeEventListener('error', resizeObserverErrorHandler, true);
+    };
   }, []);
 
   return <>{children}</>;

@@ -17,6 +17,9 @@ export interface Asset {
   serialNumber: string | null;
   purchaseDate: Date | null;
   purchasePrice: number | null;
+  totalCopies?: number;
+  totalCopiesCount?: number;
+  availableCopiesCount?: number;
   status: AssetStatus;
   condition: string | null;
   vendor: string | null;
@@ -29,6 +32,18 @@ export interface Asset {
   assignments?: AssetAssignmentDomain[];
   maintenanceRecords?: AssetMaintenanceDomain[];
   history?: AssetHistoryDomain[];
+  copies?: AssetCopyDomain[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AssetCopyDomain {
+  id: string;
+  assetId: string;
+  organizationId: string;
+  copyCode: string | null;
+  status: 'available' | 'assigned' | 'maintenance' | 'retired' | 'lost' | 'disposed';
+  acquiredAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +51,7 @@ export interface Asset {
 export interface AssetAssignmentDomain {
   id: string;
   assetId: string;
+  assetCopyId: string | null;
   organizationId: string;
   assignedToType: 'staff' | 'student' | 'room' | 'other';
   assignedToId: string | null;
@@ -44,6 +60,7 @@ export interface AssetAssignmentDomain {
   returnedOn: Date | null;
   status: 'active' | 'returned' | 'transferred';
   notes: string | null;
+  assetCopy?: AssetCopyDomain | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -375,6 +375,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
         priority: 3.08,
         children: [
           {
+            title: "Asset Categories",
+            titleKey: "assets.categories",
+            url: "/assets/categories",
+            icon: Package,
+          },
+          {
             title: "Asset Management",
             titleKey: "assets.management",
             url: "/assets",
@@ -391,12 +397,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "assets.reports",
             url: "/assets/reports",
             icon: LucideIcons.BarChart3,
-          },
-          {
-            title: "Asset Categories",
-            titleKey: "assets.categories",
-            url: "/assets/categories",
-            icon: Package,
           },
         ],
       }] : []),

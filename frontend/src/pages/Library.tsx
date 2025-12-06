@@ -243,7 +243,13 @@ export default function Library() {
                           <Badge variant="outline">Available {book.available_copies ?? 0}</Badge>{' '}
                           <Badge variant="secondary">Total {book.total_copies ?? 0}</Badge>
                         </TableCell>
-                        <TableCell>{book.deposit_amount ?? 0}</TableCell>
+                        <TableCell>
+                          {(() => {
+                            const price = book.price ?? book.deposit_amount ?? 0;
+                            const numPrice = typeof price === 'string' ? parseFloat(price) : (typeof price === 'number' ? price : 0);
+                            return isNaN(numPrice) ? '0.00' : numPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          })()}
+                        </TableCell>
                         <TableCell>
                           <Button
                             size="sm"

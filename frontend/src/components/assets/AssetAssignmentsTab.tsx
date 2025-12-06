@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import {
   useAssets,
@@ -45,6 +45,8 @@ export default function AssetAssignmentsTab() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<{ id: string; assetId: string; data: AssetAssignmentDomain } | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const canUpdate = useHasPermission('assets.update');
 
@@ -169,7 +171,12 @@ export default function AssetAssignmentsTab() {
   };
 
   const handleDelete = (assignmentId: string) => {
-    removeAssignment.mutate(assignmentId);
+    // Find the assignment to get the assetId
+    const assignment = allAssignments.find(a => a.id === assignmentId);
+    removeAssignment.mutate({ 
+      assignmentId, 
+      assetId: assignment?.assetId 
+    });
   };
 
   const getAssigneeName = (assignment: AssetAssignmentDomain) => {
@@ -204,12 +211,31 @@ export default function AssetAssignmentsTab() {
       {
         accessorKey: 'asset',
         header: 'Asset',
-        cell: ({ row }) => (
-          <div>
-            <p className="font-semibold">{row.original.assetName}</p>
-            <p className="text-xs text-muted-foreground">Tag: {row.original.assetTag}</p>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const asset = assets.find(a => a.id === row.original.assetId);
+          const totalCopies = asset?.totalCopiesCount ?? asset?.totalCopies ?? 1;
+          const availableCopies = asset?.availableCopiesCount ?? totalCopies;
+          const assignedCopies = totalCopies - availableCopies;
+          return (
+            <div>
+              <p className="font-semibold">{row.original.assetName}</p>
+              <p className="text-xs text-muted-foreground">Tag: {row.original.assetTag}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline" className="text-xs">
+                  Available: {availableCopies}
+                </Badge>
+                <Badge variant="secondary" className="text-xs">
+                  Total: {totalCopies}
+                </Badge>
+                {assignedCopies > 0 && (
+                  <Badge variant="default" className="text-xs bg-blue-500 hover:bg-blue-600 text-white">
+                    Assigned: {assignedCopies}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          );
+        },
       },
       {
         accessorKey: 'assignedTo',
@@ -294,8 +320,18 @@ export default function AssetAssignmentsTab() {
   const { table } = useDataTable({
     data: filteredAssignments,
     columns,
-    pageCount: Math.ceil(filteredAssignments.length / 25),
+    pageCount: Math.ceil(filteredAssignments.length / pageSize),
     paginationMeta: null,
+    initialState: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
+    },
+    onPaginationChange: (newPagination) => {
+      setPage(newPagination.pageIndex + 1);
+      setPageSize(newPagination.pageSize);
+    },
   });
 
   return (
@@ -360,18 +396,31 @@ export default function AssetAssignmentsTab() {
                   ))}
                 </TableHeader>
                 <TableBody>
-                  {table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
+                  {table.getRowModel().rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="text-center text-muted-foreground py-8">
+                        No assignments found
+                      </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
-              <DataTablePagination table={table} pagination={null} />
+              <DataTablePagination 
+                table={table} 
+                pagination={null}
+                showPageSizeSelector={true}
+                showTotalCount={true}
+              />
             </div>
           )}
         </CardContent>
@@ -382,6 +431,9 @@ export default function AssetAssignmentsTab() {
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingAssignment ? 'Update Assignment' : 'Create Assignment'}</DialogTitle>
+            <DialogDescription>
+              {editingAssignment ? 'Update the asset assignment details.' : 'Assign an asset to a staff member, student, or room.'}
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {!editingAssignment && (
@@ -437,7 +489,7 @@ export default function AssetAssignmentsTab() {
                     {watch('assignedToType') === 'staff' &&
                       staff?.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
-                          {s.profile?.fullName || s.employeeId}
+                          {s.fullName || s.profile?.fullName || s.employeeId || 'Unknown Staff'}
                         </SelectItem>
                       ))}
                     {watch('assignedToType') === 'student' &&

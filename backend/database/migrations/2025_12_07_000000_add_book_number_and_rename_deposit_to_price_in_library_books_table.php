@@ -20,8 +20,10 @@ return new class extends Migration
             // Add book_number column (unique identifier for the book)
             $table->string('book_number')->nullable()->unique()->after('isbn');
             
-            // Rename deposit_amount to price
-            $table->renameColumn('deposit_amount', 'price');
+            // Rename deposit_amount to price (only if deposit_amount column exists)
+            if (Schema::hasColumn('library_books', 'deposit_amount') && !Schema::hasColumn('library_books', 'price')) {
+                $table->renameColumn('deposit_amount', 'price');
+            }
             
             // Add index on book_number for faster lookups
             $table->index('book_number');
@@ -37,8 +39,10 @@ return new class extends Migration
             return;
         }
 
-        // Rename price back to deposit_amount (PostgreSQL requires separate statement)
-        DB::statement('ALTER TABLE library_books RENAME COLUMN price TO deposit_amount');
+        // Rename price back to deposit_amount (only if price column exists and deposit_amount doesn't)
+        if (Schema::hasColumn('library_books', 'price') && !Schema::hasColumn('library_books', 'deposit_amount')) {
+            DB::statement('ALTER TABLE library_books RENAME COLUMN price TO deposit_amount');
+        }
         
         Schema::table('library_books', function (Blueprint $table) {
             // Remove unique constraint

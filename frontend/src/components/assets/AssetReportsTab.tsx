@@ -60,7 +60,25 @@ export default function AssetReportsTab() {
   // Calculate statistics
   const calculatedStats = useMemo(() => {
     const totalAssets = filteredAssets.length;
-    const totalValue = filteredAssets.reduce((sum, a) => sum + (a.purchasePrice || 0), 0);
+    
+    // Total price for 1 copy of each asset
+    const totalPrice = filteredAssets.reduce((sum, a) => sum + (a.purchasePrice || 0), 0);
+    
+    // Total value for all copies (price × copies)
+    const getEffectiveCopies = (asset: Asset): number => {
+      if (asset.deletedAt) return 0;
+      const copies = asset.totalCopies ?? asset.totalCopiesCount ?? 1;
+      return copies > 0 ? copies : 1;
+    };
+    
+    const totalValue = filteredAssets.reduce((sum, a) => {
+      const price = a.purchasePrice || 0;
+      const copies = getEffectiveCopies(a);
+      return sum + (price * copies);
+    }, 0);
+    
+    const totalCopies = filteredAssets.reduce((sum, a) => sum + getEffectiveCopies(a), 0);
+    
     const totalMaintenanceCost = filteredAssets.reduce((sum, a) => sum + (a.maintenanceCostTotal || 0), 0);
     
     const statusCounts: Record<string, number> = {};
@@ -101,7 +119,9 @@ export default function AssetReportsTab() {
 
     return {
       totalAssets,
+      totalPrice,
       totalValue,
+      totalCopies,
       totalMaintenanceCost,
       statusCounts,
       categoryCounts,
@@ -126,7 +146,7 @@ export default function AssetReportsTab() {
   const assetsByCategory = useMemo(() => {
     const grouped: Record<string, Asset[]> = {};
     filteredAssets.forEach((asset) => {
-      const cat = asset.category || 'Uncategorized';
+      const cat = asset.categoryName || asset.category || 'Uncategorized';
       if (!grouped[cat]) {
         grouped[cat] = [];
       }
@@ -179,33 +199,55 @@ export default function AssetReportsTab() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Total Assets</CardDescription>
             <CardTitle className="text-2xl">{stats?.asset_count ?? calculatedStats.totalAssets}</CardTitle>
+            <div className="text-xs text-muted-foreground mt-1 space-y-1">
+              <div>{calculatedStats.totalCopies} total copies</div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  {calculatedStats.assignedAssets} assigned
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {calculatedStats.totalAssets - calculatedStats.assignedAssets} available
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Total Price</CardDescription>
+            <CardTitle className="text-2xl">
+              ${calculatedStats.totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Sum of all asset prices (1 copy each)
+            </p>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Total Value</CardDescription>
             <CardTitle className="text-2xl">
-              ${((stats?.total_purchase_value ?? 0) || calculatedStats.totalValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${calculatedStats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Price × Total Copies
+            </p>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Maintenance Cost</CardDescription>
             <CardTitle className="text-2xl">
-              ${((stats?.maintenance_cost_total ?? 0) || calculatedStats.totalMaintenanceCost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${calculatedStats.totalMaintenanceCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Needs Maintenance</CardDescription>
-            <CardTitle className="text-2xl text-orange-600">{calculatedStats.needsMaintenance}</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              {calculatedStats.needsMaintenance} need attention
+            </p>
           </CardHeader>
         </Card>
       </div>
@@ -280,6 +322,8 @@ export default function AssetReportsTab() {
                   <TableRow>
                     <TableHead>Status</TableHead>
                     <TableHead>Count</TableHead>
+                    <TableHead>Copies</TableHead>
+                    <TableHead>Assigned</TableHead>
                     <TableHead>Total Value</TableHead>
                     <TableHead>Percentage</TableHead>
                   </TableRow>
@@ -287,7 +331,17 @@ export default function AssetReportsTab() {
                 <TableBody>
                   {Object.entries(calculatedStats.statusCounts).map(([status, count]) => {
                     const statusAssets = assetsByStatus[status] || [];
-                    const statusValue = statusAssets.reduce((sum, a) => sum + (a.purchasePrice || 0), 0);
+                    const statusValue = statusAssets.reduce((sum, a) => {
+                      const price = a.purchasePrice || 0;
+                      const copies = a.totalCopiesCount ?? a.totalCopies ?? 1;
+                      return sum + (price * copies);
+                    }, 0);
+                    const totalCopies = statusAssets.reduce((sum, a) => sum + (a.totalCopiesCount ?? a.totalCopies ?? 1), 0);
+                    const assignedCopies = statusAssets.reduce((sum, a) => {
+                      const total = a.totalCopiesCount ?? a.totalCopies ?? 1;
+                      const available = a.availableCopiesCount ?? 0;
+                      return sum + (total - available);
+                    }, 0);
                     const percentage = calculatedStats.totalAssets > 0 ? ((count / calculatedStats.totalAssets) * 100).toFixed(1) : '0';
                     return (
                       <TableRow key={status}>
@@ -306,7 +360,14 @@ export default function AssetReportsTab() {
                           </Badge>
                         </TableCell>
                         <TableCell>{count}</TableCell>
-                        <TableCell>${statusValue.toLocaleString()}</TableCell>
+                        <TableCell>{totalCopies}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span>{assignedCopies}</span>
+                            <span className="text-xs text-muted-foreground">/ {totalCopies}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>${statusValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                         <TableCell>{percentage}%</TableCell>
                       </TableRow>
                     );
@@ -330,6 +391,8 @@ export default function AssetReportsTab() {
                   <TableRow>
                     <TableHead>Category</TableHead>
                     <TableHead>Count</TableHead>
+                    <TableHead>Copies</TableHead>
+                    <TableHead>Assigned</TableHead>
                     <TableHead>Total Value</TableHead>
                     <TableHead>Percentage</TableHead>
                   </TableRow>
@@ -337,13 +400,30 @@ export default function AssetReportsTab() {
                 <TableBody>
                   {Object.entries(calculatedStats.categoryCounts).map(([category, count]) => {
                     const categoryAssets = assetsByCategory[category] || [];
-                    const categoryValue = categoryAssets.reduce((sum, a) => sum + (a.purchasePrice || 0), 0);
+                    const categoryValue = categoryAssets.reduce((sum, a) => {
+                      const price = a.purchasePrice || 0;
+                      const copies = a.totalCopiesCount ?? a.totalCopies ?? 1;
+                      return sum + (price * copies);
+                    }, 0);
+                    const totalCopies = categoryAssets.reduce((sum, a) => sum + (a.totalCopiesCount ?? a.totalCopies ?? 1), 0);
+                    const assignedCopies = categoryAssets.reduce((sum, a) => {
+                      const total = a.totalCopiesCount ?? a.totalCopies ?? 1;
+                      const available = a.availableCopiesCount ?? 0;
+                      return sum + (total - available);
+                    }, 0);
                     const percentage = calculatedStats.totalAssets > 0 ? ((count / calculatedStats.totalAssets) * 100).toFixed(1) : '0';
                     return (
                       <TableRow key={category}>
-                        <TableCell>{category}</TableCell>
+                        <TableCell className="font-medium">{category}</TableCell>
                         <TableCell>{count}</TableCell>
-                        <TableCell>${categoryValue.toLocaleString()}</TableCell>
+                        <TableCell>{totalCopies}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span>{assignedCopies}</span>
+                            <span className="text-xs text-muted-foreground">/ {totalCopies}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>${categoryValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                         <TableCell>{percentage}%</TableCell>
                       </TableRow>
                     );

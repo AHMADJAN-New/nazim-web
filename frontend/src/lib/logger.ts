@@ -198,6 +198,13 @@ export const logger = new Logger();
 
 // Global error handler
 window.addEventListener('error', (event) => {
+  // Suppress benign ResizeObserver warnings
+  if (event.message === 'ResizeObserver loop completed with undelivered notifications.' ||
+      event.message === 'ResizeObserver loop limit exceeded') {
+    event.stopImmediatePropagation();
+    return;
+  }
+  
   logger.error('Global error caught', {
     component: 'Global',
     metadata: {

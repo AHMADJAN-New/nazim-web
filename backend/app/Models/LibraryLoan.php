@@ -10,6 +10,10 @@ class LibraryLoan extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $keyType = 'string';
+    public $incrementing = false;
+    protected $primaryKey = 'id';
+
     protected $fillable = [
         'organization_id',
         'book_id',

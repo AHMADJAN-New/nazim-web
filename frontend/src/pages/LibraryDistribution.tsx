@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Plus, Search, BookCheck, RefreshCw, Calendar, User, X } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Plus, Search, BookCheck, RefreshCw, Calendar, User, X, Minus } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLibraryLoans, useCreateLibraryLoan, useReturnLibraryLoan } from '@/hooks/useLibrary';
 import { useLibraryBooks } from '@/hooks/useLibrary';
@@ -42,19 +42,20 @@ const defaultLoanDate = format(new Date(), 'yyyy-MM-dd');
 
 const loanSchema = z.object({
     book_id: z.string().uuid('Book is required'),
-    book_copy_id: z.string().uuid('Copy is required'),
     borrower_type: z.enum(['student', 'staff']),
-    student_id: z.string().uuid().optional().nullable(),
-    staff_id: z.string().uuid().optional().nullable(),
+    student_id: z.string().optional().nullable(),
+    staff_id: z.string().optional().nullable(),
     loan_date: z.string().min(1, 'Loan date is required'),
     due_date: z.string().optional().nullable(),
     deposit_amount: z.number().min(0).default(0),
 }).refine(
     (data) => {
         if (data.borrower_type === 'student') {
-            return !!data.student_id;
+            const studentId = data.student_id;
+            return !!studentId && studentId !== '' && z.string().uuid().safeParse(studentId).success;
         } else {
-            return !!data.staff_id;
+            const staffId = data.staff_id;
+            return !!staffId && staffId !== '' && z.string().uuid().safeParse(staffId).success;
         }
     },
     {
@@ -80,6 +81,7 @@ export default function LibraryDistribution() {
     const [searchQuery, setSearchQuery] = useState('');
     const [borrowerFilter, setBorrowerFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('');
+    const [copiesToIssue, setCopiesToIssue] = useState<number>(1);
 
     const { data: openLoans, isLoading: loansLoading } = useLibraryLoans(true);
     const { data: books } = useLibraryBooks();
@@ -105,6 +107,9 @@ export default function LibraryDistribution() {
             deposit_amount: 0,
         },
     });
+    
+    // Watch book_id to update deposit amount when book changes
+    const watchedBookId = watch('book_id');
 
     const borrowerType = watch('borrower_type');
     const selectedBookId = watch('book_id');
@@ -158,13 +163,50 @@ export default function LibraryDistribution() {
     }, [selectedBookId, books]);
 
     const availableCopies = useMemo(() => {
-        if (!selectedBook || !Array.isArray(selectedBook.copies)) return [];
-        return selectedBook.copies.filter((copy) => copy.status === 'available');
+        if (!selectedBook) return [];
+        
+        if (!Array.isArray(selectedBook.copies)) {
+            return [];
+        }
+        
+        return selectedBook.copies.filter((copy) => {
+            // Filter for available copies and ensure they have valid UUIDs
+            const isAvailable = copy.status === 'available' || copy.status === 'Available';
+            const hasValidId = copy.id && typeof copy.id === 'string' && copy.id.trim() !== '';
+            
+            // Validate UUID format
+            if (hasValidId) {
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                return isAvailable && uuidRegex.test(copy.id);
+            }
+            
+            return false;
+        });
     }, [selectedBook]);
+    
+    // Update deposit amount when book or copies change
+    useEffect(() => {
+        if (selectedBook && selectedBook.price !== undefined && selectedBook.price !== null) {
+            const price = typeof selectedBook.price === 'string' 
+                ? parseFloat(selectedBook.price) 
+                : (typeof selectedBook.price === 'number' ? selectedBook.price : 0);
+            const totalAmount = price * copiesToIssue;
+            setValue('deposit_amount', isNaN(totalAmount) ? 0 : totalAmount);
+        }
+    }, [selectedBook, copiesToIssue, setValue]);
 
     const filteredLoans = useMemo(() => {
         if (!Array.isArray(openLoans)) return [];
         let filtered = openLoans;
+
+        // Remove duplicates based on loan ID
+        const seenIds = new Set<string>();
+        filtered = filtered.filter((loan) => {
+            if (!loan.id) return false; // Skip loans without IDs
+            if (seenIds.has(loan.id)) return false; // Skip duplicates
+            seenIds.add(loan.id);
+            return true;
+        });
 
         // Search filter
         if (searchQuery) {
@@ -191,14 +233,14 @@ export default function LibraryDistribution() {
     const handleOpenLoanDialog = () => {
         reset({
             book_id: '',
-            book_copy_id: '',
             borrower_type: 'student',
-            student_id: '',
-            staff_id: '',
+            student_id: null,
+            staff_id: null,
             loan_date: defaultLoanDate,
-            due_date: '',
+            due_date: null,
             deposit_amount: 0,
         });
+        setCopiesToIssue(1);
         setIsLoanDialogOpen(true);
     };
 
@@ -206,22 +248,105 @@ export default function LibraryDistribution() {
         setIsLoanDialogOpen(false);
         reset({
             book_id: '',
-            book_copy_id: '',
             borrower_type: 'student',
-            student_id: '',
-            staff_id: '',
+            student_id: null,
+            staff_id: null,
             loan_date: defaultLoanDate,
-            due_date: '',
+            due_date: null,
             deposit_amount: 0,
         });
+        setCopiesToIssue(1);
     };
 
-    const onSubmitLoan = (data: LoanFormData) => {
-        createLoan.mutate(data, {
-            onSuccess: () => {
+    const onSubmitLoan = async (data: LoanFormData) => {
+        if (!selectedBook || availableCopies.length === 0) {
+            toast.error('No available copies for this book');
+            return;
+        }
+        
+        if (copiesToIssue > availableCopies.length) {
+            toast.error(`Only ${availableCopies.length} copies available. Cannot issue ${copiesToIssue} copies.`);
+            return;
+        }
+        
+        // Validate that all copies have valid UUIDs
+        const copiesToLoan = availableCopies.slice(0, copiesToIssue);
+        
+        // Validate each copy has a valid UUID
+        for (const copy of copiesToLoan) {
+            if (!copy.id) {
+                toast.error(`Copy ${copy.copy_code || 'unknown'} is missing an ID. Please refresh the page.`);
+                if (import.meta.env.DEV) {
+                    console.error('Copy without ID:', copy);
+                }
+                return;
+            }
+            
+            // Validate UUID format (basic check)
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(copy.id)) {
+                toast.error(`Copy ${copy.copy_code || copy.id} has an invalid ID format. Please refresh the page.`);
+                if (import.meta.env.DEV) {
+                    console.error('Copy with invalid UUID:', copy);
+                }
+                return;
+            }
+        }
+        
+        // Set borrower based on type, converting empty strings to null
+        let studentId: string | null = null;
+        let staffId: string | null = null;
+        
+        if (data.borrower_type === 'student') {
+            studentId = data.student_id && data.student_id !== '' ? data.student_id : null;
+        } else {
+            staffId = data.staff_id && data.staff_id !== '' ? data.staff_id : null;
+        }
+        
+        // Validate borrower is set
+        if (!studentId && !staffId) {
+            toast.error('Please select a borrower');
+            return;
+        }
+        
+        // Create loans for each copy sequentially to avoid race conditions
+        try {
+            const results = [];
+            for (const copy of copiesToLoan) {
+                if (!copy.id) {
+                    toast.error(`Copy ${copy.copy_code || 'unknown'} has no ID`);
+                    continue;
+                }
+                
+                const loanPayload = {
+                    book_id: data.book_id,
+                    book_copy_id: copy.id,
+                    student_id: studentId,
+                    staff_id: staffId,
+                    loan_date: data.loan_date,
+                    due_date: data.due_date || null,
+                    deposit_amount: data.deposit_amount || 0,
+                };
+                
+                const result = await createLoan.mutateAsync(loanPayload);
+                results.push(result);
+            }
+            
+            if (results.length === copiesToIssue) {
+                // Show custom success message for multiple copies
+                if (copiesToIssue > 1) {
+                    toast.success(`Successfully issued ${copiesToIssue} copies`);
+                }
                 handleCloseLoanDialog();
-            },
-        });
+            } else {
+                toast.warning(`Issued ${results.length} of ${copiesToIssue} copies. Some may have failed.`);
+            }
+        } catch (error: any) {
+            // Error toast is already shown by the hook
+            if (import.meta.env.DEV) {
+                console.error('Failed to issue copies:', error);
+            }
+        }
     };
 
     const handleReturn = (loan: LibraryLoan) => {
@@ -231,6 +356,16 @@ export default function LibraryDistribution() {
 
     const handleConfirmReturn = () => {
         if (selectedLoan) {
+            // Validate loan ID is a valid UUID
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!selectedLoan.id || typeof selectedLoan.id !== 'string' || !uuidRegex.test(selectedLoan.id)) {
+                toast.error('Invalid loan ID. Please refresh the page and try again.');
+                if (import.meta.env.DEV) {
+                    console.error('Invalid loan ID:', selectedLoan.id);
+                }
+                return;
+            }
+            
             returnLoan.mutate({ id: selectedLoan.id }, {
                 onSuccess: () => {
                     setIsReturnDialogOpen(false);
@@ -244,16 +379,28 @@ export default function LibraryDistribution() {
         setValue('book_id', bookId);
         const book = Array.isArray(books) ? books.find((b) => b.id === bookId) : null;
         if (book) {
-            const availableCopy = findAvailableCopy(book);
-            if (availableCopy) {
-                setValue('book_copy_id', availableCopy.id);
-            } else {
-                setValue('book_copy_id', '');
-            }
-            // Set deposit amount from book price
-            if (book.price) {
-                setValue('deposit_amount', book.price);
-            }
+            // Reset copies counter to 1 when book changes, or 0 if no copies available
+            const availableCount = Array.isArray(book.copies) 
+                ? book.copies.filter((copy) => {
+                    const isAvailable = copy.status === 'available' || copy.status === 'Available';
+                    const hasValidId = copy.id && typeof copy.id === 'string' && copy.id.trim() !== '';
+                    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                    return isAvailable && hasValidId && uuidRegex.test(copy.id);
+                }).length 
+                : 0;
+            setCopiesToIssue(availableCount > 0 ? 1 : 0);
+        }
+    };
+    
+    const handleCopiesChange = (delta: number) => {
+        if (!selectedBook) return;
+        const availableCount = availableCopies.length;
+        // If no copies available, set to 0, otherwise ensure it's between 1 and availableCount
+        if (availableCount === 0) {
+            setCopiesToIssue(0);
+        } else {
+            const newCount = Math.max(1, Math.min(availableCount, copiesToIssue + delta));
+            setCopiesToIssue(newCount);
         }
     };
 
@@ -388,7 +535,7 @@ export default function LibraryDistribution() {
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        filteredLoans.map((loan) => {
+                                        filteredLoans.map((loan, index) => {
                                             const borrower = loan.student_id
                                                 ? (Array.isArray(students) ? students.find((s) => s.id === loan.student_id) : null)
                                                 : (Array.isArray(staff) ? staff.find((s) => s.id === loan.staff_id) : null);
@@ -397,8 +544,21 @@ export default function LibraryDistribution() {
                                                 : 'Unknown';
                                             const isOverdue = loan.due_date && new Date(loan.due_date) < new Date();
 
+                                            // Ensure unique key - use loan.id if valid UUID, otherwise use combination of fields with index
+                                            let uniqueKey: string;
+                                            if (loan.id && typeof loan.id === 'string' && loan.id.trim() !== '' && loan.id !== '0') {
+                                                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                                                if (uuidRegex.test(loan.id)) {
+                                                    uniqueKey = loan.id;
+                                                } else {
+                                                    uniqueKey = `loan-${loan.book_id || 'unknown'}-${loan.book_copy_id || 'unknown'}-${loan.loan_date || 'unknown'}-${index}`;
+                                                }
+                                            } else {
+                                                uniqueKey = `loan-${loan.book_id || 'unknown'}-${loan.book_copy_id || 'unknown'}-${loan.loan_date || 'unknown'}-${index}`;
+                                            }
+
                                             return (
-                                                <TableRow key={loan.id}>
+                                                <TableRow key={uniqueKey}>
                                                     <TableCell className="font-medium">
                                                         {loan.book?.title || 'Unknown Book'}
                                                     </TableCell>
@@ -475,57 +635,73 @@ export default function LibraryDistribution() {
                                 <Label htmlFor="book_id">
                                     Book <span className="text-destructive">*</span>
                                 </Label>
-                                <Controller
-                                    control={control}
-                                    name="book_id"
-                                    render={({ field }) => (
-                                        <Combobox
-                                            options={bookOptions}
-                                            value={field.value || ''}
-                                            onValueChange={(value) => {
-                                                field.onChange(value);
-                                                handleBookChange(value);
-                                            }}
-                                            placeholder="Search and select a book..."
-                                            searchPlaceholder="Search by title or author..."
-                                            emptyText="No books available."
-                                            className="w-full"
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-1">
+                                        <Controller
+                                            control={control}
+                                            name="book_id"
+                                            render={({ field }) => (
+                                                <Combobox
+                                                    options={bookOptions}
+                                                    value={field.value || ''}
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value);
+                                                        handleBookChange(value);
+                                                    }}
+                                                    placeholder="Search and select a book..."
+                                                    searchPlaceholder="Search by title or author..."
+                                                    emptyText="No books available."
+                                                    className="w-full"
+                                                />
+                                            )}
                                         />
+                                    </div>
+                                    {selectedBook && availableCopies.length > 0 && (
+                                        <div className="flex items-center gap-2 border rounded-md px-3 py-2 min-w-[140px]">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => handleCopiesChange(-1)}
+                                                disabled={copiesToIssue <= 1 || !selectedBookId || availableCopies.length === 0}
+                                            >
+                                                <Minus className="h-4 w-4" />
+                                            </Button>
+                                            <span className="text-sm font-medium min-w-[2rem] text-center">
+                                                {copiesToIssue}
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => handleCopiesChange(1)}
+                                                disabled={copiesToIssue >= availableCopies.length || !selectedBookId || availableCopies.length === 0}
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     )}
-                                />
+                                </div>
+                                {selectedBook && (
+                                    <div className="mt-2 text-sm text-muted-foreground">
+                                        {availableCopies.length > 0 ? (
+                                            <span>
+                                                {availableCopies.length} available copy{availableCopies.length !== 1 ? 'ies' : ''} 
+                                                {selectedBook.total_copies !== undefined && selectedBook.total_copies > 0 && (
+                                                    <span> of {selectedBook.total_copies} total</span>
+                                                )}
+                                            </span>
+                                        ) : (
+                                            <span className="text-destructive">
+                                                No available copies. Total copies: {selectedBook.total_copies ?? 0}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                                 {errors.book_id && (
                                     <p className="text-sm text-destructive mt-1">{errors.book_id.message}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <Label htmlFor="book_copy_id">
-                                    Copy <span className="text-destructive">*</span>
-                                </Label>
-                                <Controller
-                                    control={control}
-                                    name="book_copy_id"
-                                    render={({ field }) => (
-                                        <Select
-                                            value={field.value || ''}
-                                            onValueChange={field.onChange}
-                                            disabled={!selectedBookId || availableCopies.length === 0}
-                                        >
-                                            <SelectTrigger id="book_copy_id">
-                                                <SelectValue placeholder="Select a copy" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {availableCopies.map((copy) => (
-                                                    <SelectItem key={copy.id} value={copy.id}>
-                                                        {copy.copy_code || copy.id}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                />
-                                {errors.book_copy_id && (
-                                    <p className="text-sm text-destructive mt-1">{errors.book_copy_id.message}</p>
                                 )}
                             </div>
 
@@ -540,8 +716,8 @@ export default function LibraryDistribution() {
                                                 value={field.value}
                                                 onValueChange={(value) => {
                                                     field.onChange(value);
-                                                    setValue('student_id', '');
-                                                    setValue('staff_id', '');
+                                                    setValue('student_id', null);
+                                                    setValue('staff_id', null);
                                                 }}
                                             >
                                                 <SelectTrigger id="borrower_type">
@@ -566,7 +742,10 @@ export default function LibraryDistribution() {
                                             <Combobox
                                                 options={borrowerType === 'student' ? studentOptions : staffOptions}
                                                 value={field.value || ''}
-                                                onValueChange={field.onChange}
+                                                onValueChange={(value) => {
+                                                    // Convert empty string to null
+                                                    field.onChange(value === '' ? null : value);
+                                                }}
                                                 placeholder={`Select ${borrowerType === 'student' ? 'student' : 'staff'}...`}
                                                 searchPlaceholder={`Search ${borrowerType === 'student' ? 'students' : 'staff'}...`}
                                                 emptyText={`No ${borrowerType === 'student' ? 'students' : 'staff'} available.`}

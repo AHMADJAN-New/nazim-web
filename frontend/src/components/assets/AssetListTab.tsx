@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Plus, Pencil, Trash2, Printer } from 'lucide-react';
+import { Plus, Pencil, Trash2, Printer, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import {
   useAssets,
@@ -23,6 +25,8 @@ import { useSchools } from '@/hooks/useSchools';
 import { useBuildings } from '@/hooks/useBuildings';
 import { useRooms } from '@/hooks/useRooms';
 import { useAssetCategories } from '@/hooks/useAssetCategories';
+import { useStaff } from '@/hooks/useStaff';
+import { useStudents } from '@/hooks/useStudents';
 import { useHasPermission } from '@/hooks/usePermissions';
 import type { Asset } from '@/types/domain/asset';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -40,6 +44,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 const assetSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -52,6 +57,11 @@ const assetSchema = z.object({
     .union([z.number(), z.string()])
     .optional()
     .transform((val) => (val === '' || val === undefined ? null : Number(val))),
+  totalCopies: z
+    .union([z.number(), z.string()])
+    .optional()
+    .default(1)
+    .transform((val) => (val === '' || val === undefined ? 1 : Number(val))),
   purchaseDate: z.string().optional().nullable(),
   warrantyExpiry: z.string().optional().nullable(),
   vendor: z.string().optional().nullable(),
@@ -68,8 +78,10 @@ export default function AssetListTab() {
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isViewPanelOpen, setIsViewPanelOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [assetToDelete, setAssetToDelete] = useState<Asset | null>(null);
+  const [viewAsset, setViewAsset] = useState<Asset | null>(null);
 
   const canCreate = useHasPermission('assets.create');
   const canUpdate = useHasPermission('assets.update');
@@ -96,6 +108,9 @@ export default function AssetListTab() {
   const { data: buildings } = useBuildings();
   const { rooms } = useRooms(undefined, undefined, true);
   const { data: categories } = useAssetCategories();
+  
+  // Get all assets with assignments for history (like LibraryBooks uses loans)
+  const { assets: allAssets = [] } = useAssets(undefined, false);
 
   const createAsset = useCreateAsset();
   const updateAsset = useUpdateAsset();
@@ -125,6 +140,7 @@ export default function AssetListTab() {
       category: '',
       categoryId: null,
       purchasePrice: null,
+      totalCopies: 1,
       purchaseDate: null,
       warrantyExpiry: null,
       vendor: '',
@@ -144,6 +160,7 @@ export default function AssetListTab() {
       categoryId: asset.categoryId || null,
       serialNumber: asset.serialNumber || '',
       purchasePrice: asset.purchasePrice ?? null,
+      totalCopies: asset.totalCopies ?? 1,
       purchaseDate: asset.purchaseDate ? asset.purchaseDate.toISOString().split('T')[0] : null,
       warrantyExpiry: asset.warrantyExpiry ? asset.warrantyExpiry.toISOString().split('T')[0] : null,
       vendor: asset.vendor || '',
@@ -169,6 +186,7 @@ export default function AssetListTab() {
       categoryId: values.categoryId || null,
       serialNumber: values.serialNumber || null,
       purchasePrice: values.purchasePrice === null ? null : Number(values.purchasePrice),
+      totalCopies: values.totalCopies ?? 1,
       purchaseDate: values.purchaseDate ? new Date(values.purchaseDate) : null,
       warrantyExpiry: values.warrantyExpiry ? new Date(values.warrantyExpiry) : null,
       vendor: values.vendor || null,
@@ -409,6 +427,31 @@ export default function AssetListTab() {
         ),
       },
       {
+        accessorKey: 'copies',
+        header: 'Copies',
+        cell: ({ row }) => {
+          const asset = row.original;
+          const totalCopies = asset.totalCopiesCount ?? asset.totalCopies ?? 1;
+          const availableCopies = asset.availableCopiesCount ?? 0;
+          const assignedCopies = totalCopies - availableCopies;
+          return (
+            <div className="flex items-center gap-2">
+              <Badge variant={availableCopies === 0 ? "secondary" : "outline"}>
+                Available: {availableCopies === 0 ? "No available copies" : availableCopies}
+              </Badge>
+              <Badge variant="secondary">
+                Total: {totalCopies}
+              </Badge>
+              {assignedCopies > 0 && (
+                <Badge variant="default" className="bg-blue-500 hover:bg-blue-600 text-white">
+                  Assigned: {assignedCopies}
+                </Badge>
+              )}
+            </div>
+          );
+        },
+      },
+      {
         accessorKey: 'location',
         header: 'Location',
         cell: ({ row }) => (
@@ -427,6 +470,9 @@ export default function AssetListTab() {
         header: () => <div className="text-right">Actions</div>,
         cell: ({ row }) => (
           <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => { setViewAsset(row.original); setIsViewPanelOpen(true); }} title="View Details">
+              <Eye className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => handlePrintLabel(row.original)} title="Print Label">
               <Printer className="h-4 w-4" />
             </Button>
@@ -577,7 +623,14 @@ export default function AssetListTab() {
                   )}
                 </TableBody>
               </Table>
-              {pagination && <DataTablePagination table={table} pagination={pagination} />}
+              <DataTablePagination 
+                table={table} 
+                paginationMeta={pagination ?? null}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                showPageSizeSelector={true}
+                showTotalCount={true}
+              />
             </div>
           )}
         </CardContent>
@@ -650,6 +703,11 @@ export default function AssetListTab() {
               <div>
                 <Label>Purchase Price</Label>
                 <Input type="number" step="0.01" {...register('purchasePrice')} />
+              </div>
+              <div>
+                <Label>Number of Copies</Label>
+                <Input type="number" min="1" step="1" defaultValue={1} {...register('totalCopies')} />
+                <p className="text-xs text-muted-foreground mt-1">Number of identical copies of this asset</p>
               </div>
               <div>
                 <Label>Purchase Date</Label>
@@ -754,7 +812,252 @@ export default function AssetListTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Asset View Panel */}
+      <Sheet open={isViewPanelOpen} onOpenChange={setIsViewPanelOpen}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          {viewAsset && (
+            <>
+              <SheetHeader>
+                <SheetTitle>{viewAsset.name}</SheetTitle>
+                <SheetDescription>
+                  {viewAsset.assetTag && `Tag: ${viewAsset.assetTag}`}
+                  {viewAsset.categoryName && ` • ${viewAsset.categoryName}`}
+                </SheetDescription>
+              </SheetHeader>
+              
+              <Tabs defaultValue="info" className="mt-6">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="info">Asset Information</TabsTrigger>
+                  <TabsTrigger value="history">History</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="info" className="space-y-4 mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-muted-foreground">Name</Label>
+                          <p className="font-medium">{viewAsset.name}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Asset Tag</Label>
+                          <p className="font-medium">{viewAsset.assetTag || '—'}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Category</Label>
+                          <p className="font-medium">{viewAsset.categoryName || viewAsset.category || '—'}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Serial Number</Label>
+                          <p className="font-medium">{viewAsset.serialNumber || '—'}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Status</Label>
+                          <div className="font-medium">
+                            <Badge variant={viewAsset.status === 'available' ? 'default' : 'secondary'}>
+                              {viewAsset.status}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Condition</Label>
+                          <p className="font-medium">{viewAsset.condition || '—'}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Purchase Price</Label>
+                          <p className="font-medium">
+                            {viewAsset.purchasePrice ? `$${viewAsset.purchasePrice.toFixed(2)}` : '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Purchase Date</Label>
+                          <p className="font-medium">
+                            {viewAsset.purchaseDate ? format(viewAsset.purchaseDate, 'MMM dd, yyyy') : '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Vendor</Label>
+                          <p className="font-medium">{viewAsset.vendor || '—'}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Warranty Expiry</Label>
+                          <p className="font-medium">
+                            {viewAsset.warrantyExpiry ? format(viewAsset.warrantyExpiry, 'MMM dd, yyyy') : '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Total Copies</Label>
+                          <p className="font-medium">{viewAsset.totalCopiesCount ?? viewAsset.totalCopies ?? 1}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Available Copies</Label>
+                          <p className="font-medium">
+                            {viewAsset.availableCopiesCount === 0 ? "No available copies" : (viewAsset.availableCopiesCount ?? 0)}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Location</Label>
+                          <p className="font-medium">
+                            {viewAsset.roomNumber ? `Room: ${viewAsset.roomNumber}` :
+                             viewAsset.buildingName ? `Building: ${viewAsset.buildingName}` :
+                             viewAsset.schoolName ? `School: ${viewAsset.schoolName}` : 'Unassigned'}
+                          </p>
+                        </div>
+                      </div>
+                      {viewAsset.notes && (
+                        <div className="mt-4">
+                          <Label className="text-muted-foreground">Notes</Label>
+                          <p className="mt-1 text-sm">{viewAsset.notes}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  
+                  {Array.isArray(viewAsset.copies) && viewAsset.copies.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Copies ({viewAsset.copies.length})</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {viewAsset.copies.map((copy, index) => (
+                            <div key={copy.id || `copy-${index}`} className="flex items-center justify-between p-2 border rounded-md">
+                              <div>
+                                <p className="font-medium">Copy {index + 1}</p>
+                                {copy.copyCode && (
+                                  <p className="text-sm text-muted-foreground">Code: {copy.copyCode}</p>
+                                )}
+                              </div>
+                              <Badge variant={copy.status === 'available' ? 'default' : 'secondary'}>
+                                {copy.status || 'unknown'}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="history" className="space-y-4 mt-4">
+                  <AssetHistoryPanel assetId={viewAsset.id} allAssets={allAssets} />
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
+  );
+}
+
+// Asset History Panel Component
+function AssetHistoryPanel({ assetId, allAssets }: { assetId: string; allAssets: Asset[] }) {
+  const { data: staff } = useStaff();
+  const { data: students } = useStudents();
+  const { rooms } = useRooms(undefined, undefined, true);
+  
+  const assetAssignments = useMemo(() => {
+    const asset = allAssets.find(a => a.id === assetId);
+    if (!asset || !asset.assignments || asset.assignments.length === 0) return [];
+    
+    return asset.assignments
+      .sort((a, b) => {
+        const dateA = a.assignedOn ? new Date(a.assignedOn).getTime() : 0;
+        const dateB = b.assignedOn ? new Date(b.assignedOn).getTime() : 0;
+        return dateB - dateA; // Most recent first
+      });
+  }, [allAssets, assetId]);
+  
+  if (assetAssignments.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          No assignment history found for this asset.
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Assignment History ({assetAssignments.length})</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {assetAssignments.map((assignment, index) => {
+            const assignee = assignment.assignedToType === 'staff'
+              ? (Array.isArray(staff) ? staff.find((s) => s.id === assignment.assignedToId) : null)
+              : assignment.assignedToType === 'student'
+              ? (Array.isArray(students) ? students.find((s) => s.id === assignment.assignedToId) : null)
+              : assignment.assignedToType === 'room'
+              ? (Array.isArray(rooms) ? rooms.find((r) => r.id === assignment.assignedToId) : null)
+              : null;
+            
+            const assigneeName = assignee
+              ? ('fullName' in assignee ? assignee.fullName : 'name' in assignee ? assignee.name : 'roomNumber' in assignee ? `Room ${assignee.roomNumber}` : 'Unknown')
+              : 'Unknown';
+            
+            const isReturned = assignment.status === 'returned';
+            const isOverdue = !isReturned && assignment.expectedReturnDate && new Date(assignment.expectedReturnDate) < new Date();
+            
+            return (
+              <div key={assignment.id || `assignment-${index}`} className="border rounded-lg p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={isReturned ? 'secondary' : isOverdue ? 'destructive' : 'default'}>
+                      {isReturned ? 'Returned' : isOverdue ? 'Overdue' : 'Active'}
+                    </Badge>
+                    {assignment.assetCopy && (
+                      <Badge variant="outline">
+                        {assignment.assetCopy.copyCode || assignment.assetCopy.id || 'N/A'}
+                      </Badge>
+                    )}
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {assignment.assignedOn ? format(new Date(assignment.assignedOn), 'MMM dd, yyyy') : 'N/A'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <Label className="text-muted-foreground">Assigned To</Label>
+                    <p className="font-medium">{assigneeName}</p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {assignment.assignedToType}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Expected Return</Label>
+                    <p className="font-medium">
+                      {assignment.expectedReturnDate ? format(new Date(assignment.expectedReturnDate), 'MMM dd, yyyy') : 'N/A'}
+                    </p>
+                  </div>
+                  {isReturned && assignment.returnedAt && (
+                    <div>
+                      <Label className="text-muted-foreground">Returned Date</Label>
+                      <p className="font-medium">
+                        {format(new Date(assignment.returnedAt), 'MMM dd, yyyy')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {assignment.notes && (
+                  <div className="mt-2">
+                    <Label className="text-muted-foreground text-xs">Notes</Label>
+                    <p className="text-sm">{assignment.notes}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

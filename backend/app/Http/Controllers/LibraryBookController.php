@@ -28,15 +28,19 @@ class LibraryBookController extends Controller
 
         $query = LibraryBook::with([
             'copies' => function ($builder) {
-                $builder->select('id', 'book_id', 'copy_code', 'status');
+                $builder->whereNull('deleted_at')
+                    ->select('id', 'book_id', 'copy_code', 'status');
             },
             'category' => function ($builder) {
                 $builder->select('id', 'name', 'code');
             },
         ])->withCount([
-            'copies as total_copies',
+            'copies as total_copies' => function ($builder) {
+                $builder->whereNull('deleted_at');
+            },
             'copies as available_copies' => function ($builder) {
-                $builder->where('status', 'available');
+                $builder->where('status', 'available')
+                    ->whereNull('deleted_at');
             },
         ])->where('organization_id', $profile->organization_id);
 

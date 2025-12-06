@@ -479,7 +479,7 @@ export function AssetManagement() {
                       {assignmentForm.watch('assignedToType') === 'staff' &&
                         staff?.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
-                            {s.profile?.fullName || s.employeeId}
+                            {s.fullName || s.profile?.fullName || s.employeeId || 'Unknown Staff'}
                           </SelectItem>
                         ))}
                       {assignmentForm.watch('assignedToType') === 'student' &&

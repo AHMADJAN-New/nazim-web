@@ -150,8 +150,9 @@ export const useCreateAsset = () => {
       const apiAsset = await assetsApi.create(payload);
       return mapAssetApiToDomain(apiAsset as AssetApi.Asset);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['assets'] });
+      await queryClient.refetchQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
       toast.success('Asset saved successfully');
     },
@@ -198,12 +199,18 @@ export const useAssignAsset = () => {
       const payload = mapAssetAssignmentDomainToInsert(assignment);
       return assetsApi.createAssignment(assetId, payload);
     },
-    onSuccess: (_res, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
+    onSuccess: async (_res, variables) => {
+      // Invalidate all asset-related queries
+      await queryClient.invalidateQueries({ queryKey: ['assets'], exact: false });
+      // Refetch all asset queries to get updated copy counts
+      await queryClient.refetchQueries({ queryKey: ['assets'], exact: false });
+      // Also invalidate specific asset and assignment queries
       if (variables.assetId) {
-        queryClient.invalidateQueries({ queryKey: ['assets', variables.assetId] });
-        queryClient.invalidateQueries({ queryKey: ['asset-assignments', variables.assetId] });
+        await queryClient.invalidateQueries({ queryKey: ['assets', variables.assetId], exact: false });
+        await queryClient.invalidateQueries({ queryKey: ['asset-assignments', variables.assetId], exact: false });
       }
+      // Invalidate stats as well
+      await queryClient.invalidateQueries({ queryKey: ['asset-stats'], exact: false });
       toast.success('Assignment saved');
     },
     onError: (error: Error) => toast.error(error.message || 'Failed to assign asset'),
@@ -229,12 +236,29 @@ export const useUpdateAssignment = () => {
       const payload = mapAssetAssignmentDomainToUpdate(data);
       return assetsApi.updateAssignment(assignmentId, payload);
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
-      queryClient.invalidateQueries({ queryKey: ['asset-assignments'] });
-      if (variables.assignmentId) {
-        queryClient.invalidateQueries({ queryKey: ['asset-assignments', variables.assignmentId] });
+    onSuccess: async (response, variables) => {
+      // Extract asset_id from response if available
+      const assetId = (response as any)?.asset_id || (response as any)?.assetId;
+      
+      // Invalidate all asset-related queries
+      await queryClient.invalidateQueries({ queryKey: ['assets'], exact: false });
+      // Refetch all asset queries to get updated copy counts
+      await queryClient.refetchQueries({ queryKey: ['assets'], exact: false });
+      
+      // Invalidate specific asset if we have the ID
+      if (assetId) {
+        await queryClient.invalidateQueries({ queryKey: ['assets', assetId], exact: false });
+        await queryClient.invalidateQueries({ queryKey: ['asset-assignments', assetId], exact: false });
       }
+      
+      // Invalidate assignment queries
+      await queryClient.invalidateQueries({ queryKey: ['asset-assignments'], exact: false });
+      if (variables.assignmentId) {
+        await queryClient.invalidateQueries({ queryKey: ['asset-assignments', variables.assignmentId], exact: false });
+      }
+      
+      // Invalidate stats as well
+      await queryClient.invalidateQueries({ queryKey: ['asset-stats'], exact: false });
       toast.success('Assignment updated');
     },
     onError: (error: Error) => toast.error(error.message || 'Failed to update assignment'),
@@ -244,10 +268,28 @@ export const useUpdateAssignment = () => {
 export const useRemoveAssignment = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (assignmentId: string) => assetsApi.deleteAssignment(assignmentId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
-      queryClient.invalidateQueries({ queryKey: ['asset-assignments'] });
+    mutationFn: async ({ assignmentId, assetId }: { assignmentId: string; assetId?: string }) => {
+      await assetsApi.deleteAssignment(assignmentId);
+      return { assetId };
+    },
+    onSuccess: async (result) => {
+      const assetId = result?.assetId;
+      
+      // Invalidate all asset-related queries
+      await queryClient.invalidateQueries({ queryKey: ['assets'], exact: false });
+      // Refetch all asset queries to get updated copy counts
+      await queryClient.refetchQueries({ queryKey: ['assets'], exact: false });
+      
+      // Invalidate specific asset if we have the ID
+      if (assetId) {
+        await queryClient.invalidateQueries({ queryKey: ['assets', assetId], exact: false });
+        await queryClient.invalidateQueries({ queryKey: ['asset-assignments', assetId], exact: false });
+      }
+      
+      // Invalidate assignment queries
+      await queryClient.invalidateQueries({ queryKey: ['asset-assignments'], exact: false });
+      // Invalidate stats as well
+      await queryClient.invalidateQueries({ queryKey: ['asset-stats'], exact: false });
       toast.success('Assignment removed');
     },
     onError: (error: Error) => toast.error(error.message || 'Failed to remove assignment'),

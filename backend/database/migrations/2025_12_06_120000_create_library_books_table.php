@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('category')->nullable();
             $table->string('volume')->nullable();
             $table->text('description')->nullable();
-            $table->decimal('deposit_amount', 10, 2)->default(0);
+            $table->decimal('price', 10, 2)->default(0);
             $table->integer('default_loan_days')->default(30);
             $table->timestamps();
             $table->softDeletes();

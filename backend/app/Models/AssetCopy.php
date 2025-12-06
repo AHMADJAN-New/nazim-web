@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class LibraryCopy extends Model
+class AssetCopy extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -17,10 +17,15 @@ class LibraryCopy extends Model
 
     protected $fillable = [
         'id',
-        'book_id',
+        'asset_id',
+        'organization_id',
         'copy_code',
         'status',
         'acquired_at',
+    ];
+
+    protected $casts = [
+        'acquired_at' => 'date',
     ];
 
     /**
@@ -37,13 +42,21 @@ class LibraryCopy extends Model
         });
     }
 
-    public function book()
+    public function asset()
     {
-        return $this->belongsTo(LibraryBook::class, 'book_id');
+        return $this->belongsTo(Asset::class, 'asset_id');
     }
 
-    public function loans()
+    public function assignments()
     {
-        return $this->hasMany(LibraryLoan::class, 'book_copy_id');
+        return $this->hasMany(AssetAssignment::class, 'asset_copy_id');
+    }
+
+    public function activeAssignment()
+    {
+        return $this->hasOne(AssetAssignment::class, 'asset_copy_id')
+            ->where('status', 'active')
+            ->latest('assigned_on');
     }
 }
+

@@ -1,5 +1,5 @@
 import type * as AssetApi from '@/types/api/asset';
-import type { Asset, AssetAssignmentDomain, AssetMaintenanceDomain, AssetHistoryDomain } from '@/types/domain/asset';
+import type { Asset, AssetAssignmentDomain, AssetMaintenanceDomain, AssetHistoryDomain, AssetCopyDomain } from '@/types/domain/asset';
 
 export const mapAssetApiToDomain = (api: AssetApi.Asset): Asset => ({
   id: api.id,
@@ -18,6 +18,9 @@ export const mapAssetApiToDomain = (api: AssetApi.Asset): Asset => ({
   serialNumber: api.serial_number,
   purchaseDate: api.purchase_date ? new Date(api.purchase_date) : null,
   purchasePrice: api.purchase_price !== null && api.purchase_price !== undefined ? Number(api.purchase_price) : null,
+  totalCopies: api.total_copies ?? api.total_copies_count ?? 1,
+  totalCopiesCount: api.total_copies_count ?? api.total_copies ?? 1,
+  availableCopiesCount: api.available_copies_count ?? 0,
   status: api.status,
   condition: api.condition,
   vendor: api.vendor,
@@ -33,6 +36,18 @@ export const mapAssetApiToDomain = (api: AssetApi.Asset): Asset => ({
   assignments: api.assignments?.map(mapAssetAssignmentApiToDomain),
   maintenanceRecords: api.maintenance_records?.map(mapAssetMaintenanceApiToDomain),
   history: api.history?.map(mapAssetHistoryApiToDomain),
+  copies: api.copies?.map(mapAssetCopyApiToDomain),
+  createdAt: new Date(api.created_at),
+  updatedAt: new Date(api.updated_at),
+});
+
+export const mapAssetCopyApiToDomain = (api: AssetApi.AssetCopy): AssetCopyDomain => ({
+  id: api.id,
+  assetId: api.asset_id,
+  organizationId: api.organization_id,
+  copyCode: api.copy_code,
+  status: api.status,
+  acquiredAt: api.acquired_at ? new Date(api.acquired_at) : null,
   createdAt: new Date(api.created_at),
   updatedAt: new Date(api.updated_at),
 });
@@ -42,6 +57,7 @@ export const mapAssetAssignmentApiToDomain = (
 ): AssetAssignmentDomain => ({
   id: api.id,
   assetId: api.asset_id,
+  assetCopyId: api.asset_copy_id,
   organizationId: api.organization_id,
   assignedToType: api.assigned_to_type,
   assignedToId: api.assigned_to_id,
@@ -50,6 +66,7 @@ export const mapAssetAssignmentApiToDomain = (
   returnedOn: api.returned_on ? new Date(api.returned_on) : null,
   status: api.status,
   notes: api.notes,
+  assetCopy: api.asset_copy ? mapAssetCopyApiToDomain(api.asset_copy) : null,
   createdAt: new Date(api.created_at),
   updatedAt: new Date(api.updated_at),
 });
@@ -89,15 +106,16 @@ export const mapAssetDomainToInsert = (domain: Partial<Asset>): AssetApi.AssetIn
   serial_number: domain.serialNumber ?? null,
   purchase_date: domain.purchaseDate ? domain.purchaseDate.toISOString().split('T')[0] : null,
   purchase_price: domain.purchasePrice ?? null,
+  total_copies: domain.totalCopies ?? 1,
   status: domain.status,
   condition: domain.condition ?? null,
   vendor: domain.vendor ?? null,
   warranty_expiry: domain.warrantyExpiry ? domain.warrantyExpiry.toISOString().split('T')[0] : null,
   location_notes: domain.locationNotes ?? null,
   notes: domain.notes ?? null,
-  school_id: domain.schoolId ?? null,
-  building_id: domain.buildingId ?? null,
-  room_id: domain.roomId ?? null,
+  school_id: domain.schoolId && domain.schoolId !== 'none' ? domain.schoolId : null,
+  building_id: domain.buildingId && domain.buildingId !== 'none' ? domain.buildingId : null,
+  room_id: domain.roomId && domain.roomId !== 'none' ? domain.roomId : null,
 });
 
 export const mapAssetDomainToUpdate = (domain: Partial<Asset>): AssetApi.AssetUpdate => ({
@@ -113,9 +131,9 @@ export const mapAssetDomainToUpdate = (domain: Partial<Asset>): AssetApi.AssetUp
   warranty_expiry: domain.warrantyExpiry ? domain.warrantyExpiry.toISOString().split('T')[0] : null,
   location_notes: domain.locationNotes,
   notes: domain.notes,
-  school_id: domain.schoolId,
-  building_id: domain.buildingId,
-  room_id: domain.roomId,
+  school_id: domain.schoolId && domain.schoolId !== 'none' ? domain.schoolId : null,
+  building_id: domain.buildingId && domain.buildingId !== 'none' ? domain.buildingId : null,
+  room_id: domain.roomId && domain.roomId !== 'none' ? domain.roomId : null,
 });
 
 export const mapAssetAssignmentDomainToInsert = (

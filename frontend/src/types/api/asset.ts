@@ -13,6 +13,9 @@ export interface Asset {
   serial_number: string | null;
   purchase_date: string | null;
   purchase_price: number | null;
+  total_copies?: number;
+  total_copies_count?: number;
+  available_copies_count?: number;
   status: AssetStatus;
   condition: string | null;
   vendor: string | null;
@@ -32,6 +35,19 @@ export interface Asset {
   assignments?: AssetAssignment[];
   maintenance_records?: AssetMaintenanceRecord[];
   history?: AssetHistory[];
+  copies?: AssetCopy[];
+}
+
+export interface AssetCopy {
+  id: string;
+  asset_id: string;
+  organization_id: string;
+  copy_code: string | null;
+  status: 'available' | 'assigned' | 'maintenance' | 'retired' | 'lost' | 'disposed';
+  acquired_at: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
 }
 
 export interface AssetInsert {
@@ -41,6 +57,7 @@ export interface AssetInsert {
   serial_number?: string | null;
   purchase_date?: string | null;
   purchase_price?: number | null;
+  total_copies?: number;
   status?: AssetStatus;
   condition?: string | null;
   vendor?: string | null;
@@ -57,6 +74,7 @@ export type AssetUpdate = Partial<AssetInsert>;
 export interface AssetAssignment {
   id: string;
   asset_id: string;
+  asset_copy_id: string | null;
   organization_id: string;
   assigned_to_type: 'staff' | 'student' | 'room' | 'other';
   assigned_to_id: string | null;
@@ -67,6 +85,7 @@ export interface AssetAssignment {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  asset_copy?: AssetCopy | null;
 }
 
 export interface AssetMaintenanceRecord {

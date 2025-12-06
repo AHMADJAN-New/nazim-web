@@ -30,6 +30,7 @@ class Asset extends Model
         'serial_number',
         'purchase_date',
         'purchase_price',
+        'total_copies',
         'status',
         'condition',
         'vendor',
@@ -96,5 +97,10 @@ class Asset extends Model
     public function school()
     {
         return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    public function copies()
+    {
+        return $this->hasMany(AssetCopy::class, 'asset_id');
     }
 }

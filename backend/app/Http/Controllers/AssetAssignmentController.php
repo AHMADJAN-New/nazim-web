@@ -6,8 +6,10 @@ use App\Http\Requests\StoreAssetAssignmentRequest;
 use App\Http\Requests\UpdateAssetAssignmentRequest;
 use App\Models\Asset;
 use App\Models\AssetAssignment;
+use App\Models\AssetCopy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AssetAssignmentController extends Controller
 {
@@ -44,10 +46,14 @@ class AssetAssignmentController extends Controller
             ]);
         }
 
-        $assignments = AssetAssignment::where('asset_id', $assetId)
-            ->where('organization_id', $profile->organization_id)
-            ->orderByDesc('assigned_on')
-            ->get();
+        $query = AssetAssignment::where('asset_id', $assetId)
+            ->where('organization_id', $profile->organization_id);
+
+        if (Schema::hasTable('asset_copies') && Schema::hasColumn('asset_assignments', 'asset_copy_id')) {
+            $query->with(['assetCopy']);
+        }
+
+        $assignments = $query->orderByDesc('assigned_on')->get();
 
         return response()->json($assignments);
     }
@@ -91,25 +97,72 @@ class AssetAssignmentController extends Controller
             return response()->json(['error' => 'Assignee is not valid for this organization'], 422);
         }
 
-        $assignment = AssetAssignment::create([
-            'asset_id' => $assetId,
-            'organization_id' => $profile->organization_id,
-            'assigned_to_type' => $data['assigned_to_type'],
-            'assigned_to_id' => $data['assigned_to_id'] ?? null,
-            'assigned_on' => $data['assigned_on'] ?? now()->toDateString(),
-            'expected_return_date' => $data['expected_return_date'] ?? null,
-            'status' => 'active',
-            'notes' => $data['notes'] ?? null,
-        ]);
+        $hasCopiesTable = Schema::hasTable('asset_copies');
+        $hasCopyIdColumn = Schema::hasColumn('asset_assignments', 'asset_copy_id');
 
-        $asset->status = 'assigned';
-        $asset->save();
+        if ($hasCopiesTable && $hasCopyIdColumn) {
+            // Find an available copy to assign
+            $availableCopy = AssetCopy::where('asset_id', $assetId)
+                ->where('organization_id', $profile->organization_id)
+                ->where('status', 'available')
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$availableCopy) {
+                return response()->json(['error' => 'No available copies to assign'], 422);
+            }
+
+            $assignment = AssetAssignment::create([
+                'asset_id' => $assetId,
+                'asset_copy_id' => $availableCopy->id,
+                'organization_id' => $profile->organization_id,
+                'assigned_to_type' => $data['assigned_to_type'],
+                'assigned_to_id' => $data['assigned_to_id'] ?? null,
+                'assigned_on' => $data['assigned_on'] ?? now()->toDateString(),
+                'expected_return_date' => $data['expected_return_date'] ?? null,
+                'status' => 'active',
+                'notes' => $data['notes'] ?? null,
+            ]);
+
+            // Update copy status to assigned
+            $availableCopy->status = 'assigned';
+            $availableCopy->save();
+
+            // Automatically update asset status based on available copies
+            AssetController::updateAssetStatus($asset, $profile->organization_id);
+        } else {
+            // Fallback: assign asset directly (old behavior)
+            $assignment = AssetAssignment::create([
+                'asset_id' => $assetId,
+                'organization_id' => $profile->organization_id,
+                'assigned_to_type' => $data['assigned_to_type'],
+                'assigned_to_id' => $data['assigned_to_id'] ?? null,
+                'assigned_on' => $data['assigned_on'] ?? now()->toDateString(),
+                'expected_return_date' => $data['expected_return_date'] ?? null,
+                'status' => 'active',
+                'notes' => $data['notes'] ?? null,
+            ]);
+
+            $asset->status = 'assigned';
+            $asset->save();
+        }
 
         AssetController::recordHistory($asset->id, $profile->organization_id, 'assigned', 'Asset assigned', [
             'assigned_to_type' => $data['assigned_to_type'],
             'assigned_to_id' => $data['assigned_to_id'] ?? null,
             'assigned_by' => $user->id,
         ]);
+
+        // Reload asset with updated copy counts
+        $asset->refresh();
+        if ($hasCopiesTable) {
+            $asset->loadCount([
+                'copies as total_copies_count',
+                'copies as available_copies_count' => function ($q) {
+                    $q->where('status', 'available')->whereNull('deleted_at');
+                },
+            ]);
+        }
 
         return response()->json($assignment->refresh(), 201);
     }
@@ -158,15 +211,31 @@ class AssetAssignmentController extends Controller
         $data = $request->validated();
         $assignment->fill($data);
 
-        if (!empty($data['status']) && $data['status'] === 'returned' && empty($assignment->returned_on)) {
+        $hasCopiesTable = Schema::hasTable('asset_copies');
+        $hasCopyIdColumn = Schema::hasColumn('asset_assignments', 'asset_copy_id');
+        $wasReturned = !empty($data['status']) && $data['status'] === 'returned' && $assignment->status !== 'returned';
+
+        if ($wasReturned && empty($assignment->returned_on)) {
             $assignment->returned_on = now()->toDateString();
         }
 
         $assignment->save();
 
+        // Update copy status if assignment is returned
+        if ($wasReturned && $hasCopiesTable && $hasCopyIdColumn && $assignment->asset_copy_id) {
+            $copy = AssetCopy::where('id', $assignment->asset_copy_id)
+                ->where('organization_id', $profile->organization_id)
+                ->first();
+
+            if ($copy) {
+                $copy->status = 'available';
+                $copy->save();
+            }
+        }
+
+        // Automatically update asset status when assignment status changes
         if (!empty($data['status'])) {
-            $asset->status = $data['status'] === 'returned' ? 'available' : $asset->status;
-            $asset->save();
+            AssetController::updateAssetStatus($asset, $profile->organization_id);
         }
 
         AssetController::recordHistory($asset->id, $profile->organization_id, 'assignment_updated', 'Asset assignment updated', [
@@ -174,6 +243,17 @@ class AssetAssignmentController extends Controller
             'updated_by' => $user->id,
             'status' => $assignment->status,
         ]);
+
+        // Reload asset with updated copy counts
+        $asset->refresh();
+        if ($hasCopiesTable) {
+            $asset->loadCount([
+                'copies as total_copies_count',
+                'copies as available_copies_count' => function ($q) {
+                    $q->where('status', 'available')->whereNull('deleted_at');
+                },
+            ]);
+        }
 
         return response()->json($assignment);
     }
@@ -215,22 +295,46 @@ class AssetAssignmentController extends Controller
             ]);
         }
 
+        $hasCopiesTable = Schema::hasTable('asset_copies');
+        $hasCopyIdColumn = Schema::hasColumn('asset_assignments', 'asset_copy_id');
+        $copyId = $assignment->asset_copy_id;
+
         $assignment->delete();
 
-        $hasActiveAssignments = AssetAssignment::where('asset_id', $assignment->asset_id)
-            ->where('organization_id', $profile->organization_id)
-            ->where('status', 'active')
-            ->exists();
+        // Update copy status back to available if assignment is deleted
+        if ($hasCopiesTable && $hasCopyIdColumn && $copyId) {
+            $copy = AssetCopy::where('id', $copyId)
+                ->where('organization_id', $profile->organization_id)
+                ->first();
 
-        if (!$hasActiveAssignments && $asset) {
-            $asset->status = 'available';
-            $asset->save();
+            if ($copy) {
+                $copy->status = 'available';
+                $copy->save();
+            }
+        }
+
+        // Automatically update asset status after assignment deletion
+        if ($asset) {
+            AssetController::updateAssetStatus($asset, $profile->organization_id);
         }
 
         AssetController::recordHistory($assignment->asset_id, $profile->organization_id, 'assignment_deleted', 'Asset assignment removed', [
             'assignment_id' => $assignment->id,
             'removed_by' => $user->id,
         ]);
+
+        // Reload asset with updated copy counts
+        if ($asset) {
+            $asset->refresh();
+            if ($hasCopiesTable) {
+                $asset->loadCount([
+                    'copies as total_copies_count',
+                    'copies as available_copies_count' => function ($q) {
+                        $q->where('status', 'available')->whereNull('deleted_at');
+                    },
+                ]);
+            }
+        }
 
         return response()->json(['message' => 'Assignment removed']);
     }

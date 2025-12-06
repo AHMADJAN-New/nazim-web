@@ -44,7 +44,7 @@ class LibraryLoanController extends Controller
             $query->whereDate('due_date', '<=', $request->get('due_before'));
         }
 
-        $loans = $query->limit(200)->get();
+        $loans = $query->get();
 
         return response()->json($loans);
     }
@@ -103,14 +103,37 @@ class LibraryLoanController extends Controller
 
     public function returnCopy(Request $request, string $id)
     {
-        $loan = LibraryLoan::findOrFail($id);
         $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
 
         try {
             if (!$user->hasPermissionTo('library_loans.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
+            \Log::warning("Permission check failed for library_loans.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Validate UUID format
+        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id)) {
+            return response()->json(['error' => 'Invalid loan ID format'], 400);
+        }
+
+        $loan = LibraryLoan::where('id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->first();
+
+        if (!$loan) {
+            return response()->json(['error' => 'Loan not found'], 404);
+        }
+
+        if ($loan->returned_at) {
+            return response()->json(['error' => 'This loan has already been returned'], 422);
         }
 
         $data = $request->validate([
@@ -120,16 +143,28 @@ class LibraryLoanController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $loan->update([
-            'returned_at' => $data['returned_at'] ?? Carbon::now()->toDateString(),
-            'fee_retained' => $data['fee_retained'] ?? $loan->fee_retained,
-            'refunded' => $data['refunded'] ?? $loan->refunded,
-            'notes' => $data['notes'] ?? $loan->notes,
-        ]);
+        try {
+            $loan->update([
+                'returned_at' => $data['returned_at'] ?? Carbon::now()->toDateString(),
+                'fee_retained' => $data['fee_retained'] ?? $loan->fee_retained,
+                'refunded' => $data['refunded'] ?? $loan->refunded,
+                'notes' => $data['notes'] ?? $loan->notes,
+            ]);
 
-        $loan->copy?->update(['status' => 'available']);
+            // Update copy status to available
+            if ($loan->copy) {
+                $loan->copy->update(['status' => 'available']);
+            }
 
-        return response()->json($loan->fresh()->load(['book', 'copy']));
+            return response()->json($loan->fresh()->load(['book', 'copy']));
+        } catch (\Exception $e) {
+            \Log::error('Error returning loan: ' . $e->getMessage(), [
+                'loan_id' => $id,
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Failed to return loan. Please try again.'], 500);
+        }
     }
 
     public function dueSoon(Request $request)

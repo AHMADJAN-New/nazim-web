@@ -47,7 +47,23 @@ export function DataTablePagination<TData>({
   const currentPage = paginationMeta?.current_page ?? (table.getState().pagination.pageIndex + 1);
   const pageSize = paginationMeta?.per_page ?? table.getState().pagination.pageSize;
   const totalPages = paginationMeta?.last_page ?? table.getPageCount();
-  const total = paginationMeta?.total ?? 0;
+  
+  // For client-side pagination, get total from table's data length
+  // For server-side pagination, use paginationMeta.total
+  let total: number;
+  if (paginationMeta !== null && paginationMeta !== undefined) {
+    // Server-side pagination: use meta total
+    total = paginationMeta.total ?? 0;
+  } else {
+    // Client-side pagination: use table's row count (total data length)
+    // getRowCount() returns the total number of rows in the data, not just current page
+    total = typeof table.getRowCount === 'function' ? table.getRowCount() : table.getRowModel().rows.length;
+    // If getRowCount is not available or returns 0, try to get from table options
+    if (total === 0 && table.options.data) {
+      total = Array.isArray(table.options.data) ? table.options.data.length : 0;
+    }
+  }
+  
   const from = paginationMeta?.from ?? null;
   const to = paginationMeta?.to ?? null;
 

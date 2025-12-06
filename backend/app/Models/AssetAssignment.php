@@ -19,6 +19,7 @@ class AssetAssignment extends Model
     protected $fillable = [
         'id',
         'asset_id',
+        'asset_copy_id',
         'organization_id',
         'assigned_to_type',
         'assigned_to_id',
@@ -51,5 +52,10 @@ class AssetAssignment extends Model
     public function asset()
     {
         return $this->belongsTo(Asset::class);
+    }
+
+    public function assetCopy()
+    {
+        return $this->belongsTo(AssetCopy::class, 'asset_copy_id');
     }
 }

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { BookOpen, BookCheck, AlertTriangle, Calendar, TrendingUp, Download, X, History, FileText } from 'lucide-react';
+import { BookOpen, BookCheck, AlertTriangle, Calendar, TrendingUp, Download, X, History, FileText, Tag, DollarSign, Layers, BarChart3 } from 'lucide-react';
 import { format, addDays, isAfter, isBefore } from 'date-fns';
 import { useLibraryBooks, useLibraryLoans, useDueSoonLoans } from '@/hooks/useLibrary';
 import { useLibraryCategories } from '@/hooks/useLibraryCategories';
@@ -153,6 +153,100 @@ export default function LibraryReports() {
         setBooksPage(1);
     }, [booksSearchQuery, booksCategoryFilter]);
 
+    // Books Report Statistics
+    const booksReportStats = useMemo(() => {
+        if (!Array.isArray(filteredBooks)) {
+            return {
+                totalCategories: 0,
+                totalPrice: 0,
+                averagePrice: 0,
+                totalValue: 0,
+                totalCopies: 0,
+                booksWithNoCategory: 0,
+            };
+        }
+
+        const uniqueCategories = new Set(
+            filteredBooks
+                .map((book) => book.category_id)
+                .filter((id): id is string => id !== null && id !== undefined)
+        );
+        const totalCategories = uniqueCategories.size;
+
+        // Helper function to parse price and extract first valid number
+        const parsePrice = (price: any): number => {
+            if (price === null || price === undefined) return 0;
+            
+            // If it's already a number, return it
+            if (typeof price === 'number') {
+                return isNaN(price) ? 0 : Math.max(0, Math.min(price, 999999.99));
+            }
+            
+            // If it's a string, extract first valid price
+            const priceStr = String(price);
+            
+            // Check if it contains multiple decimal points (concatenated prices)
+            const decimalCount = (priceStr.match(/\./g) || []).length;
+            
+            if (decimalCount > 1) {
+                // Extract first valid price (digits.digits)
+                const match = priceStr.match(/^(\d+\.\d{1,2})/);
+                if (match) {
+                    const parsed = parseFloat(match[1]);
+                    return isNaN(parsed) ? 0 : Math.max(0, Math.min(parsed, 999999.99));
+                }
+            }
+            
+            // Try to parse as float
+            const parsed = parseFloat(priceStr);
+            return isNaN(parsed) ? 0 : Math.max(0, Math.min(parsed, 999999.99));
+        };
+
+        const totalPrice = filteredBooks.reduce((sum, book) => {
+            const price = parsePrice(book.price);
+            return sum + price;
+        }, 0);
+        
+        const averagePrice = filteredBooks.length > 0 ? totalPrice / filteredBooks.length : 0;
+        
+        // Helper function to get effective copies count
+        // If copies is 0 or null, treat as 1 copy (default)
+        // If book is inactive (deleted_at exists), treat as 0 copies
+        const getEffectiveCopies = (book: typeof filteredBooks[0]): number => {
+            // Check if book is inactive (soft deleted)
+            if (book.deleted_at) {
+                return 0;
+            }
+            
+            // If copies is 0, null, or undefined, default to 1
+            const copies = book.total_copies ?? 0;
+            return copies > 0 ? copies : 1;
+        };
+        
+        const totalValue = filteredBooks.reduce((sum, book) => {
+            const price = parsePrice(book.price);
+            const copies = getEffectiveCopies(book);
+            return sum + (price * copies);
+        }, 0);
+        
+        const totalCopies = filteredBooks.reduce((sum, book) => {
+            return sum + getEffectiveCopies(book);
+        }, 0);
+
+        const booksWithNoCategory = filteredBooks.filter(
+            (book) => !book.category_id || book.category_id === null
+        ).length;
+
+        return {
+            totalCategories,
+            totalPrice,
+            averagePrice,
+            totalValue,
+            totalCopies,
+            booksWithNoCategory,
+        };
+    }, [filteredBooks]);
+
     // Paginated overdue loans
     const paginatedOverdueLoans = useMemo(() => {
         const start = (overduePage - 1) * overduePageSize;
@@ -211,13 +305,16 @@ export default function LibraryReports() {
                 ? categories.find((c) => c.id === book.category_id)?.name || book.category?.name || ''
                 : book.category?.name || '';
             
+            const priceValue = book.price ?? 0;
+            const price = typeof priceValue === 'string' ? parseFloat(priceValue) : (typeof priceValue === 'number' ? priceValue : 0);
+            const finalPrice = isNaN(price) ? 0 : price;
             return [
                 book.title || '',
                 book.author || '',
                 book.isbn || '',
                 book.book_number || '',
                 categoryName,
-                (book.price ?? 0).toString(),
+                finalPrice.toFixed(2),
                 (book.total_copies ?? 0).toString(),
                 (book.available_copies ?? 0).toString(),
                 (book.default_loan_days ?? 30).toString(),
@@ -839,6 +936,76 @@ export default function LibraryReports() {
 
                 {/* Books Report Tab */}
                 <TabsContent value="books-report" className="space-y-4">
+                    {/* Books Report Statistics Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <CardTitle className="text-sm font-medium">Total Categories</CardTitle>
+                                <Tag className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{booksReportStats.totalCategories}</div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Unique categories
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <CardTitle className="text-sm font-medium">Total Price</CardTitle>
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">
+                                    {booksReportStats.totalPrice.toLocaleString('en-US', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                    })}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Sum of all book prices
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+                                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">
+                                    {booksReportStats.totalValue.toLocaleString('en-US', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                    })}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Price × Total Copies
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <CardTitle className="text-sm font-medium">Average Price</CardTitle>
+                                <Layers className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">
+                                    {booksReportStats.averagePrice.toLocaleString('en-US', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                    })}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Per book
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
                     <Card>
                         <CardHeader>
                             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -939,7 +1106,13 @@ export default function LibraryReports() {
                                                                     '—'
                                                                 )}
                                                             </TableCell>
-                                                            <TableCell>{book.price ?? 0}</TableCell>
+                                                            <TableCell>
+                                                                {(() => {
+                                                                    const price = book.price ?? 0;
+                                                                    const numPrice = typeof price === 'string' ? parseFloat(price) : (typeof price === 'number' ? price : 0);
+                                                                    return isNaN(numPrice) ? '0.00' : numPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                                })()}
+                                                            </TableCell>
                                                             <TableCell>{book.total_copies ?? 0}</TableCell>
                                                             <TableCell>
                                                                 <Badge variant={book.available_copies && book.available_copies > 0 ? 'default' : 'secondary'}>

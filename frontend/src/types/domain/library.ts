@@ -28,6 +28,7 @@ export interface LibraryBook {
   available_copies?: number;
   copies?: LibraryCopy[];
   categoryRelation?: LibraryCategory | null; // Relationship to LibraryCategory
+  deleted_at?: string | null; // Soft delete timestamp
 }
 
 export interface LibraryCopy {

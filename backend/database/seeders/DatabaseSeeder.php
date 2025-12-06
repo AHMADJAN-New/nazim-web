@@ -45,6 +45,22 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 2b: Ensuring role permissions for all organizations...');
         $this->assignPermissionsForAllOrganizations();
 
+        // Step 2c: Seed library categories for all organizations
+        $this->command->info('Step 2c: Seeding library categories...');
+        $this->call(LibraryCategorySeeder::class);
+
+        // Step 2d: Seed library books for all organizations
+        $this->command->info('Step 2d: Seeding library books...');
+        $this->call(LibraryBookSeeder::class);
+
+        // Step 2e: Seed asset categories for all organizations
+        $this->command->info('Step 2e: Seeding asset categories...');
+        $this->call(AssetCategorySeeder::class);
+
+        // Step 2f: Seed assets for all organizations
+        $this->command->info('Step 2f: Seeding assets...');
+        $this->call(AssetSeeder::class);
+
         // Step 3: Create users for Organization 1
         $this->command->info('Step 3: Creating users for Organization One...');
         $this->createUsersForOrganization($org1, [

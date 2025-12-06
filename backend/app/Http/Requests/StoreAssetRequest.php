@@ -20,6 +20,7 @@ class StoreAssetRequest extends FormRequest
             'serial_number' => 'nullable|string|max:150',
             'purchase_date' => 'nullable|date',
             'purchase_price' => 'nullable|numeric|min:0',
+            'total_copies' => 'nullable|integer|min:1',
             'status' => 'nullable|in:available,assigned,maintenance,retired,lost,disposed',
             'condition' => 'nullable|string|max:50',
             'vendor' => 'nullable|string|max:150',
