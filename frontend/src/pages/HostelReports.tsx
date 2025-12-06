@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { BarChart3, BedDouble, Building2, FileDown, ShieldCheck, Users, Search, X, MapPin, UserCheck } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { BarChart3, BedDouble, Building2, FileDown, ShieldCheck, Users, Search, X, MapPin, UserCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHostelOverview } from '@/hooks/useHostel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
 import type { HostelRoom, HostelOccupant } from '@/types/domain/hostel';
 
 interface BuildingReportRow {
@@ -114,6 +115,10 @@ export function HostelReports() {
     return boarders;
   }, [hostelOverview]);
 
+  // Pagination state for assigned boarders
+  const [assignedPage, setAssignedPage] = useState(1);
+  const [assignedPageSize, setAssignedPageSize] = useState(25);
+
   // Filter assigned boarders
   const filteredAssignedBoarders = useMemo(() => {
     let filtered = allAssignedBoarders;
@@ -146,6 +151,24 @@ export function HostelReports() {
     return filtered;
   }, [allAssignedBoarders, assignedSearchQuery, selectedBuilding, selectedRoom, hostelOverview]);
 
+  // Paginated assigned boarders
+  const paginatedAssignedBoarders = useMemo(() => {
+    const start = (assignedPage - 1) * assignedPageSize;
+    const end = start + assignedPageSize;
+    return filteredAssignedBoarders.slice(start, end);
+  }, [filteredAssignedBoarders, assignedPage, assignedPageSize]);
+
+  const assignedTotalPages = Math.ceil(filteredAssignedBoarders.length / assignedPageSize);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setAssignedPage(1);
+  }, [assignedSearchQuery, selectedBuilding, selectedRoom]);
+
+  // Pagination state for unassigned boarders
+  const [unassignedPage, setUnassignedPage] = useState(1);
+  const [unassignedPageSize, setUnassignedPageSize] = useState(25);
+
   // Filter unassigned boarders
   const filteredUnassignedBoarders = useMemo(() => {
     if (!unassignedSearchQuery) return unassignedBoarders;
@@ -157,6 +180,20 @@ export function HostelReports() {
         boarder.className?.toLowerCase().includes(query)
     );
   }, [unassignedBoarders, unassignedSearchQuery]);
+
+  // Paginated unassigned boarders
+  const paginatedUnassignedBoarders = useMemo(() => {
+    const start = (unassignedPage - 1) * unassignedPageSize;
+    const end = start + unassignedPageSize;
+    return filteredUnassignedBoarders.slice(start, end);
+  }, [filteredUnassignedBoarders, unassignedPage, unassignedPageSize]);
+
+  const unassignedTotalPages = Math.ceil(filteredUnassignedBoarders.length / unassignedPageSize);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setUnassignedPage(1);
+  }, [unassignedSearchQuery]);
 
   // Get rooms and buildings for filters
   const buildingsForFilter = useMemo(() => {
@@ -603,7 +640,7 @@ export function HostelReports() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredAssignedBoarders.map((boarder) => (
+                      paginatedAssignedBoarders.map((boarder) => (
                         <TableRow key={boarder.id}>
                           <TableCell className="font-medium">{boarder.studentName || 'Student'}</TableCell>
                           <TableCell>{boarder.admissionNumber || '—'}</TableCell>
@@ -618,6 +655,65 @@ export function HostelReports() {
                   </TableBody>
                 </Table>
               </div>
+              {filteredAssignedBoarders.length > 0 && assignedTotalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {(assignedPage - 1) * assignedPageSize + 1} to {Math.min(assignedPage * assignedPageSize, filteredAssignedBoarders.length)} of {filteredAssignedBoarders.length} boarders
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={assignedPageSize.toString()} onValueChange={(value) => setAssignedPageSize(Number(value))}>
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10 per page</SelectItem>
+                        <SelectItem value="25">25 per page</SelectItem>
+                        <SelectItem value="50">50 per page</SelectItem>
+                        <SelectItem value="100">100 per page</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => setAssignedPage(Math.max(1, assignedPage - 1))}
+                            className={assignedPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          />
+                        </PaginationItem>
+                        {Array.from({ length: Math.min(5, assignedTotalPages) }, (_, i) => {
+                          let pageNum: number;
+                          if (assignedTotalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (assignedPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (assignedPage >= assignedTotalPages - 2) {
+                            pageNum = assignedTotalPages - 4 + i;
+                          } else {
+                            pageNum = assignedPage - 2 + i;
+                          }
+                          return (
+                            <PaginationItem key={pageNum}>
+                              <PaginationLink
+                                onClick={() => setAssignedPage(pageNum)}
+                                isActive={assignedPage === pageNum}
+                                className="cursor-pointer"
+                              >
+                                {pageNum}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        })}
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => setAssignedPage(Math.min(assignedTotalPages, assignedPage + 1))}
+                            className={assignedPage === assignedTotalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -670,7 +766,7 @@ export function HostelReports() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredUnassignedBoarders.map((admission) => (
+                      paginatedUnassignedBoarders.map((admission) => (
                         <TableRow key={admission.id}>
                           <TableCell className="font-medium">{admission.studentName || 'Student'}</TableCell>
                           <TableCell>{admission.admissionNumber || '—'}</TableCell>
@@ -684,6 +780,65 @@ export function HostelReports() {
                   </TableBody>
                 </Table>
               </div>
+              {filteredUnassignedBoarders.length > 0 && unassignedTotalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {(unassignedPage - 1) * unassignedPageSize + 1} to {Math.min(unassignedPage * unassignedPageSize, filteredUnassignedBoarders.length)} of {filteredUnassignedBoarders.length} boarders
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={unassignedPageSize.toString()} onValueChange={(value) => setUnassignedPageSize(Number(value))}>
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10 per page</SelectItem>
+                        <SelectItem value="25">25 per page</SelectItem>
+                        <SelectItem value="50">50 per page</SelectItem>
+                        <SelectItem value="100">100 per page</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => setUnassignedPage(Math.max(1, unassignedPage - 1))}
+                            className={unassignedPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          />
+                        </PaginationItem>
+                        {Array.from({ length: Math.min(5, unassignedTotalPages) }, (_, i) => {
+                          let pageNum: number;
+                          if (unassignedTotalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (unassignedPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (unassignedPage >= unassignedTotalPages - 2) {
+                            pageNum = unassignedTotalPages - 4 + i;
+                          } else {
+                            pageNum = unassignedPage - 2 + i;
+                          }
+                          return (
+                            <PaginationItem key={pageNum}>
+                              <PaginationLink
+                                onClick={() => setUnassignedPage(pageNum)}
+                                isActive={unassignedPage === pageNum}
+                                className="cursor-pointer"
+                              >
+                                {pageNum}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        })}
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => setUnassignedPage(Math.min(unassignedTotalPages, unassignedPage + 1))}
+                            className={unassignedPage === unassignedTotalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

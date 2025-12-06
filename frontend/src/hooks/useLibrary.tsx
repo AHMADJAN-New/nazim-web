@@ -1,21 +1,108 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+ import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { libraryBooksApi, libraryCopiesApi, libraryLoansApi } from '@/lib/api/client';
 import type { LibraryBook, LibraryLoan } from '@/types/domain/library';
 import { useAuth } from './useAuth';
+import { usePagination } from './usePagination';
+import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
 
-export const useLibraryBooks = () => {
-  const { user } = useAuth();
-  return useQuery<LibraryBook[]>({
-    queryKey: ['library-books'],
+export const useLibraryBooks = (usePaginated?: boolean, search?: string) => {
+  const { user, profile } = useAuth();
+  const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
+    initialPage: 1,
+    initialPageSize: 25,
+  });
+
+  const { data, isLoading, error } = useQuery<LibraryBook[] | PaginatedResponse<LibraryBook>>({
+    queryKey: ['library-books', profile?.organization_id, usePaginated ? page : undefined, usePaginated ? pageSize : undefined, search],
     queryFn: async () => {
-      if (!user) return [];
-      return libraryBooksApi.list();
+      if (!user || !profile) {
+        return [];
+      }
+
+      try {
+        const params: { organization_id?: string; page?: number; per_page?: number; search?: string } = {
+          organization_id: profile.organization_id || undefined,
+        };
+
+        // Add search if provided
+        if (search) {
+          params.search = search;
+        }
+
+        // Add pagination params if using pagination
+        if (usePaginated) {
+          params.page = page;
+          params.per_page = pageSize;
+        }
+
+        const apiBooks = await libraryBooksApi.list(params);
+
+        // Check if response is paginated (Laravel returns meta fields directly, not nested)
+        if (usePaginated && apiBooks && typeof apiBooks === 'object' && 'data' in apiBooks && 'current_page' in apiBooks) {
+          // Laravel's paginated response has data and meta fields at the same level
+          const paginatedResponse = apiBooks as any;
+          // Extract meta from Laravel's response structure
+          const meta: PaginationMeta = {
+            current_page: paginatedResponse.current_page,
+            from: paginatedResponse.from,
+            last_page: paginatedResponse.last_page,
+            per_page: paginatedResponse.per_page,
+            to: paginatedResponse.to,
+            total: paginatedResponse.total,
+            path: paginatedResponse.path,
+            first_page_url: paginatedResponse.first_page_url,
+            last_page_url: paginatedResponse.last_page_url,
+            next_page_url: paginatedResponse.next_page_url,
+            prev_page_url: paginatedResponse.prev_page_url,
+          };
+          return { data: paginatedResponse.data as LibraryBook[], meta } as PaginatedResponse<LibraryBook>;
+        }
+
+        // Non-paginated response
+        return apiBooks as LibraryBook[];
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[useLibraryBooks] Error fetching books:', error);
+        }
+        throw error;
+      }
     },
-    enabled: !!user,
+    enabled: !!user && !!profile,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
+
+  // Update pagination state from API response
+  useEffect(() => {
+    if (usePaginated && data && typeof data === 'object' && 'meta' in data) {
+      updateFromMeta((data as PaginatedResponse<LibraryBook>).meta);
+    }
+  }, [data, usePaginated, updateFromMeta]);
+
+  // Return appropriate format based on pagination mode
+  if (usePaginated) {
+    const paginatedData = data as PaginatedResponse<LibraryBook> | undefined;
+    return {
+      data: paginatedData?.data || [],
+      isLoading,
+      error,
+      pagination: paginatedData?.meta ?? null,
+      paginationState,
+      page,
+      pageSize,
+      setPage,
+      setPageSize,
+    };
+  }
+
+  return {
+    data: data as LibraryBook[] | undefined,
+    isLoading,
+    error,
+  };
 };
 
 export const useCreateLibraryBook = () => {

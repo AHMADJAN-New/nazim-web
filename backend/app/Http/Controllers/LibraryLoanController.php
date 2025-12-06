@@ -27,7 +27,12 @@ class LibraryLoanController extends Controller
         } catch (\Exception $e) {
         }
 
-        $query = LibraryLoan::with(['book', 'copy'])
+        $query = LibraryLoan::with([
+            'book' => function ($builder) {
+                $builder->with('category');
+            },
+            'copy'
+        ])
             ->where('organization_id', $profile->organization_id)
             ->orderByDesc('loan_date');
 
@@ -139,7 +144,12 @@ class LibraryLoanController extends Controller
         $days = (int)($request->get('days') ?? 7);
         $date = Carbon::now()->addDays($days)->toDateString();
 
-        $loans = LibraryLoan::with(['book', 'copy'])
+        $loans = LibraryLoan::with([
+            'book' => function ($builder) {
+                $builder->with('category');
+            },
+            'copy'
+        ])
             ->where('organization_id', $profile->organization_id)
             ->whereNull('returned_at')
             ->whereDate('due_date', '<=', $date)

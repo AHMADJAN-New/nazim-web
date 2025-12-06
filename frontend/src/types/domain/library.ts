@@ -17,11 +17,12 @@ export interface LibraryBook {
   title: string;
   author?: string | null;
   isbn?: string | null;
+  book_number?: string | null;
   category?: string | null; // Legacy string field for backward compatibility
   category_id?: string | null;
   volume?: string | null;
   description?: string | null;
-  deposit_amount: number;
+  price: number;
   default_loan_days: number;
   total_copies?: number;
   available_copies?: number;

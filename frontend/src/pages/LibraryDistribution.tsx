@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Plus, Search, BookCheck, RefreshCw, Calendar, User, Filter, X } from 'lucide-react';
+import { Plus, Search, BookCheck, RefreshCw, Calendar, User, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLibraryLoans, useCreateLibraryLoan, useReturnLibraryLoan } from '@/hooks/useLibrary';
 import { useLibraryBooks } from '@/hooks/useLibrary';
+import { useLibraryCategories } from '@/hooks/useLibraryCategories';
 import { useStudents } from '@/hooks/useStudents';
 import { useStaff } from '@/hooks/useStaff';
 import type { LibraryBook, LibraryLoan } from '@/types/domain/library';
@@ -29,7 +30,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Combobox } from '@/components/ui/combobox';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -78,10 +79,11 @@ export default function LibraryDistribution() {
     const [selectedLoan, setSelectedLoan] = useState<LibraryLoan | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [borrowerFilter, setBorrowerFilter] = useState<string>('all');
-    const [filtersOpen, setFiltersOpen] = useState(false);
+    const [categoryFilter, setCategoryFilter] = useState<string>('');
 
     const { data: openLoans, isLoading: loansLoading } = useLibraryLoans(true);
     const { data: books } = useLibraryBooks();
+    const { data: categories } = useLibraryCategories();
     const { data: students } = useStudents();
     const { data: staff } = useStaff();
     const createLoan = useCreateLibraryLoan();
@@ -109,8 +111,46 @@ export default function LibraryDistribution() {
 
     const availableBooks = useMemo(() => {
         if (!Array.isArray(books)) return [];
-        return books.filter((book) => (book.available_copies ?? 0) > 0);
-    }, [books]);
+        let filtered = books.filter((book) => (book.available_copies ?? 0) > 0);
+        
+        // Filter by category if selected
+        if (categoryFilter) {
+            filtered = filtered.filter((book) => book.category_id === categoryFilter);
+        }
+        
+        return filtered;
+    }, [books, categoryFilter]);
+
+    const bookOptions = useMemo(() => {
+        if (!Array.isArray(availableBooks) || availableBooks.length === 0) {
+            return [];
+        }
+        return availableBooks.map((book) => {
+            const categoryName = Array.isArray(categories) 
+                ? categories.find(c => c.id === book.category_id)?.name 
+                : book.category?.name || '';
+            return {
+                value: book.id,
+                label: `${book.title}${book.author ? ` by ${book.author}` : ''}${categoryName ? ` [${categoryName}]` : ''} (${book.available_copies ?? 0} available)`,
+            };
+        });
+    }, [availableBooks, categories]);
+
+    const studentOptions = useMemo(() => {
+        if (!Array.isArray(students)) return [];
+        return students.map((student) => ({
+            value: student.id,
+            label: student.fullName,
+        }));
+    }, [students]);
+
+    const staffOptions = useMemo(() => {
+        if (!Array.isArray(staff)) return [];
+        return staff.map((member) => ({
+            value: member.id,
+            label: member.fullName || (member as any).name || 'Unknown',
+        }));
+    }, [staff]);
 
     const selectedBook = useMemo(() => {
         if (!selectedBookId || !Array.isArray(books)) return null;
@@ -210,14 +250,25 @@ export default function LibraryDistribution() {
             } else {
                 setValue('book_copy_id', '');
             }
-            // Set deposit amount from book
-            if (book.deposit_amount) {
-                setValue('deposit_amount', book.deposit_amount);
+            // Set deposit amount from book price
+            if (book.price) {
+                setValue('deposit_amount', book.price);
             }
         }
     };
 
-    const hasActiveFilters = borrowerFilter !== 'all' || searchQuery;
+    const hasActiveFilters = borrowerFilter !== 'all' || searchQuery || categoryFilter;
+    
+    const categoryOptions = useMemo(() => {
+        if (!Array.isArray(categories)) return [];
+        return [
+            { value: '', label: 'All Categories' },
+            ...categories.map((cat) => ({
+                value: cat.id,
+                label: cat.name,
+            })),
+        ];
+    }, [categories]);
 
     if (loansLoading) {
         return (
@@ -228,7 +279,7 @@ export default function LibraryDistribution() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <BookCheck className="h-8 w-8" />
@@ -254,57 +305,64 @@ export default function LibraryDistribution() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <div className="relative flex-1 max-w-md">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search by book title or copy code..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-10"
-                                />
+                        <div className="flex flex-col md:flex-row gap-4 items-end">
+                            <div className="relative flex-1 max-w-md w-full">
+                                <Label htmlFor="search" className="mb-2 block">Search</Label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        id="search"
+                                        placeholder="Search by book title or copy code..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-10"
+                                    />
+                                </div>
                             </div>
-                            <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-                                <CollapsibleTrigger asChild>
-                                    <Button variant="outline" size="sm">
-                                        <Filter className="h-4 w-4 mr-2" />
-                                        Filters
-                                        {hasActiveFilters && (
-                                            <Badge variant="secondary" className="ml-2">
-                                                {[borrowerFilter !== 'all' ? 1 : 0].filter(Boolean).length}
-                                            </Badge>
-                                        )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
+                                <div className="space-y-2">
+                                    <Label htmlFor="category-filter">Category</Label>
+                                    <Combobox
+                                        options={categoryOptions}
+                                        value={categoryFilter}
+                                        onValueChange={setCategoryFilter}
+                                        placeholder="All Categories"
+                                        searchPlaceholder="Search categories..."
+                                        emptyText="No categories found."
+                                        className="w-full"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="borrower-filter">Borrower</Label>
+                                    <Select value={borrowerFilter} onValueChange={setBorrowerFilter}>
+                                        <SelectTrigger id="borrower-filter" className="w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Borrowers</SelectItem>
+                                            <SelectItem value="student">Students Only</SelectItem>
+                                            <SelectItem value="staff">Staff Only</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            {hasActiveFilters && (
+                                <div className="w-full md:w-auto">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            setBorrowerFilter('all');
+                                            setCategoryFilter('');
+                                            setSearchQuery('');
+                                        }}
+                                        className="w-full md:w-auto"
+                                    >
+                                        <X className="h-4 w-4 mr-2" />
+                                        Reset
                                     </Button>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent className="space-y-2 pt-2">
-                                    <div className="flex items-center gap-2">
-                                        <Label htmlFor="borrower-filter" className="w-20">Borrower</Label>
-                                        <Select value={borrowerFilter} onValueChange={setBorrowerFilter}>
-                                            <SelectTrigger id="borrower-filter" className="w-48">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">All Borrowers</SelectItem>
-                                                <SelectItem value="student">Students Only</SelectItem>
-                                                <SelectItem value="staff">Staff Only</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        {hasActiveFilters && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setBorrowerFilter('all');
-                                                    setSearchQuery('');
-                                                }}
-                                            >
-                                                <X className="h-4 w-4 mr-2" />
-                                                Reset
-                                            </Button>
-                                        )}
-                                    </div>
-                                </CollapsibleContent>
-                            </Collapsible>
+                                </div>
+                            )}
                         </div>
 
                         <div className="rounded-md border">
@@ -378,7 +436,7 @@ export default function LibraryDistribution() {
                                                             'N/A'
                                                         )}
                                                     </TableCell>
-                                                    <TableCell>${loan.deposit_amount ?? 0}</TableCell>
+                                                    <TableCell>{loan.deposit_amount ?? 0}</TableCell>
                                                     <TableCell className="text-right">
                                                         {hasUpdatePermission && (
                                                             <Button
@@ -421,24 +479,18 @@ export default function LibraryDistribution() {
                                     control={control}
                                     name="book_id"
                                     render={({ field }) => (
-                                        <Select
+                                        <Combobox
+                                            options={bookOptions}
                                             value={field.value || ''}
                                             onValueChange={(value) => {
                                                 field.onChange(value);
                                                 handleBookChange(value);
                                             }}
-                                        >
-                                            <SelectTrigger id="book_id">
-                                                <SelectValue placeholder="Select a book" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {availableBooks.map((book) => (
-                                                    <SelectItem key={book.id} value={book.id}>
-                                                        {book.title} ({book.available_copies ?? 0} available)
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                            placeholder="Search and select a book..."
+                                            searchPlaceholder="Search by title or author..."
+                                            emptyText="No books available."
+                                            className="w-full"
+                                        />
                                     )}
                                 />
                                 {errors.book_id && (
@@ -511,37 +563,22 @@ export default function LibraryDistribution() {
                                         control={control}
                                         name={borrowerType === 'student' ? 'student_id' : 'staff_id'}
                                         render={({ field }) => (
-                                            <Select 
-                                                value={field.value || undefined} 
+                                            <Combobox
+                                                options={borrowerType === 'student' ? studentOptions : staffOptions}
+                                                value={field.value || ''}
                                                 onValueChange={field.onChange}
-                                            >
-                                                <SelectTrigger id="borrower">
-                                                    <SelectValue placeholder="Select borrower" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {borrowerType === 'student'
-                                                        ? (Array.isArray(students) ? students : []).map((student) => (
-                                                              <SelectItem key={student.id} value={student.id}>
-                                                                  {student.fullName}
-                                                              </SelectItem>
-                                                          ))
-                                                        : (Array.isArray(staff) ? staff : []).map((member) => (
-                                                              <SelectItem key={member.id} value={member.id}>
-                                                                  {member.fullName || (member as any).name}
-                                                              </SelectItem>
-                                                          ))}
-                                                    {((borrowerType === 'student' && (!Array.isArray(students) || students.length === 0)) ||
-                                                      (borrowerType === 'staff' && (!Array.isArray(staff) || staff.length === 0))) && (
-                                                        <SelectItem value="no-options" disabled>
-                                                            No {borrowerType === 'student' ? 'students' : 'staff'} available
-                                                        </SelectItem>
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
+                                                placeholder={`Select ${borrowerType === 'student' ? 'student' : 'staff'}...`}
+                                                searchPlaceholder={`Search ${borrowerType === 'student' ? 'students' : 'staff'}...`}
+                                                emptyText={`No ${borrowerType === 'student' ? 'students' : 'staff'} available.`}
+                                                className="w-full"
+                                            />
                                         )}
                                     />
                                     {errors.student_id && (
                                         <p className="text-sm text-destructive mt-1">{errors.student_id.message}</p>
+                                    )}
+                                    {errors.staff_id && (
+                                        <p className="text-sm text-destructive mt-1">{errors.staff_id.message}</p>
                                     )}
                                 </div>
                             </div>

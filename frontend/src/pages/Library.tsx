@@ -243,7 +243,7 @@ export default function Library() {
                           <Badge variant="outline">Available {book.available_copies ?? 0}</Badge>{' '}
                           <Badge variant="secondary">Total {book.total_copies ?? 0}</Badge>
                         </TableCell>
-                        <TableCell>${book.deposit_amount ?? 0}</TableCell>
+                        <TableCell>{book.deposit_amount ?? 0}</TableCell>
                         <TableCell>
                           <Button
                             size="sm"
@@ -407,7 +407,7 @@ export default function Library() {
                       </div>
                       <Badge variant="secondary">Copy {loan.copy?.copy_code || loan.copy?.id}</Badge>
                     </div>
-                    <div className="text-xs mt-2">Deposit: ${loan.deposit_amount}</div>
+                    <div className="text-xs mt-2">Deposit: {loan.deposit_amount}</div>
                     <Button
                       size="sm"
                       className="mt-2"

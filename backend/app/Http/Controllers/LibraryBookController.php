@@ -44,8 +44,16 @@ class LibraryBookController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'ilike', "%{$search}%")
                     ->orWhere('author', 'ilike', "%{$search}%")
-                    ->orWhere('isbn', 'ilike', "%{$search}%");
+                    ->orWhere('isbn', 'ilike', "%{$search}%")
+                    ->orWhere('book_number', 'ilike', "%{$search}%");
             });
+        }
+
+        // Support pagination if page and per_page are provided
+        if ($request->has('page') && $request->has('per_page')) {
+            $perPage = (int) $request->get('per_page', 25);
+            $books = $query->orderBy('title')->paginate($perPage);
+            return response()->json($books);
         }
 
         $books = $query->orderBy('title')->get();
@@ -59,11 +67,12 @@ class LibraryBookController extends Controller
             'title' => 'required|string|max:255',
             'author' => 'nullable|string|max:255',
             'isbn' => 'nullable|string|max:100',
+            'book_number' => 'nullable|string|max:100|unique:library_books,book_number',
             'category' => 'nullable|string|max:150',
             'category_id' => 'nullable|uuid|exists:library_categories,id',
             'volume' => 'nullable|string|max:50',
             'description' => 'nullable|string',
-            'deposit_amount' => 'nullable|numeric|min:0',
+            'price' => 'nullable|numeric|min:0',
             'default_loan_days' => 'nullable|integer|min:1',
             'initial_copies' => 'nullable|integer|min:0',
         ]);
@@ -85,7 +94,7 @@ class LibraryBookController extends Controller
 
         $book = LibraryBook::create(array_merge($data, [
             'organization_id' => $profile->organization_id,
-            'deposit_amount' => $data['deposit_amount'] ?? 0,
+            'price' => $data['price'] ?? 0,
             'default_loan_days' => $data['default_loan_days'] ?? 30,
         ]));
 
@@ -98,7 +107,7 @@ class LibraryBookController extends Controller
             ]);
         }
 
-        return response()->json($book->loadCount(['copies as total_copies', 'copies as available_copies' => function ($builder) {
+        return response()->json($book->load(['category'])->loadCount(['copies as total_copies', 'copies as available_copies' => function ($builder) {
             $builder->where('status', 'available');
         }]));
     }
@@ -125,17 +134,18 @@ class LibraryBookController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'author' => 'nullable|string|max:255',
             'isbn' => 'nullable|string|max:100',
+            'book_number' => 'nullable|string|max:100|unique:library_books,book_number,' . $id,
             'category' => 'nullable|string|max:150',
             'category_id' => 'nullable|uuid|exists:library_categories,id',
             'volume' => 'nullable|string|max:50',
             'description' => 'nullable|string',
-            'deposit_amount' => 'nullable|numeric|min:0',
+            'price' => 'nullable|numeric|min:0',
             'default_loan_days' => 'nullable|integer|min:1',
         ]);
 
         $book->update($data);
 
-        return response()->json($book->fresh()->loadCount(['copies as total_copies', 'copies as available_copies' => function ($builder) {
+        return response()->json($book->fresh()->load(['category'])->loadCount(['copies as total_copies', 'copies as available_copies' => function ($builder) {
             $builder->where('status', 'available');
         }]));
     }

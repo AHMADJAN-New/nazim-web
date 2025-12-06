@@ -1,17 +1,20 @@
-import { useMemo, useState } from 'react';
-import { BookOpen, BookCheck, AlertTriangle, Calendar, TrendingUp, Download, Filter, X, History } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { BookOpen, BookCheck, AlertTriangle, Calendar, TrendingUp, Download, X, History, FileText } from 'lucide-react';
 import { format, addDays, isAfter, isBefore } from 'date-fns';
 import { useLibraryBooks, useLibraryLoans, useDueSoonLoans } from '@/hooks/useLibrary';
-import type { LibraryLoan } from '@/types/domain/library';
+import { useLibraryCategories } from '@/hooks/useLibraryCategories';
+import type { LibraryLoan, LibraryBook } from '@/types/domain/library';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useLanguage } from '@/hooks/useLanguage';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function LibraryReports() {
     const { t } = useLanguage();
@@ -19,10 +22,32 @@ export default function LibraryReports() {
     const { data: allLoans, isLoading: loansLoading } = useLibraryLoans(false);
     const { data: openLoans } = useLibraryLoans(true);
     const { data: dueSoon } = useDueSoonLoans(7);
+    const { data: categories } = useLibraryCategories();
 
     const [dateFrom, setDateFrom] = useState(format(addDays(new Date(), -30), 'yyyy-MM-dd'));
     const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
-    const [filtersOpen, setFiltersOpen] = useState(false);
+    
+    // Pagination state for loan history
+    const [loanHistoryPage, setLoanHistoryPage] = useState(1);
+    const [loanHistoryPageSize, setLoanHistoryPageSize] = useState(25);
+    
+    // Pagination state for books report
+    const [booksPage, setBooksPage] = useState(1);
+    const [booksPageSize, setBooksPageSize] = useState(25);
+    const [booksSearchQuery, setBooksSearchQuery] = useState('');
+    const [booksCategoryFilter, setBooksCategoryFilter] = useState<string>('all');
+    
+    // Pagination state for overdue books
+    const [overduePage, setOverduePage] = useState(1);
+    const [overduePageSize, setOverduePageSize] = useState(25);
+    
+    // Pagination state for due soon
+    const [dueSoonPage, setDueSoonPage] = useState(1);
+    const [dueSoonPageSize, setDueSoonPageSize] = useState(25);
+    
+    // Pagination state for most borrowed
+    const [mostBorrowedPage, setMostBorrowedPage] = useState(1);
+    const [mostBorrowedPageSize, setMostBorrowedPageSize] = useState(25);
 
     const stats = useMemo(() => {
         const totalBooks = Array.isArray(books) ? books.length : 0;
@@ -75,6 +100,76 @@ export default function LibraryReports() {
         });
     }, [allLoans, dateFrom, dateTo]);
 
+    // Paginated loan history
+    const paginatedLoanHistory = useMemo(() => {
+        const start = (loanHistoryPage - 1) * loanHistoryPageSize;
+        const end = start + loanHistoryPageSize;
+        return filteredLoanHistory.slice(start, end);
+    }, [filteredLoanHistory, loanHistoryPage, loanHistoryPageSize]);
+
+    const loanHistoryTotalPages = Math.ceil(filteredLoanHistory.length / loanHistoryPageSize);
+
+    // Reset pagination when date filters change
+    useEffect(() => {
+        setLoanHistoryPage(1);
+    }, [dateFrom, dateTo]);
+
+    // Filtered books for Books Report
+    const filteredBooks = useMemo(() => {
+        if (!Array.isArray(books)) return [];
+        let filtered = books;
+
+        // Search filter
+        if (booksSearchQuery) {
+            const query = booksSearchQuery.toLowerCase();
+            filtered = filtered.filter(
+                (book) =>
+                    book.title?.toLowerCase().includes(query) ||
+                    book.author?.toLowerCase().includes(query) ||
+                    book.isbn?.toLowerCase().includes(query) ||
+                    book.book_number?.toLowerCase().includes(query)
+            );
+        }
+
+        // Category filter
+        if (booksCategoryFilter !== 'all') {
+            filtered = filtered.filter((book) => book.category_id === booksCategoryFilter);
+        }
+
+        return filtered;
+    }, [books, booksSearchQuery, booksCategoryFilter]);
+
+    // Paginated books
+    const paginatedBooks = useMemo(() => {
+        const start = (booksPage - 1) * booksPageSize;
+        const end = start + booksPageSize;
+        return filteredBooks.slice(start, end);
+    }, [filteredBooks, booksPage, booksPageSize]);
+
+    const booksTotalPages = Math.ceil(filteredBooks.length / booksPageSize);
+
+    // Reset pagination when filters change
+    useEffect(() => {
+        setBooksPage(1);
+    }, [booksSearchQuery, booksCategoryFilter]);
+
+    // Paginated overdue loans
+    const paginatedOverdueLoans = useMemo(() => {
+        const start = (overduePage - 1) * overduePageSize;
+        const end = start + overduePageSize;
+        return overdueLoans.slice(start, end);
+    }, [overdueLoans, overduePage, overduePageSize]);
+    const overdueTotalPages = Math.ceil(overdueLoans.length / overduePageSize);
+
+    // Paginated due soon loans
+    const paginatedDueSoon = useMemo(() => {
+        if (!Array.isArray(dueSoon)) return [];
+        const start = (dueSoonPage - 1) * dueSoonPageSize;
+        const end = start + dueSoonPageSize;
+        return dueSoon.slice(start, end);
+    }, [dueSoon, dueSoonPage, dueSoonPageSize]);
+    const dueSoonTotalPages = Math.ceil((Array.isArray(dueSoon) ? dueSoon.length : 0) / dueSoonPageSize);
+
     const mostBorrowedBooks = useMemo(() => {
         if (!Array.isArray(allLoans) || !Array.isArray(books)) return [];
 
@@ -93,13 +188,53 @@ export default function LibraryReports() {
         });
 
         return Object.values(bookLoanCounts)
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 10);
+            .sort((a, b) => b.count - a.count);
     }, [allLoans, books]);
 
-    const handleExport = () => {
-        // TODO: Implement export functionality
-        alert('Export functionality will be implemented');
+    // Paginated most borrowed books
+    const paginatedMostBorrowed = useMemo(() => {
+        const start = (mostBorrowedPage - 1) * mostBorrowedPageSize;
+        const end = start + mostBorrowedPageSize;
+        return mostBorrowedBooks.slice(start, end);
+    }, [mostBorrowedBooks, mostBorrowedPage, mostBorrowedPageSize]);
+    const mostBorrowedTotalPages = Math.ceil(mostBorrowedBooks.length / mostBorrowedPageSize);
+
+    const handleExportBooks = () => {
+        if (!Array.isArray(filteredBooks) || filteredBooks.length === 0) {
+            alert('No books to export');
+            return;
+        }
+
+        const headers = ['Title', 'Author', 'ISBN', 'Book Number', 'Category', 'Price', 'Total Copies', 'Available Copies', 'Default Loan Days'];
+        const rows = filteredBooks.map((book) => {
+            const categoryName = Array.isArray(categories)
+                ? categories.find((c) => c.id === book.category_id)?.name || book.category?.name || ''
+                : book.category?.name || '';
+            
+            return [
+                book.title || '',
+                book.author || '',
+                book.isbn || '',
+                book.book_number || '',
+                categoryName,
+                (book.price ?? 0).toString(),
+                (book.total_copies ?? 0).toString(),
+                (book.available_copies ?? 0).toString(),
+                (book.default_loan_days ?? 30).toString(),
+            ];
+        });
+
+        const csvContent = [headers, ...rows]
+            .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `library-books-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
     };
 
     const hasActiveFilters = dateFrom || dateTo;
@@ -113,7 +248,7 @@ export default function LibraryReports() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <BookOpen className="h-8 w-8" />
@@ -122,10 +257,6 @@ export default function LibraryReports() {
                         <p className="text-sm text-muted-foreground">Analytics and insights for your library</p>
                     </div>
                 </div>
-                <Button variant="outline" onClick={handleExport}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                </Button>
             </div>
 
             {/* Stats Cards */}
@@ -210,8 +341,12 @@ export default function LibraryReports() {
             </div>
 
             {/* Tabs for different report sections */}
-            <Tabs defaultValue="overdue" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-4">
+            <Tabs defaultValue="books-report" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-5">
+                    <TabsTrigger value="books-report" className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Books Report
+                    </TabsTrigger>
                     <TabsTrigger value="overdue" className="flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4" />
                         Overdue Books
@@ -256,8 +391,9 @@ export default function LibraryReports() {
                                     No overdue books. Great job!
                                 </p>
                             ) : (
-                                <div className="space-y-2">
-                                    {overdueLoans.map((loan) => (
+                                <>
+                                    <div className="space-y-2">
+                                        {paginatedOverdueLoans.map((loan) => (
                                         <div
                                             key={loan.id}
                                             className="border rounded-lg p-4 space-y-2 bg-destructive/5 border-destructive/20"
@@ -280,8 +416,70 @@ export default function LibraryReports() {
                                                 )}
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                    {overdueLoans.length > 0 && (
+                                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                                            <div className="text-sm text-muted-foreground">
+                                                Showing {(overduePage - 1) * overduePageSize + 1} to {Math.min(overduePage * overduePageSize, overdueLoans.length)} of {overdueLoans.length} overdue books
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Select value={overduePageSize.toString()} onValueChange={(value) => { setOverduePageSize(Number(value)); setOverduePage(1); }}>
+                                                    <SelectTrigger className="w-[120px]">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="10">10 per page</SelectItem>
+                                                        <SelectItem value="25">25 per page</SelectItem>
+                                                        <SelectItem value="50">50 per page</SelectItem>
+                                                        <SelectItem value="100">100 per page</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                {overdueTotalPages > 1 && (
+                                                    <Pagination>
+                                                    <PaginationContent>
+                                                        <PaginationItem>
+                                                            <PaginationPrevious 
+                                                                onClick={() => setOverduePage(Math.max(1, overduePage - 1))}
+                                                                className={overduePage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                            />
+                                                        </PaginationItem>
+                                                        {Array.from({ length: Math.min(5, overdueTotalPages) }, (_, i) => {
+                                                            let pageNum: number;
+                                                            if (overdueTotalPages <= 5) {
+                                                                pageNum = i + 1;
+                                                            } else if (overduePage <= 3) {
+                                                                pageNum = i + 1;
+                                                            } else if (overduePage >= overdueTotalPages - 2) {
+                                                                pageNum = overdueTotalPages - 4 + i;
+                                                            } else {
+                                                                pageNum = overduePage - 2 + i;
+                                                            }
+                                                            return (
+                                                                <PaginationItem key={pageNum}>
+                                                                    <PaginationLink
+                                                                        onClick={() => setOverduePage(pageNum)}
+                                                                        isActive={overduePage === pageNum}
+                                                                        className="cursor-pointer"
+                                                                    >
+                                                                        {pageNum}
+                                                                    </PaginationLink>
+                                                                </PaginationItem>
+                                                            );
+                                                        })}
+                                                        <PaginationItem>
+                                                            <PaginationNext 
+                                                                onClick={() => setOverduePage(Math.min(overdueTotalPages, overduePage + 1))}
+                                                                className={overduePage === overdueTotalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                            />
+                                                        </PaginationItem>
+                                                    </PaginationContent>
+                                                </Pagination>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </CardContent>
                     </Card>
@@ -300,8 +498,9 @@ export default function LibraryReports() {
                                     No books due in the next week.
                                 </p>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {Array.isArray(dueSoon) && dueSoon.map((loan) => (
+                                <>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {paginatedDueSoon.map((loan) => (
                                         <div
                                             key={loan.id}
                                             className="border rounded-lg p-4 space-y-2 hover:bg-accent/50 transition-colors"
@@ -321,8 +520,70 @@ export default function LibraryReports() {
                                                 )}
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                    {Array.isArray(dueSoon) && dueSoon.length > 0 && (
+                                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                                            <div className="text-sm text-muted-foreground">
+                                                Showing {(dueSoonPage - 1) * dueSoonPageSize + 1} to {Math.min(dueSoonPage * dueSoonPageSize, dueSoon.length)} of {dueSoon.length} books due soon
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Select value={dueSoonPageSize.toString()} onValueChange={(value) => { setDueSoonPageSize(Number(value)); setDueSoonPage(1); }}>
+                                                    <SelectTrigger className="w-[120px]">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="10">10 per page</SelectItem>
+                                                        <SelectItem value="25">25 per page</SelectItem>
+                                                        <SelectItem value="50">50 per page</SelectItem>
+                                                        <SelectItem value="100">100 per page</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                {dueSoonTotalPages > 1 && (
+                                                    <Pagination>
+                                                    <PaginationContent>
+                                                        <PaginationItem>
+                                                            <PaginationPrevious 
+                                                                onClick={() => setDueSoonPage(Math.max(1, dueSoonPage - 1))}
+                                                                className={dueSoonPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                            />
+                                                        </PaginationItem>
+                                                        {Array.from({ length: Math.min(5, dueSoonTotalPages) }, (_, i) => {
+                                                            let pageNum: number;
+                                                            if (dueSoonTotalPages <= 5) {
+                                                                pageNum = i + 1;
+                                                            } else if (dueSoonPage <= 3) {
+                                                                pageNum = i + 1;
+                                                            } else if (dueSoonPage >= dueSoonTotalPages - 2) {
+                                                                pageNum = dueSoonTotalPages - 4 + i;
+                                                            } else {
+                                                                pageNum = dueSoonPage - 2 + i;
+                                                            }
+                                                            return (
+                                                                <PaginationItem key={pageNum}>
+                                                                    <PaginationLink
+                                                                        onClick={() => setDueSoonPage(pageNum)}
+                                                                        isActive={dueSoonPage === pageNum}
+                                                                        className="cursor-pointer"
+                                                                    >
+                                                                        {pageNum}
+                                                                    </PaginationLink>
+                                                                </PaginationItem>
+                                                            );
+                                                        })}
+                                                        <PaginationItem>
+                                                            <PaginationNext 
+                                                                onClick={() => setDueSoonPage(Math.min(dueSoonTotalPages, dueSoonPage + 1))}
+                                                                className={dueSoonPage === dueSoonTotalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                            />
+                                                        </PaginationItem>
+                                                    </PaginationContent>
+                                                </Pagination>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </CardContent>
                     </Card>
@@ -332,60 +593,49 @@ export default function LibraryReports() {
                 <TabsContent value="loan-history" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <div className="flex items-center justify-between">
+                            <div className="space-y-4">
                                 <div>
                                     <CardTitle>Loan History</CardTitle>
                                     <CardDescription>All loans within the selected date range</CardDescription>
                                 </div>
-                                <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-                                    <CollapsibleTrigger asChild>
-                                        <Button variant="outline" size="sm">
-                                            <Filter className="h-4 w-4 mr-2" />
-                                            Filters
-                                            {hasActiveFilters && (
-                                                <Badge variant="secondary" className="ml-2">1</Badge>
-                                            )}
-                                        </Button>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent className="space-y-2 pt-2">
-                                        <div className="flex items-center gap-2">
-                                            <div>
-                                                <Label htmlFor="date-from" className="text-xs">From</Label>
-                                                <Input
-                                                    id="date-from"
-                                                    type="date"
-                                                    value={dateFrom}
-                                                    onChange={(e) => setDateFrom(e.target.value)}
-                                                    className="w-40"
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="date-to" className="text-xs">To</Label>
-                                                <Input
-                                                    id="date-to"
-                                                    type="date"
-                                                    value={dateTo}
-                                                    onChange={(e) => setDateTo(e.target.value)}
-                                                    className="w-40"
-                                                />
-                                            </div>
-                                            {hasActiveFilters && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setDateFrom(format(addDays(new Date(), -30), 'yyyy-MM-dd'));
-                                                        setDateTo(format(new Date(), 'yyyy-MM-dd'));
-                                                    }}
-                                                    className="mt-6"
-                                                >
-                                                    <X className="h-4 w-4 mr-2" />
-                                                    Reset
-                                                </Button>
-                                            )}
+                                <div className="flex flex-col md:flex-row gap-4 items-end">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="date-from">From Date</Label>
+                                        <Input
+                                            id="date-from"
+                                            type="date"
+                                            value={dateFrom}
+                                            onChange={(e) => setDateFrom(e.target.value)}
+                                            className="w-full md:w-40"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="date-to">To Date</Label>
+                                        <Input
+                                            id="date-to"
+                                            type="date"
+                                            value={dateTo}
+                                            onChange={(e) => setDateTo(e.target.value)}
+                                            className="w-full md:w-40"
+                                        />
+                                    </div>
+                                    {hasActiveFilters && (
+                                        <div className="w-full md:w-auto">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setDateFrom(format(addDays(new Date(), -30), 'yyyy-MM-dd'));
+                                                    setDateTo(format(new Date(), 'yyyy-MM-dd'));
+                                                }}
+                                                className="w-full md:w-auto"
+                                            >
+                                                <X className="h-4 w-4 mr-2" />
+                                                Reset
+                                            </Button>
                                         </div>
-                                    </CollapsibleContent>
-                                </Collapsible>
+                                    )}
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -395,7 +645,7 @@ export default function LibraryReports() {
                                 </p>
                             ) : (
                                 <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                                    {filteredLoanHistory.slice(0, 50).map((loan) => (
+                                    {paginatedLoanHistory.map((loan) => (
                                         <div
                                             key={loan.id}
                                             className="border rounded-lg p-3 space-y-1 hover:bg-accent/50 transition-colors"
@@ -413,10 +663,66 @@ export default function LibraryReports() {
                                             </div>
                                         </div>
                                     ))}
-                                    {filteredLoanHistory.length > 50 && (
-                                        <p className="text-xs text-muted-foreground text-center pt-2">
-                                            Showing first 50 of {filteredLoanHistory.length} loans
-                                        </p>
+                                    {filteredLoanHistory.length > 0 && (
+                                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                                            <div className="text-sm text-muted-foreground">
+                                                Showing {(loanHistoryPage - 1) * loanHistoryPageSize + 1} to {Math.min(loanHistoryPage * loanHistoryPageSize, filteredLoanHistory.length)} of {filteredLoanHistory.length} loans
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Select value={loanHistoryPageSize.toString()} onValueChange={(value) => { setLoanHistoryPageSize(Number(value)); setLoanHistoryPage(1); }}>
+                                                    <SelectTrigger className="w-[120px]">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="10">10 per page</SelectItem>
+                                                        <SelectItem value="25">25 per page</SelectItem>
+                                                        <SelectItem value="50">50 per page</SelectItem>
+                                                        <SelectItem value="100">100 per page</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                {loanHistoryTotalPages > 1 && (
+                                                    <Pagination>
+                                                        <PaginationContent>
+                                                            <PaginationItem>
+                                                                <PaginationPrevious 
+                                                                    onClick={() => setLoanHistoryPage(Math.max(1, loanHistoryPage - 1))}
+                                                                    className={loanHistoryPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                                />
+                                                            </PaginationItem>
+                                                            {Array.from({ length: Math.min(5, loanHistoryTotalPages) }, (_, i) => {
+                                                                let pageNum: number;
+                                                                if (loanHistoryTotalPages <= 5) {
+                                                                    pageNum = i + 1;
+                                                                } else if (loanHistoryPage <= 3) {
+                                                                    pageNum = i + 1;
+                                                                } else if (loanHistoryPage >= loanHistoryTotalPages - 2) {
+                                                                    pageNum = loanHistoryTotalPages - 4 + i;
+                                                                } else {
+                                                                    pageNum = loanHistoryPage - 2 + i;
+                                                                }
+                                                                return (
+                                                                    <PaginationItem key={pageNum}>
+                                                                        <PaginationLink
+                                                                            onClick={() => setLoanHistoryPage(pageNum)}
+                                                                            isActive={loanHistoryPage === pageNum}
+                                                                            className="cursor-pointer"
+                                                                        >
+                                                                            {pageNum}
+                                                                        </PaginationLink>
+                                                                    </PaginationItem>
+                                                                );
+                                                            })}
+                                                            <PaginationItem>
+                                                                <PaginationNext 
+                                                                    onClick={() => setLoanHistoryPage(Math.min(loanHistoryTotalPages, loanHistoryPage + 1))}
+                                                                    className={loanHistoryPage === loanHistoryTotalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                                />
+                                                            </PaginationItem>
+                                                        </PaginationContent>
+                                                    </Pagination>
+                                                )}
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             )}
@@ -432,7 +738,7 @@ export default function LibraryReports() {
                                 <TrendingUp className="h-5 w-5" />
                                 Most Borrowed Books
                             </CardTitle>
-                            <CardDescription>Top 10 most frequently borrowed books</CardDescription>
+                            <CardDescription>Most frequently borrowed books</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {mostBorrowedBooks.length === 0 ? (
@@ -440,15 +746,16 @@ export default function LibraryReports() {
                                     No loan history available yet.
                                 </p>
                             ) : (
-                                <div className="space-y-2">
-                                    {mostBorrowedBooks.map((item, index) => (
+                                <>
+                                    <div className="space-y-2">
+                                        {paginatedMostBorrowed.map((item, index) => (
                                         <div
                                             key={item.book.id}
                                             className="flex items-center justify-between border rounded-lg p-3 hover:bg-accent/50 transition-colors"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold">
-                                                    {index + 1}
+                                                    {(mostBorrowedPage - 1) * mostBorrowedPageSize + index + 1}
                                                 </div>
                                                 <div>
                                                     <div className="font-medium">{item.book.title}</div>
@@ -461,9 +768,254 @@ export default function LibraryReports() {
                                             </div>
                                             <Badge variant="secondary">{item.count} loans</Badge>
                                         </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                    {mostBorrowedBooks.length > 0 && (
+                                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                                            <div className="text-sm text-muted-foreground">
+                                                Showing {(mostBorrowedPage - 1) * mostBorrowedPageSize + 1} to {Math.min(mostBorrowedPage * mostBorrowedPageSize, mostBorrowedBooks.length)} of {mostBorrowedBooks.length} books
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Select value={mostBorrowedPageSize.toString()} onValueChange={(value) => { setMostBorrowedPageSize(Number(value)); setMostBorrowedPage(1); }}>
+                                                    <SelectTrigger className="w-[120px]">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="10">10 per page</SelectItem>
+                                                        <SelectItem value="25">25 per page</SelectItem>
+                                                        <SelectItem value="50">50 per page</SelectItem>
+                                                        <SelectItem value="100">100 per page</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                {mostBorrowedTotalPages > 1 && (
+                                                    <Pagination>
+                                                    <PaginationContent>
+                                                        <PaginationItem>
+                                                            <PaginationPrevious 
+                                                                onClick={() => setMostBorrowedPage(Math.max(1, mostBorrowedPage - 1))}
+                                                                className={mostBorrowedPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                            />
+                                                        </PaginationItem>
+                                                        {Array.from({ length: Math.min(5, mostBorrowedTotalPages) }, (_, i) => {
+                                                            let pageNum: number;
+                                                            if (mostBorrowedTotalPages <= 5) {
+                                                                pageNum = i + 1;
+                                                            } else if (mostBorrowedPage <= 3) {
+                                                                pageNum = i + 1;
+                                                            } else if (mostBorrowedPage >= mostBorrowedTotalPages - 2) {
+                                                                pageNum = mostBorrowedTotalPages - 4 + i;
+                                                            } else {
+                                                                pageNum = mostBorrowedPage - 2 + i;
+                                                            }
+                                                            return (
+                                                                <PaginationItem key={pageNum}>
+                                                                    <PaginationLink
+                                                                        onClick={() => setMostBorrowedPage(pageNum)}
+                                                                        isActive={mostBorrowedPage === pageNum}
+                                                                        className="cursor-pointer"
+                                                                    >
+                                                                        {pageNum}
+                                                                    </PaginationLink>
+                                                                </PaginationItem>
+                                                            );
+                                                        })}
+                                                        <PaginationItem>
+                                                            <PaginationNext 
+                                                                onClick={() => setMostBorrowedPage(Math.min(mostBorrowedTotalPages, mostBorrowedPage + 1))}
+                                                                className={mostBorrowedPage === mostBorrowedTotalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                            />
+                                                        </PaginationItem>
+                                                    </PaginationContent>
+                                                </Pagination>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Books Report Tab */}
+                <TabsContent value="books-report" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <FileText className="h-5 w-5" />
+                                        Books Report
+                                    </CardTitle>
+                                    <CardDescription>Complete inventory of all library books</CardDescription>
+                                </div>
+                                <Button variant="outline" onClick={handleExportBooks} disabled={filteredBooks.length === 0}>
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export CSV
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <div className="flex flex-col md:flex-row gap-4 items-end">
+                                    <div className="relative flex-1 max-w-md">
+                                        <Label htmlFor="books-search" className="mb-2 block">Search</Label>
+                                        <Input
+                                            id="books-search"
+                                            placeholder="Search by title, author, ISBN, or book number..."
+                                            value={booksSearchQuery}
+                                            onChange={(e) => setBooksSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="books-category-filter">Category</Label>
+                                        <Select value={booksCategoryFilter} onValueChange={setBooksCategoryFilter}>
+                                            <SelectTrigger id="books-category-filter" className="w-48">
+                                                <SelectValue placeholder="All Categories" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Categories</SelectItem>
+                                                {Array.isArray(categories) && categories.map((cat) => (
+                                                    <SelectItem key={cat.id} value={cat.id}>
+                                                        {cat.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    {(booksSearchQuery || booksCategoryFilter !== 'all') && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                setBooksSearchQuery('');
+                                                setBooksCategoryFilter('all');
+                                            }}
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Reset
+                                        </Button>
+                                    )}
+                                </div>
+
+                                <div className="rounded-md border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Title</TableHead>
+                                                <TableHead>Author</TableHead>
+                                                <TableHead>ISBN</TableHead>
+                                                <TableHead>Book #</TableHead>
+                                                <TableHead>Category</TableHead>
+                                                <TableHead>Price</TableHead>
+                                                <TableHead>Total Copies</TableHead>
+                                                <TableHead>Available</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredBooks.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                                                        {booksSearchQuery || booksCategoryFilter !== 'all'
+                                                            ? 'No books found matching your filters.'
+                                                            : 'No books available.'}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : (
+                                                paginatedBooks.map((book) => {
+                                                    const categoryName = Array.isArray(categories)
+                                                        ? categories.find((c) => c.id === book.category_id)?.name
+                                                        : book.category?.name || null;
+                                                    return (
+                                                        <TableRow key={book.id}>
+                                                            <TableCell className="font-medium">{book.title}</TableCell>
+                                                            <TableCell>{book.author || '—'}</TableCell>
+                                                            <TableCell>{book.isbn || '—'}</TableCell>
+                                                            <TableCell>{book.book_number || '—'}</TableCell>
+                                                            <TableCell>
+                                                                {categoryName ? (
+                                                                    <Badge variant="outline">{categoryName}</Badge>
+                                                                ) : (
+                                                                    '—'
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>{book.price ?? 0}</TableCell>
+                                                            <TableCell>{book.total_copies ?? 0}</TableCell>
+                                                            <TableCell>
+                                                                <Badge variant={book.available_copies && book.available_copies > 0 ? 'default' : 'secondary'}>
+                                                                    {book.available_copies ?? 0}
+                                                                </Badge>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+
+                                {filteredBooks.length > 0 && (
+                                    <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                                        <div className="text-sm text-muted-foreground">
+                                            Showing {(booksPage - 1) * booksPageSize + 1} to {Math.min(booksPage * booksPageSize, filteredBooks.length)} of {filteredBooks.length} books
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Select value={booksPageSize.toString()} onValueChange={(value) => { setBooksPageSize(Number(value)); setBooksPage(1); }}>
+                                                <SelectTrigger className="w-[120px]">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="10">10 per page</SelectItem>
+                                                    <SelectItem value="25">25 per page</SelectItem>
+                                                    <SelectItem value="50">50 per page</SelectItem>
+                                                    <SelectItem value="100">100 per page</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            {booksTotalPages > 1 && (
+                                                <Pagination>
+                                                    <PaginationContent>
+                                                        <PaginationItem>
+                                                            <PaginationPrevious 
+                                                                onClick={() => setBooksPage(Math.max(1, booksPage - 1))}
+                                                                className={booksPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                            />
+                                                        </PaginationItem>
+                                                        {Array.from({ length: Math.min(5, booksTotalPages) }, (_, i) => {
+                                                            let pageNum: number;
+                                                            if (booksTotalPages <= 5) {
+                                                                pageNum = i + 1;
+                                                            } else if (booksPage <= 3) {
+                                                                pageNum = i + 1;
+                                                            } else if (booksPage >= booksTotalPages - 2) {
+                                                                pageNum = booksTotalPages - 4 + i;
+                                                            } else {
+                                                                pageNum = booksPage - 2 + i;
+                                                            }
+                                                            return (
+                                                                <PaginationItem key={pageNum}>
+                                                                    <PaginationLink
+                                                                        onClick={() => setBooksPage(pageNum)}
+                                                                        isActive={booksPage === pageNum}
+                                                                        className="cursor-pointer"
+                                                                    >
+                                                                        {pageNum}
+                                                                    </PaginationLink>
+                                                                </PaginationItem>
+                                                            );
+                                                        })}
+                                                        <PaginationItem>
+                                                            <PaginationNext 
+                                                                onClick={() => setBooksPage(Math.min(booksTotalPages, booksPage + 1))}
+                                                                className={booksPage === booksTotalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                            />
+                                                        </PaginationItem>
+                                                    </PaginationContent>
+                                                </Pagination>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>

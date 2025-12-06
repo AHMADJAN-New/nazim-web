@@ -1935,7 +1935,7 @@ export const libraryCategoriesApi = {
 
 // Library Books API
 export const libraryBooksApi = {
-  list: async (params?: { search?: string }) => {
+  list: async (params?: { search?: string; page?: number; per_page?: number; organization_id?: string }) => {
     return apiClient.get('/library-books', params);
   },
 
@@ -1947,11 +1947,12 @@ export const libraryBooksApi = {
     title: string;
     author?: string | null;
     isbn?: string | null;
+    book_number?: string | null;
     category?: string | null;
     category_id?: string | null;
     volume?: string | null;
     description?: string | null;
-    deposit_amount?: number;
+    price?: number;
     default_loan_days?: number;
     initial_copies?: number;
   }) => {
@@ -1962,11 +1963,12 @@ export const libraryBooksApi = {
     title?: string;
     author?: string | null;
     isbn?: string | null;
+    book_number?: string | null;
     category?: string | null;
     category_id?: string | null;
     volume?: string | null;
     description?: string | null;
-    deposit_amount?: number;
+    price?: number;
     default_loan_days?: number;
   }) => {
     return apiClient.put(`/library-books/${id}`, data);

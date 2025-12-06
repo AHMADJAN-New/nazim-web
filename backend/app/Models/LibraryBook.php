@@ -5,23 +5,44 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class LibraryBook extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $keyType = 'string';
+    public $incrementing = false;
+    protected $primaryKey = 'id';
+
     protected $fillable = [
+        'id',
         'organization_id',
         'title',
         'author',
         'isbn',
+        'book_number',
         'category',
         'category_id',
         'volume',
         'description',
-        'deposit_amount',
+        'price',
         'default_loan_days',
     ];
+
+    /**
+     * Boot the model
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = (string) Str::uuid();
+            }
+        });
+    }
 
     public function copies()
     {
