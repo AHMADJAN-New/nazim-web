@@ -42,6 +42,7 @@ class PermissionSeeder extends Seeder
             'student_educational_history' => ['read', 'create', 'update', 'delete'],
             'teacher_subject_assignments' => ['read', 'create', 'update', 'delete'],
             'teacher_timetable_preferences' => ['read', 'create', 'update', 'delete'],
+            'exams' => ['read', 'create', 'update', 'delete', 'assign'],
             'roles' => ['read', 'create', 'update', 'delete'],
             'permissions' => ['read', 'create', 'update', 'delete'],
         ];

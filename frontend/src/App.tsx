@@ -36,8 +36,10 @@ import {
   AcademicYearsManagement,
   ClassesManagement,
   SubjectsManagement,
+  ExamReports,
   ScheduleSlotsManagement,
   TeacherSubjectAssignments,
+  ExamsManagement,
   StaffTypesManagement,
   StaffList,
   Students,
@@ -192,6 +194,20 @@ const App = () => (
                       <PermissionRoute permission="subjects.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <SubjectsManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/settings/exams" element={
+                      <PermissionRoute permission="exams.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamsManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/settings/exams/reports" element={
+                      <PermissionRoute permission="exams.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamReports />
                         </Suspense>
                       </PermissionRoute>
                     } />

@@ -167,6 +167,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasAcademicYearsPermission = useHasPermission('academic_years.read');
   const hasClassesPermission = useHasPermission('classes.read');
   const hasSubjectsPermission = useHasPermission('subjects.read');
+  const hasExamsPermission = useHasPermission('exams.read');
   const hasStaffPermission = useHasPermission('staff.read');
   const hasStudentsPermission = useHasPermission('students.read');
   const hasStudentAdmissionsPermission = useHasPermission('student_admissions.read');
@@ -227,7 +228,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
         ],
       }] : []),
-      ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission) ? [{
+      ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission || hasExamsPermission) ? [{
         titleKey: "academicManagement",
         icon: GraduationCap,
         badge: null,
@@ -244,6 +245,15 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "academic.subjects.title",
             url: "/settings/subjects",
             icon: BookOpen,
+          }] : []),
+          ...(hasExamsPermission ? [{
+            title: "Exams",
+            url: "/settings/exams",
+            icon: Trophy,
+          }, {
+            title: "Exam Reports",
+            url: "/settings/exams/reports",
+            icon: Trophy,
           }] : []),
           ...(hasTeacherSubjectAssignmentsPermission ? [{
             title: "Teacher Subject Assignments",
@@ -401,7 +411,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       if (item.titleKey === 'academicManagement') {
         // Show if user has any academic management permission
-        return hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission;
+        return hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasExamsPermission;
       }
       
       if (item.titleKey === 'timetables') {
@@ -411,7 +421,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasExamsPermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {

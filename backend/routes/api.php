@@ -19,6 +19,10 @@ use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\ScheduleSlotController;
 use App\Http\Controllers\TeacherSubjectAssignmentController;
+use App\Http\Controllers\ExamController;
+use App\Http\Controllers\ExamClassController;
+use App\Http\Controllers\ExamSubjectController;
+use App\Http\Controllers\ExamReportController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SchoolBrandingController;
@@ -180,6 +184,12 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     
     // Class Subjects
     Route::apiResource('class-subjects', ClassSubjectController::class);
+
+    // Exams
+    Route::apiResource('exams', ExamController::class);
+    Route::apiResource('exam-classes', ExamClassController::class)->only(['index', 'store', 'destroy']);
+    Route::apiResource('exam-subjects', ExamSubjectController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::get('/exams/{id}/report', [ExamReportController::class, 'show']);
 
     // Academic Years
     Route::apiResource('academic-years', AcademicYearController::class);

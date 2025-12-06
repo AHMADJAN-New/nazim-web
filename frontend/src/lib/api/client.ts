@@ -1728,3 +1728,89 @@ export const classSubjectsApi = {
     return apiClient.delete(`/class-subjects/${id}`);
   },
 };
+
+// Exams API
+export const examsApi = {
+  list: async (params?: {
+    organization_id?: string;
+    academic_year_id?: string;
+  }) => {
+    return apiClient.get('/exams', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/exams/${id}`);
+  },
+
+  create: async (data: {
+    name: string;
+    academic_year_id: string;
+    description?: string | null;
+  }) => {
+    return apiClient.post('/exams', data);
+  },
+
+  update: async (id: string, data: {
+    name?: string;
+    academic_year_id?: string;
+    description?: string | null;
+  }) => {
+    return apiClient.put(`/exams/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exams/${id}`);
+  },
+
+  report: async (id: string) => {
+    return apiClient.get(`/exams/${id}/report`);
+  },
+};
+
+// Exam Classes API
+export const examClassesApi = {
+  list: async (params?: { exam_id?: string }) => {
+    return apiClient.get('/exam-classes', params);
+  },
+
+  create: async (data: { exam_id: string; class_academic_year_id: string }) => {
+    return apiClient.post('/exam-classes', data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam-classes/${id}`);
+  },
+};
+
+// Exam Subjects API
+export const examSubjectsApi = {
+  list: async (params?: { exam_id?: string; exam_class_id?: string }) => {
+    return apiClient.get('/exam-subjects', params);
+  },
+
+  create: async (data: {
+    exam_id: string;
+    exam_class_id: string;
+    class_subject_id: string;
+    total_marks?: number | null;
+    passing_marks?: number | null;
+    scheduled_at?: string | null;
+  }) => {
+    return apiClient.post('/exam-subjects', data);
+  },
+
+  update: async (
+    id: string,
+    data: {
+      total_marks?: number | null;
+      passing_marks?: number | null;
+      scheduled_at?: string | null;
+    }
+  ) => {
+    return apiClient.put(`/exam-subjects/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam-subjects/${id}`);
+  },
+};
