@@ -83,10 +83,16 @@ export function usePagination(options: UsePaginationOptions = {}): UsePagination
   const updateFromMeta = useCallback((newMeta: PaginationMeta | null) => {
     setMeta(newMeta);
     // Sync page state with meta if it exists
-    if (newMeta && newMeta.current_page !== page) {
-      setPageState(newMeta.current_page);
+    // Use functional update to avoid dependency on page
+    if (newMeta) {
+      setPageState((currentPage) => {
+        if (newMeta.current_page !== currentPage) {
+          return newMeta.current_page;
+        }
+        return currentPage;
+      });
     }
-  }, [page]);
+  }, []);
 
   const paginationState = useMemo<PaginationState | null>(() => {
     if (!meta) return null;

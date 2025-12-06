@@ -229,18 +229,23 @@ export default function AttendanceReports() {
     },
   ];
 
-  const { table } = useDataTable<AttendanceReportRecord>({
-    data: reportData?.data || [],
-    columns,
-    pageCount: reportData?.last_page || 1,
-    paginationMeta: reportData ? {
+  const paginationMeta = useMemo(() => {
+    if (!reportData) return null;
+    return {
       current_page: reportData.current_page,
       per_page: reportData.per_page,
       total: reportData.total,
       last_page: reportData.last_page,
       from: reportData.from,
       to: reportData.to,
-    } : null,
+    };
+  }, [reportData?.current_page, reportData?.per_page, reportData?.total, reportData?.last_page, reportData?.from, reportData?.to]);
+
+  const { table } = useDataTable<AttendanceReportRecord>({
+    data: reportData?.data || [],
+    columns,
+    pageCount: reportData?.last_page || 1,
+    paginationMeta,
     initialState: {
       pagination: {
         pageIndex: filters.page - 1,
