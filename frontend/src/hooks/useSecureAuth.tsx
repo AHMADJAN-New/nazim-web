@@ -76,53 +76,8 @@ export const useSecureAuth = () => {
     return errors;
   };
 
-  const secureSignUp = async (email: string, password: string, userData: any) => {
-    setLoading(true);
-    try {
-      console.log('Secure sign up attempt for:', email);
-
-      // Validate password strength
-      const passwordErrors = validatePasswordStrength(password);
-      if (passwordErrors.length > 0) {
-        toast.error('Password does not meet security requirements:\n' + passwordErrors.join('\n'));
-        return { error: { message: passwordErrors.join(', ') } };
-      }
-
-      // Use Laravel API for registration
-      const response = await authApi.register({
-          email,
-          password,
-        password_confirmation: password,
-        full_name: userData?.full_name || '',
-        organization_id: userData?.organization_id,
-      });
-
-      if (response.user && response.token) {
-        return { data: { user: response.user, session: { access_token: response.token } }, error: null };
-      }
-
-      throw new Error('Registration failed');
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      
-        // Normalize duplicate email errors to a friendly message
-      const raw = String(error?.message || '');
-        let message = raw || 'Failed to create account';
-      if (/already registered|email.*exists|already exists/i.test(raw)) {
-          message = 'This email is already registered. Please sign in or reset your password.';
-        }
-      
-        return { error: { message } };
-    } catch (error: any) {
-      return { error };
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return {
     secureSignIn,
-    secureSignUp,
     validatePasswordStrength,
     loading
   };

@@ -1,0 +1,144 @@
+{
+  "scripts": {
+    "dev": {
+      "description": "Start all development servers (frontend + backend)",
+      "command": "cd backend && composer run dev",
+      "type": "shell",
+      "cwd": "${workspaceFolder}"
+    },
+    "dev:frontend": {
+      "description": "Start frontend development server",
+      "command": "npm run dev",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/frontend"
+    },
+    "dev:backend": {
+      "description": "Start backend Laravel server",
+      "command": "php artisan serve",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    "build": {
+      "description": "Build frontend for production",
+      "command": "npm run build",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/frontend"
+    },
+    "build:dev": {
+      "description": "Build frontend for development",
+      "command": "npm run build:dev",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/frontend"
+    },
+    "test": {
+      "description": "Run all tests",
+      "command": "npm run test",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/frontend"
+    },
+    "test:backend": {
+      "description": "Run backend tests",
+      "command": "php artisan test",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    "lint": {
+      "description": "Lint frontend code",
+      "command": "npm run lint",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/frontend"
+    },
+    "lint:fix": {
+      "description": "Fix linting issues",
+      "command": "npm run lint:fix",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/frontend"
+    },
+    "format": {
+      "description": "Format code with Prettier",
+      "command": "npm run format",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/frontend"
+    },
+    "migrate": {
+      "description": "Run database migrations",
+      "command": "php artisan migrate",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    "migrate:fresh": {
+      "description": "Fresh migration with seeding",
+      "command": "php artisan migrate:fresh --seed",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    "seed": {
+      "description": "Run database seeders",
+      "command": "php artisan db:seed",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    "setup": {
+      "description": "Initial project setup",
+      "command": "cd backend && composer run setup",
+      "type": "shell",
+      "cwd": "${workspaceFolder}"
+    },
+    "install": {
+      "description": "Install all dependencies",
+      "command": "cd frontend && npm install && cd ../backend && composer install",
+      "type": "shell",
+      "cwd": "${workspaceFolder}"
+    },
+    "install:frontend": {
+      "description": "Install frontend dependencies",
+      "command": "npm install",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/frontend"
+    },
+    "install:backend": {
+      "description": "Install backend dependencies",
+      "command": "composer install",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    "clear:cache": {
+      "description": "Clear Laravel cache",
+      "command": "php artisan cache:clear && php artisan config:clear && php artisan route:clear && php artisan view:clear",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    "optimize": {
+      "description": "Optimize Laravel for production",
+      "command": "php artisan config:cache && php artisan route:cache && php artisan view:cache",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    "queue:work": {
+      "description": "Start queue worker",
+      "command": "php artisan queue:work",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    "queue:listen": {
+      "description": "Start queue listener",
+      "command": "php artisan queue:listen",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    "tinker": {
+      "description": "Open Laravel Tinker",
+      "command": "php artisan tinker",
+      "type": "shell",
+      "cwd": "${workspaceFolder}/backend"
+    }
+  },
+  "tasks": {
+    "start-all": {
+      "description": "Start all development servers in parallel",
+      "dependsOn": ["dev:frontend", "dev:backend"],
+      "dependsOrder": "parallel"
+    }
+  }
+}
+
