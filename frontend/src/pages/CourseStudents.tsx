@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useReactTable, getCoreRowModel, type PaginationState } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,8 +10,52 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
-import { useCourseStudents } from '@/hooks/useCourseStudents';
-import { AlertTriangle, GraduationCap, RefreshCw, Search, Users } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  useCourseStudents,
+  useDeleteCourseStudent,
+  useMarkCompleted,
+  useMarkDropped,
+  useIssueCertificate,
+  useCopyToMain,
+} from '@/hooks/useCourseStudents';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import { CourseStudentFormDialog } from '@/components/short-term-courses/CourseStudentFormDialog';
+import { EnrollFromMainDialog } from '@/components/short-term-courses/EnrollFromMainDialog';
+import type { CourseStudent } from '@/types/domain/courseStudent';
+import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
+import {
+  AlertTriangle,
+  GraduationCap,
+  RefreshCw,
+  Users,
+  Plus,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Award,
+  Copy,
+  UserPlus,
+  BookOpen,
+} from 'lucide-react';
 
 const statusBadge: Record<string, string> = {
   enrolled: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
@@ -19,16 +64,150 @@ const statusBadge: Record<string, string> = {
   failed: 'bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-200',
 };
 
+interface StudentRowProps {
+  student: CourseStudent;
+  onEdit: (student: CourseStudent) => void;
+  onDelete: (student: CourseStudent) => void;
+  onMarkCompleted: (student: CourseStudent) => void;
+  onMarkDropped: (student: CourseStudent) => void;
+  onIssueCertificate: (student: CourseStudent) => void;
+  onCopyToMain: (student: CourseStudent) => void;
+}
+
+const StudentRow = ({
+  student,
+  onEdit,
+  onDelete,
+  onMarkCompleted,
+  onMarkDropped,
+  onIssueCertificate,
+  onCopyToMain,
+}: StudentRowProps) => {
+  return (
+    <TableRow>
+      <TableCell>
+        <div className="font-semibold leading-tight">{student.fullName}</div>
+        {student.fatherName && (
+          <div className="text-xs text-muted-foreground">S/O {student.fatherName}</div>
+        )}
+      </TableCell>
+      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+        {student.admissionNo}
+      </TableCell>
+      <TableCell className="hidden md:table-cell text-sm">{student.registrationDate}</TableCell>
+      <TableCell>
+        <Badge variant="outline" className={statusBadge[student.completionStatus] || ''}>
+          {student.completionStatus}
+        </Badge>
+        {student.certificateIssued && (
+          <Badge variant="outline" className="ml-1 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200">
+            <Award className="h-3 w-3 mr-1" />
+            Certified
+          </Badge>
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Actions</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(student)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {student.completionStatus === 'enrolled' && (
+              <>
+                <DropdownMenuItem onClick={() => onMarkCompleted(student)}>
+                  <CheckCircle className="mr-2 h-4 w-4 text-emerald-500" />
+                  Mark Completed
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onMarkDropped(student)}>
+                  <XCircle className="mr-2 h-4 w-4 text-amber-500" />
+                  Mark Dropped
+                </DropdownMenuItem>
+              </>
+            )}
+            {student.completionStatus === 'completed' && !student.certificateIssued && (
+              <DropdownMenuItem onClick={() => onIssueCertificate(student)}>
+                <Award className="mr-2 h-4 w-4 text-purple-500" />
+                Issue Certificate
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            {!student.mainStudentId && (
+              <DropdownMenuItem onClick={() => onCopyToMain(student)}>
+                <Copy className="mr-2 h-4 w-4" />
+                Copy to Main Students
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onDelete(student)} className="text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
+  );
+};
+
 const CourseStudents = () => {
+  const [searchParams] = useSearchParams();
+  const courseIdFromUrl = searchParams.get('courseId');
+
   const [status, setStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const [selectedCourseId, setSelectedCourseId] = useState<string>(courseIdFromUrl || 'all');
 
-  const { data: students, isLoading, pagination, page, pageSize, setPage, setPageSize, refetch } = useCourseStudents(undefined, true);
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<CourseStudent | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<CourseStudent | null>(null);
+  const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<ShortTermCourse | null>(null);
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false);
+  const [studentToCopy, setStudentToCopy] = useState<CourseStudent | null>(null);
+
+  // Update selectedCourseId when URL param changes
+  useEffect(() => {
+    if (courseIdFromUrl) {
+      setSelectedCourseId(courseIdFromUrl);
+    }
+  }, [courseIdFromUrl]);
+
+  const effectiveCourseId = selectedCourseId === 'all' ? undefined : selectedCourseId;
+  const { data: students, isLoading, pagination, page, pageSize, setPage, setPageSize, refetch } = useCourseStudents(effectiveCourseId, true);
+  const { data: courses } = useShortTermCourses();
+
+  const deleteMutation = useDeleteCourseStudent();
+  const markCompletedMutation = useMarkCompleted();
+  const markDroppedMutation = useMarkDropped();
+  const issueCertificateMutation = useIssueCertificate();
+  const copyToMainMutation = useCopyToMain();
+
+  // Find the selected course object
+  useEffect(() => {
+    if (courses && selectedCourseId && selectedCourseId !== 'all') {
+      const course = courses.find((c) => c.id === selectedCourseId);
+      setSelectedCourse(course || null);
+    } else {
+      setSelectedCourse(null);
+    }
+  }, [courses, selectedCourseId]);
 
   const filtered = useMemo(() => {
     return (students || []).filter((student) => {
       const matchesStatus = status === 'all' || student.completionStatus === status;
-      const matchesSearch = !search || student.fullName.toLowerCase().includes(search.toLowerCase()) || student.admissionNo.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch =
+        !search ||
+        student.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        student.admissionNo.toLowerCase().includes(search.toLowerCase());
       return matchesStatus && matchesSearch;
     });
   }, [students, status, search]);
@@ -60,14 +239,85 @@ const CourseStudents = () => {
     },
   });
 
+  const handleCreate = () => {
+    setEditingStudent(null);
+    setFormDialogOpen(true);
+  };
+
+  const handleEdit = (student: CourseStudent) => {
+    setEditingStudent(student);
+    setFormDialogOpen(true);
+  };
+
+  const handleDeleteClick = (student: CourseStudent) => {
+    setStudentToDelete(student);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (studentToDelete) {
+      await deleteMutation.mutateAsync(studentToDelete.id);
+      setDeleteDialogOpen(false);
+      setStudentToDelete(null);
+    }
+  };
+
+  const handleMarkCompleted = async (student: CourseStudent) => {
+    await markCompletedMutation.mutateAsync({ id: student.id });
+  };
+
+  const handleMarkDropped = async (student: CourseStudent) => {
+    await markDroppedMutation.mutateAsync(student.id);
+  };
+
+  const handleIssueCertificate = async (student: CourseStudent) => {
+    await issueCertificateMutation.mutateAsync(student.id);
+  };
+
+  const handleCopyClick = (student: CourseStudent) => {
+    setStudentToCopy(student);
+    setCopyDialogOpen(true);
+  };
+
+  const handleCopyConfirm = async () => {
+    if (studentToCopy) {
+      await copyToMainMutation.mutateAsync({
+        id: studentToCopy.id,
+        data: { generate_new_admission: true, link_to_course_student: true },
+      });
+      setCopyDialogOpen(false);
+      setStudentToCopy(null);
+    }
+  };
+
+  const handleEnrollFromMain = () => {
+    if (selectedCourse) {
+      setEnrollDialogOpen(true);
+    }
+  };
+
+  const openCourses = (courses || []).filter((c) => c.status === 'open' || c.status === 'draft');
+
   return (
     <div className="container mx-auto max-w-7xl p-4 md:p-6 space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold leading-tight">Course students</h1>
-          <p className="text-muted-foreground">Balanced table density, matching pagination controls, and fast filtering.</p>
+          <h1 className="text-3xl font-bold leading-tight">Course Students</h1>
+          <p className="text-muted-foreground">
+            Manage student enrollments, completions, and certificates.
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={handleCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Student
+          </Button>
+          {selectedCourse && selectedCourse.status === 'open' && (
+            <Button variant="outline" onClick={handleEnrollFromMain}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Enroll from Main
+            </Button>
+          )}
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
@@ -91,7 +341,7 @@ const CourseStudents = () => {
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <div className="text-2xl font-bold">{summary.enrolled}</div>
-            <Search className="h-6 w-6 text-slate-500" />
+            <BookOpen className="h-6 w-6 text-slate-500" />
           </CardContent>
         </Card>
         <Card>
@@ -116,11 +366,29 @@ const CourseStudents = () => {
 
       <Card>
         <CardHeader className="space-y-1 pb-3">
-          <CardTitle className="text-lg font-semibold">Roster</CardTitle>
-          <p className="text-sm text-muted-foreground">Compact rows with consistent spacing and tabular readability.</p>
+          <CardTitle className="text-lg font-semibold">Student Roster</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Filter by course, status, or search by name/admission number.
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="space-y-2">
+              <Label>Course</Label>
+              <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All courses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Courses</SelectItem>
+                  {(courses || []).map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={status} onValueChange={setStatus}>
@@ -136,9 +404,13 @@ const CourseStudents = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 md:col-span-2 lg:col-span-3">
+            <div className="space-y-2 md:col-span-2">
               <Label>Search</Label>
-              <Input placeholder="Name or admission #" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input
+                placeholder="Name or admission #"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
           </div>
 
@@ -156,28 +428,26 @@ const CourseStudents = () => {
                       <TableHead className="hidden md:table-cell">Admission</TableHead>
                       <TableHead className="hidden md:table-cell">Registered</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="text-right w-[50px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filtered.length ? (
                       filtered.map((student) => (
-                        <TableRow key={student.id}>
-                          <TableCell>
-                            <div className="font-semibold leading-tight">{student.fullName}</div>
-                            {student.homeAddress && <div className="text-xs text-muted-foreground">{student.homeAddress}</div>}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{student.admissionNo}</TableCell>
-                          <TableCell className="hidden md:table-cell text-sm">{student.registrationDate}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={statusBadge[student.completionStatus] || ''}>
-                              {student.completionStatus}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
+                        <StudentRow
+                          key={student.id}
+                          student={student}
+                          onEdit={handleEdit}
+                          onDelete={handleDeleteClick}
+                          onMarkCompleted={handleMarkCompleted}
+                          onMarkDropped={handleMarkDropped}
+                          onIssueCertificate={handleIssueCertificate}
+                          onCopyToMain={handleCopyClick}
+                        />
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                           No course students found
                         </TableCell>
                       </TableRow>
@@ -199,6 +469,60 @@ const CourseStudents = () => {
           )}
         </CardContent>
       </Card>
+
+      <CourseStudentFormDialog
+        open={formDialogOpen}
+        onOpenChange={setFormDialogOpen}
+        student={editingStudent}
+        courseId={effectiveCourseId}
+        onSuccess={() => refetch()}
+      />
+
+      {selectedCourse && (
+        <EnrollFromMainDialog
+          open={enrollDialogOpen}
+          onOpenChange={setEnrollDialogOpen}
+          course={selectedCourse}
+          onSuccess={() => refetch()}
+        />
+      )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Student</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{studentToDelete?.fullName}"? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={copyDialogOpen} onOpenChange={setCopyDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Copy to Main Students</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create a new student record in the main students table based on "
+              {studentToCopy?.fullName}". The course student will be linked to this new record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCopyConfirm}>Copy to Main</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

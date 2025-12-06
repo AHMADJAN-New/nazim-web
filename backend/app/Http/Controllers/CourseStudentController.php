@@ -167,7 +167,7 @@ class CourseStudentController extends Controller
 
         $student->delete();
 
-        return response()->json(['message' => 'Course student deleted']);
+        return response()->noContent();
     }
 
     public function markCompleted(Request $request, string $id)

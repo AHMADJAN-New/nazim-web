@@ -171,7 +171,7 @@ class ShortTermCourseController extends Controller
 
         $course->delete();
 
-        return response()->json(['message' => 'Course deleted']);
+        return response()->noContent();
     }
 
     public function close(Request $request, string $id)

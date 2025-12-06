@@ -9,9 +9,46 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
-import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  useShortTermCourses,
+  useDeleteShortTermCourse,
+  useCloseCourse,
+  useReopenCourse,
+} from '@/hooks/useShortTermCourses';
+import { ShortTermCourseFormDialog } from '@/components/short-term-courses/ShortTermCourseFormDialog';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
-import { CalendarRange, Filter, RefreshCw, School, Users } from 'lucide-react';
+import {
+  CalendarRange,
+  Filter,
+  RefreshCw,
+  School,
+  Users,
+  Plus,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Lock,
+  Unlock,
+  Eye,
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const statusTone: Record<string, string> = {
   draft: 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-200',
@@ -20,7 +57,16 @@ const statusTone: Record<string, string> = {
   completed: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200',
 };
 
-const CourseRow = ({ course }: { course: ShortTermCourse }) => {
+interface CourseRowProps {
+  course: ShortTermCourse;
+  onEdit: (course: ShortTermCourse) => void;
+  onDelete: (course: ShortTermCourse) => void;
+  onClose: (course: ShortTermCourse) => void;
+  onReopen: (course: ShortTermCourse) => void;
+  onViewStudents: (course: ShortTermCourse) => void;
+}
+
+const CourseRow = ({ course, onEdit, onDelete, onClose, onReopen, onViewStudents }: CourseRowProps) => {
   const tone = statusTone[course.status] || 'bg-muted text-muted-foreground';
   return (
     <TableRow>
@@ -40,16 +86,64 @@ const CourseRow = ({ course }: { course: ShortTermCourse }) => {
           {course.status}
         </Badge>
       </TableCell>
+      <TableCell className="text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Actions</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onViewStudents(course)}>
+              <Eye className="mr-2 h-4 w-4" />
+              View Students
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(course)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {course.status !== 'closed' && course.status !== 'completed' && (
+              <DropdownMenuItem onClick={() => onClose(course)}>
+                <Lock className="mr-2 h-4 w-4" />
+                Close Course
+              </DropdownMenuItem>
+            )}
+            {course.status === 'closed' && (
+              <DropdownMenuItem onClick={() => onReopen(course)}>
+                <Unlock className="mr-2 h-4 w-4" />
+                Reopen Course
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onDelete(course)} className="text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
     </TableRow>
   );
 };
 
 const ShortTermCourses = () => {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<ShortTermCourse | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState<ShortTermCourse | null>(null);
+
   const { data: courses, isLoading, pagination, setPage, setPageSize, page, pageSize, refetch } = useShortTermCourses(undefined, true);
+
+  const deleteMutation = useDeleteShortTermCourse();
+  const closeMutation = useCloseCourse();
+  const reopenMutation = useReopenCourse();
 
   const filteredCourses = useMemo(() => {
     return (courses || []).filter((course) => {
@@ -92,14 +186,53 @@ const ShortTermCourses = () => {
     },
   });
 
+  const handleCreate = () => {
+    setEditingCourse(null);
+    setFormDialogOpen(true);
+  };
+
+  const handleEdit = (course: ShortTermCourse) => {
+    setEditingCourse(course);
+    setFormDialogOpen(true);
+  };
+
+  const handleDeleteClick = (course: ShortTermCourse) => {
+    setCourseToDelete(course);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (courseToDelete) {
+      await deleteMutation.mutateAsync(courseToDelete.id);
+      setDeleteDialogOpen(false);
+      setCourseToDelete(null);
+    }
+  };
+
+  const handleClose = async (course: ShortTermCourse) => {
+    await closeMutation.mutateAsync(course.id);
+  };
+
+  const handleReopen = async (course: ShortTermCourse) => {
+    await reopenMutation.mutateAsync(course.id);
+  };
+
+  const handleViewStudents = (course: ShortTermCourse) => {
+    navigate(`/course-students?courseId=${course.id}`);
+  };
+
   return (
     <div className="container mx-auto max-w-7xl p-4 md:p-6 space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold leading-tight">Short-term courses</h1>
-          <p className="text-muted-foreground">Unified design with crisp pagination and filters for quick oversight.</p>
+          <p className="text-muted-foreground">Manage short-term courses, enrollments, and completions.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button onClick={handleCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Course
+          </Button>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
@@ -149,7 +282,7 @@ const ShortTermCourses = () => {
       <Card>
         <CardHeader className="space-y-1 pb-3">
           <CardTitle className="text-lg font-semibold">Course list</CardTitle>
-          <p className="text-sm text-muted-foreground">Aligned spacing, concise filters, and responsive columns.</p>
+          <p className="text-sm text-muted-foreground">All short-term courses with filters and actions.</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-4">
@@ -201,14 +334,25 @@ const ShortTermCourses = () => {
                       <TableHead className="hidden md:table-cell">Instructor</TableHead>
                       <TableHead className="hidden md:table-cell">Dates</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="text-right w-[50px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredCourses.length ? (
-                      filteredCourses.map((course) => <CourseRow key={course.id} course={course} />)
+                      filteredCourses.map((course) => (
+                        <CourseRow
+                          key={course.id}
+                          course={course}
+                          onEdit={handleEdit}
+                          onDelete={handleDeleteClick}
+                          onClose={handleClose}
+                          onReopen={handleReopen}
+                          onViewStudents={handleViewStudents}
+                        />
+                      ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                           No courses found
                         </TableCell>
                       </TableRow>
@@ -231,6 +375,34 @@ const ShortTermCourses = () => {
           )}
         </CardContent>
       </Card>
+
+      <ShortTermCourseFormDialog
+        open={formDialogOpen}
+        onOpenChange={setFormDialogOpen}
+        course={editingCourse}
+        onSuccess={() => refetch()}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Course</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{courseToDelete?.name}"? This action cannot be undone
+              and will remove all associated student enrollments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

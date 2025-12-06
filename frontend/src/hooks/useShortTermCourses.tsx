@@ -129,3 +129,54 @@ export const useDeleteShortTermCourse = () => {
     onError: (error: Error) => toast.error(error.message || 'Could not delete course'),
   });
 };
+
+export const useCloseCourse = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const apiCourse = await shortTermCoursesApi.close(id);
+      return mapShortTermCourseApiToDomain(apiCourse as Api.ShortTermCourse);
+    },
+    onSuccess: () => {
+      toast.success('Course closed');
+      void queryClient.invalidateQueries({ queryKey: ['short-term-courses'] });
+    },
+    onError: (error: Error) => toast.error(error.message || 'Could not close course'),
+  });
+};
+
+export const useReopenCourse = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const apiCourse = await shortTermCoursesApi.reopen(id);
+      return mapShortTermCourseApiToDomain(apiCourse as Api.ShortTermCourse);
+    },
+    onSuccess: () => {
+      toast.success('Course reopened');
+      void queryClient.invalidateQueries({ queryKey: ['short-term-courses'] });
+    },
+    onError: (error: Error) => toast.error(error.message || 'Could not reopen course'),
+  });
+};
+
+export const useCourseStats = (courseId: string) => {
+  const { user, profile } = useAuth();
+  return useQuery({
+    queryKey: ['course-stats', courseId],
+    queryFn: async () => {
+      if (!user || !profile) return null;
+      const stats = await shortTermCoursesApi.stats(courseId);
+      return stats as {
+        course_id: string;
+        enrollment_count: number;
+        enrolled: number;
+        completed: number;
+        dropped: number;
+      };
+    },
+    enabled: !!user && !!profile && !!courseId,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};

@@ -145,7 +145,7 @@ class CourseStudentDisciplineRecordController extends Controller
 
         $record->delete();
 
-        return response()->json(['message' => 'Record deleted']);
+        return response()->noContent();
     }
 
     public function resolve(Request $request, string $id)

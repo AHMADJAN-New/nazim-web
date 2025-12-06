@@ -129,3 +129,79 @@ export const useDeleteCourseStudent = () => {
     onError: (error: Error) => toast.error(error.message || 'Could not delete course student'),
   });
 };
+
+export const useEnrollFromMain = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { course_id: string; main_student_ids: string[]; registration_date: string; fee_paid?: boolean; fee_amount?: number }) => {
+      const result = await courseStudentsApi.enrollFromMain(data);
+      return (result as Api.CourseStudent[]).map(mapCourseStudentApiToDomain);
+    },
+    onSuccess: (students) => {
+      toast.success(`${students.length} student(s) enrolled successfully`);
+      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+    },
+    onError: (error: Error) => toast.error(error.message || 'Could not enroll students'),
+  });
+};
+
+export const useCopyToMain = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { generate_new_admission?: boolean; link_to_course_student?: boolean } }) => {
+      const result = await courseStudentsApi.copyToMain(id, data);
+      return result as { course_student_id: string; new_student_id: string };
+    },
+    onSuccess: () => {
+      toast.success('Student copied to main students');
+      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+      void queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+    onError: (error: Error) => toast.error(error.message || 'Could not copy student'),
+  });
+};
+
+export const useMarkCompleted = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, completionDate }: { id: string; completionDate?: string }) => {
+      const result = await courseStudentsApi.markCompleted(id);
+      return mapCourseStudentApiToDomain(result as Api.CourseStudent);
+    },
+    onSuccess: () => {
+      toast.success('Student marked as completed');
+      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+    },
+    onError: (error: Error) => toast.error(error.message || 'Could not mark student as completed'),
+  });
+};
+
+export const useMarkDropped = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const result = await courseStudentsApi.markDropped(id);
+      return mapCourseStudentApiToDomain(result as Api.CourseStudent);
+    },
+    onSuccess: () => {
+      toast.success('Student marked as dropped');
+      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+    },
+    onError: (error: Error) => toast.error(error.message || 'Could not mark student as dropped'),
+  });
+};
+
+export const useIssueCertificate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const result = await courseStudentsApi.issueCertificate(id);
+      return mapCourseStudentApiToDomain(result as Api.CourseStudent);
+    },
+    onSuccess: () => {
+      toast.success('Certificate issued successfully');
+      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+    },
+    onError: (error: Error) => toast.error(error.message || 'Could not issue certificate'),
+  });
+};
