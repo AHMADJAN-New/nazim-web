@@ -57,6 +57,8 @@ export interface TranslationKeys {
     admissions: string;
     studentReports: string;
     studentManagement: string;
+    staffReports: string;
+    staffManagement: string;
     attendance: string;
     attendanceReports: string;
     attendanceTotalsReport: string;
@@ -851,6 +853,8 @@ const en: TranslationKeys = {
     studentReports: 'Student Reports',
     admissionsReport: 'Admissions Report',
     studentManagement: 'Student Management',
+    staffReports: 'Staff Reports',
+    staffManagement: 'Staff Management',
     attendance: 'Attendance',
     attendanceReports: 'Attendance Reports',
     attendanceTotalsReport: 'Attendance Totals Report',
@@ -1630,6 +1634,8 @@ const ps: TranslationKeys = {
     studentReports: 'د زده کوونکو راپورونه',
     admissionsReport: 'د داخلې راپور',
     studentManagement: 'د زده کوونکو مدیریت',
+    staffReports: 'د کارکوونکو راپورونه',
+    staffManagement: 'د کارکوونکو مدیریت',
     attendance: 'حاضري',
     attendanceReports: 'د حاضري راپورونه',
     attendanceTotalsReport: 'د حاضري مجموعي راپور',
@@ -2406,6 +2412,8 @@ const fa: TranslationKeys = {
     studentReports: 'گزارش‌های دانش‌آموزان',
     admissionsReport: 'گزارش پذیرش',
     studentManagement: 'مدیریت دانش‌آموزان',
+    staffReports: 'گزارش‌های کارکنان',
+    staffManagement: 'مدیریت کارکنان',
     attendance: 'حاضری',
     attendanceReports: 'گزارش‌های حضور و غیاب',
     attendanceTotalsReport: 'گزارش مجموعی حضور و غیاب',
@@ -3186,6 +3194,8 @@ const ar: TranslationKeys = {
     studentReports: 'تقارير الطلاب',
     admissionsReport: 'تقرير القبول',
     studentManagement: 'إدارة الطلاب',
+    staffReports: 'تقارير الموظفين',
+    staffManagement: 'إدارة الموظفين',
     attendance: 'الحضور',
     attendanceReports: 'تقارير الحضور',
     attendanceTotalsReport: 'تقرير إجمالي الحضور',

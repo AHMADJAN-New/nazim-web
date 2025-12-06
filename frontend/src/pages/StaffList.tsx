@@ -45,6 +45,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Pencil, Trash2, Eye, Users, Filter, X, ChevronRight, ChevronLeft, User, MapPin, GraduationCap, Briefcase, FileText, CheckCircle2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
 import { StaffProfile } from '@/components/staff/StaffProfile';
@@ -99,6 +100,7 @@ export function StaffList() {
     const hasUpdatePermission = useHasPermission('staff.update');
     const hasDeletePermission = useHasPermission('staff.delete');
     const hasReadPermission = useHasPermission('staff.read');
+    const hasReportPermission = useHasPermission('staff_reports.read');
 
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -445,6 +447,14 @@ export function StaffList() {
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
+                            {hasReportPermission && (
+                                <Button variant="outline" asChild>
+                                    <Link to="/reports/staff-registrations">
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        Registration Report
+                                    </Link>
+                                </Button>
+                            )}
                             {hasCreatePermission && (
                                 <Button 
                                     type="button" 

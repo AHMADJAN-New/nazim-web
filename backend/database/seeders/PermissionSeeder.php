@@ -48,6 +48,7 @@ class PermissionSeeder extends Seeder
             'permissions' => ['read', 'create', 'update', 'delete'],
             'attendance_sessions' => ['read', 'create', 'update', 'delete', 'report'],
             'student_reports' => ['read', 'export'],
+            'staff_reports' => ['read', 'export'],
         ];
     }
 
