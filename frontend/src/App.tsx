@@ -52,7 +52,12 @@ import {
   AttendanceTotalsReports,
   UserManagement,
   UserProfile,
-  UserSettings
+  UserSettings,
+  Library,
+  LibraryCategories,
+  LibraryBooks,
+  LibraryDistribution,
+  LibraryReports,
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -286,6 +291,42 @@ const App = () => (
                       <PermissionRoute permission="attendance_sessions.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <AttendancePage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/library/categories" element={
+                      <PermissionRoute permission="library_categories.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <LibraryCategories />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/library/books" element={
+                      <PermissionRoute permission="library_books.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <LibraryBooks />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/library/distribution" element={
+                      <PermissionRoute permission="library_loans.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <LibraryDistribution />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/library/reports" element={
+                      <PermissionRoute permission="library_books.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <LibraryReports />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Legacy route - redirect to books */}
+                    <Route path="/library" element={
+                      <PermissionRoute permission="library_books.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <LibraryBooks />
                         </Suspense>
                       </PermissionRoute>
                     } />

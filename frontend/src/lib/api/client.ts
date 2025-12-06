@@ -1896,3 +1896,141 @@ export const attendanceSessionsApi = {
     return apiClient.get('/attendance-sessions/totals-report', params);
   },
 };
+
+// Library Categories API
+export const libraryCategoriesApi = {
+  list: async (params?: { organization_id?: string }) => {
+    return apiClient.get('/library-categories', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/library-categories/${id}`);
+  },
+
+  create: async (data: {
+    name: string;
+    code?: string | null;
+    description?: string | null;
+    is_active?: boolean;
+    display_order?: number;
+    organization_id?: string | null;
+  }) => {
+    return apiClient.post('/library-categories', data);
+  },
+
+  update: async (id: string, data: {
+    name?: string;
+    code?: string | null;
+    description?: string | null;
+    is_active?: boolean;
+    display_order?: number;
+  }) => {
+    return apiClient.put(`/library-categories/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/library-categories/${id}`);
+  },
+};
+
+// Library Books API
+export const libraryBooksApi = {
+  list: async (params?: { search?: string }) => {
+    return apiClient.get('/library-books', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/library-books/${id}`);
+  },
+
+  create: async (data: {
+    title: string;
+    author?: string | null;
+    isbn?: string | null;
+    category?: string | null;
+    category_id?: string | null;
+    volume?: string | null;
+    description?: string | null;
+    deposit_amount?: number;
+    default_loan_days?: number;
+    initial_copies?: number;
+  }) => {
+    return apiClient.post('/library-books', data);
+  },
+
+  update: async (id: string, data: {
+    title?: string;
+    author?: string | null;
+    isbn?: string | null;
+    category?: string | null;
+    category_id?: string | null;
+    volume?: string | null;
+    description?: string | null;
+    deposit_amount?: number;
+    default_loan_days?: number;
+  }) => {
+    return apiClient.put(`/library-books/${id}`, data);
+  },
+
+  remove: async (id: string) => {
+    return apiClient.delete(`/library-books/${id}`);
+  },
+};
+
+// Library Copies API
+export const libraryCopiesApi = {
+  create: async (data: {
+    book_id: string;
+    copy_code?: string | null;
+    status?: string;
+    acquired_at?: string | null;
+  }) => {
+    return apiClient.post('/library-copies', data);
+  },
+
+  update: async (id: string, data: {
+    copy_code?: string | null;
+    status?: string;
+    acquired_at?: string | null;
+  }) => {
+    return apiClient.put(`/library-copies/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/library-copies/${id}`);
+  },
+};
+
+// Library Loans API
+export const libraryLoansApi = {
+  list: async (params?: { open_only?: boolean; due_before?: string }) => {
+    return apiClient.get('/library-loans', params);
+  },
+
+  create: async (data: {
+    book_id: string;
+    book_copy_id: string;
+    student_id?: string | null;
+    staff_id?: string | null;
+    loan_date: string;
+    due_date?: string | null;
+    deposit_amount?: number;
+    fee_retained?: number;
+    notes?: string | null;
+  }) => {
+    return apiClient.post('/library-loans', data);
+  },
+
+  returnCopy: async (id: string, data?: {
+    returned_at?: string | null;
+    fee_retained?: number;
+    refunded?: boolean;
+    notes?: string | null;
+  }) => {
+    return apiClient.post(`/library-loans/${id}/return`, data || {});
+  },
+
+  dueSoon: async (params?: { days?: number }) => {
+    return apiClient.get('/library-loans/due-soon', params);
+  },
+};

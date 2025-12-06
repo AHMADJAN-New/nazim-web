@@ -68,6 +68,10 @@ export interface TranslationKeys {
     staff: string;
     hostel: string;
     library: string;
+    "library.categories": string;
+    "library.books": string;
+    "library.distribution": string;
+    "library.reports": string;
     assets: string;
     communication: string;
     reports: string;
@@ -1645,6 +1649,10 @@ const ps: TranslationKeys = {
     staff: 'کارکوونکي',
     hostel: 'خوابګاه',
     library: 'کتابتون',
+    "library.categories": 'کټګورۍ',
+    "library.books": 'کتابونه',
+    "library.distribution": 'توزیع',
+    "library.reports": 'راپورونه',
     assets: 'املاکو',
     communication: 'اړیکې',
     reports: 'راپورونه',
@@ -2423,6 +2431,10 @@ const fa: TranslationKeys = {
     staff: 'کارکنان',
     hostel: 'خوابگاه',
     library: 'کتابخانه',
+    "library.categories": 'دسته‌بندی‌ها',
+    "library.books": 'کتاب‌ها',
+    "library.distribution": 'توزیع',
+    "library.reports": 'گزارش‌ها',
     assets: 'دارایی‌ها',
     communication: 'ارتباطات',
     reports: 'گزارش‌ها',
@@ -3205,6 +3217,10 @@ const ar: TranslationKeys = {
     staff: 'الموظفون',
     hostel: 'السكن الداخلي',
     library: 'المكتبة',
+    "library.categories": 'الفئات',
+    "library.books": 'الكتب',
+    "library.distribution": 'التوزيع',
+    "library.reports": 'التقارير',
     assets: 'الأصول',
     communication: 'التواصل',
     reports: 'التقارير',

@@ -15,6 +15,7 @@ import {
   Calendar,
   Clock,
   BookOpen,
+  BookCheck,
   FileText,
   CreditCard,
   Settings,
@@ -181,6 +182,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasScheduleSlotsPermission = useHasPermission('schedule_slots.read');
   const hasTeacherSubjectAssignmentsPermission = useHasPermission('teacher_subject_assignments.read');
   const hasTimetablesPermission = useHasPermission('timetables.read');
+  const hasLibraryBooksPermission = useHasPermission('library_books.read');
+  const hasLibraryCategoriesPermission = useHasPermission('library_categories.read');
+  const hasLibraryLoansPermission = useHasPermission('library_loans.read');
+  const hasLibraryPermission = hasLibraryBooksPermission || hasLibraryCategoriesPermission || hasLibraryLoansPermission;
 
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -303,6 +308,38 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Hostel reports",
             titleKey: "hostel.reports",
             url: "/hostel/reports",
+            icon: BarChart3,
+          }] : []),
+        ],
+      }] : []),
+      ...(hasLibraryPermission ? [{
+        titleKey: "library",
+        icon: BookOpen,
+        badge: null,
+        priority: 3.07,
+        children: [
+          ...(hasLibraryCategoriesPermission ? [{
+            title: "Categories",
+            titleKey: "library.categories",
+            url: "/library/categories",
+            icon: BookOpen,
+          }] : []),
+          ...(hasLibraryBooksPermission ? [{
+            title: "Books",
+            titleKey: "library.books",
+            url: "/library/books",
+            icon: BookOpen,
+          }] : []),
+          ...(hasLibraryLoansPermission ? [{
+            title: "Distribution",
+            titleKey: "library.distribution",
+            url: "/library/distribution",
+            icon: BookCheck,
+          }] : []),
+          ...(hasLibraryBooksPermission ? [{
+            title: "Reports",
+            titleKey: "library.reports",
+            url: "/library/reports",
             icon: BarChart3,
           }] : []),
         ],
@@ -501,7 +538,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasStaffReportsPermission, hasAttendanceSessionsPermission, hasAttendanceReportsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasStaffReportsPermission, hasAttendanceSessionsPermission, hasAttendanceReportsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasLibraryPermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {

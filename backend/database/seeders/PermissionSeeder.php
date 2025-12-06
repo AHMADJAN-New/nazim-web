@@ -48,6 +48,9 @@ class PermissionSeeder extends Seeder
             'permissions' => ['read', 'create', 'update', 'delete'],
             'attendance_sessions' => ['read', 'create', 'update', 'delete', 'report'],
             'student_reports' => ['read', 'export'],
+            'library_categories' => ['read', 'create', 'update', 'delete'],
+            'library_books' => ['read', 'create', 'update', 'delete'],
+            'library_loans' => ['read', 'create', 'update'],
             'staff_reports' => ['read', 'export'],
         ];
     }

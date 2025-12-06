@@ -35,6 +35,10 @@ use App\Http\Controllers\StudentReportController;
 use App\Http\Controllers\StaffReportController;
 use App\Http\Controllers\HostelController;
 use App\Http\Controllers\AttendanceSessionController;
+use App\Http\Controllers\LibraryBookController;
+use App\Http\Controllers\LibraryCategoryController;
+use App\Http\Controllers\LibraryCopyController;
+use App\Http\Controllers\LibraryLoanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -218,4 +222,15 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/attendance-sessions/{id}/scan', [AttendanceSessionController::class, 'scan']);
     Route::get('/attendance-sessions/{id}/scans', [AttendanceSessionController::class, 'scanFeed']);
     Route::apiResource('attendance-sessions', AttendanceSessionController::class);
+
+    // Library Management
+    Route::apiResource('library-categories', LibraryCategoryController::class);
+    Route::apiResource('library-books', LibraryBookController::class);
+    Route::post('/library-copies', [LibraryCopyController::class, 'store']);
+    Route::put('/library-copies/{id}', [LibraryCopyController::class, 'update']);
+    Route::delete('/library-copies/{id}', [LibraryCopyController::class, 'destroy']);
+    Route::get('/library-loans', [LibraryLoanController::class, 'index']);
+    Route::post('/library-loans', [LibraryLoanController::class, 'store']);
+    Route::post('/library-loans/{id}/return', [LibraryLoanController::class, 'returnCopy']);
+    Route::get('/library-loans/due-soon', [LibraryLoanController::class, 'dueSoon']);
 });
