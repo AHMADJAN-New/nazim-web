@@ -58,6 +58,8 @@ export interface TranslationKeys {
     studentReports: string;
     studentManagement: string;
     attendance: string;
+    attendanceReports: string;
+    attendanceTotalsReport: string;
     classes: string;
     exams: string;
     finance: string;
@@ -117,6 +119,72 @@ export interface TranslationKeys {
     statusAbsent: string;
     statusLate: string;
     statusExcused: string;
+  };
+
+  attendanceReports: {
+    title: string;
+    subtitle: string;
+    export: string;
+    filters: string;
+    reset: string;
+    student: string;
+    class: string;
+    school: string;
+    status: string;
+    fromDate: string;
+    toDate: string;
+    allStudents: string;
+    allClasses: string;
+    allSchools: string;
+    allStatus: string;
+    cardNumber: string;
+    date: string;
+    method: string;
+    noRecords: string;
+  };
+
+  attendanceTotalsReport: {
+    title: string;
+    subtitle: string;
+    filters: string;
+    filtersTitle: string;
+    filtersDescription: string;
+    reset: string;
+    invalidRange: string;
+    invalidRangeDetail: string;
+    school: string;
+    class: string;
+    academicYear: string;
+    status: string;
+    fromDate: string;
+    toDate: string;
+    loading: string;
+    allSchools: string;
+    allClasses: string;
+    allYears: string;
+    totalSessions: string;
+    studentsMarked: string;
+    attendanceRate: string;
+    attendanceRateHelper: string;
+    absences: string;
+    absenceHelper: string;
+    statusBreakdown: string;
+    statusBreakdownHint: string;
+    records: string;
+    classBreakdown: string;
+    classBreakdownHint: string;
+    present: string;
+    absent: string;
+    totalRecords: string;
+    noClassData: string;
+    schoolBreakdown: string;
+    schoolBreakdownHint: string;
+    noSchoolData: string;
+    recentSessions: string;
+    recentSessionsHint: string;
+    date: string;
+    noRecentSessions: string;
+    noSchool: string;
   };
 
   // Dashboard
@@ -785,6 +853,7 @@ const en: TranslationKeys = {
     studentManagement: 'Student Management',
     attendance: 'Attendance',
     attendanceReports: 'Attendance Reports',
+    attendanceTotalsReport: 'Attendance Totals Report',
     classes: 'Classes',
     exams: 'Exams',
     finance: 'Finance',
@@ -846,6 +915,70 @@ const en: TranslationKeys = {
     statusExcused: 'Excused',
     statusSick: 'Sick',
     statusLeave: 'Leave (رخصت)',
+  },
+  attendanceReports: {
+    title: 'Attendance Reports',
+    subtitle: 'View and analyze student attendance records',
+    export: 'Export',
+    filters: 'Filters',
+    reset: 'Reset',
+    student: 'Student',
+    class: 'Class',
+    school: 'School',
+    status: 'Status',
+    fromDate: 'From Date',
+    toDate: 'To Date',
+    allStudents: 'All Students',
+    allClasses: 'All Classes',
+    allSchools: 'All Schools',
+    allStatus: 'All Status',
+    cardNumber: 'Card #',
+    date: 'Date',
+    method: 'Method',
+    noRecords: 'No attendance records found',
+  },
+  attendanceTotalsReport: {
+    title: 'Attendance Totals',
+    subtitle: 'See total presences and absences across classes, rooms, and schools.',
+    filters: 'Filters',
+    filtersTitle: 'Report filters',
+    filtersDescription: 'Choose a date range and optional class or school constraints.',
+    reset: 'Reset',
+    invalidRange: 'Invalid date range',
+    invalidRangeDetail: 'Start date must be before the end date.',
+    school: 'School',
+    class: 'Class / Room',
+    academicYear: 'Academic year',
+    status: 'Status',
+    fromDate: 'From date',
+    toDate: 'To date',
+    loading: 'Loading attendance report...',
+    allSchools: 'All schools',
+    allClasses: 'All classes',
+    allYears: 'All years',
+    totalSessions: 'Sessions analyzed',
+    studentsMarked: 'Students marked',
+    attendanceRate: 'Attendance rate',
+    attendanceRateHelper: 'Present vs total records',
+    absences: 'Absences',
+    absenceHelper: 'Across selected filters',
+    statusBreakdown: 'Status breakdown',
+    statusBreakdownHint: 'Quick view of attendance statuses.',
+    records: 'records',
+    classBreakdown: 'Class & room performance',
+    classBreakdownHint: 'Attendance quality grouped by assigned classes/rooms.',
+    present: 'Present',
+    absent: 'Absent',
+    totalRecords: 'Records',
+    noClassData: 'No class data available for this range.',
+    schoolBreakdown: 'School breakdown',
+    schoolBreakdownHint: 'Compare attendance patterns across schools and campuses.',
+    noSchoolData: 'No school data available.',
+    recentSessions: 'Recent attendance sessions',
+    recentSessionsHint: 'Latest sessions within the selected date range.',
+    date: 'Date',
+    noRecentSessions: 'No sessions found for this range.',
+    noSchool: 'No school',
   },
   dashboard: {
     title: 'Dashboard',
@@ -1498,6 +1631,8 @@ const ps: TranslationKeys = {
     admissionsReport: 'د داخلې راپور',
     studentManagement: 'د زده کوونکو مدیریت',
     attendance: 'حاضري',
+    attendanceReports: 'د حاضري راپورونه',
+    attendanceTotalsReport: 'د حاضري مجموعي راپور',
     classes: 'ټولګۍ',
     exams: 'ازموینې',
     finance: 'مالي چارې',
@@ -1555,6 +1690,70 @@ const ps: TranslationKeys = {
     statusAbsent: 'غایب',
     statusLate: 'ناوخته',
     statusExcused: 'معاف',
+  },
+  attendanceReports: {
+    title: 'د حاضري راپورونه',
+    subtitle: 'د زده کوونکو د حاضري ریکارډونه وګورئ او تحلیل کړئ',
+    export: 'صادرول',
+    filters: 'فلټرونه',
+    reset: 'بیا ټاکل',
+    student: 'زده کوونکی',
+    class: 'صنف',
+    school: 'ښوونځی',
+    status: 'حالت',
+    fromDate: 'د نیټې څخه',
+    toDate: 'تر نیټې',
+    allStudents: 'ټول زده کوونکي',
+    allClasses: 'ټول ټولګۍ',
+    allSchools: 'ټول ښوونځي',
+    allStatus: 'ټول حالتونه',
+    cardNumber: 'د کارت نمبر',
+    date: 'نیټه',
+    method: 'طریقه',
+    noRecords: 'د حاضري ریکارډونه ونه موندل شول',
+  },
+  attendanceTotalsReport: {
+    title: 'د حاضري مجموعي راپور',
+    subtitle: 'د ټولګیو، خونو او ښوونځیو په اوږدو کې د حاضري او غیاب مجموعې وګورئ.',
+    filters: 'فلټرونه',
+    filtersTitle: 'د راپور فلټرونه',
+    filtersDescription: 'د نیټو سلسله وټاکئ او اختیاري ټولګۍ یا ښوونځی محدودیتونه.',
+    reset: 'بیا ټاکل',
+    invalidRange: 'ناسمه نیټه سلسله',
+    invalidRangeDetail: 'د پیل نیټه باید د پای نیټې دمخه وي.',
+    school: 'ښوونځی',
+    class: 'صنف / خونه',
+    academicYear: 'د علمي کال',
+    status: 'حالت',
+    fromDate: 'د نیټې څخه',
+    toDate: 'تر نیټې',
+    loading: 'د حاضري راپور بارول کیږي...',
+    allSchools: 'ټول ښوونځي',
+    allClasses: 'ټول ټولګۍ',
+    allYears: 'ټول کلونه',
+    totalSessions: 'تحلیل شوي ناستې',
+    studentsMarked: 'نښه شوي زده کوونکي',
+    attendanceRate: 'د حاضري کچه',
+    attendanceRateHelper: 'حاضر د ټولو ریکارډونو سره',
+    absences: 'غیابونه',
+    absenceHelper: 'د ټاکل شوي فلټرونو په اوږدو کې',
+    statusBreakdown: 'د حالت تجزیه',
+    statusBreakdownHint: 'د حاضري حالتونو ګړندي کتل.',
+    records: 'ریکارډونه',
+    classBreakdown: 'د ټولګۍ او خونې فعالیت',
+    classBreakdownHint: 'د حاضري کیفیت د ټاکل شوي ټولګیو/خونو له مخې ډلبندي شوی.',
+    present: 'حاضر',
+    absent: 'غایب',
+    totalRecords: 'ریکارډونه',
+    noClassData: 'د دې سلسلې لپاره د ټولګۍ معلومات نشته.',
+    schoolBreakdown: 'د ښوونځي تجزیه',
+    schoolBreakdownHint: 'د ښوونځیو او کیمپونو په اوږدو کې د حاضري بېلګې پرتله کړئ.',
+    noSchoolData: 'د ښوونځي معلومات نشته.',
+    recentSessions: 'وروستۍ د حاضري ناستې',
+    recentSessionsHint: 'د ټاکل شوي نیټو سلسلې کې وروستۍ ناستې.',
+    date: 'نیټه',
+    noRecentSessions: 'د دې سلسلې لپاره ناستې ونه موندل شول.',
+    noSchool: 'هیڅ ښوونځی نشته',
   },
   dashboard: {
     title: 'کنټرول پینل',
@@ -2208,6 +2407,8 @@ const fa: TranslationKeys = {
     admissionsReport: 'گزارش پذیرش',
     studentManagement: 'مدیریت دانش‌آموزان',
     attendance: 'حاضری',
+    attendanceReports: 'گزارش‌های حضور و غیاب',
+    attendanceTotalsReport: 'گزارش مجموعی حضور و غیاب',
     classes: 'کلاس‌ها',
     exams: 'امتحانات',
     finance: 'مالی',
@@ -2269,10 +2470,70 @@ const fa: TranslationKeys = {
     createSuccess: 'جلسه حاضری ایجاد شد',
     saveSuccess: 'حاضری ذخیره شد',
     scanSuccess: 'حاضری ثبت شد',
-    statusPresent: 'حاضر',
-    statusAbsent: 'غایب',
-    statusLate: 'دیر',
-    statusExcused: 'معذور',
+  },
+  attendanceReports: {
+    title: 'گزارش‌های حضور و غیاب',
+    subtitle: 'مشاهده و تجزیه و تحلیل سوابق حضور و غیاب دانش‌آموزان',
+    export: 'صدور',
+    filters: 'فیلترها',
+    reset: 'بازنشانی',
+    student: 'دانش‌آموز',
+    class: 'صنف',
+    school: 'مدرسه',
+    status: 'وضعیت',
+    fromDate: 'از تاریخ',
+    toDate: 'تا تاریخ',
+    allStudents: 'همه دانش‌آموزان',
+    allClasses: 'همه صنف‌ها',
+    allSchools: 'همه مدارس',
+    allStatus: 'همه وضعیت‌ها',
+    cardNumber: 'شماره کارت',
+    date: 'تاریخ',
+    method: 'روش',
+    noRecords: 'هیچ سابقه حضور و غیابی یافت نشد',
+  },
+  attendanceTotalsReport: {
+    title: 'گزارش مجموعی حضور و غیاب',
+    subtitle: 'مجموع حضور و غیاب در صنف‌ها، اتاق‌ها و مدارس را مشاهده کنید.',
+    filters: 'فیلترها',
+    filtersTitle: 'فیلترهای گزارش',
+    filtersDescription: 'یک محدوده تاریخ و محدودیت‌های اختیاری صنف یا مدرسه را انتخاب کنید.',
+    reset: 'بازنشانی',
+    invalidRange: 'محدوده تاریخ نامعتبر',
+    invalidRangeDetail: 'تاریخ شروع باید قبل از تاریخ پایان باشد.',
+    school: 'مدرسه',
+    class: 'صنف / اتاق',
+    academicYear: 'سال تحصیلی',
+    status: 'وضعیت',
+    fromDate: 'از تاریخ',
+    toDate: 'تا تاریخ',
+    loading: 'در حال بارگذاری گزارش حضور و غیاب...',
+    allSchools: 'همه مدارس',
+    allClasses: 'همه صنف‌ها',
+    allYears: 'همه سال‌ها',
+    totalSessions: 'جلسات تجزیه شده',
+    studentsMarked: 'دانش‌آموزان علامه شده',
+    attendanceRate: 'نرخ حضور',
+    attendanceRateHelper: 'حاضر در مقابل کل سوابق',
+    absences: 'غیبت‌ها',
+    absenceHelper: 'در فیلترهای انتخاب شده',
+    statusBreakdown: 'تجزیه وضعیت',
+    statusBreakdownHint: 'نمای سریع وضعیت‌های حضور و غیاب.',
+    records: 'سوابق',
+    classBreakdown: 'عملکرد صنف و اتاق',
+    classBreakdownHint: 'کیفیت حضور و غیاب گروه‌بندی شده بر اساس صنف‌ها/اتاق‌های اختصاص داده شده.',
+    present: 'حاضر',
+    absent: 'غایب',
+    totalRecords: 'سوابق',
+    noClassData: 'هیچ داده صنفی برای این محدوده در دسترس نیست.',
+    schoolBreakdown: 'تجزیه مدرسه',
+    schoolBreakdownHint: 'الگوهای حضور و غیاب را در مدارس و پردیس‌ها مقایسه کنید.',
+    noSchoolData: 'هیچ داده مدرسه‌ای در دسترس نیست.',
+    recentSessions: 'جلسات اخیر حضور و غیاب',
+    recentSessionsHint: 'آخرین جلسات در محدوده تاریخ انتخاب شده.',
+    date: 'تاریخ',
+    noRecentSessions: 'هیچ جلسه‌ای برای این محدوده یافت نشد.',
+    noSchool: 'هیچ مدرسه‌ای نیست',
   },
   dashboard: {
     title: 'داشبورد',
@@ -2926,6 +3187,8 @@ const ar: TranslationKeys = {
     admissionsReport: 'تقرير القبول',
     studentManagement: 'إدارة الطلاب',
     attendance: 'الحضور',
+    attendanceReports: 'تقارير الحضور',
+    attendanceTotalsReport: 'تقرير إجمالي الحضور',
     classes: 'الفصول',
     exams: 'الامتحانات',
     finance: 'المالية',
@@ -2991,6 +3254,70 @@ const ar: TranslationKeys = {
     statusAbsent: 'غائب',
     statusLate: 'متأخر',
     statusExcused: 'معذور',
+  },
+  attendanceReports: {
+    title: 'تقارير الحضور',
+    subtitle: 'عرض وتحليل سجلات حضور الطلاب',
+    export: 'تصدير',
+    filters: 'مرشحات',
+    reset: 'إعادة تعيين',
+    student: 'الطالب',
+    class: 'الصف',
+    school: 'المدرسة',
+    status: 'الحالة',
+    fromDate: 'من التاريخ',
+    toDate: 'إلى التاريخ',
+    allStudents: 'جميع الطلاب',
+    allClasses: 'جميع الصفوف',
+    allSchools: 'جميع المدارس',
+    allStatus: 'جميع الحالات',
+    cardNumber: 'رقم البطاقة',
+    date: 'التاريخ',
+    method: 'الطريقة',
+    noRecords: 'لم يتم العثور على سجلات حضور',
+  },
+  attendanceTotalsReport: {
+    title: 'تقرير إجمالي الحضور',
+    subtitle: 'شاهد إجمالي الحضور والغياب عبر الصفوف والغرف والمدارس.',
+    filters: 'مرشحات',
+    filtersTitle: 'مرشحات التقرير',
+    filtersDescription: 'اختر نطاق تاريخ وقيود اختيارية للصف أو المدرسة.',
+    reset: 'إعادة تعيين',
+    invalidRange: 'نطاق تاريخ غير صالح',
+    invalidRangeDetail: 'يجب أن يكون تاريخ البدء قبل تاريخ الانتهاء.',
+    school: 'المدرسة',
+    class: 'الصف / الغرفة',
+    academicYear: 'السنة الأكاديمية',
+    status: 'الحالة',
+    fromDate: 'من التاريخ',
+    toDate: 'إلى التاريخ',
+    loading: 'جارٍ تحميل تقرير الحضور...',
+    allSchools: 'جميع المدارس',
+    allClasses: 'جميع الصفوف',
+    allYears: 'جميع السنوات',
+    totalSessions: 'الجلسات المحللة',
+    studentsMarked: 'الطلاب المحددون',
+    attendanceRate: 'معدل الحضور',
+    attendanceRateHelper: 'حاضر مقابل إجمالي السجلات',
+    absences: 'الغيابات',
+    absenceHelper: 'عبر المرشحات المحددة',
+    statusBreakdown: 'تفصيل الحالة',
+    statusBreakdownHint: 'عرض سريع لحالات الحضور.',
+    records: 'سجلات',
+    classBreakdown: 'أداء الصف والغرفة',
+    classBreakdownHint: 'جودة الحضور مجمعة حسب الصفوف/الغرف المخصصة.',
+    present: 'حاضر',
+    absent: 'غائب',
+    totalRecords: 'السجلات',
+    noClassData: 'لا توجد بيانات صفية متاحة لهذا النطاق.',
+    schoolBreakdown: 'تفصيل المدرسة',
+    schoolBreakdownHint: 'قارن أنماط الحضور عبر المدارس والحرم الجامعي.',
+    noSchoolData: 'لا توجد بيانات مدرسية متاحة.',
+    recentSessions: 'جلسات الحضور الأخيرة',
+    recentSessionsHint: 'أحدث الجلسات ضمن نطاق التاريخ المحدد.',
+    date: 'التاريخ',
+    noRecentSessions: 'لم يتم العثور على جلسات لهذا النطاق.',
+    noSchool: 'لا توجد مدرسة',
   },
   dashboard: {
     title: 'لوحة التحكم',

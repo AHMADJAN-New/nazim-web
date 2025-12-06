@@ -123,9 +123,9 @@ export default function AttendanceReports() {
           cardNumber: domainRecord.student?.cardNumber || null,
           status: domainRecord.status,
           sessionDate: (record as any).session?.session_date ? new Date((record as any).session.session_date) : domainRecord.markedAt,
-          className: (record as any).session?.class_model?.name || 
-                     ((record as any).session?.classes?.[0]?.name) || 
-                     '—',
+          className: (record as any).session?.class_model?.name ||
+            ((record as any).session?.classes?.[0]?.name) ||
+            '—',
           schoolName: (record as any).session?.school?.school_name || null,
           markedAt: domainRecord.markedAt,
           entryMethod: domainRecord.entryMethod,
@@ -394,7 +394,9 @@ export default function AttendanceReports() {
                               <div className="flex items-center">
                                 {typeof header.column.columnDef.header === 'string'
                                   ? header.column.columnDef.header
-                                  : header.column.columnDef.header}
+                                  : typeof header.column.columnDef.header === 'function'
+                                    ? header.column.columnDef.header(header.getContext())
+                                    : null}
                               </div>
                             )}
                           </TableHead>
@@ -447,4 +449,3 @@ export default function AttendanceReports() {
     </div>
   );
 }
-

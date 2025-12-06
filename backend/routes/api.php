@@ -32,6 +32,7 @@ use App\Http\Controllers\StudentEducationalHistoryController;
 use App\Http\Controllers\StudentDisciplineRecordController;
 use App\Http\Controllers\TeacherTimetablePreferenceController;
 use App\Http\Controllers\StudentReportController;
+use App\Http\Controllers\StaffReportController;
 use App\Http\Controllers\HostelController;
 use App\Http\Controllers\AttendanceSessionController;
 
@@ -61,6 +62,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);
     Route::get('/auth/profile', [AuthController::class, 'profile']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
     // Organizations (protected - all operations require authentication)
     Route::get('/organizations', [OrganizationController::class, 'index']);
@@ -112,6 +114,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Staff
     Route::get('/staff/stats', [StaffController::class, 'stats']);
+    Route::get('/staff/report/export', [StaffReportController::class, 'export']);
     Route::post('/staff/{id}/picture', [StaffController::class, 'uploadPicture']);
     Route::post('/staff/{id}/document', [StaffController::class, 'uploadDocument']);
     Route::apiResource('staff', StaffController::class);
@@ -208,6 +211,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Attendance Sessions
     Route::get('/attendance-sessions/roster', [AttendanceSessionController::class, 'roster']);
+    Route::get('/attendance-sessions/totals-report', [AttendanceSessionController::class, 'totalsReport']);
     Route::get('/attendance-sessions/report', [AttendanceSessionController::class, 'report']);
     Route::post('/attendance-sessions/{id}/close', [AttendanceSessionController::class, 'close']);
     Route::post('/attendance-sessions/{id}/records', [AttendanceSessionController::class, 'markRecords']);

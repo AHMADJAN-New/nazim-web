@@ -687,4 +687,273 @@ class AttendanceSessionController extends Controller
 
         return response()->json($records);
     }
+
+    private function buildEmptyTotalsReport(): array
+    {
+        return [
+            'totals' => [
+                'sessions' => 0,
+                'students_marked' => 0,
+                'present' => 0,
+                'absent' => 0,
+                'late' => 0,
+                'excused' => 0,
+                'sick' => 0,
+                'leave' => 0,
+                'attendance_rate' => 0,
+            ],
+            'status_breakdown' => [],
+            'class_breakdown' => [],
+            'school_breakdown' => [],
+            'recent_sessions' => [],
+        ];
+    }
+
+    public function totalsReport(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('attendance_sessions.report') && !$user->hasPermissionTo('attendance_sessions.read')) {
+                return response()->json(['error' => 'Access Denied'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for attendance_sessions.report: ' . $e->getMessage());
+            return response()->json(['error' => 'Access Denied'], 403);
+        }
+
+        $validated = $request->validate([
+            'class_id' => 'nullable|uuid|exists:classes,id',
+            'class_ids' => 'nullable|array|min:1',
+            'class_ids.*' => 'required|uuid|exists:classes,id',
+            'school_id' => 'nullable|uuid|exists:school_branding,id',
+            'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'status' => 'nullable|string|in:present,absent,late,excused,sick,leave',
+        ]);
+
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        if (empty($schoolIds)) {
+            return response()->json($this->buildEmptyTotalsReport());
+        }
+
+        if ($request->filled('school_id') && !in_array($request->input('school_id'), $schoolIds, true)) {
+            return response()->json(['error' => 'School not accessible'], 403);
+        }
+
+        $classIds = [];
+        if (!empty($validated['class_ids'])) {
+            $classIds = $validated['class_ids'];
+        }
+
+        if (!empty($validated['class_id'])) {
+            $classIds[] = $validated['class_id'];
+        }
+
+        if (!empty($classIds)) {
+            $classIds = array_unique($classIds);
+            $validClassCount = DB::table('classes')
+                ->whereIn('id', $classIds)
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            if ($validClassCount !== count($classIds)) {
+                return response()->json(['error' => 'One or more classes not found for this organization'], 404);
+            }
+        }
+
+        $recordQuery = AttendanceRecord::query()
+            ->join('attendance_sessions as s', 's.id', '=', 'attendance_records.attendance_session_id')
+            ->where('attendance_records.organization_id', $profile->organization_id)
+            ->whereNull('attendance_records.deleted_at')
+            ->whereNull('s.deleted_at')
+            ->where(function ($q) use ($schoolIds) {
+                $q->whereNull('s.school_id')->orWhereIn('s.school_id', $schoolIds);
+            });
+
+        $sessionQuery = AttendanceSession::query()
+            ->where('attendance_sessions.organization_id', $profile->organization_id)
+            ->whereNull('attendance_sessions.deleted_at')
+            ->where(function ($q) use ($schoolIds) {
+                $q->whereNull('attendance_sessions.school_id')->orWhereIn('attendance_sessions.school_id', $schoolIds);
+            });
+
+        if ($request->filled('school_id')) {
+            $recordQuery->where('s.school_id', $request->input('school_id'));
+            $sessionQuery->where('attendance_sessions.school_id', $request->input('school_id'));
+        }
+
+        if ($request->filled('academic_year_id')) {
+            $recordQuery->where('s.academic_year_id', $request->input('academic_year_id'));
+            $sessionQuery->where('attendance_sessions.academic_year_id', $request->input('academic_year_id'));
+        }
+
+        if (!empty($classIds)) {
+            $recordQuery->where(function ($q) use ($classIds) {
+                $q->whereIn('s.class_id', $classIds)
+                    ->orWhereExists(function ($sub) use ($classIds) {
+                        $sub->select(DB::raw(1))
+                            ->from('attendance_session_classes as asc')
+                            ->whereNull('asc.deleted_at')
+                            ->whereColumn('asc.attendance_session_id', 's.id')
+                            ->whereIn('asc.class_id', $classIds);
+                    });
+            });
+
+            $sessionQuery->where(function ($q) use ($classIds) {
+                $q->whereIn('attendance_sessions.class_id', $classIds)
+                    ->orWhereExists(function ($sub) use ($classIds) {
+                        $sub->select(DB::raw(1))
+                            ->from('attendance_session_classes as asc')
+                            ->whereNull('asc.deleted_at')
+                            ->whereColumn('asc.attendance_session_id', 'attendance_sessions.id')
+                            ->whereIn('asc.class_id', $classIds);
+                    });
+            });
+        }
+
+        if ($request->filled('date_from')) {
+            $recordQuery->whereDate('s.session_date', '>=', Carbon::parse($request->input('date_from'))->toDateString());
+            $sessionQuery->whereDate('attendance_sessions.session_date', '>=', Carbon::parse($request->input('date_from'))->toDateString());
+        }
+
+        if ($request->filled('date_to')) {
+            $recordQuery->whereDate('s.session_date', '<=', Carbon::parse($request->input('date_to'))->toDateString());
+            $sessionQuery->whereDate('attendance_sessions.session_date', '<=', Carbon::parse($request->input('date_to'))->toDateString());
+        }
+
+        if ($request->filled('status')) {
+            $recordQuery->where('attendance_records.status', $request->input('status'));
+        }
+
+        $recordTotals = (clone $recordQuery)
+            ->selectRaw('COUNT(*) as total_records')
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'present' THEN 1 ELSE 0 END) as present_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'absent' THEN 1 ELSE 0 END) as absent_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'late' THEN 1 ELSE 0 END) as late_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'excused' THEN 1 ELSE 0 END) as excused_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'sick' THEN 1 ELSE 0 END) as sick_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'leave' THEN 1 ELSE 0 END) as leave_count")
+            ->first();
+
+        $totalRecords = (int) ($recordTotals->total_records ?? 0);
+        $presentCount = (int) ($recordTotals->present_count ?? 0);
+        $absentCount = (int) ($recordTotals->absent_count ?? 0);
+        $lateCount = (int) ($recordTotals->late_count ?? 0);
+        $excusedCount = (int) ($recordTotals->excused_count ?? 0);
+        $sickCount = (int) ($recordTotals->sick_count ?? 0);
+        $leaveCount = (int) ($recordTotals->leave_count ?? 0);
+
+        $sessionsCount = (clone $sessionQuery)->count();
+        $uniqueStudents = (clone $recordQuery)->distinct('attendance_records.student_id')->count('attendance_records.student_id');
+
+        $statusBreakdown = (clone $recordQuery)
+            ->select('attendance_records.status', DB::raw('COUNT(*) as total'))
+            ->groupBy('attendance_records.status')
+            ->orderByDesc('total')
+            ->get();
+
+        $classBreakdown = (clone $recordQuery)
+            ->leftJoin('attendance_session_classes as asc', 'asc.attendance_session_id', '=', 'attendance_records.attendance_session_id')
+            ->leftJoin('classes as pivot_class', 'pivot_class.id', '=', 'asc.class_id')
+            ->leftJoin('classes as primary_class', 'primary_class.id', '=', 's.class_id')
+            ->leftJoin('school_branding as sb', 'sb.id', '=', 's.school_id')
+            ->selectRaw('COALESCE(pivot_class.id, primary_class.id) as class_id')
+            ->selectRaw("COALESCE(pivot_class.name, primary_class.name, 'Unassigned') as class_name")
+            ->selectRaw("COALESCE(sb.school_name, 'No school') as school_name")
+            ->selectRaw('COUNT(*) as total_records')
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'present' THEN 1 ELSE 0 END) as present_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'absent' THEN 1 ELSE 0 END) as absent_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'late' THEN 1 ELSE 0 END) as late_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'excused' THEN 1 ELSE 0 END) as excused_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'sick' THEN 1 ELSE 0 END) as sick_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'leave' THEN 1 ELSE 0 END) as leave_count")
+            ->groupBy(DB::raw('COALESCE(pivot_class.id, primary_class.id)'), DB::raw("COALESCE(pivot_class.name, primary_class.name, 'Unassigned')"), DB::raw("COALESCE(sb.school_name, 'No school')"))
+            ->orderByDesc('total_records')
+            ->get();
+
+        $schoolBreakdown = (clone $recordQuery)
+            ->leftJoin('school_branding as sb', 'sb.id', '=', 's.school_id')
+            ->selectRaw('COALESCE(sb.id, s.school_id) as school_id')
+            ->selectRaw("COALESCE(sb.school_name, 'No school') as school_name")
+            ->selectRaw('COUNT(*) as total_records')
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'present' THEN 1 ELSE 0 END) as present_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'absent' THEN 1 ELSE 0 END) as absent_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'late' THEN 1 ELSE 0 END) as late_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'excused' THEN 1 ELSE 0 END) as excused_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'sick' THEN 1 ELSE 0 END) as sick_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'leave' THEN 1 ELSE 0 END) as leave_count")
+            ->groupBy(DB::raw('COALESCE(sb.id, s.school_id)'), DB::raw("COALESCE(sb.school_name, 'No school')"))
+            ->orderByDesc('total_records')
+            ->get();
+
+        $sessionStats = (clone $recordQuery)
+            ->select('attendance_records.attendance_session_id')
+            ->selectRaw('COUNT(*) as total_records')
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'present' THEN 1 ELSE 0 END) as present_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'absent' THEN 1 ELSE 0 END) as absent_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'late' THEN 1 ELSE 0 END) as late_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'excused' THEN 1 ELSE 0 END) as excused_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'sick' THEN 1 ELSE 0 END) as sick_count")
+            ->selectRaw("SUM(CASE WHEN attendance_records.status = 'leave' THEN 1 ELSE 0 END) as leave_count")
+            ->groupBy('attendance_records.attendance_session_id')
+            ->get()
+            ->keyBy('attendance_session_id');
+
+        $recentSessions = (clone $sessionQuery)
+            ->with(['classes:id,name', 'school:id,school_name'])
+            ->orderBy('attendance_sessions.session_date', 'desc')
+            ->orderBy('attendance_sessions.created_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($session) use ($sessionStats) {
+                $stats = $sessionStats->get($session->id);
+
+                return [
+                    'id' => $session->id,
+                    'session_date' => optional($session->session_date)->toDateString(),
+                    'status' => $session->status,
+                    'class_name' => $session->classModel?->name ?? ($session->classes->first()?->name ?? '—'),
+                    'school_name' => $session->school?->school_name ?? null,
+                    'totals' => [
+                        'records' => (int) ($stats->total_records ?? 0),
+                        'present' => (int) ($stats->present_count ?? 0),
+                        'absent' => (int) ($stats->absent_count ?? 0),
+                        'late' => (int) ($stats->late_count ?? 0),
+                        'excused' => (int) ($stats->excused_count ?? 0),
+                        'sick' => (int) ($stats->sick_count ?? 0),
+                        'leave' => (int) ($stats->leave_count ?? 0),
+                    ],
+                ];
+            })->values();
+
+        $attendanceRate = $totalRecords > 0 ? round(($presentCount / $totalRecords) * 100, 1) : 0;
+
+        $report = [
+            'totals' => [
+                'sessions' => $sessionsCount,
+                'students_marked' => $uniqueStudents,
+                'present' => $presentCount,
+                'absent' => $absentCount,
+                'late' => $lateCount,
+                'excused' => $excusedCount,
+                'sick' => $sickCount,
+                'leave' => $leaveCount,
+                'attendance_rate' => $attendanceRate,
+            ],
+            'status_breakdown' => $statusBreakdown,
+            'class_breakdown' => $classBreakdown,
+            'school_breakdown' => $schoolBreakdown,
+            'recent_sessions' => $recentSessions,
+        ];
+
+        return response()->json($report);
+    }
 }

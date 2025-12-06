@@ -46,7 +46,7 @@ class PermissionSeeder extends Seeder
             'teacher_timetable_preferences' => ['read', 'create', 'update', 'delete'],
             'roles' => ['read', 'create', 'update', 'delete'],
             'permissions' => ['read', 'create', 'update', 'delete'],
-            'attendance_sessions' => ['read', 'create', 'update', 'delete'],
+            'attendance_sessions' => ['read', 'create', 'update', 'delete', 'report'],
             'student_reports' => ['read', 'export'],
         ];
     }
@@ -80,7 +80,7 @@ class PermissionSeeder extends Seeder
                 'academic_years.read',
                 'profiles.read', 'profiles.update',
                 'teacher_subject_assignments.read', 'teacher_subject_assignments.create',
-                'attendance_sessions.read', 'attendance_sessions.create', 'attendance_sessions.update',
+                'attendance_sessions.read', 'attendance_sessions.create', 'attendance_sessions.update', 'attendance_sessions.report',
                 // Basic read permissions for dashboard and navigation
                 'organizations.read', // Needed to view organization info
                 'rooms.read', // Needed for dashboard stats

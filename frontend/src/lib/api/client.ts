@@ -42,7 +42,7 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('api_token');
     }
-    
+
     // Development helper messages
     if (import.meta.env.DEV && typeof window !== 'undefined') {
       // Log helpful information once on initialization
@@ -82,7 +82,7 @@ class ApiClient {
     // This works perfectly with Vite proxy: /api/students -> http://localhost:5173/api/students
     const fullPath = `${this.baseUrl}${endpoint}`;
     const url = new URL(fullPath, window.location.origin);
-    
+
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
@@ -135,11 +135,11 @@ class ApiClient {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: response.statusText }));
-        
+
         // Suppress console errors for expected 401 when no token (user not logged in)
         // This is normal behavior, not an error
         const isExpectedUnauth = response.status === 401 && !hasToken && endpoint.includes('/auth/');
-        
+
         // For validation errors (400 or 422), include details if available
         if ((response.status === 400 || response.status === 422) && (error.details || error.errors)) {
           const validationErrors = error.details || error.errors;
@@ -148,7 +148,7 @@ class ApiClient {
             .join('; ');
           throw new Error(error.message || 'Validation failed' + (details ? ` - ${details}` : ''));
         }
-        
+
         // Create error but don't log expected 401s
         const errorObj = new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
         if (isExpectedUnauth) {
@@ -166,10 +166,10 @@ class ApiClient {
       return response.json();
     } catch (error: any) {
       // Detect DevTools request blocking
-      const isDevToolsBlocked = error.message?.includes('blocked') || 
-                                 error.message?.toLowerCase().includes('devtools') ||
-                                 (error.name === 'TypeError' && error.message?.includes('Failed to fetch'));
-      
+      const isDevToolsBlocked = error.message?.includes('blocked') ||
+        error.message?.toLowerCase().includes('devtools') ||
+        (error.name === 'TypeError' && error.message?.includes('Failed to fetch'));
+
       // Check if request was actually blocked by DevTools (visible in Network tab as "blocked:devtools")
       // This happens when "Disable cache" or request blocking is enabled in DevTools
       // Throttle warnings to avoid console spam (max once per 5 seconds)
@@ -177,7 +177,7 @@ class ApiClient {
         const now = Date.now();
         if (now - this.lastDevToolsWarning > this.DEVTOOLS_WARNING_THROTTLE) {
           this.lastDevToolsWarning = now;
-          const devToolsMessage = 
+          const devToolsMessage =
             '⚠️ Request appears to be blocked by DevTools. ' +
             'To fix: Open DevTools → Network tab → Disable "Disable cache" and any request blocking. ' +
             'Then refresh the page.';
@@ -186,20 +186,20 @@ class ApiClient {
       }
 
       // Handle network errors
-      if (error.message?.includes('Failed to fetch') || 
-          error.message?.includes('NetworkError') ||
-          error.message?.includes('blocked') ||
-          error.name === 'TypeError') {
+      if (error.message?.includes('Failed to fetch') ||
+        error.message?.includes('NetworkError') ||
+        error.message?.includes('blocked') ||
+        error.name === 'TypeError') {
         // Check if it's a CORS or network issue
         const isNetworkError = !error.response && (error.message?.includes('Failed to fetch') || error.name === 'TypeError');
         if (isNetworkError) {
           // Provide helpful error message with troubleshooting steps
-          const backendUrl = this.baseUrl.includes('localhost') || this.baseUrl.includes('127.0.0.1') 
-            ? 'http://localhost:8000' 
+          const backendUrl = this.baseUrl.includes('localhost') || this.baseUrl.includes('127.0.0.1')
+            ? 'http://localhost:8000'
             : this.baseUrl;
-          
+
           let errorMessage = `Network error: Unable to connect to API server at ${backendUrl}.`;
-          
+
           if (import.meta.env.DEV) {
             errorMessage += '\n\nTroubleshooting steps:';
             errorMessage += '\n1. Ensure Laravel backend is running: `php artisan serve` (should run on port 8000)';
@@ -207,7 +207,7 @@ class ApiClient {
             errorMessage += '\n3. Verify Vite proxy is working (check Vite dev server console)';
             errorMessage += '\n4. Check browser console for CORS errors';
           }
-          
+
           throw new Error(errorMessage);
         }
       }
@@ -260,7 +260,7 @@ class ApiClient {
 
   async post<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
     const headers: HeadersInit = {};
-    
+
     // If data is FormData, don't stringify and don't set Content-Type (browser will set it with boundary)
     if (data instanceof FormData) {
       return this.request<T>(endpoint, {
@@ -269,7 +269,7 @@ class ApiClient {
         headers: options?.headers || {},
       });
     }
-    
+
     return this.request<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -337,6 +337,14 @@ export const authApi = {
 
   updateProfile: async (data: any) => {
     return apiClient.put('/auth/profile', data);
+  },
+
+  changePassword: async (data: {
+    current_password: string;
+    new_password: string;
+    new_password_confirmation: string;
+  }) => {
+    return apiClient.post('/auth/change-password', data);
   },
 };
 
@@ -754,6 +762,17 @@ export const staffApi = {
     return apiClient.post(`/staff/${id}/document`, formData, {
       headers: {}, // Let browser set Content-Type with boundary
     });
+  },
+
+  exportReport: async (params: {
+    format: 'csv' | 'pdf' | 'xlsx';
+    organization_id?: string;
+    school_id?: string;
+    status?: string;
+    staff_type_id?: string;
+    search?: string;
+  }) => {
+    return apiClient.requestFile('/staff/report/export', { method: 'GET', params });
   },
 };
 
@@ -1863,5 +1882,17 @@ export const attendanceSessionsApi = {
     per_page?: number;
   }) => {
     return apiClient.get('/attendance-sessions/report', params);
+  },
+  totalsReport: async (params?: {
+    organization_id?: string;
+    class_id?: string;
+    class_ids?: string[];
+    school_id?: string;
+    academic_year_id?: string;
+    date_from?: string;
+    date_to?: string;
+    status?: string;
+  }) => {
+    return apiClient.get('/attendance-sessions/totals-report', params);
   },
 };

@@ -171,6 +171,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasSubjectsPermission = useHasPermission('subjects.read');
   const hasStaffPermission = useHasPermission('staff.read');
   const hasAttendanceSessionsPermission = useHasPermission('attendance_sessions.read');
+  const hasAttendanceReportsPermission = useHasPermission('attendance_sessions.report');
   const hasStudentsPermission = useHasPermission('students.read');
   const hasStudentAdmissionsPermission = useHasPermission('student_admissions.read');
   const hasStudentReportsPermission = useHasPermission('student_reports.read');
@@ -194,6 +195,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   // Permission checks for specific child items
   const hasPermissionsPermission = useHasPermission('permissions.read'); // Assuming this permission exists for permissions management
   const hasRolesPermission = useHasPermission('roles.read'); // Permission for roles management
+  const hasAttendanceNavigation = hasAttendanceSessionsPermission || hasAttendanceReportsPermission;
 
   // Context-aware navigation items - computed with useMemo to avoid hook order issues
   const allNavigationItems = useMemo((): NavigationItem[] => {
@@ -212,25 +214,31 @@ export const SmartSidebar = memo(function SmartSidebar() {
         badge: null,
         priority: 3
       }] : []),
-      ...(hasAttendanceSessionsPermission ? [{
+      ...(hasAttendanceNavigation ? [{
         titleKey: "attendance",
         url: "/attendance",
         icon: UserCheck,
         badge: null,
         priority: 3.02,
         children: [
-          {
+          ...(hasAttendanceSessionsPermission ? [{
             title: "Attendance",
             titleKey: "attendance",
             url: "/attendance",
             icon: UserCheck,
-          },
-          {
+          }] : []),
+          ...(hasAttendanceSessionsPermission ? [{
             title: "Attendance Reports",
             titleKey: "attendanceReports",
             url: "/attendance/reports",
             icon: FileText,
-          },
+          }] : []),
+          ...(hasAttendanceReportsPermission ? [{
+            title: "Attendance Totals",
+            titleKey: "attendanceTotalsReport",
+            url: "/attendance/reports/totals",
+            icon: BarChart3,
+          }] : []),
         ],
       }] : []),
       ...((hasStudentsPermission || hasStudentAdmissionsPermission || hasStudentReportsPermission || hasStudentAdmissionsReportPermission) ? [{
@@ -474,7 +482,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasAttendanceReportsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {

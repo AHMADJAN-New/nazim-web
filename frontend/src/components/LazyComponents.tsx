@@ -4,6 +4,8 @@ import { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
 // Lazy load core pages for better code splitting
 export const Dashboard = lazy(() => import('@/pages/Dashboard'));
 export const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
+export const UserProfile = lazy(() => import('@/pages/UserProfile'));
+export const UserSettings = lazy(() => import('@/pages/UserSettings'));
 
 // Lazy load settings components
 export const BuildingsManagement = lazy(() => import('@/components/settings/BuildingsManagement').then(module => ({ default: module.BuildingsManagement })));
@@ -27,10 +29,12 @@ export const Students = lazy(() => import('@/pages/Students').then(module => ({ 
 export const StudentAdmissions = lazy(() => import('@/pages/StudentAdmissions').then(module => ({ default: module.StudentAdmissions })));
 export const StudentReport = lazy(() => import('@/pages/StudentReport'));
 export const StudentAdmissionsReport = lazy(() => import('@/pages/StudentAdmissionsReport'));
+export const StaffReport = lazy(() => import('@/pages/StaffReport'));
 export const HostelManagement = lazy(() => import('@/pages/HostelManagement').then(module => ({ default: module.HostelManagement })));
 export const HostelReports = lazy(() => import('@/pages/HostelReports').then(module => ({ default: module.HostelReports })));
 export const AttendancePage = lazy(() => import('@/pages/Attendance').then(module => ({ default: module.default })));
 export const AttendanceReports = lazy(() => import('@/pages/AttendanceReports'));
+export const AttendanceTotalsReports = lazy(() => import('@/pages/AttendanceTotalsReports'));
 export const UserManagement = lazy(() => import('@/components/admin/UserManagement').then(module => ({ default: module.UserManagement })));
 
 // Re-export loading components for backward compatibility

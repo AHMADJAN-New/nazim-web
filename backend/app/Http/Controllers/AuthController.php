@@ -276,4 +276,43 @@ class AuthController extends Controller
 
         return response()->json($profile);
     }
+
+    /**
+     * Change user password
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = $request->user();
+        
+        // Get user from database to check current password
+        $dbUser = DB::table('users')
+            ->where('id', $user->id)
+            ->first();
+
+        if (!$dbUser) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        // Verify current password
+        if (!Hash::check($request->current_password, $dbUser->encrypted_password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The current password is incorrect.'],
+            ]);
+        }
+
+        // Update password
+        DB::table('users')
+            ->where('id', $user->id)
+            ->update([
+                'encrypted_password' => Hash::make($request->new_password),
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['message' => 'Password changed successfully']);
+    }
 }

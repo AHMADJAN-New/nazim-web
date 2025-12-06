@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +33,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] }: AppHeaderProps) {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const { language, setLanguage } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -191,12 +194,27 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
           {/* User Profile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <img
-                  src={profile?.avatar_url || ''}
-                  alt={profile?.full_name || 'User'}
-                  className="h-8 w-8 rounded-full object-cover"
-                />
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={profile?.avatar_url || undefined}
+                    alt={profile?.full_name || 'User'}
+                  />
+                  <AvatarFallback className="bg-muted">
+                    {profile?.full_name ? (
+                      <span className="text-xs font-medium">
+                        {profile.full_name
+                          .split(' ')
+                          .map(n => n[0])
+                          .join('')
+                          .toUpperCase()
+                          .slice(0, 2)}
+                      </span>
+                    ) : (
+                      <User className="h-4 w-4" />
+                    )}
+                  </AvatarFallback>
+                </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -212,11 +230,11 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings/user')}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>

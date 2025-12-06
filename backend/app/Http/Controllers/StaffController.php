@@ -94,10 +94,55 @@ class StaffController extends Controller
                   ->orWhere('father_name', 'ilike', "%{$search}%")
                   ->orWhere('grandfather_name', 'ilike', "%{$search}%")
                   ->orWhere('employee_id', 'ilike', "%{$search}%")
+                  ->orWhere('staff_code', 'ilike', "%{$search}%")
                   ->orWhere('email', 'ilike', "%{$search}%");
             });
         }
 
+        // Handle pagination if requested
+        if ($request->has('page') && $request->has('per_page')) {
+            $perPage = (int) $request->per_page;
+            $page = (int) $request->page;
+            
+            $staff = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+            
+            // Transform to include profile data
+            $transformedData = $staff->getCollection()->map(function ($s) {
+                $staffArray = $s->toArray();
+                
+                // Add profile if exists
+                if ($s->profile_id && $s->profile) {
+                    $staffArray['profile'] = [
+                        'id' => $s->profile->id,
+                        'full_name' => $s->profile->full_name,
+                        'email' => $s->profile->email,
+                        'phone' => $s->profile->phone,
+                        'avatar_url' => $s->profile->avatar_url,
+                        'role' => $s->profile->role,
+                    ];
+                }
+                
+                return $staffArray;
+            });
+            
+            // Return paginated response in Laravel format
+            return response()->json([
+                'data' => $transformedData,
+                'current_page' => $staff->currentPage(),
+                'from' => $staff->firstItem(),
+                'last_page' => $staff->lastPage(),
+                'per_page' => $staff->perPage(),
+                'to' => $staff->lastItem(),
+                'total' => $staff->total(),
+                'path' => $request->url(),
+                'first_page_url' => $staff->url(1),
+                'last_page_url' => $staff->url($staff->lastPage()),
+                'next_page_url' => $staff->nextPageUrl(),
+                'prev_page_url' => $staff->previousPageUrl(),
+            ]);
+        }
+
+        // Non-paginated response
         $staff = $query->orderBy('created_at', 'desc')->get();
 
         // Transform to include profile data

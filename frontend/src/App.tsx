@@ -44,11 +44,15 @@ import {
   StudentAdmissions,
   StudentReport,
   StudentAdmissionsReport,
+  StaffReport,
   HostelManagement,
   HostelReports,
   AttendancePage,
   AttendanceReports,
-  UserManagement
+  AttendanceTotalsReports,
+  UserManagement,
+  UserProfile,
+  UserSettings
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -103,6 +107,17 @@ const App = () => (
                     <Route path="/dashboard" element={
                       <Suspense fallback={<DashboardSkeleton />}>
                         <Dashboard />
+                      </Suspense>
+                    } />
+                    {/* User Profile and Settings */}
+                    <Route path="/profile" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <UserProfile />
+                      </Suspense>
+                    } />
+                    <Route path="/settings/user" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <UserSettings />
                       </Suspense>
                     } />
                     <Route path="/academic/timetable-generation" element={
@@ -244,6 +259,13 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/reports/staff-registrations" element={
+                      <PermissionRoute permission="staff_reports.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <StaffReport />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     <Route path="/hostel" element={
                       <HostelPermissionGuard>
                         <Suspense fallback={<PageSkeleton />}>
@@ -271,6 +293,13 @@ const App = () => (
                       <PermissionRoute permission="attendance_sessions.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <AttendanceReports />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/attendance/reports/totals" element={
+                      <PermissionRoute permission="attendance_sessions.report">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AttendanceTotalsReports />
                         </Suspense>
                       </PermissionRoute>
                     } />
