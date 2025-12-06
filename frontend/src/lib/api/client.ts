@@ -2211,3 +2211,39 @@ export const leaveRequestsApi = {
 
   scan: async (token: string) => apiClient.get(`/leave-requests/scan/${token}`),
 };
+// Short-term courses API
+export const shortTermCoursesApi = {
+  list: async (params?: { organization_id?: string; status?: string; page?: number; per_page?: number }) =>
+    apiClient.get('/short-term-courses', params),
+  get: async (id: string) => apiClient.get(`/short-term-courses/${id}`),
+  create: async (data: any) => apiClient.post('/short-term-courses', data),
+  update: async (id: string, data: any) => apiClient.put(`/short-term-courses/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/short-term-courses/${id}`),
+  close: async (id: string) => apiClient.post(`/short-term-courses/${id}/close`),
+  reopen: async (id: string) => apiClient.post(`/short-term-courses/${id}/reopen`),
+  stats: async (id: string) => apiClient.get(`/short-term-courses/${id}/stats`),
+};
+
+// Course students API
+export const courseStudentsApi = {
+  list: async (params?: { organization_id?: string; course_id?: string; status?: string; page?: number; per_page?: number }) =>
+    apiClient.get('/course-students', params),
+  get: async (id: string) => apiClient.get(`/course-students/${id}`),
+  create: async (data: any) => apiClient.post('/course-students', data),
+  update: async (id: string, data: any) => apiClient.put(`/course-students/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/course-students/${id}`),
+  enrollFromMain: async (data: any) => apiClient.post('/course-students/enroll-from-main', data),
+  copyToMain: async (id: string, data: any) => apiClient.post(`/course-students/${id}/copy-to-main`, data),
+  markCompleted: async (id: string) => apiClient.post(`/course-students/${id}/complete`),
+  markDropped: async (id: string) => apiClient.post(`/course-students/${id}/drop`),
+  issueCertificate: async (id: string) => apiClient.post(`/course-students/${id}/issue-certificate`),
+};
+
+// Course student discipline records API
+export const courseStudentDisciplineRecordsApi = {
+  list: async (courseStudentId: string) => apiClient.get(`/course-students/${courseStudentId}/discipline-records`),
+  create: async (courseStudentId: string, data: any) => apiClient.post(`/course-students/${courseStudentId}/discipline-records`, data),
+  update: async (id: string, data: any) => apiClient.put(`/course-student-discipline-records/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/course-student-discipline-records/${id}`),
+  resolve: async (id: string) => apiClient.post(`/course-student-discipline-records/${id}/resolve`),
+};

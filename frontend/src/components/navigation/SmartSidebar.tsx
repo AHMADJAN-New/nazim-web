@@ -182,6 +182,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasStudentAdmissionsPermission = useHasPermission('student_admissions.read');
   const hasStudentReportsPermission = useHasPermission('student_reports.read');
   const hasStudentAdmissionsReportPermission = useHasPermission('student_admissions.report');
+  const hasShortTermCoursesPermission = useHasPermission('short_term_courses.read');
+  const hasCourseStudentsPermission = useHasPermission('course_students.read');
+  const hasCourseReportsPermission = useHasPermission('course_students.report');
   const hasStaffTypesPermission = useHasPermission('staff_types.read');
   const hasScheduleSlotsPermission = useHasPermission('schedule_slots.read');
   const hasTeacherSubjectAssignmentsPermission = useHasPermission('teacher_subject_assignments.read');
@@ -282,6 +285,32 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/leave-requests/reports",
             icon: LucideIcons.BarChart3,
           },
+        ],
+      }] : []),
+      ...((hasShortTermCoursesPermission || hasCourseStudentsPermission || hasCourseReportsPermission) ? [{
+        titleKey: "shortTermCourses",
+        icon: GraduationCap,
+        badge: null,
+        priority: 3.045,
+        children: [
+          ...(hasShortTermCoursesPermission ? [{
+            title: "Courses",
+            titleKey: "courses",
+            url: "/short-term-courses",
+            icon: LucideIcons.BookOpen,
+          }] : []),
+          ...(hasCourseStudentsPermission ? [{
+            title: "Course Students",
+            titleKey: "courseStudents",
+            url: "/course-students",
+            icon: GraduationCap,
+          }] : []),
+          ...(hasCourseReportsPermission ? [{
+            title: "Course Reports",
+            titleKey: "courseReports",
+            url: "/course-students/reports",
+            icon: LucideIcons.BarChart3,
+          }] : []),
         ],
       }] : []),
       ...((hasStudentsPermission || hasStudentAdmissionsPermission || hasStudentReportsPermission || hasStudentAdmissionsReportPermission) ? [{

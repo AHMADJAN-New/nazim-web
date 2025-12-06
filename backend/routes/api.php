@@ -39,6 +39,9 @@ use App\Http\Controllers\LibraryBookController;
 use App\Http\Controllers\LibraryCategoryController;
 use App\Http\Controllers\LibraryCopyController;
 use App\Http\Controllers\LibraryLoanController;
+use App\Http\Controllers\ShortTermCourseController;
+use App\Http\Controllers\CourseStudentController;
+use App\Http\Controllers\CourseStudentDisciplineRecordController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetAssignmentController;
@@ -251,6 +254,27 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/library-loans', [LibraryLoanController::class, 'store']);
     Route::post('/library-loans/{id}/return', [LibraryLoanController::class, 'returnCopy']);
     Route::get('/library-loans/due-soon', [LibraryLoanController::class, 'dueSoon']);
+
+    // Short-term courses
+    Route::apiResource('short-term-courses', ShortTermCourseController::class);
+    Route::post('/short-term-courses/{id}/close', [ShortTermCourseController::class, 'close']);
+    Route::post('/short-term-courses/{id}/reopen', [ShortTermCourseController::class, 'reopen']);
+    Route::get('/short-term-courses/{id}/stats', [ShortTermCourseController::class, 'stats']);
+
+    // Course students
+    Route::apiResource('course-students', CourseStudentController::class);
+    Route::post('/course-students/enroll-from-main', [CourseStudentController::class, 'enrollFromMain']);
+    Route::post('/course-students/{id}/copy-to-main', [CourseStudentController::class, 'copyToMain']);
+    Route::post('/course-students/{id}/complete', [CourseStudentController::class, 'markCompleted']);
+    Route::post('/course-students/{id}/drop', [CourseStudentController::class, 'markDropped']);
+    Route::post('/course-students/{id}/issue-certificate', [CourseStudentController::class, 'issueCertificate']);
+
+    // Course student discipline records
+    Route::get('/course-students/{id}/discipline-records', [CourseStudentDisciplineRecordController::class, 'index']);
+    Route::post('/course-students/{id}/discipline-records', [CourseStudentDisciplineRecordController::class, 'store']);
+    Route::put('/course-student-discipline-records/{id}', [CourseStudentDisciplineRecordController::class, 'update']);
+    Route::delete('/course-student-discipline-records/{id}', [CourseStudentDisciplineRecordController::class, 'destroy']);
+    Route::post('/course-student-discipline-records/{id}/resolve', [CourseStudentDisciplineRecordController::class, 'resolve']);
 
     // Leave Requests
     Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
