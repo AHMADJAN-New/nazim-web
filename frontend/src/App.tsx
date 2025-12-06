@@ -60,6 +60,10 @@ import {
   LibraryReports,
   LeaveManagement,
   LeaveReports,
+  Assets,
+  AssetAssignments,
+  AssetReports,
+  AssetCategories
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -153,6 +157,34 @@ const App = () => (
                       <PermissionRoute permission="rooms.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <RoomsManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/assets" element={
+                      <PermissionRoute permission="assets.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <Assets />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/assets/assignments" element={
+                      <PermissionRoute permission="assets.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AssetAssignments />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/assets/reports" element={
+                      <PermissionRoute permission="assets.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AssetReports />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/assets/categories" element={
+                      <PermissionRoute permission="asset_categories.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AssetCategories />
                         </Suspense>
                       </PermissionRoute>
                     } />

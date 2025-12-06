@@ -26,9 +26,10 @@ import {
   Building2,
   DoorOpen,
   BedDouble,
+  Boxes,
   Shield,
+  ShieldCheck,
   MessageSquare,
-  BarChart3,
   School,
   Moon,
   Sun,
@@ -41,7 +42,8 @@ import {
   UserCog,
   Lock,
   AlertTriangle,
-  User
+  User,
+  Package
 } from "lucide-react";
 
 import {
@@ -170,6 +172,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasAcademicYearsPermission = useHasPermission('academic_years.read');
   const hasClassesPermission = useHasPermission('classes.read');
   const hasSubjectsPermission = useHasPermission('subjects.read');
+  const hasAssetsPermission = useHasPermission('assets.read');
   const hasStaffPermission = useHasPermission('staff.read');
   const hasStaffReportsPermission = useHasPermission('staff_reports.read');
   const hasAttendanceSessionsPermission = useHasPermission('attendance_sessions.read');
@@ -257,7 +260,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Attendance Totals",
             titleKey: "attendanceTotalsReport",
             url: "/attendance/reports/totals",
-            icon: BarChart3,
+            icon: LucideIcons.BarChart3,
           }] : []),
         ],
       }] : []),
@@ -277,7 +280,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Leave Reports",
             titleKey: "leaveReports",
             url: "/leave-requests/reports",
-            icon: BarChart3,
+            icon: LucideIcons.BarChart3,
           },
         ],
       }] : []),
@@ -329,7 +332,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Hostel reports",
             titleKey: "hostel.reports",
             url: "/hostel/reports",
-            icon: BarChart3,
+            icon: LucideIcons.BarChart3,
           }] : []),
         ],
       }] : []),
@@ -361,8 +364,40 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Reports",
             titleKey: "library.reports",
             url: "/library/reports",
-            icon: BarChart3,
+            icon: LucideIcons.BarChart3,
           }] : []),
+        ],
+      }] : []),
+      ...(hasAssetsPermission ? [{
+        titleKey: "assets",
+        icon: Boxes,
+        badge: null,
+        priority: 3.08,
+        children: [
+          {
+            title: "Asset Management",
+            titleKey: "assets.management",
+            url: "/assets",
+            icon: Boxes,
+          },
+          {
+            title: "Asset Assignments",
+            titleKey: "assets.assignments",
+            url: "/assets/assignments",
+            icon: ShieldCheck,
+          },
+          {
+            title: "Asset Reports",
+            titleKey: "assets.reports",
+            url: "/assets/reports",
+            icon: LucideIcons.BarChart3,
+          },
+          {
+            title: "Asset Categories",
+            titleKey: "assets.categories",
+            url: "/assets/categories",
+            icon: Package,
+          },
         ],
       }] : []),
       ...((hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission || hasTimetablesPermission) ? [{
@@ -559,7 +594,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {

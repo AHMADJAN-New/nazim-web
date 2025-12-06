@@ -1094,6 +1094,113 @@ export const residencyTypesApi = {
   },
 };
 
+export const assetsApi = {
+  list: async (params?: {
+    status?: string | string[];
+    school_id?: string;
+    building_id?: string;
+    room_id?: string;
+    search?: string;
+    page?: number;
+    per_page?: number;
+  }) => {
+    return apiClient.get('/assets', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/assets/${id}`);
+  },
+
+  create: async (data: {
+    name: string;
+    asset_tag: string;
+    category?: string | null;
+    category_id?: string | null;
+    serial_number?: string | null;
+    purchase_date?: string | null;
+    purchase_price?: number | null;
+    status?: string;
+    condition?: string | null;
+    vendor?: string | null;
+    warranty_expiry?: string | null;
+    location_notes?: string | null;
+    notes?: string | null;
+    school_id?: string | null;
+    building_id?: string | null;
+    room_id?: string | null;
+  }) => {
+    return apiClient.post('/assets', data);
+  },
+
+  update: async (id: string, data: any) => {
+    return apiClient.put(`/assets/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/assets/${id}`);
+  },
+
+  stats: async () => {
+    return apiClient.get('/assets/stats');
+  },
+
+  history: async (id: string) => {
+    return apiClient.get(`/assets/${id}/history`);
+  },
+
+  listAssignments: async (assetId: string) => {
+    return apiClient.get(`/assets/${assetId}/assignments`);
+  },
+
+  createAssignment: async (
+    assetId: string,
+    data: {
+      assigned_to_type: string;
+      assigned_to_id?: string | null;
+      assigned_on?: string | null;
+      expected_return_date?: string | null;
+      notes?: string | null;
+    }
+  ) => {
+    return apiClient.post(`/assets/${assetId}/assignments`, data);
+  },
+
+  updateAssignment: async (id: string, data: any) => {
+    return apiClient.put(`/asset-assignments/${id}`, data);
+  },
+
+  deleteAssignment: async (id: string) => {
+    return apiClient.delete(`/asset-assignments/${id}`);
+  },
+
+  listMaintenance: async (assetId: string) => {
+    return apiClient.get(`/assets/${assetId}/maintenance`);
+  },
+
+  createMaintenance: async (
+    assetId: string,
+    data: {
+      maintenance_type?: string | null;
+      status?: string;
+      performed_on?: string | null;
+      next_due_date?: string | null;
+      cost?: number | null;
+      vendor?: string | null;
+      notes?: string | null;
+    }
+  ) => {
+    return apiClient.post(`/assets/${assetId}/maintenance`, data);
+  },
+
+  updateMaintenance: async (id: string, data: any) => {
+    return apiClient.put(`/asset-maintenance/${id}`, data);
+  },
+
+  deleteMaintenance: async (id: string) => {
+    return apiClient.delete(`/asset-maintenance/${id}`);
+  },
+};
+
 // Report Templates API
 export const reportTemplatesApi = {
   list: async (params?: {
@@ -1930,6 +2037,42 @@ export const libraryCategoriesApi = {
 
   delete: async (id: string) => {
     return apiClient.delete(`/library-categories/${id}`);
+  },
+};
+
+// Asset Categories API
+export const assetCategoriesApi = {
+  list: async (params?: { organization_id?: string }) => {
+    return apiClient.get('/asset-categories', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/asset-categories/${id}`);
+  },
+
+  create: async (data: {
+    name: string;
+    code?: string | null;
+    description?: string | null;
+    is_active?: boolean;
+    display_order?: number;
+    organization_id?: string | null;
+  }) => {
+    return apiClient.post('/asset-categories', data);
+  },
+
+  update: async (id: string, data: {
+    name?: string;
+    code?: string | null;
+    description?: string | null;
+    is_active?: boolean;
+    display_order?: number;
+  }) => {
+    return apiClient.put(`/asset-categories/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/asset-categories/${id}`);
   },
 };
 

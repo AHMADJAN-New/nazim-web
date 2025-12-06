@@ -43,6 +43,10 @@ export const LibraryDistribution = lazy(() => import('@/pages/LibraryDistributio
 export const LibraryReports = lazy(() => import('@/pages/LibraryReports'));
 export const LeaveManagement = lazy(() => import('@/pages/LeaveManagement').then(module => ({ default: module.default })));
 export const LeaveReports = lazy(() => import('@/pages/LeaveReports').then(module => ({ default: module.default })));
+export const Assets = lazy(() => import('@/pages/Assets').then(module => ({ default: module.default })));
+export const AssetAssignments = lazy(() => import('@/pages/AssetAssignments').then(module => ({ default: module.default })));
+export const AssetReports = lazy(() => import('@/pages/AssetReports').then(module => ({ default: module.default })));
+export const AssetCategories = lazy(() => import('@/pages/AssetCategories').then(module => ({ default: module.default })));
 
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';

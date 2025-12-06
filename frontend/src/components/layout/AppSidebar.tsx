@@ -107,21 +107,21 @@ export function AppSidebar() {
   const { t, isRTL } = useLanguage();
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  
+
   const collapsed = state === "collapsed";
 
   const currentPath = location.pathname;
 
   const isActive = (path: string) => currentPath === path;
-  const isChildActive = (children?: Array<{ url: string }>) => 
+  const isChildActive = (children?: Array<{ url: string }>) =>
     children?.some(child => currentPath.startsWith(child.url)) || false;
 
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50";
 
   const toggleExpanded = (title: string) => {
-    setExpandedItems(prev => 
-      prev.includes(title) 
+    setExpandedItems(prev =>
+      prev.includes(title)
         ? prev.filter(item => item !== title)
         : [...prev, title]
     );
@@ -135,7 +135,7 @@ export function AppSidebar() {
     const label = t(`nav.${item.titleKey}`);
     if (item.children) {
       const isExpanded = expandedItems.includes(item.titleKey) || isChildActive(item.children);
-      
+
       return (
         <Collapsible key={item.titleKey} open={isExpanded} onOpenChange={() => toggleExpanded(item.titleKey)}>
           <SidebarMenuItem>
@@ -160,8 +160,8 @@ export function AppSidebar() {
                   {item.children.map((child: NavigationChild) => (
                     <SidebarMenuItem key={child.url}>
                       <SidebarMenuButton asChild>
-                        <NavLink 
-                          to={child.url} 
+                        <NavLink
+                          to={child.url}
                           className={getNavCls({ isActive: isActive(child.url) })}
                         >
                           <child.icon className="h-4 w-4" />
@@ -181,8 +181,8 @@ export function AppSidebar() {
     return (
       <SidebarMenuItem key={item.url}>
         <SidebarMenuButton asChild>
-          <NavLink 
-            to={item.url} 
+          <NavLink
+            to={item.url}
             className={getNavCls({ isActive: isActive(item.url) })}
           >
             <item.icon className="h-4 w-4" />
@@ -227,8 +227,8 @@ export function AppSidebar() {
       {!collapsed && (
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <img 
-              src={currentUser.profilePhoto} 
+            <img
+              src={currentUser.profilePhoto}
               alt={currentUser.name}
               className="w-10 h-10 rounded-full object-cover"
             />

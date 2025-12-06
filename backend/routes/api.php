@@ -40,6 +40,10 @@ use App\Http\Controllers\LibraryCategoryController;
 use App\Http\Controllers\LibraryCopyController;
 use App\Http\Controllers\LibraryLoanController;
 use App\Http\Controllers\LeaveRequestController;
+use App\Http\Controllers\AssetController;
+use App\Http\Controllers\AssetAssignmentController;
+use App\Http\Controllers\AssetMaintenanceController;
+use App\Http\Controllers\AssetCategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -214,6 +218,18 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Teacher Subject Assignments
     Route::apiResource('teacher-subject-assignments', TeacherSubjectAssignmentController::class);
+
+    // Assets
+    Route::get('/assets/stats', [AssetController::class, 'stats']);
+    Route::get('/assets/{id}/history', [AssetController::class, 'history']);
+    Route::get('/assets/{id}/assignments', [AssetController::class, 'assignments']);
+    Route::post('/assets/{id}/assignments', [AssetController::class, 'createAssignment']);
+    Route::get('/assets/{id}/maintenance', [AssetMaintenanceController::class, 'index']);
+    Route::post('/assets/{id}/maintenance', [AssetMaintenanceController::class, 'store']);
+    Route::apiResource('assets', AssetController::class);
+    Route::apiResource('asset-assignments', AssetAssignmentController::class);
+    Route::apiResource('asset-maintenance', AssetMaintenanceController::class);
+    Route::apiResource('asset-categories', AssetCategoryController::class);
 
     // Attendance Sessions
     Route::get('/attendance-sessions/roster', [AttendanceSessionController::class, 'roster']);

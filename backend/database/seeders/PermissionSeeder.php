@@ -17,6 +17,8 @@ class PermissionSeeder extends Seeder
     public static function getPermissions(): array
     {
         return [
+            'assets' => ['read', 'create', 'update', 'delete'],
+            'asset_categories' => ['read', 'create', 'update', 'delete'],
             'buildings' => ['read', 'create', 'update', 'delete'],
             'subjects' => ['read', 'create', 'update', 'delete', 'assign', 'copy'],
             'report_templates' => ['read', 'create', 'update', 'delete'],
@@ -74,6 +76,8 @@ class PermissionSeeder extends Seeder
                 'academic_years.read',
                 'profiles.read', 'profiles.update',
                 'student_admissions.read', 'student_admissions.create',
+                'assets.read', 'assets.create', 'assets.update', 'assets.delete', // Full asset management access
+                'asset_categories.read', 'asset_categories.create', 'asset_categories.update', 'asset_categories.delete', // Asset category management
             ],
             'teacher' => [
                 // Teachers can read and manage academic content
@@ -93,6 +97,8 @@ class PermissionSeeder extends Seeder
                 'buildings.read', // Needed for dashboard stats
                 'staff.read', // Needed to view staff members
                 'school_branding.read', // Needed to view schools
+                'assets.read', 'assets.create', 'assets.update', 'assets.delete', // Full asset management access
+                'asset_categories.read', 'asset_categories.create', 'asset_categories.update', 'asset_categories.delete', // Asset category management
             ],
             'hostel_manager' => [
                 'hostel.read',
