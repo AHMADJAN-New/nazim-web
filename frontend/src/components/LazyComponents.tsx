@@ -41,6 +41,8 @@ export const LibraryCategories = lazy(() => import('@/pages/LibraryCategories'))
 export const LibraryBooks = lazy(() => import('@/pages/LibraryBooks'));
 export const LibraryDistribution = lazy(() => import('@/pages/LibraryDistribution'));
 export const LibraryReports = lazy(() => import('@/pages/LibraryReports'));
+export const LeaveManagement = lazy(() => import('@/pages/LeaveManagement').then(module => ({ default: module.default })));
+export const LeaveReports = lazy(() => import('@/pages/LeaveReports').then(module => ({ default: module.default })));
 
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';

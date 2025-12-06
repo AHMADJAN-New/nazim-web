@@ -47,6 +47,7 @@ class PermissionSeeder extends Seeder
             'roles' => ['read', 'create', 'update', 'delete'],
             'permissions' => ['read', 'create', 'update', 'delete'],
             'attendance_sessions' => ['read', 'create', 'update', 'delete', 'report'],
+            'leave_requests' => ['read', 'create', 'update', 'delete'],
             'student_reports' => ['read', 'export'],
             'library_categories' => ['read', 'create', 'update', 'delete'],
             'library_books' => ['read', 'create', 'update', 'delete'],
@@ -84,7 +85,8 @@ class PermissionSeeder extends Seeder
                 'academic_years.read',
                 'profiles.read', 'profiles.update',
                 'teacher_subject_assignments.read', 'teacher_subject_assignments.create',
-                'attendance_sessions.read', 'attendance_sessions.create', 'attendance_sessions.update', 'attendance_sessions.report',
+                'attendance_sessions.read', 'attendance_sessions.create', 'attendance_sessions.update',
+                'leave_requests.read', 'leave_requests.create', 'leave_requests.update',
                 // Basic read permissions for dashboard and navigation
                 'organizations.read', // Needed to view organization info
                 'rooms.read', // Needed for dashboard stats

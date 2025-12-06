@@ -58,6 +58,8 @@ import {
   LibraryBooks,
   LibraryDistribution,
   LibraryReports,
+  LeaveManagement,
+  LeaveReports,
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -363,6 +365,21 @@ const App = () => (
                       <PermissionRoute permission="users.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <UserManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Leave Management routes */}
+                    <Route path="/leave-requests" element={
+                      <PermissionRoute permission="leave_requests.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <LeaveManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/leave-requests/reports" element={
+                      <PermissionRoute permission="leave_requests.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <LeaveReports />
                         </Suspense>
                       </PermissionRoute>
                     } />

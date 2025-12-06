@@ -2034,3 +2034,35 @@ export const libraryLoansApi = {
     return apiClient.get('/library-loans/due-soon', params);
   },
 };
+
+// Leave Requests API
+export const leaveRequestsApi = {
+  list: async (params?: {
+    student_id?: string;
+    class_id?: string;
+    school_id?: string;
+    status?: string;
+    month?: number;
+    year?: number;
+    date_from?: string;
+    date_to?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/leave-requests', params),
+
+  get: async (id: string) => apiClient.get(`/leave-requests/${id}`),
+
+  create: async (data: any) => apiClient.post('/leave-requests', data),
+
+  update: async (id: string, data: any) => apiClient.put(`/leave-requests/${id}`, data),
+
+  approve: async (id: string, data?: { approval_note?: string | null }) =>
+    apiClient.post(`/leave-requests/${id}/approve`, data || {}),
+
+  reject: async (id: string, data?: { approval_note?: string | null }) =>
+    apiClient.post(`/leave-requests/${id}/reject`, data || {}),
+
+  printData: async (id: string) => apiClient.get(`/leave-requests/${id}/print`),
+
+  scan: async (token: string) => apiClient.get(`/leave-requests/scan/${token}`),
+};

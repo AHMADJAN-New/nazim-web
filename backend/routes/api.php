@@ -39,6 +39,7 @@ use App\Http\Controllers\LibraryBookController;
 use App\Http\Controllers\LibraryCategoryController;
 use App\Http\Controllers\LibraryCopyController;
 use App\Http\Controllers\LibraryLoanController;
+use App\Http\Controllers\LeaveRequestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,6 +50,7 @@ use App\Http\Controllers\LibraryLoanController;
 // Public routes
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::get('/leave-requests/scan/{token}', [LeaveRequestController::class, 'scanPublic']);
 
 // Public stats endpoints (for landing page)
 // Note: These return aggregate counts across all organizations
@@ -189,10 +191,10 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Subjects
     Route::apiResource('subjects', SubjectController::class);
-    
+
     // Class Subject Templates
     Route::apiResource('class-subject-templates', ClassSubjectTemplateController::class);
-    
+
     // Class Subjects
     Route::apiResource('class-subjects', ClassSubjectController::class);
 
@@ -233,4 +235,10 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/library-loans', [LibraryLoanController::class, 'store']);
     Route::post('/library-loans/{id}/return', [LibraryLoanController::class, 'returnCopy']);
     Route::get('/library-loans/due-soon', [LibraryLoanController::class, 'dueSoon']);
+
+    // Leave Requests
+    Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
+    Route::post('/leave-requests/{id}/approve', [LeaveRequestController::class, 'approve']);
+    Route::post('/leave-requests/{id}/reject', [LeaveRequestController::class, 'reject']);
+    Route::apiResource('leave-requests', LeaveRequestController::class);
 });

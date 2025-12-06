@@ -174,6 +174,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasStaffReportsPermission = useHasPermission('staff_reports.read');
   const hasAttendanceSessionsPermission = useHasPermission('attendance_sessions.read');
   const hasAttendanceReportsPermission = useHasPermission('attendance_sessions.report');
+  const hasLeaveRequestsPermission = useHasPermission('leave_requests.read');
   const hasStudentsPermission = useHasPermission('students.read');
   const hasStudentAdmissionsPermission = useHasPermission('student_admissions.read');
   const hasStudentReportsPermission = useHasPermission('student_reports.read');
@@ -258,6 +259,26 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/attendance/reports/totals",
             icon: BarChart3,
           }] : []),
+        ],
+      }] : []),
+      ...(hasLeaveRequestsPermission ? [{
+        titleKey: "leaveRequests",
+        icon: Calendar,
+        badge: null,
+        priority: 3.03,
+        children: [
+          {
+            title: "Leave Requests",
+            titleKey: "leaveRequests",
+            url: "/leave-requests",
+            icon: Calendar,
+          },
+          {
+            title: "Leave Reports",
+            titleKey: "leaveReports",
+            url: "/leave-requests/reports",
+            icon: BarChart3,
+          },
         ],
       }] : []),
       ...((hasStudentsPermission || hasStudentAdmissionsPermission || hasStudentReportsPermission || hasStudentAdmissionsReportPermission) ? [{
@@ -520,7 +541,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         // Show if user has any academic management permission
         return hasClassesPermission || hasSubjectsPermission || hasTeacherSubjectAssignmentsPermission;
       }
-      
+
       if (item.titleKey === 'timetables') {
         // Show if user has access to timetables or schedule slots
         return hasTimetablesPermission || hasScheduleSlotsPermission;
@@ -538,7 +559,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasStaffReportsPermission, hasAttendanceSessionsPermission, hasAttendanceReportsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasLibraryPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {
