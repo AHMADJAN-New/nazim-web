@@ -2247,3 +2247,109 @@ export const courseStudentDisciplineRecordsApi = {
   delete: async (id: string) => apiClient.delete(`/course-student-discipline-records/${id}`),
   resolve: async (id: string) => apiClient.post(`/course-student-discipline-records/${id}/resolve`),
 };
+
+// Course Attendance Sessions API
+export const courseAttendanceSessionsApi = {
+  list: async (params?: {
+    course_id?: string;
+    method?: string;
+    status?: string;
+    date_from?: string;
+    date_to?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/course-attendance-sessions', params),
+
+  get: async (id: string) => apiClient.get(`/course-attendance-sessions/${id}`),
+
+  create: async (data: {
+    course_id: string;
+    session_date: string;
+    session_title?: string | null;
+    method?: string;
+    remarks?: string | null;
+  }) => apiClient.post('/course-attendance-sessions', data),
+
+  update: async (id: string, data: {
+    session_date?: string;
+    session_title?: string | null;
+    method?: string;
+    remarks?: string | null;
+  }) => apiClient.put(`/course-attendance-sessions/${id}`, data),
+
+  delete: async (id: string) => apiClient.delete(`/course-attendance-sessions/${id}`),
+
+  roster: async (params: { course_id: string }) =>
+    apiClient.get('/course-attendance-sessions/roster', params),
+
+  markRecords: async (id: string, data: {
+    records: Array<{
+      course_student_id: string;
+      status: 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
+      note?: string | null;
+    }>;
+  }) => apiClient.post(`/course-attendance-sessions/${id}/records`, data),
+
+  scan: async (id: string, data: { code: string }) =>
+    apiClient.post(`/course-attendance-sessions/${id}/scan`, data),
+
+  scans: async (id: string, params?: { limit?: number }) =>
+    apiClient.get(`/course-attendance-sessions/${id}/scans`, params),
+
+  close: async (id: string) => apiClient.post(`/course-attendance-sessions/${id}/close`),
+
+  report: async (params?: {
+    course_id?: string;
+    course_student_id?: string;
+    date_from?: string;
+    date_to?: string;
+  }) => apiClient.get('/course-attendance-sessions/report', params),
+};
+
+// Course Documents API
+export const courseDocumentsApi = {
+  list: async (params?: {
+    course_id?: string;
+    course_student_id?: string;
+    document_type?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/course-documents', params),
+
+  get: async (id: string) => apiClient.get(`/course-documents/${id}`),
+
+  create: async (data: FormData) => apiClient.post('/course-documents', data),
+
+  delete: async (id: string) => apiClient.delete(`/course-documents/${id}`),
+
+  download: async (id: string) =>
+    apiClient.requestFile(`/course-documents/${id}/download`, { method: 'GET' }),
+};
+
+// Certificate Templates API
+export const certificateTemplatesApi = {
+  list: async (params?: { active_only?: boolean }) =>
+    apiClient.get('/certificate-templates', params),
+
+  get: async (id: string) => apiClient.get(`/certificate-templates/${id}`),
+
+  create: async (data: FormData) => apiClient.post('/certificate-templates', data),
+
+  update: async (id: string, data: FormData) => {
+    // Laravel doesn't support PUT with FormData, use POST with _method
+    data.append('_method', 'PUT');
+    return apiClient.post(`/certificate-templates/${id}`, data);
+  },
+
+  delete: async (id: string) => apiClient.delete(`/certificate-templates/${id}`),
+
+  setDefault: async (id: string) => apiClient.post(`/certificate-templates/${id}/set-default`),
+
+  getBackgroundUrl: (id: string) => `${API_URL}/certificate-templates/${id}/background`,
+
+  generateCertificate: async (courseStudentId: string, data: { template_id: string }) =>
+    apiClient.post(`/certificate-templates/generate/${courseStudentId}`, data),
+
+  getCertificateData: async (courseStudentId: string) =>
+    apiClient.get(`/certificate-templates/certificate-data/${courseStudentId}`),
+};
