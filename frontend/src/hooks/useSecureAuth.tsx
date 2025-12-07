@@ -122,7 +122,6 @@ export const useSecureAuth = () => {
 
   return {
     secureSignIn,
-    secureSignUp,
     validatePasswordStrength,
     loading
   };

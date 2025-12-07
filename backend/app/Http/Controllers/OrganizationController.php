@@ -83,43 +83,6 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Public endpoint for signup form - returns minimal organization data only
-     * Returns only id, name, and slug (no sensitive settings or other data)
-     */
-    public function publicList(Request $request)
-    {
-        try {
-            // Use DB facade directly to avoid Eloquent issues if table doesn't exist
-            $organizations = DB::connection('pgsql')
-                ->table('organizations')
-                ->whereNull('deleted_at')
-                ->select('id', 'name', 'slug') // Only return minimal data needed for signup
-                ->orderBy('name')
-                ->get();
-
-            return response()->json($organizations);
-        } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('OrganizationController::publicList database error: ' . $e->getMessage(), [
-                'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            // If table doesn't exist, return empty array instead of error
-            if (str_contains($e->getMessage(), 'does not exist') || str_contains($e->getMessage(), 'relation')) {
-                return response()->json([]);
-            }
-
-            return response()->json(['error' => 'Failed to fetch organizations'], 500);
-        } catch (\Exception $e) {
-            Log::error('OrganizationController::publicList error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json(['error' => 'Failed to fetch organizations'], 500);
-        }
-    }
-
-    /**
      * Store a newly created organization
      */
     public function store(Request $request)

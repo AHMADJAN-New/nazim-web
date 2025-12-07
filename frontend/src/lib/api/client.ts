@@ -309,17 +309,6 @@ export const authApi = {
     return response;
   },
 
-  register: async (data: {
-    email: string;
-    password: string;
-    password_confirmation: string;
-    full_name: string;
-    organization_id?: string;
-  }) => {
-    const response = await apiClient.post<{ user: any; token: string }>('/auth/register', data);
-    apiClient.setToken(response.token);
-    return response;
-  },
 
   logout: async () => {
     await apiClient.post('/auth/logout');
@@ -352,11 +341,6 @@ export const authApi = {
 export const organizationsApi = {
   list: async (params?: { organization_id?: string }) => {
     return apiClient.get('/organizations', params);
-  },
-
-  // Public endpoint for signup form (no authentication required)
-  publicList: async () => {
-    return apiClient.get('/organizations/public');
   },
 
   get: async (id: string) => {

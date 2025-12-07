@@ -51,6 +51,7 @@ use App\Http\Controllers\CourseAttendanceSessionController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\CourseDocumentController;
 use App\Http\Controllers\CertificateTemplateController;
+use App\Http\Controllers\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,7 +60,6 @@ use App\Http\Controllers\CertificateTemplateController;
 */
 
 // Public routes
-Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::get('/leave-requests/scan/{token}', [LeaveRequestController::class, 'scanPublic']);
 
@@ -68,9 +68,6 @@ Route::get('/leave-requests/scan/{token}', [LeaveRequestController::class, 'scan
 // Consider protecting if aggregate data is sensitive
 Route::get('/stats/students-count', [StatsController::class, 'studentsCount']);
 Route::get('/stats/staff-count', [StatsController::class, 'staffCount']);
-
-// Public organizations endpoint (for signup form - returns minimal data only)
-Route::get('/organizations/public', [OrganizationController::class, 'publicList']);
 
 // Protected routes
 Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
@@ -311,4 +308,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/leave-requests/{id}/approve', [LeaveRequestController::class, 'approve']);
     Route::post('/leave-requests/{id}/reject', [LeaveRequestController::class, 'reject']);
     Route::apiResource('leave-requests', LeaveRequestController::class);
+
+    // Dashboard
+    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 });
