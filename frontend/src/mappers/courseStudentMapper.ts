@@ -46,7 +46,7 @@ export const mapCourseStudentApiToDomain = (student: Api.CourseStudent): CourseS
 export const mapCourseStudentDomainToInsert = (student: Partial<CourseStudent>): Api.CourseStudentInsert => ({
   organization_id: student.organizationId!,
   course_id: student.courseId!,
-  admission_no: student.admissionNo!,
+  admission_no: student.admissionNo && student.admissionNo.trim() !== '' ? student.admissionNo : null, // Allow null/undefined for auto-generation
   registration_date: student.registrationDate!,
   completion_status: student.completionStatus,
   fee_paid: student.feePaid,

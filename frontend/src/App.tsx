@@ -47,6 +47,9 @@ import {
   ShortTermCourses,
   CourseStudents,
   CourseStudentReports,
+  CourseDashboard,
+  CourseAttendance,
+  CertificateTemplates,
   StaffReport,
   HostelManagement,
   HostelReports,
@@ -413,6 +416,27 @@ const App = () => (
                       <PermissionRoute permission="course_students.report">
                         <Suspense fallback={<PageSkeleton />}>
                           <CourseStudentReports />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/course-dashboard" element={
+                      <PermissionRoute permission="short_term_courses.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <CourseDashboard />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/course-attendance" element={
+                      <PermissionRoute permission="course_attendance.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <CourseAttendance />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/certificate-templates" element={
+                      <PermissionRoute permission="certificate_templates.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <CertificateTemplates />
                         </Suspense>
                       </PermissionRoute>
                     } />

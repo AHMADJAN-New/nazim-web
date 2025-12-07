@@ -185,6 +185,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasShortTermCoursesPermission = useHasPermission('short_term_courses.read');
   const hasCourseStudentsPermission = useHasPermission('course_students.read');
   const hasCourseReportsPermission = useHasPermission('course_students.report');
+  const hasCourseAttendancePermission = useHasPermission('course_attendance.read');
+  const hasCertificateTemplatesPermission = useHasPermission('certificate_templates.read');
   const hasStaffTypesPermission = useHasPermission('staff_types.read');
   const hasScheduleSlotsPermission = useHasPermission('schedule_slots.read');
   const hasTeacherSubjectAssignmentsPermission = useHasPermission('teacher_subject_assignments.read');
@@ -218,7 +220,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
         url: "/dashboard",
         icon: Home,
         badge: null,
-        priority: 1
+        priority: 0.5
       },
       ...((hasStaffPermission || hasStaffReportsPermission) ? [{
         titleKey: "staffManagement",
@@ -287,12 +289,18 @@ export const SmartSidebar = memo(function SmartSidebar() {
           },
         ],
       }] : []),
-      ...((hasShortTermCoursesPermission || hasCourseStudentsPermission || hasCourseReportsPermission) ? [{
+      ...((hasShortTermCoursesPermission || hasCourseStudentsPermission || hasCourseReportsPermission || hasCourseAttendancePermission || hasCertificateTemplatesPermission) ? [{
         titleKey: "shortTermCourses",
         icon: GraduationCap,
         badge: null,
         priority: 3.045,
         children: [
+          ...(hasShortTermCoursesPermission ? [{
+            title: "Course Dashboard",
+            titleKey: "courseDashboard",
+            url: "/course-dashboard",
+            icon: LucideIcons.LayoutDashboard,
+          }] : []),
           ...(hasShortTermCoursesPermission ? [{
             title: "Courses",
             titleKey: "courses",
@@ -304,6 +312,18 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "courseStudents",
             url: "/course-students",
             icon: GraduationCap,
+          }] : []),
+          ...(hasCourseAttendancePermission ? [{
+            title: "Course Attendance",
+            titleKey: "courseAttendance",
+            url: "/course-attendance",
+            icon: UserCheck,
+          }] : []),
+          ...(hasCertificateTemplatesPermission ? [{
+            title: "Certificate Templates",
+            titleKey: "certificateTemplates",
+            url: "/certificate-templates",
+            icon: LucideIcons.Award,
           }] : []),
           ...(hasCourseReportsPermission ? [{
             title: "Course Reports",

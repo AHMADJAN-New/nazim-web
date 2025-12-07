@@ -45,7 +45,7 @@ export interface CourseStudent {
 export interface CourseStudentInsert {
   organization_id: string;
   course_id: string;
-  admission_no: string;
+  admission_no?: string | null;
   registration_date: string;
   completion_status?: CourseCompletionStatus;
   fee_paid?: boolean;

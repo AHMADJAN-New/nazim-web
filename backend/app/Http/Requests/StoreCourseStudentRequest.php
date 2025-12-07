@@ -17,7 +17,7 @@ class StoreCourseStudentRequest extends FormRequest
             'organization_id' => ['required', 'uuid'],
             'course_id' => ['required', 'uuid'],
             'main_student_id' => ['nullable', 'uuid'],
-            'admission_no' => ['required', 'string', 'max:255'],
+            'admission_no' => ['nullable', 'string', 'max:255'],
             'registration_date' => ['required', 'date'],
             'completion_status' => ['nullable', 'in:enrolled,completed,dropped,failed'],
             'completion_date' => ['nullable', 'date'],

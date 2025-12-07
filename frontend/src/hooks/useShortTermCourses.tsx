@@ -29,6 +29,7 @@ export const useShortTermCourses = (organizationId?: string, usePaginated?: bool
         params.per_page = pageSize;
       }
       const apiCourses = await shortTermCoursesApi.list(params);
+      
       if (usePaginated && apiCourses && typeof apiCourses === 'object' && 'data' in apiCourses) {
         const paginated = apiCourses as any;
         const courses = (paginated.data as Api.ShortTermCourse[]).map(mapShortTermCourseApiToDomain);
@@ -47,7 +48,13 @@ export const useShortTermCourses = (organizationId?: string, usePaginated?: bool
         };
         return { data: courses, meta } as PaginatedResponse<Api.ShortTermCourse>;
       }
-      return (apiCourses as Api.ShortTermCourse[]).map(mapShortTermCourseApiToDomain);
+      
+      // Non-paginated response
+      const coursesArray = Array.isArray(apiCourses) 
+        ? (apiCourses as Api.ShortTermCourse[]).map(mapShortTermCourseApiToDomain)
+        : [];
+      
+      return coursesArray;
     },
     enabled: !!user && !!profile,
     staleTime: 5 * 60 * 1000,
@@ -76,7 +83,7 @@ export const useShortTermCourses = (organizationId?: string, usePaginated?: bool
     };
   }
 
-  return { data: data as ShortTermCourse[] | undefined, isLoading, error, refetch };
+  return { data: (data as ShortTermCourse[] | undefined) || [], isLoading, error, refetch };
 };
 
 export const useCreateShortTermCourse = () => {
@@ -91,9 +98,18 @@ export const useCreateShortTermCourse = () => {
       const apiCourse = await shortTermCoursesApi.create(insertPayload);
       return mapShortTermCourseApiToDomain(apiCourse as Api.ShortTermCourse);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Course saved successfully');
-      void queryClient.invalidateQueries({ queryKey: ['short-term-courses'] });
+      // Invalidate all short-term-courses queries (with any pagination params)
+      await queryClient.invalidateQueries({ 
+        queryKey: ['short-term-courses'],
+        exact: false 
+      });
+      // Refetch all matching queries
+      await queryClient.refetchQueries({ 
+        queryKey: ['short-term-courses'],
+        exact: false 
+      });
     },
     onError: (error: Error) => toast.error(error.message || 'Could not save course'),
   });
@@ -107,9 +123,16 @@ export const useUpdateShortTermCourse = () => {
       const apiCourse = await shortTermCoursesApi.update(id, updatePayload);
       return mapShortTermCourseApiToDomain(apiCourse as Api.ShortTermCourse);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Course updated');
-      void queryClient.invalidateQueries({ queryKey: ['short-term-courses'] });
+      await queryClient.invalidateQueries({ 
+        queryKey: ['short-term-courses'],
+        exact: false 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: ['short-term-courses'],
+        exact: false 
+      });
     },
     onError: (error: Error) => toast.error(error.message || 'Could not update course'),
   });
@@ -122,9 +145,16 @@ export const useDeleteShortTermCourse = () => {
       await shortTermCoursesApi.delete(id);
       return id;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Course deleted');
-      void queryClient.invalidateQueries({ queryKey: ['short-term-courses'] });
+      await queryClient.invalidateQueries({ 
+        queryKey: ['short-term-courses'],
+        exact: false 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: ['short-term-courses'],
+        exact: false 
+      });
     },
     onError: (error: Error) => toast.error(error.message || 'Could not delete course'),
   });
@@ -137,9 +167,16 @@ export const useCloseCourse = () => {
       const apiCourse = await shortTermCoursesApi.close(id);
       return mapShortTermCourseApiToDomain(apiCourse as Api.ShortTermCourse);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Course closed');
-      void queryClient.invalidateQueries({ queryKey: ['short-term-courses'] });
+      await queryClient.invalidateQueries({ 
+        queryKey: ['short-term-courses'],
+        exact: false 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: ['short-term-courses'],
+        exact: false 
+      });
     },
     onError: (error: Error) => toast.error(error.message || 'Could not close course'),
   });
@@ -152,9 +189,16 @@ export const useReopenCourse = () => {
       const apiCourse = await shortTermCoursesApi.reopen(id);
       return mapShortTermCourseApiToDomain(apiCourse as Api.ShortTermCourse);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Course reopened');
-      void queryClient.invalidateQueries({ queryKey: ['short-term-courses'] });
+      await queryClient.invalidateQueries({ 
+        queryKey: ['short-term-courses'],
+        exact: false 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: ['short-term-courses'],
+        exact: false 
+      });
     },
     onError: (error: Error) => toast.error(error.message || 'Could not reopen course'),
   });

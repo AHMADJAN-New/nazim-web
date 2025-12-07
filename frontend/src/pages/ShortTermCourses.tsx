@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useReactTable, getCoreRowModel, type PaginationState } from '@tanstack/react-table';
+import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,11 +28,20 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
   useShortTermCourses,
   useDeleteShortTermCourse,
   useCloseCourse,
   useReopenCourse,
 } from '@/hooks/useShortTermCourses';
+import { useCourseStudents } from '@/hooks/useCourseStudents';
+import type { CourseStudent } from '@/types/domain/courseStudent';
 import { ShortTermCourseFormDialog } from '@/components/short-term-courses/ShortTermCourseFormDialog';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
 import {
@@ -48,7 +58,6 @@ import {
   Unlock,
   Eye,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 const statusTone: Record<string, string> = {
   draft: 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-200',
@@ -78,7 +87,16 @@ const CourseRow = ({ course, onEdit, onDelete, onClose, onReopen, onViewStudents
       </TableCell>
       <TableCell className="hidden md:table-cell">{course.instructorName || '—'}</TableCell>
       <TableCell className="hidden md:table-cell">
-        <div className="text-sm">{course.startDate || '—'} → {course.endDate || '—'}</div>
+        <div className="text-sm">
+          {course.startDate 
+            ? format(new Date(course.startDate), 'MMM d, yyyy')
+            : '—'
+          } → {
+          course.endDate 
+            ? format(new Date(course.endDate), 'MMM d, yyyy')
+            : '—'
+          }
+        </div>
         {course.durationDays && <div className="text-xs text-muted-foreground">{course.durationDays} days</div>}
       </TableCell>
       <TableCell>
@@ -129,7 +147,6 @@ const CourseRow = ({ course, onEdit, onDelete, onClose, onReopen, onViewStudents
 };
 
 const ShortTermCourses = () => {
-  const navigate = useNavigate();
   const [status, setStatus] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -138,12 +155,20 @@ const ShortTermCourses = () => {
   const [editingCourse, setEditingCourse] = useState<ShortTermCourse | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<ShortTermCourse | null>(null);
+  const [studentsPanelOpen, setStudentsPanelOpen] = useState(false);
+  const [selectedCourseForStudents, setSelectedCourseForStudents] = useState<ShortTermCourse | null>(null);
 
   const { data: courses, isLoading, pagination, setPage, setPageSize, page, pageSize, refetch } = useShortTermCourses(undefined, true);
 
   const deleteMutation = useDeleteShortTermCourse();
   const closeMutation = useCloseCourse();
   const reopenMutation = useReopenCourse();
+
+  // Fetch students for the selected course when panel is open
+  const { data: courseStudents = [], isLoading: studentsLoading } = useCourseStudents(
+    selectedCourseForStudents?.id,
+    false
+  );
 
   const filteredCourses = useMemo(() => {
     return (courses || []).filter((course) => {
@@ -218,7 +243,8 @@ const ShortTermCourses = () => {
   };
 
   const handleViewStudents = (course: ShortTermCourse) => {
-    navigate(`/course-students?courseId=${course.id}`);
+    setSelectedCourseForStudents(course);
+    setStudentsPanelOpen(true);
   };
 
   return (
@@ -380,7 +406,13 @@ const ShortTermCourses = () => {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         course={editingCourse}
-        onSuccess={() => refetch()}
+        onSuccess={() => {
+          // Reset to page 1 to see the newly created course
+          if (!editingCourse) {
+            setPage(1);
+          }
+          refetch();
+        }}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -403,6 +435,193 @@ const ShortTermCourses = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Students Side Panel */}
+      <Sheet open={studentsPanelOpen} onOpenChange={setStudentsPanelOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader className="pb-4 border-b">
+            <SheetTitle className="text-xl font-bold">
+              {selectedCourseForStudents ? selectedCourseForStudents.name : 'Course Students'}
+            </SheetTitle>
+            {selectedCourseForStudents && (
+              <SheetDescription className="mt-2">
+                View and manage students enrolled in this course
+              </SheetDescription>
+            )}
+          </SheetHeader>
+
+          {/* Course Info & Stats */}
+          {selectedCourseForStudents && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Total Students</p>
+                  <p className="text-lg font-semibold">{courseStudents.length}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Enrolled</p>
+                  <p className="text-lg font-semibold text-blue-600">
+                    {courseStudents.filter(s => s.completionStatus === 'enrolled').length}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Completed</p>
+                  <p className="text-lg font-semibold text-emerald-600">
+                    {courseStudents.filter(s => s.completionStatus === 'completed').length}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Certificates</p>
+                  <p className="text-lg font-semibold text-purple-600">
+                    {courseStudents.filter(s => s.certificateIssued).length}
+                  </p>
+                </div>
+              </div>
+              {selectedCourseForStudents.startDate && selectedCourseForStudents.endDate && (
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    Course Period: {format(new Date(selectedCourseForStudents.startDate), 'MMM d, yyyy')} → {format(new Date(selectedCourseForStudents.endDate), 'MMM d, yyyy')}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Students List */}
+          <div className="mt-6 space-y-4">
+            {studentsLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <LoadingSpinner />
+                <p className="mt-4 text-sm text-muted-foreground">Loading students...</p>
+              </div>
+            ) : courseStudents.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-6 mb-4">
+                  <Users className="h-12 w-12 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No students enrolled</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  This course doesn't have any enrolled students yet. Add students to get started.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {courseStudents.map((student: CourseStudent) => {
+                  const statusColors: Record<string, { bg: string; text: string }> = {
+                    enrolled: { bg: 'bg-blue-50 dark:bg-blue-950', text: 'text-blue-700 dark:text-blue-300' },
+                    completed: { bg: 'bg-emerald-50 dark:bg-emerald-950', text: 'text-emerald-700 dark:text-emerald-300' },
+                    dropped: { bg: 'bg-red-50 dark:bg-red-950', text: 'text-red-700 dark:text-red-300' },
+                    failed: { bg: 'bg-amber-50 dark:bg-amber-950', text: 'text-amber-700 dark:text-amber-300' },
+                  };
+
+                  const statusStyle = statusColors[student.completionStatus] || { bg: 'bg-muted', text: 'text-muted-foreground' };
+
+                  return (
+                    <Card key={student.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                      <div className={`${statusStyle.bg} px-4 py-3 border-b`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-base truncate">{student.fullName}</h4>
+                            {student.fatherName && (
+                              <p className="text-sm text-muted-foreground mt-0.5">Father: {student.fatherName}</p>
+                            )}
+                          </div>
+                          <div className="ml-4 flex flex-col gap-1.5 items-end">
+                            <Badge
+                              variant="outline"
+                              className={`${statusStyle.text} border-current font-medium`}
+                            >
+                              {student.completionStatus.charAt(0).toUpperCase() + student.completionStatus.slice(1)}
+                            </Badge>
+                            {student.certificateIssued && (
+                              <Badge variant="outline" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 border-purple-300 dark:border-purple-700">
+                                <span className="flex items-center gap-1">
+                                  <span>✓</span> Certificate
+                                </span>
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          {/* Student Details Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Admission No:</span>
+                              <span className="ml-2 font-medium">{student.admissionNo}</span>
+                            </div>
+                            {student.registrationDate && (
+                              <div>
+                                <span className="text-muted-foreground">Registered:</span>
+                                <span className="ml-2 font-medium">
+                                  {format(new Date(student.registrationDate), 'MMM d, yyyy')}
+                                </span>
+                              </div>
+                            )}
+                            {student.completionDate && (
+                              <div>
+                                <span className="text-muted-foreground">Completed:</span>
+                                <span className="ml-2 font-medium">
+                                  {format(new Date(student.completionDate), 'MMM d, yyyy')}
+                                </span>
+                              </div>
+                            )}
+                            {student.grade && (
+                              <div>
+                                <span className="text-muted-foreground">Grade:</span>
+                                <span className="ml-2 font-medium">{student.grade}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Guardian Info */}
+                          {student.guardianName && (
+                            <div className="pt-2 border-t">
+                              <p className="text-sm">
+                                <span className="text-muted-foreground">Guardian:</span>
+                                <span className="ml-2 font-medium">{student.guardianName}</span>
+                                {student.guardianRelation && (
+                                  <span className="text-muted-foreground ml-2">({student.guardianRelation})</span>
+                                )}
+                                {student.guardianPhone && (
+                                  <span className="text-muted-foreground ml-2">• {student.guardianPhone}</span>
+                                )}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Fee Information */}
+                          {student.feePaid && student.feeAmount && (
+                            <div className="pt-2 border-t">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Fee Payment</span>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700">
+                                    Paid
+                                  </Badge>
+                                  <span className="text-sm font-semibold">
+                                    {student.feeAmount.toLocaleString()} AFN
+                                  </span>
+                                </div>
+                              </div>
+                              {student.feePaidDate && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Paid on: {format(new Date(student.feePaidDate), 'MMM d, yyyy')}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

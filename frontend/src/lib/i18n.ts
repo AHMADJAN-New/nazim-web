@@ -80,6 +80,13 @@ export interface TranslationKeys {
     authentication: string;
     academicSettings: string;
     academicManagement: string;
+    shortTermCourses: string;
+    courses: string;
+    courseDashboard: string;
+    courseStudents: string;
+    courseAttendance: string;
+    certificateTemplates: string;
+    courseReports: string;
   };
 
   attendancePage: {
@@ -875,6 +882,13 @@ const en: TranslationKeys = {
     authentication: 'Authentication',
     academicSettings: 'Academic Settings',
     academicManagement: 'Academic Management',
+    shortTermCourses: 'Short Term Courses',
+    courses: 'Courses',
+    courseDashboard: 'Course Dashboard',
+    courseStudents: 'Course Students',
+    courseAttendance: 'Course Attendance',
+    certificateTemplates: 'Certificate Templates',
+    courseReports: 'Course Reports',
   },
   attendancePage: {
     title: 'Attendance',
@@ -1660,6 +1674,13 @@ const ps: TranslationKeys = {
     authentication: 'د تصدیق مدیریت',
     academicSettings: 'د علمي ترتیباتو',
     academicManagement: 'د علمي مدیریت',
+    shortTermCourses: 'لنډمهاله کورسونه',
+    courses: 'کورسونه',
+    courseDashboard: 'د کورس کنټرول پینل',
+    courseStudents: 'د کورس زده کوونکي',
+    courseAttendance: 'د کورس حاضري',
+    certificateTemplates: 'د سند قالبونه',
+    courseReports: 'د کورس راپورونه',
   },
   attendancePage: {
     title: 'حاضري',
@@ -2442,6 +2463,13 @@ const fa: TranslationKeys = {
     authentication: 'مدیریت احراز هویت',
     academicSettings: 'تنظیمات آکادمیک',
     academicManagement: 'مدیریت آکادمیک',
+    shortTermCourses: 'دوره‌های کوتاه مدت',
+    courses: 'دوره‌ها',
+    courseDashboard: 'داشبورد دوره',
+    courseStudents: 'دانش‌آموزان دوره',
+    courseAttendance: 'حاضری دوره',
+    certificateTemplates: 'قالب‌های گواهینامه',
+    courseReports: 'گزارش‌های دوره',
   },
   attendancePage: {
     title: 'حاضری',
@@ -3228,6 +3256,13 @@ const ar: TranslationKeys = {
     authentication: 'إدارة المصادقة',
     academicSettings: 'الإعدادات الأكاديمية',
     academicManagement: 'الإدارة الأكاديمية',
+    shortTermCourses: 'الدورات قصيرة الأجل',
+    courses: 'الدورات',
+    courseDashboard: 'لوحة تحكم الدورة',
+    courseStudents: 'طلاب الدورة',
+    courseAttendance: 'حضور الدورة',
+    certificateTemplates: 'قوالب الشهادات',
+    courseReports: 'تقارير الدورة',
   },
   attendancePage: {
     title: 'الحضور',

@@ -28,7 +28,7 @@ interface CourseStudentFormDialogProps {
 
 interface StudentFormValues {
   courseId: string;
-  admissionNo: string;
+  admissionNo?: string;
   registrationDate: string;
   fullName: string;
   fatherName: string;
@@ -170,7 +170,7 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
   const onSubmit = async (values: StudentFormValues) => {
     const payload: Partial<CourseStudent> = {
       courseId: values.courseId,
-      admissionNo: values.admissionNo,
+      admissionNo: values.admissionNo || undefined, // Let backend auto-generate if empty
       registrationDate: values.registrationDate,
       fullName: values.fullName,
       fatherName: values.fatherName || null,
@@ -262,12 +262,15 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
                 </div>
 
                 <div>
-                  <Label htmlFor="admissionNo">Admission No</Label>
+                  <Label htmlFor="admissionNo">Admission No (Optional)</Label>
                   <Input
                     id="admissionNo"
-                    placeholder="Auto-generated if empty"
+                    placeholder="Leave empty to auto-generate"
                     {...register('admissionNo')}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Will be auto-generated if left empty
+                  </p>
                 </div>
 
                 <div>

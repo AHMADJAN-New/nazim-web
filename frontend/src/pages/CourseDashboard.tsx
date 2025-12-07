@@ -52,13 +52,13 @@ interface CourseStats {
 
 export default function CourseDashboard() {
   const navigate = useNavigate();
-  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('all');
   const [reportType, setReportType] = useState<'enrollment' | 'attendance' | 'completion'>('enrollment');
 
   const { data: courses = [], isLoading: coursesLoading } = useShortTermCourses();
   const { data: allStudents = [] } = useCourseStudents();
   const { data: attendanceReport } = useCourseAttendanceReport(
-    selectedCourseId ? { courseId: selectedCourseId } : undefined
+    selectedCourseId && selectedCourseId !== 'all' ? { courseId: selectedCourseId } : undefined
   );
 
   // Calculate overall stats
@@ -84,7 +84,7 @@ export default function CourseDashboard() {
 
   // Get course-specific students
   const courseStudents = useMemo(() => {
-    if (!selectedCourseId) return allStudents;
+    if (!selectedCourseId || selectedCourseId === 'all') return allStudents;
     return allStudents.filter((s) => s.courseId === selectedCourseId);
   }, [selectedCourseId, allStudents]);
 
@@ -287,7 +287,7 @@ export default function CourseDashboard() {
                   <SelectValue placeholder="All courses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Courses</SelectItem>
+                  <SelectItem value="all">All Courses</SelectItem>
                   {courses.map((course) => (
                     <SelectItem key={course.id} value={course.id}>
                       {course.name}

@@ -32,6 +32,9 @@ export const StudentAdmissionsReport = lazy(() => import('@/pages/StudentAdmissi
 export const ShortTermCourses = lazy(() => import('@/pages/ShortTermCourses'));
 export const CourseStudents = lazy(() => import('@/pages/CourseStudents'));
 export const CourseStudentReports = lazy(() => import('@/pages/CourseStudentReports'));
+export const CourseDashboard = lazy(() => import('@/pages/CourseDashboard'));
+export const CourseAttendance = lazy(() => import('@/pages/CourseAttendance'));
+export const CertificateTemplates = lazy(() => import('@/pages/CertificateTemplates'));
 export const StaffReport = lazy(() => import('@/pages/StaffReport'));
 export const HostelManagement = lazy(() => import('@/pages/HostelManagement').then(module => ({ default: module.HostelManagement })));
 export const HostelReports = lazy(() => import('@/pages/HostelReports').then(module => ({ default: module.HostelReports })));

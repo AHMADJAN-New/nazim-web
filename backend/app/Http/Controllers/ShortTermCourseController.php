@@ -49,7 +49,20 @@ class ShortTermCourseController extends Controller
             $query->whereDate('end_date', '<=', $request->end_date);
         }
 
-        return response()->json($query->orderBy('start_date', 'desc')->get());
+        $query->orderBy('start_date', 'desc');
+
+        // Support pagination if page and per_page are provided
+        if ($request->has('page') && $request->has('per_page')) {
+            $perPage = (int) $request->input('per_page', 10);
+            $allowedPerPage = [10, 25, 50, 100];
+            if (!in_array($perPage, $allowedPerPage, true)) {
+                $perPage = 10;
+            }
+            $courses = $query->paginate($perPage);
+            return response()->json($courses);
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(StoreShortTermCourseRequest $request)

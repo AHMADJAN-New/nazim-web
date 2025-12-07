@@ -73,9 +73,54 @@ class CourseStudentController extends Controller
         $validated = $request->validated();
         $validated['organization_id'] = $profile->organization_id;
 
-        $student = CourseStudent::create($validated);
+        // Auto-generate admission number if not provided or empty
+        if (empty($validated['admission_no']) || trim($validated['admission_no'] ?? '') === '') {
+            $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->find($validated['course_id']);
+            
+            if ($course) {
+                $validated['admission_no'] = $this->generateAdmissionNumber($course);
+            } else {
+                // Fallback if course not found
+                $validated['admission_no'] = 'CS-' . now()->format('Y') . '-' . str_pad((string)(CourseStudent::where('organization_id', $profile->organization_id)->count() + 1), 3, '0', STR_PAD_LEFT);
+            }
+        }
 
-        return response()->json($student, 201);
+        // Sanitize UTF-8 strings to prevent encoding errors
+        $validated = $this->sanitizeUtf8($validated);
+
+        try {
+            $student = CourseStudent::create($validated);
+            
+            // Reload to get all attributes with proper encoding
+            $student = $student->fresh();
+            
+            // Convert model to array and ensure UTF-8 encoding
+            $studentData = $student->toArray();
+            $studentData = $this->ensureUtf8Encoding($studentData);
+            
+            // Use JSON encoding flags that handle UTF-8 properly
+            $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+            if (defined('JSON_INVALID_UTF8_IGNORE')) {
+                $jsonFlags |= JSON_INVALID_UTF8_IGNORE;
+            }
+            
+            return response()->json($studentData, 201, [
+                'Content-Type' => 'application/json; charset=utf-8'
+            ], $jsonFlags);
+        } catch (\Exception $e) {
+            Log::error('[CourseStudentController] Error creating course student', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'validated' => $validated,
+            ]);
+            
+            return response()->json([
+                'error' => 'Failed to create course student',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function show(Request $request, string $id)
@@ -440,5 +485,48 @@ class CourseStudentController extends Controller
         $sequence = CourseStudent::where('course_id', $course->id)->count() + 1;
         $year = $course->start_date ? $course->start_date->format('Y') : now()->format('Y');
         return sprintf('CS-%s-%s-%03d', strtoupper(substr($course->name, 0, 3)), $year, $sequence);
+    }
+
+    /**
+     * Sanitize UTF-8 strings in validated data to prevent encoding errors
+     */
+    private function sanitizeUtf8(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if (is_string($value)) {
+                // Remove invalid UTF-8 characters and ensure proper encoding
+                $value = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+                // Remove any remaining invalid UTF-8 sequences
+                $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value);
+                // Ensure valid UTF-8
+                if (!mb_check_encoding($value, 'UTF-8')) {
+                    $value = mb_convert_encoding($value, 'UTF-8', 'ISO-8859-1');
+                }
+                // Trim whitespace
+                $data[$key] = trim($value);
+            } elseif (is_array($value)) {
+                $data[$key] = $this->sanitizeUtf8($value);
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * Ensure all string values in array are properly UTF-8 encoded
+     */
+    private function ensureUtf8Encoding(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if (is_string($value)) {
+                // Check and fix encoding
+                if (!mb_check_encoding($value, 'UTF-8')) {
+                    $value = mb_convert_encoding($value, 'UTF-8', mb_detect_encoding($value, mb_detect_order(), true) ?: 'UTF-8');
+                }
+                $data[$key] = $value;
+            } elseif (is_array($value)) {
+                $data[$key] = $this->ensureUtf8Encoding($value);
+            }
+        }
+        return $data;
     }
 }

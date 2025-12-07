@@ -323,7 +323,7 @@ export function ProfileManagement() {
                           </SelectTrigger>
                           <SelectContent>
                             {rolesLoading ? (
-                              <SelectItem value="" disabled>Loading roles...</SelectItem>
+                              <SelectItem value="loading" disabled>Loading roles...</SelectItem>
                             ) : (
                               roles.map((role) => (
                                 <SelectItem key={role.name} value={role.name}>
