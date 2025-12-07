@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { courseStudentsApi } from '@/lib/api/client';
 import type * as Api from '@/types/api/courseStudent';
@@ -29,9 +29,14 @@ export const useCourseStudents = (courseId?: string, usePaginated?: boolean) => 
         params.per_page = pageSize;
       }
       const apiStudents = await courseStudentsApi.list(params);
+      
+      if (import.meta.env.DEV) {
+        console.log('[useCourseStudents] API response:', apiStudents);
+      }
+      
       if (usePaginated && apiStudents && typeof apiStudents === 'object' && 'data' in apiStudents) {
         const paginated = apiStudents as any;
-        const students = (paginated.data as Api.CourseStudent[]).map(mapCourseStudentApiToDomain);
+        const students = (paginated.data || []).map(mapCourseStudentApiToDomain);
         const meta: PaginationMeta = {
           current_page: paginated.current_page,
           from: paginated.from,
@@ -47,7 +52,15 @@ export const useCourseStudents = (courseId?: string, usePaginated?: boolean) => 
         };
         return { data: students, meta } as PaginatedResponse<Api.CourseStudent>;
       }
-      return (apiStudents as Api.CourseStudent[]).map(mapCourseStudentApiToDomain);
+      // Handle non-paginated response
+      if (Array.isArray(apiStudents)) {
+        return apiStudents.map(mapCourseStudentApiToDomain);
+      }
+      // If response is not an array, return empty array
+      if (import.meta.env.DEV) {
+        console.warn('[useCourseStudents] Unexpected response format:', apiStudents);
+      }
+      return [];
     },
     enabled: !!user && !!profile,
     staleTime: 5 * 60 * 1000,
@@ -91,11 +104,13 @@ export const useCreateCourseStudent = () => {
       const apiStudent = await courseStudentsApi.create(insertPayload);
       return mapCourseStudentApiToDomain(apiStudent as Api.CourseStudent);
     },
-    onSuccess: () => {
-      toast.success('Course student saved');
-      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+    onSuccess: async () => {
+      showToast.success('toast.courseStudents.saved');
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['course-students'] });
+      await queryClient.refetchQueries({ queryKey: ['course-students'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not save course student'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseStudents.saveFailed'),
   });
 };
 
@@ -107,11 +122,13 @@ export const useUpdateCourseStudent = () => {
       const apiStudent = await courseStudentsApi.update(id, updatePayload);
       return mapCourseStudentApiToDomain(apiStudent as Api.CourseStudent);
     },
-    onSuccess: () => {
-      toast.success('Course student updated');
-      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+    onSuccess: async () => {
+      showToast.success('toast.courseStudents.updated');
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['course-students'] });
+      await queryClient.refetchQueries({ queryKey: ['course-students'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not update course student'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseStudents.updateFailed'),
   });
 };
 
@@ -122,11 +139,13 @@ export const useDeleteCourseStudent = () => {
       await courseStudentsApi.delete(id);
       return id;
     },
-    onSuccess: () => {
-      toast.success('Course student deleted');
-      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+    onSuccess: async () => {
+      showToast.success('toast.courseStudents.deleted');
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['course-students'] });
+      await queryClient.refetchQueries({ queryKey: ['course-students'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not delete course student'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseStudents.deleteFailed'),
   });
 };
 
@@ -135,13 +154,27 @@ export const useEnrollFromMain = () => {
   return useMutation({
     mutationFn: async (data: { course_id: string; main_student_ids: string[]; registration_date: string; fee_paid?: boolean; fee_amount?: number }) => {
       const result = await courseStudentsApi.enrollFromMain(data);
-      return (result as Api.CourseStudent[]).map(mapCourseStudentApiToDomain);
+      
+      // Handle case where backend returns error object instead of array
+      if (result && typeof result === 'object' && 'error' in result && !Array.isArray(result)) {
+        throw new Error((result as any).error || 'Failed to enroll students');
+      }
+      
+      // Ensure result is an array
+      const studentsArray = Array.isArray(result) ? result : [];
+      return studentsArray.map(mapCourseStudentApiToDomain);
     },
-    onSuccess: (students) => {
-      toast.success(`${students.length} student(s) enrolled successfully`);
-      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+    onSuccess: async (students) => {
+      if (students && students.length > 0) {
+        showToast.success(`${students.length} student(s) enrolled successfully`);
+      } else {
+        showToast.warning('toast.courseStudents.noStudentsEnrolled');
+      }
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['course-students'] });
+      await queryClient.refetchQueries({ queryKey: ['course-students'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not enroll students'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseStudents.enrollFailed'),
   });
 };
 
@@ -153,11 +186,11 @@ export const useCopyToMain = () => {
       return result as { course_student_id: string; new_student_id: string };
     },
     onSuccess: () => {
-      toast.success('Student copied to main students');
+      showToast.success('toast.courseStudents.copiedToMain');
       void queryClient.invalidateQueries({ queryKey: ['course-students'] });
       void queryClient.invalidateQueries({ queryKey: ['students'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not copy student'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseStudents.copyFailed'),
   });
 };
 
@@ -168,11 +201,13 @@ export const useMarkCompleted = () => {
       const result = await courseStudentsApi.markCompleted(id);
       return mapCourseStudentApiToDomain(result as Api.CourseStudent);
     },
-    onSuccess: () => {
-      toast.success('Student marked as completed');
-      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+    onSuccess: async () => {
+      showToast.success('toast.courseStudents.markedCompleted');
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['course-students'] });
+      await queryClient.refetchQueries({ queryKey: ['course-students'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not mark student as completed'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseStudents.markCompletedFailed'),
   });
 };
 
@@ -183,11 +218,13 @@ export const useMarkDropped = () => {
       const result = await courseStudentsApi.markDropped(id);
       return mapCourseStudentApiToDomain(result as Api.CourseStudent);
     },
-    onSuccess: () => {
-      toast.success('Student marked as dropped');
-      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+    onSuccess: async () => {
+      showToast.success('toast.courseStudents.markedDropped');
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['course-students'] });
+      await queryClient.refetchQueries({ queryKey: ['course-students'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not mark student as dropped'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseStudents.markDroppedFailed'),
   });
 };
 
@@ -198,10 +235,12 @@ export const useIssueCertificate = () => {
       const result = await courseStudentsApi.issueCertificate(id);
       return mapCourseStudentApiToDomain(result as Api.CourseStudent);
     },
-    onSuccess: () => {
-      toast.success('Certificate issued successfully');
-      void queryClient.invalidateQueries({ queryKey: ['course-students'] });
+    onSuccess: async () => {
+      showToast.success('toast.courseStudents.certificateIssued');
+      // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['course-students'] });
+      await queryClient.refetchQueries({ queryKey: ['course-students'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not issue certificate'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseStudents.certificateIssueFailed'),
   });
 };

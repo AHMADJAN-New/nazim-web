@@ -73,10 +73,10 @@ class CourseDocumentController extends Controller
         $validated = $request->validate([
             'course_id' => 'required|uuid|exists:short_term_courses,id',
             'course_student_id' => 'nullable|uuid|exists:course_students,id',
-            'document_type' => 'required|string|in:syllabus,material,assignment,certificate,receipt,other',
+            'document_type' => 'required|string|in:syllabus,material,assignment,certificate,receipt,attendance,grade,other',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'file' => 'required|file|max:10240', // 10MB max
+            'file' => 'required|file|max:10240', // 10MB max - accepts all file types (PDF, Word, Excel, PowerPoint, Images, Text, Archives, etc.)
         ]);
 
         // Verify course belongs to organization

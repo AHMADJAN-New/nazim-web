@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { organizationsApi } from '@/lib/api/client';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import type * as OrganizationApi from '@/types/api/organization';
@@ -80,10 +80,10 @@ export const useCreateOrganization = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
       queryClient.invalidateQueries({ queryKey: ['accessible-organizations'] });
-      toast.success('Organization created successfully');
+      showToast.success('toast.organizationCreated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create organization');
+      showToast.error(error.message || 'toast.organizationCreateFailed');
     },
   });
 };
@@ -115,10 +115,10 @@ export const useUpdateOrganization = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
       queryClient.invalidateQueries({ queryKey: ['accessible-organizations'] });
-      toast.success('Organization updated successfully');
+      showToast.success('toast.organizationUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update organization');
+      showToast.error(error.message || 'toast.organizationUpdateFailed');
     },
   });
 };
@@ -133,10 +133,10 @@ export const useDeleteOrganization = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
       queryClient.invalidateQueries({ queryKey: ['accessible-organizations'] });
-      toast.success('Organization deleted successfully');
+      showToast.success('toast.organizationDeleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete organization');
+      showToast.error(error.message || 'toast.organizationDeleteFailed');
     },
   });
 };

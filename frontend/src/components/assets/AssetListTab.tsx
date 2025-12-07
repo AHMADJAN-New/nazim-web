@@ -157,7 +157,6 @@ export default function AssetListTab() {
       status: asset.status,
       category: asset.category || '',
       categoryId: asset.categoryId || null,
-      categoryId: asset.categoryId || null,
       serialNumber: asset.serialNumber || '',
       purchasePrice: asset.purchasePrice ?? null,
       totalCopies: asset.totalCopies ?? 1,

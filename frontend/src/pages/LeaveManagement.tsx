@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { leaveRequestsApi, studentAdmissionsApi } from '@/lib/api/client';
 import type { LeaveRequest, LeaveRequestInsert } from '@/types/domain/leave';
 import { mapLeaveRequestApiToDomain } from '@/mappers/leaveMapper';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-800 border-amber-200',
@@ -32,6 +33,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function LeaveManagement() {
+  const { t } = useLanguage();
   const { data: profile } = useProfile();
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('');

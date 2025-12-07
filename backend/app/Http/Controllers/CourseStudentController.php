@@ -49,6 +49,23 @@ class CourseStudentController extends Controller
             $query->where('completion_status', $request->completion_status);
         }
 
+        // Support pagination if page and per_page parameters are provided
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = $request->input('per_page', 25);
+            // Validate per_page is one of allowed values
+            $allowedPerPage = [10, 25, 50, 100];
+            if (!in_array((int)$perPage, $allowedPerPage)) {
+                $perPage = 25; // Default to 25 if invalid
+            }
+            
+            $students = $query->orderBy('registration_date', 'desc')
+                ->paginate((int)$perPage);
+            
+            // Return paginated response in Laravel's standard format
+            return response()->json($students);
+        }
+
+        // Return all results if no pagination requested (backward compatibility)
         return response()->json($query->orderBy('registration_date', 'desc')->get());
     }
 
@@ -343,6 +360,25 @@ class CourseStudentController extends Controller
                 ->find($mainStudentId);
 
             if (!$mainStudent) {
+                Log::warning('[CourseStudentController] Student not found for enrollment', [
+                    'student_id' => $mainStudentId,
+                    'course_id' => $course->id,
+                ]);
+                continue;
+            }
+            
+            // Check if student is already enrolled in this course
+            $existingEnrollment = CourseStudent::where('course_id', $course->id)
+                ->where('main_student_id', $mainStudent->id)
+                ->whereNull('deleted_at')
+                ->first();
+                
+            if ($existingEnrollment) {
+                Log::info('[CourseStudentController] Student already enrolled in course', [
+                    'student_id' => $mainStudentId,
+                    'course_id' => $course->id,
+                    'course_student_id' => $existingEnrollment->id,
+                ]);
                 continue;
             }
 
@@ -391,10 +427,34 @@ class CourseStudentController extends Controller
             $data['fee_paid'] = $validated['fee_paid'] ?? false;
             $data['fee_amount'] = $validated['fee_amount'] ?? null;
 
-            $created[] = CourseStudent::create($data);
+            try {
+                $courseStudent = CourseStudent::create($data);
+                $created[] = $courseStudent->fresh();
+            } catch (\Exception $e) {
+                Log::error('[CourseStudentController] Failed to create course student', [
+                    'error' => $e->getMessage(),
+                    'student_id' => $mainStudentId,
+                    'course_id' => $course->id,
+                ]);
+                continue;
+            }
         }
 
-        return response()->json($created, 201);
+        if (empty($created)) {
+            return response()->json([
+                'error' => 'No students were enrolled. They may already be enrolled in this course or not found.',
+                'enrolled_count' => 0,
+            ], 200);
+        }
+
+        // Ensure proper UTF-8 encoding in response
+        // Convert to array to ensure proper encoding
+        $responseData = array_map(function($item) {
+            return $item->toArray();
+        }, $created);
+        
+        return response()->json($responseData, 201)
+            ->header('Content-Type', 'application/json; charset=utf-8');
     }
 
     public function copyToMain(CopyToMainRequest $request, string $id)
@@ -478,6 +538,144 @@ class CourseStudentController extends Controller
             'course_student_id' => $student->id,
             'new_student_id' => $newStudent->id,
         ]);
+    }
+
+    public function enrollToNewCourse(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($user);
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('course_students.create')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('[CourseStudentController] permission check failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $request->validate([
+            'course_id' => 'required|uuid|exists:short_term_courses,id',
+            'registration_date' => 'nullable|date',
+            'fee_paid' => 'nullable|boolean',
+            'fee_amount' => 'nullable|numeric|min:0',
+        ]);
+
+        // Get the existing course student
+        $existingStudent = CourseStudent::where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->find($id);
+
+        if (!$existingStudent) {
+            return response()->json(['error' => 'Course student not found'], 404);
+        }
+
+        // Check if the new course exists
+        $newCourse = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->find($request->course_id);
+
+        if (!$newCourse) {
+            return response()->json(['error' => 'Course not found'], 404);
+        }
+
+        // Check if student is already enrolled in this course
+        $existingEnrollment = CourseStudent::where('course_id', $request->course_id)
+            ->whereNull('deleted_at')
+            ->where(function($query) use ($existingStudent) {
+                // Check by main_student_id if available
+                if ($existingStudent->main_student_id) {
+                    $query->where('main_student_id', $existingStudent->main_student_id);
+                }
+                // Also check by name matching (for students without main_student_id)
+                $query->orWhere(function($q) use ($existingStudent) {
+                    $q->where('full_name', $existingStudent->full_name)
+                      ->where('father_name', $existingStudent->father_name);
+                });
+            })
+            ->first();
+
+        if ($existingEnrollment) {
+            return response()->json([
+                'error' => 'Student is already enrolled in this course',
+                'existing_enrollment_id' => $existingEnrollment->id,
+            ], 409);
+        }
+
+        // Create new enrollment with same personal info but new course
+        $newEnrollmentData = $existingStudent->only([
+            'organization_id',
+            'main_student_id',
+            'full_name',
+            'father_name',
+            'grandfather_name',
+            'mother_name',
+            'gender',
+            'birth_year',
+            'birth_date',
+            'age',
+            'orig_province',
+            'orig_district',
+            'orig_village',
+            'curr_province',
+            'curr_district',
+            'curr_village',
+            'nationality',
+            'preferred_language',
+            'guardian_name',
+            'guardian_relation',
+            'guardian_phone',
+            'home_address',
+            'picture_path',
+            'is_orphan',
+            'disability_status',
+        ]);
+
+        $newEnrollmentData['course_id'] = $request->course_id;
+        $newEnrollmentData['registration_date'] = $request->registration_date ?? now()->toDateString();
+        $newEnrollmentData['completion_status'] = 'enrolled';
+        $newEnrollmentData['fee_paid'] = $request->fee_paid ?? $existingStudent->fee_paid ?? false;
+        $newEnrollmentData['fee_amount'] = $request->fee_amount ?? $existingStudent->fee_amount ?? null;
+        $newEnrollmentData['fee_paid_date'] = $request->fee_paid ? now() : null;
+
+        // Generate new admission number for the new course
+        $newEnrollmentData['admission_no'] = $this->generateAdmissionNumber($newCourse);
+
+        // Sanitize UTF-8 strings
+        $newEnrollmentData = $this->sanitizeUtf8($newEnrollmentData);
+
+        try {
+            $newEnrollment = CourseStudent::create($newEnrollmentData);
+            $newEnrollment = $newEnrollment->fresh();
+
+            $studentData = $newEnrollment->toArray();
+            $studentData = $this->ensureUtf8Encoding($studentData);
+
+            $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+            if (defined('JSON_INVALID_UTF8_IGNORE')) {
+                $jsonFlags |= JSON_INVALID_UTF8_IGNORE;
+            }
+
+            return response()->json($studentData, 201, [
+                'Content-Type' => 'application/json; charset=utf-8'
+            ], $jsonFlags);
+        } catch (\Exception $e) {
+            Log::error('[CourseStudentController] Error enrolling student to new course', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'existing_student_id' => $id,
+                'new_course_id' => $request->course_id,
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to enroll student to new course',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     private function generateAdmissionNumber(ShortTermCourse $course): string

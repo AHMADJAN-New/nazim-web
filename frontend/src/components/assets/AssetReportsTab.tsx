@@ -10,17 +10,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { isBefore, isAfter } from 'date-fns';
+import { useLanguage } from '@/hooks/useLanguage';
 import type { Asset } from '@/types/domain/asset';
+import type { AssetCategory } from '@/hooks/useAssetCategories';
+import type * as AssetApi from '@/types/api/asset';
 
 export default function AssetReportsTab() {
-  const { assets = [], isLoading: assetsLoading } = useAssets(undefined, false);
+  const { t } = useLanguage();
+  const { assets: assetsData, isLoading: assetsLoading } = useAssets(undefined, false);
+  const assets: Asset[] = (assetsData as Asset[]) || [];
   const { data: stats, isLoading: statsLoading } = useAssetStats();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const isLoading = assetsLoading || statsLoading;
 
-  const { data: assetCategories } = useAssetCategories();
+  const { data: assetCategoriesData } = useAssetCategories();
+  const assetCategories: AssetCategory[] = (assetCategoriesData as AssetCategory[]) || [];
   
   // Get unique categories
   const categories = useMemo(() => {
@@ -42,7 +48,8 @@ export default function AssetReportsTab() {
 
   // Filter assets
   const filteredAssets = useMemo(() => {
-    let filtered = [...assets];
+    if (!assets || assets.length === 0) return [];
+    let filtered: Asset[] = [...assets];
     
     if (statusFilter !== 'all') {
       filtered = filtered.filter((a) => a.status === statusFilter);
@@ -66,7 +73,6 @@ export default function AssetReportsTab() {
     
     // Total value for all copies (price × copies)
     const getEffectiveCopies = (asset: Asset): number => {
-      if (asset.deletedAt) return 0;
       const copies = asset.totalCopies ?? asset.totalCopiesCount ?? 1;
       return copies > 0 ? copies : 1;
     };
@@ -192,7 +198,7 @@ export default function AssetReportsTab() {
         <div className="flex items-center gap-3">
           <BarChart3 className="h-8 w-8" />
           <div>
-            <h1 className="text-2xl font-semibold">Asset Reports</h1>
+            <h1 className="text-2xl font-semibold">{t('assets.assetReports')}</h1>
             <p className="text-sm text-muted-foreground">Analytics and insights for your assets</p>
           </div>
         </div>
@@ -203,7 +209,7 @@ export default function AssetReportsTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Total Assets</CardDescription>
-            <CardTitle className="text-2xl">{stats?.asset_count ?? calculatedStats.totalAssets}</CardTitle>
+            <CardTitle className="text-2xl">{(stats as AssetApi.AssetStats | undefined)?.asset_count ?? calculatedStats.totalAssets}</CardTitle>
             <div className="text-xs text-muted-foreground mt-1 space-y-1">
               <div>{calculatedStats.totalCopies} total copies</div>
               <div className="flex items-center gap-2">

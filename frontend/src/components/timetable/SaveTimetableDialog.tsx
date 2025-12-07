@@ -98,11 +98,13 @@ export function SaveTimetableDialog({
 			);
 			
 			if (invalidEntries.length > 0) {
-				toast.error(`Cannot save: ${invalidEntries.length} entry/entries have missing required fields.`);
+				toast.error((t('timetable.saveValidationError') || 'Cannot save: {count} entry/entries have missing required fields.').replace('{count}', invalidEntries.length.toString()));
 				return;
 			}
 
-			console.log('Saving timetable with entries:', data.entries.length);
+			if (import.meta.env.DEV) {
+				console.log('Saving timetable with entries:', data.entries.length);
+			}
 			
 			await createTimetable({
 				name: data.name.trim(),
@@ -125,12 +127,14 @@ export function SaveTimetableDialog({
 			onOpenChange(false);
 		} catch (error: any) {
 			// Log detailed error for debugging
-			console.error('Failed to save timetable:', error);
-			console.error('Error details:', {
-				message: error?.message,
-				response: error?.response,
-				stack: error?.stack
-			});
+			if (import.meta.env.DEV) {
+				console.error('Failed to save timetable:', error);
+				console.error('Error details:', {
+					message: error?.message,
+					response: error?.response,
+					stack: error?.stack
+				});
+			}
 			
 			// Extract error message from various possible locations
 			const errorMessage = 
@@ -139,7 +143,7 @@ export function SaveTimetableDialog({
 				error?.message || 
 				'Unknown error occurred';
 			
-			toast.error(`Failed to save timetable: ${errorMessage}`);
+			toast.error((t('timetable.saveFailed') || 'Failed to save timetable: {error}').replace('{error}', errorMessage));
 			// Don't close dialog on error so user can retry
 		}
 	};

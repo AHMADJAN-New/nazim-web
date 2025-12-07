@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { assetsApi } from '@/lib/api/client';
 import type * as AssetApi from '@/types/api/asset';
 import type { Asset, AssetAssignmentDomain, AssetMaintenanceDomain } from '@/types/domain/asset';
@@ -154,9 +154,9 @@ export const useCreateAsset = () => {
       await queryClient.invalidateQueries({ queryKey: ['assets'] });
       await queryClient.refetchQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
-      toast.success('Asset saved successfully');
+      showToast.success('toast.assets.saved');
     },
-    onError: (error: Error) => toast.error(error.message || 'Failed to save asset'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.assets.saveFailed'),
   });
 };
 
@@ -173,9 +173,9 @@ export const useUpdateAsset = () => {
       if (variables?.id) {
         queryClient.invalidateQueries({ queryKey: ['assets', variables.id] });
       }
-      toast.success('Asset updated');
+      showToast.success('toast.assets.updated');
     },
-    onError: (error: Error) => toast.error(error.message || 'Failed to update asset'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.assets.updateFailed'),
   });
 };
 
@@ -186,9 +186,9 @@ export const useDeleteAsset = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
-      toast.success('Asset removed');
+      showToast.success('toast.assets.removed');
     },
-    onError: (error: Error) => toast.error(error.message || 'Failed to remove asset'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.assets.removeFailed'),
   });
 };
 
@@ -211,9 +211,9 @@ export const useAssignAsset = () => {
       }
       // Invalidate stats as well
       await queryClient.invalidateQueries({ queryKey: ['asset-stats'], exact: false });
-      toast.success('Assignment saved');
+      showToast.success('toast.assets.assignmentSaved');
     },
-    onError: (error: Error) => toast.error(error.message || 'Failed to assign asset'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.assets.assignFailed'),
   });
 };
 
@@ -259,9 +259,9 @@ export const useUpdateAssignment = () => {
       
       // Invalidate stats as well
       await queryClient.invalidateQueries({ queryKey: ['asset-stats'], exact: false });
-      toast.success('Assignment updated');
+      showToast.success('toast.assets.assignmentUpdated');
     },
-    onError: (error: Error) => toast.error(error.message || 'Failed to update assignment'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.assets.assignmentUpdateFailed'),
   });
 };
 
@@ -290,9 +290,9 @@ export const useRemoveAssignment = () => {
       await queryClient.invalidateQueries({ queryKey: ['asset-assignments'], exact: false });
       // Invalidate stats as well
       await queryClient.invalidateQueries({ queryKey: ['asset-stats'], exact: false });
-      toast.success('Assignment removed');
+      showToast.success('toast.assets.assignmentRemoved');
     },
-    onError: (error: Error) => toast.error(error.message || 'Failed to remove assignment'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.assets.assignmentRemoveFailed'),
   });
 };
 
@@ -322,9 +322,9 @@ export const useLogMaintenance = () => {
       }
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
-      toast.success('Maintenance saved');
+      showToast.success('toast.assets.maintenanceSaved');
     },
-    onError: (error: Error) => toast.error(error.message || 'Failed to log maintenance'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.assets.maintenanceSaveFailed'),
   });
 };
 
@@ -339,9 +339,9 @@ export const useUpdateMaintenance = () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['asset-maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
-      toast.success('Maintenance updated');
+      showToast.success('toast.assets.maintenanceUpdated');
     },
-    onError: (error: Error) => toast.error(error.message || 'Failed to update maintenance'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.assets.maintenanceUpdateFailed'),
   });
 };
 
@@ -353,9 +353,9 @@ export const useRemoveMaintenance = () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['asset-maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['asset-stats'] });
-      toast.success('Maintenance removed');
+      showToast.success('toast.assets.maintenanceRemoved');
     },
-    onError: (error: Error) => toast.error(error.message || 'Failed to remove maintenance record'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.assets.maintenanceRemoveFailed'),
   });
 };
 

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { apiClient } from '@/lib/api/client';
 
 export interface UploadStudentPictureArgs {
@@ -31,10 +31,10 @@ export const useStudentPictureUpload = () => {
             };
         },
         onSuccess: () => {
-            toast.success('Picture uploaded successfully');
+            showToast.success('toast.pictureUploaded');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to upload picture');
+            showToast.error(error.message || 'toast.pictureUploadFailed');
         },
     });
 };

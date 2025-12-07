@@ -45,6 +45,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const schoolSchema = z.object({
   school_name: z.string().min(1, 'School name is required').max(255, 'School name must be 255 characters or less'),
@@ -69,6 +70,7 @@ const schoolSchema = z.object({
 type SchoolFormData = z.infer<typeof schoolSchema>;
 
 export function SchoolsManagement() {
+  const { t } = useLanguage();
   const hasCreatePermission = useHasPermission('school_branding.create');
   const hasUpdatePermission = useHasPermission('school_branding.update');
   const hasDeletePermission = useHasPermission('school_branding.delete');
@@ -298,12 +300,12 @@ export function SchoolsManagement() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <SchoolIcon className="h-5 w-5" />
-              Schools Management
+              {t('schools.title')}
             </CardTitle>
-            <CardDescription>Manage schools and branding for organizations</CardDescription>
+            <CardDescription>{t('schools.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <LoadingSpinner size="lg" text="Loading schools..." />
+            <LoadingSpinner size="lg" text={t('schools.loadingSchools')} />
           </CardContent>
         </Card>
       </div>
@@ -318,14 +320,14 @@ export function SchoolsManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <SchoolIcon className="h-5 w-5" />
-                Schools Management
+                {t('schools.title')}
               </CardTitle>
-              <CardDescription>Manage schools and branding for organizations</CardDescription>
+              <CardDescription>{t('schools.subtitle')}</CardDescription>
             </div>
             {hasCreatePermission && (
               <Button onClick={() => handleOpenDialog()}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add School
+                {t('schools.addSchool')}
               </Button>
             )}
           </div>
@@ -336,7 +338,7 @@ export function SchoolsManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by school name, email..."
+                placeholder={t('schools.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -349,20 +351,20 @@ export function SchoolsManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>School Name</TableHead>
-                  <TableHead>Arabic Name</TableHead>
-                  <TableHead>Pashto Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('schools.schoolName')}</TableHead>
+                  <TableHead>{t('schools.arabicName')}</TableHead>
+                  <TableHead>{t('schools.pashtoName')}</TableHead>
+                  <TableHead>{t('schools.email')}</TableHead>
+                  <TableHead>{t('schools.phone')}</TableHead>
+                  <TableHead>{t('schools.status')}</TableHead>
+                  <TableHead className="text-right">{t('schools.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredSchools.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground">
-                      {searchQuery ? 'No schools found matching your search' : 'No schools found. Add your first school.'}
+                      {searchQuery ? t('schools.noSchoolsFound') : t('schools.noSchoolsMessage')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -376,7 +378,7 @@ export function SchoolsManagement() {
                         <TableCell>{school.schoolPhone || '-'}</TableCell>
                         <TableCell>
                           <Badge variant={school.isActive ? 'default' : 'secondary'}>
-                            {school.isActive ? 'Active' : 'Inactive'}
+                            {school.isActive ? t('schools.active') : t('schools.inactive')}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -388,7 +390,7 @@ export function SchoolsManagement() {
                                 setSelectedSchool(school.id);
                                 setIsDetailsDialogOpen(true);
                               }}
-                              title="View Details"
+                              title={t('schools.viewDetails')}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -397,7 +399,7 @@ export function SchoolsManagement() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleOpenDialog(school.id)}
-                                title="Edit"
+                                title={t('schools.edit')}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -407,7 +409,7 @@ export function SchoolsManagement() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteClick(school.id)}
-                                title="Delete"
+                                title={t('schools.delete')}
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
@@ -430,22 +432,22 @@ export function SchoolsManagement() {
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>
-                {selectedSchool ? 'Edit School' : 'Add New School'}
+                {selectedSchool ? t('schools.editSchool') : t('schools.addNewSchool')}
               </DialogTitle>
               <DialogDescription>
                 {selectedSchool
-                  ? 'Update the school information below.'
-                  : 'Enter the school details to add a new school.'}
+                  ? t('schools.updateSchoolInfo')
+                  : t('schools.enterSchoolDetails')}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="school_name">School Name *</Label>
+                  <Label htmlFor="school_name">{t('schools.schoolNameRequired')}</Label>
                   <Input
                     id="school_name"
                     {...register('school_name')}
-                    placeholder="Enter school name"
+                    placeholder={t('schools.enterSchoolName')}
                   />
                   {errors.school_name && (
                     <p className="text-sm text-destructive">{errors.school_name.message}</p>
@@ -454,22 +456,22 @@ export function SchoolsManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="school_name_arabic">Arabic Name</Label>
+                  <Label htmlFor="school_name_arabic">{t('schools.arabicName')}</Label>
                   <Input
                     id="school_name_arabic"
                     {...register('school_name_arabic')}
-                    placeholder="الاسم العربي"
+                    placeholder={t('schools.enterArabicName')}
                   />
                   {errors.school_name_arabic && (
                     <p className="text-sm text-destructive">{errors.school_name_arabic.message}</p>
                   )}
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="school_name_pashto">Pashto Name</Label>
+                  <Label htmlFor="school_name_pashto">{t('schools.pashtoName')}</Label>
                   <Input
                     id="school_name_pashto"
                     {...register('school_name_pashto')}
-                    placeholder="د پښتو نوم"
+                    placeholder={t('schools.enterPashtoName')}
                   />
                   {errors.school_name_pashto && (
                     <p className="text-sm text-destructive">{errors.school_name_pashto.message}</p>
@@ -477,46 +479,46 @@ export function SchoolsManagement() {
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="school_address">Address</Label>
+                <Label htmlFor="school_address">{t('schools.address')}</Label>
                 <Input
                   id="school_address"
                   {...register('school_address')}
-                  placeholder="Enter school address"
+                  placeholder={t('schools.enterSchoolAddress')}
                 />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="school_phone">Phone</Label>
+                  <Label htmlFor="school_phone">{t('schools.phone')}</Label>
                   <Input
                     id="school_phone"
                     {...register('school_phone')}
-                    placeholder="+1234567890"
+                    placeholder={t('schools.enterPhone')}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="school_email">Email</Label>
+                  <Label htmlFor="school_email">{t('schools.email')}</Label>
                   <Input
                     id="school_email"
                     type="email"
                     {...register('school_email')}
-                    placeholder="school@example.com"
+                    placeholder={t('schools.enterEmail')}
                   />
                   {errors.school_email && (
                     <p className="text-sm text-destructive">{errors.school_email.message}</p>
                   )}
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="school_website">Website</Label>
+                  <Label htmlFor="school_website">{t('schools.website')}</Label>
                   <Input
                     id="school_website"
                     {...register('school_website')}
-                    placeholder="https://example.com"
+                    placeholder={t('schools.enterWebsite')}
                   />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="primary_color">Primary Color</Label>
+                  <Label htmlFor="primary_color">{t('schools.primaryColor')}</Label>
                   <div className="flex gap-2">
                     <Input
                       id="primary_color"
@@ -531,7 +533,7 @@ export function SchoolsManagement() {
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="secondary_color">Secondary Color</Label>
+                  <Label htmlFor="secondary_color">{t('schools.secondaryColor')}</Label>
                   <div className="flex gap-2">
                     <Input
                       id="secondary_color"
@@ -546,7 +548,7 @@ export function SchoolsManagement() {
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="accent_color">Accent Color</Label>
+                  <Label htmlFor="accent_color">{t('schools.accentColor')}</Label>
                   <div className="flex gap-2">
                     <Input
                       id="accent_color"
@@ -562,7 +564,7 @@ export function SchoolsManagement() {
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="font_family">Font Family</Label>
+                <Label htmlFor="font_family">{t('schools.fontFamily')}</Label>
                 <Input
                   id="font_family"
                   {...register('font_family')}
@@ -571,19 +573,19 @@ export function SchoolsManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="calendar_preference">Calendar Preference</Label>
+                  <Label htmlFor="calendar_preference">{t('schools.calendarPreference')}</Label>
                   <Controller
                     name="calendar_preference"
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value || 'gregorian'}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select calendar" />
+                          <SelectValue placeholder={t('schools.selectCalendar')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="gregorian">Gregorian</SelectItem>
-                          <SelectItem value="hijri">Hijri</SelectItem>
-                          <SelectItem value="solar">Solar</SelectItem>
+                          <SelectItem value="gregorian">{t('schools.gregorian')}</SelectItem>
+                          <SelectItem value="hijri">{t('schools.hijri')}</SelectItem>
+                          <SelectItem value="solar">{t('schools.solar')}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -592,7 +594,7 @@ export function SchoolsManagement() {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="primary_logo">Primary Logo</Label>
+                  <Label htmlFor="primary_logo">{t('schools.primaryLogo')}</Label>
                   <Input
                     id="primary_logo"
                     type="file"
@@ -607,7 +609,7 @@ export function SchoolsManagement() {
                   )}
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="secondary_logo">Secondary Logo</Label>
+                  <Label htmlFor="secondary_logo">{t('schools.secondaryLogo')}</Label>
                   <Input
                     id="secondary_logo"
                     type="file"
@@ -622,7 +624,7 @@ export function SchoolsManagement() {
                   )}
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="ministry_logo">Ministry Logo</Label>
+                  <Label htmlFor="ministry_logo">{t('schools.ministryLogo')}</Label>
                   <Input
                     id="ministry_logo"
                     type="file"
@@ -639,60 +641,60 @@ export function SchoolsManagement() {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="primary_logo_usage">Primary Logo Usage</Label>
+                  <Label htmlFor="primary_logo_usage">{t('schools.primaryLogoUsage')}</Label>
                   <Controller
                     name="primary_logo_usage"
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value || 'header'}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select usage" />
+                          <SelectValue placeholder={t('schools.selectUsage')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="header">Header</SelectItem>
-                          <SelectItem value="footer">Footer</SelectItem>
-                          <SelectItem value="both">Both</SelectItem>
-                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="header">{t('schools.header')}</SelectItem>
+                          <SelectItem value="footer">{t('schools.footer')}</SelectItem>
+                          <SelectItem value="both">{t('schools.both')}</SelectItem>
+                          <SelectItem value="none">{t('schools.none')}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="secondary_logo_usage">Secondary Logo Usage</Label>
+                  <Label htmlFor="secondary_logo_usage">{t('schools.secondaryLogoUsage')}</Label>
                   <Controller
                     name="secondary_logo_usage"
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value || 'footer'}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select usage" />
+                          <SelectValue placeholder={t('schools.selectUsage')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="header">Header</SelectItem>
-                          <SelectItem value="footer">Footer</SelectItem>
-                          <SelectItem value="both">Both</SelectItem>
-                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="header">{t('schools.header')}</SelectItem>
+                          <SelectItem value="footer">{t('schools.footer')}</SelectItem>
+                          <SelectItem value="both">{t('schools.both')}</SelectItem>
+                          <SelectItem value="none">{t('schools.none')}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="ministry_logo_usage">Ministry Logo Usage</Label>
+                  <Label htmlFor="ministry_logo_usage">{t('schools.ministryLogoUsage')}</Label>
                   <Controller
                     name="ministry_logo_usage"
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value || 'header'}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select usage" />
+                          <SelectValue placeholder={t('schools.selectUsage')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="header">Header</SelectItem>
-                          <SelectItem value="footer">Footer</SelectItem>
-                          <SelectItem value="both">Both</SelectItem>
-                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="header">{t('schools.header')}</SelectItem>
+                          <SelectItem value="footer">{t('schools.footer')}</SelectItem>
+                          <SelectItem value="both">{t('schools.both')}</SelectItem>
+                          <SelectItem value="none">{t('schools.none')}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -710,15 +712,15 @@ export function SchoolsManagement() {
                     />
                   )}
                 />
-                <Label htmlFor="is_active">Active</Label>
+                <Label htmlFor="is_active">{t('schools.active')}</Label>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                Cancel
+                {t('schools.cancel')}
               </Button>
               <Button type="submit" disabled={createSchool.isPending || updateSchool.isPending}>
-                {selectedSchool ? 'Update' : 'Create'} School
+                {selectedSchool ? t('common.update') : t('common.create')} {t('schools.schoolName')}
               </Button>
             </DialogFooter>
           </form>
@@ -731,65 +733,65 @@ export function SchoolsManagement() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <SchoolIcon className="h-5 w-5" />
-              School Details
+              {t('schools.schoolDetails')}
             </DialogTitle>
             <DialogDescription>
-              View complete information about {selectedSchoolData?.schoolName}
+              {t('schools.viewCompleteInfo').replace('{name}', selectedSchoolData?.schoolName || '')}
             </DialogDescription>
           </DialogHeader>
           {selectedSchoolData && (
             <div className="space-y-6 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">School Name</Label>
+                  <Label className="text-muted-foreground">{t('schools.schoolName')}</Label>
                   <p className="font-medium">{selectedSchoolData.schoolName}</p>
                 </div>
                 {selectedSchoolData.schoolNameArabic && (
                   <div>
-                    <Label className="text-muted-foreground">Arabic Name</Label>
+                    <Label className="text-muted-foreground">{t('schools.arabicName')}</Label>
                     <p>{selectedSchoolData.schoolNameArabic}</p>
                   </div>
                 )}
                 {selectedSchoolData.schoolNamePashto && (
                   <div>
-                    <Label className="text-muted-foreground">Pashto Name</Label>
+                    <Label className="text-muted-foreground">{t('schools.pashtoName')}</Label>
                     <p>{selectedSchoolData.schoolNamePashto}</p>
                   </div>
                 )}
                 {selectedSchoolData.schoolAddress && (
                   <div className="col-span-2">
-                    <Label className="text-muted-foreground">Address</Label>
+                    <Label className="text-muted-foreground">{t('schools.address')}</Label>
                     <p>{selectedSchoolData.schoolAddress}</p>
                   </div>
                 )}
                 {selectedSchoolData.schoolPhone && (
                   <div>
-                    <Label className="text-muted-foreground">Phone</Label>
+                    <Label className="text-muted-foreground">{t('schools.phone')}</Label>
                     <p>{selectedSchoolData.schoolPhone}</p>
                   </div>
                 )}
                 {selectedSchoolData.schoolEmail && (
                   <div>
-                    <Label className="text-muted-foreground">Email</Label>
+                    <Label className="text-muted-foreground">{t('schools.email')}</Label>
                     <p>{selectedSchoolData.schoolEmail}</p>
                   </div>
                 )}
                 {selectedSchoolData.schoolWebsite && (
                   <div>
-                    <Label className="text-muted-foreground">Website</Label>
+                    <Label className="text-muted-foreground">{t('schools.website')}</Label>
                     <p>{selectedSchoolData.schoolWebsite}</p>
                   </div>
                 )}
                 <div>
-                  <Label className="text-muted-foreground">Status</Label>
+                  <Label className="text-muted-foreground">{t('schools.status')}</Label>
                   <Badge variant={selectedSchoolData.isActive ? 'default' : 'secondary'}>
-                    {selectedSchoolData.isActive ? 'Active' : 'Inactive'}
+                    {selectedSchoolData.isActive ? t('schools.active') : t('schools.inactive')}
                   </Badge>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">Primary Color</Label>
+                  <Label className="text-muted-foreground">{t('schools.primaryColor')}</Label>
                   <div className="flex items-center gap-2">
                     <div
                       className="w-8 h-8 rounded border"
@@ -799,7 +801,7 @@ export function SchoolsManagement() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Secondary Color</Label>
+                  <Label className="text-muted-foreground">{t('schools.secondaryColor')}</Label>
                   <div className="flex items-center gap-2">
                     <div
                       className="w-8 h-8 rounded border"
@@ -809,7 +811,7 @@ export function SchoolsManagement() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Accent Color</Label>
+                  <Label className="text-muted-foreground">{t('schools.accentColor')}</Label>
                   <div className="flex items-center gap-2">
                     <div
                       className="w-8 h-8 rounded border"
@@ -821,11 +823,11 @@ export function SchoolsManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">Font Family</Label>
+                  <Label className="text-muted-foreground">{t('schools.fontFamily')}</Label>
                   <p>{selectedSchoolData.fontFamily}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Report Font Size</Label>
+                  <Label className="text-muted-foreground">{t('schools.reportFontSize')}</Label>
                   <p>{selectedSchoolData.reportFontSize}</p>
                 </div>
               </div>
@@ -833,14 +835,14 @@ export function SchoolsManagement() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
-              Close
+              {t('schools.close')}
             </Button>
             <Button onClick={() => {
               setIsDetailsDialogOpen(false);
               handleOpenDialog(selectedSchool || undefined);
             }}>
               <Pencil className="h-4 w-4 mr-2" />
-              Edit School
+              {t('schools.editSchoolButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -850,22 +852,18 @@ export function SchoolsManagement() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('schools.deleteConfirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will soft delete the school
-              {selectedSchool &&
-                schools?.find((s) => s.id === selectedSchool) &&
-                ` "${schools.find((s) => s.id === selectedSchool)?.schoolName}"`}
-              . The school will be hidden but can be restored if needed.
+              {t('schools.deleteConfirmDescription').replace('{name}', selectedSchool && schools?.find((s) => s.id === selectedSchool) ? schools.find((s) => s.id === selectedSchool)?.schoolName || '' : '')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('schools.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('schools.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -47,6 +47,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const reportTemplateSchema = z.object({
     template_name: z.string().min(1, 'Template name is required').max(255, 'Template name must be 255 characters or less'),
@@ -67,6 +68,7 @@ const reportTemplateSchema = z.object({
 
 type ReportTemplateFormData = z.infer<typeof reportTemplateSchema>;
 
+// Template types will be translated in the component
 const TEMPLATE_TYPES = [
     { value: 'student_report', label: 'Student Report' },
     { value: 'attendance_report', label: 'Attendance Report' },
@@ -77,6 +79,7 @@ const TEMPLATE_TYPES = [
 ];
 
 export function ReportTemplatesManagement() {
+    const { t } = useLanguage();
     const hasCreatePermission = useHasPermission('reports.create');
     const hasUpdatePermission = useHasPermission('reports.update');
     const hasDeletePermission = useHasPermission('reports.delete');
@@ -219,7 +222,7 @@ export function ReportTemplatesManagement() {
             <div className="container mx-auto p-6">
                 <Card>
                     <CardContent className="p-6">
-                        <LoadingSpinner size="lg" text="Loading report templates..." />
+                        <LoadingSpinner size="lg" text={t('reportTemplates.loadingReportTemplates')} />
                     </CardContent>
                 </Card>
             </div>
@@ -234,14 +237,14 @@ export function ReportTemplatesManagement() {
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 <FileText className="h-5 w-5" />
-                                Report Templates Management
+                                {t('reportTemplates.title')}
                             </CardTitle>
-                            <CardDescription>Manage report template headers and footers</CardDescription>
+                            <CardDescription>{t('reportTemplates.subtitle')}</CardDescription>
                         </div>
                         {hasCreatePermission && (
                             <Button onClick={() => handleOpenDialog()}>
                                 <Plus className="h-4 w-4 mr-2" />
-                                Add Template
+                                {t('reportTemplates.addTemplate')}
                             </Button>
                         )}
                     </div>
@@ -249,15 +252,15 @@ export function ReportTemplatesManagement() {
                 <CardContent>
                     {/* School Filter */}
                     <div className="mb-4">
-                        <Label>Filter by School</Label>
+                        <Label>{t('reportTemplates.filterBySchool')}</Label>
                         <Select value={selectedSchoolId || ''} onValueChange={setSelectedSchoolId}>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select school" />
+                                <SelectValue placeholder={t('reportTemplates.selectSchool')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {schools?.map((school) => (
                                     <SelectItem key={school.id} value={school.id}>
-                                        {school.school_name}
+                                        {school.schoolName}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -269,7 +272,7 @@ export function ReportTemplatesManagement() {
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search templates..."
+                                placeholder={t('reportTemplates.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
@@ -282,19 +285,19 @@ export function ReportTemplatesManagement() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Template Name</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>School</TableHead>
-                                    <TableHead>Default</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>{t('reportTemplates.templateName')}</TableHead>
+                                    <TableHead>{t('reportTemplates.type')}</TableHead>
+                                    <TableHead>{t('reportTemplates.school')}</TableHead>
+                                    <TableHead>{t('reportTemplates.default')}</TableHead>
+                                    <TableHead>{t('reportTemplates.status')}</TableHead>
+                                    <TableHead className="text-right">{t('reportTemplates.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredTemplates.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                            {searchQuery ? 'No templates found matching your search' : 'No templates found. Add your first template.'}
+                                            {searchQuery ? t('reportTemplates.noTemplatesFound') : t('reportTemplates.noTemplatesMessage')}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -305,20 +308,20 @@ export function ReportTemplatesManagement() {
                                                 <TableCell className="font-medium">{template.template_name}</TableCell>
                                                 <TableCell>
                                                     <Badge variant="secondary">
-                                                        {TEMPLATE_TYPES.find(t => t.value === template.template_type)?.label || template.template_type}
+                                                        {TEMPLATE_TYPES.find(tt => tt.value === template.template_type)?.label || template.template_type}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell>{school?.school_name || 'Unknown'}</TableCell>
+                                                <TableCell>{school?.schoolName || t('reportTemplates.unknown')}</TableCell>
                                                 <TableCell>
                                                     {template.is_default ? (
-                                                        <Badge variant="default">Default</Badge>
+                                                        <Badge variant="default">{t('reportTemplates.default')}</Badge>
                                                     ) : (
                                                         <span className="text-muted-foreground">-</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant={template.is_active ? 'default' : 'secondary'}>
-                                                        {template.is_active ? 'Active' : 'Inactive'}
+                                                        {template.is_active ? t('reportTemplates.active') : t('reportTemplates.inactive')}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">
@@ -359,43 +362,46 @@ export function ReportTemplatesManagement() {
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <DialogHeader>
                             <DialogTitle>
-                                {selectedTemplate ? 'Edit Report Template' : 'Add New Report Template'}
+                                {selectedTemplate ? t('reportTemplates.editReportTemplate') : t('reportTemplates.addNewReportTemplate')}
                             </DialogTitle>
                             <DialogDescription>
                                 {selectedTemplate
-                                    ? 'Update the report template configuration below.'
-                                    : 'Configure the header and footer for your report template.'}
+                                    ? t('reportTemplates.updateTemplateConfig')
+                                    : t('reportTemplates.configureHeaderFooter')}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="template_name">Template Name *</Label>
+                                    <Label htmlFor="template_name">{t('reportTemplates.templateNameRequired')}</Label>
                                     <Input
                                         id="template_name"
                                         {...register('template_name')}
-                                        placeholder="Enter template name"
+                                        placeholder={t('reportTemplates.enterTemplateName')}
                                     />
                                     {errors.template_name && (
                                         <p className="text-sm text-destructive">{errors.template_name.message}</p>
                                     )}
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="template_type">Template Type *</Label>
+                                    <Label htmlFor="template_type">{t('reportTemplates.templateTypeRequired')}</Label>
                                     <Controller
                                         name="template_type"
                                         control={control}
                                         render={({ field }) => (
                                             <Select onValueChange={field.onChange} value={field.value || ''}>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Select template type" />
+                                                    <SelectValue placeholder={t('reportTemplates.selectTemplateType')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {TEMPLATE_TYPES.map((type) => (
-                                                        <SelectItem key={type.value} value={type.value}>
-                                                            {type.label}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {TEMPLATE_TYPES.map((type) => {
+                                                        const translationKey = `reportTemplates.${type.value}` as keyof typeof t;
+                                                        return (
+                                                            <SelectItem key={type.value} value={type.value}>
+                                                                {(t as any)(translationKey) || type.label}
+                                                            </SelectItem>
+                                                        );
+                                                    })}
                                                 </SelectContent>
                                             </Select>
                                         )}
@@ -406,19 +412,19 @@ export function ReportTemplatesManagement() {
                                 </div>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="school_id">School *</Label>
+                                <Label htmlFor="school_id">{t('reportTemplates.schoolRequired')}</Label>
                                 <Controller
                                     name="school_id"
                                     control={control}
                                     render={({ field }) => (
                                         <Select onValueChange={field.onChange} value={field.value || ''}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select school" />
+                                                <SelectValue placeholder={t('reportTemplates.selectSchool')} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {schools?.map((school) => (
                                                     <SelectItem key={school.id} value={school.id}>
-                                                        {school.school_name}
+                                                        {school.schoolName}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -430,65 +436,65 @@ export function ReportTemplatesManagement() {
                                 )}
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="header_text">Header Text</Label>
+                                <Label htmlFor="header_text">{t('reportTemplates.headerText')}</Label>
                                 <Textarea
                                     id="header_text"
                                     {...register('header_text')}
-                                    placeholder="Enter header text (plain text)"
+                                    placeholder={t('reportTemplates.enterHeaderText')}
                                     rows={3}
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="header_html">Header HTML</Label>
+                                <Label htmlFor="header_html">{t('reportTemplates.headerHtml')}</Label>
                                 <Textarea
                                     id="header_html"
                                     {...register('header_html')}
-                                    placeholder="Enter header HTML (rich content)"
+                                    placeholder={t('reportTemplates.enterHeaderHtml')}
                                     rows={5}
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="footer_text">Footer Text</Label>
+                                <Label htmlFor="footer_text">{t('reportTemplates.footerText')}</Label>
                                 <Textarea
                                     id="footer_text"
                                     {...register('footer_text')}
-                                    placeholder="Enter footer text (plain text)"
+                                    placeholder={t('reportTemplates.enterFooterText')}
                                     rows={3}
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="footer_html">Footer HTML</Label>
+                                <Label htmlFor="footer_html">{t('reportTemplates.footerHtml')}</Label>
                                 <Textarea
                                     id="footer_html"
                                     {...register('footer_html')}
-                                    placeholder="Enter footer HTML (rich content)"
+                                    placeholder={t('reportTemplates.enterFooterHtml')}
                                     rows={5}
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="report_logo_selection">Report Logo Selection</Label>
+                                    <Label htmlFor="report_logo_selection">{t('reportTemplates.reportLogoSelection')}</Label>
                                     <Controller
                                         name="report_logo_selection"
                                         control={control}
                                         render={({ field }) => (
                                             <Select onValueChange={field.onChange} value={field.value || 'primary'}>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Select logo" />
+                                                    <SelectValue placeholder={t('reportTemplates.selectLogo')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="primary">Primary Logo</SelectItem>
-                                                    <SelectItem value="secondary">Secondary Logo</SelectItem>
-                                                    <SelectItem value="ministry">Ministry Logo</SelectItem>
-                                                    <SelectItem value="all">All Logos</SelectItem>
-                                                    <SelectItem value="none">No Logo</SelectItem>
+                                                    <SelectItem value="primary">{t('reportTemplates.primaryLogo')}</SelectItem>
+                                                    <SelectItem value="secondary">{t('reportTemplates.secondaryLogo')}</SelectItem>
+                                                    <SelectItem value="ministry">{t('reportTemplates.ministryLogo')}</SelectItem>
+                                                    <SelectItem value="all">{t('reportTemplates.allLogos')}</SelectItem>
+                                                    <SelectItem value="none">{t('reportTemplates.noLogo')}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         )}
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="report_font_size">Report Font Size</Label>
+                                    <Label htmlFor="report_font_size">{t('reportTemplates.reportFontSize')}</Label>
                                     <Input
                                         id="report_font_size"
                                         {...register('report_font_size')}
@@ -508,7 +514,7 @@ export function ReportTemplatesManagement() {
                                             />
                                         )}
                                     />
-                                    <Label htmlFor="show_page_numbers">Show Page Numbers</Label>
+                                    <Label htmlFor="show_page_numbers">{t('reportTemplates.showPageNumbers')}</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <Controller
@@ -521,7 +527,7 @@ export function ReportTemplatesManagement() {
                                             />
                                         )}
                                     />
-                                    <Label htmlFor="show_generation_date">Show Generation Date</Label>
+                                    <Label htmlFor="show_generation_date">{t('reportTemplates.showGenerationDate')}</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <Controller
@@ -534,7 +540,7 @@ export function ReportTemplatesManagement() {
                                             />
                                         )}
                                     />
-                                    <Label htmlFor="table_alternating_colors">Table Alternating Colors</Label>
+                                    <Label htmlFor="table_alternating_colors">{t('reportTemplates.tableAlternatingColors')}</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <Controller
@@ -547,7 +553,7 @@ export function ReportTemplatesManagement() {
                                             />
                                         )}
                                     />
-                                    <Label htmlFor="is_default">Set as Default Template</Label>
+                                    <Label htmlFor="is_default">{t('reportTemplates.setAsDefaultTemplate')}</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <Controller
@@ -560,16 +566,16 @@ export function ReportTemplatesManagement() {
                                             />
                                         )}
                                     />
-                                    <Label htmlFor="is_active">Active</Label>
+                                    <Label htmlFor="is_active">{t('reportTemplates.active')}</Label>
                                 </div>
                             </div>
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                                Cancel
+                                {t('reportTemplates.cancel')}
                             </Button>
                             <Button type="submit" disabled={createTemplate.isPending || updateTemplate.isPending}>
-                                {selectedTemplate ? 'Update' : 'Create'} Template
+                                {selectedTemplate ? t('reportTemplates.update') : t('reportTemplates.create')} {t('reportTemplates.templateName')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -580,22 +586,18 @@ export function ReportTemplatesManagement() {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('reportTemplates.deleteConfirmTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action will soft delete the report template
-                            {selectedTemplate &&
-                                templates?.find((t) => t.id === selectedTemplate) &&
-                                ` "${templates.find((t) => t.id === selectedTemplate)?.template_name}"`}
-                            . The template will be hidden but can be restored if needed.
+                            {t('reportTemplates.deleteConfirmDescription').replace('{name}', selectedTemplate && templates?.find((tmpl) => tmpl.id === selectedTemplate) ? templates.find((tmpl) => tmpl.id === selectedTemplate)?.template_name || '' : '')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('reportTemplates.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDeleteConfirm}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            Delete
+                            {t('reportTemplates.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

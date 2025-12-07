@@ -65,21 +65,82 @@ class CertificateTemplateController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'background_image' => 'nullable|image|max:5120', // 5MB max
-            'layout_config' => 'nullable|array',
-            'is_default' => 'boolean',
-            'is_active' => 'boolean',
+            'background_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max
+            'layout_config' => 'nullable|json',
+            'course_id' => 'nullable|uuid|exists:short_term_courses,id',
+            'is_default' => 'nullable|in:0,1,true,false',
+            'is_active' => 'nullable|in:0,1,true,false',
         ]);
+
+        // Convert string booleans to actual booleans
+        if (isset($validated['is_default'])) {
+            $validated['is_default'] = filter_var($validated['is_default'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        }
+        if (isset($validated['is_active'])) {
+            $validated['is_active'] = filter_var($validated['is_active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+        }
+
+        // Decode layout_config JSON string to array if provided
+        $layoutConfig = null;
+        if ($request->filled('layout_config')) {
+            $layoutConfig = json_decode($request->input('layout_config'), true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($layoutConfig)) {
+                return response()->json(['error' => 'The layout config field must be a valid JSON array.'], 422);
+            }
+        }
 
         $backgroundPath = null;
         if ($request->hasFile('background_image')) {
-            $file = $request->file('background_image');
-            $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
-            $backgroundPath = $file->storeAs(
-                'certificate-templates/' . $profile->organization_id,
-                $fileName,
-                'local'
-            );
+            try {
+                $file = $request->file('background_image');
+                
+                // Validate file extension
+                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                $extension = strtolower($file->getClientOriginalExtension());
+                if (!in_array($extension, $allowedExtensions)) {
+                    return response()->json([
+                        'error' => 'The background image must be a valid image file (jpg, jpeg, png, gif, or webp).',
+                        'errors' => ['background_image' => ['Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions)]]
+                    ], 422);
+                }
+
+                // Validate file size (5MB = 5120 KB)
+                if ($file->getSize() > 5 * 1024 * 1024) {
+                    return response()->json([
+                        'error' => 'The background image must not be larger than 5MB.',
+                        'errors' => ['background_image' => ['File size exceeds 5MB limit']]
+                    ], 422);
+                }
+
+                // Ensure storage directory exists
+                $directory = 'certificate-templates/' . $profile->organization_id;
+                if (!Storage::disk('local')->exists($directory)) {
+                    Storage::disk('local')->makeDirectory($directory);
+                }
+
+                $fileName = Str::uuid() . '.' . $extension;
+                $backgroundPath = $file->storeAs(
+                    $directory,
+                    $fileName,
+                    'local'
+                );
+
+                if (!$backgroundPath) {
+                    return response()->json([
+                        'error' => 'The background image failed to upload. Please try again.',
+                        'errors' => ['background_image' => ['File storage failed']]
+                    ], 422);
+                }
+            } catch (\Exception $e) {
+                Log::error('Certificate template background image upload failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                return response()->json([
+                    'error' => 'The background image failed to upload: ' . $e->getMessage(),
+                    'errors' => ['background_image' => [$e->getMessage()]]
+                ], 422);
+            }
         }
 
         // If this is marked as default, unset other defaults
@@ -91,10 +152,11 @@ class CertificateTemplateController extends Controller
 
         $template = CertificateTemplate::create([
             'organization_id' => $profile->organization_id,
+            'course_id' => $validated['course_id'] ?? null,
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'background_image_path' => $backgroundPath,
-            'layout_config' => $validated['layout_config'] ?? CertificateTemplate::getDefaultLayout(),
+            'layout_config' => $layoutConfig ?? CertificateTemplate::getDefaultLayout(),
             'is_default' => $validated['is_default'] ?? false,
             'is_active' => $validated['is_active'] ?? true,
             'created_by' => (string) $user->id,
@@ -151,25 +213,86 @@ class CertificateTemplateController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'background_image' => 'nullable|image|max:5120',
-            'layout_config' => 'nullable|array',
-            'is_default' => 'boolean',
-            'is_active' => 'boolean',
+            'background_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            'layout_config' => 'nullable|json',
+            'course_id' => 'nullable|uuid|exists:short_term_courses,id',
+            'is_default' => 'nullable|in:0,1,true,false',
+            'is_active' => 'nullable|in:0,1,true,false',
         ]);
 
-        if ($request->hasFile('background_image')) {
-            // Delete old background if exists
-            if ($template->background_image_path && Storage::disk('local')->exists($template->background_image_path)) {
-                Storage::disk('local')->delete($template->background_image_path);
-            }
+        // Convert string booleans to actual booleans
+        if (isset($validated['is_default'])) {
+            $validated['is_default'] = filter_var($validated['is_default'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        }
+        if (isset($validated['is_active'])) {
+            $validated['is_active'] = filter_var($validated['is_active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+        }
 
-            $file = $request->file('background_image');
-            $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
-            $validated['background_image_path'] = $file->storeAs(
-                'certificate-templates/' . $profile->organization_id,
-                $fileName,
-                'local'
-            );
+        // Decode layout_config JSON string to array if provided
+        if ($request->filled('layout_config')) {
+            $layoutConfig = json_decode($request->input('layout_config'), true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($layoutConfig)) {
+                return response()->json(['error' => 'The layout config field must be a valid JSON array.'], 422);
+            }
+            $validated['layout_config'] = $layoutConfig;
+        }
+
+        if ($request->hasFile('background_image')) {
+            try {
+                // Delete old background if exists
+                if ($template->background_image_path && Storage::disk('local')->exists($template->background_image_path)) {
+                    Storage::disk('local')->delete($template->background_image_path);
+                }
+
+                $file = $request->file('background_image');
+                
+                // Validate file extension
+                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                $extension = strtolower($file->getClientOriginalExtension());
+                if (!in_array($extension, $allowedExtensions)) {
+                    return response()->json([
+                        'error' => 'The background image must be a valid image file (jpg, jpeg, png, gif, or webp).',
+                        'errors' => ['background_image' => ['Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions)]]
+                    ], 422);
+                }
+
+                // Validate file size (5MB = 5120 KB)
+                if ($file->getSize() > 5 * 1024 * 1024) {
+                    return response()->json([
+                        'error' => 'The background image must not be larger than 5MB.',
+                        'errors' => ['background_image' => ['File size exceeds 5MB limit']]
+                    ], 422);
+                }
+
+                // Ensure storage directory exists
+                $directory = 'certificate-templates/' . $profile->organization_id;
+                if (!Storage::disk('local')->exists($directory)) {
+                    Storage::disk('local')->makeDirectory($directory);
+                }
+
+                $fileName = Str::uuid() . '.' . $extension;
+                $validated['background_image_path'] = $file->storeAs(
+                    $directory,
+                    $fileName,
+                    'local'
+                );
+
+                if (!$validated['background_image_path']) {
+                    return response()->json([
+                        'error' => 'The background image failed to upload. Please try again.',
+                        'errors' => ['background_image' => ['File storage failed']]
+                    ], 422);
+                }
+            } catch (\Exception $e) {
+                Log::error('Certificate template background image upload failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                return response()->json([
+                    'error' => 'The background image failed to upload: ' . $e->getMessage(),
+                    'errors' => ['background_image' => [$e->getMessage()]]
+                ], 422);
+            }
         }
         unset($validated['background_image']);
 
@@ -337,7 +460,8 @@ class CertificateTemplateController extends Controller
         }
 
         $student->certificate_template_id = $template->id;
-        $student->certificate_issued_at = now();
+        $student->certificate_issued_date = now();
+        $student->certificate_issued = true;
         $student->save();
 
         // Return certificate data for frontend PDF generation
@@ -371,6 +495,14 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        try {
+            if (!$user->hasPermissionTo('certificate_templates.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $student = CourseStudent::where('organization_id', $profile->organization_id)
             ->whereNull('deleted_at')
             ->with(['course', 'certificateTemplate'])
@@ -395,11 +527,19 @@ class CertificateTemplateController extends Controller
                 'id' => $student->id,
                 'full_name' => $student->full_name,
                 'father_name' => $student->father_name,
+                'grandfather_name' => $student->grandfather_name,
+                'mother_name' => $student->mother_name,
                 'registration_date' => $student->registration_date,
                 'completion_date' => $student->completion_date,
                 'certificate_number' => $student->certificate_number,
-                'certificate_issued_at' => $student->certificate_issued_at,
-                'status' => $student->status,
+                'certificate_issued_at' => $student->certificate_issued_date,
+                'status' => $student->completion_status,
+                'curr_province' => $student->curr_province,
+                'curr_district' => $student->curr_district,
+                'curr_village' => $student->curr_village,
+                'nationality' => $student->nationality,
+                'guardian_name' => $student->guardian_name,
+                'picture_path' => $student->picture_path,
             ],
             'course' => $student->course ? [
                 'id' => $student->course->id,

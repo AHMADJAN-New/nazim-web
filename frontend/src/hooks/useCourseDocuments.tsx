@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { courseDocumentsApi } from '@/lib/api/client';
 
@@ -75,10 +75,10 @@ export const useCreateCourseDocument = () => {
       return document as CourseDocument;
     },
     onSuccess: () => {
-      toast.success('Document uploaded');
+      showToast.success('toast.courseDocuments.uploaded');
       void queryClient.invalidateQueries({ queryKey: ['course-documents'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not upload document'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseDocuments.uploadFailed'),
   });
 };
 
@@ -91,10 +91,10 @@ export const useDeleteCourseDocument = () => {
       return id;
     },
     onSuccess: () => {
-      toast.success('Document deleted');
+      showToast.success('toast.courseDocuments.deleted');
       void queryClient.invalidateQueries({ queryKey: ['course-documents'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not delete document'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseDocuments.deleteFailed'),
   });
 };
 
@@ -113,6 +113,6 @@ export const useDownloadCourseDocument = () => {
       document.body.removeChild(a);
       return true;
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not download document'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseDocuments.downloadFailed'),
   });
 };

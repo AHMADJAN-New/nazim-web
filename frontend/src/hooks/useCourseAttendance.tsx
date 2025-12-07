@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { courseAttendanceSessionsApi } from '@/lib/api/client';
 
@@ -104,10 +104,10 @@ export const useCreateCourseAttendanceSession = () => {
       return session as CourseAttendanceSession;
     },
     onSuccess: () => {
-      toast.success('Attendance session created');
+      showToast.success('toast.courseAttendance.sessionCreated');
       void queryClient.invalidateQueries({ queryKey: ['course-attendance-sessions'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not create session'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseAttendance.sessionCreateFailed'),
   });
 };
 
@@ -120,11 +120,11 @@ export const useUpdateCourseAttendanceSession = () => {
       return session as CourseAttendanceSession;
     },
     onSuccess: () => {
-      toast.success('Attendance session updated');
+      showToast.success('toast.courseAttendance.sessionUpdated');
       void queryClient.invalidateQueries({ queryKey: ['course-attendance-sessions'] });
       void queryClient.invalidateQueries({ queryKey: ['course-attendance-session'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not update session'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseAttendance.sessionUpdateFailed'),
   });
 };
 
@@ -137,14 +137,14 @@ export const useDeleteCourseAttendanceSession = () => {
       return id;
     },
     onSuccess: () => {
-      toast.success('Attendance session deleted');
+      showToast.success('toast.courseAttendance.sessionDeleted');
       void queryClient.invalidateQueries({ queryKey: ['course-attendance-sessions'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not delete session'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseAttendance.sessionDeleteFailed'),
   });
 };
 
-export const useCourseRoster = (courseId: string) => {
+export const useCourseRoster = (courseId: string | undefined) => {
   const { user, profile } = useAuth();
 
   return useQuery<CourseRosterStudent[]>({
@@ -154,7 +154,9 @@ export const useCourseRoster = (courseId: string) => {
       const roster = await courseAttendanceSessionsApi.roster({ course_id: courseId });
       return roster as CourseRosterStudent[];
     },
-    enabled: !!user && !!profile && !!courseId,
+    enabled: !!user && !!profile && !!courseId && courseId.trim() !== '',
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -174,11 +176,11 @@ export const useMarkCourseAttendanceRecords = () => {
       return result;
     },
     onSuccess: () => {
-      toast.success('Attendance records saved');
+      showToast.success('toast.courseAttendance.recordsSaved');
       void queryClient.invalidateQueries({ queryKey: ['course-attendance-sessions'] });
       void queryClient.invalidateQueries({ queryKey: ['course-attendance-session'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not save attendance'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseAttendance.recordsSaveFailed'),
   });
 };
 
@@ -192,12 +194,12 @@ export const useScanCourseAttendance = () => {
     },
     onSuccess: (data: any) => {
       if (data.student) {
-        toast.success(`${data.student.full_name} marked ${data.status}`);
+        showToast.success(`${data.student.full_name} marked ${data.status}`);
       }
       void queryClient.invalidateQueries({ queryKey: ['course-attendance-session'] });
       void queryClient.invalidateQueries({ queryKey: ['course-attendance-scans'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Scan failed'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseAttendance.scanFailed'),
   });
 };
 
@@ -225,11 +227,11 @@ export const useCloseCourseAttendanceSession = () => {
       return result as CourseAttendanceSession;
     },
     onSuccess: () => {
-      toast.success('Attendance session closed');
+      showToast.success('toast.courseAttendance.sessionClosed');
       void queryClient.invalidateQueries({ queryKey: ['course-attendance-sessions'] });
       void queryClient.invalidateQueries({ queryKey: ['course-attendance-session'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not close session'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseAttendance.sessionCloseFailed'),
   });
 };
 

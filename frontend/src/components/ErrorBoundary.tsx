@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, RefreshCw, Home, Bug } from "lucide-react";
 import { toast } from "sonner";
+import { t, Language } from '@/lib/i18n';
+
+const getLanguage = (): Language => {
+  const saved = localStorage.getItem('nazim-language');
+  return (['en', 'ps', 'fa', 'ar'].includes(saved as string) ? saved as Language : 'en');
+};
 
 interface Props {
   children?: ReactNode;
@@ -57,10 +63,11 @@ class ErrorBoundary extends Component<Props, State> {
 
     // Show toast notification for non-critical errors
     if (this.props.level !== 'critical') {
-      toast.error('Something went wrong', {
-        description: 'We\'ve logged the error and are working on a fix.',
+      const lang = getLanguage();
+      toast.error(t('errorBoundary.somethingWentWrong', lang), {
+        description: t('errorBoundary.workingOnFix', lang),
         action: {
-          label: 'Retry',
+          label: t('errorBoundary.retry', lang),
           onClick: () => this.handleRetry(),
         },
       });
@@ -116,8 +123,9 @@ class ErrorBoundary extends Component<Props, State> {
         errorInfo: undefined,
       });
     } else {
-      toast.error('Maximum retry attempts reached', {
-        description: 'Please refresh the page or contact support.',
+      const lang = getLanguage();
+      toast.error(t('errorBoundary.maxRetriesReached', lang), {
+        description: t('errorBoundary.refreshOrContactSupport', lang),
       });
     }
   };
@@ -161,6 +169,7 @@ Please describe what you were doing when this error occurred:
 
       // Critical errors get a full-page error screen
       if (this.props.level === 'critical') {
+        const lang = getLanguage();
         return (
           <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
             <Card className="max-w-md w-full">
@@ -168,9 +177,9 @@ Please describe what you were doing when this error occurred:
                 <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
                   <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
-                <CardTitle className="text-red-900">Application Error</CardTitle>
+                <CardTitle className="text-red-900">{t('errorBoundary.applicationError', lang)}</CardTitle>
                 <CardDescription>
-                  Something went wrong and the application crashed.
+                  {t('errorBoundary.applicationCrashed', lang)}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -178,7 +187,7 @@ Please describe what you were doing when this error occurred:
                   <p>Error ID: <code className="bg-gray-100 px-1 rounded">{this.state.errorId}</code></p>
                   {import.meta.env.DEV && (
                     <details className="mt-2">
-                      <summary className="cursor-pointer text-blue-600">Technical Details</summary>
+                      <summary className="cursor-pointer text-blue-600">{t('errorBoundary.technicalDetails', lang)}</summary>
                       <pre className="text-xs mt-2 p-2 bg-gray-100 rounded overflow-auto">
                         {this.state.error?.stack}
                       </pre>
@@ -188,16 +197,16 @@ Please describe what you were doing when this error occurred:
                 <div className="flex gap-2">
                   <Button onClick={this.handleRefresh} className="flex-1">
                     <RefreshCw className="w-4 h-4 mr-2" />
-                    Refresh Page
+                    {t('errorBoundary.refreshPage', lang)}
                   </Button>
                   <Button variant="outline" onClick={this.handleGoHome} className="flex-1">
                     <Home className="w-4 h-4 mr-2" />
-                    Go Home
+                    {t('errorBoundary.goHome', lang)}
                   </Button>
                 </div>
                 <Button variant="ghost" onClick={this.handleReportBug} className="w-full">
                   <Bug className="w-4 h-4 mr-2" />
-                  Report Bug
+                  {t('errorBoundary.reportBug', lang)}
                 </Button>
               </CardContent>
             </Card>
@@ -206,20 +215,21 @@ Please describe what you were doing when this error occurred:
       }
 
       // Component-level errors get a smaller fallback
+      const lang = getLanguage();
       return (
         <Card className="border-red-200 bg-red-50">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h3 className="font-medium text-red-900">Something went wrong</h3>
+                <h3 className="font-medium text-red-900">{t('errorBoundary.componentError', lang)}</h3>
                 <p className="text-sm text-red-700 mt-1">
-                  This component encountered an error. You can try reloading it.
+                  {t('errorBoundary.tryReloading', lang)}
                 </p>
                 {import.meta.env.DEV && (
                   <details className="mt-2">
                     <summary className="text-xs cursor-pointer text-red-600">
-                      Error Details (Development)
+                      {t('errorBoundary.errorDetailsDev', lang)}
                     </summary>
                     <pre className="text-xs mt-1 p-2 bg-red-100 rounded overflow-auto max-h-32">
                       {this.state.error?.message}
@@ -230,12 +240,12 @@ Please describe what you were doing when this error occurred:
                   {this.retryCount < this.maxRetries && (
                     <Button size="sm" onClick={this.handleRetry}>
                       <RefreshCw className="w-3 h-3 mr-1" />
-                      Retry ({this.maxRetries - this.retryCount} left)
+                      {t('errorBoundary.retry', lang)} ({this.maxRetries - this.retryCount} left)
                     </Button>
                   )}
                   <Button size="sm" variant="outline" onClick={this.handleReportBug}>
                     <Bug className="w-3 h-3 mr-1" />
-                    Report
+                    {t('errorBoundary.report', lang)}
                   </Button>
                 </div>
               </div>
@@ -285,6 +295,7 @@ export function useErrorHandler() {
 // Async error handler for promises
 export function useAsyncErrorHandler() {
   const handleAsyncError = React.useCallback((error: Error, context?: string) => {
+    const lang = getLanguage();
     logger.error('Async error caught', {
       component: context || 'Async',
       metadata: {
@@ -293,8 +304,8 @@ export function useAsyncErrorHandler() {
       },
     });
 
-    toast.error('An error occurred', {
-      description: error.message || 'Please try again later.',
+    toast.error(t('errorBoundary.anErrorOccurred', lang), {
+      description: error.message || t('errorBoundary.tryAgainLater', lang),
     });
   }, []);
 

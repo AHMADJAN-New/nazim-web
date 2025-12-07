@@ -224,7 +224,7 @@ export default function AssetCategories() {
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search categories..."
+                                placeholder={t('assets.searchCategories')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
@@ -324,7 +324,7 @@ export default function AssetCategories() {
                                 <Input
                                     id="name"
                                     {...register('name')}
-                                    placeholder="e.g., Electronics, Furniture, Vehicles"
+                                    placeholder={t('common.exampleCategories')}
                                 />
                                 {errors.name && (
                                     <p className="text-sm text-destructive mt-1">{errors.name.message}</p>

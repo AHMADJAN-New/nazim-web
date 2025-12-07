@@ -2237,6 +2237,8 @@ export const courseStudentsApi = {
   markCompleted: async (id: string) => apiClient.post(`/course-students/${id}/complete`),
   markDropped: async (id: string) => apiClient.post(`/course-students/${id}/drop`),
   issueCertificate: async (id: string) => apiClient.post(`/course-students/${id}/issue-certificate`),
+  enrollToNewCourse: async (id: string, data: { course_id: string; registration_date?: string; fee_paid?: boolean; fee_amount?: number }) =>
+    apiClient.post(`/course-students/${id}/enroll-to-new-course`, data),
 };
 
 // Course student discipline records API
@@ -2347,9 +2349,32 @@ export const certificateTemplatesApi = {
 
   getBackgroundUrl: (id: string) => `${API_URL}/certificate-templates/${id}/background`,
 
+  getBackgroundImage: async (endpoint: string) => {
+    // Extract the path from the endpoint (remove /api prefix if present)
+    const path = endpoint.startsWith('/api') ? endpoint.replace('/api', '') : endpoint;
+    return apiClient.requestFile(path, { method: 'GET' });
+  },
+
   generateCertificate: async (courseStudentId: string, data: { template_id: string }) =>
     apiClient.post(`/certificate-templates/generate/${courseStudentId}`, data),
 
   getCertificateData: async (courseStudentId: string) =>
     apiClient.get(`/certificate-templates/certificate-data/${courseStudentId}`),
+};
+
+// Translations API
+export const translationsApi = {
+  get: async () => apiClient.get<{
+    en: Record<string, unknown>;
+    ps: Record<string, unknown>;
+    fa: Record<string, unknown>;
+    ar: Record<string, unknown>;
+  }>('/translations'),
+
+  save: async (translations: {
+    en: Record<string, unknown>;
+    ps: Record<string, unknown>;
+    fa: Record<string, unknown>;
+    ar: Record<string, unknown>;
+  }) => apiClient.post<{ message: string; languages: string[] }>('/translations', { translations }),
 };

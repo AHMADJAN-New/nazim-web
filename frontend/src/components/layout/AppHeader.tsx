@@ -34,7 +34,7 @@ interface AppHeaderProps {
 export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] }: AppHeaderProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
@@ -122,7 +122,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Select Language</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('common.selectLanguage')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {languages.map((lang) => (
                 <DropdownMenuItem
@@ -163,7 +163,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('common.notifications')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {notifications.length > 0 ? (
                 notifications.map((notification) => (

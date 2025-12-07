@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { leaveRequestsApi } from '@/lib/api/client';
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
@@ -114,11 +114,11 @@ export const useCreateLeaveRequest = () => {
       return mapLeaveRequestApiToDomain(response as LeaveApi.LeaveRequest);
     },
     onSuccess: () => {
-      toast.success(t('common.savedSuccess') || 'Leave request created');
+      showToast.success('toast.leaveRequests.created');
       void queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('common.error'));
+      showToast.error(error.message || 'toast.leaveRequests.createFailed');
     },
   });
 };
@@ -133,11 +133,11 @@ export const useUpdateLeaveRequest = () => {
       return mapLeaveRequestApiToDomain(response as LeaveApi.LeaveRequest);
     },
     onSuccess: () => {
-      toast.success(t('common.savedSuccess'));
+      showToast.success('toast.leaveRequests.updated');
       void queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('common.error'));
+      showToast.error(error.message || 'toast.leaveRequests.updateFailed');
     },
   });
 };
@@ -151,10 +151,10 @@ export const useApproveLeaveRequest = () => {
       return mapLeaveRequestApiToDomain(response as LeaveApi.LeaveRequest);
     },
     onSuccess: () => {
-      toast.success(t('common.savedSuccess'));
+      showToast.success('toast.leaveRequests.approved');
       void queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
     },
-    onError: (error: Error) => toast.error(error.message || t('common.error')),
+    onError: (error: Error) => showToast.error(error.message || 'toast.leaveRequests.approveFailed'),
   });
 };
 
@@ -167,9 +167,9 @@ export const useRejectLeaveRequest = () => {
       return mapLeaveRequestApiToDomain(response as LeaveApi.LeaveRequest);
     },
     onSuccess: () => {
-      toast.success(t('common.savedSuccess'));
+      showToast.success('toast.leaveRequests.rejected');
       void queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
     },
-    onError: (error: Error) => toast.error(error.message || t('common.error')),
+    onError: (error: Error) => showToast.error(error.message || 'toast.leaveRequests.rejectFailed'),
   });
 };

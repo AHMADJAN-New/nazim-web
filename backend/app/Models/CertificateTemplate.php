@@ -20,6 +20,7 @@ class CertificateTemplate extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'course_id',
         'name',
         'description',
         'background_image_path',
@@ -68,6 +69,11 @@ class CertificateTemplate extends Model
         return $this->belongsTo(Profile::class, 'created_by');
     }
 
+    public function course()
+    {
+        return $this->belongsTo(ShortTermCourse::class, 'course_id');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
@@ -81,12 +87,20 @@ class CertificateTemplate extends Model
     public static function getDefaultLayout(): array
     {
         return [
-            'studentName' => ['x' => 50, 'y' => 40, 'fontSize' => 28, 'fontWeight' => 'bold', 'color' => '#1a365d'],
-            'courseName' => ['x' => 50, 'y' => 50, 'fontSize' => 20, 'fontWeight' => 'normal', 'color' => '#2d3748'],
-            'completionDate' => ['x' => 50, 'y' => 60, 'fontSize' => 14, 'fontWeight' => 'normal', 'color' => '#4a5568'],
-            'certificateNumber' => ['x' => 50, 'y' => 85, 'fontSize' => 10, 'fontWeight' => 'normal', 'color' => '#718096'],
-            'instructorName' => ['x' => 25, 'y' => 75, 'fontSize' => 12, 'fontWeight' => 'normal', 'color' => '#4a5568'],
-            'organizationName' => ['x' => 75, 'y' => 75, 'fontSize' => 12, 'fontWeight' => 'normal', 'color' => '#4a5568'],
+            'enabledFields' => ['header', 'studentName', 'fatherName', 'courseName', 'certificateNumber', 'date'],
+            'headerPosition' => ['x' => 50, 'y' => 15],
+            'studentNamePosition' => ['x' => 50, 'y' => 35],
+            'fatherNamePosition' => ['x' => 50, 'y' => 42],
+            'courseNamePosition' => ['x' => 50, 'y' => 65],
+            'certificateNumberPosition' => ['x' => 10, 'y' => 90],
+            'datePosition' => ['x' => 90, 'y' => 90],
+            'headerText' => 'Certificate of Completion',
+            'courseNameText' => '',
+            'dateText' => 'Date:',
+            'fontSize' => 24,
+            'fontFamily' => 'Arial',
+            'textColor' => '#000000',
+            'rtl' => true,
         ];
     }
 }

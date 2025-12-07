@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/hooks/useLanguage';
 import { organizationsApi, authApi } from '@/lib/api/client';
 import { validatePasswordStrength } from '@/lib/utils/passwordValidation';
 import { logger } from '@/lib/logger';
@@ -19,6 +20,7 @@ interface Organization {
 }
 
 export default function AuthPage() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { user, refreshAuth } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -60,7 +62,7 @@ export default function AuthPage() {
       if (error?.message?.includes('Failed to fetch') ||
         error?.message?.includes('Network') ||
         error?.message?.includes('fetch')) {
-        toast.error('Network error: Unable to fetch organizations. Please check your connection and ensure the API server is running.');
+        toast.error(t('auth.networkError') || 'Network error: Unable to fetch organizations. Please check your connection and ensure the API server is running.');
       } else {
         // Other errors - show a generic message
         console.warn('Could not fetch organizations:', error.message);
@@ -72,7 +74,7 @@ export default function AuthPage() {
     e.preventDefault();
 
     if (!formData.email || !formData.password) {
-      toast.error('Please enter both email and password');
+      toast.error(t('auth.enterEmailAndPassword') || 'Please enter both email and password');
       return;
     }
 
@@ -107,7 +109,7 @@ export default function AuthPage() {
         // Wait a bit more to ensure auth state is fully updated
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        toast.success('Logged in successfully!');
+        toast.success(t('auth.loggedInSuccessfully') || 'Logged in successfully!');
 
         // Navigate to dashboard after auth is ready
         navigate('/dashboard', { replace: true });
@@ -115,16 +117,16 @@ export default function AuthPage() {
         if (import.meta.env.DEV) {
           console.warn('Sign in returned no user data');
         }
-        toast.error('Sign in failed. Please try again.');
+        toast.error(t('auth.signInFailed') || 'Sign in failed. Please try again.');
       }
     } catch (error: any) {
       if (import.meta.env.DEV) {
         console.error('Sign in error:', error);
       }
-      const errorMessage = error.message || 'Failed to sign in. Please check your credentials and try again.';
+      const errorMessage = error.message || t('auth.signInFailed') || 'Failed to sign in. Please check your credentials and try again.';
 
       if (errorMessage.includes('credentials') || errorMessage.includes('Invalid')) {
-        toast.error('Invalid email or password. Please check your credentials and try again.');
+        toast.error(t('auth.invalidCredentials') || 'Invalid email or password. Please check your credentials and try again.');
       } else {
         toast.error(errorMessage);
       }
@@ -138,22 +140,22 @@ export default function AuthPage() {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error(t('resetPassword.passwordsDoNotMatch') || 'Passwords do not match');
       return;
     }
 
     if (!formData.organizationId) {
-      toast.error('Please select an organization');
+      toast.error(t('auth.selectOrganizationRequired') || 'Please select an organization');
       return;
     }
 
     if (!formData.fullName) {
-      toast.error('Please enter your full name');
+      toast.error(t('auth.enterFullName') || 'Please enter your full name');
       return;
     }
 
     if (!formData.email) {
-      toast.error('Please enter your email address');
+      toast.error(t('auth.enterEmail') || 'Please enter your email address');
       return;
     }
 
@@ -173,7 +175,7 @@ export default function AuthPage() {
 
       if (response.user && response.token) {
         console.log('Sign up successful:', response.user.email);
-        toast.success('Registration successful! You can now sign in.');
+        toast.success(t('auth.registrationSuccessful') || 'Registration successful! You can now sign in.');
         // Clear form
         setFormData({
           email: '',
@@ -188,16 +190,16 @@ export default function AuthPage() {
         window.location.reload();
       } else {
         console.warn('Sign up returned no user data');
-        toast.error('Sign up failed. Please try again.');
+        toast.error(t('auth.signUpFailed') || 'Sign up failed. Please try again.');
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
-      let errorMessage = error.message || 'Failed to create account';
+      let errorMessage = error.message || t('auth.signUpFailed') || 'Failed to create account';
 
       if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
-        errorMessage = 'This email is already registered. Please sign in or reset your password.';
+        errorMessage = t('auth.emailAlreadyRegistered') || 'This email is already registered. Please sign in or reset your password.';
       } else if (errorMessage.includes('Invalid email')) {
-        errorMessage = 'Please enter a valid email address.';
+        errorMessage = t('auth.invalidEmail') || 'Please enter a valid email address.';
       } else if (errorMessage.includes('Password')) {
         errorMessage = errorMessage; // Password validation errors are already user-friendly
       }
@@ -224,23 +226,23 @@ export default function AuthPage() {
       <Card className="w-full max-w-md shrink-0" style={{ margin: '0 auto' }}>
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            School Management System
+            {t('auth.title') || 'School Management System'}
           </CardTitle>
           <CardDescription className="text-center">
-            Access your school management system
+            {t('auth.subtitle') || 'Access your school management system'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="login">{t('auth.signIn') || 'Sign In'}</TabsTrigger>
+              <TabsTrigger value="signup">{t('auth.signUp') || 'Sign Up'}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div>
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-email">{t('auth.email') || 'Email'}</Label>
                   <Input
                     id="signin-email"
                     type="email"
@@ -250,7 +252,7 @@ export default function AuthPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="signin-password">Password</Label>
+                  <Label htmlFor="signin-password">{t('auth.password') || 'Password'}</Label>
                   <Input
                     id="signin-password"
                     type="password"
@@ -260,7 +262,7 @@ export default function AuthPage() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={authLoading}>
-                  {authLoading ? 'Signing In...' : 'Sign In'}
+                  {authLoading ? (t('auth.signingIn') || 'Signing In...') : (t('auth.signIn') || 'Sign In')}
                 </Button>
               </form>
             </TabsContent>
@@ -268,7 +270,7 @@ export default function AuthPage() {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div>
-                  <Label htmlFor="full-name">Full Name</Label>
+                  <Label htmlFor="full-name">{t('auth.fullName') || 'Full Name'}</Label>
                   <Input
                     id="full-name"
                     type="text"
@@ -278,7 +280,7 @@ export default function AuthPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email">{t('auth.email') || 'Email'}</Label>
                   <Input
                     id="signup-email"
                     type="email"
@@ -288,7 +290,7 @@ export default function AuthPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone (optional)</Label>
+                  <Label htmlFor="phone">{t('auth.phone') || 'Phone'} ({t('common.optional') || 'optional'})</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -297,30 +299,30 @@ export default function AuthPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="role">Role</Label>
+                  <Label htmlFor="role">{t('auth.role') || 'Role'}</Label>
                   <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select your role" />
+                      <SelectValue placeholder={t('auth.selectRole') || 'Select your role'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                      <SelectItem value="parent">Parent</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="student">{t('auth.roleStudent') || 'Student'}</SelectItem>
+                      <SelectItem value="teacher">{t('auth.roleTeacher') || 'Teacher'}</SelectItem>
+                      <SelectItem value="parent">{t('auth.roleParent') || 'Parent'}</SelectItem>
+                      <SelectItem value="staff">{t('auth.roleStaff') || 'Staff'}</SelectItem>
+                      <SelectItem value="admin">{t('auth.roleAdmin') || 'Admin'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="organization">Organization</Label>
+                  <Label htmlFor="organization">{t('auth.organization') || 'Organization'}</Label>
                   <Select value={formData.organizationId} onValueChange={(value) => setFormData({ ...formData, organizationId: value })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select your organization" />
+                      <SelectValue placeholder={t('auth.selectOrganization') || 'Select your organization'} />
                     </SelectTrigger>
                     <SelectContent>
                       {organizations.length === 0 ? (
                         <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                          No organizations available
+                          {t('auth.noOrganizationsAvailable') || 'No organizations available'}
                         </div>
                       ) : (
                         organizations.map((org) => (
@@ -333,12 +335,12 @@ export default function AuthPage() {
                   </Select>
                   {organizations.length === 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      No organizations found. Please contact an administrator.
+                      {t('auth.noOrganizationsFound') || 'No organizations found. Please contact an administrator.'}
                     </p>
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password">{t('auth.password') || 'Password'}</Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -361,7 +363,7 @@ export default function AuthPage() {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Label htmlFor="confirm-password">{t('auth.confirmPassword') || 'Confirm Password'}</Label>
                   <Input
                     id="confirm-password"
                     type="password"
@@ -371,7 +373,7 @@ export default function AuthPage() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading || authLoading || passwordErrors.length > 0}>
-                  {loading || authLoading ? 'Creating Account...' : 'Sign Up'}
+                  {loading || authLoading ? (t('auth.creatingAccount') || 'Creating Account...') : (t('auth.signUp') || 'Sign Up')}
                 </Button>
               </form>
             </TabsContent>

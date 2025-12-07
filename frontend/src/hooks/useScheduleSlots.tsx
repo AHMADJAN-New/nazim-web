@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
 import { scheduleSlotsApi } from '@/lib/api/client';
@@ -124,10 +124,10 @@ export const useCreateScheduleSlot = () => {
             await queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
             await queryClient.invalidateQueries({ queryKey: ['schedule-slot'] });
             await queryClient.refetchQueries({ queryKey: ['schedule-slots'] });
-            toast.success('Schedule slot created successfully');
-        },
-        onError: (error: Error) => {
-            toast.error(error.message || 'Failed to create schedule slot');
+            showToast.success('toast.scheduleSlotCreated');
+          },
+          onError: (error: Error) => {
+            showToast.error(error.message || 'toast.scheduleSlotCreateFailed');
         },
         retry: false, // Prevent infinite retries on connection errors
     });
@@ -189,10 +189,10 @@ export const useUpdateScheduleSlot = () => {
             await queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
             await queryClient.invalidateQueries({ queryKey: ['schedule-slot'] });
             await queryClient.refetchQueries({ queryKey: ['schedule-slots'] });
-            toast.success('Schedule slot updated successfully');
-        },
-        onError: (error: Error) => {
-            toast.error(error.message || 'Failed to update schedule slot');
+            showToast.success('toast.scheduleSlotUpdated');
+          },
+          onError: (error: Error) => {
+            showToast.error(error.message || 'toast.scheduleSlotUpdateFailed');
         },
         retry: false, // Prevent infinite retries on connection errors
     });
@@ -229,10 +229,10 @@ export const useDeleteScheduleSlot = () => {
             await queryClient.invalidateQueries({ queryKey: ['schedule-slots'] });
             await queryClient.invalidateQueries({ queryKey: ['schedule-slot'] });
             await queryClient.refetchQueries({ queryKey: ['schedule-slots'] });
-            toast.success('Schedule slot deleted successfully');
-        },
-        onError: (error: Error) => {
-            toast.error(error.message || 'Failed to delete schedule slot');
+            showToast.success('toast.scheduleSlotDeleted');
+          },
+          onError: (error: Error) => {
+            showToast.error(error.message || 'toast.scheduleSlotDeleteFailed');
         },
         retry: false, // Prevent infinite retries on connection errors
     });

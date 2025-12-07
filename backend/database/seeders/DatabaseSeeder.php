@@ -117,6 +117,14 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 13: Admitting students to classes...');
         $this->call(StudentAdmissionSeeder::class);
 
+        // Step 14: Create short-term courses
+        $this->command->info('Step 14: Creating short-term courses...');
+        $this->call(CourseSeeder::class);
+
+        // Step 15: Enroll students in courses
+        $this->command->info('Step 15: Enrolling students in courses...');
+        $this->call(CourseStudentSeeder::class);
+
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');
         $this->command->info('');

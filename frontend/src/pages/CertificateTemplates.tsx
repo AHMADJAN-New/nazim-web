@@ -48,12 +48,19 @@ import {
   Star,
   Image,
   FileText,
+  Layout,
 } from 'lucide-react';
+import { CertificateLayoutEditor } from '@/components/certificates/CertificateLayoutEditor';
 import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export default function CertificateTemplates() {
+  const { t } = useLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isLayoutEditorOpen, setIsLayoutEditorOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<CertificateTemplate | null>(null);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
 
@@ -61,6 +68,7 @@ export default function CertificateTemplates() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [backgroundImage, setBackgroundImage] = useState<File | null>(null);
+  const [courseId, setCourseId] = useState<string>('');
   const [isDefault, setIsDefault] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [layoutConfig, setLayoutConfig] = useState<CertificateLayoutConfig>({
@@ -68,9 +76,18 @@ export default function CertificateTemplates() {
     fontFamily: 'Arial',
     textColor: '#000000',
     rtl: true,
+    enabledFields: ['header', 'studentName', 'fatherName', 'courseName', 'certificateNumber', 'date'],
+    // Default positions (as percentages)
+    headerPosition: { x: 50, y: 15 },
+    studentNamePosition: { x: 50, y: 35 },
+    fatherNamePosition: { x: 50, y: 42 },
+    courseNamePosition: { x: 50, y: 65 },
+    certificateNumberPosition: { x: 10, y: 90 },
+    datePosition: { x: 90, y: 90 },
   });
 
   const { data: templates = [], isLoading } = useCertificateTemplates();
+  const { data: courses = [] } = useShortTermCourses();
   const createTemplate = useCreateCertificateTemplate();
   const updateTemplate = useUpdateCertificateTemplate();
   const deleteTemplate = useDeleteCertificateTemplate();
@@ -80,6 +97,7 @@ export default function CertificateTemplates() {
     setName('');
     setDescription('');
     setBackgroundImage(null);
+    setCourseId('');
     setIsDefault(false);
     setIsActive(true);
     setLayoutConfig({
@@ -96,6 +114,7 @@ export default function CertificateTemplates() {
       setSelectedTemplate(template);
       setName(template.name);
       setDescription(template.description || '');
+      setCourseId(template.course_id || '');
       setIsDefault(template.is_default);
       setIsActive(template.is_active);
       setLayoutConfig(template.layout_config || {});
@@ -116,6 +135,7 @@ export default function CertificateTemplates() {
       description: description || null,
       background_image: backgroundImage,
       layout_config: layoutConfig,
+      course_id: courseId || null,
       is_default: isDefault,
       is_active: isActive,
     };
@@ -139,6 +159,26 @@ export default function CertificateTemplates() {
     await setDefaultTemplate.mutateAsync(id);
   };
 
+  const handleOpenLayoutEditor = (template: CertificateTemplate) => {
+    setSelectedTemplate(template);
+    setLayoutConfig(template.layout_config || {});
+    setIsLayoutEditorOpen(true);
+  };
+
+  const handleLayoutSave = async (newConfig: CertificateLayoutConfig) => {
+    if (!selectedTemplate) return;
+    
+    await updateTemplate.mutateAsync({
+      id: selectedTemplate.id,
+      data: {
+        layout_config: newConfig,
+      },
+    });
+    
+    setIsLayoutEditorOpen(false);
+    // The updateTemplate mutation will automatically invalidate queries
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -149,10 +189,10 @@ export default function CertificateTemplates() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Certificate Templates</h1>
+        <h1 className="text-2xl font-bold">{t('certificateTemplates.title')}</h1>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="h-4 w-4 mr-2" />
-          New Template
+          {t('certificateTemplates.createTemplate')}
         </Button>
       </div>
 
@@ -162,7 +202,7 @@ export default function CertificateTemplates() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t('common.loading')}</p>
           ) : templates.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
@@ -175,12 +215,12 @@ export default function CertificateTemplates() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead>{t('certificateTemplates.templateName')}</TableHead>
+                  <TableHead>{t('certificateTemplates.description')}</TableHead>
                   <TableHead>Background</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -232,6 +272,14 @@ export default function CertificateTemplates() {
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => handleOpenLayoutEditor(template)}
+                          title="Edit Layout"
+                        >
+                          <Layout className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => handleOpenDialog(template)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -275,16 +323,35 @@ export default function CertificateTemplates() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Background Image</Label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-                {selectedTemplate?.background_image_path && !backgroundImage && (
-                  <p className="text-sm text-muted-foreground">Current image will be kept</p>
-                )}
+                <Label>Course (Optional)</Label>
+                <Select value={courseId || 'none'} onValueChange={(value) => setCourseId(value === 'none' ? '' : value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a course (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None (General Template)</SelectItem>
+                    {courses.map((course) => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Assign this template to a specific course. Select "None" for general use.
+                </p>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Background Image</Label>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+              {selectedTemplate?.background_image_path && !backgroundImage && (
+                <p className="text-sm text-muted-foreground">Current image will be kept</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -363,6 +430,25 @@ export default function CertificateTemplates() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Layout Editor Dialog */}
+      {isLayoutEditorOpen && selectedTemplate && (
+        <Dialog open={isLayoutEditorOpen} onOpenChange={setIsLayoutEditorOpen}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Layout: {selectedTemplate.name}</DialogTitle>
+            </DialogHeader>
+            <CertificateLayoutEditor
+              templateId={selectedTemplate.id}
+              backgroundImageUrl={selectedTemplate.background_image_path ? getCertificateBackgroundUrl(selectedTemplate.id) : null}
+              layoutConfig={layoutConfig}
+              courseId={selectedTemplate.course_id}
+              onSave={handleLayoutSave}
+              onCancel={() => setIsLayoutEditorOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Delete Confirmation */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

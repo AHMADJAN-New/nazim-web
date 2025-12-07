@@ -32,7 +32,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState } from "react";
+import { useLanguage } from "@/hooks/useLanguage";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLandingStats } from "@/hooks/useLandingStats";
 // Contact form will be handled by Laravel API endpoint
@@ -40,6 +41,7 @@ import { useToast } from "@/hooks/use-toast";
 
 
 const Index = () => {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTestimonial, setActiveTestimonial] = useState(0);
@@ -52,160 +54,160 @@ const Index = () => {
     }
   }, [user, navigate]);
 
-  const features = [
+  const features = useMemo(() => [
     {
       icon: Users,
-      title: "Student Management",
-      description: "Complete student information system with admission, records, and progress tracking",
+      title: t('landing.features.studentManagement.title') || "Student Management",
+      description: t('landing.features.studentManagement.description') || "Complete student information system with admission, records, and progress tracking",
       color: "text-blue-600",
       bgFrom: "from-blue-100",
       bgTo: "to-blue-200",
     },
     {
       icon: GraduationCap,
-      title: "Academic Management",
-      description: "Manage classes, subjects, exams, and academic performance analytics",
+      title: t('landing.features.academicManagement.title') || "Academic Management",
+      description: t('landing.features.academicManagement.description') || "Manage classes, subjects, exams, and academic performance analytics",
       color: "text-green-600",
       bgFrom: "from-green-100",
       bgTo: "to-green-200",
     },
     {
       icon: BookOpen,
-      title: "Library System",
-      description: "Digital library management with book tracking and student borrowing records",
+      title: t('landing.features.librarySystem.title') || "Library System",
+      description: t('landing.features.librarySystem.description') || "Digital library management with book tracking and student borrowing records",
       color: "text-purple-600",
       bgFrom: "from-purple-100",
       bgTo: "to-purple-200",
     },
     {
       icon: Calendar,
-      title: "Attendance Tracking",
-      description: "Real-time attendance management with automated reporting and notifications",
+      title: t('landing.features.attendanceTracking.title') || "Attendance Tracking",
+      description: t('landing.features.attendanceTracking.description') || "Real-time attendance management with automated reporting and notifications",
       color: "text-orange-600",
       bgFrom: "from-orange-100",
       bgTo: "to-orange-200",
     },
     {
       icon: Calculator,
-      title: "Fee Management",
-      description: "Comprehensive fee collection, payment tracking, and financial reporting",
+      title: t('landing.features.feeManagement.title') || "Fee Management",
+      description: t('landing.features.feeManagement.description') || "Comprehensive fee collection, payment tracking, and financial reporting",
       color: "text-red-600",
       bgFrom: "from-red-100",
       bgTo: "to-red-200",
     },
     {
       icon: Building,
-      title: "Hostel Management",
-      description: "Complete hostel administration with room allocation and student management",
+      title: t('landing.features.hostelManagement.title') || "Hostel Management",
+      description: t('landing.features.hostelManagement.description') || "Complete hostel administration with room allocation and student management",
       color: "text-indigo-600",
       bgFrom: "from-indigo-100",
       bgTo: "to-indigo-200",
     },
     {
       icon: Award,
-      title: "Hifz Progress",
-      description: "Track Quran memorization progress with detailed analytics and reports",
+      title: t('landing.features.hifzProgress.title') || "Hifz Progress",
+      description: t('landing.features.hifzProgress.description') || "Track Quran memorization progress with detailed analytics and reports",
       color: "text-emerald-600",
       bgFrom: "from-emerald-100",
       bgTo: "to-emerald-200",
     },
     {
       icon: MessageSquare,
-      title: "Communication Hub",
-      description: "Announcements, notifications, and parent-teacher communication platform",
+      title: t('landing.features.communicationHub.title') || "Communication Hub",
+      description: t('landing.features.communicationHub.description') || "Announcements, notifications, and parent-teacher communication platform",
       color: "text-pink-600",
       bgFrom: "from-pink-100",
       bgTo: "to-pink-200",
     }
-  ];
+  ], [t]);
 
-  const benefits = [
+  const benefits = useMemo(() => [
     {
       icon: Shield,
-      title: "Secure & Reliable",
-      description: "Enterprise-grade security with 99.9% uptime guarantee"
+      title: t('landing.benefits.secureReliable.title') || "Secure & Reliable",
+      description: t('landing.benefits.secureReliable.description') || "Enterprise-grade security with 99.9% uptime guarantee"
     },
     {
       icon: Zap,
-      title: "Lightning Fast",
-      description: "Optimized performance for instant access to all features"
+      title: t('landing.benefits.lightningFast.title') || "Lightning Fast",
+      description: t('landing.benefits.lightningFast.description') || "Optimized performance for instant access to all features"
     },
     {
       icon: Globe,
-      title: "Multi-Language",
-      description: "Support for English, Urdu, Arabic, and Pashto languages"
+      title: t('landing.benefits.multiLanguage.title') || "Multi-Language",
+      description: t('landing.benefits.multiLanguage.description') || "Support for English, Urdu, Arabic, and Pashto languages"
     },
     {
       icon: Smartphone,
-      title: "Mobile Ready",
-      description: "Responsive design works perfectly on all devices"
+      title: t('landing.benefits.mobileReady.title') || "Mobile Ready",
+      description: t('landing.benefits.mobileReady.description') || "Responsive design works perfectly on all devices"
     },
     {
       icon: Cloud,
-      title: "Cloud-Based",
-      description: "Access your data anywhere, anytime from any device"
+      title: t('landing.benefits.cloudBased.title') || "Cloud-Based",
+      description: t('landing.benefits.cloudBased.description') || "Access your data anywhere, anytime from any device"
     },
     {
       icon: HeadphonesIcon,
-      title: "24/7 Support",
-      description: "Round-the-clock customer support and training assistance"
+      title: t('landing.benefits.support24x7.title') || "24/7 Support",
+      description: t('landing.benefits.support24x7.description') || "Round-the-clock customer support and training assistance"
     }
-  ];
+  ], [t]);
 
-  const pricingPlans = [
+  const pricingPlans = useMemo(() => [
     {
-      name: "Starter",
+      name: t('landing.pricing.starter.name') || "Starter",
       price: "₹2,999",
-      period: "/month",
-      description: "Perfect for small schools up to 200 students",
+      period: t('landing.pricing.period') || "/month",
+      description: t('landing.pricing.starter.description') || "Perfect for small schools up to 200 students",
       features: [
-        "Up to 200 students",
-        "Basic student management",
-        "Attendance tracking",
-        "Fee management",
-        "Basic reports",
-        "Email support"
+        t('landing.pricing.starter.feature1') || "Up to 200 students",
+        t('landing.pricing.starter.feature2') || "Basic student management",
+        t('landing.pricing.starter.feature3') || "Attendance tracking",
+        t('landing.pricing.starter.feature4') || "Fee management",
+        t('landing.pricing.starter.feature5') || "Basic reports",
+        t('landing.pricing.starter.feature6') || "Email support"
       ],
       popular: false,
       color: "border-gray-200"
     },
     {
-      name: "Professional",
+      name: t('landing.pricing.professional.name') || "Professional",
       price: "₹5,999",
-      period: "/month",
-      description: "Ideal for medium schools up to 1000 students",
+      period: t('landing.pricing.period') || "/month",
+      description: t('landing.pricing.professional.description') || "Ideal for medium schools up to 1000 students",
       features: [
-        "Up to 1000 students",
-        "Complete academic management",
-        "Advanced analytics",
-        "Library management",
-        "Hostel management",
-        "SMS notifications",
-        "Priority support",
-        "Custom reports"
+        t('landing.pricing.professional.feature1') || "Up to 1000 students",
+        t('landing.pricing.professional.feature2') || "Complete academic management",
+        t('landing.pricing.professional.feature3') || "Advanced analytics",
+        t('landing.pricing.professional.feature4') || "Library management",
+        t('landing.pricing.professional.feature5') || "Hostel management",
+        t('landing.pricing.professional.feature6') || "SMS notifications",
+        t('landing.pricing.professional.feature7') || "Priority support",
+        t('landing.pricing.professional.feature8') || "Custom reports"
       ],
       popular: true,
       color: "border-primary ring-2 ring-primary/20"
     },
     {
-      name: "Enterprise",
+      name: t('landing.pricing.enterprise.name') || "Enterprise",
       price: "₹12,999",
-      period: "/month",
-      description: "For large institutions with unlimited students",
+      period: t('landing.pricing.period') || "/month",
+      description: t('landing.pricing.enterprise.description') || "For large institutions with unlimited students",
       features: [
-        "Unlimited students",
-        "Multi-branch support",
-        "Advanced security",
-        "API access",
-        "Custom integrations",
-        "Dedicated support",
-        "Training sessions",
-        "White-label options"
+        t('landing.pricing.enterprise.feature1') || "Unlimited students",
+        t('landing.pricing.enterprise.feature2') || "Multi-branch support",
+        t('landing.pricing.enterprise.feature3') || "Advanced security",
+        t('landing.pricing.enterprise.feature4') || "API access",
+        t('landing.pricing.enterprise.feature5') || "Custom integrations",
+        t('landing.pricing.enterprise.feature6') || "Dedicated support",
+        t('landing.pricing.enterprise.feature7') || "Training sessions",
+        t('landing.pricing.enterprise.feature8') || "White-label options"
       ],
       popular: false,
       color: "border-gray-200"
     }
-  ];
+  ], [t]);
 
   const testimonials = [
     {
@@ -232,12 +234,12 @@ const Index = () => {
   ];
 
   const { data: landingStats } = useLandingStats();
-  const stats = [
-    { number: landingStats?.students?.toLocaleString() || "0", label: "Students Managed" },
-    { number: landingStats?.staff?.toLocaleString() || "0", label: "Staff Members" },
-    { number: "99.9%", label: "Uptime Guarantee" },
-    { number: "24/7", label: "Support Available" }
-  ];
+  const stats = useMemo(() => [
+    { number: landingStats?.students?.toLocaleString() || "0", label: t('landing.stats.studentsManaged') || "Students Managed" },
+    { number: landingStats?.staff?.toLocaleString() || "0", label: t('landing.stats.staffMembers') || "Staff Members" },
+    { number: "99.9%", label: t('landing.stats.uptimeGuarantee') || "Uptime Guarantee" },
+    { number: "24/7", label: t('landing.stats.supportAvailable') || "Support Available" }
+  ], [landingStats, t]);
 
   const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -257,8 +259,8 @@ const Index = () => {
     // TODO: Create contact endpoint in Laravel API
     // For now, just show success message
     toast({
-      title: "Message sent",
-      description: "We'll get back to you soon.",
+      title: t('landing.contact.messageSent') || "Message sent",
+      description: t('landing.contact.messageSentDescription') || "We'll get back to you soon.",
     });
     e.currentTarget.reset();
     

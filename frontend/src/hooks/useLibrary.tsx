@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { libraryBooksApi, libraryCopiesApi, libraryLoansApi } from '@/lib/api/client';
 import type { LibraryBook, LibraryLoan } from '@/types/domain/library';
 import { useAuth } from './useAuth';
@@ -110,11 +110,11 @@ export const useCreateLibraryBook = () => {
   return useMutation({
     mutationFn: (data: any) => libraryBooksApi.create(data),
     onSuccess: async () => {
-      toast.success('Book saved');
+      showToast.success('toast.library.bookSaved');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
       await qc.refetchQueries({ queryKey: ['library-books'] });
     },
-    onError: () => toast.error('Failed to save book'),
+    onError: () => showToast.error('toast.library.bookSaveFailed'),
   });
 };
 
@@ -123,10 +123,10 @@ export const useUpdateLibraryBook = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => libraryBooksApi.update(id, data),
     onSuccess: () => {
-      toast.success('Book updated');
+      showToast.success('toast.library.bookUpdated');
       qc.invalidateQueries({ queryKey: ['library-books'] });
     },
-    onError: () => toast.error('Failed to update book'),
+    onError: () => showToast.error('toast.library.bookUpdateFailed'),
   });
 };
 
@@ -135,10 +135,10 @@ export const useDeleteLibraryBook = () => {
   return useMutation({
     mutationFn: (id: string) => libraryBooksApi.remove(id),
     onSuccess: () => {
-      toast.success('Book removed');
+      showToast.success('toast.library.bookRemoved');
       qc.invalidateQueries({ queryKey: ['library-books'] });
     },
-    onError: () => toast.error('Failed to remove book'),
+    onError: () => showToast.error('toast.library.bookRemoveFailed'),
   });
 };
 
@@ -149,9 +149,9 @@ export const useCreateLibraryCopy = () => {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['library-books'] });
       await qc.refetchQueries({ queryKey: ['library-books'] });
-      toast.success('Copy added');
+      showToast.success('toast.library.copyAdded');
     },
-    onError: () => toast.error('Failed to add copy'),
+    onError: () => showToast.error('toast.library.copyAddFailed'),
   });
 };
 
@@ -174,13 +174,13 @@ export const useCreateLibraryLoan = () => {
   return useMutation({
     mutationFn: (data: any) => libraryLoansApi.create(data),
     onSuccess: async () => {
-      toast.success('Loan created');
+      showToast.success('toast.library.loanCreated');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
       await qc.invalidateQueries({ queryKey: ['library-loans'] });
       await qc.refetchQueries({ queryKey: ['library-books'] });
       await qc.refetchQueries({ queryKey: ['library-loans'] });
     },
-    onError: () => toast.error('Failed to create loan'),
+    onError: () => showToast.error('toast.library.loanCreateFailed'),
   });
 };
 
@@ -189,12 +189,12 @@ export const useReturnLibraryLoan = () => {
   return useMutation({
     mutationFn: ({ id }: { id: string }) => libraryLoansApi.returnCopy(id),
     onSuccess: async () => {
-      toast.success('Book returned');
+      showToast.success('toast.library.bookReturned');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
       await qc.invalidateQueries({ queryKey: ['library-loans'] });
       await qc.refetchQueries({ queryKey: ['library-loans'] });
     },
-    onError: () => toast.error('Failed to return book'),
+    onError: () => showToast.error('toast.library.bookReturnFailed'),
   });
 };
 

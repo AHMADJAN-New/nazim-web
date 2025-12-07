@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { academicYearsApi } from '@/lib/api/client';
@@ -156,10 +156,10 @@ export const useCreateAcademicYear = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic-years'] });
       queryClient.invalidateQueries({ queryKey: ['current-academic-year'] });
-      toast.success('Academic year created successfully');
+      showToast.success('academic.academicYears.academicYearCreated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create academic year');
+      showToast.error(error.message || 'toast.academicYears.createFailed');
     },
   });
 };
@@ -236,10 +236,10 @@ export const useUpdateAcademicYear = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic-years'] });
       queryClient.invalidateQueries({ queryKey: ['current-academic-year'] });
-      toast.success('Academic year updated successfully');
+      showToast.success('academic.academicYears.academicYearUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update academic year');
+      showToast.error(error.message || 'toast.academicYears.updateFailed');
     },
   });
 };
@@ -282,10 +282,10 @@ export const useDeleteAcademicYear = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic-years'] });
       queryClient.invalidateQueries({ queryKey: ['current-academic-year'] });
-      toast.success('Academic year deleted successfully');
+      showToast.success('academic.academicYears.academicYearDeleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete academic year');
+      showToast.error(error.message || 'toast.academicYears.deleteFailed');
     },
   });
 };
@@ -326,10 +326,10 @@ export const useSetCurrentAcademicYear = () => {
       // Force refetch to update the UI
       await queryClient.refetchQueries({ queryKey: ['academic-years'] });
       await queryClient.refetchQueries({ queryKey: ['current-academic-year'] });
-      toast.success('Academic year set as current successfully');
+      showToast.success('academic.academicYears.academicYearSetAsCurrent');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to set academic year as current');
+      showToast.error(error.message || 'toast.academicYears.setCurrentFailed');
     },
   });
 };

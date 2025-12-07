@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { optionalUuidSchema, optionalStringLength, requiredStringLength } from './common';
+import { validationMessages } from './validationHelpers';
 
 /**
  * Educational history validation schema
@@ -26,7 +27,7 @@ export const educationalHistorySchema = z.object({
     return true;
   },
   {
-    message: 'End date must be after or equal to start date',
+    message: validationMessages.endDateAfterStart(),
     path: ['end_date'],
   }
 );

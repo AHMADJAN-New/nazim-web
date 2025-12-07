@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { authApi } from '@/lib/api/client';
 
 interface LoginAttempt {
@@ -29,9 +29,9 @@ export const useSecureAuth = () => {
       // TODO: Implement failed login attempt handling in Laravel API
       // For now, show generic error message
       if (error.message?.includes('credentials') || error.message?.includes('Invalid')) {
-        toast.error('Invalid credentials. Please check your email and password.');
+        showToast.error('toast.invalidCredentials');
       } else {
-        toast.error(error.message || 'Login failed');
+        showToast.error(error.message || 'toast.loginFailed');
               }
 
         return { error };
@@ -84,7 +84,7 @@ export const useSecureAuth = () => {
       // Validate password strength
       const passwordErrors = validatePasswordStrength(password);
       if (passwordErrors.length > 0) {
-        toast.error('Password does not meet security requirements:\n' + passwordErrors.join('\n'));
+        showToast.error('toast.passwordRequirementsNotMet');
         return { error: { message: passwordErrors.join(', ') } };
       }
 

@@ -1,0 +1,33 @@
+
+  // Error Boundary
+  errorBoundary: {
+    somethingWentWrong: string;
+    workingOnFix: string;
+    retry: string;
+    maxRetriesReached: string;
+    refreshOrContactSupport: string;
+    applicationError: string;
+    applicationCrashed: string;
+    technicalDetails: string;
+    refreshPage: string;
+    goHome: string;
+    reportBug: string;
+    componentError: string;
+    tryReloading: string;
+    errorDetailsDev: string;
+    report: string;
+    anErrorOccurred: string;
+    tryAgainLater: string;
+  };
+
+  // Guards
+  guards: {
+    checkingPermissions: string;
+    accessDenied: string;
+    noPermission: string;
+    requiredPermission: string;
+    loading: string;
+    organizationRequired: string;
+    organizationRequiredMessage: string;
+  };
+

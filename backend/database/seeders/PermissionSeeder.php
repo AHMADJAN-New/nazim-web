@@ -56,10 +56,11 @@ class PermissionSeeder extends Seeder
             'library_loans' => ['read', 'create', 'update'],
             'staff_reports' => ['read', 'export'],
             'short_term_courses' => ['read', 'create', 'update', 'delete', 'close'],
-            'course_students' => ['read', 'create', 'update', 'delete', 'enroll_from_main', 'copy_to_main'],
+            'course_students' => ['read', 'create', 'update', 'delete', 'enroll_from_main', 'copy_to_main', 'report'],
             'course_student_discipline_records' => ['read', 'create', 'update', 'delete'],
             'course_attendance' => ['read', 'create', 'update', 'delete'],
             'certificate_templates' => ['read', 'create', 'update', 'delete'],
+            'course_documents' => ['read', 'create', 'update', 'delete'],
         ];
     }
 

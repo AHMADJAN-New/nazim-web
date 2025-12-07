@@ -1,4 +1,5 @@
 import { DayName } from '@/lib/timetableSolver';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export interface ClassTimetableCell {
 	teacherName: string;
@@ -23,17 +24,18 @@ export function ClassTimetableTable({
 	slots,
 	getCellList,
 }: ClassTimetableTableProps) {
+	const { t } = useLanguage();
 	const dayHeaders = allYear ? (['all_year'] as DayName[]) : days;
 	return (
 		<div className="overflow-auto">
 			<table className="min-w-full border">
 				<thead>
 					<tr className="bg-primary text-primary-foreground">
-						<th className="p-2 border">Class</th>
+						<th className="p-2 border">{t('timetable.class') || 'Class'}</th>
 						{dayHeaders.flatMap((day) =>
 							slots.map((s) => (
 								<th key={`${day}-${s.id}`} className="p-2 border">
-									<div className="text-xs capitalize">{day}</div>
+									<div className="text-xs capitalize">{t(`timetable.days.${day}`) || day}</div>
 									<div className="text-xs">{s.name}</div>
 									<div className="text-[10px]">{s.start_time} - {s.end_time}</div>
 								</th>

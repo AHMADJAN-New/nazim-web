@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { permissionsApi, rolesApi } from '@/lib/api/client';
 import { useAuth } from './useAuth';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import type * as PermissionApi from '@/types/api/permission';
 import type { Permission, RolePermission } from '@/types/domain/permission';
@@ -108,10 +108,10 @@ export const useCreateRole = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
-      toast.success('Role created successfully');
+      showToast.success('toast.roleCreated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create role');
+      showToast.error(error.message || 'toast.roleCreateFailed');
     },
   });
 };
@@ -149,10 +149,10 @@ export const useUpdateRole = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
-      toast.success('Role updated successfully');
+      showToast.success('toast.roleUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update role');
+      showToast.error(error.message || 'toast.roleUpdateFailed');
     },
   });
 };
@@ -184,10 +184,10 @@ export const useDeleteRole = () => {
       // CRITICAL: Use both invalidateQueries AND refetchQueries for immediate UI updates
       await queryClient.invalidateQueries({ queryKey: ['roles'] });
       await queryClient.refetchQueries({ queryKey: ['roles'] });
-      toast.success('Role deleted successfully');
+      showToast.success('toast.roleDeleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete role');
+      showToast.error(error.message || 'toast.roleDeleteFailed');
     },
   });
 };
@@ -278,10 +278,10 @@ export const useAssignPermissionToRole = () => {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['role-permissions', variables.role] });
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
-      toast.success(`Permission assigned to ${variables.role} role`);
+      showToast.success(`Permission assigned to ${variables.role} role`);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to assign permission');
+      showToast.error(error.message || 'toast.permissionAssignFailed');
     },
   });
 };
@@ -313,10 +313,10 @@ export const useRemovePermissionFromRole = () => {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['role-permissions', variables.role] });
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
-      toast.success(`Permission removed from ${variables.role} role`);
+      showToast.success(`Permission removed from ${variables.role} role`);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to remove permission');
+      showToast.error(error.message || 'toast.permissionRemoveFailed');
     },
   });
 };
@@ -355,10 +355,10 @@ export const useCreatePermission = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
-      toast.success('Permission created successfully');
+      showToast.success('toast.permissionCreated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create permission');
+      showToast.error(error.message || 'toast.permissionCreateFailed');
     },
   });
 };
@@ -401,10 +401,10 @@ export const useUpdatePermission = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
-      toast.success('Permission updated successfully');
+      showToast.success('toast.permissionUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update permission');
+      showToast.error(error.message || 'toast.permissionUpdateFailed');
     },
   });
 };
@@ -434,10 +434,10 @@ export const useDeletePermission = () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
       queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
-      toast.success('Permission deleted successfully');
+      showToast.success('toast.permissionDeleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete permission');
+      showToast.error(error.message || 'toast.permissionDeleteFailed');
     },
   });
 };
@@ -530,10 +530,10 @@ export const useAssignPermissionToUser = () => {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user-permissions-for-user', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
-      toast.success('Permission assigned to user');
+      showToast.success('toast.permissionAssignedToUser');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to assign permission to user');
+      showToast.error(error.message || 'toast.permissionAssignFailed');
     },
   });
 };
@@ -570,10 +570,10 @@ export const useRemovePermissionFromUser = () => {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user-permissions-for-user', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
-      toast.success('Permission removed from user');
+      showToast.success('toast.permissionRemovedFromUser');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to remove permission from user');
+      showToast.error(error.message || 'toast.permissionRemoveFailed');
     },
   });
 };
@@ -611,10 +611,10 @@ export const useAssignRoleToUser = () => {
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       queryClient.invalidateQueries({ queryKey: ['user-roles', variables.userId] });
-      toast.success(`Role ${variables.role} assigned to user`);
+      showToast.success(`Role ${variables.role} assigned to user`);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to assign role to user');
+      showToast.error(error.message || 'toast.roleAssignFailed');
     },
   });
 };
@@ -648,10 +648,10 @@ export const useRemoveRoleFromUser = () => {
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       queryClient.invalidateQueries({ queryKey: ['user-roles', variables.userId] });
-      toast.success(`Role ${variables.role} removed from user`);
+      showToast.success(`Role ${variables.role} removed from user`);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to remove role from user');
+      showToast.error(error.message || 'toast.roleRemoveFailed');
     },
   });
 };

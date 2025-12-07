@@ -38,8 +38,10 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Search, Shield, Edit, Save, X, Trash2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export function PermissionsManagement() {
+  const { t } = useLanguage();
   const { data: profile } = useProfile();
   const { data: currentOrg } = useCurrentOrganization();
   const { data: roles = [], isLoading: rolesLoading } = useRoles();
@@ -201,12 +203,12 @@ export function PermissionsManagement() {
         await removePermission.mutateAsync({ role, permissionId });
       }
 
-      toast.success('Permission roles updated successfully');
+      toast.success(t('permissions.permissionRolesUpdated'));
       setIsEditMode(false);
       setEditingPermission(null);
       setSelectedRoles({});
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update permission roles');
+      toast.error(error.message || t('permissions.failedToUpdate'));
     }
   };
 
@@ -237,8 +239,8 @@ export function PermissionsManagement() {
           <CardContent className="p-6">
             <div className="text-center text-destructive">
               <Shield className="h-12 w-12 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
-              <p>You do not have permission to manage permissions.</p>
+              <h3 className="text-lg font-semibold mb-2">{t('permissions.accessDenied')}</h3>
+              <p>{t('permissions.noPermissionMessage')}</p>
             </div>
           </CardContent>
         </Card>
@@ -251,7 +253,7 @@ export function PermissionsManagement() {
       <div className="container mx-auto p-6">
         <Card>
           <CardContent className="p-6">
-            <div className="text-center">Loading permissions...</div>
+            <div className="text-center">{t('permissions.loadingPermissions')}</div>
           </CardContent>
         </Card>
       </div>
@@ -269,13 +271,13 @@ export function PermissionsManagement() {
   };
 
   const handleDeletePermission = async (permissionId: string) => {
-    if (!confirm('Are you sure you want to delete this permission? This action cannot be undone.')) {
+    if (!confirm(t('permissions.deleteConfirm'))) {
       return;
     }
     try {
       await deletePermission.mutateAsync(permissionId);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete permission');
+      toast.error(error.message || t('permissions.failedToDelete'));
     }
   };
 
@@ -301,10 +303,10 @@ export function PermissionsManagement() {
               <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div>
                 <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                  Managing permissions for: <span className="font-semibold">{currentOrg.name}</span>
+                  {t('permissions.managingPermissionsFor').replace('{name}', currentOrg.name)}
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300">
-                  You can view global permissions and manage permissions for your organization
+                  {t('permissions.viewGlobalAndManage')}
                 </p>
               </div>
             </div>
@@ -318,10 +320,10 @@ export function PermissionsManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Permissions Management
+                {t('permissions.title')}
               </CardTitle>
               <CardDescription>
-                {`View and manage permissions for ${currentOrg?.name || 'your organization'}. You can create organization-specific permissions.`}
+                {t('permissions.subtitle').replace('{orgName}', currentOrg?.name || 'your organization')}
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -331,7 +333,7 @@ export function PermissionsManagement() {
                   onClick={() => setShowCreateDialog(true)}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Permission
+                  {t('permissions.createPermission')}
                 </Button>
               )}
               {!isEditMode && (
@@ -340,7 +342,7 @@ export function PermissionsManagement() {
                   onClick={() => setIsEditMode(true)}
                 >
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit Mode
+                  {t('permissions.editMode')}
                 </Button>
               )}
               {isEditMode && (
@@ -349,7 +351,7 @@ export function PermissionsManagement() {
                   onClick={() => handleCancelEdit()}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Cancel Edit
+                  {t('permissions.cancelEdit')}
                 </Button>
               )}
             </div>
@@ -361,7 +363,7 @@ export function PermissionsManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search permissions by name, resource, action, or description..."
+                placeholder={t('permissions.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -373,7 +375,7 @@ export function PermissionsManagement() {
                 size="sm"
                 onClick={() => setSelectedResource(null)}
               >
-                All Resources
+                {t('permissions.allResources')}
               </Button>
               {resources.map(resource => (
                 <Button
@@ -393,19 +395,19 @@ export function PermissionsManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Permission Name</TableHead>
-                  <TableHead>Resource</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Roles</TableHead>
-                  {isEditMode && <TableHead className="text-right">Actions</TableHead>}
+                  <TableHead>{t('permissions.permissionName')}</TableHead>
+                  <TableHead>{t('permissions.resource')}</TableHead>
+                  <TableHead>{t('permissions.action')}</TableHead>
+                  <TableHead>{t('permissions.description')}</TableHead>
+                  <TableHead>{t('permissions.roles')}</TableHead>
+                  {isEditMode && <TableHead className="text-right">{t('permissions.actions')}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPermissions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={isEditMode ? 6 : 5} className="text-center text-muted-foreground">
-                      No permissions found
+                      {t('permissions.noPermissionsFound')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -420,9 +422,9 @@ export function PermissionsManagement() {
                           <div className="flex items-center gap-2">
                             {permission.name}
                             {permission.organizationId === null ? (
-                              <Badge variant="outline" className="text-xs">Global</Badge>
+                              <Badge variant="outline" className="text-xs">{t('permissions.globalBadge')}</Badge>
                             ) : (
-                              <Badge variant="secondary" className="text-xs">Org-Specific</Badge>
+                              <Badge variant="secondary" className="text-xs">{t('permissions.orgSpecificBadge')}</Badge>
                             )}
                           </div>
                         </TableCell>
@@ -433,7 +435,7 @@ export function PermissionsManagement() {
                           <Badge variant="secondary">{permission.action}</Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {permission.description || 'No description'}
+                          {permission.description || t('permissions.noDescription')}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
@@ -474,7 +476,7 @@ export function PermissionsManagement() {
                                   disabled={assignPermission.isPending || removePermission.isPending}
                                 >
                                   <Save className="h-4 w-4 mr-2" />
-                                  Save
+                                  {t('permissions.save')}
                                 </Button>
                                 <Button
                                   size="sm"
@@ -482,7 +484,7 @@ export function PermissionsManagement() {
                                   onClick={() => handleCancelEdit()}
                                 >
                                   <X className="h-4 w-4 mr-2" />
-                                  Cancel
+                                  {t('permissions.cancel')}
                                 </Button>
                               </div>
                             ) : (
@@ -494,7 +496,7 @@ export function PermissionsManagement() {
                                     onClick={() => handleEditPermission(permission.id)}
                                   >
                                     <Edit className="h-4 w-4 mr-2" />
-                                    Edit Roles
+                                    {t('permissions.editRoles')}
                                   </Button>
                                 )}
                                 {isPermissionDeletable(permission) && (
@@ -505,7 +507,7 @@ export function PermissionsManagement() {
                                     disabled={deletePermission.isPending}
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
+                                    {t('permissions.delete')}
                                   </Button>
                                 )}
                               </div>
@@ -524,7 +526,7 @@ export function PermissionsManagement() {
           <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Permissions</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('permissions.totalPermissions')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{permissions?.length || 0}</div>
@@ -532,7 +534,7 @@ export function PermissionsManagement() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Resources</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('permissions.resources')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{resources.length}</div>
@@ -540,7 +542,7 @@ export function PermissionsManagement() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Roles</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('permissions.rolesCount')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{roles.length}</div>
@@ -554,47 +556,47 @@ export function PermissionsManagement() {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New Permission</DialogTitle>
+            <DialogTitle>{t('permissions.createDialogTitle')}</DialogTitle>
             <DialogDescription>
-              Create a new organization-specific permission. This permission will only be available for your organization.
+              {t('permissions.createDialogDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="permission-name">Permission Name</Label>
+              <Label htmlFor="permission-name">{t('permissions.permissionName')}</Label>
               <Input
                 id="permission-name"
-                placeholder="e.g., custom_feature.read"
+                placeholder={t('permissions.permissionNamePlaceholder')}
                 value={newPermission.name}
                 onChange={(e) => setNewPermission({ ...newPermission, name: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">
-                Format: resource.action (e.g., custom_feature.read)
+                {t('permissions.permissionNameFormat')}
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="permission-resource">Resource</Label>
+              <Label htmlFor="permission-resource">{t('permissions.resource')}</Label>
               <Input
                 id="permission-resource"
-                placeholder="e.g., custom_feature"
+                placeholder={t('permissions.resourcePlaceholder')}
                 value={newPermission.resource}
                 onChange={(e) => setNewPermission({ ...newPermission, resource: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="permission-action">Action</Label>
+              <Label htmlFor="permission-action">{t('permissions.action')}</Label>
               <Input
                 id="permission-action"
-                placeholder="e.g., read, create, update, delete"
+                placeholder={t('permissions.actionPlaceholder')}
                 value={newPermission.action}
                 onChange={(e) => setNewPermission({ ...newPermission, action: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="permission-description">Description</Label>
+              <Label htmlFor="permission-description">{t('permissions.description')}</Label>
               <Input
                 id="permission-description"
-                placeholder="Describe what this permission allows"
+                placeholder={t('permissions.descriptionPlaceholder')}
                 value={newPermission.description}
                 onChange={(e) => setNewPermission({ ...newPermission, description: e.target.value })}
               />
@@ -602,13 +604,13 @@ export function PermissionsManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-              Cancel
+              {t('permissions.cancel')}
             </Button>
             <Button
               onClick={handleCreatePermission}
               disabled={!newPermission.name || !newPermission.resource || !newPermission.action || createPermission.isPending}
             >
-              {createPermission.isPending ? 'Creating...' : 'Create Permission'}
+              {createPermission.isPending ? t('permissions.creating') : t('permissions.createPermissionButton')}
             </Button>
           </DialogFooter>
         </DialogContent>

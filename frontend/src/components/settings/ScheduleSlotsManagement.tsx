@@ -317,9 +317,9 @@ export function ScheduleSlotsManagement() {
     };
 
     const formatDays = (days: string[]) => {
-        if (!days || days.length === 0) return 'Any Day';
-        if (days.length === 7) return 'All Days';
-        return days.map(day => day.charAt(0).toUpperCase() + day.slice(1)).join(', ');
+        if (!days || days.length === 0) return t('academic.scheduleSlots.anyDay') || 'Any Day';
+        if (days.length === 7) return t('academic.scheduleSlots.allDays') || 'All Days';
+        return days.map(day => t(`academic.timetable.days.${day}`)).join(', ');
     };
 
     return (
@@ -344,8 +344,8 @@ export function ScheduleSlotsManagement() {
                 <CardHeader>
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div>
-                            <CardTitle>Schedule Slots</CardTitle>
-                            <CardDescription>Time ranges available for scheduling</CardDescription>
+                            <CardTitle>{t('academic.scheduleSlots.title')}</CardTitle>
+                            <CardDescription>{t('academic.scheduleSlots.management')}</CardDescription>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 w-full">
                             {academicYears && academicYears.length > 0 && (
@@ -357,7 +357,7 @@ export function ScheduleSlotsManagement() {
                                         <SelectValue placeholder={t('academic.scheduleSlots.selectAcademicYear')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Academic Years</SelectItem>
+                                        <SelectItem value="all">{t('common.allAcademicYears')}</SelectItem>
                                         {academicYears.map((year) => (
                                             <SelectItem key={year.id} value={year.id}>
                                                 {year.name}
@@ -372,11 +372,11 @@ export function ScheduleSlotsManagement() {
                                     onValueChange={(value) => setSelectedSchoolId(value === 'all' ? undefined : value)}
                                 >
                                     <SelectTrigger className="w-full sm:w-48">
-                                        <SelectValue placeholder="Filter by school" />
+                                        <SelectValue placeholder={t('academic.scheduleSlots.school')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Schools</SelectItem>
-                                        <SelectItem value="none">Organization-wide Only</SelectItem>
+                                        <SelectItem value="all">{t('academic.scheduleSlots.allSchools')}</SelectItem>
+                                        <SelectItem value="none">{t('academic.scheduleSlots.organizationWide') || 'Organization-wide Only'}</SelectItem>
                                         {schools.map((school) => (
                                             <SelectItem key={school.id} value={school.id}>
                                                 {school.schoolName}
@@ -388,7 +388,7 @@ export function ScheduleSlotsManagement() {
                             <div className="relative w-full sm:w-64">
                                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search slots..."
+                                    placeholder={t('academic.scheduleSlots.searchPlaceholder')}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="pl-8 w-full"
@@ -399,10 +399,10 @@ export function ScheduleSlotsManagement() {
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
-                        <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                        <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
                     ) : filteredSlots.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
-                            {searchQuery ? 'No slots found matching your search' : 'No schedule slots found'}
+                            {searchQuery ? t('academic.scheduleSlots.noSlotsFound') : t('academic.scheduleSlots.noSlotsMessage')}
                         </div>
                     ) : (
                         <>
@@ -411,16 +411,16 @@ export function ScheduleSlotsManagement() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Code</TableHead>
-                                            <TableHead>Name</TableHead>
-                                            <TableHead>Time Range</TableHead>
-                                            <TableHead>Duration</TableHead>
-                                            <TableHead>Days</TableHead>
-                                            <TableHead>Academic Year</TableHead>
-                                            <TableHead>School</TableHead>
-                                            <TableHead>Sort Order</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
+                                            <TableHead>{t('academic.scheduleSlots.code')}</TableHead>
+                                            <TableHead>{t('academic.scheduleSlots.name')}</TableHead>
+                                            <TableHead>{t('academic.scheduleSlots.timeRange') || 'Time Range'}</TableHead>
+                                            <TableHead>{t('academic.scheduleSlots.duration')}</TableHead>
+                                            <TableHead>{t('academic.scheduleSlots.days')}</TableHead>
+                                            <TableHead>{t('academic.scheduleSlots.academicYear')}</TableHead>
+                                            <TableHead>{t('academic.scheduleSlots.school')}</TableHead>
+                                            <TableHead>{t('academic.scheduleSlots.sortOrder')}</TableHead>
+                                            <TableHead>{t('academic.scheduleSlots.isActive')}</TableHead>
+                                            <TableHead className="text-right">{t('common.actions')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -461,20 +461,20 @@ export function ScheduleSlotsManagement() {
                                                             {slot.academicYear.name}
                                                         </Badge>
                                                     ) : (
-                                                        <Badge variant="outline">Global</Badge>
+                                                        <Badge variant="outline">{t('academic.scheduleSlots.global')}</Badge>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
                                                     {slot.school ? (
                                                         <Badge variant="outline" className="text-xs">{slot.school.schoolName}</Badge>
                                                     ) : (
-                                                        <span className="text-muted-foreground">Organization-wide</span>
+                                                        <span className="text-muted-foreground">{t('academic.scheduleSlots.organizationWide') || 'Organization-wide'}</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>{slot.sortOrder}</TableCell>
                                                 <TableCell>
                                                     <Badge variant={slot.isActive ? 'default' : 'secondary'}>
-                                                        {slot.isActive ? 'Active' : 'Inactive'}
+                                                        {slot.isActive ? t('academic.scheduleSlots.active') : t('academic.scheduleSlots.inactive')}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">
@@ -504,15 +504,15 @@ export function ScheduleSlotsManagement() {
                                                                 }}>
                                                                     <AlertDialogContent>
                                                                         <AlertDialogHeader>
-                                                                            <AlertDialogTitle>Delete Schedule Slot</AlertDialogTitle>
+                                                                            <AlertDialogTitle>{t('academic.scheduleSlots.deleteSlot')}</AlertDialogTitle>
                                                                             <AlertDialogDescription>
-                                                                                Are you sure you want to delete "{slot.name}"? This action cannot be undone.
+                                                                                {t('academic.scheduleSlots.deleteConfirm')} "{slot.name}"
                                                                             </AlertDialogDescription>
                                                                         </AlertDialogHeader>
                                                                         <AlertDialogFooter>
-                                                                            <AlertDialogCancel onClick={() => setDeletingSlot(null)}>Cancel</AlertDialogCancel>
+                                                                            <AlertDialogCancel onClick={() => setDeletingSlot(null)}>{t('common.cancel')}</AlertDialogCancel>
                                                                             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                                                                                Delete
+                                                                                {t('common.delete')}
                                                                             </AlertDialogAction>
                                                                         </AlertDialogFooter>
                                                                     </AlertDialogContent>
@@ -564,15 +564,15 @@ export function ScheduleSlotsManagement() {
                                                                 }}>
                                                                     <AlertDialogContent>
                                                                         <AlertDialogHeader>
-                                                                            <AlertDialogTitle>Delete Schedule Slot</AlertDialogTitle>
+                                                                            <AlertDialogTitle>{t('academic.scheduleSlots.deleteSlot')}</AlertDialogTitle>
                                                                             <AlertDialogDescription>
-                                                                                Are you sure you want to delete "{slot.name}"? This action cannot be undone.
+                                                                                {t('academic.scheduleSlots.deleteConfirm')} "{slot.name}"
                                                                             </AlertDialogDescription>
                                                                         </AlertDialogHeader>
                                                                         <AlertDialogFooter>
-                                                                            <AlertDialogCancel onClick={() => setDeletingSlot(null)}>Cancel</AlertDialogCancel>
+                                                                            <AlertDialogCancel onClick={() => setDeletingSlot(null)}>{t('common.cancel')}</AlertDialogCancel>
                                                                             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                                                                                Delete
+                                                                                {t('common.delete')}
                                                                             </AlertDialogAction>
                                                                         </AlertDialogFooter>
                                                                     </AlertDialogContent>
@@ -616,10 +616,10 @@ export function ScheduleSlotsManagement() {
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <span className="text-muted-foreground">Status:</span>
+                                                        <span className="text-muted-foreground">{t('common.statusLabel')}</span>
                                                         <div className="mt-1">
                                                             <Badge variant={slot.isActive ? 'default' : 'secondary'}>
-                                                                {slot.isActive ? 'Active' : 'Inactive'}
+                                                                {slot.isActive ? t('academic.scheduleSlots.active') : t('academic.scheduleSlots.inactive')}
                                                             </Badge>
                                                         </div>
                                                     </div>
@@ -664,35 +664,35 @@ export function ScheduleSlotsManagement() {
                     <DialogHeader>
                         <DialogTitle>{editingSlot ? t('academic.scheduleSlots.editSlot') : t('academic.scheduleSlots.addSlot')}</DialogTitle>
                         <DialogDescription>
-                            {editingSlot ? 'Update the schedule slot details' : 'Create a new time range for scheduling'}
+                            {editingSlot ? t('academic.scheduleSlots.updateSlot') || 'Update the schedule slot details' : t('academic.scheduleSlots.createSlot') || 'Create a new time range for scheduling'}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={onSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="code">Code *</Label>
+                                <Label htmlFor="code">{t('academic.scheduleSlots.code')} *</Label>
                                 <Input
                                     id="code"
                                     {...form.register('code')}
-                                    placeholder="SLOT-001"
+                                    placeholder={t('academic.scheduleSlots.code')}
                                 />
                                 {form.formState.errors.code && (
                                     <p className="text-sm text-destructive">{form.formState.errors.code.message}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="name">Name *</Label>
+                                <Label htmlFor="name">{t('academic.scheduleSlots.name')} *</Label>
                                 <Input
                                     id="name"
                                     {...form.register('name')}
-                                    placeholder="Morning Slot"
+                                    placeholder={t('academic.scheduleSlots.name')}
                                 />
                                 {form.formState.errors.name && (
                                     <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="default_duration_minutes">Duration (minutes) *</Label>
+                                <Label htmlFor="default_duration_minutes">{t('academic.scheduleSlots.duration')} *</Label>
                                 <Input
                                     id="default_duration_minutes"
                                     type="number"
@@ -707,7 +707,7 @@ export function ScheduleSlotsManagement() {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="start_time">Start Time *</Label>
+                                <Label htmlFor="start_time">{t('academic.scheduleSlots.startTime')} *</Label>
                                 <Input
                                     id="start_time"
                                     type="time"
@@ -718,7 +718,7 @@ export function ScheduleSlotsManagement() {
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="end_time">End Time *</Label>
+                                <Label htmlFor="end_time">{t('academic.scheduleSlots.endTime')} *</Label>
                                 <Input
                                     id="end_time"
                                     type="time"
@@ -807,7 +807,7 @@ export function ScheduleSlotsManagement() {
                                                 onValueChange={(value) => field.onChange(value === 'all' ? null : value)}
                                             >
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Select school" />
+                                                    <SelectValue placeholder={t('common.selectSchool')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="all">{t('academic.scheduleSlots.allSchools')}</SelectItem>
@@ -826,7 +826,7 @@ export function ScheduleSlotsManagement() {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="sort_order">Sort Order *</Label>
+                                <Label htmlFor="sort_order">{t('academic.scheduleSlots.sortOrder')} *</Label>
                                 <Input
                                     id="sort_order"
                                     type="number"
@@ -848,18 +848,18 @@ export function ScheduleSlotsManagement() {
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
                                             />
-                                            <Label htmlFor="is_active">Active</Label>
+                                            <Label htmlFor="is_active">{t('academic.scheduleSlots.isActive')}</Label>
                                         </div>
                                     )}
                                 />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="description">Description</Label>
+                            <Label htmlFor="description">{t('academic.scheduleSlots.description')}</Label>
                             <Textarea
                                 id="description"
                                 {...form.register('description')}
-                                placeholder="Optional description"
+                                placeholder={t('academic.scheduleSlots.description')}
                                 rows={3}
                             />
                             {form.formState.errors.description && (
@@ -868,10 +868,10 @@ export function ScheduleSlotsManagement() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={closeDialog}>
-                                Cancel
+                                {t('common.cancel')}
                             </Button>
                             <Button type="submit" disabled={createSlot.isPending || updateSlot.isPending}>
-                                {editingSlot ? 'Update' : 'Create'}
+                                {editingSlot ? t('common.save') : t('common.save')}
                             </Button>
                         </DialogFooter>
                     </form>

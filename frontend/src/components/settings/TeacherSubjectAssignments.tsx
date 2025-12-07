@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTeacherSubjectAssignments, useCreateTeacherSubjectAssignment, useUpdateTeacherSubjectAssignment, useDeleteTeacherSubjectAssignment, type TeacherSubjectAssignment } from '@/hooks/useTeacherSubjectAssignments';
 import { useProfile } from '@/hooks/useProfiles';
-import { useStaff } from '@/hooks/useStaff';
+import { useStaff, type Staff } from '@/hooks/useStaff';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useSchools } from '@/hooks/useSchools';
@@ -9,6 +9,7 @@ import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useScheduleSlots } from '@/hooks/useScheduleSlots';
 import { useClassSubjectsForMultipleClasses } from '@/hooks/useSubjects';
 import { useOrganizations } from '@/hooks/useOrganizations';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -98,11 +99,17 @@ export function TeacherSubjectAssignments() {
     }
     const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYearId || undefined, profile?.organization_id);
     const { data: scheduleSlots } = useScheduleSlots(profile?.organization_id, selectedAcademicYearId || undefined);
-    const { data: assignments, isLoading, refetch: refetchAssignments } = useTeacherSubjectAssignments(
+    const queryClient = useQueryClient();
+    const assignmentsResult = useTeacherSubjectAssignments(
         profile?.organization_id,
         teacherFilter !== 'all' ? teacherFilter : undefined,
         academicYearFilter !== 'all' ? academicYearFilter : undefined
     );
+    const assignments = 'data' in assignmentsResult ? assignmentsResult.data : assignmentsResult.assignments;
+    const isLoading = assignmentsResult.isLoading;
+    const refetchAssignments = async () => {
+        await queryClient.invalidateQueries({ queryKey: ['teacher-subject-assignments'] });
+    };
     const createAssignment = useCreateTeacherSubjectAssignment();
     const updateAssignment = useUpdateTeacherSubjectAssignment();
     const deleteAssignment = useDeleteTeacherSubjectAssignment();
@@ -111,14 +118,14 @@ export function TeacherSubjectAssignments() {
     // Note: teacher_subject_assignments.teacher_id now references staff.id (not profiles.id)
     // This allows staff to be assigned even without a profile/account
     // useStaff hook already filters out deleted staff, so we don't need to check deleted_at
-    const teacherStaff = useMemo(() => {
+    const teacherStaff = useMemo((): Staff[] => {
         if (!staff) {
             console.log('TeacherSubjectAssignments: No staff data available');
             return [];
         }
         console.log('TeacherSubjectAssignments: Staff data:', staff.length, 'records');
         // Show all active staff - they can be assigned even without profile_id
-        const activeStaff = staff.filter(s => s.status === 'active');
+        const activeStaff = staff.filter(s => s.status === 'active') as Staff[];
         console.log('TeacherSubjectAssignments: Active staff:', activeStaff.length, 'records');
         return activeStaff;
     }, [staff]);
@@ -173,7 +180,7 @@ export function TeacherSubjectAssignments() {
         if (!scheduleSlots) return [];
         if (!selectedSchoolId || selectedSchoolId === 'all') return scheduleSlots;
         return scheduleSlots.filter(slot => 
-            slot.school_id === null || slot.school_id === selectedSchoolId
+            slot.schoolId === null || slot.schoolId === selectedSchoolId
         );
     }, [scheduleSlots, selectedSchoolId]);
 
@@ -188,9 +195,26 @@ export function TeacherSubjectAssignments() {
         return assignments.map(assignment => ({
             ...assignment,
             schedule_slots: (assignment.schedule_slot_ids || [])
-                .map((id: string) => slotsMap.get(id))
-                .filter(Boolean),
-        }));
+                .map((id: string) => {
+                    const slot = slotsMap.get(id);
+                    if (!slot) return null;
+                    // Convert domain ScheduleSlot to API format expected by TeacherSubjectAssignment
+                    return {
+                        id: slot.id,
+                        name: slot.name,
+                        code: slot.code,
+                        start_time: slot.startTime,
+                        end_time: slot.endTime,
+                    };
+                })
+                .filter(Boolean) as Array<{
+                    id: string;
+                    name: string;
+                    code: string;
+                    start_time: string;
+                    end_time: string;
+                }>,
+        })) as TeacherSubjectAssignment[];
     }, [assignments, scheduleSlots]);
 
     // Create a map of academic_year_id -> academic year name for quick lookup
@@ -211,14 +235,19 @@ export function TeacherSubjectAssignments() {
 
         if (searchQuery) {
             const query = (searchQuery || '').toLowerCase();
-            filtered = filtered.filter(assignment => 
-                assignment.teacher?.full_name?.toLowerCase().includes(query) ||
-                assignment.teacher?.employee_id?.toLowerCase().includes(query) ||
-                assignment.subject?.name?.toLowerCase().includes(query) ||
-                assignment.subject?.code?.toLowerCase().includes(query) ||
-                assignment.class_academic_year?.class?.name?.toLowerCase().includes(query) ||
-                assignment.class_academic_year?.class?.code?.toLowerCase().includes(query)
-            );
+            filtered = filtered.filter(assignment => {
+                const teacherFullName = assignment.teacher ? [
+                    assignment.teacher.first_name,
+                    assignment.teacher.father_name,
+                    assignment.teacher.grandfather_name
+                ].filter(Boolean).join(' ') : '';
+                return teacherFullName?.toLowerCase().includes(query) ||
+                    assignment.teacher?.employee_id?.toLowerCase().includes(query) ||
+                    assignment.subject?.name?.toLowerCase().includes(query) ||
+                    assignment.subject?.code?.toLowerCase().includes(query) ||
+                    assignment.class_academic_year?.class?.name?.toLowerCase().includes(query) ||
+                    assignment.class_academic_year?.class?.code?.toLowerCase().includes(query);
+            });
         }
 
         return filtered;
@@ -258,19 +287,19 @@ export function TeacherSubjectAssignments() {
 
     const handleStep1Next = () => {
         if (!selectedTeacherId) {
-            toast.error('Please select a teacher');
+            toast.error(t('teacherSubjectAssignments.pleaseSelectTeacher'));
             return;
         }
         if (!selectedAcademicYearId) {
-            toast.error('Please select an academic year');
+            toast.error(t('teacherSubjectAssignments.pleaseSelectAcademicYear'));
             return;
         }
         if (selectedClassIds.length === 0) {
-            toast.error('Please select at least one class');
+            toast.error(t('teacherSubjectAssignments.pleaseSelectAtLeastOneClass'));
             return;
         }
         if (selectedSlotIds.length === 0) {
-            toast.error('Please select at least one schedule slot');
+            toast.error(t('teacherSubjectAssignments.pleaseSelectAtLeastOneScheduleSlot'));
             return;
         }
         setCurrentStep(2);
@@ -295,45 +324,45 @@ export function TeacherSubjectAssignments() {
 
     const handleSubmit = async () => {
         if (!selectedTeacherId || !selectedAcademicYearId) {
-            toast.error('Please complete step 1');
+            toast.error(t('teacherSubjectAssignments.pleaseCompleteStep1'));
             return;
         }
 
         // Use user's organization
         let organizationId = profile?.organization_id;
         
-        // If school is selected, get organization_id from school
+        // If school is selected, get organizationId from school
         if (!organizationId && selectedSchoolId && selectedSchoolId !== 'all') {
             const selectedSchool = schools?.find(s => s.id === selectedSchoolId);
-            if (selectedSchool?.organization_id) {
-                organizationId = selectedSchool.organization_id;
+            if (selectedSchool?.organizationId) {
+                organizationId = selectedSchool.organizationId;
             }
         }
         
-        // If still no organization_id, try to get it from the first selected class_academic_year
+        // If still no organizationId, try to get it from the first selected class_academic_year
         if (!organizationId && selectedClassIds.length > 0) {
             const firstClass = filteredClasses.find(c => c.id === selectedClassIds[0]);
-            if (firstClass?.organization_id) {
-                organizationId = firstClass.organization_id;
+            if (firstClass?.organizationId) {
+                organizationId = firstClass.organizationId;
             }
         }
         
         if (!organizationId) {
-            toast.error('Organization ID is required. Please select a school or ensure you are assigned to an organization.');
+            toast.error(t('teacherSubjectAssignments.organizationIdRequired'));
             return;
         }
 
         if (isEditDialogOpen && editingAssignment) {
             // Update single assignment
             if (selectedClassIds.length === 0 || selectedSlotIds.length === 0) {
-                toast.error('Please select at least one class and schedule slot');
+                toast.error(t('teacherSubjectAssignments.pleaseSelectAtLeastOneClassAndSlot'));
                 return;
             }
 
             const classId = selectedClassIds[0];
             const subjectIds = selectedSubjectIds[classId] || [];
             if (subjectIds.length === 0) {
-                toast.error('Please select at least one subject');
+                toast.error(t('teacherSubjectAssignments.pleaseSelectAtLeastOneSubject'));
                 return;
             }
 
@@ -382,7 +411,7 @@ export function TeacherSubjectAssignments() {
             });
 
             if (assignmentsToCreate.length === 0) {
-                toast.error('Please select at least one subject to assign');
+                toast.error(t('teacherSubjectAssignments.pleaseSelectAtLeastOneSubjectToAssign'));
                 return;
             }
 
@@ -416,7 +445,7 @@ export function TeacherSubjectAssignments() {
             <div className="container mx-auto p-6">
                 <Card>
                     <CardContent className="p-6">
-                        <div className="text-center text-muted-foreground">You don't have permission to view teacher subject assignments</div>
+                        <div className="text-center text-muted-foreground">{t('teacherSubjectAssignments.noPermission')}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -432,17 +461,17 @@ export function TeacherSubjectAssignments() {
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 <BookOpen className="h-5 w-5" />
-                                Teacher Subject Assignments
+                                {t('teacherSubjectAssignments.title')}
                             </CardTitle>
                             <CardDescription>
-                                Assign subjects to teachers for timetable generation
+                                {t('teacherSubjectAssignments.subtitle')}
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                             {hasCreatePermission && (
                                 <Button onClick={handleCreateClick}>
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Create Assignment
+                                    {t('teacherSubjectAssignments.createAssignment')}
                                 </Button>
                             )}
                         </div>
@@ -454,7 +483,7 @@ export function TeacherSubjectAssignments() {
                         <div className="relative flex-1 min-w-[200px]">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search by teacher, subject, or class..."
+                                placeholder={t('teacherSubjectAssignments.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
@@ -462,13 +491,13 @@ export function TeacherSubjectAssignments() {
                         </div>
                         <Select value={teacherFilter} onValueChange={setTeacherFilter}>
                             <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="Filter by teacher" />
+                                <SelectValue placeholder={t('teacherSubjectAssignments.filterByTeacher')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Teachers</SelectItem>
+                                <SelectItem value="all">{t('teacherSubjectAssignments.allTeachers')}</SelectItem>
                                 {teacherStaff.length === 0 ? (
                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                        No active staff with linked profiles found
+                                        {t('teacherSubjectAssignments.noActiveStaff')}
                                     </div>
                                 ) : (
                                     teacherStaff.map((staffMember) => (
@@ -485,10 +514,10 @@ export function TeacherSubjectAssignments() {
                         </Select>
                         <Select value={academicYearFilter} onValueChange={setAcademicYearFilter}>
                             <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="Filter by academic year" />
+                                <SelectValue placeholder={t('teacherSubjectAssignments.filterByAcademicYear')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Academic Years</SelectItem>
+                                <SelectItem value="all">{t('teacherSubjectAssignments.allAcademicYears')}</SelectItem>
                                 {academicYears?.map((year) => (
                                     <SelectItem key={year.id} value={year.id}>
                                         {year.name}
@@ -507,7 +536,7 @@ export function TeacherSubjectAssignments() {
                                 }}
                             >
                                 <X className="w-4 h-4 mr-2" />
-                                Clear
+                                {t('teacherSubjectAssignments.clear')}
                             </Button>
                         )}
                     </div>
@@ -519,49 +548,56 @@ export function TeacherSubjectAssignments() {
                 <CardContent className="p-0">
                     {isLoading ? (
                         <div className="p-6">
-                            <LoadingSpinner text="Loading assignments..." />
+                            <LoadingSpinner text={t('teacherSubjectAssignments.loadingAssignments')} />
                         </div>
                     ) : filteredAssignments.length === 0 ? (
                         <div className="p-6 text-center text-muted-foreground">
                             {searchQuery || teacherFilter !== 'all' || academicYearFilter !== 'all'
-                                ? 'No assignments found matching your filters'
-                                : 'No assignments available'}
+                                ? t('teacherSubjectAssignments.noAssignmentsFound')
+                                : t('teacherSubjectAssignments.noAssignmentsAvailable')}
                         </div>
                     ) : (
                         <div className="rounded-md border">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Teacher</TableHead>
-                                        <TableHead>Academic Year</TableHead>
-                                        <TableHead>Class</TableHead>
-                                        <TableHead>Subject</TableHead>
-                                        <TableHead>Schedule Slots</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Actions</TableHead>
+                                        <TableHead>{t('teacherSubjectAssignments.teacher')}</TableHead>
+                                        <TableHead>{t('teacherSubjectAssignments.academicYear')}</TableHead>
+                                        <TableHead>{t('teacherSubjectAssignments.class')}</TableHead>
+                                        <TableHead>{t('teacherSubjectAssignments.subject')}</TableHead>
+                                        <TableHead>{t('teacherSubjectAssignments.scheduleSlots')}</TableHead>
+                                        <TableHead>{t('teacherSubjectAssignments.status')}</TableHead>
+                                        <TableHead>{t('teacherSubjectAssignments.actions')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredAssignments.map((assignment) => (
                                         <TableRow key={assignment.id}>
                                             <TableCell>
-                                                {assignment.teacher?.employee_id && assignment.teacher?.full_name 
-                                                    ? `${assignment.teacher.employee_id} - ${assignment.teacher.full_name}`
-                                                    : assignment.teacher?.full_name || 'Unknown'}
+                                                {(() => {
+                                                    const teacherFullName = assignment.teacher ? [
+                                                        assignment.teacher.first_name,
+                                                        assignment.teacher.father_name,
+                                                        assignment.teacher.grandfather_name
+                                                    ].filter(Boolean).join(' ') : '';
+                                                    return assignment.teacher?.employee_id && teacherFullName
+                                                        ? `${assignment.teacher.employee_id} - ${teacherFullName}`
+                                                        : teacherFullName || t('teacherSubjectAssignments.unknown');
+                                                })()}
                                             </TableCell>
                                             <TableCell>
                                                 {assignment.academic_year_id 
                                                     ? (academicYearMap.get(assignment.academic_year_id) || 
-                                                       assignment.class_academic_year?.academic_year?.name || 
-                                                       'Unknown Year')
-                                                    : (assignment.class_academic_year?.academic_year?.name || 'Unknown Year')}
+                                                       assignment.academic_year?.name || 
+                                                       t('teacherSubjectAssignments.unknownYear'))
+                                                    : (assignment.academic_year?.name || t('teacherSubjectAssignments.unknownYear'))}
                                             </TableCell>
                                             <TableCell>
-                                                {assignment.class_academic_year?.class?.name || assignment.class_academic_year?.class?.code || 'Unknown'}
+                                                {assignment.class_academic_year?.class?.name || assignment.class_academic_year?.class?.code || t('teacherSubjectAssignments.unknownClass')}
                                                 {assignment.class_academic_year?.section_name && ` - ${assignment.class_academic_year.section_name}`}
                                             </TableCell>
                                             <TableCell>
-                                                {assignment.subject?.name || assignment.subject?.code || 'Unknown'}
+                                                {assignment.subject?.name || assignment.subject?.code || t('teacherSubjectAssignments.unknown')}
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-wrap gap-1">
@@ -574,7 +610,7 @@ export function TeacherSubjectAssignments() {
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant={assignment.is_active ? 'default' : 'secondary'}>
-                                                    {assignment.is_active ? 'Active' : 'Inactive'}
+                                                    {assignment.is_active ? t('teacherSubjectAssignments.active') : t('teacherSubjectAssignments.inactive')}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
@@ -605,15 +641,15 @@ export function TeacherSubjectAssignments() {
                                                             </AlertDialogTrigger>
                                                             <AlertDialogContent>
                                                                 <AlertDialogHeader>
-                                                                    <AlertDialogTitle>Delete Assignment</AlertDialogTitle>
+                                                                    <AlertDialogTitle>{t('teacherSubjectAssignments.deleteAssignment')}</AlertDialogTitle>
                                                                     <AlertDialogDescription>
-                                                                        Are you sure you want to delete this assignment? This action cannot be undone.
+                                                                        {t('teacherSubjectAssignments.deleteConfirm')}
                                                                     </AlertDialogDescription>
                                                                 </AlertDialogHeader>
                                                                 <AlertDialogFooter>
-                                                                    <AlertDialogCancel onClick={() => setDeletingAssignment(null)}>Cancel</AlertDialogCancel>
+                                                                    <AlertDialogCancel onClick={() => setDeletingAssignment(null)}>{t('teacherSubjectAssignments.cancel')}</AlertDialogCancel>
                                                                     <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                                                                        Delete
+                                                                        {t('teacherSubjectAssignments.delete')}
                                                                     </AlertDialogAction>
                                                                 </AlertDialogFooter>
                                                             </AlertDialogContent>
@@ -643,9 +679,9 @@ export function TeacherSubjectAssignments() {
             }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Create Teacher Subject Assignment</DialogTitle>
+                        <DialogTitle>{t('teacherSubjectAssignments.createDialogTitle')}</DialogTitle>
                         <DialogDescription>
-                            Assign subjects to teachers for timetable generation
+                            {t('teacherSubjectAssignments.subtitle')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -708,32 +744,32 @@ export function TeacherSubjectAssignments() {
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
                                                 <User className="h-5 w-5" />
-                                                Teacher & Classes
+                                                {t('teacherSubjectAssignments.teacherAndClasses')}
                                             </CardTitle>
-                                            <CardDescription>Select teacher, academic year, classes, and schedule slots</CardDescription>
+                                            <CardDescription>{t('teacherSubjectAssignments.teacherAndClassesDescription')}</CardDescription>
                                         </CardHeader>
                                         <CardContent className="space-y-4">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
-                                                    <Label>Teacher *</Label>
+                                                    <Label>{t('teacherSubjectAssignments.teacherRequired')}</Label>
                                                     <Select value={selectedTeacherId} onValueChange={setSelectedTeacherId}>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder="Select a teacher" />
+                                                            <SelectValue placeholder={t('teacherSubjectAssignments.selectTeacher')} />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {staffLoading ? (
                                                                 <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                                    Loading staff...
+                                                                    {t('teacherSubjectAssignments.loadingStaff')}
                                                                 </div>
                                                             ) : staffError ? (
                                                                 <div className="px-2 py-1.5 text-sm text-destructive">
-                                                                    Error loading staff: {staffError.message || 'Unknown error'}
+                                                                    {t('teacherSubjectAssignments.errorLoadingStaff').replace('{error}', staffError.message || 'Unknown error')}
                                                                 </div>
                                                             ) : teacherStaff.length === 0 ? (
                                                                 <div className="px-2 py-1.5 text-sm text-muted-foreground">
                                                                     {staff && staff.length > 0 
-                                                                        ? `No active staff with linked profiles found. Total active staff: ${staff.filter(s => s.status === 'active').length}`
-                                                                        : 'No staff data available.'}
+                                                                        ? t('teacherSubjectAssignments.noActiveStaffMessage').replace('{count}', staff.filter(s => s.status === 'active').length.toString())
+                                                                        : t('teacherSubjectAssignments.noStaffData')}
                                                                 </div>
                                                             ) : (
                                                                 teacherStaff.map((staffMember) => (
@@ -751,10 +787,10 @@ export function TeacherSubjectAssignments() {
                                                 </div>
 
                                                 <div className="space-y-2">
-                                                    <Label>Academic Year *</Label>
+                                                    <Label>{t('teacherSubjectAssignments.academicYearRequired')}</Label>
                                                     <Select value={selectedAcademicYearId} onValueChange={setSelectedAcademicYearId}>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder="Select academic year" />
+                                                            <SelectValue placeholder={t('teacherSubjectAssignments.selectAcademicYear')} />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {academicYears?.map((year) => (
@@ -768,16 +804,16 @@ export function TeacherSubjectAssignments() {
 
                                                 {schools && schools.length > 1 && (
                                                     <div className="space-y-2">
-                                                        <Label>School (Optional)</Label>
+                                                        <Label>{t('teacherSubjectAssignments.schoolOptional')}</Label>
                                                         <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
                                                             <SelectTrigger>
-                                                                <SelectValue placeholder="All schools" />
+                                                                <SelectValue placeholder={t('teacherSubjectAssignments.allSchools')} />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                <SelectItem value="all">All Schools</SelectItem>
+                                                                <SelectItem value="all">{t('teacherSubjectAssignments.allSchools')}</SelectItem>
                                                                 {schools.map((school) => (
                                                                     <SelectItem key={school.id} value={school.id}>
-                                                                        {school.school_name}
+                                                                        {school.schoolName}
                                                                     </SelectItem>
                                                                 ))}
                                                             </SelectContent>
@@ -789,10 +825,10 @@ export function TeacherSubjectAssignments() {
                                             {selectedAcademicYearId && (
                                                 <>
                                                     <div className="space-y-2">
-                                                        <Label>Classes *</Label>
+                                                        <Label>{t('teacherSubjectAssignments.classesRequired')}</Label>
                                                         <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
                                                             {filteredClasses.length === 0 ? (
-                                                                <p className="text-sm text-muted-foreground">No classes found for selected academic year</p>
+                                                                <p className="text-sm text-muted-foreground">{t('teacherSubjectAssignments.noClassesFound')}</p>
                                                             ) : (
                                                                 <div className="space-y-2">
                                                                     {filteredClasses.map((cay) => (
@@ -819,7 +855,7 @@ export function TeacherSubjectAssignments() {
                                                                                 className="text-sm font-normal cursor-pointer flex-1"
                                                                             >
                                                                                 {cay.class?.name || cay.class?.code || 'Unknown Class'}
-                                                                                {cay.section_name && ` - ${cay.section_name}`}
+                                                                                {cay.sectionName && ` - ${cay.sectionName}`}
                                                                             </Label>
                                                                         </div>
                                                                     ))}
@@ -829,10 +865,10 @@ export function TeacherSubjectAssignments() {
                                                     </div>
 
                                                     <div className="space-y-2">
-                                                        <Label>Schedule Slots *</Label>
+                                                        <Label>{t('teacherSubjectAssignments.scheduleSlotsRequired')}</Label>
                                                         <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
                                                             {filteredSlots.length === 0 ? (
-                                                                <p className="text-sm text-muted-foreground">No schedule slots found</p>
+                                                                <p className="text-sm text-muted-foreground">{t('teacherSubjectAssignments.noScheduleSlotsFound')}</p>
                                                             ) : (
                                                                 <div className="space-y-2">
                                                                     {filteredSlots.map((slot) => (
@@ -852,7 +888,7 @@ export function TeacherSubjectAssignments() {
                                                                                 htmlFor={`slot-${slot.id}`}
                                                                                 className="text-sm font-normal cursor-pointer flex-1"
                                                                             >
-                                                                                {slot.name} ({slot.code}) - {slot.start_time} to {slot.end_time}
+                                                                                {slot.name} ({slot.code}) - {slot.startTime} to {slot.endTime}
                                                                             </Label>
                                                                         </div>
                                                                     ))}
@@ -874,9 +910,9 @@ export function TeacherSubjectAssignments() {
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
                                                 <GraduationCap className="h-5 w-5" />
-                                                Select Subjects
+                                                {t('teacherSubjectAssignments.selectSubjects')}
                                             </CardTitle>
-                                            <CardDescription>Choose which subjects the teacher will teach for each selected class</CardDescription>
+                                            <CardDescription>{t('teacherSubjectAssignments.selectSubjectsDescription')}</CardDescription>
                                         </CardHeader>
                                         <CardContent className="space-y-6">
                                             {selectedClassIds.map((classId) => {
@@ -887,11 +923,11 @@ export function TeacherSubjectAssignments() {
                                                 return (
                                                     <div key={classId} className="border rounded-md p-4 space-y-3">
                                                         <div className="font-semibold">
-                                                            {cay?.class?.name || cay?.class?.code || 'Unknown Class'}
-                                                            {cay?.section_name && ` - ${cay.section_name}`}
+                                                            {cay?.class?.name || cay?.class?.code || t('teacherSubjectAssignments.unknownClass')}
+                                                            {cay?.sectionName && ` - ${cay.sectionName}`}
                                                         </div>
                                                         {subjects.length === 0 ? (
-                                                            <p className="text-sm text-muted-foreground">No subjects found for this class</p>
+                                                            <p className="text-sm text-muted-foreground">{t('teacherSubjectAssignments.noSubjectsFound')}</p>
                                                         ) : (
                                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                                                 {subjects.map((cs) => (
@@ -905,7 +941,7 @@ export function TeacherSubjectAssignments() {
                                                                             htmlFor={`subject-${classId}-${cs.subject_id}`}
                                                                             className="text-sm font-normal cursor-pointer flex-1"
                                                                         >
-                                                                            {cs.subject?.name || cs.subject?.code || 'Unknown Subject'}
+                                                                            {cs.subject?.name || cs.subject?.code || t('teacherSubjectAssignments.unknownSubject')}
                                                                         </Label>
                                                                     </div>
                                                                 ))}
@@ -916,13 +952,13 @@ export function TeacherSubjectAssignments() {
                                             })}
 
                                             <div className="space-y-2">
-                                                <Label htmlFor="notes">Notes (Optional)</Label>
+                                                <Label htmlFor="notes">{t('teacherSubjectAssignments.notesOptional')}</Label>
                                                 <Textarea
                                                     id="notes"
                                                     value={notes}
                                                     onChange={(e) => setNotes(e.target.value)}
                                                     rows={3}
-                                                    placeholder="Additional notes about this assignment..."
+                                                    placeholder={t('teacherSubjectAssignments.notesPlaceholder')}
                                                 />
                                             </div>
                                         </CardContent>
@@ -937,7 +973,7 @@ export function TeacherSubjectAssignments() {
                             {currentStep > 1 && (
                                 <Button type="button" variant="outline" onClick={() => setCurrentStep(1)}>
                                     <ChevronLeft className="h-4 w-4 mr-2" />
-                                    Previous
+                                    {t('teacherSubjectAssignments.previous')}
                                 </Button>
                             )}
                         </div>
@@ -950,11 +986,11 @@ export function TeacherSubjectAssignments() {
                                     resetForm();
                                 }}
                             >
-                                {t('common.cancel')}
+                                {t('teacherSubjectAssignments.cancel')}
                             </Button>
                             {currentStep < 2 ? (
                                 <Button type="button" onClick={handleStep1Next}>
-                                    Next
+                                    {t('teacherSubjectAssignments.next')}
                                     <ChevronRight className="h-4 w-4 ml-2" />
                                 </Button>
                             ) : (
@@ -963,7 +999,7 @@ export function TeacherSubjectAssignments() {
                                     onClick={handleSubmit}
                                     disabled={createAssignment.isPending || Object.values(selectedSubjectIds).flat().length === 0}
                                 >
-                                    {createAssignment.isPending ? 'Creating...' : 'Create Assignments'}
+                                    {createAssignment.isPending ? t('teacherSubjectAssignments.creating') : t('teacherSubjectAssignments.createAssignments')}
                                 </Button>
                             )}
                         </div>
@@ -985,9 +1021,9 @@ export function TeacherSubjectAssignments() {
             }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Edit Teacher Subject Assignment</DialogTitle>
+                        <DialogTitle>{t('teacherSubjectAssignments.editDialogTitle')}</DialogTitle>
                         <DialogDescription>
-                            Update the assignment details
+                            {t('teacherSubjectAssignments.updateAssignmentDetails')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -1050,54 +1086,61 @@ export function TeacherSubjectAssignments() {
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
                                                 <User className="h-5 w-5" />
-                                                Teacher & Classes
+                                                {t('teacherSubjectAssignments.teacherAndClasses')}
                                             </CardTitle>
-                                            <CardDescription>Assignment details (read-only)</CardDescription>
+                                            <CardDescription>{t('teacherSubjectAssignments.assignmentDetailsReadOnly')}</CardDescription>
                                         </CardHeader>
                                         <CardContent className="space-y-4">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
-                                                    <Label>Teacher</Label>
+                                                    <Label>{t('teacherSubjectAssignments.teacher')}</Label>
                                                     <Input 
                                                         value={
-                                                            editingAssignment.teacher?.employee_id && editingAssignment.teacher?.full_name
-                                                                ? `${editingAssignment.teacher.employee_id} - ${editingAssignment.teacher.full_name}`
-                                                                : editingAssignment.teacher?.full_name || 'Unknown'
+                                                            (() => {
+                                                                const teacherFullName = editingAssignment.teacher ? [
+                                                                    editingAssignment.teacher.first_name,
+                                                                    editingAssignment.teacher.father_name,
+                                                                    editingAssignment.teacher.grandfather_name
+                                                                ].filter(Boolean).join(' ') : '';
+                                                                return editingAssignment.teacher?.employee_id && teacherFullName
+                                                                    ? `${editingAssignment.teacher.employee_id} - ${teacherFullName}`
+                                                                    : teacherFullName || t('teacherSubjectAssignments.unknown');
+                                                            })()
                                                         } 
                                                         disabled 
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Academic Year</Label>
+                                                    <Label>{t('teacherSubjectAssignments.academicYear')}</Label>
                                                     <Input 
                                                         value={
                                                             editingAssignment.academic_year_id 
                                                                 ? (academicYearMap.get(editingAssignment.academic_year_id) || 
-                                                                   editingAssignment.class_academic_year?.academic_year?.name || 
-                                                                   'Unknown Year')
-                                                                : (editingAssignment.class_academic_year?.academic_year?.name || 'Unknown Year')
+                                                                   editingAssignment.academic_year?.name || 
+                                                                   t('teacherSubjectAssignments.unknownYear'))
+                                                                : (editingAssignment.academic_year?.name || t('teacherSubjectAssignments.unknownYear'))
                                                         } 
                                                         disabled 
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Class</Label>
+                                                    <Label>{t('teacherSubjectAssignments.class')}</Label>
                                                     <Input 
-                                                        value={`${editingAssignment.class_academic_year?.class?.name || 'Unknown'}${editingAssignment.class_academic_year?.section_name ? ` - ${editingAssignment.class_academic_year.section_name}` : ''}`} 
+                                                        value={`${editingAssignment.class_academic_year?.class?.name || t('teacherSubjectAssignments.unknownClass')}${editingAssignment.class_academic_year?.section_name ? ` - ${editingAssignment.class_academic_year.section_name}` : ''}`} 
                                                         disabled 
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Subject</Label>
-                                                    <Input value={editingAssignment.subject?.name || 'Unknown'} disabled />
+                                                    <Label>{t('teacherSubjectAssignments.subject')}</Label>
+                                                    <Input value={editingAssignment.subject?.name || t('teacherSubjectAssignments.unknown')} disabled />
                                                 </div>
                                             </div>
 
                                             <div className="space-y-2">
-                                                <Label>Schedule Slots *</Label>
+                                                <Label>{t('teacherSubjectAssignments.scheduleSlotsRequired')}</Label>
                                                 <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
                                                     {filteredSlots.length === 0 ? (
-                                                        <p className="text-sm text-muted-foreground">No schedule slots found</p>
+                                                        <p className="text-sm text-muted-foreground">{t('teacherSubjectAssignments.noScheduleSlotsFound')}</p>
                                                     ) : (
                                                         <div className="space-y-2">
                                                             {filteredSlots.map((slot) => (
@@ -1117,7 +1160,7 @@ export function TeacherSubjectAssignments() {
                                                                         htmlFor={`edit-slot-${slot.id}`}
                                                                         className="text-sm font-normal cursor-pointer flex-1"
                                                                     >
-                                                                        {slot.name} ({slot.code}) - {slot.start_time} to {slot.end_time}
+                                                                        {slot.name} ({slot.code}) - {slot.startTime} to {slot.endTime}
                                                                     </Label>
                                                                 </div>
                                                             ))}
@@ -1137,19 +1180,19 @@ export function TeacherSubjectAssignments() {
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
                                                 <GraduationCap className="h-5 w-5" />
-                                                Notes
+                                                {t('teacherSubjectAssignments.notesOptional')}
                                             </CardTitle>
-                                            <CardDescription>Update assignment notes</CardDescription>
+                                            <CardDescription>{t('teacherSubjectAssignments.updateAssignmentDetails')}</CardDescription>
                                         </CardHeader>
                                         <CardContent className="space-y-4">
                                             <div className="space-y-2">
-                                                <Label htmlFor="edit-notes">Notes</Label>
+                                                <Label htmlFor="edit-notes">{t('teacherSubjectAssignments.notesOptional')}</Label>
                                                 <Textarea
                                                     id="edit-notes"
                                                     value={notes}
                                                     onChange={(e) => setNotes(e.target.value)}
                                                     rows={5}
-                                                    placeholder="Additional notes about this assignment..."
+                                                    placeholder={t('teacherSubjectAssignments.notesPlaceholder')}
                                                 />
                                             </div>
                                         </CardContent>
@@ -1164,7 +1207,7 @@ export function TeacherSubjectAssignments() {
                             {currentStep > 1 && (
                                 <Button type="button" variant="outline" onClick={() => setCurrentStep(1)}>
                                     <ChevronLeft className="h-4 w-4 mr-2" />
-                                    Previous
+                                    {t('teacherSubjectAssignments.previous')}
                                 </Button>
                             )}
                         </div>
@@ -1178,11 +1221,11 @@ export function TeacherSubjectAssignments() {
                                     setEditingAssignment(null);
                                 }}
                             >
-                                {t('common.cancel')}
+                                {t('teacherSubjectAssignments.cancel')}
                             </Button>
                             {currentStep < 2 ? (
                                 <Button type="button" onClick={() => setCurrentStep(2)}>
-                                    Next
+                                    {t('teacherSubjectAssignments.next')}
                                     <ChevronRight className="h-4 w-4 ml-2" />
                                 </Button>
                             ) : (
@@ -1191,7 +1234,7 @@ export function TeacherSubjectAssignments() {
                                     onClick={handleSubmit}
                                     disabled={updateAssignment.isPending || selectedSlotIds.length === 0}
                                 >
-                                    {updateAssignment.isPending ? 'Updating...' : 'Update Assignment'}
+                                    {updateAssignment.isPending ? t('teacherSubjectAssignments.updating') : t('teacherSubjectAssignments.updateAssignment')}
                                 </Button>
                             )}
                         </div>

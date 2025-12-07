@@ -265,10 +265,11 @@ export const initializeSecurity = () => {
       "http://127.0.0.1:8000",
     ];
     
-    // Build img-src for images
+    // Build img-src for images (include blob: for image previews)
     const imgSrcParts = [
       "'self'",
       "data:",
+      "blob:",
       "https:",
       "http:", // Allow HTTP for local development
     ];

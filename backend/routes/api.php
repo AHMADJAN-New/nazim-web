@@ -48,6 +48,7 @@ use App\Http\Controllers\AssetAssignmentController;
 use App\Http\Controllers\AssetMaintenanceController;
 use App\Http\Controllers\AssetCategoryController;
 use App\Http\Controllers\CourseAttendanceSessionController;
+use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\CourseDocumentController;
 use App\Http\Controllers\CertificateTemplateController;
 
@@ -121,6 +122,10 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Roles
     Route::apiResource('roles', RoleController::class);
+
+    // Translations (no permission required - accessible to all authenticated users)
+    Route::get('/translations', [TranslationController::class, 'index']);
+    Route::post('/translations', [TranslationController::class, 'store']);
 
     // Buildings
     Route::apiResource('buildings', BuildingController::class);
@@ -271,6 +276,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/course-students/{id}/complete', [CourseStudentController::class, 'markCompleted']);
     Route::post('/course-students/{id}/drop', [CourseStudentController::class, 'markDropped']);
     Route::post('/course-students/{id}/issue-certificate', [CourseStudentController::class, 'issueCertificate']);
+    Route::post('/course-students/{id}/enroll-to-new-course', [CourseStudentController::class, 'enrollToNewCourse']);
 
     // Course student discipline records
     Route::get('/course-students/{id}/discipline-records', [CourseStudentDisciplineRecordController::class, 'index']);

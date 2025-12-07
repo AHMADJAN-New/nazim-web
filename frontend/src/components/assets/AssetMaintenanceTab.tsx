@@ -27,6 +27,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef, flexRender } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const maintenanceSchema = z.object({
   assetId: z.string().min(1, 'Asset is required'),
@@ -45,6 +46,7 @@ const maintenanceSchema = z.object({
 type MaintenanceFormValues = z.infer<typeof maintenanceSchema>;
 
 export default function AssetMaintenanceTab() {
+  const { t } = useLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMaintenance, setEditingMaintenance] = useState<{ id: string; assetId: string; data: AssetMaintenanceDomain } | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -338,7 +340,7 @@ export default function AssetMaintenanceTab() {
         </div>
         {canUpdate && (
           <Button onClick={openCreate} className="gap-2">
-            <Plus className="h-4 w-4" /> Log Maintenance
+            <Plus className="h-4 w-4" /> {t('assets.logMaintenance')}
           </Button>
         )}
       </div>
@@ -346,7 +348,7 @@ export default function AssetMaintenanceTab() {
       {/* Maintenance Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Maintenance Records</CardTitle>
+          <CardTitle>{t('assets.maintenanceRecords')}</CardTitle>
           <CardDescription>Track all maintenance activities for your assets</CardDescription>
         </CardHeader>
         <CardContent>
@@ -392,7 +394,7 @@ export default function AssetMaintenanceTab() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingMaintenance ? 'Update Maintenance' : 'Log Maintenance'}</DialogTitle>
+            <DialogTitle>{editingMaintenance ? t('assets.updateMaintenance') : t('assets.logMaintenance')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {!editingMaintenance && (

@@ -734,7 +734,7 @@ export function SubjectsManagement() {
                                     }}
                                 >
                                     <SelectTrigger className="w-[300px]">
-                                        <SelectValue placeholder="Select a class" />
+                                        <SelectValue placeholder={t('common.selectClass')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {classes?.map((cls) => (
@@ -971,7 +971,7 @@ export function SubjectsManagement() {
                                 <Input
                                     id="name"
                                     {...registerSubject('name')}
-                                    placeholder="Mathematics"
+                                    placeholder={t('common.example') + ' Mathematics'}
                                 />
                                 {subjectErrors.name && (
                                     <p className="text-sm text-destructive">{subjectErrors.name.message}</p>
@@ -1010,7 +1010,7 @@ export function SubjectsManagement() {
                             <Textarea
                                 id="description"
                                 {...registerSubject('description')}
-                                placeholder="Subject description"
+                                placeholder={t('academic.subjects.description')}
                                 rows={3}
                             />
                         </div>
@@ -1333,7 +1333,7 @@ export function SubjectsManagement() {
                                 render={({ field }) => (
                                     <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select a class" />
+                                            <SelectValue placeholder={t('common.selectClass')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {classes?.map((cls) => (
@@ -1403,7 +1403,7 @@ export function SubjectsManagement() {
                                 render={({ field }) => (
                                     <Select value={field.value || undefined} onValueChange={field.onChange}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select a class" />
+                                            <SelectValue placeholder={t('common.selectClass')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {classes?.map((cls) => (

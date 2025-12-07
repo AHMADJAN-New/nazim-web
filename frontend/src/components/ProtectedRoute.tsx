@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfiles';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireOrganization = false
 }) => {
+  const { t } = useLanguage();
   const { user, loading, profile, profileLoading } = useAuth();
   const { data: profileData, isLoading: profileQueryLoading } = useProfile();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -36,7 +38,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const isLoading = (loading || (profileLoading && !currentProfile)) && !loadingTimeout;
 
   if (isLoading) {
-    return <LoadingSpinner size="lg" text="Loading..." fullScreen />;
+    return <LoadingSpinner size="lg" text={t('guards.loading')} fullScreen />;
   }
 
   // Only allow authenticated users
@@ -55,10 +57,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return (
         <div className="container mx-auto p-6">
           <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Organization Required</h2>
+            <h2 className="text-xl font-semibold mb-2">{t('guards.organizationRequired')}</h2>
             <p className="text-muted-foreground">
-              Your account must be assigned to an organization to access this resource.
-              Please contact an administrator.
+              {t('guards.organizationRequiredMessage')}
             </p>
           </div>
         </div>

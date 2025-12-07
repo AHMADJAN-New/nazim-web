@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 
 export interface SystemSettings {
   school_name: string;
@@ -49,10 +49,10 @@ export const useUpdateSystemSettings = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-settings'] });
-      toast.success('System settings updated successfully');
+      showToast.success('toast.systemSettingsUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update system settings');
+      showToast.error(error.message || 'toast.systemSettingsUpdateFailed');
     },
   });
 };

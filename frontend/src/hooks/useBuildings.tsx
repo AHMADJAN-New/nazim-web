@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { buildingsApi, schoolsApi } from '@/lib/api/client';
 import type * as BuildingApi from '@/types/api/building';
@@ -160,10 +160,10 @@ export const useCreateBuilding = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buildings'] });
-      toast.success('Building created successfully');
+      showToast.success('buildings.buildingCreated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create building');
+      showToast.error(error.message || 'toast.buildings.createFailed');
     },
   });
 };
@@ -202,10 +202,10 @@ export const useUpdateBuilding = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buildings'] });
-      toast.success('Building updated successfully');
+      showToast.success('buildings.buildingUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update building');
+      showToast.error(error.message || 'toast.buildings.updateFailed');
     },
   });
 };
@@ -221,10 +221,10 @@ export const useDeleteBuilding = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buildings'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
-      toast.success('Building deleted successfully');
+      showToast.success('buildings.buildingDeleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete building');
+      showToast.error(error.message || 'toast.buildings.deleteFailed');
     },
   });
 };

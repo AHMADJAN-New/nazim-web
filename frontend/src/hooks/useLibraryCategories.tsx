@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { libraryCategoriesApi } from '@/lib/api/client';
 import type { LibraryCategory } from '@/types/domain/library';
 import { useAuth } from './useAuth';
@@ -44,12 +44,12 @@ export const useCreateLibraryCategory = () => {
       });
     },
     onSuccess: async () => {
-      toast.success('Category created successfully');
+      showToast.success('toast.libraryCategories.created');
       await queryClient.invalidateQueries({ queryKey: ['library-categories'] });
       await queryClient.refetchQueries({ queryKey: ['library-categories'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create category');
+      showToast.error(error.message || 'toast.libraryCategories.createFailed');
     },
   });
 };
@@ -62,12 +62,12 @@ export const useUpdateLibraryCategory = () => {
       return libraryCategoriesApi.update(id, data);
     },
     onSuccess: async () => {
-      toast.success('Category updated successfully');
+      showToast.success('toast.libraryCategories.updated');
       await queryClient.invalidateQueries({ queryKey: ['library-categories'] });
       await queryClient.refetchQueries({ queryKey: ['library-categories'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update category');
+      showToast.error(error.message || 'toast.libraryCategories.updateFailed');
     },
   });
 };
@@ -80,12 +80,12 @@ export const useDeleteLibraryCategory = () => {
       await libraryCategoriesApi.delete(id);
     },
     onSuccess: async () => {
-      toast.success('Category deleted successfully');
+      showToast.success('toast.libraryCategories.deleted');
       await queryClient.invalidateQueries({ queryKey: ['library-categories'] });
       await queryClient.refetchQueries({ queryKey: ['library-categories'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete category');
+      showToast.error(error.message || 'toast.libraryCategories.deleteFailed');
     },
   });
 };

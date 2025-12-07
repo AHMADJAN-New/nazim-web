@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { optionalUuidSchema, optionalStringLength, requiredStringLength } from './common';
+import { validationMessages } from './validationHelpers';
 
 /**
  * Discipline record validation schema
  * Matches backend StoreStudentDisciplineRecordRequest validation rules
  */
 export const disciplineRecordSchema = z.object({
-  incident_date: z.string().min(1, 'Incident date is required'),
+  incident_date: z.string().min(1, validationMessages.incidentDateRequired()),
   incident_type: requiredStringLength(100, 'Incident type'),
   organization_id: optionalUuidSchema,
   school_id: optionalUuidSchema,

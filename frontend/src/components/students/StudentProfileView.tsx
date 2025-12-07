@@ -392,20 +392,20 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                   <div className="flex flex-wrap gap-2">
                     {student.status && (
                       <Badge variant={statusBadgeVariant(student.status)} className="text-sm px-3 py-1">
-                        {student.status.charAt(0).toUpperCase() + student.status.slice(1)}
+                        {t(`students.${student.status}`) || student.status.charAt(0).toUpperCase() + student.status.slice(1)}
                       </Badge>
                     )}
                     {student.admissionFeeStatus && (
                       <Badge variant={feeStatusBadgeVariant(student.admissionFeeStatus)} className="text-sm px-3 py-1">
-                        Fee: {student.admissionFeeStatus.charAt(0).toUpperCase() + student.admissionFeeStatus.slice(1)}
+                        {t('students.fee') || 'Fee'}: {t(`students.${student.admissionFeeStatus}`) || student.admissionFeeStatus.charAt(0).toUpperCase() + student.admissionFeeStatus.slice(1)}
                       </Badge>
                     )}
                     <Badge variant="outline" className="text-sm px-3 py-1">
-                      {student.gender === 'male' ? 'Male' : 'Female'}
+                      {student.gender === 'male' ? t('students.male') : t('students.female')}
                     </Badge>
                     {student.applyingGrade && (
                       <Badge variant="outline" className="text-sm px-3 py-1">
-                        Grade {student.applyingGrade}
+                        {t('students.grade') || 'Grade'} {student.applyingGrade}
                       </Badge>
                     )}
                   </div>
@@ -598,7 +598,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                           <span className="font-medium truncate">{doc.file_name}</span>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          {new Date(doc.created_at).toLocaleDateString()} • {doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} KB` : '—'}
+                          {new Date(doc.created_at).toLocaleDateString()} • {doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} ${t('common.kb') || 'KB'}` : '—'}
                         </div>
                         {doc.description && (
                           <div className="text-sm text-muted-foreground mt-1">{doc.description}</div>
@@ -643,7 +643,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                         {record.start_date && record.end_date && (
                           <div>
                             <span className="font-medium">{t('students.period') || 'Period'}:</span>{' '}
-                            {new Date(record.start_date).toLocaleDateString()} - {new Date(record.end_date).toLocaleDateString()}
+                            {new Date(record.start_date).toLocaleDateString()} {t('common.to') || '-'} {new Date(record.end_date).toLocaleDateString()}
                           </div>
                         )}
                         {record.start_date && !record.end_date && (
@@ -706,7 +706,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                           >
                             {record.severity 
                               ? (t(`students.severity${record.severity.charAt(0).toUpperCase() + record.severity.slice(1)}`) || record.severity)
-                              : 'Unknown'}
+                              : (t('common.unknown') || 'Unknown')}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2">
@@ -740,7 +740,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                       )}
                       {record.resolved && record.resolved_date && (
                         <div className="text-xs text-muted-foreground mt-2">
-                          {t('students.resolved') || 'Resolved'} on {new Date(record.resolved_date).toLocaleDateString()}
+                          {t('students.resolved') || 'Resolved'} {t('common.on') || 'on'} {new Date(record.resolved_date).toLocaleDateString()}
                         </div>
                       )}
                     </div>

@@ -29,6 +29,8 @@ class CourseStudent extends Model
         'grade',
         'certificate_issued',
         'certificate_issued_date',
+        'certificate_template_id',
+        'certificate_number',
         'fee_paid',
         'fee_paid_date',
         'fee_amount',
@@ -118,6 +120,11 @@ class CourseStudent extends Model
     public function disciplineRecords()
     {
         return $this->hasMany(CourseStudentDisciplineRecord::class, 'course_student_id');
+    }
+
+    public function certificateTemplate()
+    {
+        return $this->belongsTo(CertificateTemplate::class, 'certificate_template_id');
     }
 
     public function scopeEnrolled($query)

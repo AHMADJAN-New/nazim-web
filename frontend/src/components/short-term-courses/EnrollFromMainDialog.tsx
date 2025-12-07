@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo, memo, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudents } from '@/hooks/useStudents';
 import { useEnrollFromMain } from '@/hooks/useCourseStudents';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
@@ -22,7 +23,8 @@ import { Search, UserPlus } from 'lucide-react';
 interface EnrollFromMainDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  course: ShortTermCourse;
+  course?: ShortTermCourse;
+  courses?: ShortTermCourse[];
   onSuccess?: () => void;
 }
 
@@ -30,25 +32,64 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
   open,
   onOpenChange,
   course,
+  courses,
   onSuccess,
 }: EnrollFromMainDialogProps) {
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>(course?.id || '');
   const [registrationDate, setRegistrationDate] = useState(new Date().toISOString().split('T')[0]);
   const [feePaid, setFeePaid] = useState(false);
+  
+  // Update selectedCourseId when course prop changes
+  useEffect(() => {
+    if (course?.id) {
+      setSelectedCourseId(course.id);
+    }
+  }, [course?.id]);
+  
+  const selectedCourse = course || (courses?.find(c => c.id === selectedCourseId));
+  const openCourses = courses?.filter(c => c.status === 'open' || c.status === 'draft') || [];
 
-  const { data: students, isLoading } = useStudents();
+  const { data: studentsData, isLoading, error } = useStudents(undefined, false);
   const enrollMutation = useEnrollFromMain();
 
+  // Handle both paginated and non-paginated responses
+  const students = useMemo(() => {
+    if (!studentsData) {
+      if (import.meta.env.DEV) {
+        console.log('[EnrollFromMainDialog] No students data:', { studentsData, error });
+      }
+      return [];
+    }
+    // Check if it's a paginated response
+    if (typeof studentsData === 'object' && 'data' in studentsData && !Array.isArray(studentsData)) {
+      return (studentsData as any).data || [];
+    }
+    // Otherwise it's an array
+    return Array.isArray(studentsData) ? studentsData : [];
+  }, [studentsData, error]);
+
   const filteredStudents = useMemo(() => {
-    if (!students || !Array.isArray(students)) return [];
+    if (!students || !Array.isArray(students) || students.length === 0) {
+      if (import.meta.env.DEV) {
+        console.log('[EnrollFromMainDialog] No students to filter:', { students, studentsData });
+      }
+      return [];
+    }
     const searchLower = search.toLowerCase();
-    return students.filter((s) =>
-      s.full_name?.toLowerCase().includes(searchLower) ||
-      s.admission_no?.toLowerCase().includes(searchLower) ||
-      s.father_name?.toLowerCase().includes(searchLower)
-    );
-  }, [students, search]);
+    return students.filter((s: any) => {
+      // Handle both domain types (camelCase) and API types (snake_case)
+      const fullName = s.fullName || s.full_name || '';
+      const admissionNo = s.admissionNumber || s.admission_no || '';
+      const fatherName = s.fatherName || s.father_name || '';
+      return (
+        fullName.toLowerCase().includes(searchLower) ||
+        admissionNo.toLowerCase().includes(searchLower) ||
+        fatherName.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [students, search, studentsData]);
 
   const handleToggle = (id: string) => {
     setSelectedIds((prev) =>
@@ -65,20 +106,34 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
   };
 
   const handleEnroll = async () => {
-    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 0) {
+      // Show error - no students selected
+      return;
+    }
+    
+    if (!selectedCourse) {
+      // Show error - no course selected
+      return;
+    }
 
-    await enrollMutation.mutateAsync({
-      course_id: course.id,
-      main_student_ids: selectedIds,
-      registration_date: registrationDate,
-      fee_paid: feePaid,
-      fee_amount: course.feeAmount ?? undefined,
-    });
+    try {
+      const result = await enrollMutation.mutateAsync({
+        course_id: selectedCourse.id,
+        main_student_ids: selectedIds,
+        registration_date: registrationDate,
+        fee_paid: feePaid,
+        fee_amount: selectedCourse.feeAmount ?? undefined,
+      });
 
-    setSelectedIds([]);
-    setSearch('');
-    onSuccess?.();
-    onOpenChange(false);
+      // Success - clear selections
+      setSelectedIds([]);
+      setSearch('');
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (error) {
+      // Error is handled by the mutation's onError
+      console.error('[EnrollFromMainDialog] Enrollment failed:', error);
+    }
   };
 
   const handleClose = () => {
@@ -96,11 +151,61 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
             Enroll Students from Main Database
           </DialogTitle>
           <DialogDescription>
-            Select students from the main database to enroll in <strong>{course.name}</strong>.
+            {selectedCourse 
+              ? `Select students from the main database to enroll in ${selectedCourse.name}.`
+              : 'Select a course and students from the main database to enroll.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          {openCourses.length > 0 && (
+            <div>
+              <Label htmlFor="courseSelect" className="text-base font-semibold">
+                Select Course <span className="text-destructive">*</span>
+              </Label>
+              <Select 
+                value={selectedCourseId} 
+                onValueChange={(value) => {
+                  setSelectedCourseId(value);
+                  // Clear selected students when course changes
+                  setSelectedIds([]);
+                }}
+                disabled={isLoading}
+              >
+                <SelectTrigger id="courseSelect" className="w-full">
+                  <SelectValue placeholder="Select a course to enroll students" />
+                </SelectTrigger>
+                <SelectContent>
+                  {openCourses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{c.name}</span>
+                        {c.feeAmount && (
+                          <span className="text-xs text-muted-foreground">
+                            Fee: {c.feeAmount}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!selectedCourse && selectedCourseId && (
+                <p className="text-sm text-destructive mt-1">
+                  Selected course not found. Please select a valid course.
+                </p>
+              )}
+            </div>
+          )}
+          
+          {openCourses.length === 0 && (
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                No open courses available. Please create a course first.
+              </p>
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="registrationDate">Registration Date</Label>
@@ -118,7 +223,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
                 onCheckedChange={(checked) => setFeePaid(checked === true)}
               />
               <Label htmlFor="feePaid" className="cursor-pointer">
-                Mark fee as paid {course.feeAmount ? `(${course.feeAmount})` : ''}
+                Mark fee as paid {selectedCourse?.feeAmount ? `(${selectedCourse.feeAmount})` : ''}
               </Label>
             </div>
           </div>
@@ -148,35 +253,88 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
             <ScrollArea className="h-[300px] rounded-md border">
               <div className="p-4 space-y-2">
                 {filteredStudents.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    {search ? 'No students match your search' : 'No students available'}
-                  </p>
+                  <div className="text-center text-muted-foreground py-8 space-y-2">
+                    <p>
+                      {search ? 'No students match your search' : 'No students available'}
+                    </p>
+                    {!isLoading && students.length === 0 && (
+                      <p className="text-xs">
+                        Make sure you have students in the main students table.
+                      </p>
+                    )}
+                    {!isLoading && students.length > 0 && search && (
+                      <p className="text-xs">
+                        Try a different search term. Found {students.length} student(s) total.
+                      </p>
+                    )}
+                  </div>
                 ) : (
-                  filteredStudents.map((student) => (
-                    <div
-                      key={student.id}
-                      className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                        selectedIds.includes(student.id)
-                          ? 'bg-primary/10 border-primary'
-                          : 'hover:bg-muted/50'
-                      }`}
-                      onClick={() => handleToggle(student.id)}
-                    >
-                      <Checkbox
-                        checked={selectedIds.includes(student.id)}
-                        onCheckedChange={() => handleToggle(student.id)}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{student.full_name}</div>
-                        <div className="text-sm text-muted-foreground truncate">
-                          {student.father_name && `S/O ${student.father_name}`}
+                  filteredStudents.map((student: any) => {
+                    const studentId = student.id;
+                    const fullName = student.fullName || student.full_name || '-';
+                    const fatherName = student.fatherName || student.father_name;
+                    const admissionNo = student.admissionNumber || student.admission_no || 'No ID';
+                    
+                    return (
+                      <div
+                        key={`enroll-student-${studentId}`}
+                        className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          selectedIds.includes(studentId)
+                            ? 'bg-primary/10 border-primary'
+                            : 'hover:bg-muted/50'
+                        }`}
+                        onClick={() => handleToggle(studentId)}
+                      >
+                        <Checkbox
+                          checked={selectedIds.includes(studentId)}
+                          onCheckedChange={() => handleToggle(studentId)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{fullName}</div>
+                          <div className="text-sm text-muted-foreground space-y-0.5 mt-1">
+                            {fatherName && (
+                              <div className="truncate">S/O {fatherName}</div>
+                            )}
+                            {(student.grandfatherName || student.grandfather_name) && (
+                              <div className="truncate text-xs">G/S {student.grandfatherName || student.grandfather_name}</div>
+                            )}
+                            {(student.motherName || student.mother_name) && (
+                              <div className="truncate text-xs">D/O {student.motherName || student.mother_name}</div>
+                            )}
+                            {(student.currProvince || student.curr_province) && (
+                              <div className="truncate text-xs">
+                                {(student.currProvince || student.curr_province)}
+                                {(student.currDistrict || student.curr_district) && `, ${student.currDistrict || student.curr_district}`}
+                                {(student.currVillage || student.curr_village) && `, ${student.currVillage || student.curr_village}`}
+                              </div>
+                            )}
+                            {(student.guardianName || student.guardian_name) && (
+                              <div className="truncate text-xs">Guardian: {student.guardianName || student.guardian_name}</div>
+                            )}
+                            {(student.nationality) && (
+                              <div className="truncate text-xs">Nationality: {student.nationality}</div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <Badge variant="outline" className="text-xs">
+                            {admissionNo}
+                          </Badge>
+                          {(student.gender) && (
+                            <Badge variant="secondary" className="text-xs">
+                              {student.gender === 'male' ? 'M' : student.gender === 'female' ? 'F' : student.gender}
+                            </Badge>
+                          )}
+                          {(student.birthYear || student.birth_year) && (
+                            <span className="text-xs text-muted-foreground">
+                              Born: {student.birthYear || student.birth_year}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <Badge variant="outline" className="shrink-0">
-                        {student.admission_no || 'No ID'}
-                      </Badge>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>
@@ -189,11 +347,15 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
           </Button>
           <Button
             onClick={handleEnroll}
-            disabled={selectedIds.length === 0 || enrollMutation.isPending}
+            disabled={selectedIds.length === 0 || !selectedCourse || enrollMutation.isPending}
           >
-            {enrollMutation.isPending
-              ? 'Enrolling...'
-              : `Enroll ${selectedIds.length} Student${selectedIds.length !== 1 ? 's' : ''}`}
+            {enrollMutation.isPending 
+              ? 'Enrolling...' 
+              : selectedIds.length === 0
+              ? 'Select Students'
+              : !selectedCourse
+              ? 'Select Course'
+              : `Enroll ${selectedIds.length} Student${selectedIds.length !== 1 ? 's' : ''} to ${selectedCourse.name}`}
           </Button>
         </DialogFooter>
       </DialogContent>

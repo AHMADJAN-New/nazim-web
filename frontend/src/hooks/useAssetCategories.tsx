@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { assetCategoriesApi } from '@/lib/api/client';
 import { useAuth } from './useAuth';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 
 export interface AssetCategory {
   id: string;
@@ -55,10 +55,10 @@ export const useCreateAssetCategory = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asset-categories'] });
-      toast.success('Category created successfully');
+      showToast.success('toast.assetCategories.created');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create category');
+      showToast.error(error.message || 'toast.assetCategories.createFailed');
     },
   });
 };
@@ -73,10 +73,10 @@ export const useUpdateAssetCategory = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asset-categories'] });
       queryClient.invalidateQueries({ queryKey: ['assets'] });
-      toast.success('Category updated successfully');
+      showToast.success('toast.assetCategories.updated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update category');
+      showToast.error(error.message || 'toast.assetCategories.updateFailed');
     },
   });
 };
@@ -91,10 +91,10 @@ export const useDeleteAssetCategory = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asset-categories'] });
       queryClient.invalidateQueries({ queryKey: ['assets'] });
-      toast.success('Category deleted successfully');
+      showToast.success('toast.assetCategories.deleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete category');
+      showToast.error(error.message || 'toast.assetCategories.deleteFailed');
     },
   });
 };

@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { useCreateShortTermCourse, useUpdateShortTermCourse } from '@/hooks/useShortTermCourses';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface ShortTermCourseFormDialogProps {
   open: boolean;
@@ -42,6 +43,7 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
   course,
   onSuccess,
 }: ShortTermCourseFormDialogProps) {
+  const { t } = useLanguage();
   const isEdit = !!course;
   const createMutation = useCreateShortTermCourse();
   const updateMutation = useUpdateShortTermCourse();
@@ -131,7 +133,7 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
               <Label htmlFor="name">Course Name *</Label>
               <Input
                 id="name"
-                placeholder="e.g., Advanced Web Development"
+                placeholder={t('common.courseNameExample')}
                 {...register('name', { required: 'Course name is required' })}
               />
               {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}

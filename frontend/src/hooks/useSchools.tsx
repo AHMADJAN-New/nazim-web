@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useProfile } from './useProfiles';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
@@ -94,10 +94,10 @@ export const useCreateSchool = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schools'] });
-      toast.success('School created successfully');
+      showToast.success('toast.schoolCreated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create school');
+      showToast.error(error.message || 'toast.schoolCreateFailed');
     },
   });
 };
@@ -129,10 +129,10 @@ export const useUpdateSchool = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schools'] });
       queryClient.invalidateQueries({ queryKey: ['school'] });
-      toast.success('School updated successfully');
+      showToast.success('toast.schoolUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update school');
+      showToast.error(error.message || 'toast.schoolUpdateFailed');
     },
   });
 };
@@ -161,10 +161,10 @@ export const useDeleteSchool = () => {
       await queryClient.invalidateQueries({ queryKey: ['schools'] });
       await queryClient.refetchQueries({ queryKey: ['schools'] });
       await queryClient.invalidateQueries({ queryKey: ['school'] });
-      toast.success('School deleted successfully');
+      showToast.success('toast.schoolDeleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete school');
+      showToast.error(error.message || 'toast.schoolDeleteFailed');
     },
   });
 };

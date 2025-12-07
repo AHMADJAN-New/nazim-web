@@ -296,7 +296,7 @@ export default function Attendance() {
               })}
             </div>
             {selectedClassIds.length === 0 && (
-              <p className="text-xs text-muted-foreground">Select at least one class</p>
+              <p className="text-xs text-muted-foreground">{t('attendancePage.selectAtLeastOneClass') || 'Select at least one class'}</p>
             )}
           </div>
           <div className="space-y-3">
@@ -413,7 +413,7 @@ export default function Attendance() {
                     <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {[10, 25, 50].map(size => (
-                        <SelectItem key={size} value={String(size)}>{size} / page</SelectItem>
+                        <SelectItem key={size} value={String(size)}>{size} {t('pagination.perPage') || '/ page'}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -439,7 +439,7 @@ export default function Attendance() {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 max-w-md">
                   <Input
-                    placeholder={t('attendancePage.scanPrompt') || 'Search by name, admission, card, or code...'}
+                    placeholder={t('attendancePage.searchRosterPlaceholder') || 'Search by name, admission, card, or code...'}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full"
@@ -512,7 +512,7 @@ export default function Attendance() {
                     {!orderedRoster.length && (
                       <TableRow>
                         <TableCell colSpan={4} className="text-center text-muted-foreground">
-                          {searchTerm.trim() ? 'No students match your search' : t('attendancePage.emptyRoster')}
+                          {searchTerm.trim() ? (t('attendancePage.noStudentsMatchSearch') || 'No students match your search') : t('attendancePage.emptyRoster')}
                         </TableCell>
                       </TableRow>
                     )}
@@ -589,7 +589,7 @@ export default function Attendance() {
                     <p className="font-semibold">{t('attendancePage.scanFeedTitle')}</p>
                   </div>
                   <Input
-                    placeholder="Search scans..."
+                    placeholder={t('attendancePage.searchScans') || 'Search scans...'}
                     value={scanFeedSearch}
                     onChange={(e) => setScanFeedSearch(e.target.value)}
                     className="w-48"
@@ -622,7 +622,7 @@ export default function Attendance() {
                             {!selectedSessionId 
                               ? t('attendancePage.selectSessionForScan')
                               : scanFeedSearch.trim()
-                              ? 'No scans match your search'
+                              ? (t('attendancePage.noScansMatchSearch') || 'No scans match your search')
                               : t('attendancePage.noScansYet')}
                           </TableCell>
                         </TableRow>

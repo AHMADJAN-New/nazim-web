@@ -37,9 +37,20 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import pdfMake from 'pdfmake-arabic/build/pdfmake';
-import pdfFonts from 'pdfmake-arabic/build/vfs_fonts';
+import * as pdfFonts from 'pdfmake-arabic/build/vfs_fonts';
+import { useLanguage } from '@/hooks/useLanguage';
 
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// Set up fonts for Arabic/Pashto support
+try {
+  // Initialize VFS
+  if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
+    pdfMake.vfs = pdfFonts.pdfMake.vfs;
+  } else if (pdfFonts && (pdfFonts as any).vfs) {
+    pdfMake.vfs = (pdfFonts as any).vfs;
+  }
+} catch (error) {
+  console.warn('Failed to initialize pdfmake fonts:', error);
+}
 
 interface CourseStats {
   total_students: number;
@@ -51,6 +62,7 @@ interface CourseStats {
 }
 
 export default function CourseDashboard() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [selectedCourseId, setSelectedCourseId] = useState<string>('all');
   const [reportType, setReportType] = useState<'enrollment' | 'attendance' | 'completion'>('enrollment');
@@ -91,7 +103,7 @@ export default function CourseDashboard() {
   // Export functions
   const exportToCsv = () => {
     let csvContent = '';
-    const headers = ['Student Name', 'Father Name', 'Course', 'Status', 'Registration Date', 'Completion Date'];
+    const headers = [t('courses.studentName'), t('courses.fatherName'), t('courses.course'), t('courses.status'), t('courses.registration'), t('courses.completionDate')];
     csvContent += headers.join(',') + '\n';
 
     courseStudents.forEach((student) => {
@@ -119,11 +131,11 @@ export default function CourseDashboard() {
   const exportToPdf = () => {
     const selectedCourse = courses.find((c) => c.id === selectedCourseId);
     const title = selectedCourse
-      ? `Course Report: ${selectedCourse.name}`
-      : 'All Courses Report';
+      ? `${t('courses.courseReports')}: ${selectedCourse.name}`
+      : t('courses.allCoursesReport');
 
     const tableBody = [
-      ['Student Name', 'Father Name', 'Course', 'Status', 'Reg. Date'],
+      [t('courses.studentName'), t('courses.fatherName'), t('courses.course'), t('courses.status'), t('courses.regDate')],
     ];
 
     courseStudents.forEach((student) => {
@@ -142,10 +154,10 @@ export default function CourseDashboard() {
       pageMargins: [40, 60, 40, 60],
       content: [
         { text: title, style: 'header' },
-        { text: `Generated: ${format(new Date(), 'MMM d, yyyy HH:mm')}`, style: 'subheader' },
+        { text: `${t('courses.generated')} ${format(new Date(), 'MMM d, yyyy HH:mm')}`, style: 'subheader' },
         { text: '\n' },
         {
-          text: `Summary: ${courseStudents.length} students, ${courseStudents.filter((s) => s.status === 'completed').length} completed, ${courseStudents.filter((s) => s.status === 'dropped').length} dropped`,
+          text: `${t('courses.summary')}: ${courseStudents.length} ${t('nav.students') || 'students'}, ${courseStudents.filter((s) => s.status === 'completed').length} ${t('courses.completed')}, ${courseStudents.filter((s) => s.status === 'dropped').length} ${t('courses.dropped')}`,
           style: 'summary',
         },
         { text: '\n\n' },
@@ -187,15 +199,15 @@ export default function CourseDashboard() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Course Dashboard</h1>
+        <h1 className="text-2xl font-bold">{t('courses.courseDashboard')}</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate('/short-term-courses')}>
             <BookOpen className="h-4 w-4 mr-2" />
-            Manage Courses
+            {t('courses.management')}
           </Button>
           <Button variant="outline" onClick={() => navigate('/course-attendance')}>
             <Calendar className="h-4 w-4 mr-2" />
-            Attendance
+            {t('nav.attendance')}
           </Button>
         </div>
       </div>
@@ -204,47 +216,47 @@ export default function CourseDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('courses.totalCourses')}</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{overallStats.totalCourses}</div>
             <p className="text-xs text-muted-foreground">
-              {overallStats.activeCourses} active, {overallStats.closedCourses} closed
+              {overallStats.activeCourses} {t('courses.active')}, {overallStats.closedCourses} {t('courses.closed')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('courses.totalStudents')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{overallStats.totalStudents}</div>
             <p className="text-xs text-muted-foreground">
-              {overallStats.activeStudents} currently enrolled
+              {overallStats.activeStudents} {t('courses.currentlyEnrolled')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('courses.completed')}</CardTitle>
             <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{overallStats.completedStudents}</div>
             <Progress value={overallStats.completionRate} className="mt-2" />
             <p className="text-xs text-muted-foreground mt-1">
-              {overallStats.completionRate}% completion rate
+              {overallStats.completionRate}% {t('courses.completionRate')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Dropped</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('courses.dropped')}</CardTitle>
             <UserX className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -252,7 +264,7 @@ export default function CourseDashboard() {
             <p className="text-xs text-muted-foreground">
               {overallStats.totalStudents > 0
                 ? Math.round((overallStats.droppedStudents / overallStats.totalStudents) * 100)
-                : 0}% drop rate
+                : 0}% {t('courses.dropRate')}
             </p>
           </CardContent>
         </Card>
@@ -263,17 +275,17 @@ export default function CourseDashboard() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Course Reports</CardTitle>
-              <CardDescription>View and export detailed course reports</CardDescription>
+              <CardTitle>{t('courses.courseReports')}</CardTitle>
+              <CardDescription>{t('courses.courseReportsDescription')}</CardDescription>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={exportToCsv}>
                 <Download className="h-4 w-4 mr-1" />
-                CSV
+                {t('courses.csv')}
               </Button>
               <Button variant="outline" size="sm" onClick={exportToPdf}>
                 <Download className="h-4 w-4 mr-1" />
-                PDF
+                {t('courses.pdf')}
               </Button>
             </div>
           </div>
@@ -281,13 +293,13 @@ export default function CourseDashboard() {
         <CardContent>
           <div className="flex gap-4 mb-6">
             <div className="w-64">
-              <Label>Select Course</Label>
+              <Label>{t('courses.selectCourse')}</Label>
               <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All courses" />
+                  <SelectValue placeholder={t('courses.allCourses')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Courses</SelectItem>
+                  <SelectItem value="all">{t('courses.allCourses')}</SelectItem>
                   {courses.map((course) => (
                     <SelectItem key={course.id} value={course.id}>
                       {course.name}
@@ -297,15 +309,15 @@ export default function CourseDashboard() {
               </Select>
             </div>
             <div className="w-48">
-              <Label>Report Type</Label>
+              <Label>{t('courses.reportType')}</Label>
               <Select value={reportType} onValueChange={(v) => setReportType(v as any)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="enrollment">Enrollment</SelectItem>
-                  <SelectItem value="attendance">Attendance</SelectItem>
-                  <SelectItem value="completion">Completion</SelectItem>
+                  <SelectItem value="enrollment">{t('courses.enrollment')}</SelectItem>
+                  <SelectItem value="attendance">{t('nav.attendance')}</SelectItem>
+                  <SelectItem value="completion">{t('courses.completion')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -316,19 +328,19 @@ export default function CourseDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Registration</TableHead>
-                  <TableHead>Completion</TableHead>
-                  {reportType === 'attendance' && <TableHead>Attendance Rate</TableHead>}
+                  <TableHead>{t('courses.student')}</TableHead>
+                  <TableHead>{t('courses.course')}</TableHead>
+                  <TableHead>{t('courses.status')}</TableHead>
+                  <TableHead>{t('courses.registration')}</TableHead>
+                  <TableHead>{t('courses.completionDate')}</TableHead>
+                  {reportType === 'attendance' && <TableHead>{t('courses.attendanceRate')}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {courseStudents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={reportType === 'attendance' ? 6 : 5} className="text-center py-8">
-                      No students found
+                      {t('courses.noStudentsFound')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -418,20 +430,20 @@ export default function CourseDashboard() {
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Students</span>
+                    <span className="text-muted-foreground">{t('common.total')}</span>
                     <span className="font-medium">{students.length}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Completed</span>
+                    <span className="text-muted-foreground">{t('courses.completed')}</span>
                     <span className="font-medium text-green-600">{completed}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Dropped</span>
+                    <span className="text-muted-foreground">{t('courses.dropped')}</span>
                     <span className="font-medium text-red-600">{dropped}</span>
                   </div>
                   <Progress value={completionRate} className="mt-2" />
                   <p className="text-xs text-muted-foreground text-right">
-                    {completionRate}% completion
+                    {completionRate}% {t('courses.completion')}
                   </p>
                 </div>
               </CardContent>

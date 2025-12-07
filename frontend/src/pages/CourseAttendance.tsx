@@ -57,13 +57,16 @@ import {
   Calendar,
   Users,
   QrCode,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
   Clock,
   Trash2,
   Lock,
+  AlertCircle,
+  Heart,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useLanguage } from '@/hooks/useLanguage';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
 
@@ -74,6 +77,7 @@ interface AttendanceRecord {
 }
 
 export default function CourseAttendance() {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const initialCourseId = searchParams.get('courseId') || '';
 
@@ -91,7 +95,7 @@ export default function CourseAttendance() {
   const { data: courses = [] } = useShortTermCourses();
   const { data: sessions = [], isLoading: sessionsLoading } = useCourseAttendanceSessions(selectedCourseId || undefined);
   const { data: currentSession } = useCourseAttendanceSession(selectedSessionId || '');
-  const { data: roster = [] } = useCourseRoster(selectedCourseId);
+  const { data: roster = [], isLoading: rosterLoading } = useCourseRoster(selectedCourseId || undefined);
   const { data: recentScans = [] } = useCourseAttendanceScans(selectedSessionId || '', 10);
 
   const createSession = useCreateCourseAttendanceSession();
@@ -166,10 +170,25 @@ export default function CourseAttendance() {
   };
 
   const handleSaveAttendance = async () => {
-    if (!selectedSessionId) return;
-    const records = Array.from(attendanceRecords.values());
-    if (records.length === 0) return;
-    await markRecords.mutateAsync({ sessionId: selectedSessionId, records });
+    if (!selectedSessionId || !roster || roster.length === 0) return;
+    
+    // Build records for all students in roster
+    // Use existing records if available, otherwise default to 'absent'
+    const apiRecords = roster.map(student => {
+      const existingRecord = attendanceRecords.get(student.id);
+      return {
+        course_student_id: student.id,
+        status: existingRecord?.status || 'absent',
+        note: existingRecord?.note || null,
+      };
+    });
+    
+    if (apiRecords.length === 0) {
+      console.error('No students in roster to save');
+      return;
+    }
+    
+    await markRecords.mutateAsync({ sessionId: selectedSessionId, records: apiRecords });
   };
 
   const handleBarcodeScan = async (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -185,34 +204,42 @@ export default function CourseAttendance() {
     setSelectedSessionId(null);
   };
 
+  const attendanceOptions = [
+    { value: 'present', label: 'Present', icon: CheckCircle2, color: 'bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-400' },
+    { value: 'absent', label: 'Absent', icon: XCircle, color: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-400' },
+    { value: 'late', label: 'Late', icon: Clock, color: 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-400' },
+    { value: 'excused', label: 'Excused', icon: AlertCircle, color: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-400' },
+    { value: 'sick', label: 'Sick', icon: Heart, color: 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-400' },
+    { value: 'leave', label: 'Leave', icon: Calendar, color: 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-400' },
+  ];
+
   const getStatusBadge = (status: AttendanceStatus) => {
-    const variants: Record<AttendanceStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
-      present: { variant: 'default', label: 'Present' },
-      absent: { variant: 'destructive', label: 'Absent' },
-      late: { variant: 'secondary', label: 'Late' },
-      excused: { variant: 'outline', label: 'Excused' },
-      sick: { variant: 'outline', label: 'Sick' },
-      leave: { variant: 'outline', label: 'Leave' },
-    };
-    const { variant, label } = variants[status];
-    return <Badge variant={variant}>{label}</Badge>;
+    const option = attendanceOptions.find(opt => opt.value === status);
+    if (!option) return <Badge variant="outline">{status}</Badge>;
+    const Icon = option.icon;
+    return (
+      <Badge variant="outline" className={`${option.color} flex items-center gap-1.5 font-medium w-fit`}>
+        <Icon className="h-3.5 w-3.5" />
+        {option.label}
+      </Badge>
+    );
   };
 
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Course Attendance</h1>
+        <h1 className="text-2xl font-bold">{t('courses.courseAttendance')}</h1>
       </div>
 
       {/* Course Selection */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Select Course</CardTitle>
+          <CardTitle className="text-lg">{t('courses.selectCourse')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Select value={selectedCourseId} onValueChange={(v) => { setSelectedCourseId(v); setSelectedSessionId(null); }}>
             <SelectTrigger className="w-full max-w-md">
-              <SelectValue placeholder="Select a course..." />
+              <SelectValue placeholder={t('common.selectCourse')} />
             </SelectTrigger>
             <SelectContent>
               {courses.map((course) => (
@@ -230,15 +257,15 @@ export default function CourseAttendance() {
           {/* Sessions List */}
           <Card className="lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Sessions</CardTitle>
+              <CardTitle className="text-lg">{t('courses.sessions')}</CardTitle>
               <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" />
-                New
+                {t('common.add')}
               </Button>
             </CardHeader>
             <CardContent>
               {sessionsLoading ? (
-                <p className="text-muted-foreground">Loading...</p>
+                <p className="text-muted-foreground">{t('common.loading')}</p>
               ) : sessions.length === 0 ? (
                 <p className="text-muted-foreground">No sessions yet</p>
               ) : (
@@ -279,7 +306,7 @@ export default function CourseAttendance() {
                       </div>
                       <div className="flex gap-3 mt-2 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-green-500" />
+                          <CheckCircle2 className="h-3 w-3 text-green-500" />
                           {session.present_count || 0}
                         </span>
                         <span className="flex items-center gap-1">
@@ -352,7 +379,20 @@ export default function CourseAttendance() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {roster.map((student) => {
+                          {rosterLoading ? (
+                            <TableRow>
+                              <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                                Loading students...
+                              </TableCell>
+                            </TableRow>
+                          ) : roster.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                                No enrolled students found for this course
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            roster.map((student) => {
                             const record = attendanceRecords.get(student.id);
                             return (
                               <TableRow key={student.id}>
@@ -368,22 +408,34 @@ export default function CourseAttendance() {
                                     value={record?.status || 'absent'}
                                     onValueChange={(v) => handleStatusChange(student.id, v as AttendanceStatus)}
                                   >
-                                    <SelectTrigger className="w-28">
-                                      <SelectValue />
+                                    <SelectTrigger className="w-40">
+                                      <SelectValue>
+                                        {record?.status ? (
+                                          getStatusBadge(record.status)
+                                        ) : (
+                                          getStatusBadge('absent')
+                                        )}
+                                      </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="present">Present</SelectItem>
-                                      <SelectItem value="absent">Absent</SelectItem>
-                                      <SelectItem value="late">Late</SelectItem>
-                                      <SelectItem value="excused">Excused</SelectItem>
-                                      <SelectItem value="sick">Sick</SelectItem>
-                                      <SelectItem value="leave">Leave</SelectItem>
+                                      {attendanceOptions.map(option => {
+                                        const Icon = option.icon;
+                                        return (
+                                          <SelectItem key={option.value} value={option.value}>
+                                            <div className="flex items-center gap-2">
+                                              <Icon className="h-4 w-4" />
+                                              {option.label}
+                                            </div>
+                                          </SelectItem>
+                                        );
+                                      })}
                                     </SelectContent>
                                   </Select>
                                 </TableCell>
                               </TableRow>
                             );
-                          })}
+                          })
+                          )}
                         </TableBody>
                       </Table>
                     </div>
@@ -401,7 +453,7 @@ export default function CourseAttendance() {
                         value={barcodeInput}
                         onChange={(e) => setBarcodeInput(e.target.value)}
                         onKeyDown={handleBarcodeScan}
-                        placeholder="Scan or type card number..."
+                        placeholder={t('common.scanCardNumber')}
                         className="text-lg"
                         autoFocus
                       />

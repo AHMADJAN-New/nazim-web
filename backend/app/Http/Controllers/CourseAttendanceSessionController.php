@@ -220,9 +220,27 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        try {
+            if (!$user->hasPermissionTo('course_attendance.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('[CourseAttendanceSessionController] permission check failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $request->validate([
             'course_id' => 'required|uuid|exists:short_term_courses,id',
         ]);
+
+        // Verify course belongs to user's organization
+        $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->find($request->course_id);
+
+        if (!$course) {
+            return response()->json(['error' => 'Course not found'], 404);
+        }
 
         $students = CourseStudent::where('organization_id', $profile->organization_id)
             ->where('course_id', $request->course_id)

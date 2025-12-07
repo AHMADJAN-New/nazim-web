@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { shortTermCoursesApi } from '@/lib/api/client';
 import type * as Api from '@/types/api/shortTermCourse';
@@ -99,7 +99,7 @@ export const useCreateShortTermCourse = () => {
       return mapShortTermCourseApiToDomain(apiCourse as Api.ShortTermCourse);
     },
     onSuccess: async () => {
-      toast.success('Course saved successfully');
+      showToast.success('toast.courseSaved');
       // Invalidate all short-term-courses queries (with any pagination params)
       await queryClient.invalidateQueries({ 
         queryKey: ['short-term-courses'],
@@ -111,7 +111,7 @@ export const useCreateShortTermCourse = () => {
         exact: false 
       });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not save course'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseSaveFailed'),
   });
 };
 
@@ -124,7 +124,7 @@ export const useUpdateShortTermCourse = () => {
       return mapShortTermCourseApiToDomain(apiCourse as Api.ShortTermCourse);
     },
     onSuccess: async () => {
-      toast.success('Course updated');
+      showToast.success('toast.courseUpdated');
       await queryClient.invalidateQueries({ 
         queryKey: ['short-term-courses'],
         exact: false 
@@ -134,7 +134,7 @@ export const useUpdateShortTermCourse = () => {
         exact: false 
       });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not update course'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseUpdateFailed'),
   });
 };
 
@@ -146,7 +146,7 @@ export const useDeleteShortTermCourse = () => {
       return id;
     },
     onSuccess: async () => {
-      toast.success('Course deleted');
+      showToast.success('toast.courseDeleted');
       await queryClient.invalidateQueries({ 
         queryKey: ['short-term-courses'],
         exact: false 
@@ -156,7 +156,7 @@ export const useDeleteShortTermCourse = () => {
         exact: false 
       });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not delete course'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseDeleteFailed'),
   });
 };
 
@@ -168,7 +168,7 @@ export const useCloseCourse = () => {
       return mapShortTermCourseApiToDomain(apiCourse as Api.ShortTermCourse);
     },
     onSuccess: async () => {
-      toast.success('Course closed');
+      showToast.success('toast.courseClosed');
       await queryClient.invalidateQueries({ 
         queryKey: ['short-term-courses'],
         exact: false 
@@ -178,7 +178,7 @@ export const useCloseCourse = () => {
         exact: false 
       });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not close course'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseCloseFailed'),
   });
 };
 
@@ -190,7 +190,7 @@ export const useReopenCourse = () => {
       return mapShortTermCourseApiToDomain(apiCourse as Api.ShortTermCourse);
     },
     onSuccess: async () => {
-      toast.success('Course reopened');
+      showToast.success('toast.courseReopened');
       await queryClient.invalidateQueries({ 
         queryKey: ['short-term-courses'],
         exact: false 
@@ -200,7 +200,7 @@ export const useReopenCourse = () => {
         exact: false 
       });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not reopen course'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseReopenFailed'),
   });
 };
 

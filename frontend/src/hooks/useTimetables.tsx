@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { timetablesApi, teacherTimetablePreferencesApi } from '@/lib/api/client';
 import type * as TimetableApi from '@/types/api/timetable';
 import type { Timetable, TimetableEntry, TeacherPreference } from '@/types/domain/timetable';
@@ -143,10 +143,10 @@ export const useCreateTimetable = () => {
 			// Invalidate all timetable queries to ensure fresh data
 			queryClient.invalidateQueries({ queryKey: ['timetables'] });
 			queryClient.invalidateQueries({ queryKey: ['timetable'] });
-			toast.success('Timetable created successfully');
+			showToast.success('toast.timetableCreated');
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to create timetable');
+			showToast.error(error.message || 'toast.timetableCreateFailed');
 		},
 	});
 };
@@ -180,10 +180,10 @@ export const useUpdateTimetable = () => {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['timetables'] });
 			queryClient.invalidateQueries({ queryKey: ['timetable'] });
-			toast.success('Timetable updated successfully');
+			showToast.success('toast.timetableUpdated');
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to update timetable');
+			showToast.error(error.message || 'toast.timetableUpdateFailed');
 		},
 	});
 };
@@ -203,10 +203,10 @@ export const useDeleteTimetable = () => {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['timetables'] });
 			queryClient.invalidateQueries({ queryKey: ['timetable'] });
-			toast.success('Timetable deleted successfully');
+			showToast.success('toast.timetableDeleted');
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to delete timetable');
+			showToast.error(error.message || 'toast.timetableDeleteFailed');
 		},
 	});
 };
@@ -278,10 +278,10 @@ export const useUpsertTeacherPreference = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['teacher-prefs'] });
-			toast.success('Teacher preferences saved');
+			showToast.success('toast.teacherPreferencesSaved');
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to save teacher preferences');
+			showToast.error(error.message || 'toast.teacherPreferencesSaveFailed');
 		},
 	});
 };
@@ -300,10 +300,10 @@ export const useDeleteTeacherPreference = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['teacher-prefs'] });
-			toast.success('Teacher preference deleted');
+			showToast.success('toast.teacherPreferenceDeleted');
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || 'Failed to delete teacher preference');
+			showToast.error(error.message || 'toast.teacherPreferenceDeleteFailed');
 		},
 	});
 };

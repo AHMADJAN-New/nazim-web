@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { academicYearsApi, subjectsApi, classSubjectsApi, classSubjectTemplatesApi, classAcademicYearsApi } from '@/lib/api/client';
@@ -280,10 +280,10 @@ export const useCreateSubject = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
-            toast.success('Subject created successfully');
+            showToast.success('toast.subjectCreated');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to create subject');
+            showToast.error(error.message || 'toast.subjectCreateFailed');
         },
     });
 };
@@ -348,10 +348,10 @@ export const useUpdateSubject = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
             queryClient.invalidateQueries({ queryKey: ['class-subjects'] });
-            toast.success('Subject updated successfully');
+            showToast.success('toast.subjectUpdated');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to update subject');
+            showToast.error(error.message || 'toast.subjectUpdateFailed');
         },
     });
 };
@@ -383,10 +383,10 @@ export const useDeleteSubject = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
-            toast.success('Subject deleted successfully');
+            showToast.success('toast.subjectDeleted');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to delete subject');
+            showToast.error(error.message || 'toast.subjectDeleteFailed');
         },
     });
 };
@@ -460,10 +460,10 @@ export const useAssignSubjectToClass = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subjects'] });
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
-            toast.success('Subject assigned to class successfully');
+            showToast.success('toast.subjectAssignedToClass');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to assign subject to class');
+            showToast.error(error.message || 'toast.subjectAssignFailed');
         },
     });
 };
@@ -514,10 +514,10 @@ export const useUpdateClassSubject = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subjects'] });
             queryClient.invalidateQueries({ queryKey: ['subject-history'] });
-            toast.success('Subject assignment updated successfully');
+            showToast.success('toast.subjectAssignmentUpdated');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to update subject assignment');
+            showToast.error(error.message || 'toast.subjectAssignmentUpdateFailed');
         },
     });
 };
@@ -551,10 +551,10 @@ export const useRemoveSubjectFromClass = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-subjects'] });
             queryClient.invalidateQueries({ queryKey: ['subject-history'] });
-            toast.success('Subject removed from class successfully');
+            showToast.success('toast.subjectRemovedFromClass');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to remove subject from class');
+            showToast.error(error.message || 'toast.subjectRemoveFailed');
         },
     });
 };
@@ -631,10 +631,10 @@ export const useBulkAssignSubjects = () => {
         onSuccess: (result) => {
             queryClient.invalidateQueries({ queryKey: ['class-subjects'] });
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
-            toast.success(`Successfully assigned ${result.created.length} subject(s). ${result.skipped > 0 ? `${result.skipped} subject(s) were already assigned.` : ''}`);
+            showToast.success(`Successfully assigned ${result.created.length} subject(s). ${result.skipped > 0 ? `${result.skipped} subject(s) were already assigned.` : ''}`);
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to assign subjects');
+            showToast.error(error.message || 'toast.subjectAssignFailed');
         },
     });
 };
@@ -716,10 +716,10 @@ export const useCopySubjectsBetweenYears = () => {
         onSuccess: (result) => {
             queryClient.invalidateQueries({ queryKey: ['class-subjects'] });
             queryClient.invalidateQueries({ queryKey: ['subject-history'] });
-            toast.success(`Successfully copied ${result.created.length} subject assignment(s). ${result.skipped > 0 ? `${result.skipped} subject(s) were already assigned.` : ''}`);
+            showToast.success(`Successfully copied ${result.created.length} subject assignment(s). ${result.skipped > 0 ? `${result.skipped} subject(s) were already assigned.` : ''}`);
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to copy subjects between academic years');
+            showToast.error(error.message || 'toast.subjectAssignFailed');
         },
     });
 };
@@ -797,7 +797,7 @@ export const useAssignSubjectToClassTemplate = () => {
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to assign subject to class');
+            showToast.error(error.message || 'toast.subjectAssignFailed');
         },
     });
 };
@@ -820,7 +820,7 @@ export const useRemoveSubjectFromClassTemplate = () => {
             queryClient.invalidateQueries({ queryKey: ['class-subjects'] });
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to remove subject from class');
+            showToast.error(error.message || 'toast.subjectRemoveFailed');
         },
     });
 };
@@ -864,7 +864,7 @@ export const useBulkAssignSubjectsToClassTemplate = () => {
             queryClient.invalidateQueries({ queryKey: ['subjects'] });
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to assign subjects to class');
+            showToast.error(error.message || 'toast.subjectAssignFailed');
         },
     });
 };

@@ -56,9 +56,11 @@ import { useRecentActivities } from "@/hooks/useRecentActivities";
 import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useLanguage } from "@/hooks/useLanguage";
 import { LoadingSpinner } from "@/components/ui/loading";
 
 export default function Dashboard() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
@@ -79,55 +81,55 @@ export default function Dashboard() {
   // Create stats cards from real data
   const statsCards = dashboardStats ? [
     {
-      title: "Total Students",
+      title: t('dashboard.totalStudents') || "Total Students",
       value: dashboardStats.totalStudents.toLocaleString(),
       icon: Users,
-      description: "Active students",
+      description: t('dashboard.activeStudents') || "Active students",
       color: "primary" as const,
       onClick: "/students"
     },
     {
-      title: "Total Staff",
+      title: t('dashboard.totalStaff') || "Total Staff",
       value: dashboardStats.totalStaff.toLocaleString(),
       icon: GraduationCap,
-      description: "Active staff",
+      description: t('dashboard.activeStaff') || "Active staff",
       color: "secondary" as const,
       onClick: "/staff"
     },
     {
-      title: "Total Classes",
+      title: t('dashboard.totalClasses') || "Total Classes",
       value: dashboardStats.totalClasses.toLocaleString(),
       icon: BookOpen,
-      description: "Active classes",
+      description: t('dashboard.activeClasses') || "Active classes",
       color: "primary" as const,
       onClick: "/classes"
     },
     {
-      title: "Total Rooms",
+      title: t('dashboard.totalRooms') || "Total Rooms",
       value: dashboardStats.totalRooms.toLocaleString(),
       icon: Building,
-      description: "Available rooms",
+      description: t('dashboard.availableRooms') || "Available rooms",
       color: "secondary" as const,
       onClick: "/settings/buildings"
     },
     {
-      title: "Total Buildings",
+      title: t('dashboard.totalBuildings') || "Total Buildings",
       value: dashboardStats.totalBuildings.toLocaleString(),
       icon: Home,
-      description: "School buildings",
+      description: t('dashboard.schoolBuildings') || "School buildings",
       color: "primary" as const,
       onClick: "/settings/buildings"
     }
   ] : [];
 
   const genderDistribution = dashboardStats ? [
-    { name: "Male", value: dashboardStats.studentGender.male, color: "#2563eb" },
-    { name: "Female", value: dashboardStats.studentGender.female, color: "#dc2626" }
+    { name: t('students.male') || "Male", value: dashboardStats.studentGender.male, color: "#2563eb" },
+    { name: t('students.female') || "Female", value: dashboardStats.studentGender.female, color: "#dc2626" }
   ] : [];
 
   if (statsLoading || roleLoading) {
     return (
-      <MainLayout title="Dashboard">
+      <MainLayout title={t('dashboard.title') || "Dashboard"}>
         <LoadingSpinner />
       </MainLayout>
     );
@@ -142,9 +144,9 @@ export default function Dashboard() {
     <>
       {/* Welcome Section */}
       <div className="bg-gradient-hero p-6 rounded-lg text-primary-foreground">
-        <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.email?.split('@')[0] || 'User'}!</h1>
+        <h1 className="text-2xl font-bold mb-2">{t('dashboard.welcomeBack') || 'Welcome back'}, {user?.email?.split('@')[0] || t('common.user') || 'User'}!</h1>
         <p className="text-primary-foreground/80">
-          Here's what's happening at your school today
+          {t('dashboard.welcomeMessage') || "Here's what's happening at your school today"}
         </p>
       </div>
 
@@ -169,7 +171,7 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <PieChart className="h-5 w-5 text-secondary" />
-                Gender Distribution
+                {t('dashboard.genderDistribution') || 'Gender Distribution'}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -202,7 +204,7 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-primary" />
-                Students by Class
+                {t('dashboard.studentsByClass') || 'Students by Class'}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -225,16 +227,16 @@ export default function Dashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
-            Quick Actions
+            {t('dashboard.quickActions') || 'Quick Actions'}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Students", icon: Users, href: "/students", color: "hover:bg-primary/10" },
-              { label: "Staff", icon: GraduationCap, href: "/staff", color: "hover:bg-secondary/10" },
-              { label: "Classes", icon: BookOpen, href: "/classes", color: "hover:bg-primary/10" },
-              { label: "Buildings", icon: Building, href: "/settings/buildings", color: "hover:bg-accent/10" }
+              { label: t('nav.students') || "Students", icon: Users, href: "/students", color: "hover:bg-primary/10" },
+              { label: t('nav.staff') || "Staff", icon: GraduationCap, href: "/staff", color: "hover:bg-secondary/10" },
+              { label: t('nav.classes') || "Classes", icon: BookOpen, href: "/classes", color: "hover:bg-primary/10" },
+              { label: t('dashboard.buildings') || "Buildings", icon: Building, href: "/settings/buildings", color: "hover:bg-accent/10" }
             ].map((action, index) => (
               <Button
                 key={index}
@@ -253,7 +255,7 @@ export default function Dashboard() {
   );
 
   return (
-    <MainLayout title="Dashboard">
+    <MainLayout title={t('dashboard.title') || "Dashboard"}>
       <div className="space-y-6">
         {renderDashboard()}
       </div>

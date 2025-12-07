@@ -37,6 +37,7 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const organizationSchema = z.object({
   name: z.string().min(1, 'Organization name is required').max(255, 'Organization name must be 255 characters or less'),
@@ -49,6 +50,7 @@ const organizationSchema = z.object({
 type OrganizationFormData = z.infer<typeof organizationSchema>;
 
 export function OrganizationsManagement() {
+  const { t } = useLanguage();
   const hasCreatePermission = useHasPermission('organizations.create');
   const hasUpdatePermission = useHasPermission('organizations.update');
   const hasDeletePermission = useHasPermission('organizations.delete');
@@ -111,11 +113,16 @@ export function OrganizationsManagement() {
         }
       );
     } else {
-      createOrganization.mutate(data, {
-        onSuccess: () => {
-          handleCloseDialog();
-        },
-      });
+      if (data.name && data.slug) {
+        createOrganization.mutate({
+          name: data.name,
+          slug: data.slug,
+        }, {
+          onSuccess: () => {
+            handleCloseDialog();
+          },
+        });
+      }
     }
   };
 
@@ -145,12 +152,12 @@ export function OrganizationsManagement() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Organizations Management
+              {t('organizations.title')}
             </CardTitle>
-            <CardDescription>Manage organizations for multi-tenant SaaS</CardDescription>
+            <CardDescription>{t('organizations.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <LoadingSpinner size="lg" text="Loading organizations..." />
+            <LoadingSpinner size="lg" text={t('organizations.loadingOrganizations')} />
           </CardContent>
         </Card>
       </div>
@@ -165,14 +172,14 @@ export function OrganizationsManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Organizations Management
+                {t('organizations.title')}
               </CardTitle>
-              <CardDescription>Manage organizations for multi-tenant SaaS</CardDescription>
+              <CardDescription>{t('organizations.subtitle')}</CardDescription>
             </div>
             {hasCreatePermission && (
               <Button onClick={() => handleOpenDialog()}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Organization
+                {t('organizations.addOrganization')}
               </Button>
             )}
           </div>
@@ -182,7 +189,7 @@ export function OrganizationsManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search organizations..."
+                placeholder={t('organizations.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -194,19 +201,19 @@ export function OrganizationsManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>Settings</TableHead>
-                  <TableHead>Created At</TableHead>
-                  <TableHead>Updated At</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('organizations.name')}</TableHead>
+                  <TableHead>{t('organizations.slug')}</TableHead>
+                  <TableHead>{t('organizations.settings')}</TableHead>
+                  <TableHead>{t('organizations.createdAt')}</TableHead>
+                  <TableHead>{t('organizations.updatedAt')}</TableHead>
+                  <TableHead className="text-right">{t('organizations.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredOrganizations.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      {searchQuery ? 'No organizations found matching your search' : 'No organizations found. Add your first organization.'}
+                      {searchQuery ? t('organizations.noOrganizationsFound') : t('organizations.noOrganizationsMessage')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -231,13 +238,13 @@ export function OrganizationsManagement() {
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm">
                             <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {new Date(org.created_at).toLocaleDateString()}
+                            {new Date(org.createdAt).toLocaleDateString()}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm">
                             <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {new Date(org.updated_at).toLocaleDateString()}
+                            {new Date(org.updatedAt).toLocaleDateString()}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
@@ -249,7 +256,7 @@ export function OrganizationsManagement() {
                                 setSelectedOrganization(org.id);
                                 setIsDetailsDialogOpen(true);
                               }}
-                              title="View Details"
+                              title={t('organizations.viewDetails')}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -258,7 +265,7 @@ export function OrganizationsManagement() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleOpenDialog(org.id)}
-                                title="Edit"
+                                title={t('organizations.edit')}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -268,7 +275,7 @@ export function OrganizationsManagement() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteClick(org.id)}
-                                title="Delete"
+                                title={t('organizations.delete')}
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
@@ -291,47 +298,47 @@ export function OrganizationsManagement() {
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>
-                {selectedOrganization ? 'Edit Organization' : 'Add New Organization'}
+                {selectedOrganization ? t('organizations.editOrganization') : t('organizations.addNewOrganization')}
               </DialogTitle>
               <DialogDescription>
                 {selectedOrganization
-                  ? 'Update the organization information below.'
-                  : 'Enter the organization details to add a new organization.'}
+                  ? t('organizations.updateOrganizationInfo')
+                  : t('organizations.enterOrganizationDetails')}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Organization Name</Label>
+                <Label htmlFor="name">{t('organizations.organizationName')}</Label>
                 <Input
                   id="name"
                   {...register('name')}
-                  placeholder="Enter organization name"
+                  placeholder={t('organizations.enterOrganizationName')}
                 />
                 {errors.name && (
                   <p className="text-sm text-destructive">{errors.name.message}</p>
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="slug">Slug</Label>
+                <Label htmlFor="slug">{t('organizations.slug')}</Label>
                 <Input
                   id="slug"
                   {...register('slug')}
-                  placeholder="organization-slug"
+                  placeholder={t('organizations.slugPlaceholder')}
                 />
                 {errors.slug && (
                   <p className="text-sm text-destructive">{errors.slug.message}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  URL-friendly identifier (lowercase letters, numbers, and hyphens only)
+                  {t('organizations.slugHint')}
                 </p>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                Cancel
+                {t('organizations.cancel')}
               </Button>
               <Button type="submit" disabled={createOrganization.isPending || updateOrganization.isPending}>
-                {selectedOrganization ? 'Update' : 'Create'}
+                {selectedOrganization ? t('organizations.update') : t('organizations.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -344,39 +351,39 @@ export function OrganizationsManagement() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Organization Details
+              {t('organizations.organizationDetails')}
             </DialogTitle>
             <DialogDescription>
-              View complete information about {selectedOrg?.name}
+              {t('organizations.viewCompleteInfo').replace('{name}', selectedOrg?.name || '')}
             </DialogDescription>
           </DialogHeader>
           {selectedOrg && (
             <div className="space-y-6 py-4">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Basic Information</h3>
+                <h3 className="font-semibold text-lg">{t('organizations.basicInformation')}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-muted-foreground">Name</Label>
+                    <Label className="text-muted-foreground">{t('organizations.name')}</Label>
                     <p className="font-medium">{selectedOrg.name}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Slug</Label>
+                    <Label className="text-muted-foreground">{t('organizations.slug')}</Label>
                     <p>
                       <code className="text-sm bg-muted px-2 py-1 rounded">{selectedOrg.slug}</code>
                     </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">ID</Label>
+                    <Label className="text-muted-foreground">{t('organizations.id')}</Label>
                     <p className="text-sm font-mono text-muted-foreground break-all">{selectedOrg.id}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Created At</Label>
-                    <p className="text-sm">{new Date(selectedOrg.created_at).toLocaleString()}</p>
+                    <Label className="text-muted-foreground">{t('organizations.createdAt')}</Label>
+                    <p className="text-sm">{new Date(selectedOrg.createdAt).toLocaleString()}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Updated At</Label>
-                    <p className="text-sm">{new Date(selectedOrg.updated_at).toLocaleString()}</p>
+                    <Label className="text-muted-foreground">{t('organizations.updatedAt')}</Label>
+                    <p className="text-sm">{new Date(selectedOrg.updatedAt).toLocaleString()}</p>
                   </div>
                 </div>
               </div>
@@ -384,7 +391,7 @@ export function OrganizationsManagement() {
               {/* Statistics */}
               {orgStats && (
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Statistics</h3>
+                  <h3 className="font-semibold text-lg">{t('organizations.statistics')}</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <Card>
                       <CardContent className="p-4">
@@ -392,7 +399,7 @@ export function OrganizationsManagement() {
                           <Users className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.userCount}</p>
-                            <p className="text-sm text-muted-foreground">Users</p>
+                            <p className="text-sm text-muted-foreground">{t('organizations.users')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -403,7 +410,7 @@ export function OrganizationsManagement() {
                           <Building2 className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.schoolCount}</p>
-                            <p className="text-sm text-muted-foreground">Schools</p>
+                            <p className="text-sm text-muted-foreground">{t('organizations.schools')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -414,7 +421,7 @@ export function OrganizationsManagement() {
                           <GraduationCap className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.studentCount}</p>
-                            <p className="text-sm text-muted-foreground">Students</p>
+                            <p className="text-sm text-muted-foreground">{t('organizations.students')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -425,7 +432,7 @@ export function OrganizationsManagement() {
                           <BookOpen className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.classCount}</p>
-                            <p className="text-sm text-muted-foreground">Classes</p>
+                            <p className="text-sm text-muted-foreground">{t('organizations.classes')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -436,7 +443,7 @@ export function OrganizationsManagement() {
                           <UserCheck className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.staffCount}</p>
-                            <p className="text-sm text-muted-foreground">Staff</p>
+                            <p className="text-sm text-muted-foreground">{t('organizations.staff')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -447,7 +454,7 @@ export function OrganizationsManagement() {
                           <Building className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.buildingCount}</p>
-                            <p className="text-sm text-muted-foreground">Buildings</p>
+                            <p className="text-sm text-muted-foreground">{t('organizations.buildings')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -458,7 +465,7 @@ export function OrganizationsManagement() {
                           <DoorOpen className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <p className="text-2xl font-bold">{orgStats.roomCount}</p>
-                            <p className="text-sm text-muted-foreground">Rooms</p>
+                            <p className="text-sm text-muted-foreground">{t('organizations.rooms')}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -469,7 +476,7 @@ export function OrganizationsManagement() {
 
               {/* Settings */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Settings</h3>
+                <h3 className="font-semibold text-lg">{t('organizations.settingsTitle')}</h3>
                 {selectedOrg.settings && Object.keys(selectedOrg.settings).length > 0 ? (
                   <div className="rounded-md border p-4 bg-muted/50">
                     <pre className="text-sm overflow-x-auto">
@@ -477,21 +484,21 @@ export function OrganizationsManagement() {
                     </pre>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No settings configured</p>
+                  <p className="text-sm text-muted-foreground">{t('organizations.noSettingsConfigured')}</p>
                 )}
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
-              Close
+              {t('organizations.close')}
             </Button>
             <Button onClick={() => {
               setIsDetailsDialogOpen(false);
               handleOpenDialog(selectedOrganization || undefined);
             }}>
               <Pencil className="h-4 w-4 mr-2" />
-              Edit Organization
+              {t('organizations.editOrganizationButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -501,22 +508,18 @@ export function OrganizationsManagement() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('organizations.deleteConfirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the organization
-              {selectedOrganization &&
-                organizations?.find((o) => o.id === selectedOrganization) &&
-                ` "${organizations.find((o) => o.id === selectedOrganization)?.name}"`}
-              . If this organization has users or data, the deletion will fail.
+              {t('organizations.deleteConfirmDescription').replace('{name}', selectedOrganization && organizations?.find((o) => o.id === selectedOrganization) ? organizations.find((o) => o.id === selectedOrganization)?.name || '' : '')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('organizations.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('organizations.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

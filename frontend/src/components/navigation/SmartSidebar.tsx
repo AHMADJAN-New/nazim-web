@@ -187,6 +187,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasCourseReportsPermission = useHasPermission('course_students.report');
   const hasCourseAttendancePermission = useHasPermission('course_attendance.read');
   const hasCertificateTemplatesPermission = useHasPermission('certificate_templates.read');
+  const hasCourseDocumentsPermission = useHasPermission('course_documents.read');
   const hasStaffTypesPermission = useHasPermission('staff_types.read');
   const hasScheduleSlotsPermission = useHasPermission('schedule_slots.read');
   const hasTeacherSubjectAssignmentsPermission = useHasPermission('teacher_subject_assignments.read');
@@ -289,7 +290,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           },
         ],
       }] : []),
-      ...((hasShortTermCoursesPermission || hasCourseStudentsPermission || hasCourseReportsPermission || hasCourseAttendancePermission || hasCertificateTemplatesPermission) ? [{
+      ...((hasShortTermCoursesPermission || hasCourseStudentsPermission || hasCourseReportsPermission || hasCourseAttendancePermission || hasCertificateTemplatesPermission || hasCourseDocumentsPermission) ? [{
         titleKey: "shortTermCourses",
         icon: GraduationCap,
         badge: null,
@@ -319,11 +320,23 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/course-attendance",
             icon: UserCheck,
           }] : []),
+          ...(hasCourseStudentsPermission ? [{
+            title: "Course Certificates",
+            titleKey: "courseCertificates",
+            url: "/course-certificates",
+            icon: LucideIcons.Award,
+          }] : []),
           ...(hasCertificateTemplatesPermission ? [{
             title: "Certificate Templates",
             titleKey: "certificateTemplates",
             url: "/certificate-templates",
             icon: LucideIcons.Award,
+          }] : []),
+          ...(hasCourseDocumentsPermission ? [{
+            title: "Course Documents",
+            titleKey: "courseDocuments",
+            url: "/course-documents",
+            icon: FileText,
           }] : []),
           ...(hasCourseReportsPermission ? [{
             title: "Course Reports",
@@ -532,6 +545,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/admin/users",
             icon: Users,
           }] : []),
+          // Translations Editor - no permission required
+          {
+            title: "Translations",
+            titleKey: "translations",
+            url: "/settings/translations",
+            icon: Languages,
+          },
         ],
       },
       {
@@ -643,7 +663,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {
@@ -858,7 +878,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           {!collapsed && (
             <div>
               <h1 className="text-lg font-bold text-sidebar-foreground">Nazim</h1>
-              <p className="text-xs text-sidebar-foreground/70">School Management</p>
+              <p className="text-xs text-sidebar-foreground/70">{t('common.schoolManagement')}</p>
             </div>
           )}
         </div>
@@ -926,7 +946,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Main Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('common.mainNavigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {filteredItems.map(renderMenuItem)}

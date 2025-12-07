@@ -293,10 +293,10 @@ export function AcademicYearsManagement() {
             <div className="flex gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('common.filterByStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="all">{t('common.all')} {t('academic.academicYears.status')}</SelectItem>
                   <SelectItem value="active">{t('academic.academicYears.active')}</SelectItem>
                   <SelectItem value="archived">{t('academic.academicYears.archived')}</SelectItem>
                   <SelectItem value="planned">{t('academic.academicYears.planned')}</SelectItem>

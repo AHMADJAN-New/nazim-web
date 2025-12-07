@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { roomsApi } from '@/lib/api/client';
 import type * as RoomApi from '@/types/api/room';
@@ -139,10 +139,10 @@ export const useCreateRoom = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
-      toast.success('Room created successfully');
+      showToast.success('toast.roomCreated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create room');
+      showToast.error(error.message || 'toast.roomCreateFailed');
     },
   });
 };
@@ -195,10 +195,10 @@ export const useUpdateRoom = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
-      toast.success('Room updated successfully');
+      showToast.success('toast.roomUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update room');
+      showToast.error(error.message || 'toast.roomUpdateFailed');
     },
   });
 };
@@ -213,10 +213,10 @@ export const useDeleteRoom = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
-      toast.success('Room deleted successfully');
+      showToast.success('toast.roomDeleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete room');
+      showToast.error(error.message || 'toast.roomDeleteFailed');
     },
   });
 };

@@ -1,23 +1,48 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { certificateTemplatesApi } from '@/lib/api/client';
 
 export interface CertificateLayoutConfig {
+  // Field positions (x, y as percentages 0-100)
+  headerPosition?: { x: number; y: number };
   studentNamePosition?: { x: number; y: number };
   fatherNamePosition?: { x: number; y: number };
+  grandfatherNamePosition?: { x: number; y: number };
+  motherNamePosition?: { x: number; y: number };
   courseNamePosition?: { x: number; y: number };
   certificateNumberPosition?: { x: number; y: number };
   datePosition?: { x: number; y: number };
+  provincePosition?: { x: number; y: number };
+  districtPosition?: { x: number; y: number };
+  villagePosition?: { x: number; y: number };
+  nationalityPosition?: { x: number; y: number };
+  guardianNamePosition?: { x: number; y: number };
+  studentPhotoPosition?: { x: number; y: number; width?: number; height?: number };
+  // Editable text content for fields
+  headerText?: string; // Custom header text (default: "Certificate of Completion")
+  courseNameText?: string; // Custom course name label/prefix (default: empty, uses actual course name)
+  dateText?: string; // Custom date label/prefix (default: "Date:")
+  // Field visibility (optional fields - user can enable/disable)
+  enabledFields?: string[]; // Array of field IDs that should be displayed
+  // Global style settings (used as defaults)
   fontSize?: number;
   fontFamily?: string;
   textColor?: string;
   rtl?: boolean;
+  // Per-field font settings (overrides global settings)
+  fieldFonts?: {
+    [fieldId: string]: {
+      fontSize?: number; // Custom font size for this field (overrides global fontSize * multiplier)
+      fontFamily?: string; // Custom font family for this field (overrides global fontFamily)
+    };
+  };
 }
 
 export interface CertificateTemplate {
   id: string;
   organization_id: string;
+  course_id: string | null;
   name: string;
   description: string | null;
   background_image_path: string | null;
@@ -33,12 +58,20 @@ export interface CertificateData {
   student: {
     id: string;
     full_name: string;
-    father_name: string;
+    father_name?: string | null;
+    grandfather_name?: string | null;
+    mother_name?: string | null;
     registration_date: string | null;
     completion_date: string | null;
     certificate_number: string | null;
     certificate_issued_at: string | null;
     status: string;
+    curr_province?: string | null;
+    curr_district?: string | null;
+    curr_village?: string | null;
+    nationality?: string | null;
+    guardian_name?: string | null;
+    picture_path?: string | null;
   };
   course: {
     id: string;
@@ -92,6 +125,7 @@ export const useCreateCertificateTemplate = () => {
       description?: string | null;
       background_image?: File | null;
       layout_config?: CertificateLayoutConfig;
+      course_id?: string | null;
       is_default?: boolean;
       is_active?: boolean;
     }) => {
@@ -100,6 +134,7 @@ export const useCreateCertificateTemplate = () => {
       if (data.description) formData.append('description', data.description);
       if (data.background_image) formData.append('background_image', data.background_image);
       if (data.layout_config) formData.append('layout_config', JSON.stringify(data.layout_config));
+      if (data.course_id) formData.append('course_id', data.course_id);
       if (data.is_default !== undefined) formData.append('is_default', data.is_default ? '1' : '0');
       if (data.is_active !== undefined) formData.append('is_active', data.is_active ? '1' : '0');
 
@@ -107,10 +142,16 @@ export const useCreateCertificateTemplate = () => {
       return template as CertificateTemplate;
     },
     onSuccess: () => {
-      toast.success('Certificate template created');
+      showToast.success('toast.certificateTemplates.created');
       void queryClient.invalidateQueries({ queryKey: ['certificate-templates'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not create template'),
+    onError: (error: Error) => {
+      const errorMessage = error.message || 'toast.certificateTemplates.createFailed';
+      showToast.error(errorMessage);
+      if (import.meta.env.DEV) {
+        console.error('[useCreateCertificateTemplate] Error:', error);
+      }
+    },
   });
 };
 
@@ -125,6 +166,7 @@ export const useUpdateCertificateTemplate = () => {
         description?: string | null;
         background_image?: File | null;
         layout_config?: CertificateLayoutConfig;
+        course_id?: string | null;
         is_default?: boolean;
         is_active?: boolean;
       };
@@ -134,6 +176,7 @@ export const useUpdateCertificateTemplate = () => {
       if (data.description !== undefined) formData.append('description', data.description || '');
       if (data.background_image) formData.append('background_image', data.background_image);
       if (data.layout_config) formData.append('layout_config', JSON.stringify(data.layout_config));
+      if (data.course_id !== undefined) formData.append('course_id', data.course_id || '');
       if (data.is_default !== undefined) formData.append('is_default', data.is_default ? '1' : '0');
       if (data.is_active !== undefined) formData.append('is_active', data.is_active ? '1' : '0');
 
@@ -141,11 +184,17 @@ export const useUpdateCertificateTemplate = () => {
       return template as CertificateTemplate;
     },
     onSuccess: () => {
-      toast.success('Certificate template updated');
+      showToast.success('toast.certificateTemplates.updated');
       void queryClient.invalidateQueries({ queryKey: ['certificate-templates'] });
       void queryClient.invalidateQueries({ queryKey: ['certificate-template'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not update template'),
+    onError: (error: Error) => {
+      const errorMessage = error.message || 'toast.certificateTemplates.updateFailed';
+      showToast.error(errorMessage);
+      if (import.meta.env.DEV) {
+        console.error('[useUpdateCertificateTemplate] Error:', error);
+      }
+    },
   });
 };
 
@@ -158,10 +207,10 @@ export const useDeleteCertificateTemplate = () => {
       return id;
     },
     onSuccess: () => {
-      toast.success('Certificate template deleted');
+      showToast.success('toast.certificateTemplates.deleted');
       void queryClient.invalidateQueries({ queryKey: ['certificate-templates'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not delete template'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.certificateTemplates.deleteFailed'),
   });
 };
 
@@ -174,10 +223,10 @@ export const useSetDefaultCertificateTemplate = () => {
       return template as CertificateTemplate;
     },
     onSuccess: () => {
-      toast.success('Default template updated');
+      showToast.success('toast.certificateTemplates.defaultUpdated');
       void queryClient.invalidateQueries({ queryKey: ['certificate-templates'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not set default template'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.certificateTemplates.setDefaultFailed'),
   });
 };
 
@@ -194,10 +243,10 @@ export const useGenerateCertificate = () => {
       };
     },
     onSuccess: () => {
-      toast.success('Certificate generated');
+      showToast.success('toast.certificateTemplates.generated');
       void queryClient.invalidateQueries({ queryKey: ['course-students'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not generate certificate'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.certificateTemplates.generateFailed'),
   });
 };
 

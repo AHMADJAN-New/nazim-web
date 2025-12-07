@@ -190,6 +190,14 @@
     margin-right: 0 !important;
     margin-left: auto !important;
   }
+
+  /* RTL Error Messages - Align to left in RTL mode */
+  [dir="rtl"] .text-destructive,
+  [dir="rtl"] p.text-destructive,
+  [dir="rtl"] .text-sm.text-destructive {
+    text-align: left;
+    direction: rtl;
+  }
 }
 
 @layer base {

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { courseStudentDisciplineRecordsApi } from '@/lib/api/client';
 
@@ -86,10 +86,10 @@ export const useCreateDisciplineRecord = () => {
       return mapApiToDomain(result as ApiDisciplineRecord);
     },
     onSuccess: (_data, variables) => {
-      toast.success('Discipline record created');
+      showToast.success('toast.discipline.created');
       void queryClient.invalidateQueries({ queryKey: ['course-student-discipline-records', variables.courseStudentId] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not create record'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.discipline.createFailed'),
   });
 };
 
@@ -107,10 +107,10 @@ export const useUpdateDisciplineRecord = () => {
       return mapApiToDomain(result as ApiDisciplineRecord);
     },
     onSuccess: () => {
-      toast.success('Discipline record updated');
+      showToast.success('toast.discipline.updated');
       void queryClient.invalidateQueries({ queryKey: ['course-student-discipline-records'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not update record'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.discipline.updateFailed'),
   });
 };
 
@@ -122,10 +122,10 @@ export const useDeleteDisciplineRecord = () => {
       return id;
     },
     onSuccess: () => {
-      toast.success('Discipline record deleted');
+      showToast.success('toast.discipline.deleted');
       void queryClient.invalidateQueries({ queryKey: ['course-student-discipline-records'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not delete record'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.discipline.deleteFailed'),
   });
 };
 
@@ -137,9 +137,9 @@ export const useResolveDisciplineRecord = () => {
       return mapApiToDomain(result as ApiDisciplineRecord);
     },
     onSuccess: () => {
-      toast.success('Discipline record resolved');
+      showToast.success('toast.discipline.resolved');
       void queryClient.invalidateQueries({ queryKey: ['course-student-discipline-records'] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Could not resolve record'),
+    onError: (error: Error) => showToast.error(error.message || 'toast.discipline.resolveFailed'),
   });
 };

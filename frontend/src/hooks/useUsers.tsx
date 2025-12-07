@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useHasPermission } from './usePermissions';
@@ -99,10 +99,10 @@ export const useCreateUser = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
-      toast.success('User created successfully');
+      showToast.success('toast.userCreated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create user');
+      showToast.error(error.message || 'toast.userCreateFailed');
     },
   });
 };
@@ -142,10 +142,10 @@ export const useUpdateUser = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
-      toast.success('User updated successfully');
+      showToast.success('toast.userUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update user');
+      showToast.error(error.message || 'toast.userUpdateFailed');
     },
   });
 };
@@ -172,10 +172,10 @@ export const useDeleteUser = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
-      toast.success('User deleted successfully');
+      showToast.success('toast.userDeleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete user');
+      showToast.error(error.message || 'toast.userDeleteFailed');
     },
   });
 };
@@ -199,10 +199,10 @@ export const useResetUserPassword = () => {
       return { id: userId };
     },
     onSuccess: () => {
-      toast.success('Password reset successfully');
+      showToast.success('toast.passwordReset');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to reset password');
+      showToast.error(error.message || 'toast.passwordResetFailed');
     },
   });
 };

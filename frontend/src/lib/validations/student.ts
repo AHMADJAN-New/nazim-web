@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { optionalUuidSchema, optionalEmailSchema, phoneSchema, optionalStringLength, requiredStringLength } from './common';
+import { validationMessages } from './validationHelpers';
 
 /**
  * Student form validation schema
@@ -17,7 +18,7 @@ export const studentSchema = z.object({
   gender: z.enum(['male', 'female']),
   birth_year: optionalStringLength(10, 'Birth year'),
   birth_date: optionalStringLength(30, 'Birth date'),
-  age: z.number().min(3, 'Age must be at least 3').max(25, 'Age must be realistic for school').optional().nullable(),
+  age: z.number().min(3, validationMessages.ageMin(3)).max(25, validationMessages.ageMax()).optional().nullable(),
   admission_year: optionalStringLength(10, 'Admission year'),
   orig_province: optionalStringLength(80, 'Province'),
   orig_district: optionalStringLength(80, 'District'),

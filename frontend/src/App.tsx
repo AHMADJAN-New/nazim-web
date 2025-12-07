@@ -49,7 +49,9 @@ import {
   CourseStudentReports,
   CourseDashboard,
   CourseAttendance,
+  CourseCertificates,
   CertificateTemplates,
+  CourseDocuments,
   StaffReport,
   HostelManagement,
   HostelReports,
@@ -69,7 +71,8 @@ import {
   Assets,
   AssetAssignments,
   AssetReports,
-  AssetCategories
+  AssetCategories,
+  TranslationEditor
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -283,6 +286,11 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/settings/translations" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <TranslationEditor />
+                      </Suspense>
+                    } />
                     <Route path="/staff" element={
                       <PermissionRoute permission="staff.read">
                         <Suspense fallback={<PageSkeleton />}>
@@ -433,10 +441,24 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/course-certificates" element={
+                      <PermissionRoute permission="course_students.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <CourseCertificates />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     <Route path="/certificate-templates" element={
                       <PermissionRoute permission="certificate_templates.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <CertificateTemplates />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/course-documents" element={
+                      <PermissionRoute permission="course_documents.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <CourseDocuments />
                         </Suspense>
                       </PermissionRoute>
                     } />

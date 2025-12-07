@@ -45,25 +45,25 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef } from '@tanstack/react-table';
 
-const admissionSchema = z.object({
+const getAdmissionSchema = (t: ReturnType<typeof useLanguage>['t']) => z.object({
   organization_id: z.string().uuid().optional(),
   school_id: z.string().uuid().optional().nullable(),
-  student_id: z.string().uuid({ message: 'Student is required' }),
+  student_id: z.string().uuid({ message: t('admissions.studentRequired') }),
   academic_year_id: z.string().uuid().optional().nullable(),
   class_id: z.string().uuid().optional().nullable(),
   class_academic_year_id: z.string().uuid().optional().nullable(),
   residency_type_id: z.string().uuid().optional().nullable(),
   room_id: z.string().uuid().optional().nullable(),
-  admission_year: z.string().max(10, 'Admission year must be 10 characters or less').optional().nullable(),
-  admission_date: z.string().max(30, 'Admission date is too long').optional(),
+  admission_year: z.string().max(10, t('admissions.admissionYearMaxLength')).optional().nullable(),
+  admission_date: z.string().max(30, t('admissions.admissionDateTooLong')).optional(),
   enrollment_status: z
     .enum(['pending', 'admitted', 'active', 'inactive', 'suspended', 'withdrawn', 'graduated'] as [AdmissionStatus, ...AdmissionStatus[]])
     .default('admitted'),
-  enrollment_type: z.string().max(50, 'Enrollment type is too long').optional().nullable(),
-  shift: z.string().max(50, 'Shift is too long').optional().nullable(),
+  enrollment_type: z.string().max(50, t('admissions.enrollmentTypeTooLong')).optional().nullable(),
+  shift: z.string().max(50, t('admissions.shiftTooLong')).optional().nullable(),
   is_boarder: z.boolean().default(false),
-  fee_status: z.string().max(50, 'Fee status is too long').optional().nullable(),
-  placement_notes: z.string().max(500, 'Notes must be 500 characters or less').optional().nullable(),
+  fee_status: z.string().max(50, t('admissions.feeStatusTooLong')).optional().nullable(),
+  placement_notes: z.string().max(500, t('admissions.placementNotesMaxLength')).optional().nullable(),
 });
 
 const statusVariant = (status: AdmissionStatus) => {
@@ -132,6 +132,8 @@ export function StudentAdmissions() {
   const [statusFilter, setStatusFilter] = useState<'all' | AdmissionStatus>('all');
   const [residencyFilter, setResidencyFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const admissionSchema = getAdmissionSchema(t);
 
   const {
     register,
@@ -224,7 +226,7 @@ export function StudentAdmissions() {
         return (
           <div className="space-y-1 min-w-[200px]">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold break-words">{admission.student?.fullName || 'Unassigned'}</span>
+              <span className="font-semibold break-words">{admission.student?.fullName || t('hostel.unassigned')}</span>
               {admission.enrollmentStatus && (
                 <Badge variant={statusVariant(admission.enrollmentStatus)} className="shrink-0">
                   {admission.enrollmentStatus === 'pending' ? t('admissions.pending') :
@@ -269,7 +271,7 @@ export function StudentAdmissions() {
         if (classInfo) {
           return (
             <div className="space-y-1">
-              <div className="font-medium">{admission.class?.name || 'Unknown'}</div>
+              <div className="font-medium">{admission.class?.name || t('common.unknown')}</div>
               {classInfo.sectionName && (
                 <Badge variant="outline" className="text-xs">
                   {classInfo.sectionName}
@@ -787,42 +789,42 @@ export function StudentAdmissions() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total admissions</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('admissions.totalAdmissionsLabel')}</CardTitle>
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">Across all residency types</p>
+            <p className="text-xs text-muted-foreground">{t('admissions.acrossAllResidencyTypes')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active students</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('admissions.activeStudents')}</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.active}</div>
-            <p className="text-xs text-muted-foreground">Currently studying</p>
+            <p className="text-xs text-muted-foreground">{t('admissions.currentlyStudying')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pending/Admitted</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('admissions.pendingAdmitted')}</CardTitle>
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.pending}</div>
-            <p className="text-xs text-muted-foreground">Awaiting activation</p>
+            <p className="text-xs text-muted-foreground">{t('admissions.awaitingActivation')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Boarders</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('admissions.boardersLabel')}</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.boarders}</div>
-            <p className="text-xs text-muted-foreground">Students with accommodation</p>
+            <p className="text-xs text-muted-foreground">{t('admissions.studentsWithAccommodation')}</p>
           </CardContent>
         </Card>
       </div>
@@ -841,7 +843,7 @@ export function StudentAdmissions() {
             <div className="flex flex-col items-center justify-center py-8 space-y-2">
               <p className="text-destructive font-medium">Error loading admissions</p>
               <p className="text-sm text-muted-foreground">
-                {admissionsError instanceof Error ? admissionsError.message : 'Unknown error occurred'}
+                {admissionsError instanceof Error ? admissionsError.message : t('common.unexpectedError')}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
                 Please ensure the migration <code className="bg-muted px-1 rounded">20250205000034_fix_student_admissions_rls_policies.sql</code> has been applied.
@@ -962,14 +964,14 @@ export function StudentAdmissions() {
       <AlertDialog open={!!admissionToDelete} onOpenChange={(open) => !open && setAdmissionToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('admissions.removeAdmission') || 'Remove admission?'}</AlertDialogTitle>
+            <AlertDialogTitle>{t('admissions.removeAdmission')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('admissions.removeAdmissionDescription') || 'This will keep the student registration but remove their class placement record.'}
+              {t('admissions.removeAdmissionDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>{t('common.delete') || 'Remove'}</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
