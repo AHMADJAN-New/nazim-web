@@ -151,7 +151,7 @@ const StudentReport = () => {
       : schools?.[0];
 
     if (!exportSchool) {
-      toast.error('A school is required to export the report.');
+      toast.error(t('studentReport.schoolRequired') || 'A school is required to export the report.');
       return;
     }
 
@@ -172,16 +172,16 @@ const StudentReport = () => {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      toast.success(`Report exported as ${format.toUpperCase()}`);
+      toast.success(t('studentReport.reportExported') || `Report exported as ${format.toUpperCase()}`);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error(error);
       }
-      toast.error('Failed to export the report. Please try again.');
+      toast.error(t('studentReport.exportFailed') || 'Failed to export the report. Please try again.');
     }
   };
 
-  const columns: ColumnDef<Student, any>[] = [
+  const columns: ColumnDef<Student, any>[] = useMemo(() => [
     {
       id: 'avatar',
       header: '',
@@ -214,7 +214,7 @@ const StudentReport = () => {
     },
     {
       accessorKey: 'studentCode',
-      header: 'ID',
+      header: t('studentReport.studentId') || 'ID',
       cell: ({ row }) => (
         <div className="font-mono text-sm font-medium">
           {row.original.studentCode || row.original.admissionNumber || '—'}
@@ -223,28 +223,28 @@ const StudentReport = () => {
     },
     {
       accessorKey: 'admissionNumber',
-      header: 'Admission #',
+      header: t('students.admissionNo') || 'Admission #',
       cell: ({ row }) => (
         <div className="font-medium">{row.original.admissionNumber || '—'}</div>
       ),
     },
     {
       accessorKey: 'fullName',
-      header: 'Name',
+      header: t('studentReport.fullName') || 'Name',
       cell: ({ row }) => (
         <div className="font-semibold">{row.original.fullName}</div>
       ),
     },
     {
       accessorKey: 'cardNumber',
-      header: 'Card #',
+      header: t('attendancePage.cardHeader') || 'Card #',
       cell: ({ row }) => (
         <div className="text-sm">{row.original.cardNumber || '—'}</div>
       ),
     },
     {
       accessorKey: 'originLocation',
-      header: 'Origin Location',
+      header: t('studentReport.originLocation') || 'Origin Location',
       cell: ({ row }) => (
         <div className="text-sm">
           {buildLocation(row.original.origProvince, row.original.origDistrict, row.original.origVillage)}
@@ -253,14 +253,14 @@ const StudentReport = () => {
     },
     {
       accessorKey: 'birthYear',
-      header: 'Birth Year',
+      header: t('studentReport.birthYear') || 'Birth Year',
       cell: ({ row }) => (
         <div className="text-sm">{row.original.birthYear || '—'}</div>
       ),
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: t('studentReport.status') || 'Status',
       cell: ({ row }) => (
         <Badge variant={statusBadgeVariant(row.original.status)} className="capitalize">
           {formatStatus(row.original.status)}
@@ -269,7 +269,7 @@ const StudentReport = () => {
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: t('common.actions') || 'Actions',
       cell: ({ row }) => (
         <Button
           variant="ghost"
@@ -278,11 +278,11 @@ const StudentReport = () => {
           className="h-8 w-8 p-0"
         >
           <Eye className="h-4 w-4" />
-          <span className="sr-only">View details</span>
+          <span className="sr-only">{t('common.view') || 'View details'}</span>
         </Button>
       ),
     },
-  ];
+  ], [t]);
 
   const { table } = useDataTable<Student>({
     data: paginatedStudents,
@@ -314,9 +314,9 @@ const StudentReport = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold leading-tight">Student Registration Report</h1>
+          <h1 className="text-3xl font-bold leading-tight">{t('studentReport.title') || 'Student Registration Report'}</h1>
           <p className="text-muted-foreground">
-            View and export student registration data with detailed information
+            {t('studentReport.subtitle') || 'View and export student registration data with detailed information'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -350,14 +350,14 @@ const StudentReport = () => {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>{t('studentReport.filters') || 'Filters'}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by name, admission number..."
+                placeholder={t('studentReport.searchPlaceholder') || 'Search by name, admission number...'}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -374,10 +374,10 @@ const StudentReport = () => {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="All Schools" />
+                <SelectValue placeholder={t('studentReport.allSchools') || 'All Schools'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Schools</SelectItem>
+                <SelectItem value="all">{t('studentReport.allSchools') || 'All Schools'}</SelectItem>
                 {schools?.map((school) => (
                   <SelectItem key={school.id} value={school.id}>
                     {school.schoolName}
@@ -393,14 +393,14 @@ const StudentReport = () => {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="All Status" />
+                <SelectValue placeholder={t('studentReport.allStatus') || 'All Status'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="applied">Applied</SelectItem>
-                <SelectItem value="admitted">Admitted</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                <SelectItem value="all">{t('studentReport.allStatus') || 'All Status'}</SelectItem>
+                <SelectItem value="applied">{t('studentReport.applied') || 'Applied'}</SelectItem>
+                <SelectItem value="admitted">{t('studentReport.admitted') || 'Admitted'}</SelectItem>
+                <SelectItem value="active">{t('studentReport.active') || 'Active'}</SelectItem>
+                <SelectItem value="withdrawn">{t('studentReport.withdrawn') || 'Withdrawn'}</SelectItem>
               </SelectContent>
             </Select>
             <Select
@@ -411,12 +411,12 @@ const StudentReport = () => {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="All Genders" />
+                <SelectValue placeholder={t('studentReport.allGenders') || 'All Genders'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Genders</SelectItem>
-                <SelectItem value="male">Male</SelectItem>
-                <SelectItem value="female">Female</SelectItem>
+                <SelectItem value="all">{t('studentReport.allGenders') || 'All Genders'}</SelectItem>
+                <SelectItem value="male">{t('studentReport.male') || 'Male'}</SelectItem>
+                <SelectItem value="female">{t('studentReport.female') || 'Female'}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -426,12 +426,12 @@ const StudentReport = () => {
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Students ({filteredStudents.length})</CardTitle>
+          <CardTitle>{t('studentReport.students') || 'Students'} ({filteredStudents.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="py-12 flex justify-center">
-              <LoadingSpinner text="Loading students..." />
+              <LoadingSpinner text={t('studentReport.loadingStudents') || 'Loading students...'} />
             </div>
           ) : (
             <>
@@ -479,7 +479,7 @@ const StudentReport = () => {
                           colSpan={columns.length}
                           className="h-24 text-center"
                         >
-                          No students found.
+                          {t('studentReport.noStudentsFound') || 'No students found.'}
                         </TableCell>
                       </TableRow>
                     )}
@@ -549,42 +549,42 @@ const StudentReport = () => {
                 <div className={`space-y-6 ${isRTL ? 'pl-4' : 'pr-4'}`}>
                   {/* Personal Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Personal Information</h3>
+                    <h3 className="text-lg font-semibold">{t('studentReport.personalInformation') || 'Personal Information'}</h3>
                     <div className="space-y-3">
                       {selectedStudent.studentCode && (
                         <div className="flex items-center justify-between py-2 border-b">
-                          <span className="text-sm font-medium text-muted-foreground">Student ID</span>
+                          <span className="text-sm font-medium text-muted-foreground">{t('studentReport.studentId') || 'Student ID'}</span>
                           <span className="text-sm font-mono font-medium">{selectedStudent.studentCode}</span>
                         </div>
                       )}
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Full Name</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.fullName') || 'Full Name'}</span>
                         <span className="text-sm font-medium">{selectedStudent.fullName}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Father Name</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.fatherName') || 'Father Name'}</span>
                         <span className="text-sm">{selectedStudent.fatherName || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Gender</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.gender') || 'Gender'}</span>
                         <Badge variant="outline" className="capitalize">
-                          {selectedStudent.gender === 'male' ? 'Male' : 'Female'}
+                          {selectedStudent.gender === 'male' ? (t('studentReport.male') || 'Male') : (t('studentReport.female') || 'Female')}
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Age</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.age') || 'Age'}</span>
                         <span className="text-sm">{selectedStudent.age ?? '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Birth Date</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.birthDate') || 'Birth Date'}</span>
                         <span className="text-sm">{formatDate(selectedStudent.dateOfBirth ?? selectedStudent.birthDate)}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Nationality</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.nationality') || 'Nationality'}</span>
                         <span className="text-sm">{selectedStudent.nationality || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Status</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.status') || 'Status'}</span>
                         <Badge variant={statusBadgeVariant(selectedStudent.status)} className="capitalize">
                           {formatStatus(selectedStudent.status)}
                         </Badge>
@@ -594,26 +594,26 @@ const StudentReport = () => {
 
                   {/* Guardian Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Guardian Information</h3>
+                    <h3 className="text-lg font-semibold">{t('studentReport.guardianInformation') || 'Guardian Information'}</h3>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Guardian Name</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.guardianName') || 'Guardian Name'}</span>
                         <span className="text-sm">{selectedStudent.guardianName || selectedStudent.fatherName || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Relation</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.relation') || 'Relation'}</span>
                         <span className="text-sm">{selectedStudent.guardianRelation || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Guardian Phone</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.guardianPhone') || 'Guardian Phone'}</span>
                         <span className="text-sm">{selectedStudent.guardianPhone || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Contact Phone</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.contactPhone') || 'Contact Phone'}</span>
                         <span className="text-sm">{selectedStudent.phone || '—'}</span>
                       </div>
                       <div className="flex items-start justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Home Address</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.homeAddress') || 'Home Address'}</span>
                         <span className="text-sm text-right max-w-[60%]">{selectedStudent.homeAddress || selectedStudent.address?.street || '—'}</span>
                       </div>
                     </div>
@@ -621,26 +621,26 @@ const StudentReport = () => {
 
                   {/* Academic Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Academic Information</h3>
+                    <h3 className="text-lg font-semibold">{t('studentReport.academicInformation') || 'Academic Information'}</h3>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">School</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.school') || 'School'}</span>
                         <span className="text-sm">{selectedStudent.school?.schoolName || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Applying Grade</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.applyingGrade') || 'Applying Grade'}</span>
                         <span className="text-sm">{selectedStudent.applyingGrade || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Admission Year</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.admissionYear') || 'Admission Year'}</span>
                         <span className="text-sm">{selectedStudent.admissionYear || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Admission Fee Status</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.admissionFeeStatus') || 'Admission Fee Status'}</span>
                         <Badge variant="outline">{formatStatus(selectedStudent.admissionFeeStatus)}</Badge>
                       </div>
                       <div className="flex items-start justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Previous School</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.previousSchool') || 'Previous School'}</span>
                         <span className="text-sm text-right max-w-[60%]">{selectedStudent.previousSchool || '—'}</span>
                       </div>
                     </div>
@@ -648,16 +648,16 @@ const StudentReport = () => {
 
                   {/* Location Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Location Information</h3>
+                    <h3 className="text-lg font-semibold">{t('studentReport.locationInformation') || 'Location Information'}</h3>
                     <div className="space-y-3">
                       <div className="flex items-start justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Origin Location</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.originLocation') || 'Origin Location'}</span>
                         <span className="text-sm text-right max-w-[60%]">
                           {buildLocation(selectedStudent.origProvince, selectedStudent.origDistrict, selectedStudent.origVillage)}
                         </span>
                       </div>
                       <div className="flex items-start justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Current Location</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.currentLocation') || 'Current Location'}</span>
                         <span className="text-sm text-right max-w-[60%]">
                           {buildLocation(selectedStudent.currProvince, selectedStudent.currDistrict, selectedStudent.currVillage)}
                         </span>
@@ -667,20 +667,20 @@ const StudentReport = () => {
 
                   {/* Additional Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Additional Information</h3>
+                    <h3 className="text-lg font-semibold">{t('studentReport.additionalInformation') || 'Additional Information'}</h3>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Is Orphan</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.isOrphan') || 'Is Orphan'}</span>
                         <Badge variant={selectedStudent.isOrphan ? 'secondary' : 'outline'}>
-                          {selectedStudent.isOrphan ? 'Yes' : 'No'}
+                          {selectedStudent.isOrphan ? (t('studentReport.yes') || 'Yes') : (t('studentReport.no') || 'No')}
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Disability Status</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.disabilityStatus') || 'Disability Status'}</span>
                         <span className="text-sm">{selectedStudent.disabilityStatus || '—'}</span>
                       </div>
                       <div className="flex items-start justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Emergency Contact</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('studentReport.emergencyContact') || 'Emergency Contact'}</span>
                         <span className="text-sm text-right max-w-[60%]">
                           {selectedStudent.emergencyContactName || selectedStudent.emergencyContactPhone
                             ? `${selectedStudent.emergencyContactName || ''} ${selectedStudent.emergencyContactPhone || ''}`.trim()

@@ -52,16 +52,17 @@ interface AttendanceReportRecord {
   note: string | null;
 }
 
-const statusOptions = [
-  { value: 'present', label: 'Present', icon: CheckCircle2, color: 'bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-400' },
-  { value: 'absent', label: 'Absent', icon: XCircle, color: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-400' },
-  { value: 'late', label: 'Late', icon: Clock, color: 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-400' },
-  { value: 'excused', label: 'Excused', icon: AlertCircle, color: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-400' },
-  { value: 'sick', label: 'Sick', icon: Heart, color: 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-400' },
-  { value: 'leave', label: 'Leave', icon: Calendar, color: 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-400' },
+const getStatusOptions = (t: ReturnType<typeof useLanguage>['t']) => [
+  { value: 'present', label: t('attendancePage.statusPresent') || 'Present', icon: CheckCircle2, color: 'bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-400' },
+  { value: 'absent', label: t('attendancePage.statusAbsent') || 'Absent', icon: XCircle, color: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-400' },
+  { value: 'late', label: t('attendancePage.statusLate') || 'Late', icon: Clock, color: 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-400' },
+  { value: 'excused', label: t('attendancePage.statusExcused') || 'Excused', icon: AlertCircle, color: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-400' },
+  { value: 'sick', label: t('attendancePage.statusSick') || 'Sick', icon: Heart, color: 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-400' },
+  { value: 'leave', label: t('attendancePage.statusLeave') || 'Leave', icon: Calendar, color: 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-400' },
 ];
 
-const StatusBadge = ({ status }: { status: string }) => {
+const StatusBadge = ({ status, t }: { status: string; t: ReturnType<typeof useLanguage>['t'] }) => {
+  const statusOptions = getStatusOptions(t);
   const option = statusOptions.find(opt => opt.value === status);
   if (!option) return <Badge variant="outline">{status}</Badge>;
   const Icon = option.icon;
@@ -171,16 +172,16 @@ export default function AttendanceReports() {
 
   const handleExport = async () => {
     try {
-      toast.info('Export feature coming soon');
+      toast.info(t('attendanceReports.exportComingSoon') || 'Export feature coming soon');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to export');
+      toast.error(error.message || t('common.error') || 'Failed to export');
     }
   };
 
   const columns: ColumnDef<AttendanceReportRecord>[] = [
     {
       accessorKey: 'studentName',
-      header: 'Student',
+      header: t('attendanceReports.student') || 'Student',
       cell: ({ row }) => (
         <div>
           <div className="font-medium">{row.original.studentName}</div>
@@ -190,27 +191,27 @@ export default function AttendanceReports() {
     },
     {
       accessorKey: 'cardNumber',
-      header: 'Card #',
+      header: t('attendancePage.cardHeader') || 'Card #',
       cell: ({ row }) => <div className="text-sm">{row.original.cardNumber || '—'}</div>,
     },
     {
       accessorKey: 'className',
-      header: 'Class',
+      header: t('attendanceReports.class') || 'Class',
       cell: ({ row }) => <div className="text-sm">{row.original.className}</div>,
     },
     {
       accessorKey: 'schoolName',
-      header: 'School',
+      header: t('attendanceReports.school') || 'School',
       cell: ({ row }) => <div className="text-sm">{row.original.schoolName || '—'}</div>,
     },
     {
       accessorKey: 'status',
-      header: 'Status',
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      header: t('attendancePage.statusHeader') || 'Status',
+      cell: ({ row }) => <StatusBadge status={row.original.status} t={t} />,
     },
     {
       accessorKey: 'sessionDate',
-      header: 'Date',
+      header: t('attendanceReports.date') || 'Date',
       cell: ({ row }) => (
         <div className="text-sm">
           <div>{format(row.original.sessionDate, 'MMM dd, yyyy')}</div>
@@ -220,7 +221,7 @@ export default function AttendanceReports() {
     },
     {
       accessorKey: 'entryMethod',
-      header: 'Method',
+      header: t('attendanceReports.method') || 'Method',
       cell: ({ row }) => (
         <Badge variant="outline" className="text-xs capitalize">
           {row.original.entryMethod}
@@ -269,12 +270,12 @@ export default function AttendanceReports() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Attendance Reports</CardTitle>
-              <CardDescription className="text-sm">View and analyze student attendance records</CardDescription>
+              <CardTitle className="text-lg">{t('attendanceReports.title') || 'Attendance Reports'}</CardTitle>
+              <CardDescription className="text-sm">{t('attendanceReports.subtitle') || 'View and analyze student attendance records'}</CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
-              Export
+              {t('common.export') || 'Export'}
             </Button>
           </div>
         </CardHeader>
@@ -284,7 +285,7 @@ export default function AttendanceReports() {
               <CollapsibleTrigger asChild>
                 <Button variant="outline" size="sm">
                   <Filter className="h-4 w-4 mr-2" />
-                  Filters
+                  {t('common.filter') || 'Filters'}
                   {hasActiveFilters && (
                     <Badge variant="secondary" className="ml-2">
                       {Object.values(filters).filter(v => v && typeof v === 'string').length}
@@ -295,20 +296,20 @@ export default function AttendanceReports() {
               {hasActiveFilters && (
                 <Button variant="ghost" size="sm" onClick={handleResetFilters}>
                   <X className="h-4 w-4 mr-2" />
-                  Reset
+                  {t('common.reset') || 'Reset'}
                 </Button>
               )}
             </div>
             <CollapsibleContent className="space-y-4 pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Student</label>
+                  <label className="text-sm font-medium">{t('attendanceReports.student') || 'Student'}</label>
                   <Select value={filters.studentId || 'all'} onValueChange={(v) => handleFilterChange('studentId', v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="All Students" />
+                      <SelectValue placeholder={t('attendanceReports.allStudents') || 'All Students'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Students</SelectItem>
+                      <SelectItem value="all">{t('attendanceReports.allStudents') || 'All Students'}</SelectItem>
                       {(students || []).map(student => (
                         <SelectItem key={student.id} value={student.id}>
                           {student.fullName} ({student.admissionNumber})
@@ -318,13 +319,13 @@ export default function AttendanceReports() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Class</label>
+                  <label className="text-sm font-medium">{t('attendanceReports.class') || 'Class'}</label>
                   <Select value={filters.classId || 'all'} onValueChange={(v) => handleFilterChange('classId', v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="All Classes" />
+                      <SelectValue placeholder={t('attendanceReports.allClasses') || 'All Classes'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Classes</SelectItem>
+                      <SelectItem value="all">{t('attendanceReports.allClasses') || 'All Classes'}</SelectItem>
                       {(classes || []).map(cls => (
                         <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
                       ))}
@@ -332,13 +333,13 @@ export default function AttendanceReports() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">School</label>
+                  <label className="text-sm font-medium">{t('attendanceReports.school') || 'School'}</label>
                   <Select value={filters.schoolId || 'all'} onValueChange={(v) => handleFilterChange('schoolId', v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="All Schools" />
+                      <SelectValue placeholder={t('attendanceReports.allSchools') || 'All Schools'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Schools</SelectItem>
+                      <SelectItem value="all">{t('attendanceReports.allSchools') || 'All Schools'}</SelectItem>
                       {(schools || []).map(school => (
                         <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>
                       ))}
@@ -346,21 +347,21 @@ export default function AttendanceReports() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Status</label>
+                  <label className="text-sm font-medium">{t('attendancePage.statusHeader') || 'Status'}</label>
                   <Select value={filters.status || 'all'} onValueChange={(v) => handleFilterChange('status', v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="All Status" />
+                      <SelectValue placeholder={t('attendanceReports.allStatus') || 'All Status'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      {statusOptions.map(option => (
+                      <SelectItem value="all">{t('attendanceReports.allStatus') || 'All Status'}</SelectItem>
+                      {getStatusOptions(t).map(option => (
                         <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">From Date</label>
+                  <label className="text-sm font-medium">{t('attendanceReports.fromDate') || 'From Date'}</label>
                   <Input
                     type="date"
                     value={filters.dateFrom}
@@ -368,7 +369,7 @@ export default function AttendanceReports() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">To Date</label>
+                  <label className="text-sm font-medium">{t('attendanceReports.toDate') || 'To Date'}</label>
                   <Input
                     type="date"
                     value={filters.dateTo}
@@ -420,7 +421,7 @@ export default function AttendanceReports() {
                     ) : (
                       <TableRow>
                         <TableCell colSpan={columns.length} className="text-center text-muted-foreground py-8">
-                          No attendance records found
+                          {t('attendanceReports.noRecords') || 'No attendance records found'}
                         </TableCell>
                       </TableRow>
                     )}

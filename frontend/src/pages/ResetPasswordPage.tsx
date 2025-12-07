@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLanguage } from '@/hooks/useLanguage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 
 export default function ResetPasswordPage() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,7 @@ export default function ResetPasswordPage() {
     const token = searchParams.get('token');
     
     if (!token) {
-      toast.error('Invalid reset link. Please request a new password reset.');
+      toast.error(t('resetPassword.invalidResetLink') || 'Invalid reset link. Please request a new password reset.');
       navigate('/auth');
       return;
     }
@@ -36,19 +38,19 @@ export default function ResetPasswordPage() {
     const errors: string[] = [];
     
     if (password.length < 8) {
-      errors.push('Password must be at least 8 characters long');
+      errors.push(t('resetPassword.requirement8Chars') || 'Password must be at least 8 characters long');
     }
     if (!/[A-Z]/.test(password)) {
-      errors.push('Password must contain at least one uppercase letter');
+      errors.push(t('resetPassword.requirementUppercase') || 'Password must contain at least one uppercase letter');
     }
     if (!/[a-z]/.test(password)) {
-      errors.push('Password must contain at least one lowercase letter');
+      errors.push(t('resetPassword.requirementLowercase') || 'Password must contain at least one lowercase letter');
     }
     if (!/\d/.test(password)) {
-      errors.push('Password must contain at least one number');
+      errors.push(t('resetPassword.requirementNumber') || 'Password must contain at least one number');
     }
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      errors.push('Password must contain at least one special character');
+      errors.push(t('resetPassword.requirementSpecial') || 'Password must contain at least one special character');
     }
     
     return errors;
@@ -58,7 +60,7 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error(t('resetPassword.passwordsDoNotMatch') || 'Passwords do not match');
       return;
     }
 
@@ -108,23 +110,23 @@ export default function ResetPasswordPage() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
             <Shield className="h-6 w-6" />
-            Reset Password
+            {t('resetPassword.title') || 'Reset Password'}
           </CardTitle>
           <CardDescription className="text-center">
-            Create a new secure password for your account
+            {t('resetPassword.subtitle') || 'Create a new secure password for your account'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="password">New Password</Label>
+              <Label htmlFor="password">{t('resetPassword.newPassword') || 'New Password'}</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Enter your new password"
+                  placeholder={t('resetPassword.newPassword') || 'Enter your new password'}
                   required
                 />
                 <Button
@@ -141,7 +143,7 @@ export default function ResetPasswordPage() {
               {formData.password && (
                 <div className="mt-2">
                   <div className="flex justify-between text-xs mb-1">
-                    <span>Password Strength</span>
+                    <span>{t('resetPassword.passwordStrength') || 'Password Strength'}</span>
                     <span className={passwordStrength.strength >= 80 ? 'text-green-600' : 'text-muted-foreground'}>
                       {passwordStrength.label}
                     </span>
@@ -157,14 +159,14 @@ export default function ResetPasswordPage() {
             </div>
 
             <div>
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Label htmlFor="confirmPassword">{t('resetPassword.confirmPassword') || 'Confirm New Password'}</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  placeholder="Confirm your new password"
+                  placeholder={t('resetPassword.confirmPassword') || 'Confirm your new password'}
                   required
                 />
                 <Button
@@ -180,18 +182,18 @@ export default function ResetPasswordPage() {
             </div>
 
             <div className="text-xs text-muted-foreground space-y-1">
-              <p>Password must contain:</p>
+              <p>{t('resetPassword.passwordRequirements') || 'Password must contain:'}</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>At least 8 characters</li>
-                <li>One uppercase letter</li>
-                <li>One lowercase letter</li>
-                <li>One number</li>
-                <li>One special character</li>
+                <li>{t('resetPassword.requirement8Chars') || 'At least 8 characters'}</li>
+                <li>{t('resetPassword.requirementUppercase') || 'One uppercase letter'}</li>
+                <li>{t('resetPassword.requirementLowercase') || 'One lowercase letter'}</li>
+                <li>{t('resetPassword.requirementNumber') || 'One number'}</li>
+                <li>{t('resetPassword.requirementSpecial') || 'One special character'}</li>
               </ul>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Updating Password...' : 'Update Password'}
+              {loading ? (t('resetPassword.updatingPassword') || 'Updating Password...') : (t('resetPassword.updatePassword') || 'Update Password')}
             </Button>
           </form>
         </CardContent>

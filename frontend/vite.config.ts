@@ -12,6 +12,15 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    commonjsOptions: {
+      include: [/pdfmake-arabic/, /node_modules/],
+      transformMixedEsModules: true,
+    },
+  },
+  optimizeDeps: {
+    include: ['pdfmake-arabic/build/vfs_fonts'],
+  },
   server: {
     port: 5173,
     host: true,

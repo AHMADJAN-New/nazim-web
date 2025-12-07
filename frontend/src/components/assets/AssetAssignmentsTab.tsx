@@ -29,6 +29,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef, flexRender } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const assignmentSchema = z.object({
   assetId: z.string().min(1, 'Asset is required'),
@@ -42,6 +43,7 @@ const assignmentSchema = z.object({
 type AssignmentFormValues = z.infer<typeof assignmentSchema>;
 
 export default function AssetAssignmentsTab() {
+  const { t } = useLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<{ id: string; assetId: string; data: AssetAssignmentDomain } | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');

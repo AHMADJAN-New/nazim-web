@@ -1,0 +1,772 @@
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { GripVertical, Save, RotateCcw, Eye } from 'lucide-react';
+import type { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
+import { certificateTemplatesApi } from '@/lib/api/client';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import { useCourseStudents } from '@/hooks/useCourseStudents';
+import { useLanguage } from '@/hooks/useLanguage';
+
+interface FieldConfig {
+  id: string;
+  label: string;
+  key: keyof CertificateLayoutConfig;
+  sampleText: string;
+  defaultFontSize?: number;
+  isImage?: boolean; // For photo/avatar fields
+  defaultWidth?: number; // For image fields
+  defaultHeight?: number; // For image fields
+}
+
+// FIELDS will be created dynamically based on student data and course name
+const getFields = (studentName: string, fatherName: string, courseName: string): FieldConfig[] => [
+  { id: 'header', label: 'Header', key: 'headerPosition', sampleText: 'Certificate of Completion', defaultFontSize: 36 },
+  { id: 'studentName', label: 'Student Name', key: 'studentNamePosition', sampleText: studentName, defaultFontSize: 28 },
+  { id: 'fatherName', label: 'Father Name', key: 'fatherNamePosition', sampleText: fatherName, defaultFontSize: 16 },
+  { id: 'grandfatherName', label: 'Grandfather Name', key: 'grandfatherNamePosition', sampleText: 'Son of Grandfather', defaultFontSize: 14 },
+  { id: 'motherName', label: 'Mother Name', key: 'motherNamePosition', sampleText: 'Son of Mary', defaultFontSize: 14 },
+  { id: 'courseName', label: 'Course Name', key: 'courseNamePosition', sampleText: courseName, defaultFontSize: 24 },
+  { id: 'certificateNumber', label: 'Certificate Number', key: 'certificateNumberPosition', sampleText: 'CERT-2024-0001', defaultFontSize: 12 },
+  { id: 'date', label: 'Date', key: 'datePosition', sampleText: 'Jan 15, 2024', defaultFontSize: 12 },
+  { id: 'province', label: 'Province', key: 'provincePosition', sampleText: 'Kabul', defaultFontSize: 12 },
+  { id: 'district', label: 'District', key: 'districtPosition', sampleText: 'District 1', defaultFontSize: 12 },
+  { id: 'village', label: 'Village', key: 'villagePosition', sampleText: 'Village Name', defaultFontSize: 12 },
+  { id: 'nationality', label: 'Nationality', key: 'nationalityPosition', sampleText: 'Afghan', defaultFontSize: 12 },
+  { id: 'guardianName', label: 'Guardian Name', key: 'guardianNamePosition', sampleText: 'Guardian Name', defaultFontSize: 14 },
+  { id: 'studentPhoto', label: 'Student Photo', key: 'studentPhotoPosition', sampleText: '📷', isImage: true, defaultWidth: 100, defaultHeight: 100, defaultFontSize: 12 },
+];
+
+interface CertificateLayoutEditorProps {
+  templateId: string;
+  backgroundImageUrl: string | null;
+  layoutConfig: CertificateLayoutConfig;
+  courseId?: string | null;
+  onSave: (config: CertificateLayoutConfig) => void;
+  onCancel: () => void;
+}
+
+export function CertificateLayoutEditor({
+  templateId,
+  backgroundImageUrl,
+  layoutConfig,
+  courseId,
+  onSave,
+  onCancel,
+}: CertificateLayoutEditorProps) {
+  // Initialize config from layoutConfig prop and preserve it when prop changes
+  const [config, setConfig] = useState<CertificateLayoutConfig>(() => ({
+    ...layoutConfig,
+    enabledFields: layoutConfig.enabledFields || ['header', 'studentName', 'fatherName', 'courseName', 'certificateNumber', 'date'],
+    fieldFonts: layoutConfig.fieldFonts || {},
+  }));
+
+  // Update config when layoutConfig prop changes (preserves saved layout)
+  useEffect(() => {
+    setConfig({
+      ...layoutConfig,
+      enabledFields: layoutConfig.enabledFields || ['header', 'studentName', 'fatherName', 'courseName', 'certificateNumber', 'date'],
+      fieldFonts: layoutConfig.fieldFonts || {},
+    });
+  }, [layoutConfig]);
+  const [draggingField, setDraggingField] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [selectedField, setSelectedField] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [backgroundImageLoaded, setBackgroundImageLoaded] = useState(false);
+  const [backgroundImageError, setBackgroundImageError] = useState(false);
+  const [imageScale, setImageScale] = useState(1);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+  
+  // Fetch course name if courseId is provided
+  const { data: courses = [] } = useShortTermCourses();
+  const course = courseId ? courses.find((c) => c.id === courseId) : null;
+  const courseName = course?.name || 'Advanced Mathematics'; // Fallback to sample text
+  
+  // Fetch students for the course to get real names
+  const { data: courseStudents = [] } = useCourseStudents(courseId || undefined, false);
+  const { language } = useLanguage();
+  
+  // Load Bahij Nassim fonts for editor preview (same as PDF/image generator)
+  useEffect(() => {
+    const loadFonts = async () => {
+      try {
+        // Load Bahij Nassim Bold font (same as used in PDF/image generator)
+        const boldWoffModule = await import('@/fonts/Bahij Nassim-Bold.woff?url');
+        const boldWoffUrl = boldWoffModule.default;
+        const fontFace = new FontFace('Bahij Nassim', `url(${boldWoffUrl})`);
+        await fontFace.load();
+        document.fonts.add(fontFace);
+        setFontsLoaded(true);
+        if (import.meta.env.DEV) {
+          console.log('[CertificateLayoutEditor] Bahij Nassim Bold loaded');
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[CertificateLayoutEditor] Failed to load Bahij Nassim, using fallback');
+        }
+        setFontsLoaded(false);
+      }
+    };
+    
+    loadFonts();
+  }, []);
+  
+  // Get first student's name and father name, or use language-aware sample names
+  const { studentName, fatherName } = useMemo(() => {
+    if (courseStudents.length > 0) {
+      const firstStudent = courseStudents[0];
+      return {
+        studentName: firstStudent.fullName || '',
+        fatherName: firstStudent.fatherName || '',
+      };
+    }
+    
+    // Language-aware sample names
+    if (language === 'ps' || language === 'fa' || language === 'ar') {
+      // Pashto/Arabic/Farsi names
+      return {
+        studentName: 'احمد محمد',
+        fatherName: 'بن محمد',
+      };
+    } else {
+      // English names
+      return {
+        studentName: 'John Doe',
+        fatherName: 'Son of John Smith',
+      };
+    }
+  }, [courseStudents, language]);
+
+  // Get fields with dynamic student names and course name
+  const FIELDS = useMemo(() => getFields(studentName, fatherName, courseName), [studentName, fatherName, courseName]);
+
+  // Load background image
+  useEffect(() => {
+    if (!backgroundImageUrl) {
+      setBackgroundImageError(true);
+      return;
+    }
+
+    const loadImage = async () => {
+      try {
+        // Extract endpoint from URL
+        let endpoint = backgroundImageUrl;
+        if (backgroundImageUrl.startsWith('http://') || backgroundImageUrl.startsWith('https://')) {
+          const urlObj = new URL(backgroundImageUrl);
+          endpoint = urlObj.pathname;
+        }
+        if (endpoint.startsWith('/api')) {
+          endpoint = endpoint.replace('/api', '');
+        }
+
+        const { blob } = await certificateTemplatesApi.getBackgroundImage(endpoint);
+        const url = URL.createObjectURL(blob);
+        setImageUrl(url);
+        
+        // Create a temporary image to get dimensions
+        const img = new Image();
+        img.onload = () => {
+          setBackgroundImageLoaded(true);
+          // Calculate scale to fit container (max width 800px)
+          // This scale is used to match the preview container size
+          const maxWidth = 800;
+          const scale = img.width > maxWidth ? maxWidth / img.width : 1;
+          setImageScale(scale);
+          
+          // Also calculate scale factor for font sizes
+          // PDF uses 842pt width, Image uses 1123px width (at 96 DPI)
+          // Editor container scales to fit, so we need to match the relative font sizes
+          // The font sizes in PDF/image are absolute (in points/pixels), but in editor they're scaled
+          // We'll use the imageScale to adjust font sizes to match the visual appearance
+        };
+        img.onerror = () => {
+          setBackgroundImageError(true);
+        };
+        img.src = url;
+      } catch (error) {
+        console.error('Failed to load background image:', error);
+        setBackgroundImageError(true);
+      }
+    };
+
+    loadImage();
+
+    // Cleanup: revoke object URL on unmount
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [backgroundImageUrl]);
+
+  const getFieldPosition = (fieldKey: keyof CertificateLayoutConfig) => {
+    const position = config[fieldKey] as { x: number; y: number } | undefined;
+    if (position) return position;
+    
+    // Default positions for each field (as percentages)
+    const defaultPositions: Record<string, { x: number; y: number }> = {
+      headerPosition: { x: 50, y: 15 }, // Top center
+      studentNamePosition: { x: 50, y: 35 }, // Upper center
+      fatherNamePosition: { x: 50, y: 42 }, // Below student name
+      grandfatherNamePosition: { x: 50, y: 48 }, // Below father name
+      motherNamePosition: { x: 50, y: 54 }, // Below grandfather name
+      courseNamePosition: { x: 50, y: 65 }, // Middle center
+      certificateNumberPosition: { x: 10, y: 90 }, // Bottom left
+      datePosition: { x: 90, y: 90 }, // Bottom right
+      provincePosition: { x: 30, y: 75 }, // Lower left
+      districtPosition: { x: 50, y: 75 }, // Lower center
+      villagePosition: { x: 70, y: 75 }, // Lower right
+      nationalityPosition: { x: 50, y: 80 }, // Bottom center
+      guardianNamePosition: { x: 50, y: 70 }, // Lower middle
+      studentPhotoPosition: { x: 15, y: 40 }, // Left side, middle
+    };
+    
+    return defaultPositions[fieldKey] || { x: 50, y: 50 };
+  };
+
+  const updateFieldPosition = (fieldKey: keyof CertificateLayoutConfig, x: number, y: number) => {
+    setConfig((prev) => ({
+      ...prev,
+      [fieldKey]: { x, y },
+    }));
+  };
+
+  const handleMouseDown = useCallback((e: React.MouseEvent, fieldId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingField(fieldId);
+    setSelectedField(fieldId);
+
+    const field = FIELDS.find((f) => f.id === fieldId);
+    if (!field || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const position = getFieldPosition(field.key);
+    const fieldX = (position.x / 100) * rect.width;
+    const fieldY = (position.y / 100) * rect.height;
+
+    setDragOffset({
+      x: e.clientX - rect.left - fieldX,
+      y: e.clientY - rect.top - fieldY,
+    });
+  }, [config]);
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!draggingField || !containerRef.current) return;
+
+      const field = FIELDS.find((f) => f.id === draggingField);
+      if (!field) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
+      const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+
+      // Clamp to container bounds
+      const clampedX = Math.max(0, Math.min(100, x));
+      const clampedY = Math.max(0, Math.min(100, y));
+
+      updateFieldPosition(field.key, clampedX, clampedY);
+    },
+    [draggingField, dragOffset, FIELDS]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setDraggingField(null);
+  }, []);
+
+  useEffect(() => {
+    if (draggingField) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [draggingField, handleMouseMove, handleMouseUp]);
+
+  const resetFieldPosition = (fieldKey: keyof CertificateLayoutConfig) => {
+    setConfig((prev) => {
+      const newConfig = { ...prev };
+      delete newConfig[fieldKey];
+      return newConfig;
+    });
+  };
+
+  const handleSave = () => {
+    onSave(config);
+  };
+
+  const getFieldStyle = (field: FieldConfig) => {
+    const position = getFieldPosition(field.key);
+    const baseFontSize = config.fontSize || field.defaultFontSize || 24;
+    const isRtl = config.rtl !== false;
+    
+    // Get per-field font settings if available
+    const fieldFont = config.fieldFonts?.[field.id];
+    
+    // Use per-field font family or fall back to global/default
+    let fontFamily = 'Arial';
+    if (fieldFont?.fontFamily) {
+      fontFamily = fieldFont.fontFamily;
+    } else if (isRtl && fontsLoaded) {
+      fontFamily = '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif';
+    } else if (config.fontFamily) {
+      fontFamily = config.fontFamily;
+    }
+    
+    // Calculate font size: use per-field custom size, or apply multipliers
+    let fontSize = baseFontSize;
+    if (fieldFont?.fontSize !== undefined) {
+      // Use custom font size for this field (absolute value, no multiplier)
+      fontSize = fieldFont.fontSize;
+    } else {
+      // Apply default multipliers
+      if (field.id === 'header') {
+        fontSize = baseFontSize * 1.5;
+      } else if (field.id === 'studentName') {
+        fontSize = baseFontSize * 1.17;
+      } else if (field.id === 'fatherName' || field.id === 'grandfatherName' || field.id === 'motherName') {
+        fontSize = baseFontSize;
+      } else if (field.id === 'courseName') {
+        fontSize = baseFontSize * 1.0;
+      } else if (field.id === 'certificateNumber' || field.id === 'date') {
+        fontSize = baseFontSize * 0.5;
+      } else {
+        fontSize = baseFontSize * 0.8;
+      }
+    }
+    
+    // Scale font size based on image scale (to match preview container size)
+    const scaledFontSize = fontSize * imageScale;
+    
+    const textColor = config.textColor || '#000000';
+    const isSelected = selectedField === field.id;
+    const isDragging = draggingField === field.id;
+
+    return {
+      position: 'absolute' as const,
+      left: `${position.x}%`,
+      top: `${position.y}%`,
+      transform: 'translate(-50%, -50%)',
+      fontSize: `${scaledFontSize}px`,
+      fontFamily,
+      fontWeight: 'bold' as const, // Use bold for all fields (same as PDF/image generator)
+      color: textColor,
+      cursor: 'move',
+      userSelect: 'none' as const,
+      zIndex: isSelected || isDragging ? 10 : 1,
+      opacity: isDragging ? 0.7 : 1,
+      border: isSelected ? '2px dashed #3b82f6' : '2px dashed transparent',
+      padding: '4px 8px',
+      backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+      borderRadius: '4px',
+      whiteSpace: 'nowrap' as const,
+      pointerEvents: 'auto' as const,
+    };
+  };
+  
+  // Available fonts for selection
+  const availableFonts = [
+    { value: 'Arial', label: 'Arial' },
+    { value: 'Roboto', label: 'Roboto' },
+    { value: 'Bahij Nassim', label: 'Bahij Nassim (Arabic/Pashto)' },
+    { value: 'Times New Roman', label: 'Times New Roman' },
+    { value: 'Courier New', label: 'Courier New' },
+    { value: 'Georgia', label: 'Georgia' },
+    { value: 'Verdana', label: 'Verdana' },
+  ];
+  
+  // Update per-field font settings
+  const updateFieldFont = (fieldId: string, property: 'fontSize' | 'fontFamily', value: number | string) => {
+    setConfig((prev) => {
+      const newFieldFonts = { ...(prev.fieldFonts || {}) };
+      if (!newFieldFonts[fieldId]) {
+        newFieldFonts[fieldId] = {};
+      }
+      newFieldFonts[fieldId] = {
+        ...newFieldFonts[fieldId],
+        [property]: value,
+      };
+      return {
+        ...prev,
+        fieldFonts: newFieldFonts,
+      };
+    });
+  };
+  
+  // Clear per-field font setting
+  const clearFieldFont = (fieldId: string, property: 'fontSize' | 'fontFamily') => {
+    setConfig((prev) => {
+      const newFieldFonts = { ...(prev.fieldFonts || {}) };
+      if (newFieldFonts[fieldId]) {
+        const updated = { ...newFieldFonts[fieldId] };
+        delete updated[property];
+        if (Object.keys(updated).length === 0) {
+          delete newFieldFonts[fieldId];
+        } else {
+          newFieldFonts[fieldId] = updated;
+        }
+      }
+      return {
+        ...prev,
+        fieldFonts: Object.keys(newFieldFonts).length > 0 ? newFieldFonts : undefined,
+      };
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Layout Editor</h3>
+          <p className="text-sm text-muted-foreground">
+            Drag fields to position them on the certificate. Click to select a field.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>
+            <Save className="h-4 w-4 mr-2" />
+            Save Layout
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Preview Canvas */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Certificate Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div
+                ref={containerRef}
+                className="relative w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden"
+                style={{ aspectRatio: '297/210', maxHeight: '600px' }}
+                onClick={() => setSelectedField(null)}
+              >
+                {backgroundImageError ? (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    <div className="text-center">
+                      <p>Background image not available</p>
+                      <p className="text-sm">Upload a background image to see the preview</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {!backgroundImageLoaded && (
+                      <div className="absolute inset-0 flex items-center justify-center z-0">
+                        <p className="text-muted-foreground">Loading background image...</p>
+                      </div>
+                    )}
+                    {imageUrl && (
+                      <img
+                        src={imageUrl}
+                        alt="Certificate Background"
+                        className="w-full h-full object-contain"
+                        style={{ 
+                          display: backgroundImageLoaded ? 'block' : 'none',
+                        }}
+                      />
+                    )}
+                  </>
+                )}
+
+                {/* Draggable Fields - Only show enabled fields */}
+                {FIELDS.filter(field => config.enabledFields?.includes(field.id)).map((field) => {
+                  const position = getFieldPosition(field.key);
+                  const isImageField = field.isImage;
+                  
+                  return (
+                    <div
+                      key={field.id}
+                      style={getFieldStyle(field)}
+                      onMouseDown={(e) => handleMouseDown(e, field.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedField(field.id);
+                      }}
+                    >
+                      {isImageField ? (
+                        <div className="flex items-center justify-center gap-1 border-2 border-dashed border-blue-400 bg-blue-50 rounded p-2">
+                          <GripVertical className="h-4 w-4 opacity-50" />
+                          <span className="text-2xl">{field.sampleText}</span>
+                          <span className="text-xs">Photo</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <GripVertical className="h-4 w-4 opacity-50" />
+                          <span>
+                            {field.id === 'header' && config.headerText
+                              ? config.headerText
+                              : field.id === 'courseName'
+                              ? (() => {
+                                  const actualCourseName = courseName;
+                                  const courseNameLabel = config.courseNameText || '';
+                                  return courseNameLabel 
+                                    ? `${courseNameLabel} ${actualCourseName}`
+                                    : actualCourseName;
+                                })()
+                              : field.id === 'date' && config.dateText
+                              ? `${config.dateText} ${field.sampleText}`
+                              : field.sampleText}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Field Controls */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Field Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Global Settings */}
+              <div className="space-y-2">
+                <Label>Font Size</Label>
+                <Input
+                  type="number"
+                  value={config.fontSize || 24}
+                  onChange={(e) => setConfig({ ...config, fontSize: parseInt(e.target.value) || 24 })}
+                  min="8"
+                  max="72"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Font Family</Label>
+                <Input
+                  value={config.fontFamily || 'Arial'}
+                  onChange={(e) => setConfig({ ...config, fontFamily: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Text Color</Label>
+                <Input
+                  type="color"
+                  value={config.textColor || '#000000'}
+                  onChange={(e) => setConfig({ ...config, textColor: e.target.value })}
+                />
+              </div>
+
+              {/* Editable Text Fields for Header, Course Name, and Date */}
+              {selectedField === 'header' && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label>Header Text</Label>
+                  <Input
+                    value={config.headerText || 'Certificate of Completion'}
+                    onChange={(e) => setConfig({ ...config, headerText: e.target.value })}
+                    placeholder="Certificate of Completion"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Custom text for the certificate header
+                  </p>
+                </div>
+              )}
+
+              {selectedField === 'courseName' && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label>Course Name Label (Optional)</Label>
+                  <Input
+                    value={config.courseNameText || ''}
+                    onChange={(e) => setConfig({ ...config, courseNameText: e.target.value })}
+                    placeholder="Leave empty to use course name only"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Optional prefix/label for course name (e.g., "Course:"). Leave empty to show only the course name.
+                  </p>
+                </div>
+              )}
+
+              {selectedField === 'date' && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label>Date Label</Label>
+                  <Input
+                    value={config.dateText || 'Date:'}
+                    onChange={(e) => setConfig({ ...config, dateText: e.target.value })}
+                    placeholder="Date:"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Label/prefix for the date field (e.g., "Date:", "Issued on:", etc.)
+                  </p>
+                </div>
+              )}
+
+              {/* Per-Field Font Settings */}
+              {selectedField && (
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-semibold">Field-Specific Font Settings</Label>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        clearFieldFont(selectedField, 'fontSize');
+                        clearFieldFont(selectedField, 'fontFamily');
+                      }}
+                      className="text-xs"
+                    >
+                      Reset to Default
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-xs">Font Family</Label>
+                    <Select
+                      value={config.fieldFonts?.[selectedField]?.fontFamily || 'global'}
+                      onValueChange={(value) => {
+                        if (value && value !== 'global') {
+                          updateFieldFont(selectedField, 'fontFamily', value);
+                        } else {
+                          clearFieldFont(selectedField, 'fontFamily');
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Use global font" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="global">Use Global Font</SelectItem>
+                        {availableFonts.map((font) => (
+                          <SelectItem key={font.value} value={font.value}>
+                            {font.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Select "Use Global Font" to use the global font setting
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Font Size (px)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        value={config.fieldFonts?.[selectedField]?.fontSize || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '') {
+                            clearFieldFont(selectedField, 'fontSize');
+                          } else {
+                            const numValue = parseInt(value);
+                            if (!isNaN(numValue) && numValue > 0) {
+                              updateFieldFont(selectedField, 'fontSize', numValue);
+                            }
+                          }
+                        }}
+                        placeholder="Auto (based on multiplier)"
+                        className="h-8 text-xs"
+                        min="8"
+                        max="144"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => clearFieldFont(selectedField, 'fontSize')}
+                        className="h-8 px-2"
+                        title="Reset to default"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Leave empty to use calculated size (global fontSize × multiplier)
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Field List */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Fields</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 max-h-96 overflow-y-auto">
+              {FIELDS.map((field) => {
+                const position = getFieldPosition(field.key);
+                const isSelected = selectedField === field.id;
+                const isEnabled = config.enabledFields?.includes(field.id) ?? false;
+                return (
+                  <div
+                    key={field.id}
+                    className={`p-2 rounded border cursor-pointer transition-colors ${
+                      isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                    } ${!isEnabled ? 'opacity-50' : ''}`}
+                    onClick={() => setSelectedField(field.id)}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <input
+                          type="checkbox"
+                          checked={isEnabled}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            const newEnabledFields = config.enabledFields || [];
+                            if (e.target.checked) {
+                              setConfig({
+                                ...config,
+                                enabledFields: [...newEnabledFields, field.id],
+                              });
+                            } else {
+                              setConfig({
+                                ...config,
+                                enabledFields: newEnabledFields.filter(id => id !== field.id),
+                              });
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{field.label}</p>
+                          {isEnabled && (
+                            <p className="text-xs text-muted-foreground">
+                              Position: {position.x.toFixed(1)}%, {position.y.toFixed(1)}%
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {isEnabled && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            resetFieldPosition(field.key);
+                          }}
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { studentAdmissionsApi } from '@/lib/api/client';
 import type * as StudentAdmissionApi from '@/types/api/studentAdmission';
@@ -148,12 +148,12 @@ export const useCreateStudentAdmission = () => {
       return mapStudentAdmissionApiToDomain(apiAdmission as StudentAdmissionApi.StudentAdmission);
     },
     onSuccess: () => {
-      toast.success('Student admitted');
+      showToast.success('toast.studentAdmissions.admitted');
       void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to admit student');
+      showToast.error(error.message || 'toast.studentAdmissions.admitFailed');
     },
   });
 };
@@ -175,12 +175,12 @@ export const useUpdateStudentAdmission = () => {
       return mapStudentAdmissionApiToDomain(apiUpdated as StudentAdmissionApi.StudentAdmission);
     },
     onSuccess: () => {
-      toast.success('Admission updated');
+      showToast.success('toast.studentAdmissions.updated');
       void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update admission');
+      showToast.error(error.message || 'toast.studentAdmissions.updateFailed');
     },
   });
 };
@@ -199,12 +199,12 @@ export const useDeleteStudentAdmission = () => {
       return id;
     },
     onSuccess: () => {
-      toast.success('Admission removed');
+      showToast.success('toast.studentAdmissions.removed');
       void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
       void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to remove admission');
+      showToast.error(error.message || 'toast.studentAdmissions.removeFailed');
     },
   });
 };

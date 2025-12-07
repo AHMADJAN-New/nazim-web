@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect } from 'react';
 import type { Student } from '@/types/domain/student';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface StudentProfilePrintProps {
   student: Student;
@@ -16,6 +17,7 @@ export function StudentProfilePrint({
   guardianPictureUrl,
   isRTL,
 }: StudentProfilePrintProps) {
+  const { t } = useLanguage();
   // Inject print styles
   useEffect(() => {
     const styleId = 'student-profile-print-styles';
@@ -309,133 +311,69 @@ export function StudentProfilePrint({
   }, [isRTL]);
 
   const printText = useMemo(() => {
-    if (isRTL) {
-      return {
-        title: 'د زده کوونکي انفرادي معلومات',
-        personal: 'شخصي معلومات',
-        admissionSection: 'د داخلې معلومات',
-        addressSection: 'استوګنځای معلومات',
-        guardianSection: 'د سرپرست معلومات',
-        otherInfo: 'نور معلومات',
-        name: 'نوم',
-        fatherName: 'د پلار نوم',
-        grandfatherName: 'د نیکه نوم',
-        birthYear: 'د زیږون کال',
-        tazkiraNumber: 'تذکره نمبر',
-        idNumber: 'ID',
-        cardNumber: 'کارډ نمبر',
-        admissionNo: 'اساس نمبر',
-        admissionYear: 'د شمولیت کال',
-        applyingGrade: 'د داخلې درجه',
-        schoolLabel: 'مدرسه',
-        originProvince: 'اصلي ولایت',
-        originDistrict: 'اصلي ولسوالۍ',
-        originVillage: 'اصلي کلي / ناحیه',
-        currentProvince: 'فعلي ولایت',
-        currentDistrict: 'فعلي ولسوالۍ',
-        currentVillage: 'فعلي کلي / ناحیه',
-        homeAddress: 'د فعلي استوګنځای دقیق ادرس',
-        guardianName: 'د سرپرست نوم',
-        guardianRelation: 'له زده کوونکي سره تړاو',
-        guardianPhone: 'ټلفون',
-        guardianTazkira: 'تذکره',
-        guarantorName: 'د ضامن نوم',
-        guarantorPhone: 'د ضامن د ټیلیفون نمبر',
-        guarantorTazkira: 'د ضامن تذکره',
-        guarantorAddress: 'د ضامن ادرس',
-        isOrphan: 'یتیم دی؟',
-        feeStatus: 'د داخلې فیس حالت',
-        createdAt: 'ریکارډ جوړ شوی',
-        updatedAt: 'ریکارډ تازه شوی',
-        guardianLabel: 'سرپرست',
-        studentLabel: 'زده کونکی',
-        yes: 'هو',
-        no: 'نه',
-        commitmentsTitle: 'تعهدات، ضمانت، او تائید',
-        commitmentTitle: 'تعهد نامه',
-        guaranteeTitle: 'ضمانت نامه',
-        approvalTitle: 'تائيد نامه',
-        commitmentText: [
-          'د مدرسې ټول قوانين به په ځان عملي کوم',
-          'د مدرسې د قوانينو سر بېره به شرعي قوانين هم په ځان تطبيقوم',
-          'د مدرسې د ټولو استاذانو او اراکينو به احترام کوم او د مدرسې د ټولو شتمنيو به ساتنه کوم',
-          'له قانون څخه د سرغړونې او يا د غير حاضري په صورت کې د ادارې هر ډول پرېکړه منم او په ځان به يې تطبيقوم',
-          'د کوچني او لوی مبایل په اړه به د مدرسې قانون ته غاړه ږدم، د مخالفت په صورت کې مدرسه زما داخراج یا د مبایل د ضبط حق لري.',
-          'د مدرسې مهتمم يا د هغه نائب په زکوة، صدقه او ورته خيريه چارو کې خپل وکيل ګرځوم',
-        ],
-        guaranteeText: 'ذکر شوي شرائط او ضوابط زما د علم مطابق سم دي؛ لهذا ته مدرسه کې په داخله ورکولو باندې راضي یم او ضمانت درکوم چې مذکور طالب العلم به د مدرسې ټولو قوانينو ته پابند اوسيږي، د مخالفت په صورت کې د مدرسې هر ډول پرېکړه ماته منظوره ده.',
-        approvalText: {
-          admission: 'د داخلې ناظم له لوري مذکور طالب العلم ته په درجه',
-          fee: 'داخله فيس:',
-          date: 'د داخلې تاريخ:',
-          signature: 'د ناظم لاسليک:',
-          stamp: 'مهر',
-        },
-      };
-    }
     return {
-      title: 'Student Personal Information',
-      personal: 'Personal Information',
-      admissionSection: 'Admission Information',
-      addressSection: 'Address Information',
-      guardianSection: 'Guardian Information',
-      otherInfo: 'Other Information',
-      name: 'Name',
-      fatherName: 'Father Name',
-      grandfatherName: 'Grandfather Name',
-      birthYear: 'Birth Year',
-      tazkiraNumber: 'Tazkira Number',
-      idNumber: 'ID',
-      cardNumber: 'Card Number',
-      admissionNo: 'Admission No',
-      admissionYear: 'Admission Year',
-      applyingGrade: 'Applying Grade',
-      schoolLabel: 'School',
-      originProvince: 'Origin Province',
-      originDistrict: 'Origin District',
-      originVillage: 'Origin Village',
-      currentProvince: 'Current Province',
-      currentDistrict: 'Current District',
-      currentVillage: 'Current Village',
-      homeAddress: 'Home Address',
-      guardianName: 'Guardian Name',
-      guardianRelation: 'Relation',
-      guardianPhone: 'Phone',
-      guardianTazkira: 'Tazkira',
-      guarantorName: 'Guarantor Name',
-      guarantorPhone: 'Guarantor Phone',
-      guarantorTazkira: 'Guarantor Tazkira',
-      guarantorAddress: 'Guarantor Address',
-      isOrphan: 'Is Orphan?',
-      feeStatus: 'Fee Status',
-      createdAt: 'Created At',
-      updatedAt: 'Updated At',
-      guardianLabel: 'Guardian',
-      studentLabel: 'Student',
-      yes: 'Yes',
-      no: 'No',
-      commitmentsTitle: 'Commitments, Guarantee, and Approval',
-      commitmentTitle: 'Commitment',
-      guaranteeTitle: 'Guarantee',
-      approvalTitle: 'Approval',
+      title: t('students.printTitle') || (isRTL ? 'د زده کوونکي انفرادي معلومات' : 'Student Personal Information'),
+      personal: t('students.personalInfo') || 'Personal Information',
+      admissionSection: t('students.admissionInfo') || 'Admission Information',
+      addressSection: t('students.addressInfo') || 'Address Information',
+      guardianSection: t('students.guardianInfo') || 'Guardian Information',
+      otherInfo: t('students.otherInfo') || 'Other Information',
+      name: t('students.name') || 'Name',
+      fatherName: t('students.fatherName') || 'Father Name',
+      grandfatherName: t('students.grandfatherName') || 'Grandfather Name',
+      birthYear: t('students.birthYear') || 'Birth Year',
+      tazkiraNumber: t('students.tazkiraNumber') || 'Tazkira Number',
+      idNumber: t('students.idNumber') || 'ID Number',
+      cardNumber: t('students.cardNumber') || 'Card Number',
+      admissionNo: t('students.admissionNo') || 'Admission No',
+      admissionYear: t('students.admissionYear') || 'Admission Year',
+      applyingGrade: t('students.applyingGrade') || 'Applying Grade',
+      schoolLabel: t('students.school') || 'School',
+      originProvince: t('students.originProvince') || 'Origin Province',
+      originDistrict: t('students.originDistrict') || 'Origin District',
+      originVillage: t('students.originVillage') || 'Origin Village',
+      currentProvince: t('students.currentProvince') || 'Current Province',
+      currentDistrict: t('students.currentDistrict') || 'Current District',
+      currentVillage: t('students.currentVillage') || 'Current Village',
+      homeAddress: t('students.homeAddress') || 'Home Address',
+      guardianName: t('students.guardianName') || 'Guardian Name',
+      guardianRelation: t('students.relation') || 'Relation',
+      guardianPhone: t('students.phone') || 'Phone',
+      guardianTazkira: t('students.guardianTazkira') || 'National ID',
+      guarantorName: t('students.zaminName') || 'Guarantor Name',
+      guarantorPhone: t('students.zaminPhone') || 'Guarantor Phone',
+      guarantorTazkira: t('students.zaminTazkira') || 'Guarantor ID',
+      guarantorAddress: t('students.zaminAddress') || 'Guarantor Address',
+      isOrphan: t('students.orphanStatus') || 'Is Orphan?',
+      feeStatus: t('students.admissionFeeStatus') || 'Fee Status',
+      createdAt: t('students.createdAt') || 'Created At',
+      updatedAt: t('students.updatedAt') || 'Updated At',
+      guardianLabel: t('students.guardian') || 'Guardian',
+      studentLabel: t('students.student') || 'Student',
+      yes: t('common.yes') || 'Yes',
+      no: t('common.no') || 'No',
+      commitmentsTitle: t('students.commitmentsTitle') || 'Commitments, Guarantee & Approval',
+      commitmentTitle: t('students.commitmentTitle') || 'Commitment',
+      guaranteeTitle: t('students.guaranteeTitle') || 'Guarantee',
+      approvalTitle: t('students.approvalTitle') || 'Approval',
       commitmentText: [
-        'I will follow all school rules',
-        'I will follow Islamic laws in addition to school rules',
-        'I will respect all teachers and staff and protect school property',
-        'I accept any decision by the administration for violations or absences',
-        'I will follow school rules regarding mobile phones, and the school has the right to expel me or confiscate my phone if I violate.',
-        'I authorize the school principal or deputy to act on my behalf in zakat, charity, and similar charitable activities',
+        t('students.commitmentText1') || 'I will follow all school rules',
+        t('students.commitmentText2') || 'I will follow Islamic laws in addition to school rules',
+        t('students.commitmentText3') || 'I will respect all teachers and staff and protect school property',
+        t('students.commitmentText4') || 'I accept any decision by the administration for violations or absences',
+        t('students.commitmentText5') || 'I will follow school rules regarding mobile phones, and the school has the right to expel me or confiscate my phone if I violate.',
+        t('students.commitmentText6') || 'I authorize the school principal or deputy to act on my behalf in zakat, charity, and similar charitable activities',
       ],
-      guaranteeText: 'The mentioned conditions and regulations are correct according to my knowledge; therefore, I am satisfied with admission to the school and guarantee that the mentioned student will abide by all school rules, and any decision by the school in case of violation is acceptable to me.',
+      guaranteeText: t('students.guaranteeText') || 'The mentioned conditions and regulations are correct according to my knowledge; therefore, I am satisfied with admission to the school and guarantee that the mentioned student will abide by all school rules, and any decision by the school in case of violation is acceptable to me.',
       approvalText: {
-        admission: 'The mentioned student was admitted to grade',
-        fee: 'Admission Fee:',
-        date: 'Admission Date:',
-        signature: 'Administrator Signature:',
-        stamp: 'Stamp',
+        admission: t('students.approvalAdmission') || 'The mentioned student was admitted to grade',
+        fee: t('students.approvalFee') || 'Admission Fee:',
+        date: t('students.approvalDate') || 'Admission Date:',
+        signature: t('students.approvalSignature') || 'Administrator Signature:',
+        stamp: t('students.approvalStamp') || 'Stamp',
       },
     };
-  }, [isRTL]);
+  }, [isRTL, t]);
 
   const displayValue = (value?: string | number | null) => {
     if (value === null || value === undefined || value === '') {
@@ -512,16 +450,16 @@ export function StudentProfilePrint({
             </tr>
             {student.mother_name && (
               <tr>
-                <td className="print-label">{isRTL ? 'د مور نوم' : 'Mother Name'}</td>
+                <td className="print-label">{t('students.motherName') || 'Mother Name'}</td>
                 <td className="print-value">{displayValue(student.mother_name)}</td>
-                <td className="print-label">{isRTL ? 'جنس' : 'Gender'}</td>
-                <td className="print-value">{student.gender === 'male' ? (isRTL ? 'نارینه' : 'Male') : (isRTL ? 'ښځینه' : 'Female')}</td>
+                <td className="print-label">{t('students.gender') || 'Gender'}</td>
+                <td className="print-value">{student.gender === 'male' ? t('students.male') : t('students.female')}</td>
               </tr>
             )}
             {!student.mother_name && (
               <tr>
-                <td className="print-label">{isRTL ? 'جنس' : 'Gender'}</td>
-                <td className="print-value">{student.gender === 'male' ? (isRTL ? 'نارینه' : 'Male') : (isRTL ? 'ښځینه' : 'Female')}</td>
+                <td className="print-label">{t('students.gender') || 'Gender'}</td>
+                <td className="print-value">{student.gender === 'male' ? t('students.male') : t('students.female')}</td>
                 <td className="print-label"></td>
                 <td className="print-value"></td>
               </tr>
@@ -651,8 +589,7 @@ export function StudentProfilePrint({
           ))}
         </ul>
         <div style={{ marginTop: '18px' }}>
-          {isRTL ? 'امضا: ' : 'Signature: '}
-          <span className="signature-line"></span>
+          {t('common.signature') || 'Signature'}: <span className="signature-line"></span>
         </div>
       </div>
 
@@ -663,8 +600,7 @@ export function StudentProfilePrint({
           {printText.guaranteeText}
         </div>
         <div style={{ marginTop: '10px' }}>
-          {isRTL ? 'د ضامن لاسلیک: ' : 'Guarantor Signature: '}
-          <span className="signature-line"></span>
+          {t('students.guarantorSignature') || 'Guarantor Signature'}: <span className="signature-line"></span>
         </div>
       </div>
 
@@ -677,7 +613,7 @@ export function StudentProfilePrint({
               <td style={{ width: isRTL ? '42%' : '58%', textAlign: isRTL ? 'right' : 'left' }}>
                 {printText.approvalText.admission}
                 <span className="signature-line" style={{ width: '110px', margin: '0 8px', verticalAlign: 'middle' }}></span>
-                {isRTL ? 'کې داخله ورکړل شوه.' : 'was admitted.'}
+                {t('students.wasAdmitted') || 'was admitted.'}
               </td>
               <td style={{ width: isRTL ? '58%' : '42%' }}></td>
             </tr>
@@ -701,8 +637,7 @@ export function StudentProfilePrint({
                 <span className="signature-line" style={{ width: '120px', margin: '0 8px', verticalAlign: 'middle' }}></span>
               </td>
               <td style={{ textAlign: isRTL ? 'right' : 'left', paddingTop: '16px' }}>
-                {isRTL ? 'مهر: ' : 'Stamp: '}
-                <span className="stamp-box">{printText.approvalText.stamp}</span>
+                {t('students.stamp') || 'Stamp'}: <span className="stamp-box">{printText.approvalText.stamp}</span>
               </td>
             </tr>
           </tbody>

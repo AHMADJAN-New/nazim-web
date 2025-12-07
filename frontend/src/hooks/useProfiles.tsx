@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profilesApi } from '@/lib/api/client';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { useHasPermission } from './usePermissions';
@@ -111,10 +111,10 @@ export const useUpdateProfile = () => {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
       queryClient.invalidateQueries({ queryKey: ['auth', 'profile'] });
-      toast.success('Profile updated successfully');
+      showToast.success('toast.profileUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update profile');
+      showToast.error(error.message || 'toast.profileUpdateFailed');
     },
   });
 };

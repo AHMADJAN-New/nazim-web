@@ -51,6 +51,8 @@ const buildingSchema = z.object({
   school_id: z.string().min(1, 'School is required'),
 });
 
+// Note: Schema validation messages are hardcoded as they're used before translations are available
+
 type BuildingFormData = z.infer<typeof buildingSchema>;
 
 // Building report row type with resolved names
@@ -61,38 +63,39 @@ interface BuildingReportRow {
   created_at: string;
 }
 
-// Building report definition
-const buildingReportDefinition: ReportDefinition<BuildingReportRow> = {
+// Building report definition - Note: This is defined outside component to avoid recreation
+// Translations will be applied when the report is generated
+const getBuildingReportDefinition = (t: (key: string) => string): ReportDefinition<BuildingReportRow> => ({
   id: 'buildings',
-  title: 'Buildings Report',
+  title: t('settings.buildings.reportTitle'),
   fileName: 'buildings_report',
   pageSize: 'A4',
   orientation: 'portrait',
   columns: [
     {
       key: 'building_name',
-      label: 'Building Name',
+      label: t('settings.buildings.reportBuildingName'),
       width: 30,
       pdfWidth: '*',
       align: 'left',
     },
     {
       key: 'school_name',
-      label: 'School Name',
+      label: t('settings.buildings.reportSchoolName'),
       width: 25,
       pdfWidth: '*',
       align: 'left',
     },
     {
       key: 'organization_name',
-      label: 'Organization',
+      label: t('settings.buildings.reportOrganization'),
       width: 25,
       pdfWidth: '*',
       align: 'left',
     },
     {
       key: 'created_at',
-      label: 'Created At',
+      label: t('settings.buildings.reportCreatedAt'),
       width: 20,
       pdfWidth: 'auto',
       align: 'left',
@@ -104,7 +107,7 @@ const buildingReportDefinition: ReportDefinition<BuildingReportRow> = {
     alternateRowColor: '#f9fafb',
     useAlternateRowColors: true,
   },
-};
+});
 
 export function BuildingsManagement() {
   const { t } = useLanguage();
@@ -191,7 +194,7 @@ export function BuildingsManagement() {
   }, [isDialogOpen, selectedBuilding, filteredSchools, watch, setValue]);
 
   // Client-side filtering for search
-  const filteredBuildings = buildings?.filter((building) => {
+  const filteredBuildings = (buildings as unknown as Building[] | undefined)?.filter((building: Building) => {
     if (!searchQuery) return true;
     return building.buildingName?.toLowerCase().includes((searchQuery || '').toLowerCase());
   }) || [];
@@ -200,34 +203,34 @@ export function BuildingsManagement() {
   const columns: ColumnDef<Building>[] = [
     {
       accessorKey: 'buildingName',
-      header: 'Building Name',
+      header: t('settings.buildings.buildingName'),
       cell: ({ row }) => <span className="font-medium">{row.original.buildingName}</span>,
     },
     {
       accessorKey: 'school',
-      header: 'School',
-      cell: ({ row }) => row.original.school?.schoolName || 'N/A',
+      header: t('settings.buildings.school'),
+      cell: ({ row }) => row.original.school?.schoolName || t('settings.buildings.na'),
     },
     {
       accessorKey: 'roomsCount',
-      header: 'Rooms',
+      header: t('settings.buildings.rooms'),
       cell: ({ row }) => (
         <>
           <span className="font-medium">{row.original.roomsCount ?? 0}</span>
           <span className="text-muted-foreground text-sm ml-1">
-            {row.original.roomsCount === 1 ? 'room' : 'rooms'}
+            {row.original.roomsCount === 1 ? t('settings.buildings.room') : t('settings.buildings.rooms')}
           </span>
         </>
       ),
     },
     {
       accessorKey: 'createdAt',
-      header: 'Created At',
+      header: t('settings.buildings.createdAt'),
       cell: ({ row }) => row.original.createdAt.toLocaleDateString(),
     },
     {
       id: 'actions',
-      header: () => <div className="text-right">Actions</div>,
+      header: () => <div className="text-right">{t('common.actions')}</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
           {hasUpdatePermission && (
@@ -281,13 +284,13 @@ export function BuildingsManagement() {
 
   // Transform buildings data for export
   const transformBuildingsForExport = (buildingsToTransform: Building[]): BuildingReportRow[] => {
-    return buildingsToTransform.map((building) => {
+    return buildingsToTransform.map((building: Building) => {
       const buildingSchool = schools?.find((s) => s.id === building.schoolId);
 
       return {
         building_name: building.buildingName,
-        school_name: buildingSchool?.schoolName || 'Unknown School',
-        created_at: building.createdAt.toLocaleDateString(),
+        school_name: buildingSchool?.schoolName || t('settings.buildings.unknownSchool'),
+        created_at: building.createdAt instanceof Date ? building.createdAt.toLocaleDateString() : new Date(building.createdAt).toLocaleDateString(),
       };
     });
   };
@@ -297,13 +300,13 @@ export function BuildingsManagement() {
     const parts: string[] = [];
 
     if (searchQuery) {
-      parts.push(`Search: ${searchQuery}`);
+      parts.push(`${t('common.search')}: ${searchQuery}`);
     }
 
     if (selectedSchoolId && schools && schools.length > 1) {
       const school = schools.find((s) => s.id === selectedSchoolId);
       if (school) {
-        parts.push(`School: ${school.schoolName}`);
+        parts.push(`${t('settings.buildings.school')}: ${school.schoolName}`);
       }
     }
 
@@ -313,69 +316,75 @@ export function BuildingsManagement() {
   // Export handlers
   const handleExportPdf = async () => {
     if (!school) {
-      toast.error('Please configure school branding first to export reports.');
+      toast.error(t('settings.buildings.exportErrorNoSchool'));
       return;
     }
 
     if (!filteredBuildings || filteredBuildings.length === 0) {
-      toast.error('No buildings to export.');
+      toast.error(t('settings.buildings.exportErrorNoBuildings'));
       return;
     }
 
     try {
       const reportData = transformBuildingsForExport(filteredBuildings);
       const filtersSummary = buildFiltersSummary();
+      const reportDefinition = getBuildingReportDefinition(t);
 
       await exportReport({
         format: 'pdf',
-        definition: buildingReportDefinition,
+        definition: reportDefinition,
         rows: reportData,
         school,
         template: defaultTemplate,
         filtersSummary,
       });
 
-      toast.success('PDF export started');
+      toast.success(t('settings.buildings.exportSuccessPdf'));
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to export PDF');
+      if (import.meta.env.DEV) {
+        console.error('Export error:', error);
+      }
+      toast.error(error instanceof Error ? error.message : t('settings.buildings.exportErrorPdf'));
     }
   };
 
   const handleExportExcel = async () => {
     if (!school) {
-      toast.error('Please configure school branding first to export reports.');
+      toast.error(t('settings.buildings.exportErrorNoSchool'));
       return;
     }
 
     if (!filteredBuildings || filteredBuildings.length === 0) {
-      toast.error('No buildings to export.');
+      toast.error(t('settings.buildings.exportErrorNoBuildings'));
       return;
     }
 
     try {
       const reportData = transformBuildingsForExport(filteredBuildings);
       const filtersSummary = buildFiltersSummary();
+      const reportDefinition = getBuildingReportDefinition(t);
 
       await exportReport({
         format: 'excel',
-        definition: buildingReportDefinition,
+        definition: reportDefinition,
         rows: reportData,
         school,
         template: defaultTemplate,
         filtersSummary,
       });
 
-      toast.success('Excel export started');
+      toast.success(t('settings.buildings.exportSuccessExcel'));
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to export Excel');
+      if (import.meta.env.DEV) {
+        console.error('Export error:', error);
+      }
+      toast.error(error instanceof Error ? error.message : t('settings.buildings.exportErrorExcel'));
     }
   };
 
   const handleOpenDialog = (buildingId?: string) => {
     if (buildingId) {
-      const building = buildings?.find((b) => b.id === buildingId);
+      const building = (buildings as unknown as Building[] | undefined)?.find((b: Building) => b.id === buildingId);
       if (building) {
         reset({
           building_name: building.buildingName,
@@ -430,7 +439,7 @@ export function BuildingsManagement() {
     }
 
     if (!schoolId) {
-      toast.error('Please select a school');
+      toast.error(t('settings.buildings.schoolRequired'));
       return;
     }
 
@@ -477,7 +486,7 @@ export function BuildingsManagement() {
       <div className="container mx-auto p-6">
         <Card>
           <CardContent className="p-6">
-            <div className="text-center">Loading buildings...</div>
+            <div className="text-center">{t('settings.buildings.loadingBuildings')}</div>
           </CardContent>
         </Card>
       </div>
@@ -492,9 +501,9 @@ export function BuildingsManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Buildings Management
+                {t('settings.buildings.management')}
               </CardTitle>
-              <CardDescription>Manage building names and information</CardDescription>
+              <CardDescription>{t('settings.buildings.title')}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -504,7 +513,7 @@ export function BuildingsManagement() {
                 disabled={!filteredBuildings || filteredBuildings.length === 0 || !school}
               >
                 <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Export Excel
+                {t('settings.buildings.exportExcel')}
               </Button>
               <Button
                 variant="outline"
@@ -513,12 +522,12 @@ export function BuildingsManagement() {
                 disabled={!filteredBuildings || filteredBuildings.length === 0 || !school}
               >
                 <FileDown className="h-4 w-4 mr-2" />
-                Export PDF
+                {t('settings.buildings.exportPdf')}
               </Button>
               {hasCreatePermission && (
                 <Button onClick={() => handleOpenDialog()}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Building
+                  {t('settings.buildings.addBuilding')}
                 </Button>
               )}
             </div>
@@ -529,7 +538,7 @@ export function BuildingsManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search buildings..."
+                placeholder={t('settings.buildings.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -547,7 +556,7 @@ export function BuildingsManagement() {
                         {header.isPlaceholder
                           ? null
                           : typeof header.column.columnDef.header === 'function'
-                          ? header.column.columnDef.header({ column: header.column })
+                          ? header.column.columnDef.header({ column: header.column, header, table: table })
                           : header.column.columnDef.header}
                       </TableHead>
                     ))}
@@ -558,7 +567,7 @@ export function BuildingsManagement() {
                 {table.getRowModel().rows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
-                      {searchQuery ? 'No buildings found matching your search' : 'No buildings found. Add your first building.'}
+                      {searchQuery ? t('settings.buildings.noBuildingsFound') : t('settings.buildings.noBuildingsMessage')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -566,9 +575,9 @@ export function BuildingsManagement() {
                     <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
-                          {cell.column.columnDef.cell
-                            ? cell.column.columnDef.cell({ row })
-                            : null}
+                          {cell.column.columnDef.cell && typeof cell.column.columnDef.cell === 'function'
+                            ? cell.column.columnDef.cell({ row, column: cell.column, cell, getValue: cell.getValue, renderValue: cell.renderValue, table: table })
+                            : cell.column.columnDef.cell}
                         </TableCell>
                       ))}
                     </TableRow>
@@ -596,24 +605,24 @@ export function BuildingsManagement() {
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>
-                {selectedBuilding ? 'Edit Building' : 'Add New Building'}
+                {selectedBuilding ? t('settings.buildings.editBuilding') : t('settings.buildings.addBuilding')}
               </DialogTitle>
               <DialogDescription>
                 {selectedBuilding
-                  ? 'Update the building information below.'
-                  : 'Enter the building name to add a new building.'}
+                  ? t('settings.buildings.update')
+                  : t('settings.buildings.create')}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               {filteredSchools.length > 1 ? (
                 <div className="grid gap-2">
-                  <Label htmlFor="school_id">School</Label>
+                  <Label htmlFor="school_id">{t('settings.buildings.school')}</Label>
                   <Select
                     value={selectedSchoolId || ''}
                     onValueChange={(value) => setValue('school_id', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select school" />
+                      <SelectValue placeholder={t('settings.buildings.selectSchool')} />
                     </SelectTrigger>
                     <SelectContent>
                       {filteredSchools.map((school) => (
@@ -629,7 +638,7 @@ export function BuildingsManagement() {
                 </div>
               ) : filteredSchools.length === 1 ? (
                 <div className="grid gap-2">
-                  <Label htmlFor="school_id">School</Label>
+                  <Label htmlFor="school_id">{t('settings.buildings.school')}</Label>
                   <Input
                     id="school_id"
                     value={filteredSchools[0].schoolName}
@@ -639,13 +648,13 @@ export function BuildingsManagement() {
                 </div>
               ) : (
                 <div className="grid gap-2">
-                  <Label htmlFor="school_id">School *</Label>
+                  <Label htmlFor="school_id">{t('settings.buildings.school')} *</Label>
                   <Select
                     value={selectedSchoolId || ''}
                     onValueChange={(value) => setValue('school_id', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select school" />
+                      <SelectValue placeholder={t('settings.buildings.selectSchool')} />
                     </SelectTrigger>
                     <SelectContent>
                       {filteredSchools.map((school) => (
@@ -661,11 +670,11 @@ export function BuildingsManagement() {
                 </div>
               )}
               <div className="grid gap-2">
-                <Label htmlFor="building_name">Building Name</Label>
+                <Label htmlFor="building_name">{t('settings.buildings.buildingName')}</Label>
                 <Input
                   id="building_name"
                   {...register('building_name')}
-                  placeholder="Enter building name"
+                  placeholder={t('settings.buildings.enterBuildingName')}
                 />
                 {errors.building_name && (
                   <p className="text-sm text-destructive">{errors.building_name.message}</p>
@@ -674,10 +683,10 @@ export function BuildingsManagement() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createBuilding.isPending || updateBuilding.isPending}>
-                {selectedBuilding ? 'Update' : 'Create'}
+                {selectedBuilding ? t('settings.buildings.update') : t('settings.buildings.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -688,22 +697,22 @@ export function BuildingsManagement() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the building
+              {t('settings.buildings.deleteConfirm')}
               {selectedBuilding &&
                 buildings?.find((b) => b.id === selectedBuilding) &&
-                ` "${buildings.find((b) => b.id === selectedBuilding)?.buildingName}"`}
-              . If this building has rooms assigned, the deletion will fail.
+                ` "${(buildings as unknown as Building[] | undefined)?.find((b: Building) => b.id === selectedBuilding)?.buildingName}"`}
+              {t('settings.buildings.deleteConfirmRooms') || '. If this building has rooms assigned, the deletion will fail.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

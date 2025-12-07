@@ -4,6 +4,7 @@ import { useUserPermissions } from '@/hooks/usePermissions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface HostelPermissionGuardProps {
   children: ReactNode;
@@ -22,6 +23,7 @@ export function HostelPermissionGuard({
   fallback,
   showError = true 
 }: HostelPermissionGuardProps) {
+  const { t } = useLanguage();
   const { data: permissions, isLoading } = useUserPermissions();
   const hasHostelRead = useHasPermission('hostel.read');
   const hasRoomsRead = useHasPermission('rooms.read');
@@ -31,7 +33,7 @@ export function HostelPermissionGuard({
   const isInitialLoad = isLoading && permissions === undefined;
   
   if (hasHostelRead === undefined || hasRoomsRead === undefined || hasAdmissionsRead === undefined || isInitialLoad) {
-    return <LoadingSpinner size="lg" text="Checking permissions..." />;
+    return <LoadingSpinner size="lg" text={t('guards.checkingPermissions')} />;
   }
 
   // Check: (hostel.read OR rooms.read) AND student_admissions.read
@@ -55,10 +57,10 @@ export function HostelPermissionGuard({
       <CardContent className="p-6">
         <div className="text-center text-muted-foreground">
           <Shield className="h-12 w-12 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
-          <p>You do not have permission to access this resource.</p>
+          <h3 className="text-lg font-semibold mb-2">{t('guards.accessDenied')}</h3>
+          <p>{t('guards.noPermission')}</p>
           <p className="text-sm mt-2">
-            Required permissions: <code className="bg-muted px-2 py-1 rounded">(hostel.read OR rooms.read) AND student_admissions.read</code>
+            {t('guards.requiredPermission')}: <code className="bg-muted px-2 py-1 rounded">(hostel.read OR rooms.read) AND student_admissions.read</code>
           </p>
         </div>
       </CardContent>

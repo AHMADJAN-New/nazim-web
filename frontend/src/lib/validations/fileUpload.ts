@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { validationMessages } from './validationHelpers';
 
 /**
  * Allowed MIME types for document uploads
@@ -14,19 +15,20 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+const MAX_FILE_SIZE_MB = MAX_FILE_SIZE / (1024 * 1024);
 
 /**
  * File validation schema
  */
 export const fileSchema = z
-  .instanceof(File, { message: 'File is required' })
+  .instanceof(File, { message: validationMessages.fileRequired() })
   .refine(
     (file) => file.size <= MAX_FILE_SIZE,
-    `File size must be less than ${MAX_FILE_SIZE / (1024 * 1024)}MB`
+    validationMessages.fileSizeMax(MAX_FILE_SIZE_MB)
   )
   .refine(
     (file) => ALLOWED_MIME_TYPES.includes(file.type),
-    `File type must be one of: ${ALLOWED_MIME_TYPES.join(', ')}`
+    validationMessages.fileTypeInvalid(ALLOWED_MIME_TYPES.join(', '))
   );
 
 /**
@@ -36,14 +38,14 @@ export const validateFile = (file: File): { valid: boolean; error?: string } => 
   if (file.size > MAX_FILE_SIZE) {
     return {
       valid: false,
-      error: `File size must be less than ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
+      error: validationMessages.fileSizeMax(MAX_FILE_SIZE_MB),
     };
   }
 
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     return {
       valid: false,
-      error: `File type must be one of: ${ALLOWED_MIME_TYPES.join(', ')}`,
+      error: validationMessages.fileTypeInvalid(ALLOWED_MIME_TYPES.join(', ')),
     };
   }
 

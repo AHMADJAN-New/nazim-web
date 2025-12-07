@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useStudentPictureUpload } from '@/hooks/useStudentPictureUpload';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface StudentPictureUploadProps {
     studentId?: string;
@@ -20,6 +21,7 @@ export function StudentPictureUpload({
     onFileSelected,
     allowUploadWithoutStudent = false,
 }: StudentPictureUploadProps) {
+    const { t } = useLanguage();
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [imageError, setImageError] = useState(false);
@@ -112,12 +114,12 @@ export function StudentPictureUpload({
                         onLoad={() => setImageError(false)}
                     />
                 ) : (
-                    <span className="text-xs text-muted-foreground">No Image</span>
+                    <span className="text-xs text-muted-foreground">{t('students.noImage') || 'No Image'}</span>
                 )}
             </div>
             <div className="space-y-2">
                 <div>
-                    <Label htmlFor="student-picture-input">Select Picture</Label>
+                    <Label htmlFor="student-picture-input">{t('students.selectPicture') || 'Select Picture'}</Label>
                     <input
                         id="student-picture-input"
                         type="file"
@@ -128,7 +130,7 @@ export function StudentPictureUpload({
                 </div>
                 <div className="flex gap-2">
                     <Button type="button" variant="secondary" onClick={onUpload} disabled={disabled}>
-                        {upload.isPending ? 'Uploading...' : 'Upload Picture'}
+                        {upload.isPending ? (t('common.uploading') || 'Uploading...') : (t('students.uploadPicture') || 'Upload Picture')}
                     </Button>
                     {file ? <span className="text-xs text-muted-foreground">{file.name}</span> : null}
                 </div>

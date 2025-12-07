@@ -206,17 +206,17 @@ export function StaffTypesManagement() {
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 <Users className="h-5 w-5" />
-                                Staff Types Management
+                                {t('academic.staffTypes.management')}
                             </CardTitle>
                             <CardDescription>
-                                Manage staff role types and categories
+                                {t('academic.staffTypes.title')}
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                             {hasCreatePermission && (
                                 <Button onClick={() => handleOpenDialog()}>
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Add Staff Type
+                                    {t('academic.staffTypes.addStaffType')}
                                 </Button>
                             )}
                         </div>
@@ -227,7 +227,7 @@ export function StaffTypesManagement() {
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search staff types..."
+                                placeholder={t('academic.staffTypes.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
@@ -239,12 +239,12 @@ export function StaffTypesManagement() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Code</TableHead>
-                                    <TableHead>Description</TableHead>
-                                    <TableHead>Order</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>{t('academic.staffTypes.name')}</TableHead>
+                                    <TableHead>{t('academic.staffTypes.code')}</TableHead>
+                                    <TableHead>{t('academic.staffTypes.description')}</TableHead>
+                                    <TableHead>{t('academic.staffTypes.displayOrder')}</TableHead>
+                                    <TableHead>{t('academic.staffTypes.isActive')}</TableHead>
+                                    <TableHead className="text-right">{t('common.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -252,8 +252,8 @@ export function StaffTypesManagement() {
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center text-muted-foreground">
                                             {searchQuery
-                                                ? 'No staff types found'
-                                                : 'No staff types available'}
+                                                ? t('academic.staffTypes.noStaffTypesFound')
+                                                : t('academic.staffTypes.noStaffTypesMessage')}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -269,7 +269,7 @@ export function StaffTypesManagement() {
                                             <TableCell>{type.displayOrder}</TableCell>
                                             <TableCell>
                                                 <Badge variant={type.isActive ? 'default' : 'secondary'}>
-                                                    {type.isActive ? 'Active' : 'Inactive'}
+                                                    {type.isActive ? t('academic.staffTypes.active') : t('academic.staffTypes.inactive')}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -310,24 +310,24 @@ export function StaffTypesManagement() {
                         <DialogHeader>
                             <DialogTitle>
                                 {selectedStaffType
-                                    ? 'Edit Staff Type'
-                                    : 'Add Staff Type'}
+                                    ? t('academic.staffTypes.editStaffType')
+                                    : t('academic.staffTypes.addStaffType')}
                             </DialogTitle>
                             <DialogDescription>
                                 {selectedStaffType
-                                    ? 'Update staff type information'
-                                    : 'Create a new staff type'}
+                                    ? t('academic.staffTypes.updateStaffType')
+                                    : t('academic.staffTypes.createStaffType')}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="name">
-                                    Name *
+                                    {t('academic.staffTypes.name')} *
                                 </Label>
                                 <Input
                                     id="name"
                                     {...register('name')}
-                                    placeholder="e.g., Teacher"
+                                    placeholder={t('academic.staffTypes.name')}
                                 />
                                 {errors.name && (
                                     <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -335,12 +335,12 @@ export function StaffTypesManagement() {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="code">
-                                    Code *
+                                    {t('academic.staffTypes.code')} *
                                 </Label>
                                 <Input
                                     id="code"
                                     {...register('code')}
-                                    placeholder="e.g., teacher"
+                                    placeholder={t('academic.staffTypes.code')}
                                 />
                                 {errors.code && (
                                     <p className="text-sm text-destructive">{errors.code.message}</p>
@@ -348,12 +348,12 @@ export function StaffTypesManagement() {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="description">
-                                    Description
+                                    {t('academic.staffTypes.description')}
                                 </Label>
                                 <Textarea
                                     id="description"
                                     {...register('description')}
-                                    placeholder="Optional description"
+                                    placeholder={t('academic.staffTypes.description')}
                                     rows={3}
                                 />
                                 {errors.description && (
@@ -362,7 +362,7 @@ export function StaffTypesManagement() {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="display_order">
-                                    Display Order
+                                    {t('academic.staffTypes.displayOrder')}
                                 </Label>
                                 <Input
                                     id="display_order"
@@ -382,7 +382,7 @@ export function StaffTypesManagement() {
                                     onCheckedChange={(checked) => setValue('is_active', checked)}
                                 />
                                 <Label htmlFor="is_active" className="cursor-pointer">
-                                    Active
+                                    {t('academic.staffTypes.isActive')}
                                 </Label>
                             </div>
                         </div>
@@ -404,7 +404,7 @@ export function StaffTypesManagement() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this staff type? This action cannot be undone.
+                            {t('academic.staffTypes.deleteConfirm')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

@@ -1406,9 +1406,33 @@ export function ComponentName({ prop1, prop2 }: ComponentProps) {
 - **LTR Languages**: English
 
 ### Translation System
-- All translations are stored in `/src/lib/i18n.ts`
+- **Translation files are organized in `/src/lib/translations/` directory**
+  - `types.ts` - Contains the `TranslationKeys` interface (type definitions)
+  - `en.ts` - English translations
+  - `ps.ts` - Pashto translations
+  - `fa.ts` - Farsi translations
+  - `ar.ts` - Arabic translations
+- **Main i18n file**: `/src/lib/i18n.ts` contains utility functions and imports from translation files
 - Use the `useLanguage` hook to access translations
 - Translation keys follow a hierarchical structure: `category.key` (e.g., `students.title`, `nav.dashboard`)
+
+### Translation File Structure
+```
+frontend/src/lib/
+├── i18n.ts                    # Main file with utilities (t, isRTL, getDirection, etc.)
+└── translations/
+    ├── types.ts               # TranslationKeys interface
+    ├── en.ts                  # English translations
+    ├── ps.ts                  # Pashto translations
+    ├── fa.ts                  # Farsi translations
+    └── ar.ts                  # Arabic translations
+```
+
+**File Organization Benefits:**
+- Each language in its own file for easier maintenance
+- Type definitions separated from translations
+- Main i18n.ts file is clean and focused on utilities
+- No breaking changes - all existing code continues to work
 
 ### Using Translations
 ```typescript
@@ -1435,9 +1459,19 @@ return (
 - **Forms**: `forms.required`, `forms.invalidEmail`, etc.
 
 ### Adding New Translations
-1. Add the key to the `TranslationKeys` interface in `/src/lib/i18n.ts`
-2. Add translations for all languages (en, ps, fa, ar)
-3. Use the key in components with `t('category.key')`
+1. **Add the key to the `TranslationKeys` interface** in `/src/lib/translations/types.ts`
+2. **Add translations for all languages** in their respective files:
+   - `/src/lib/translations/en.ts` - English
+   - `/src/lib/translations/ps.ts` - Pashto
+   - `/src/lib/translations/fa.ts` - Farsi
+   - `/src/lib/translations/ar.ts` - Arabic
+3. **Use the key in components** with `t('category.key')`
+
+**Important Notes:**
+- Each language file imports the `TranslationKeys` type from `./types`
+- All translation files must have the same structure matching the `TranslationKeys` interface
+- The main `/src/lib/i18n.ts` file automatically imports and exports all translations
+- No changes needed in components - they continue to use `useLanguage()` hook as before
 
 ### RTL (Right-to-Left) Support
 
@@ -1491,6 +1525,289 @@ Sidebar component
 - Language preference is stored in `localStorage` with key `'nazim-language'`
 - Default language is English (`'en'`)
 - Language switcher is available in both sidebar and header
+
+## Toast Notifications
+
+**CRITICAL: ALL toast messages MUST use the centralized `showToast` utility with translation keys. NEVER use `toast` directly from `sonner`.**
+
+### Centralized Toast System
+
+The application uses a centralized toast notification system (`/src/lib/toast.ts`) that:
+- **Automatically translates messages** using translation keys
+- **Respects RTL/LTR language direction** (toasts appear on left for RTL, right for LTR)
+- **Provides consistent positioning** across all languages
+- **Supports parameter interpolation** for dynamic messages
+
+### Toast Utility Location
+- **Main utility**: `/src/lib/toast.ts` - Centralized toast functions
+- **Toaster component**: `/src/components/ui/sonner.tsx` - Renders toasts with RTL support
+- **Translation keys**: `/src/lib/translations/types.ts` - Contains `toast` section for common messages
+
+### Using Toast Notifications
+
+#### Basic Usage Pattern
+```typescript
+import { showToast } from '@/lib/toast';
+import { useLanguage } from '@/hooks/useLanguage';
+
+export const useCreateYourResource = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (data: YourResourceData) => {
+      return await apiClient.yourResources.create(data);
+    },
+    onSuccess: () => {
+      // ✅ CORRECT: Use translation key
+      showToast.success(t('toast.yourResourceCreated'));
+      queryClient.invalidateQueries({ queryKey: ['your-resources'] });
+    },
+    onError: (error: Error) => {
+      // ✅ CORRECT: Use translation key with fallback
+      showToast.error(error.message || t('toast.yourResourceCreateFailed'));
+    },
+  });
+};
+```
+
+#### Translation Key Patterns
+
+**CRITICAL: Always use translation keys, never hardcoded strings.**
+
+1. **Common toast messages** (use `toast.*` keys):
+   ```typescript
+   showToast.success('toast.profileUpdated');
+   showToast.error('toast.profileUpdateFailed');
+   showToast.success('toast.userCreated');
+   showToast.error('toast.userCreateFailed');
+   ```
+
+2. **Resource-specific messages** (use resource-specific keys):
+   ```typescript
+   // For academic years
+   showToast.success('academic.academicYears.academicYearCreated');
+   showToast.error('academic.academicYears.academicYearCreateFailed');
+   
+   // For subjects
+   showToast.success('academic.subjects.subjectCreated');
+   showToast.error('academic.subjects.subjectCreateFailed');
+   ```
+
+3. **Messages with parameters**:
+   ```typescript
+   showToast.success('toast.subjectsAssigned', { 
+     count: 5, 
+     skipped: 2 
+   });
+   // Translation: 'Successfully assigned {count} subject(s). {skipped} subject(s) were already assigned.'
+   ```
+
+#### Toast Types
+
+```typescript
+// Success toast
+showToast.success('toast.resourceCreated');
+
+// Error toast
+showToast.error('toast.resourceCreateFailed');
+
+// Info toast
+showToast.info('toast.resourceUpdated');
+
+// Warning toast
+showToast.warning('toast.resourceInUse');
+
+// Loading toast (returns toast ID for dismissal)
+const toastId = showToast.loading('toast.processing');
+// ... do work ...
+showToast.dismiss(toastId);
+```
+
+### RTL/LTR Positioning
+
+**CRITICAL: Toast positioning is handled automatically by the system.**
+
+- **RTL languages** (Arabic, Pashto, Farsi): Toasts appear on **bottom-left**
+- **LTR languages** (English): Toasts appear on **bottom-right**
+- **Position updates automatically** when language changes
+- **No manual positioning needed** - the `Toaster` component handles this
+
+#### How It Works
+
+1. **`showToast` utility** (`/src/lib/toast.ts`):
+   - Reads current language from `localStorage`
+   - Determines position based on `isRTL()` function
+   - Sets `position: 'bottom-left'` for RTL, `'bottom-right'` for LTR
+
+2. **`Toaster` component** (`/src/components/ui/sonner.tsx`):
+   - Listens for language changes
+   - Updates toast position dynamically
+   - Handles cross-tab language changes
+
+### Translation Keys for Toast Messages
+
+**CRITICAL: All toast messages MUST have translation keys in all four languages.**
+
+#### Adding New Toast Translation Keys
+
+1. **Add to `TranslationKeys` interface** (`/src/lib/translations/types.ts`):
+   ```typescript
+   export interface TranslationKeys {
+     // ... existing keys ...
+     toast: {
+       // ... existing toast keys ...
+       yourResourceCreated: string;
+       yourResourceCreateFailed: string;
+       yourResourceUpdated: string;
+       yourResourceUpdateFailed: string;
+       yourResourceDeleted: string;
+       yourResourceDeleteFailed: string;
+     };
+   }
+   ```
+
+2. **Add translations to all language files**:
+   - `/src/lib/translations/en.ts` - English
+   - `/src/lib/translations/ps.ts` - Pashto
+   - `/src/lib/translations/fa.ts` - Farsi
+   - `/src/lib/translations/ar.ts` - Arabic
+
+3. **Use in hooks**:
+   ```typescript
+   showToast.success('toast.yourResourceCreated');
+   ```
+
+#### Common Toast Keys (Already Available)
+
+The following keys are available in the `toast` section:
+- `profileUpdated`, `profileUpdateFailed`
+- `userCreated`, `userCreateFailed`, `userUpdateFailed`, `userDeleteFailed`
+- `organizationCreated`, `organizationCreateFailed`, etc.
+- `subjectCreated`, `subjectUpdated`, `subjectDeleted`, etc.
+- `studentRegistered`, `studentUpdated`, `studentRemoved`, etc.
+- And many more...
+
+**Check `/src/lib/translations/types.ts` for the complete list.**
+
+### Hook Pattern with Toast Notifications
+
+**CRITICAL: ALL mutation hooks MUST use `showToast` for success/error messages.**
+
+```typescript
+import { showToast } from '@/lib/toast';
+import { useLanguage } from '@/hooks/useLanguage';
+
+export const useCreateYourResource = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (data: YourResourceData) => {
+      if (!profile?.organization_id) {
+        throw new Error('User must be assigned to an organization');
+      }
+
+      return await apiClient.yourResources.create({
+        ...data,
+        organization_id: profile.organization_id,
+      });
+    },
+    onSuccess: () => {
+      // ✅ CORRECT: Use translation key
+      showToast.success(t('toast.yourResourceCreated'));
+      void queryClient.invalidateQueries({ queryKey: ['your-resources'] });
+    },
+    onError: (error: Error) => {
+      // ✅ CORRECT: Use translation key with error message fallback
+      showToast.error(error.message || t('toast.yourResourceCreateFailed'));
+    },
+  });
+};
+
+export const useUpdateYourResource = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; [key: string]: any }) => {
+      return await apiClient.yourResources.update(id, updates);
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.yourResourceUpdated'));
+      void queryClient.invalidateQueries({ queryKey: ['your-resources'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.yourResourceUpdateFailed'));
+    },
+  });
+};
+
+export const useDeleteYourResource = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.yourResources.delete(id);
+    },
+    onSuccess: async () => {
+      showToast.success(t('toast.yourResourceDeleted'));
+      await queryClient.invalidateQueries({ queryKey: ['your-resources'] });
+      await queryClient.refetchQueries({ queryKey: ['your-resources'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.yourResourceDeleteFailed'));
+    },
+  });
+};
+```
+
+### Best Practices
+
+#### ✅ DO:
+- **ALWAYS** use `showToast` utility (never `toast` directly from `sonner`)
+- **ALWAYS** use translation keys (never hardcoded strings)
+- **ALWAYS** import `useLanguage` hook to get `t` function
+- **ALWAYS** provide fallback error messages: `error.message || t('toast.key')`
+- **ALWAYS** add translation keys to all four language files
+- **ALWAYS** use `toast.*` keys for common messages, resource-specific keys for domain messages
+
+#### ❌ DON'T:
+- **NEVER** use `toast.success()` or `toast.error()` directly from `sonner`
+- **NEVER** hardcode toast messages: `showToast.success('User created')` ❌
+- **NEVER** skip translation keys
+- **NEVER** manually set toast position (it's handled automatically)
+- **NEVER** use plain strings when translation keys exist
+
+### Common Mistakes to Avoid
+
+❌ **WRONG:**
+```typescript
+import { toast } from 'sonner';
+
+toast.success('User created successfully'); // ❌ Hardcoded, no translation, wrong position
+```
+
+✅ **CORRECT:**
+```typescript
+import { showToast } from '@/lib/toast';
+import { useLanguage } from '@/hooks/useLanguage';
+
+const { t } = useLanguage();
+showToast.success(t('toast.userCreated')); // ✅ Translated, RTL-aware, centralized
+```
+
+### Toast Checklist
+
+Before committing code with toast messages, verify:
+- [ ] Uses `showToast` utility (not `toast` directly)
+- [ ] Uses translation keys (not hardcoded strings)
+- [ ] Translation keys exist in all four language files (`en.ts`, `ps.ts`, `fa.ts`, `ar.ts`)
+- [ ] Success messages use appropriate translation keys
+- [ ] Error messages have fallback: `error.message || t('toast.key')`
+- [ ] `useLanguage` hook is imported and `t` function is used
+- [ ] No manual position setting (handled automatically)
 
 ## Authentication & Security
 

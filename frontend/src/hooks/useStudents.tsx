@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { 
   studentsApi, 
@@ -148,11 +148,11 @@ export const useCreateStudent = () => {
       return mapStudentApiToDomain(apiStudent as StudentApi.Student);
     },
     onSuccess: () => {
-      toast.success('Student registered successfully');
+      showToast.success('toast.studentRegistered');
       void queryClient.invalidateQueries({ queryKey: ['students'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to register student');
+      showToast.error(error.message || 'toast.studentRegisterFailed');
     },
   });
 };
@@ -173,11 +173,11 @@ export const useUpdateStudent = () => {
       return mapStudentApiToDomain(apiStudent as StudentApi.Student);
     },
     onSuccess: () => {
-      toast.success('Student information updated');
+      showToast.success('toast.studentInformationUpdated');
       void queryClient.invalidateQueries({ queryKey: ['students'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update student');
+      showToast.error(error.message || 'toast.studentUpdateFailed');
     },
   });
 };
@@ -196,11 +196,11 @@ export const useDeleteStudent = () => {
       return id;
     },
     onSuccess: () => {
-      toast.success('Student removed');
+      showToast.success('toast.studentRemoved');
       void queryClient.invalidateQueries({ queryKey: ['students'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to remove student');
+      showToast.error(error.message || 'toast.studentRemoveFailed');
     },
   });
 };
@@ -283,11 +283,11 @@ export const useUploadStudentDocument = () => {
       return document as StudentApi.StudentDocument;
     },
     onSuccess: (_, variables) => {
-      toast.success('Document uploaded successfully');
+      showToast.success('toast.documentUploaded');
       void queryClient.invalidateQueries({ queryKey: ['student-documents', variables.studentId] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to upload document');
+      showToast.error(error.message || 'toast.documentUploadFailed');
     },
   });
 };
@@ -306,11 +306,11 @@ export const useDeleteStudentDocument = () => {
       return { documentId, studentId };
     },
     onSuccess: (_, variables) => {
-      toast.success('Document deleted successfully');
+      showToast.success('toast.documentDeleted');
       void queryClient.invalidateQueries({ queryKey: ['student-documents', variables.studentId] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete document');
+      showToast.error(error.message || 'toast.documentDeleteFailed');
     },
   });
 };
@@ -361,11 +361,11 @@ export const useCreateStudentEducationalHistory = () => {
       return history as StudentApi.StudentEducationalHistory;
     },
     onSuccess: (_, variables) => {
-      toast.success('Educational history added');
+      showToast.success('toast.educationalHistoryAdded');
       void queryClient.invalidateQueries({ queryKey: ['student-educational-history', variables.student_id] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to add educational history');
+      showToast.error(error.message || 'toast.educationalHistoryAddFailed');
     },
   });
 };
@@ -384,11 +384,11 @@ export const useUpdateStudentEducationalHistory = () => {
       return { record: updated as StudentApi.StudentEducationalHistory, studentId };
     },
     onSuccess: (result) => {
-      toast.success('Educational history updated');
+      showToast.success('toast.educationalHistoryUpdated');
       void queryClient.invalidateQueries({ queryKey: ['student-educational-history', result.studentId] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update educational history');
+      showToast.error(error.message || 'toast.educationalHistoryUpdateFailed');
     },
   });
 };
@@ -407,11 +407,11 @@ export const useDeleteStudentEducationalHistory = () => {
       return { id, studentId };
     },
     onSuccess: (_, variables) => {
-      toast.success('Educational history deleted');
+      showToast.success('toast.educationalHistoryDeleted');
       void queryClient.invalidateQueries({ queryKey: ['student-educational-history', variables.studentId] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete educational history');
+      showToast.error(error.message || 'toast.educationalHistoryDeleteFailed');
     },
   });
 };
@@ -462,11 +462,11 @@ export const useCreateStudentDisciplineRecord = () => {
       return record as StudentApi.StudentDisciplineRecord;
     },
     onSuccess: (_, variables) => {
-      toast.success('Discipline record added');
+      showToast.success('toast.disciplineRecordAdded');
       void queryClient.invalidateQueries({ queryKey: ['student-discipline-records', variables.student_id] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to add discipline record');
+      showToast.error(error.message || 'toast.disciplineRecordAddFailed');
     },
   });
 };
@@ -485,11 +485,11 @@ export const useUpdateStudentDisciplineRecord = () => {
       return { record: updated as StudentApi.StudentDisciplineRecord, studentId };
     },
     onSuccess: (result) => {
-      toast.success('Discipline record updated');
+      showToast.success('toast.disciplineRecordUpdated');
       void queryClient.invalidateQueries({ queryKey: ['student-discipline-records', result.studentId] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update discipline record');
+      showToast.error(error.message || 'toast.disciplineRecordUpdateFailed');
     },
   });
 };
@@ -508,11 +508,11 @@ export const useDeleteStudentDisciplineRecord = () => {
       return { id, studentId };
     },
     onSuccess: (_, variables) => {
-      toast.success('Discipline record deleted');
+      showToast.success('toast.disciplineRecordDeleted');
       void queryClient.invalidateQueries({ queryKey: ['student-discipline-records', variables.studentId] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete discipline record');
+      showToast.error(error.message || 'toast.disciplineRecordDeleteFailed');
     },
   });
 };
@@ -532,11 +532,11 @@ export const useResolveStudentDisciplineRecord = () => {
       return { record: updated as StudentApi.StudentDisciplineRecord, studentId };
     },
     onSuccess: (result) => {
-      toast.success('Discipline record marked as resolved');
+      showToast.success('toast.disciplineRecordResolved');
       void queryClient.invalidateQueries({ queryKey: ['student-discipline-records', result.studentId] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to resolve discipline record');
+      showToast.error(error.message || 'toast.disciplineRecordResolveFailed');
     },
   });
 };

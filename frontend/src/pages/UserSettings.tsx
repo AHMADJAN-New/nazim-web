@@ -106,7 +106,7 @@ export default function UserSettings() {
                     id="current_password"
                     type={showCurrentPassword ? 'text' : 'password'}
                     {...register('current_password')}
-                    placeholder="Enter your current password"
+                    placeholder={t('common.enterCurrentPassword')}
                     disabled={isSubmitting}
                     className="pr-10"
                   />
@@ -138,7 +138,7 @@ export default function UserSettings() {
                     id="new_password"
                     type={showNewPassword ? 'text' : 'password'}
                     {...register('new_password')}
-                    placeholder="Enter your new password"
+                    placeholder={t('common.enterNewPassword')}
                     disabled={isSubmitting}
                     className="pr-10"
                   />

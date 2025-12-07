@@ -39,11 +39,18 @@ use App\Http\Controllers\LibraryBookController;
 use App\Http\Controllers\LibraryCategoryController;
 use App\Http\Controllers\LibraryCopyController;
 use App\Http\Controllers\LibraryLoanController;
+use App\Http\Controllers\ShortTermCourseController;
+use App\Http\Controllers\CourseStudentController;
+use App\Http\Controllers\CourseStudentDisciplineRecordController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetAssignmentController;
 use App\Http\Controllers\AssetMaintenanceController;
 use App\Http\Controllers\AssetCategoryController;
+use App\Http\Controllers\CourseAttendanceSessionController;
+use App\Http\Controllers\TranslationController;
+use App\Http\Controllers\CourseDocumentController;
+use App\Http\Controllers\CertificateTemplateController;
 use App\Http\Controllers\DashboardController;
 
 /*
@@ -112,6 +119,10 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Roles
     Route::apiResource('roles', RoleController::class);
+
+    // Translations (no permission required - accessible to all authenticated users)
+    Route::get('/translations', [TranslationController::class, 'index']);
+    Route::post('/translations', [TranslationController::class, 'store']);
 
     // Buildings
     Route::apiResource('buildings', BuildingController::class);
@@ -248,6 +259,49 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/library-loans', [LibraryLoanController::class, 'store']);
     Route::post('/library-loans/{id}/return', [LibraryLoanController::class, 'returnCopy']);
     Route::get('/library-loans/due-soon', [LibraryLoanController::class, 'dueSoon']);
+
+    // Short-term courses
+    Route::apiResource('short-term-courses', ShortTermCourseController::class);
+    Route::post('/short-term-courses/{id}/close', [ShortTermCourseController::class, 'close']);
+    Route::post('/short-term-courses/{id}/reopen', [ShortTermCourseController::class, 'reopen']);
+    Route::get('/short-term-courses/{id}/stats', [ShortTermCourseController::class, 'stats']);
+
+    // Course students
+    Route::apiResource('course-students', CourseStudentController::class);
+    Route::post('/course-students/enroll-from-main', [CourseStudentController::class, 'enrollFromMain']);
+    Route::post('/course-students/{id}/copy-to-main', [CourseStudentController::class, 'copyToMain']);
+    Route::post('/course-students/{id}/complete', [CourseStudentController::class, 'markCompleted']);
+    Route::post('/course-students/{id}/drop', [CourseStudentController::class, 'markDropped']);
+    Route::post('/course-students/{id}/issue-certificate', [CourseStudentController::class, 'issueCertificate']);
+    Route::post('/course-students/{id}/enroll-to-new-course', [CourseStudentController::class, 'enrollToNewCourse']);
+
+    // Course student discipline records
+    Route::get('/course-students/{id}/discipline-records', [CourseStudentDisciplineRecordController::class, 'index']);
+    Route::post('/course-students/{id}/discipline-records', [CourseStudentDisciplineRecordController::class, 'store']);
+    Route::put('/course-student-discipline-records/{id}', [CourseStudentDisciplineRecordController::class, 'update']);
+    Route::delete('/course-student-discipline-records/{id}', [CourseStudentDisciplineRecordController::class, 'destroy']);
+    Route::post('/course-student-discipline-records/{id}/resolve', [CourseStudentDisciplineRecordController::class, 'resolve']);
+
+    // Course Attendance Sessions
+    Route::get('/course-attendance-sessions/roster', [CourseAttendanceSessionController::class, 'roster']);
+    Route::get('/course-attendance-sessions/report', [CourseAttendanceSessionController::class, 'report']);
+    Route::post('/course-attendance-sessions/{id}/close', [CourseAttendanceSessionController::class, 'close']);
+    Route::post('/course-attendance-sessions/{id}/records', [CourseAttendanceSessionController::class, 'markRecords']);
+    Route::post('/course-attendance-sessions/{id}/scan', [CourseAttendanceSessionController::class, 'scan']);
+    Route::get('/course-attendance-sessions/{id}/scans', [CourseAttendanceSessionController::class, 'scans']);
+    Route::apiResource('course-attendance-sessions', CourseAttendanceSessionController::class);
+
+    // Course Documents
+    Route::get('/course-documents/{id}/download', [CourseDocumentController::class, 'download']);
+    Route::apiResource('course-documents', CourseDocumentController::class);
+
+    // Certificate Templates
+    Route::get('/certificate-templates/{id}/background', [CertificateTemplateController::class, 'getBackgroundImage'])
+        ->name('certificate-templates.background');
+    Route::post('/certificate-templates/{id}/set-default', [CertificateTemplateController::class, 'setDefault']);
+    Route::post('/certificate-templates/generate/{courseStudentId}', [CertificateTemplateController::class, 'generateCertificate']);
+    Route::get('/certificate-templates/certificate-data/{courseStudentId}', [CertificateTemplateController::class, 'getCertificateData']);
+    Route::apiResource('certificate-templates', CertificateTemplateController::class);
 
     // Leave Requests
     Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);

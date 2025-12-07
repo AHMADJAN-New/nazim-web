@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { classesApi } from '@/lib/api/client';
 import type * as ClassApi from '@/types/api/class';
@@ -187,10 +187,10 @@ export const useCreateClass = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['classes'] });
-            toast.success('Class created successfully');
+            showToast.success('academic.classes.classCreated');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to create class');
+            showToast.error(error.message || 'toast.classes.createFailed');
         },
     });
 };
@@ -215,10 +215,10 @@ export const useUpdateClass = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['classes'] });
             queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
-            toast.success('Class updated successfully');
+            showToast.success('academic.classes.classUpdated');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to update class');
+            showToast.error(error.message || 'toast.classes.updateFailed');
         },
     });
 };
@@ -237,10 +237,10 @@ export const useDeleteClass = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['classes'] });
-            toast.success('Class deleted successfully');
+            showToast.success('academic.classes.classDeleted');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to delete class');
+            showToast.error(error.message || 'toast.classes.deleteFailed');
         },
     });
 };
@@ -274,10 +274,10 @@ export const useAssignClassToYear = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
             queryClient.invalidateQueries({ queryKey: ['classes'] });
-            toast.success('Class assigned to academic year successfully');
+            showToast.success('academic.classes.classAssigned');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to assign class to academic year');
+            showToast.error(error.message || 'toast.classes.assignFailed');
         },
     });
 };
@@ -302,10 +302,10 @@ export const useUpdateClassYearInstance = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
             queryClient.invalidateQueries({ queryKey: ['class-history'] });
-            toast.success('Class instance updated successfully');
+            showToast.success('academic.classes.classInstanceUpdated');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to update class instance');
+            showToast.error(error.message || 'toast.classes.instanceUpdateFailed');
         },
     });
 };
@@ -325,10 +325,10 @@ export const useRemoveClassFromYear = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
             queryClient.invalidateQueries({ queryKey: ['class-history'] });
-            toast.success('Class removed from academic year successfully');
+            showToast.success('academic.classes.classRemoved');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to remove class from academic year');
+            showToast.error(error.message || 'toast.classes.removeFailed');
         },
     });
 };
@@ -365,10 +365,10 @@ export const useBulkAssignClassSections = () => {
         onSuccess: (result) => {
             queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
             queryClient.invalidateQueries({ queryKey: ['classes'] });
-            toast.success(`Successfully created ${result.created.length} section(s). ${result.skipped > 0 ? `${result.skipped} section(s) already existed.` : ''}`);
+            showToast.success(`Successfully created ${result.created.length} section(s). ${result.skipped > 0 ? `${result.skipped} section(s) already existed.` : ''}`);
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to create sections');
+            showToast.error(error.message || 'toast.classes.sectionCreateFailed');
         },
     });
 };
@@ -401,10 +401,10 @@ export const useCopyClassesBetweenYears = () => {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['class-academic-years'] });
             queryClient.invalidateQueries({ queryKey: ['class-history'] });
-            toast.success(`Successfully copied ${data.length} class instance(s) to the new academic year`);
+            showToast.success('academic.classes.classesCopied');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to copy classes between academic years');
+            showToast.error(error.message || 'toast.classes.copyFailed');
         },
     });
 };

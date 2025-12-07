@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { attendanceSessionsApi } from '@/lib/api/client';
 import { useLanguage } from './useLanguage';
@@ -144,11 +144,11 @@ export const useCreateAttendanceSession = () => {
       return mapAttendanceSessionApiToDomain(apiSession as AttendanceApi.AttendanceSession);
     },
     onSuccess: () => {
-      toast.success(t('attendancePage.createSuccess'));
+      showToast.success('attendancePage.createSuccess');
       void queryClient.invalidateQueries({ queryKey: ['attendance-sessions'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('common.error'));
+      showToast.error(error.message || 'common.error');
     },
   });
 };
@@ -163,12 +163,12 @@ export const useUpdateAttendanceSession = () => {
       return mapAttendanceSessionApiToDomain(apiSession as AttendanceApi.AttendanceSession);
     },
     onSuccess: (_data, variables) => {
-      toast.success(t('attendancePage.saveSuccess'));
+      showToast.success('attendancePage.saveSuccess');
       void queryClient.invalidateQueries({ queryKey: ['attendance-session', variables.id] });
       void queryClient.invalidateQueries({ queryKey: ['attendance-sessions'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('common.error'));
+      showToast.error(error.message || 'common.error');
     },
   });
 };
@@ -193,12 +193,12 @@ export const useMarkAttendance = (sessionId?: string) => {
       }
     },
     onSuccess: () => {
-      toast.success(t('attendancePage.saveSuccess'));
+      showToast.success('attendancePage.saveSuccess');
       void queryClient.invalidateQueries({ queryKey: ['attendance-session', sessionId] });
       void queryClient.invalidateQueries({ queryKey: ['attendance-sessions'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('common.error'));
+      showToast.error(error.message || 'common.error');
     },
   });
 };
@@ -218,7 +218,7 @@ export const useScanAttendance = (sessionId?: string) => {
     },
     onSuccess: (record) => {
       const mapped = mapAttendanceRecordApiToDomain(record as AttendanceApi.AttendanceRecord);
-      toast.success(t('attendancePage.scanSuccess'));
+      showToast.success('attendancePage.scanSuccess');
       queryClient.setQueryData(['attendance-session', sessionId], (current: AttendanceSession | undefined) => {
         if (!current) return current;
         const existing = current.records || [];
@@ -234,7 +234,7 @@ export const useScanAttendance = (sessionId?: string) => {
       void queryClient.invalidateQueries({ queryKey: ['attendance-sessions'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('common.error'));
+      showToast.error(error.message || 'common.error');
     },
   });
 };
@@ -274,12 +274,12 @@ export const useCloseAttendanceSession = () => {
       return mapAttendanceSessionApiToDomain(apiSession as AttendanceApi.AttendanceSession);
     },
     onSuccess: () => {
-      toast.success(t('attendancePage.sessionClosed') || 'Session closed successfully');
+      showToast.success('attendancePage.sessionClosed');
       void queryClient.invalidateQueries({ queryKey: ['attendance-sessions'] });
       void queryClient.invalidateQueries({ queryKey: ['attendance-session'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('common.error'));
+      showToast.error(error.message || 'common.error');
     },
   });
 };

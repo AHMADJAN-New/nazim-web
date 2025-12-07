@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { residencyTypesApi } from '@/lib/api/client';
@@ -109,10 +109,10 @@ export const useCreateResidencyType = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['residency-types'] });
       await queryClient.refetchQueries({ queryKey: ['residency-types'] });
-      toast.success('Residency type created successfully');
+      showToast.success('toast.residencyTypeCreated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create residency type');
+      showToast.error(error.message || 'toast.residencyTypeCreateFailed');
     },
   });
 };
@@ -170,10 +170,10 @@ export const useUpdateResidencyType = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['residency-types'] });
       await queryClient.refetchQueries({ queryKey: ['residency-types'] });
-      toast.success('Residency type updated successfully');
+      showToast.success('toast.residencyTypeUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update residency type');
+      showToast.error(error.message || 'toast.residencyTypeUpdateFailed');
     },
   });
 };
@@ -195,10 +195,10 @@ export const useDeleteResidencyType = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['residency-types'] });
       await queryClient.refetchQueries({ queryKey: ['residency-types'] });
-      toast.success('Residency type deleted successfully');
+      showToast.success('toast.residencyTypeDeleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete residency type');
+      showToast.error(error.message || 'toast.residencyTypeDeleteFailed');
     },
   });
 };

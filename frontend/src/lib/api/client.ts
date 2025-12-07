@@ -2195,3 +2195,170 @@ export const leaveRequestsApi = {
 
   scan: async (token: string) => apiClient.get(`/leave-requests/scan/${token}`),
 };
+// Short-term courses API
+export const shortTermCoursesApi = {
+  list: async (params?: { organization_id?: string; status?: string; page?: number; per_page?: number }) =>
+    apiClient.get('/short-term-courses', params),
+  get: async (id: string) => apiClient.get(`/short-term-courses/${id}`),
+  create: async (data: any) => apiClient.post('/short-term-courses', data),
+  update: async (id: string, data: any) => apiClient.put(`/short-term-courses/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/short-term-courses/${id}`),
+  close: async (id: string) => apiClient.post(`/short-term-courses/${id}/close`),
+  reopen: async (id: string) => apiClient.post(`/short-term-courses/${id}/reopen`),
+  stats: async (id: string) => apiClient.get(`/short-term-courses/${id}/stats`),
+};
+
+// Course students API
+export const courseStudentsApi = {
+  list: async (params?: { organization_id?: string; course_id?: string; status?: string; page?: number; per_page?: number }) =>
+    apiClient.get('/course-students', params),
+  get: async (id: string) => apiClient.get(`/course-students/${id}`),
+  create: async (data: any) => apiClient.post('/course-students', data),
+  update: async (id: string, data: any) => apiClient.put(`/course-students/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/course-students/${id}`),
+  enrollFromMain: async (data: any) => apiClient.post('/course-students/enroll-from-main', data),
+  copyToMain: async (id: string, data: any) => apiClient.post(`/course-students/${id}/copy-to-main`, data),
+  markCompleted: async (id: string) => apiClient.post(`/course-students/${id}/complete`),
+  markDropped: async (id: string) => apiClient.post(`/course-students/${id}/drop`),
+  issueCertificate: async (id: string) => apiClient.post(`/course-students/${id}/issue-certificate`),
+  enrollToNewCourse: async (id: string, data: { course_id: string; registration_date?: string; fee_paid?: boolean; fee_amount?: number }) =>
+    apiClient.post(`/course-students/${id}/enroll-to-new-course`, data),
+};
+
+// Course student discipline records API
+export const courseStudentDisciplineRecordsApi = {
+  list: async (courseStudentId: string) => apiClient.get(`/course-students/${courseStudentId}/discipline-records`),
+  create: async (courseStudentId: string, data: any) => apiClient.post(`/course-students/${courseStudentId}/discipline-records`, data),
+  update: async (id: string, data: any) => apiClient.put(`/course-student-discipline-records/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/course-student-discipline-records/${id}`),
+  resolve: async (id: string) => apiClient.post(`/course-student-discipline-records/${id}/resolve`),
+};
+
+// Course Attendance Sessions API
+export const courseAttendanceSessionsApi = {
+  list: async (params?: {
+    course_id?: string;
+    method?: string;
+    status?: string;
+    date_from?: string;
+    date_to?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/course-attendance-sessions', params),
+
+  get: async (id: string) => apiClient.get(`/course-attendance-sessions/${id}`),
+
+  create: async (data: {
+    course_id: string;
+    session_date: string;
+    session_title?: string | null;
+    method?: string;
+    remarks?: string | null;
+  }) => apiClient.post('/course-attendance-sessions', data),
+
+  update: async (id: string, data: {
+    session_date?: string;
+    session_title?: string | null;
+    method?: string;
+    remarks?: string | null;
+  }) => apiClient.put(`/course-attendance-sessions/${id}`, data),
+
+  delete: async (id: string) => apiClient.delete(`/course-attendance-sessions/${id}`),
+
+  roster: async (params: { course_id: string }) =>
+    apiClient.get('/course-attendance-sessions/roster', params),
+
+  markRecords: async (id: string, data: {
+    records: Array<{
+      course_student_id: string;
+      status: 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
+      note?: string | null;
+    }>;
+  }) => apiClient.post(`/course-attendance-sessions/${id}/records`, data),
+
+  scan: async (id: string, data: { code: string }) =>
+    apiClient.post(`/course-attendance-sessions/${id}/scan`, data),
+
+  scans: async (id: string, params?: { limit?: number }) =>
+    apiClient.get(`/course-attendance-sessions/${id}/scans`, params),
+
+  close: async (id: string) => apiClient.post(`/course-attendance-sessions/${id}/close`),
+
+  report: async (params?: {
+    course_id?: string;
+    course_student_id?: string;
+    date_from?: string;
+    date_to?: string;
+  }) => apiClient.get('/course-attendance-sessions/report', params),
+};
+
+// Course Documents API
+export const courseDocumentsApi = {
+  list: async (params?: {
+    course_id?: string;
+    course_student_id?: string;
+    document_type?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/course-documents', params),
+
+  get: async (id: string) => apiClient.get(`/course-documents/${id}`),
+
+  create: async (data: FormData) => apiClient.post('/course-documents', data),
+
+  delete: async (id: string) => apiClient.delete(`/course-documents/${id}`),
+
+  download: async (id: string) =>
+    apiClient.requestFile(`/course-documents/${id}/download`, { method: 'GET' }),
+};
+
+// Certificate Templates API
+export const certificateTemplatesApi = {
+  list: async (params?: { active_only?: boolean }) =>
+    apiClient.get('/certificate-templates', params),
+
+  get: async (id: string) => apiClient.get(`/certificate-templates/${id}`),
+
+  create: async (data: FormData) => apiClient.post('/certificate-templates', data),
+
+  update: async (id: string, data: FormData) => {
+    // Laravel doesn't support PUT with FormData, use POST with _method
+    data.append('_method', 'PUT');
+    return apiClient.post(`/certificate-templates/${id}`, data);
+  },
+
+  delete: async (id: string) => apiClient.delete(`/certificate-templates/${id}`),
+
+  setDefault: async (id: string) => apiClient.post(`/certificate-templates/${id}/set-default`),
+
+  getBackgroundUrl: (id: string) => `${API_URL}/certificate-templates/${id}/background`,
+
+  getBackgroundImage: async (endpoint: string) => {
+    // Extract the path from the endpoint (remove /api prefix if present)
+    const path = endpoint.startsWith('/api') ? endpoint.replace('/api', '') : endpoint;
+    return apiClient.requestFile(path, { method: 'GET' });
+  },
+
+  generateCertificate: async (courseStudentId: string, data: { template_id: string }) =>
+    apiClient.post(`/certificate-templates/generate/${courseStudentId}`, data),
+
+  getCertificateData: async (courseStudentId: string) =>
+    apiClient.get(`/certificate-templates/certificate-data/${courseStudentId}`),
+};
+
+// Translations API
+export const translationsApi = {
+  get: async () => apiClient.get<{
+    en: Record<string, unknown>;
+    ps: Record<string, unknown>;
+    fa: Record<string, unknown>;
+    ar: Record<string, unknown>;
+  }>('/translations'),
+
+  save: async (translations: {
+    en: Record<string, unknown>;
+    ps: Record<string, unknown>;
+    fa: Record<string, unknown>;
+    ar: Record<string, unknown>;
+  }) => apiClient.post<{ message: string; languages: string[] }>('/translations', { translations }),
+};

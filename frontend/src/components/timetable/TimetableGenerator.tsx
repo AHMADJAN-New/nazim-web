@@ -49,6 +49,7 @@ function DraggableCell({
 	children: React.ReactNode;
 	className?: string;
 }) {
+	const { t } = useLanguage();
 	const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
 		id,
 	});
@@ -65,7 +66,7 @@ function DraggableCell({
 					{...attributes}
 					{...listeners}
 					className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing transition-opacity"
-					aria-label="Drag to move"
+					aria-label={t('timetable.dragToMove') || 'Drag to move'}
 				>
 					<GripVertical className="h-4 w-4 text-muted-foreground" />
 				</button>
@@ -207,8 +208,8 @@ export function TimetableGenerator() {
 
 	const preferences = useMemo(() => {
 		return (teacherPrefsAll || []).map((p) => ({
-			teacherId: p.teacher_id,
-			blockedSlotIds: p.schedule_slot_ids || [],
+			teacherId: p.teacherId,
+			blockedSlotIds: p.scheduleSlotIds || [],
 		}));
 	}, [teacherPrefsAll]);
 
@@ -277,31 +278,31 @@ export function TimetableGenerator() {
 
 	const generate = () => {
 		try {
-			// Validation
-			if (!selectedAcademicYearId) {
-				toast.error('Please select an academic year');
-				return;
-			}
+		// Validation
+		if (!selectedAcademicYearId) {
+			toast.error(t('timetable.selectAcademicYearError'));
+			return;
+		}
 
-			if (selectedClassIds.length === 0) {
-				toast.error('Please select at least one class');
-				return;
-			}
+		if (selectedClassIds.length === 0) {
+			toast.error(t('timetable.selectAtLeastOneClass'));
+			return;
+		}
 
-			if (selectedSlotIds.length === 0) {
-				toast.error('Please select at least one period');
-				return;
-			}
+		if (selectedSlotIds.length === 0) {
+			toast.error(t('timetable.selectAtLeastOnePeriod') || 'Please select at least one period');
+			return;
+		}
 
-			if (!allYear && selectedDays.length === 0) {
-				toast.error('Please select at least one day');
-				return;
-			}
+		if (!allYear && selectedDays.length === 0) {
+			toast.error(t('timetable.selectAtLeastOneDay') || 'Please select at least one day');
+			return;
+		}
 
-			if (filteredAssignments.length === 0) {
-				toast.error('No teacher-subject assignments found for the selected classes. Please assign teachers to subjects first.');
-				return;
-			}
+		if (filteredAssignments.length === 0) {
+			toast.error(t('timetable.noAssignmentsFound') || 'No teacher-subject assignments found for the selected classes. Please assign teachers to subjects first.');
+			return;
+		}
 
 			const chosenSlots = availableSlots.filter((s) => 
 				selectedSlotIds.includes(s.id) && 
@@ -311,25 +312,25 @@ export function TimetableGenerator() {
 				s.end_time.trim() !== ''
 			);
 
-			if (chosenSlots.length === 0) {
-				toast.error('No valid schedule slots found. Please ensure all selected slots have start and end times configured.');
-				return;
-			}
+		if (chosenSlots.length === 0) {
+			toast.error(t('timetable.noValidSlotsFound') || 'No valid schedule slots found. Please ensure all selected slots have start and end times configured.');
+			return;
+		}
 
-			// Build solver inputs
-			const assignments: Assignment[] = filteredAssignments.map((a) => ({
-				teacherId: a.teacher_id,
-				classAcademicYearId: a.class_academic_year_id,
-				subjectId: a.subject_id,
-				teacherName: teacherMap.get(a.teacher_id) || '',
-				className: classMap.get(a.class_academic_year_id) || '',
-				subjectName: a.subject?.name || '',
-			}));
+		// Build solver inputs
+		const assignments: Assignment[] = filteredAssignments.map((a) => ({
+			teacherId: a.teacher_id,
+			classAcademicYearId: a.class_academic_year_id,
+			subjectId: a.subject_id,
+			teacherName: teacherMap.get(a.teacher_id) || '',
+			className: classMap.get(a.class_academic_year_id) || '',
+			subjectName: a.subject?.name || '',
+		}));
 
-			if (assignments.length === 0) {
-				toast.error('No assignments to schedule');
-				return;
-			}
+		if (assignments.length === 0) {
+			toast.error(t('timetable.noAssignmentsToSchedule') || 'No assignments to schedule');
+			return;
+		}
 
 			// Compute per-class capacity (handle overbooked classes)
 			const perClassCount: Record<string, number> = {};
@@ -343,7 +344,7 @@ export function TimetableGenerator() {
 				capacity[classId] = count > perClassSlots ? 2 : 1;
 			}
 
-			toast.info('Generating timetable... This may take a few seconds.');
+			toast.info(t('timetable.generatingTimetable') || 'Generating timetable... This may take a few seconds.');
 
 			const solver = new TimetableSolver(
 				assignments,
@@ -382,15 +383,18 @@ export function TimetableGenerator() {
 			setSaveEntries(saveRows);
 			setUnscheduledCount(result.unscheduled.length);
 
-			if (result.unscheduled.length > 0) {
-				toast.warning(`Timetable generated, but ${result.unscheduled.length} assignment(s) could not be scheduled.`);
-			} else {
-				toast.success(`Timetable generated successfully with ${entryRows.length} scheduled entries.`);
-			}
-		} catch (error) {
-			console.error('Error generating timetable:', error);
-			toast.error(`Failed to generate timetable: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		if (result.unscheduled.length > 0) {
+			toast.warning((t('timetable.generatedWithUnscheduled') || 'Timetable generated, but {count} assignment(s) could not be scheduled.').replace('{count}', result.unscheduled.length.toString()));
+		} else {
+			toast.success((t('timetable.generatedSuccessfully') || 'Timetable generated successfully with {count} scheduled entries.').replace('{count}', entryRows.length.toString()));
 		}
+	} catch (error) {
+		if (import.meta.env.DEV) {
+			console.error('Error generating timetable:', error);
+		}
+		const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+		toast.error((t('timetable.generateFailed') || 'Failed to generate timetable: {error}').replace('{error}', errorMessage));
+	}
 	};
 
 	// Display helpers
@@ -492,8 +496,10 @@ export function TimetableGenerator() {
 		}
 		
 		if (!newDay || !newSlotId) {
-			console.error('Failed to parse cell ID:', overId);
-			toast.error('Failed to parse drop target. Please try again.');
+			if (import.meta.env.DEV) {
+				console.error('Failed to parse cell ID:', overId);
+			}
+			toast.error(t('timetable.parseDropTargetError') || 'Failed to parse drop target. Please try again.');
 			return;
 		}
 		
@@ -506,7 +512,7 @@ export function TimetableGenerator() {
 
 		// Check if the move is valid (no conflicts)
 		if (!canMoveEntry(entryIndex, newSlotId, newDayTyped)) {
-			toast.error('Cannot move: This would create a conflict with another assignment');
+			toast.error(t('timetable.moveConflictError') || 'Cannot move: This would create a conflict with another assignment');
 			return;
 		}
 
@@ -540,13 +546,13 @@ export function TimetableGenerator() {
 			});
 		});
 
-		toast.success('Timetable entry moved successfully');
+		toast.success(t('timetable.entryMovedSuccessfully') || 'Timetable entry moved successfully');
 	};
 
 	// Export and Print functions
 	const handleExportExcel = () => {
 		if (entries.length === 0) {
-			toast.error('No timetable to export. Please generate a timetable first.');
+			toast.error(t('timetable.noTimetableToExport') || 'No timetable to export. Please generate a timetable first.');
 			return;
 		}
 
@@ -559,8 +565,8 @@ export function TimetableGenerator() {
 			// Teacher View Sheet
 			const teacherRows: Array<Array<string | number>> = [];
 			// Add school name if available
-			if (school?.school_name) {
-				teacherRows.push([school.school_name || '']);
+			if (school?.schoolName) {
+				teacherRows.push([school.schoolName || '']);
 			}
 			teacherRows.push([t('timetable.teacherView') || 'Teacher View']);
 			teacherRows.push([]); // Blank row
@@ -584,8 +590,8 @@ export function TimetableGenerator() {
 			// Class View Sheet
 			const classRows: Array<Array<string | number>> = [];
 			// Add school name if available
-			if (school?.school_name) {
-				classRows.push([school.school_name || '']);
+			if (school?.schoolName) {
+				classRows.push([school.schoolName || '']);
 			}
 			classRows.push([t('timetable.classView') || 'Class View']);
 			classRows.push([]); // Blank row
@@ -609,21 +615,23 @@ export function TimetableGenerator() {
 
 			const fileName = `timetable_${new Date().toISOString().split('T')[0]}.xlsx`;
 			XLSX.writeFile(wb, fileName);
-			toast.success('Timetable exported to Excel successfully');
+			toast.success(t('timetable.exportedToExcelSuccessfully') || 'Timetable exported to Excel successfully');
 		} catch (error) {
-			console.error('Error exporting to Excel:', error);
-			toast.error('Failed to export timetable to Excel');
+			if (import.meta.env.DEV) {
+				console.error('Error exporting to Excel:', error);
+			}
+			toast.error(t('timetable.exportToExcelFailed') || 'Failed to export timetable to Excel');
 		}
 	};
 
 	const handleExportPdf = async () => {
 		if (entries.length === 0) {
-			toast.error('No timetable to export. Please generate a timetable first.');
+			toast.error(t('timetable.noTimetableToExport') || 'No timetable to export. Please generate a timetable first.');
 			return;
 		}
 
 		if (!school) {
-			toast.error('Please configure school branding first to export PDF.');
+			toast.error(t('timetable.configureBrandingForPdf') || 'Please configure school branding first to export PDF.');
 			return;
 		}
 
@@ -768,22 +776,24 @@ export function TimetableGenerator() {
 				// Add info for better Unicode handling
 				info: {
 					title: normalizeText(t('timetable.title') || 'Timetable'),
-					author: school?.school_name || '',
+					author: school?.schoolName || '',
 				},
 			};
 
 			const fileName = `timetable_${new Date().toISOString().split('T')[0]}.pdf`;
 			(pdfMake as any).createPdf(docDefinition).download(fileName);
-			toast.success('Timetable exported to PDF successfully');
+			toast.success(t('timetable.exportedToPdfSuccessfully') || 'Timetable exported to PDF successfully');
 		} catch (error) {
-			console.error('Error exporting to PDF:', error);
-			toast.error('Failed to export timetable to PDF');
+			if (import.meta.env.DEV) {
+				console.error('Error exporting to PDF:', error);
+			}
+			toast.error(t('timetable.exportToPdfFailed') || 'Failed to export timetable to PDF');
 		}
 	};
 
 	const handlePrint = () => {
 		if (entries.length === 0) {
-			toast.error('No timetable to print. Please generate a timetable first.');
+			toast.error(t('timetable.noTimetableToPrint') || 'No timetable to print. Please generate a timetable first.');
 			return;
 		}
 
@@ -865,8 +875,8 @@ export function TimetableGenerator() {
 		const tt = loadedTimetable;
 		
 		// Set the academic year if available (this will trigger schedule slots to load)
-		if (tt.timetable.academic_year_id && tt.timetable.academic_year_id !== selectedAcademicYearId) {
-			setSelectedAcademicYearId(tt.timetable.academic_year_id);
+		if (tt.timetable.academicYearId && tt.timetable.academicYearId !== selectedAcademicYearId) {
+			setSelectedAcademicYearId(tt.timetable.academicYearId);
 			// Wait for slots to load before setting selected slots
 			// This will be handled in the next effect run
 			return;
@@ -878,12 +888,12 @@ export function TimetableGenerator() {
 		let hasAllYear = false;
 		
 		(tt.entries || []).forEach((e) => {
-			if (e.schedule_slot_id) uniqueSlotIds.add(e.schedule_slot_id);
-			if (e.day_name) {
-				if (e.day_name === 'all_year') {
+			if (e.scheduleSlotId) uniqueSlotIds.add(e.scheduleSlotId);
+			if (e.dayName) {
+				if (e.dayName === 'all_year') {
 					hasAllYear = true;
 				} else {
-					uniqueDays.add(e.day_name);
+					uniqueDays.add(e.dayName);
 				}
 			}
 		});
@@ -929,7 +939,7 @@ export function TimetableGenerator() {
 		}));
 		setSaveEntries(saveRows);
 		setUnscheduledCount(0);
-		toast.success('Timetable loaded successfully');
+		toast.success(t('timetable.loadedSuccessfully') || 'Timetable loaded successfully');
 	}, [loadedTimetable?.timetable?.id, classMap, teacherMap, selectedAcademicYearId, scheduleSlots]);
 
 	return (
@@ -941,7 +951,7 @@ export function TimetableGenerator() {
 				<CardContent className="space-y-4">
 					{/* Academic Year Selector */}
 					<div className="space-y-2">
-						<Label className="font-semibold">Academic Year *</Label>
+						<Label className="font-semibold">{t('timetable.academicYearLabel') || 'Academic Year'} *</Label>
 						<Select 
 							value={selectedAcademicYearId || ''} 
 							onValueChange={(value) => {
@@ -951,18 +961,18 @@ export function TimetableGenerator() {
 							}}
 						>
 							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select Academic Year" />
+								<SelectValue placeholder={t('timetable.selectAcademicYear') || 'Select Academic Year'} />
 							</SelectTrigger>
 							<SelectContent>
 								{academicYears?.map((year) => (
 									<SelectItem key={year.id} value={year.id}>
-										{year.name} {year.is_current ? '(Current)' : ''}
+										{year.name} {year.isCurrent ? `(${t('timetable.current') || 'Current'})` : ''}
 									</SelectItem>
 								))}
 							</SelectContent>
 						</Select>
 						{!selectedAcademicYearId && (
-							<p className="text-sm text-muted-foreground">Please select an academic year to view classes</p>
+							<p className="text-sm text-muted-foreground">{t('timetable.selectAcademicYearHint') || 'Please select an academic year to view classes'}</p>
 						)}
 					</div>
 
@@ -981,7 +991,7 @@ export function TimetableGenerator() {
 												setSelectedClassIds([]);
 											}} 
 										/>
-										<span className="text-xs">Show only classes with assignments</span>
+										<span className="text-xs">{t('timetable.showOnlyClassesWithAssignments') || 'Show only classes with assignments'}</span>
 									</label>
 								</div>
 								<div className="border rounded-md p-3 h-64 overflow-auto space-y-2">
@@ -989,14 +999,14 @@ export function TimetableGenerator() {
 										filteredClasses.map((c) => (
 											<label key={c.id} className="flex gap-2 items-center">
 												<Checkbox checked={selectedClassIds.includes(c.id)} onCheckedChange={(v) => toggleClass(c.id, v)} />
-												<span>{c.class?.name || c.id}{c.section_name ? ` - ${c.section_name}` : ''}</span>
+												<span>{c.class?.name || c.id}{c.sectionName ? ` - ${c.sectionName}` : ''}</span>
 											</label>
 										))
 									) : (
 										<p className="text-sm text-muted-foreground">
 											{showOnlyClassesWithAssignments 
-												? 'No classes with teacher-subject assignments found for this academic year' 
-												: 'No classes found for this academic year'}
+												? (t('timetable.noClassesWithAssignments') || 'No classes with teacher-subject assignments found for this academic year')
+												: (t('timetable.noClassesFound') || 'No classes found for this academic year')}
 										</p>
 									)}
 								</div>
@@ -1016,7 +1026,7 @@ export function TimetableGenerator() {
 									{dayList.map((d) => (
 										<label key={d} className="flex items-center gap-2">
 											<Checkbox checked={selectedDays.includes(d)} onCheckedChange={(v) => toggleDay(d, v)} />
-											<span className="capitalize">{d}</span>
+											<span className="capitalize">{t(`timetable.days.${d}`) || d}</span>
 										</label>
 									))}
 								</div>
@@ -1107,11 +1117,11 @@ export function TimetableGenerator() {
 							<Button
 								onClick={() => {
 									if (saveEntries.length === 0) {
-										toast.error('No entries to save. Please generate a timetable first.');
+										toast.error(t('timetable.noEntriesToSave') || 'No entries to save. Please generate a timetable first.');
 										return;
 									}
 									if (!selectedAcademicYearId) {
-										toast.error('Please select an academic year before saving.');
+										toast.error(t('timetable.selectAcademicYearBeforeSave') || 'Please select an academic year before saving.');
 										return;
 									}
 									setSaveOpen(true);
@@ -1144,7 +1154,7 @@ export function TimetableGenerator() {
 															{(allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList)).flatMap((day) =>
 																headerSlots.map((s) => (
 																	<th key={`${day}-${s.id}`} className="p-2 border">
-																		<div className="text-xs capitalize">{day}</div>
+																		<div className="text-xs capitalize">{t(`timetable.days.${day}`) || day}</div>
 																		<div className="text-xs">{s.name}</div>
 																		<div className="text-[10px]">{s.start_time} - {s.end_time}</div>
 																	</th>
@@ -1190,7 +1200,7 @@ export function TimetableGenerator() {
 												</table>
 											) : (
 												<div className="text-center py-8 text-muted-foreground">
-													No schedule slots selected. Please select periods to view the timetable.
+													{t('timetable.noSlotsSelected') || 'No schedule slots selected. Please select periods to view the timetable.'}
 												</div>
 											)}
 										</div>
@@ -1203,10 +1213,10 @@ export function TimetableGenerator() {
 										<thead>
 											<tr className="bg-primary text-primary-foreground">
 												<th className="p-2 border">{t('timetable.class') || 'Class'}</th>
-												{(allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList)).flatMap((day) =>
+													{(allYear ? (['all_year'] as DayName[]) : (selectedDays.length > 0 ? selectedDays : dayList)).flatMap((day) =>
 													headerSlots.map((s) => (
 														<th key={`${day}-${s.id}`} className="p-2 border">
-															<div className="text-xs capitalize">{day}</div>
+															<div className="text-xs capitalize">{t(`timetable.days.${day}`) || day}</div>
 															<div className="text-xs">{s.name}</div>
 															<div className="text-[10px]">{s.start_time} - {s.end_time}</div>
 														</th>

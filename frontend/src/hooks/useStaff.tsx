@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { staffApi, staffTypesApi, staffDocumentsApi } from '@/lib/api/client';
@@ -249,10 +249,10 @@ export const useCreateStaff = () => {
       }
       await queryClient.invalidateQueries({ queryKey: ['staff-stats'] });
       await queryClient.refetchQueries({ queryKey: ['staff-stats'] });
-      toast.success('Staff member created successfully');
+      showToast.success('toast.staff.created');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create staff member');
+      showToast.error(error.message || 'toast.staff.createFailed');
     },
   });
 };
@@ -277,10 +277,10 @@ export const useUpdateStaff = () => {
       await queryClient.refetchQueries({ queryKey: ['staff'] });
       await queryClient.invalidateQueries({ queryKey: ['staff-stats'] });
       await queryClient.refetchQueries({ queryKey: ['staff-stats'] });
-      toast.success('Staff member updated successfully');
+      showToast.success('toast.staff.updated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update staff member');
+      showToast.error(error.message || 'toast.staff.updateFailed');
     },
   });
 };
@@ -299,10 +299,10 @@ export const useDeleteStaff = () => {
       await queryClient.refetchQueries({ queryKey: ['staff'] });
       await queryClient.invalidateQueries({ queryKey: ['staff-stats'] });
       await queryClient.refetchQueries({ queryKey: ['staff-stats'] });
-      toast.success('Staff member deleted successfully');
+      showToast.success('toast.staff.deleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete staff member');
+      showToast.error(error.message || 'toast.staff.deleteFailed');
     },
   });
 };
@@ -411,10 +411,10 @@ export const useCreateStaffType = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-types'] });
-      toast.success('Staff type created successfully');
+      showToast.success('toast.staffTypes.created');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create staff type');
+      showToast.error(error.message || 'toast.staffTypes.createFailed');
     },
   });
 };
@@ -440,10 +440,10 @@ export const useUpdateStaffType = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-types'] });
       queryClient.invalidateQueries({ queryKey: ['staff'] });
-      toast.success('Staff type updated successfully');
+      showToast.success('toast.staffTypes.updated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update staff type');
+      showToast.error(error.message || 'toast.staffTypes.updateFailed');
     },
   });
 };
@@ -463,10 +463,10 @@ export const useDeleteStaffType = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-types'] });
-      toast.success('Staff type deleted successfully');
+      showToast.success('toast.staffTypes.deleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete staff type');
+      showToast.error(error.message || 'toast.staffTypes.deleteFailed');
     },
   });
 };
@@ -509,10 +509,10 @@ export const useDeleteStaffDocument = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-files'] });
-      toast.success('Document deleted successfully');
+      showToast.success('toast.staff.documentDeleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete document');
+      showToast.error(error.message || 'toast.staff.documentDeleteFailed');
     },
   });
 };

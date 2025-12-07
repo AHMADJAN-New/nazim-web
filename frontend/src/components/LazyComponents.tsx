@@ -29,6 +29,14 @@ export const Students = lazy(() => import('@/pages/Students').then(module => ({ 
 export const StudentAdmissions = lazy(() => import('@/pages/StudentAdmissions').then(module => ({ default: module.StudentAdmissions })));
 export const StudentReport = lazy(() => import('@/pages/StudentReport'));
 export const StudentAdmissionsReport = lazy(() => import('@/pages/StudentAdmissionsReport'));
+export const ShortTermCourses = lazy(() => import('@/pages/ShortTermCourses'));
+export const CourseStudents = lazy(() => import('@/pages/CourseStudents'));
+export const CourseStudentReports = lazy(() => import('@/pages/CourseStudentReports'));
+export const CourseDashboard = lazy(() => import('@/pages/CourseDashboard'));
+export const CourseAttendance = lazy(() => import('@/pages/CourseAttendance'));
+export const CourseCertificates = lazy(() => import('@/pages/CourseCertificates'));
+export const CertificateTemplates = lazy(() => import('@/pages/CertificateTemplates'));
+export const CourseDocuments = lazy(() => import('@/pages/CourseDocuments'));
 export const StaffReport = lazy(() => import('@/pages/StaffReport'));
 export const HostelManagement = lazy(() => import('@/pages/HostelManagement').then(module => ({ default: module.HostelManagement })));
 export const HostelReports = lazy(() => import('@/pages/HostelReports').then(module => ({ default: module.HostelReports })));
@@ -47,6 +55,7 @@ export const Assets = lazy(() => import('@/pages/Assets').then(module => ({ defa
 export const AssetAssignments = lazy(() => import('@/pages/AssetAssignments').then(module => ({ default: module.default })));
 export const AssetReports = lazy(() => import('@/pages/AssetReports').then(module => ({ default: module.default })));
 export const AssetCategories = lazy(() => import('@/pages/AssetCategories').then(module => ({ default: module.default })));
+export const TranslationEditor = lazy(() => import('@/pages/TranslationEditor'));
 
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';

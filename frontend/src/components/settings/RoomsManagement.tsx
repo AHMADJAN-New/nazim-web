@@ -105,7 +105,7 @@ export function RoomsManagement() {
   // Client-side filtering for search
   // Note: When search is active, we filter the current page's results
   // For full search across all pages, consider implementing server-side search
-  const filteredRooms = rooms?.filter((room) => {
+  const filteredRooms = (rooms as unknown as Room[] | undefined)?.filter((room: Room) => {
     if (!searchQuery) return true; // Show all if no search query
     const query = (searchQuery || '').toLowerCase();
     const matchesSearch =
@@ -119,24 +119,24 @@ export function RoomsManagement() {
   const columns: ColumnDef<Room>[] = [
     {
       accessorKey: 'roomNumber',
-      header: 'Room Number',
+      header: t('settings.rooms.roomNumber'),
       cell: ({ row }) => <span className="font-medium">{row.original.roomNumber}</span>,
     },
     {
       accessorKey: 'building',
-      header: 'Building',
-      cell: ({ row }) => row.original.building?.buildingName || 'N/A',
+      header: t('settings.rooms.building'),
+      cell: ({ row }) => row.original.building?.buildingName || t('settings.rooms.na'),
     },
     {
       accessorKey: 'staff',
-      header: 'Staff/Warden',
+      header: t('settings.rooms.staffWarden'),
       cell: ({ row }) => row.original.staff?.profile?.fullName || (
-        <span className="text-muted-foreground">No staff assigned</span>
+        <span className="text-muted-foreground">{t('settings.rooms.noStaffAssigned')}</span>
       ),
     },
     {
       accessorKey: 'createdAt',
-      header: 'Created At',
+      header: t('settings.rooms.createdAt'),
       cell: ({ row }) => {
         const date = row.original.createdAt;
         return date instanceof Date
@@ -146,7 +146,7 @@ export function RoomsManagement() {
     },
     {
       id: 'actions',
-      header: () => <div className="text-right">Actions</div>,
+      header: () => <div className="text-right">{t('common.actions')}</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
           {hasUpdatePermission && (
@@ -192,7 +192,7 @@ export function RoomsManagement() {
 
   const handleOpenDialog = (roomId?: string) => {
     if (roomId) {
-      const room = rooms?.find((r) => r.id === roomId);
+      const room = (rooms as unknown as Room[] | undefined)?.find((r: Room) => r.id === roomId);
       if (room) {
         reset({
           room_number: room.roomNumber,
@@ -272,12 +272,12 @@ export function RoomsManagement() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DoorOpen className="h-5 w-5" />
-              Rooms Management
+              {t('settings.rooms.management')}
             </CardTitle>
-            <CardDescription>Manage rooms, assign buildings and staff</CardDescription>
+            <CardDescription>{t('settings.rooms.title')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <LoadingSpinner size="lg" text="Loading rooms..." />
+            <LoadingSpinner size="lg" text={t('settings.rooms.loadingRooms')} />
           </CardContent>
         </Card>
       </div>
@@ -292,14 +292,14 @@ export function RoomsManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <DoorOpen className="h-5 w-5" />
-                Rooms Management
+                {t('settings.rooms.management')}
               </CardTitle>
-              <CardDescription>Manage rooms, assign buildings and staff</CardDescription>
+              <CardDescription>{t('settings.rooms.title')}</CardDescription>
             </div>
             {hasCreatePermission && (
               <Button onClick={() => handleOpenDialog()}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Room
+                {t('settings.rooms.addRoom')}
               </Button>
             )}
           </div>
@@ -309,7 +309,7 @@ export function RoomsManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by room number, building, or staff..."
+                placeholder={t('settings.rooms.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -327,7 +327,7 @@ export function RoomsManagement() {
                         {header.isPlaceholder
                           ? null
                           : typeof header.column.columnDef.header === 'function'
-                          ? header.column.columnDef.header({ column: header.column })
+                          ? header.column.columnDef.header({ column: header.column, header, table: table })
                           : header.column.columnDef.header}
                       </TableHead>
                     ))}
@@ -338,7 +338,7 @@ export function RoomsManagement() {
                 {table.getRowModel().rows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
-                      {searchQuery ? 'No rooms found matching your search' : 'No rooms found. Add your first room.'}
+                      {searchQuery ? t('settings.rooms.noRoomsFound') : t('settings.rooms.noRoomsMessage')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -346,9 +346,9 @@ export function RoomsManagement() {
                     <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
-                          {cell.column.columnDef.cell
-                            ? cell.column.columnDef.cell({ row })
-                            : null}
+                          {cell.column.columnDef.cell && typeof cell.column.columnDef.cell === 'function'
+                            ? cell.column.columnDef.cell({ row, column: cell.column, cell, getValue: cell.getValue, renderValue: cell.renderValue, table: table })
+                            : cell.column.columnDef.cell}
                         </TableCell>
                       ))}
                     </TableRow>
@@ -376,35 +376,35 @@ export function RoomsManagement() {
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>
-                {selectedRoom ? 'Edit Room' : 'Add New Room'}
+                {selectedRoom ? t('settings.rooms.editRoom') : t('settings.rooms.addRoom')}
               </DialogTitle>
               <DialogDescription>
                 {selectedRoom
-                  ? 'Update the room information below.'
-                  : 'Enter the room details to add a new room.'}
+                  ? t('settings.rooms.update')
+                  : t('settings.rooms.create')}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="room_number">Room Number</Label>
+                <Label htmlFor="room_number">{t('settings.rooms.roomNumber')}</Label>
                 <Input
                   id="room_number"
                   {...register('room_number')}
-                  placeholder="Enter room number"
+                  placeholder={t('settings.rooms.roomNumber')}
                 />
                 {errors.room_number && (
                   <p className="text-sm text-destructive">{errors.room_number.message}</p>
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="building_id">Building</Label>
+                <Label htmlFor="building_id">{t('settings.rooms.building')}</Label>
                 <Controller
                   name="building_id"
                   control={control}
                   render={({ field }) => (
                     <Select onValueChange={field.onChange} value={field.value}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a building" />
+                        <SelectValue placeholder={t('settings.rooms.selectBuilding')} />
                       </SelectTrigger>
                       <SelectContent>
                         {buildings?.map((building) => (
@@ -421,7 +421,7 @@ export function RoomsManagement() {
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="staff_id">Staff/Warden (Optional)</Label>
+                <Label htmlFor="staff_id">{t('settings.rooms.staffWardenOptional')}</Label>
                 <Controller
                   name="staff_id"
                   control={control}
@@ -431,13 +431,13 @@ export function RoomsManagement() {
                       value={field.value || 'none'}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select staff member (optional)" />
+                        <SelectValue placeholder={t('settings.rooms.selectStaff')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">No staff assigned</SelectItem>
+                        <SelectItem value="none">{t('settings.rooms.noStaffAssigned')}</SelectItem>
                         {staff?.map((staffMember) => (
                           <SelectItem key={staffMember.id} value={staffMember.id}>
-                            {staffMember.profile?.fullName || `Staff ${staffMember.employeeId}`}
+                            {staffMember.profile?.fullName || `${t('settings.rooms.staffWarden')} ${staffMember.employeeId}`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -448,10 +448,10 @@ export function RoomsManagement() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createRoom.isPending || updateRoom.isPending}>
-                {selectedRoom ? 'Update' : 'Create'}
+                {selectedRoom ? t('settings.rooms.update') : t('settings.rooms.create')}
               </Button>
             </DialogFooter>
           </form>
@@ -462,22 +462,22 @@ export function RoomsManagement() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the room
+              {t('settings.rooms.deleteConfirm')}
               {selectedRoom &&
                 rooms?.find((r) => r.id === selectedRoom) &&
-                ` "${rooms.find((r) => r.id === selectedRoom)?.roomNumber}"`}
-              . If this room is in use, the deletion will fail.
+                ` "${(rooms as unknown as Room[] | undefined)?.find((r: Room) => r.id === selectedRoom)?.roomNumber}"`}
+              {t('settings.rooms.deleteConfirmRooms')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

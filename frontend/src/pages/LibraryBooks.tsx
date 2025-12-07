@@ -47,6 +47,7 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { useLanguage } from '@/hooks/useLanguage';
+import { cn } from '@/lib/utils';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -69,7 +70,7 @@ const bookSchema = z.object({
 type BookFormData = z.infer<typeof bookSchema>;
 
 export default function LibraryBooks() {
-    const { t } = useLanguage();
+    const { t, isRTL } = useLanguage();
     const hasCreatePermission = useHasPermission('library_books.create');
     const hasUpdatePermission = useHasPermission('library_books.update');
     const hasDeletePermission = useHasPermission('library_books.delete');
@@ -93,6 +94,7 @@ export default function LibraryBooks() {
     } = useLibraryBooks(true, searchQuery);
     const { data: categories } = useLibraryCategories();
     const { data: allLoans } = useLibraryLoans(false); // Get all loans for history
+    const typedAllLoans = (allLoans as LibraryLoan[]) || [];
     const createBook = useCreateLibraryBook();
     const updateBook = useUpdateLibraryBook();
     const deleteBook = useDeleteLibraryBook();
@@ -253,12 +255,12 @@ export default function LibraryBooks() {
         },
         {
             accessorKey: 'author',
-            header: 'Author',
+            header: t('library.author'),
             cell: ({ row }) => row.original.author || '—',
         },
         {
             accessorKey: 'category',
-            header: 'Category',
+            header: t('library.category'),
             cell: ({ row }) => {
                 const book = row.original;
                 const category = Array.isArray(categories)
@@ -281,7 +283,7 @@ export default function LibraryBooks() {
         },
         {
             accessorKey: 'copies',
-            header: 'Copies',
+            header: t('library.copies'),
             cell: ({ row }) => {
                 const book = row.original;
                 return (
@@ -298,7 +300,7 @@ export default function LibraryBooks() {
         },
         {
             accessorKey: 'price',
-            header: 'Price',
+            header: t('library.price'),
             cell: ({ row }) => {
                 const price = row.original.price ?? 0;
                 const numPrice = typeof price === 'string' ? parseFloat(price) : (typeof price === 'number' ? price : 0);
@@ -307,11 +309,11 @@ export default function LibraryBooks() {
         },
         {
             id: 'actions',
-            header: () => <div className="text-right">Actions</div>,
+            header: () => <div className={cn("text-right", isRTL && "text-left")}>{t('common.actions')}</div>,
             cell: ({ row }) => {
                 const book = row.original;
                 return (
-                    <div className="flex justify-end gap-2">
+                    <div className={cn("flex gap-2", isRTL ? "justify-start" : "justify-end")}>
                         <Button
                             variant="ghost"
                             size="sm"
@@ -319,7 +321,7 @@ export default function LibraryBooks() {
                                 setViewBook(book);
                                 setIsViewPanelOpen(true);
                             }}
-                            title="View Details"
+                            title={t('library.viewDetails')}
                         >
                             <Eye className="h-4 w-4" />
                         </Button>
@@ -327,7 +329,7 @@ export default function LibraryBooks() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleAddCopy(book.id)}
-                            title="Add Copy"
+                            title={t('library.addCopy')}
                         >
                             <Copy className="h-4 w-4" />
                         </Button>
@@ -353,7 +355,7 @@ export default function LibraryBooks() {
                 );
             },
         },
-    ], [categories, hasUpdatePermission, hasDeletePermission]);
+    ], [categories, hasUpdatePermission, hasDeletePermission, t, isRTL]);
 
     // Use DataTable hook for pagination integration
     const { table } = useDataTable({
@@ -387,23 +389,23 @@ export default function LibraryBooks() {
                 <div className="flex items-center gap-3">
                     <BookOpen className="h-8 w-8" />
                     <div>
-                        <h1 className="text-2xl font-semibold">Library Books</h1>
-                        <p className="text-sm text-muted-foreground">Manage your library book collection</p>
+                        <h1 className="text-2xl font-semibold">{t('library.books')}</h1>
+                        <p className="text-sm text-muted-foreground">{t('library.subtitle')}</p>
                     </div>
                 </div>
                 {hasCreatePermission && (
                     <Button onClick={() => handleOpenDialog()}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Book
+                        {t('library.addBook')}
                     </Button>
                 )}
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Books</CardTitle>
+                    <CardTitle>{t('library.books')}</CardTitle>
                     <CardDescription>
-                        {pagination ? `${pagination.total} total books` : `${Array.isArray(books) ? books.length : 0} total books`}
+                        {pagination ? `${pagination.total} ${t('library.booksLabel')}` : `${Array.isArray(books) ? books.length : 0} ${t('library.booksLabel')}`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -415,7 +417,7 @@ export default function LibraryBooks() {
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <Input
                                         id="search"
-                                        placeholder="Search by title, author, ISBN, or book number..."
+                                        placeholder={t('library.searchBookPlaceholder')}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className="pl-10"
@@ -429,7 +431,7 @@ export default function LibraryBooks() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Categories</SelectItem>
+                                        <SelectItem value="all">{t('library.allCategories')}</SelectItem>
                                         {Array.isArray(categories) && categories.map((cat) => (
                                             <SelectItem key={cat.id} value={cat.id}>
                                                 {cat.name}
@@ -475,12 +477,12 @@ export default function LibraryBooks() {
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>
-                            {selectedBook ? 'Edit Book' : 'Add New Book'}
+                            {selectedBook ? t('library.editBookTitle') : t('library.addNewBookTitle')}
                         </DialogTitle>
                         <DialogDescription>
                             {selectedBook
-                                ? 'Update the book information below.'
-                                : 'Add a new book to your library collection.'}
+                                ? t('library.updateBookInfo')
+                                : t('library.addNewBookInfo')}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit(onSubmit)}>
@@ -488,23 +490,23 @@ export default function LibraryBooks() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label htmlFor="title">
-                                        Title <span className="text-destructive">*</span>
+                                        {t('library.bookTitle')} <span className="text-destructive">*</span>
                                     </Label>
                                     <Input
                                         id="title"
                                         {...register('title')}
-                                        placeholder="Enter book title"
+                                        placeholder={t('library.enterBookTitle')}
                                     />
                                     {errors.title && (
                                         <p className="text-sm text-destructive mt-1">{errors.title.message}</p>
                                     )}
                                 </div>
                                 <div>
-                                    <Label htmlFor="author">Author</Label>
+                                    <Label htmlFor="author">{t('library.author')}</Label>
                                     <Input
                                         id="author"
                                         {...register('author')}
-                                        placeholder="Author name"
+                                        placeholder={t('library.authorPlaceholder')}
                                     />
                                     {errors.author && (
                                         <p className="text-sm text-destructive mt-1">{errors.author.message}</p>
@@ -514,22 +516,22 @@ export default function LibraryBooks() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="isbn">ISBN</Label>
+                                    <Label htmlFor="isbn">{t('library.isbn')}</Label>
                                     <Input
                                         id="isbn"
                                         {...register('isbn')}
-                                        placeholder="ISBN number"
+                                        placeholder={t('library.isbnPlaceholder')}
                                     />
                                     {errors.isbn && (
                                         <p className="text-sm text-destructive mt-1">{errors.isbn.message}</p>
                                     )}
                                 </div>
                                 <div>
-                                    <Label htmlFor="book_number">Book Number</Label>
+                                    <Label htmlFor="book_number">{t('library.bookNumber')}</Label>
                                     <Input
                                         id="book_number"
                                         {...register('book_number')}
-                                        placeholder="Unique book number"
+                                        placeholder={t('library.bookNumberPlaceholder')}
                                     />
                                     {errors.book_number && (
                                         <p className="text-sm text-destructive mt-1">{errors.book_number.message}</p>
@@ -539,7 +541,7 @@ export default function LibraryBooks() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="category_id">Category</Label>
+                                    <Label htmlFor="category_id">{t('library.category')}</Label>
                                     <Controller
                                         control={control}
                                         name="category_id"
@@ -549,7 +551,7 @@ export default function LibraryBooks() {
                                                 onValueChange={(value) => field.onChange(value || null)}
                                             >
                                                 <SelectTrigger id="category_id">
-                                                    <SelectValue placeholder="Select category (optional)" />
+                                                    <SelectValue placeholder={t('library.selectCategoryOptional')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {Array.isArray(categories) && categories.map((cat) => (
@@ -559,7 +561,7 @@ export default function LibraryBooks() {
                                                     ))}
                                                     {(!Array.isArray(categories) || categories.length === 0) && (
                                                         <SelectItem value="no-categories" disabled>
-                                                            No categories available
+                                                            {t('library.noCategoriesAvailable')}
                                                         </SelectItem>
                                                     )}
                                                 </SelectContent>
@@ -568,11 +570,11 @@ export default function LibraryBooks() {
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="volume">Volume</Label>
+                                    <Label htmlFor="volume">{t('library.volume')}</Label>
                                     <Input
                                         id="volume"
                                         {...register('volume')}
-                                        placeholder="Volume number"
+                                        placeholder={t('library.volumePlaceholder')}
                                     />
                                     {errors.volume && (
                                         <p className="text-sm text-destructive mt-1">{errors.volume.message}</p>
@@ -581,11 +583,11 @@ export default function LibraryBooks() {
                             </div>
 
                             <div>
-                                <Label htmlFor="description">Description</Label>
+                                <Label htmlFor="description">{t('library.description')}</Label>
                                 <Textarea
                                     id="description"
                                     {...register('description')}
-                                    placeholder="Book description"
+                                    placeholder={t('library.descriptionPlaceholder')}
                                     rows={3}
                                 />
                                 {errors.description && (
@@ -595,7 +597,7 @@ export default function LibraryBooks() {
 
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
-                                    <Label htmlFor="price">Price</Label>
+                                    <Label htmlFor="price">{t('library.price')}</Label>
                                     <Input
                                         id="price"
                                         type="number"
@@ -608,7 +610,7 @@ export default function LibraryBooks() {
                                     )}
                                 </div>
                                 <div>
-                                    <Label htmlFor="default_loan_days">Default Loan Days</Label>
+                                    <Label htmlFor="default_loan_days">{t('library.defaultLoanDays')}</Label>
                                     <Input
                                         id="default_loan_days"
                                         type="number"
@@ -621,7 +623,7 @@ export default function LibraryBooks() {
                                 </div>
                                 {!selectedBook && (
                                     <div>
-                                        <Label htmlFor="initial_copies">Initial Copies</Label>
+                                        <Label htmlFor="initial_copies">{t('library.initialCopies')}</Label>
                                         <Input
                                             id="initial_copies"
                                             type="number"
@@ -637,13 +639,13 @@ export default function LibraryBooks() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                                Cancel
+                                {t('common.cancel')}
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={createBook.isPending || updateBook.isPending}
                             >
-                                {selectedBook ? 'Update' : 'Create'}
+                                {selectedBook ? t('library.update') : t('library.create')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -654,20 +656,21 @@ export default function LibraryBooks() {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('library.areYouSure')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will delete the book "{selectedBook?.title}". All copies and loan records will be affected.
-                            This action cannot be undone.
+                            {t('library.deleteBookConfirm').replace('{title}', selectedBook?.title || '')}
+                            {' '}
+                            {t('library.cannotUndo')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDelete}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             disabled={deleteBook.isPending}
                         >
-                            {deleteBook.isPending ? 'Deleting...' : 'Delete'}
+                            {deleteBook.isPending ? t('library.deleting') : t('common.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -688,8 +691,8 @@ export default function LibraryBooks() {
                             
                             <Tabs defaultValue="info" className="mt-6">
                                 <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="info">Book Information</TabsTrigger>
-                                    <TabsTrigger value="history">History</TabsTrigger>
+                                    <TabsTrigger value="info">{t('library.bookInformation')}</TabsTrigger>
+                                    <TabsTrigger value="history">{t('library.history')}</TabsTrigger>
                                 </TabsList>
                                 
                                 <TabsContent value="info" className="space-y-4 mt-4">
@@ -786,7 +789,7 @@ export default function LibraryBooks() {
                                 </TabsContent>
                                 
                                 <TabsContent value="history" className="space-y-4 mt-4">
-                                    <BookHistoryPanel bookId={viewBook.id} allLoans={allLoans} />
+                                    <BookHistoryPanel bookId={viewBook.id} allLoans={typedAllLoans} />
                                 </TabsContent>
                             </Tabs>
                         </>

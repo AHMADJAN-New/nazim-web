@@ -636,13 +636,13 @@ export function ClassesManagement() {
                                     </div>
                                     <Select value={gradeLevelFilter} onValueChange={setGradeLevelFilter}>
                                         <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Filter by grade" />
+                                            <SelectValue placeholder={t('common.filterByGrade')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All Grades</SelectItem>
+                                            <SelectItem value="all">{t('common.all')} {t('academic.classes.gradeLevel')}</SelectItem>
                                             {Array.from({ length: 13 }, (_, i) => (
                                                 <SelectItem key={i} value={i.toString()}>
-                                                    Grade {i}
+                                                    {t('academic.classes.gradeLevel')} {i}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -960,7 +960,7 @@ export function ClassesManagement() {
                                         min="0"
                                         max="12"
                                         {...registerClass('grade_level', { valueAsNumber: true })}
-                                        placeholder="e.g., 1, 2, 3"
+                                        placeholder={t('common.gradeExample')}
                                     />
                                     {classErrors.grade_level && (
                                         <p className="text-sm text-destructive">{classErrors.grade_level.message}</p>
@@ -1102,7 +1102,7 @@ export function ClassesManagement() {
                                 <Input
                                     id="section_name"
                                     {...registerAssign('section_name')}
-                                    placeholder="e.g., Section A, Section B"
+                                    placeholder={t('common.sectionExample')}
                                 />
                                 {assignErrors.section_name && (
                                     <p className="text-sm text-destructive">{assignErrors.section_name.message}</p>
@@ -1124,7 +1124,7 @@ export function ClassesManagement() {
                                                 <SelectValue placeholder={t('academic.classes.selectRoom')} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">None</SelectItem>
+                                                <SelectItem value="none">{t('common.none')}</SelectItem>
                                                 {rooms?.map((room) => (
                                                     <SelectItem key={room.id} value={room.id}>
                                                         {room.roomNumber} {room.building && `(${room.building.buildingName})`}
@@ -1145,7 +1145,7 @@ export function ClassesManagement() {
                                     min="1"
                                     max="200"
                                     {...registerAssign('capacity', { valueAsNumber: true })}
-                                    placeholder="Override default capacity"
+                                    placeholder={t('common.overrideCapacity')}
                                 />
                                 {assignErrors.capacity && (
                                     <p className="text-sm text-destructive">{assignErrors.capacity.message}</p>
@@ -1249,18 +1249,18 @@ export function ClassesManagement() {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="bulk_sections">
-                                    {t('academic.classes.sectionsInput')} * (e.g., A, B, C, D)
+                                    {t('academic.classes.sectionsInput')} * ({t('common.example')}: A, B, C, D)
                                 </Label>
                                 <Input
                                     id="bulk_sections"
                                     {...registerBulkSections('sections')}
-                                    placeholder="A, B, C, D"
+                                    placeholder={`${t('common.example')}: A, B, C, D`}
                                 />
                                 {bulkSectionsErrors.sections && (
                                     <p className="text-sm text-destructive">{bulkSectionsErrors.sections.message}</p>
                                 )}
                                 <p className="text-xs text-muted-foreground">
-                                    Enter section names separated by commas. Existing sections will be skipped.
+                                    {t('common.sectionsInputHint')}
                                 </p>
                             </div>
                             <div className="grid gap-2">
@@ -1279,7 +1279,7 @@ export function ClassesManagement() {
                                                 <SelectValue placeholder={t('academic.classes.selectRoom')} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">None</SelectItem>
+                                                <SelectItem value="none">{t('common.none')}</SelectItem>
                                                 {rooms?.map((room) => (
                                                     <SelectItem key={room.id} value={room.id}>
                                                         {room.roomNumber} {room.building && `(${room.building.buildingName})`}
@@ -1300,7 +1300,7 @@ export function ClassesManagement() {
                                     min="1"
                                     max="200"
                                     {...registerBulkSections('default_capacity', { valueAsNumber: true })}
-                                    placeholder="Override default capacity for all sections"
+                                    placeholder={t('common.overrideCapacityAll')}
                                 />
                                 {bulkSectionsErrors.default_capacity && (
                                     <p className="text-sm text-destructive">{bulkSectionsErrors.default_capacity.message}</p>

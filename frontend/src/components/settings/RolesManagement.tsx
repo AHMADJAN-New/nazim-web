@@ -44,6 +44,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const roleSchema = z.object({
   name: z.string().min(1, 'Role name is required').max(255, 'Role name must be 255 characters or less'),
@@ -53,6 +54,7 @@ const roleSchema = z.object({
 type RoleFormData = z.infer<typeof roleSchema>;
 
 export function RolesManagement() {
+  const { t } = useLanguage();
   const { data: profile } = useProfile();
   const { data: roles = [], isLoading: rolesLoading } = useRoles();
   const hasReadPermission = useHasPermission('roles.read');
@@ -163,7 +165,7 @@ export function RolesManagement() {
         <Card>
           <CardContent className="p-6">
             <div className="text-center text-muted-foreground">
-              You do not have permission to view roles.
+              {t('roles.noPermission')}
             </div>
           </CardContent>
         </Card>
@@ -179,16 +181,16 @@ export function RolesManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Roles Management
+                {t('roles.title')}
               </CardTitle>
               <CardDescription>
-                Manage roles for your organization. Roles define what permissions users have.
+                {t('roles.subtitle')}
               </CardDescription>
             </div>
             {hasCreatePermission && (
               <Button onClick={() => handleOpenDialog()}>
                 <Plus className="h-4 w-4 mr-2" />
-                Create Role
+                {t('roles.createRole')}
               </Button>
             )}
           </div>
@@ -199,7 +201,7 @@ export function RolesManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search roles by name or description..."
+                placeholder={t('roles.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -209,23 +211,23 @@ export function RolesManagement() {
 
           {/* Roles Table */}
           {rolesLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading roles...</div>
+            <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
           ) : (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Organization</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('roles.name')}</TableHead>
+                    <TableHead>{t('roles.description')}</TableHead>
+                    <TableHead>{t('roles.organization')}</TableHead>
+                    <TableHead className="text-right">{t('roles.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredRoles.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center text-muted-foreground">
-                        {searchQuery ? 'No roles found matching your search' : 'No roles found'}
+                        {searchQuery ? t('roles.noRolesFound') : t('roles.noRolesMessage')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -235,13 +237,13 @@ export function RolesManagement() {
                           {role.name}
                         </TableCell>
                         <TableCell>
-                          {role.description || <span className="text-muted-foreground">No description</span>}
+                          {role.description || <span className="text-muted-foreground">{t('roles.noDescription')}</span>}
                         </TableCell>
                         <TableCell>
                           {role.organization_id ? (
-                            <Badge variant="outline">Organization-specific</Badge>
+                            <Badge variant="outline">{t('roles.organizationSpecific')}</Badge>
                           ) : (
-                            <Badge variant="secondary">Global</Badge>
+                            <Badge variant="secondary">{t('roles.global')}</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
@@ -281,7 +283,7 @@ export function RolesManagement() {
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Roles</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('roles.totalRoles')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{roles.length}</div>
@@ -289,7 +291,7 @@ export function RolesManagement() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Organization Roles</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('roles.organizationRoles')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -305,18 +307,18 @@ export function RolesManagement() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{isEditMode ? 'Edit Role' : 'Create Role'}</DialogTitle>
+            <DialogTitle>{isEditMode ? t('roles.editRole') : t('roles.createRoleDialog')}</DialogTitle>
             <DialogDescription>
-              {isEditMode ? 'Update role information' : 'Create a new role for your organization'}
+              {isEditMode ? t('roles.updateRoleInfo') : t('roles.createNewRole')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <Label htmlFor="name">Role Name *</Label>
+              <Label htmlFor="name">{t('roles.roleNameRequired')}</Label>
               <Input
                 id="name"
                 {...register('name')}
-                placeholder="e.g., manager, accountant"
+                placeholder={t('roles.roleNamePlaceholder')}
                 disabled={isEditMode} // Role names cannot be changed (would break existing assignments)
               />
               {errors.name && (
@@ -324,16 +326,16 @@ export function RolesManagement() {
               )}
               {isEditMode && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  Role names cannot be changed to maintain data integrity.
+                  {t('roles.roleNameCannotChange')}
                 </p>
               )}
             </div>
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('roles.description')}</Label>
               <Input
                 id="description"
                 {...register('description')}
-                placeholder="Describe what this role is for"
+                placeholder={t('roles.descriptionPlaceholder')}
               />
               {errors.description && (
                 <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
@@ -341,10 +343,10 @@ export function RolesManagement() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                Cancel
+                {t('roles.cancel')}
               </Button>
               <Button type="submit" disabled={createRole.isPending || updateRole.isPending}>
-                {isEditMode ? 'Update' : 'Create'} Role
+                {isEditMode ? t('roles.update') : t('roles.create')} {t('roles.name')}
               </Button>
             </DialogFooter>
           </form>
@@ -355,18 +357,15 @@ export function RolesManagement() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Role</AlertDialogTitle>
+            <AlertDialogTitle>{t('roles.deleteRole')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the role &quot;{selectedRole?.name}&quot;? This action cannot be undone.
-              <br />
-              <br />
-              <strong>Note:</strong> Roles that are assigned to users cannot be deleted.
+              {t('roles.deleteConfirm').replace('{name}', selectedRole?.name || '')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('roles.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Delete
+              {t('roles.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

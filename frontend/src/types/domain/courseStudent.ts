@@ -1,0 +1,43 @@
+import type { CourseCompletionStatus } from '@/types/api/courseStudent';
+
+export interface CourseStudent {
+  id: string;
+  organizationId: string;
+  courseId: string;
+  mainStudentId?: string | null;
+  admissionNo: string;
+  registrationDate: string;
+  completionStatus: CourseCompletionStatus;
+  completionDate?: string | null;
+  grade?: string | null;
+  certificateIssued: boolean;
+  certificateIssuedDate?: string | null;
+  feePaid: boolean;
+  feePaidDate?: string | null;
+  feeAmount?: number | null;
+  fullName: string;
+  fatherName?: string | null;
+  grandfatherName?: string | null;
+  motherName?: string | null;
+  gender?: string | null;
+  birthYear?: number | null;
+  birthDate?: string | null;
+  age?: number | null;
+  origProvince?: string | null;
+  origDistrict?: string | null;
+  origVillage?: string | null;
+  currProvince?: string | null;
+  currDistrict?: string | null;
+  currVillage?: string | null;
+  nationality?: string | null;
+  preferredLanguage?: string | null;
+  guardianName?: string | null;
+  guardianRelation?: string | null;
+  guardianPhone?: string | null;
+  homeAddress?: string | null;
+  picturePath?: string | null;
+  isOrphan?: boolean | null;
+  disabilityStatus?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

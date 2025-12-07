@@ -20,12 +20,14 @@ import {
 import { useStudents } from '@/hooks/useStudents';
 import { useStaff } from '@/hooks/useStaff';
 import type { LibraryBook } from '@/types/domain/library';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const defaultLoanDate = format(new Date(), 'yyyy-MM-dd');
 
 const findAvailableCopy = (book: LibraryBook) => book.copies?.find((copy) => copy.status === 'available');
 
 export default function Library() {
+  const { t } = useLanguage();
   const { data: books = [], isLoading } = useLibraryBooks();
   const { data: openLoans = [] } = useLibraryLoans(true);
   const { data: dueSoon = [] } = useDueSoonLoans(7);
@@ -108,8 +110,8 @@ export default function Library() {
         <div className="flex items-center gap-3">
           <BookOpen className="h-8 w-8" />
           <div>
-            <h1 className="text-2xl font-semibold">Library Management</h1>
-            <p className="text-sm text-muted-foreground">Manage books, copies, loans, and track returns</p>
+            <h1 className="text-2xl font-semibold">{t('library.title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('library.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -118,15 +120,15 @@ export default function Library() {
         <TabsList>
           <TabsTrigger value="books" className="flex items-center gap-2">
             <LibraryIcon className="h-4 w-4" />
-            Books
+            {t('library.books')}
           </TabsTrigger>
           <TabsTrigger value="loans" className="flex items-center gap-2">
             <BookCheck className="h-4 w-4" />
-            Loans
+            {t('library.loans')}
           </TabsTrigger>
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            Overview
+            {t('library.overview')}
           </TabsTrigger>
         </TabsList>
 
@@ -134,13 +136,13 @@ export default function Library() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle>Register Book</CardTitle>
-                <CardDescription>Add a new book to the library</CardDescription>
+                <CardTitle>{t('library.addBook')}</CardTitle>
+                <CardDescription>{t('library.addNewBookInfo')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <form className="space-y-3" onSubmit={handleBookSubmit}>
                   <div>
-                    <Label htmlFor="title">Title</Label>
+                    <Label htmlFor="title">{t('library.bookTitle')}</Label>
                     <Input
                       id="title"
                       value={bookForm.title}
@@ -150,30 +152,30 @@ export default function Library() {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label>Author</Label>
+                      <Label>{t('library.author')}</Label>
                       <Input value={bookForm.author} onChange={(e) => setBookForm({ ...bookForm, author: e.target.value })} />
                     </div>
                     <div>
-                      <Label>ISBN</Label>
+                      <Label>{t('library.isbn')}</Label>
                       <Input value={bookForm.isbn} onChange={(e) => setBookForm({ ...bookForm, isbn: e.target.value })} />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label>Category</Label>
+                      <Label>{t('library.category')}</Label>
                       <Input
                         value={bookForm.category}
                         onChange={(e) => setBookForm({ ...bookForm, category: e.target.value })}
                       />
                     </div>
                     <div>
-                      <Label>Volume</Label>
+                      <Label>{t('library.volume')}</Label>
                       <Input value={bookForm.volume} onChange={(e) => setBookForm({ ...bookForm, volume: e.target.value })} />
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <Label>Initial Copies</Label>
+                      <Label>{t('library.initialCopies')}</Label>
                       <Input
                         type="number"
                         min={0}
@@ -182,7 +184,7 @@ export default function Library() {
                       />
                     </div>
                     <div>
-                      <Label>Loan Days</Label>
+                      <Label>{t('library.defaultLoanDays')}</Label>
                       <Input
                         type="number"
                         min={1}
@@ -191,7 +193,7 @@ export default function Library() {
                       />
                     </div>
                     <div>
-                      <Label>Deposit</Label>
+                      <Label>{t('library.depositAmount')}</Label>
                       <Input
                         type="number"
                         min={0}
@@ -201,7 +203,7 @@ export default function Library() {
                     </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={createBook.isPending}>
-                    <Plus className="h-4 w-4 mr-2" /> Save Book
+                    <Plus className="h-4 w-4 mr-2" /> {t('library.saveBook')}
                   </Button>
                 </form>
               </CardContent>
@@ -209,28 +211,28 @@ export default function Library() {
 
             <Card className="lg:col-span-2">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Inventory</CardTitle>
-                <Badge variant="secondary">{Array.isArray(books) ? books.length : 0} books</Badge>
+                <CardTitle>{t('library.inventory')}</CardTitle>
+                <Badge variant="secondary">{Array.isArray(books) ? books.length : 0} {t('library.books')}</Badge>
               </CardHeader>
               <CardContent className="overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Copies</TableHead>
-                      <TableHead>Deposit</TableHead>
-                      <TableHead>Add Copy</TableHead>
+                      <TableHead>{t('library.bookTitle')}</TableHead>
+                      <TableHead>{t('library.copies')}</TableHead>
+                      <TableHead>{t('library.depositAmount')}</TableHead>
+                      <TableHead>{t('library.addCopy')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
                       <TableRow>
-                        <TableCell colSpan={4}>Loading...</TableCell>
+                        <TableCell colSpan={4}>{t('common.loading')}</TableCell>
                       </TableRow>
                     )}
                     {!isLoading && (!Array.isArray(books) || books.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={4}>No books registered yet.</TableCell>
+                        <TableCell colSpan={4}>{t('library.noBooksMessage')}</TableCell>
                       </TableRow>
                     )}
                     {Array.isArray(books) && books.map((book: any) => (
@@ -240,8 +242,8 @@ export default function Library() {
                           <div className="text-xs text-muted-foreground">{book.author}</div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">Available {book.available_copies ?? 0}</Badge>{' '}
-                          <Badge variant="secondary">Total {book.total_copies ?? 0}</Badge>
+                          <Badge variant="outline">{t('library.availableCopies')} {book.available_copies ?? 0}</Badge>{' '}
+                          <Badge variant="secondary">{t('library.totalCopies')} {book.total_copies ?? 0}</Badge>
                         </TableCell>
                         <TableCell>
                           {(() => {
@@ -257,7 +259,7 @@ export default function Library() {
                             onClick={() => createCopy.mutate({ book_id: book.id })}
                             disabled={createCopy.isPending}
                           >
-                            <Plus className="h-4 w-4 mr-1" /> Copy
+                            <Plus className="h-4 w-4 mr-1" /> {t('library.copy')}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -274,8 +276,8 @@ export default function Library() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Assign Book</CardTitle>
-                  <CardDescription>Loan a book to a student or staff member</CardDescription>
+                  <CardTitle>{t('library.assignBook')}</CardTitle>
+                  <CardDescription>{t('library.assignBookDescription')}</CardDescription>
                 </div>
                 <Badge>{availableBooks.length} available</Badge>
               </CardHeader>
@@ -397,30 +399,30 @@ export default function Library() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Active Loans</CardTitle>
+                <CardTitle>{t('library.activeLoans')}</CardTitle>
                 <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-                  <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+                  <RefreshCw className="h-4 w-4 mr-1" /> {t('common.refresh')}
                 </Button>
               </CardHeader>
               <CardContent className="space-y-3">
-                {(!Array.isArray(openLoans) || openLoans.length === 0) && <p className="text-sm text-muted-foreground">No active loans.</p>}
+                {(!Array.isArray(openLoans) || openLoans.length === 0) && <p className="text-sm text-muted-foreground">{t('library.noActiveLoans')}</p>}
                 {Array.isArray(openLoans) && openLoans.map((loan: any) => (
                   <div key={loan.id} className="border rounded-md p-3">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-semibold">{loan.book?.title}</div>
-                        <div className="text-xs text-muted-foreground">Due {loan.due_date || 'N/A'}</div>
+                        <div className="text-xs text-muted-foreground">{t('library.dueDate')}: {loan.due_date || 'N/A'}</div>
                       </div>
-                      <Badge variant="secondary">Copy {loan.copy?.copy_code || loan.copy?.id}</Badge>
+                      <Badge variant="secondary">{t('library.copy')} {loan.copy?.copy_code || loan.copy?.id}</Badge>
                     </div>
-                    <div className="text-xs mt-2">Deposit: {loan.deposit_amount}</div>
+                    <div className="text-xs mt-2">{t('library.depositAmount')}: {loan.deposit_amount}</div>
                     <Button
                       size="sm"
                       className="mt-2"
                       onClick={() => returnLoan.mutate({ id: loan.id })}
                       variant="outline"
                     >
-                      Mark Returned
+                      {t('library.returnLoan')}
                     </Button>
                   </div>
                 ))}
@@ -433,8 +435,8 @@ export default function Library() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Total Books</CardTitle>
-                <CardDescription>Books in library</CardDescription>
+                <CardTitle className="text-lg">{t('library.totalBooks')}</CardTitle>
+                <CardDescription>{t('library.totalCopiesLabel2')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{Array.isArray(books) ? books.length : 0}</div>
@@ -442,8 +444,8 @@ export default function Library() {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Active Loans</CardTitle>
-                <CardDescription>Currently loaned out</CardDescription>
+                <CardTitle className="text-lg">{t('library.activeLoans')}</CardTitle>
+                <CardDescription>{t('library.onLoanLabel')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{Array.isArray(openLoans) ? openLoans.length : 0}</div>
@@ -451,8 +453,8 @@ export default function Library() {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Due Soon</CardTitle>
-                <CardDescription>Due in next 7 days</CardDescription>
+                <CardTitle className="text-lg">{t('library.dueSoonCount')}</CardTitle>
+                <CardDescription>{t('library.dueInNext7Days')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{Array.isArray(dueSoon) ? dueSoon.length : 0}</div>
@@ -462,22 +464,22 @@ export default function Library() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Due Soon</CardTitle>
-              <CardDescription>Books due for return in the next 7 days</CardDescription>
+              <CardTitle>{t('library.dueSoonBooks')}</CardTitle>
+              <CardDescription>{t('library.dueInNext7Days')}</CardDescription>
             </CardHeader>
             <CardContent>
               {!Array.isArray(dueSoon) || dueSoon.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No books due in the next week.</p>
+                <p className="text-sm text-muted-foreground text-center py-8">{t('library.noBooksDueSoon')}</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {dueSoon.map((loan: any) => (
                     <div key={loan.id} className="border rounded-lg p-4 space-y-2 hover:bg-accent/50 transition-colors">
                       <div className="font-semibold">{loan.book?.title}</div>
-                      <div className="text-sm text-muted-foreground">Due: {loan.due_date}</div>
+                      <div className="text-sm text-muted-foreground">{t('library.dueDate')}: {loan.due_date}</div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline">Copy {loan.copy?.copy_code || loan.copy?.id}</Badge>
+                        <Badge variant="outline">{t('library.copy')} {loan.copy?.copy_code || loan.copy?.id}</Badge>
                         {loan.book?.author && (
-                          <span className="text-xs text-muted-foreground">by {loan.book.author}</span>
+                          <span className="text-xs text-muted-foreground">{t('library.author')}: {loan.book.author}</span>
                         )}
                       </div>
                     </div>

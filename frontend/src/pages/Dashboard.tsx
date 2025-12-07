@@ -63,6 +63,7 @@ import { useRecentActivities } from "@/hooks/useRecentActivities";
 import { useUpcomingEvents } from "@/hooks/useUpcomingEvents";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useLanguage } from "@/hooks/useLanguage";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { useAssetStats, useAssets } from "@/hooks/useAssets";
 import { useLibraryBooks, useLibraryLoans } from "@/hooks/useLibrary";
@@ -71,6 +72,7 @@ import { useAttendanceSessions } from "@/hooks/useAttendance";
 import { useMemo } from "react";
 
 export default function Dashboard() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
@@ -251,55 +253,55 @@ export default function Dashboard() {
   // Create stats cards from real data
   const statsCards = dashboardStats ? [
     {
-      title: "Total Students",
+      title: t('dashboard.totalStudents') || "Total Students",
       value: dashboardStats.totalStudents.toLocaleString(),
       icon: Users,
-      description: "Active students",
+      description: t('dashboard.activeStudents') || "Active students",
       color: "primary" as const,
       onClick: "/students"
     },
     {
-      title: "Total Staff",
+      title: t('dashboard.totalStaff') || "Total Staff",
       value: dashboardStats.totalStaff.toLocaleString(),
       icon: GraduationCap,
-      description: "Active staff",
+      description: t('dashboard.activeStaff') || "Active staff",
       color: "secondary" as const,
       onClick: "/staff"
     },
     {
-      title: "Total Classes",
+      title: t('dashboard.totalClasses') || "Total Classes",
       value: dashboardStats.totalClasses.toLocaleString(),
       icon: BookOpen,
-      description: "Active classes",
+      description: t('dashboard.activeClasses') || "Active classes",
       color: "primary" as const,
       onClick: "/classes"
     },
     {
-      title: "Total Rooms",
+      title: t('dashboard.totalRooms') || "Total Rooms",
       value: dashboardStats.totalRooms.toLocaleString(),
       icon: Building,
-      description: "Available rooms",
+      description: t('dashboard.availableRooms') || "Available rooms",
       color: "secondary" as const,
       onClick: "/settings/buildings"
     },
     {
-      title: "Total Buildings",
+      title: t('dashboard.totalBuildings') || "Total Buildings",
       value: dashboardStats.totalBuildings.toLocaleString(),
       icon: Home,
-      description: "School buildings",
+      description: t('dashboard.schoolBuildings') || "School buildings",
       color: "primary" as const,
       onClick: "/settings/buildings"
     }
   ] : [];
 
   const genderDistribution = dashboardStats ? [
-    { name: "Male", value: dashboardStats.studentGender.male, color: "#2563eb" },
-    { name: "Female", value: dashboardStats.studentGender.female, color: "#dc2626" }
+    { name: t('students.male') || "Male", value: dashboardStats.studentGender.male, color: "#2563eb" },
+    { name: t('students.female') || "Female", value: dashboardStats.studentGender.female, color: "#dc2626" }
   ] : [];
 
   if (statsLoading || roleLoading || assetStatsLoading) {
     return (
-      <MainLayout title="Dashboard">
+      <MainLayout title={t('dashboard.title') || "Dashboard"}>
         <LoadingSpinner />
       </MainLayout>
     );
@@ -313,6 +315,11 @@ export default function Dashboard() {
   const renderDefaultDashboard = () => (
     <>
       {/* Welcome Section */}
+      <div className="bg-gradient-hero p-6 rounded-lg text-primary-foreground">
+        <h1 className="text-2xl font-bold mb-2">{t('dashboard.welcomeBack') || 'Welcome back'}, {user?.email?.split('@')[0] || t('common.user') || 'User'}!</h1>
+        <p className="text-primary-foreground/80">
+          {t('dashboard.welcomeMessage') || "Here's what's happening at your school today"}
+        </p>
       <div className="bg-gradient-to-r from-primary to-primary/80 p-8 rounded-xl text-primary-foreground shadow-lg mb-8">
         <div className="flex items-center justify-between">
           <div>
@@ -396,17 +403,12 @@ export default function Dashboard() {
 
         {/* Gender Distribution - Pie Chart */}
         {dashboardStats && (dashboardStats.studentGender.male > 0 || dashboardStats.studentGender.female > 0) && (
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <PieChart className="h-5 w-5 text-secondary" />
-                  Gender Distribution
-                </CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/students")}>
-                  View All
-                </Button>
-              </div>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/students")}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PieChart className="h-5 w-5 text-secondary" />
+                {t('dashboard.genderDistribution') || 'Gender Distribution'}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer
@@ -446,168 +448,14 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Secondary Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {statsCards.slice(4).map((stat, index) => (
-          <div 
-            key={index} 
-            onClick={() => handleStatClick(stat.onClick)}
-            className="cursor-pointer transform hover:scale-[1.02] transition-all duration-200"
-          >
-            <StatsCard {...stat} />
-          </div>
-        ))}
-      </div>
-
-      {/* Resources & Operations Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {/* Assets Card */}
-        {assetsData && (
-          <div 
-            onClick={() => navigate("/assets")}
-            className="cursor-pointer transform hover:scale-[1.02] transition-all duration-200"
-          >
-            <StatsCard
-              title="Total Assets"
-              value={assetsData.total.toLocaleString()}
-              icon={Package}
-              description={`Value: ₹${assetsData.totalValue.toLocaleString()}`}
-              color="primary"
-            />
-          </div>
-        )}
-
-        {/* Assets Value Card */}
-        {assetsData && (
-          <div 
-            onClick={() => navigate("/assets")}
-            className="cursor-pointer transform hover:scale-[1.02] transition-all duration-200"
-          >
-            <StatsCard
-              title="Assets Value"
-              value={`₹${assetsData.totalValue.toLocaleString()}`}
-              icon={DollarSign}
-              description="Total purchase value"
-              color="success"
-            />
-          </div>
-        )}
-
-        {/* Books Card */}
-        {booksData && (
-          <div 
-            onClick={() => navigate("/library/books")}
-            className="cursor-pointer transform hover:scale-[1.02] transition-all duration-200"
-          >
-            <StatsCard
-              title="Total Books"
-              value={booksData.totalBooks.toLocaleString()}
-              icon={BookMarked}
-              description={`${booksData.totalCopies} copies total`}
-              color="secondary"
-            />
-          </div>
-        )}
-
-        {/* Books Available Card */}
-        {booksData && (
-          <div 
-            onClick={() => navigate("/library/books")}
-            className="cursor-pointer transform hover:scale-[1.02] transition-all duration-200"
-          >
-            <StatsCard
-              title="Books Available"
-              value={booksData.availableCopies.toLocaleString()}
-              icon={BookOpen}
-              description={`${booksData.onLoan} on loan`}
-              color="success"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Operations & Attendance Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {/* Leave Requests - Pending */}
-        {leaveRequestsData && (
-          <div 
-            onClick={() => navigate("/leave-management")}
-            className="cursor-pointer transform hover:scale-[1.02] transition-all duration-200"
-          >
-            <StatsCard
-              title="Pending Leave Requests"
-              value={leaveRequestsData.pending.toLocaleString()}
-              icon={Clock}
-              description={`${leaveRequestsData.total} total requests`}
-              color="warning"
-            />
-          </div>
-        )}
-
-        {/* Leave Requests - Approved */}
-        {leaveRequestsData && (
-          <div 
-            onClick={() => navigate("/leave-management")}
-            className="cursor-pointer transform hover:scale-[1.02] transition-all duration-200"
-          >
-            <StatsCard
-              title="Approved Leaves"
-              value={leaveRequestsData.approved.toLocaleString()}
-              icon={CheckCircle2}
-              description="This period"
-              color="success"
-            />
-          </div>
-        )}
-
-        {/* Leave Requests - Rejected */}
-        {leaveRequestsData && (
-          <div 
-            onClick={() => navigate("/leave-management")}
-            className="cursor-pointer transform hover:scale-[1.02] transition-all duration-200"
-          >
-            <StatsCard
-              title="Rejected Leaves"
-              value={leaveRequestsData.rejected.toLocaleString()}
-              icon={XCircle}
-              description="This period"
-              color="destructive"
-            />
-          </div>
-        )}
-
-        {/* Today's Attendance */}
-        {attendanceDataComputed && (
-          <div 
-            onClick={() => navigate("/attendance")}
-            className="cursor-pointer transform hover:scale-[1.02] transition-all duration-200"
-          >
-            <StatsCard
-              title="Today's Attendance"
-              value={`${attendanceDataComputed.today.percentage}%`}
-              icon={UserCheck}
-              description={`${attendanceDataComputed.today.present}/${attendanceDataComputed.today.total} present`}
-              color={attendanceDataComputed.today.percentage >= 90 ? "success" : attendanceDataComputed.today.percentage >= 70 ? "warning" : "destructive"}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Analytics Section - Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Attendance Trend - Area Chart */}
-        {attendanceDataComputed && attendanceDataComputed.weeklyTrend.some(d => d.total > 0) && (
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Activity className="h-5 w-5 text-primary" />
-                  Attendance Trend (Last 7 Days)
-                </CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/attendance")}>
-                  View Details
-                </Button>
-              </div>
+        {/* Students by Class Chart - Show only if data exists */}
+        {studentsByClass && studentsByClass.length > 0 && (
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/students")}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                {t('dashboard.studentsByClass') || 'Students by Class'}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer
@@ -717,90 +565,27 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Analytics Section - Charts Row 3 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Books Status Distribution */}
-        {booksData && booksData.booksStatusData.some(d => d.value > 0) && (
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <PieChart className="h-5 w-5 text-secondary" />
-                  Books Status
-                </CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/library/books")}>
-                  View All
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  Available: {
-                    label: "Available",
-                    color: "hsl(142.1 76.2% 36.3%)",
-                  },
-                  "On Loan": {
-                    label: "On Loan",
-                    color: "hsl(38 92% 50%)",
-                  },
-                }}
-                className="h-[300px]"
-              >
-                <RechartsPieChart>
-                  <Pie
-                    data={booksData.booksStatusData.filter(d => d.value > 0)}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {booksData.booksStatusData.filter(d => d.value > 0).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                </RechartsPieChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Leave Requests Status */}
-        {leaveRequestsData && leaveRequestsData.leaveStatusData.some(d => d.value > 0) && (
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <PieChart className="h-5 w-5 text-primary" />
-                  Leave Requests Status
-                </CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/leave-management")}>
-                  View All
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  Pending: {
-                    label: "Pending",
-                    color: "hsl(38 92% 50%)",
-                  },
-                  Approved: {
-                    label: "Approved",
-                    color: "hsl(142.1 76.2% 36.3%)",
-                  },
-                  Rejected: {
-                    label: "Rejected",
-                    color: "hsl(0 72.2% 50.6%)",
-                  },
-                }}
-                className="h-[300px]"
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            {t('dashboard.quickActions') || 'Quick Actions'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: t('nav.students') || "Students", icon: Users, href: "/students", color: "hover:bg-primary/10" },
+              { label: t('nav.staff') || "Staff", icon: GraduationCap, href: "/staff", color: "hover:bg-secondary/10" },
+              { label: t('nav.classes') || "Classes", icon: BookOpen, href: "/classes", color: "hover:bg-primary/10" },
+              { label: t('dashboard.buildings') || "Buildings", icon: Building, href: "/settings/buildings", color: "hover:bg-accent/10" }
+            ].map((action, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                className={`h-20 flex-col gap-2 transition-all duration-200 ${action.color}`}
+                onClick={() => navigate(action.href)}
               >
                 <RechartsPieChart>
                   <Pie
@@ -956,7 +741,7 @@ export default function Dashboard() {
   );
 
   return (
-    <MainLayout title="Dashboard">
+    <MainLayout title={t('dashboard.title') || "Dashboard"}>
       <div className="space-y-6">
         {renderDashboard()}
       </div>

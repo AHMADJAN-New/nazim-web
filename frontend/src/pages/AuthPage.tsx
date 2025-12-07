@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/hooks/useLanguage';
+import { organizationsApi, authApi } from '@/lib/api/client';
+import { validatePasswordStrength } from '@/lib/utils/passwordValidation';
+import { logger } from '@/lib/logger';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { authApi } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 export default function AuthPage() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { user, refreshAuth } = useAuth();
   const [authLoading, setAuthLoading] = useState(false);
@@ -21,11 +27,37 @@ export default function AuthPage() {
     }
   }, [user, navigate]);
 
+  const fetchOrganizations = async () => {
+    try {
+      // Fetch organizations from Laravel API (public endpoint for signup form)
+      const data = await organizationsApi.publicList() as Organization[];
+      setOrganizations(data || []);
+
+      if (!data || data.length === 0) {
+        console.warn('No organizations found in database');
+      }
+    } catch (error: any) {
+      console.error('Error fetching organizations:', error);
+      logger.error('Error fetching organizations', error);
+      setOrganizations([]);
+
+      // Only show error for network issues
+      if (error?.message?.includes('Failed to fetch') ||
+        error?.message?.includes('Network') ||
+        error?.message?.includes('fetch')) {
+        toast.error(t('auth.networkError') || 'Network error: Unable to fetch organizations. Please check your connection and ensure the API server is running.');
+      } else {
+        // Other errors - show a generic message
+        console.warn('Could not fetch organizations:', error.message);
+      }
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.email || !formData.password) {
-      toast.error('Please enter both email and password');
+      toast.error(t('auth.enterEmailAndPassword') || 'Please enter both email and password');
       return;
     }
 
@@ -38,6 +70,24 @@ export default function AuthPage() {
         // Refresh auth state (simplified - no unnecessary delays)
         await refreshAuth();
 
+        // Wait a bit more to ensure auth state is fully updated
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        toast.success(t('auth.loggedInSuccessfully') || 'Logged in successfully!');
+
+        // Navigate to dashboard after auth is ready
+        navigate('/dashboard', { replace: true });
+      } else {
+        if (import.meta.env.DEV) {
+          console.warn('Sign in returned no user data');
+        }
+        toast.error(t('auth.signInFailed') || 'Sign in failed. Please try again.');
+      }
+    } catch (error: any) {
+      if (import.meta.env.DEV) {
+        console.error('Sign in error:', error);
+      }
+      const errorMessage = error.message || t('auth.signInFailed') || 'Failed to sign in. Please check your credentials and try again.';
         // Navigate immediately - no artificial delays
         navigate('/dashboard', { replace: true });
       } else {
@@ -47,16 +97,260 @@ export default function AuthPage() {
       const errorMessage = error.message || 'Failed to sign in. Please check your credentials and try again.';
 
       if (errorMessage.includes('credentials') || errorMessage.includes('Invalid')) {
-        toast.error('Invalid email or password. Please check your credentials and try again.');
+        toast.error(t('auth.invalidCredentials') || 'Invalid email or password. Please check your credentials and try again.');
       } else {
         toast.error(errorMessage);
       }
     } finally {
+      setLoading(false);
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error(t('resetPassword.passwordsDoNotMatch') || 'Passwords do not match');
+      return;
+    }
+
+    if (!formData.organizationId) {
+      toast.error(t('auth.selectOrganizationRequired') || 'Please select an organization');
+      return;
+    }
+
+    if (!formData.fullName) {
+      toast.error(t('auth.enterFullName') || 'Please enter your full name');
+      return;
+    }
+
+    if (!formData.email) {
+      toast.error(t('auth.enterEmail') || 'Please enter your email address');
+      return;
+    }
+
+    setLoading(true);
+    setAuthLoading(true);
+
+    try {
+      console.log('Attempting sign up for:', formData.email);
+
+      const response = await authApi.register({
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.confirmPassword,
+        full_name: formData.fullName,
+        organization_id: formData.organizationId || undefined,
+      });
+
+      if (response.user && response.token) {
+        console.log('Sign up successful:', response.user.email);
+        toast.success(t('auth.registrationSuccessful') || 'Registration successful! You can now sign in.');
+        // Clear form
+        setFormData({
+          email: '',
+          password: '',
+          confirmPassword: '',
+          fullName: '',
+          phone: '',
+          role: 'student',
+          organizationId: ''
+        });
+        // Redirect to login tab or reload
+        window.location.reload();
+      } else {
+        console.warn('Sign up returned no user data');
+        toast.error(t('auth.signUpFailed') || 'Sign up failed. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      let errorMessage = error.message || t('auth.signUpFailed') || 'Failed to create account';
+
+      if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
+        errorMessage = t('auth.emailAlreadyRegistered') || 'This email is already registered. Please sign in or reset your password.';
+      } else if (errorMessage.includes('Invalid email')) {
+        errorMessage = t('auth.invalidEmail') || 'Please enter a valid email address.';
+      } else if (errorMessage.includes('Password')) {
+        errorMessage = errorMessage; // Password validation errors are already user-friendly
+      }
+
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
       setAuthLoading(false);
     }
   };
 
   return (
+    <div 
+      className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4" 
+      dir="ltr"
+      style={{ 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        minHeight: '100vh'
+      }}
+    >
+      <Card className="w-full max-w-md shrink-0" style={{ margin: '0 auto' }}>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">
+            {t('auth.title') || 'School Management System'}
+          </CardTitle>
+          <CardDescription className="text-center">
+            {t('auth.subtitle') || 'Access your school management system'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">{t('auth.signIn') || 'Sign In'}</TabsTrigger>
+              <TabsTrigger value="signup">{t('auth.signUp') || 'Sign Up'}</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="login">
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div>
+                  <Label htmlFor="signin-email">{t('auth.email') || 'Email'}</Label>
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="signin-password">{t('auth.password') || 'Password'}</Label>
+                  <Input
+                    id="signin-password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={authLoading}>
+                  {authLoading ? (t('auth.signingIn') || 'Signing In...') : (t('auth.signIn') || 'Sign In')}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="signup">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div>
+                  <Label htmlFor="full-name">{t('auth.fullName') || 'Full Name'}</Label>
+                  <Input
+                    id="full-name"
+                    type="text"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="signup-email">{t('auth.email') || 'Email'}</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">{t('auth.phone') || 'Phone'} ({t('common.optional') || 'optional'})</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="role">{t('auth.role') || 'Role'}</Label>
+                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('auth.selectRole') || 'Select your role'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="student">{t('auth.roleStudent') || 'Student'}</SelectItem>
+                      <SelectItem value="teacher">{t('auth.roleTeacher') || 'Teacher'}</SelectItem>
+                      <SelectItem value="parent">{t('auth.roleParent') || 'Parent'}</SelectItem>
+                      <SelectItem value="staff">{t('auth.roleStaff') || 'Staff'}</SelectItem>
+                      <SelectItem value="admin">{t('auth.roleAdmin') || 'Admin'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="organization">{t('auth.organization') || 'Organization'}</Label>
+                  <Select value={formData.organizationId} onValueChange={(value) => setFormData({ ...formData, organizationId: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('auth.selectOrganization') || 'Select your organization'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {organizations.length === 0 ? (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          {t('auth.noOrganizationsAvailable') || 'No organizations available'}
+                        </div>
+                      ) : (
+                        organizations.map((org) => (
+                          <SelectItem key={org.id} value={org.id}>
+                            {org.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {organizations.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t('auth.noOrganizationsFound') || 'No organizations found. Please contact an administrator.'}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="signup-password">{t('auth.password') || 'Password'}</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => {
+                      const password = e.target.value;
+                      setFormData({ ...formData, password });
+                      setPasswordErrors(validatePasswordStrength(password));
+                    }}
+                    required
+                  />
+                  {passwordErrors.length > 0 && formData.password && (
+                    <div className="mt-2 space-y-1">
+                      {passwordErrors.map((error, index) => (
+                        <p key={index} className="text-sm text-destructive">
+                          • {error}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="confirm-password">{t('auth.confirmPassword') || 'Confirm Password'}</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading || authLoading || passwordErrors.length > 0}>
+                  {loading || authLoading ? (t('auth.creatingAccount') || 'Creating Account...') : (t('auth.signUp') || 'Sign Up')}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 p-4">
       {/* Main Container - Responsive design */}
       <div className="w-full max-w-[800px] min-h-[600px] md:h-[600px] flex rounded-[20px] overflow-hidden shadow-2xl">

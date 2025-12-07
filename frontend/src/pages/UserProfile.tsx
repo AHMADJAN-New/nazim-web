@@ -188,7 +188,7 @@ export default function UserProfile() {
                 id="full_name"
                 {...register('full_name')}
                 disabled={!isEditing}
-                placeholder="Enter your full name"
+                placeholder={t('common.enterFullName')}
               />
               {errors.full_name && (
                 <p className="text-sm text-destructive">{errors.full_name.message}</p>
@@ -214,7 +214,7 @@ export default function UserProfile() {
                 id="phone"
                 {...register('phone')}
                 disabled={!isEditing}
-                placeholder="Enter your phone number"
+                placeholder={t('common.enterPhoneNumber')}
               />
               {errors.phone && (
                 <p className="text-sm text-destructive">{errors.phone.message}</p>

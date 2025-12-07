@@ -97,53 +97,53 @@ export function HostelManagement() {
   const columns: ColumnDef<HostelRoom>[] = useMemo(() => [
     {
       accessorKey: 'roomNumber',
-      header: 'Room',
+      header: t('hostel.room'),
       cell: ({ row }) => (
         <span className="font-medium">{row.original.roomNumber}</span>
       ),
     },
     {
       accessorKey: 'buildingName',
-      header: 'Building',
-      cell: ({ row }) => row.original.buildingName || 'Unassigned',
+      header: t('hostel.building'),
+      cell: ({ row }) => row.original.buildingName || t('hostel.unassigned'),
     },
     {
       accessorKey: 'staffName',
-      header: 'Warden',
-      cell: ({ row }) => row.original.staffName || 'Not assigned',
+      header: t('hostel.warden'),
+      cell: ({ row }) => row.original.staffName || t('hostel.notAssigned'),
     },
     {
       accessorKey: 'occupants',
-      header: 'Occupancy',
+      header: t('hostel.occupancy'),
       cell: ({ row }) => {
         const count = row.original.occupants.length;
         return (
           <Badge variant={count > 0 ? 'default' : 'secondary'}>
-            {count} student{count === 1 ? '' : 's'}
+            {count} {count === 1 ? t('hostel.student') : t('hostel.studentPlural')}
           </Badge>
         );
       },
     },
     {
       accessorKey: 'students',
-      header: 'Students',
+      header: t('hostel.students'),
       cell: ({ row }) => {
         const occupants = row.original.occupants;
         if (occupants.length === 0) {
-          return <span className="text-muted-foreground">No students assigned</span>;
+          return <span className="text-muted-foreground">{t('hostel.noStudentsAssigned')}</span>;
         }
         return (
           <div className="flex flex-wrap gap-2">
             {occupants.map((student) => (
               <Badge key={student.id} variant="outline">
-                {student.studentName || 'Student'}
+                {student.studentName || t('hostel.student')}
               </Badge>
             ))}
           </div>
         );
       },
     },
-  ], []);
+  ], [t]);
 
   // Use DataTable hook for pagination integration
   const { table } = useDataTable({
@@ -165,17 +165,17 @@ export function HostelManagement() {
 
   const exportCsv = () => {
     const headers = [
-      'Room Number',
-      'Building',
-      'Warden',
-      'Occupancy',
-      'Students',
+      t('hostel.roomNumber'),
+      t('hostel.building'),
+      t('hostel.warden'),
+      t('hostel.occupancy'),
+      t('hostel.students'),
     ];
 
     const rows = filteredRooms.map((room) => [
       room.roomNumber,
-      room.buildingName || 'Unassigned',
-      room.staffName || 'Not assigned',
+      room.buildingName || t('hostel.unassigned'),
+      room.staffName || t('hostel.notAssigned'),
       room.occupants.length.toString(),
       room.occupants.map((student) => student.studentName || '').join(' | '),
     ]);
@@ -226,7 +226,7 @@ export function HostelManagement() {
         </div>
         <Button onClick={exportCsv} variant="outline" disabled={filteredRooms.length === 0}>
           <FileDown className="h-4 w-4 mr-2" />
-          Export occupancy CSV
+          {t('hostel.exportOccupancyCsv')}
         </Button>
       </div>
 
@@ -290,7 +290,7 @@ export function HostelManagement() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <Select value={buildingFilter} onValueChange={setBuildingFilter}>
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Filter by building" />
+                  <SelectValue placeholder={t('hostel.filterByBuilding')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All buildings</SelectItem>
@@ -302,7 +302,7 @@ export function HostelManagement() {
                 </SelectContent>
               </Select>
               <Input
-                placeholder="Search rooms, wardens, or students"
+                placeholder={t('hostel.searchRoomsPlaceholder')}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 className="w-full sm:w-64"

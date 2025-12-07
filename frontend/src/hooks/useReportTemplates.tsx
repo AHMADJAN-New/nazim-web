@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reportTemplatesApi } from '@/lib/api/client';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 
 export interface ReportTemplate {
   id: string;
@@ -66,10 +66,10 @@ export const useCreateReportTemplate = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report-templates'] });
-      toast.success('Report template created successfully');
+      showToast.success('toast.reportTemplateCreated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create report template');
+      showToast.error(error.message || 'toast.reportTemplateCreateFailed');
     },
   });
 };
@@ -84,10 +84,10 @@ export const useUpdateReportTemplate = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report-templates'] });
-      toast.success('Report template updated successfully');
+      showToast.success('toast.reportTemplateUpdated');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update report template');
+      showToast.error(error.message || 'toast.reportTemplateUpdateFailed');
     },
   });
 };
@@ -102,10 +102,10 @@ export const useDeleteReportTemplate = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report-templates'] });
-      toast.success('Report template deleted successfully');
+      showToast.success('toast.reportTemplateDeleted');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete report template');
+      showToast.error(error.message || 'toast.reportTemplateDeleteFailed');
     },
   });
 };

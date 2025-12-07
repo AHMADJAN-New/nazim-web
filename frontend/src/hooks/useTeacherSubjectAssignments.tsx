@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useProfile } from './useProfiles';
 import { teacherSubjectAssignmentsApi } from '@/lib/api/client';
@@ -260,10 +260,10 @@ export const useCreateTeacherSubjectAssignment = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['teacher-subject-assignments'] });
-            toast.success('Teacher subject assignment created successfully');
+            showToast.success('toast.teacherSubjectAssignmentCreated');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to create teacher subject assignment');
+            showToast.error(error.message || 'toast.teacherSubjectAssignmentCreateFailed');
         },
     });
 };
@@ -302,10 +302,10 @@ export const useUpdateTeacherSubjectAssignment = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['teacher-subject-assignments'] });
-            toast.success('Teacher subject assignment updated successfully');
+            showToast.success('toast.teacherSubjectAssignmentUpdated');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to update teacher subject assignment');
+            showToast.error(error.message || 'toast.teacherSubjectAssignmentUpdateFailed');
         },
     });
 };
@@ -326,10 +326,10 @@ export const useDeleteTeacherSubjectAssignment = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['teacher-subject-assignments'] });
-            toast.success('Teacher subject assignment deleted successfully');
+            showToast.success('toast.teacherSubjectAssignmentDeleted');
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to delete teacher subject assignment');
+            showToast.error(error.message || 'toast.teacherSubjectAssignmentDeleteFailed');
         },
     });
 };

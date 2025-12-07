@@ -520,7 +520,7 @@ export function Students() {
             <Button variant="outline" asChild>
               <Link to="/reports/student-registrations">
                 <FileText className="w-4 h-4 mr-2" />
-                Registration Report
+                {t('studentReport.title')}
               </Link>
             </Button>
             <Button onClick={() => setIsCreateOpen(true)}>

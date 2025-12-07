@@ -48,7 +48,7 @@ export function LoadTimetableDialog({ open, onOpenChange, organizationId, academ
 
 	// Debug logging to help troubleshoot
 	useEffect(() => {
-		if (open && !isLoading) {
+		if (open && !isLoading && import.meta.env.DEV) {
 			console.log('LoadTimetableDialog - Timetables loaded:', {
 				count: timetables?.length || 0,
 				timetables: timetables,
@@ -76,12 +76,12 @@ export function LoadTimetableDialog({ open, onOpenChange, organizationId, academ
 				</DialogHeader>
 				<div className="space-y-3">
 					{error ? (
-						<div className="text-center py-8 text-destructive">Error loading timetables: {error.message}</div>
+						<div className="text-center py-8 text-destructive">{(t('timetable.loadError') || 'Error loading timetables: {error}').replace('{error}', error.message)}</div>
 					) : isLoading ? (
-						<div className="text-center py-8 text-muted-foreground">Loading timetables...</div>
+						<div className="text-center py-8 text-muted-foreground">{t('timetable.loadingTimetables') || 'Loading timetables...'}</div>
 					) : sorted.length === 0 ? (
 						<div className="text-center py-8 text-muted-foreground">
-							No saved timetables found for this organization.
+							{t('timetable.noSavedTimetables') || 'No saved timetables found for this organization.'}
 						</div>
 					) : (
 						<ScrollArea className="h-80 border rounded-md p-2">
@@ -101,7 +101,7 @@ export function LoadTimetableDialog({ open, onOpenChange, organizationId, academ
 											{tt.description && <div className="mt-1 text-xs">{tt.description}</div>}
 											{previewTimetable && selectedId === tt.id && (
 												<div className="mt-2 text-xs text-muted-foreground">
-													{previewTimetable.entries?.length || 0} entries
+													{previewTimetable.entries?.length || 0} {t('timetable.entries') || 'entries'}
 												</div>
 											)}
 										</div>

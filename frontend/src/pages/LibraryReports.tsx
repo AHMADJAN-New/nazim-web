@@ -350,8 +350,8 @@ export default function LibraryReports() {
                 <div className="flex items-center gap-3">
                     <BookOpen className="h-8 w-8" />
                     <div>
-                        <h1 className="text-2xl font-semibold">Library Reports</h1>
-                        <p className="text-sm text-muted-foreground">Analytics and insights for your library</p>
+                        <h1 className="text-2xl font-semibold">{t('library.libraryReports')}</h1>
+                        <p className="text-sm text-muted-foreground">{t('library.analytics')}</p>
                     </div>
                 </div>
             </div>

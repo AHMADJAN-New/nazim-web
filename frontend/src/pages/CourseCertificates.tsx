@@ -1,0 +1,269 @@
+import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { LoadingSpinner } from '@/components/ui/loading';
+import {
+  useCourseStudents,
+} from '@/hooks/useCourseStudents';
+import { useShortTermCourses } from '@/hooks/useShortTermCourses';
+import { CertificatePdfGenerator } from '@/components/short-term-courses/CertificatePdfGenerator';
+import type { CourseStudent } from '@/types/domain/courseStudent';
+import {
+  Award,
+  Download,
+  Eye,
+  FileText,
+  GraduationCap,
+  Search,
+} from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { useLanguage } from '@/hooks/useLanguage';
+
+export default function CourseCertificates() {
+  const { t } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedCourseId, setSelectedCourseId] = useState<string>(
+    searchParams.get('course_id') || 'all'
+  );
+  const [search, setSearch] = useState('');
+  const [certificateDialogOpen, setCertificateDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<CourseStudent | null>(null);
+
+  const { data: courses } = useShortTermCourses();
+  const { data: studentsData, isLoading } = useCourseStudents();
+
+  // Filter students to only show those with issued certificates
+  const studentsWithCertificates = useMemo(() => {
+    if (!studentsData) return [];
+    return studentsData.filter(
+      (student) => student.certificateIssued && student.completionStatus === 'completed'
+    );
+  }, [studentsData]);
+
+  // Filter by course
+  const filteredByCourse = useMemo(() => {
+    if (selectedCourseId === 'all') return studentsWithCertificates;
+    return studentsWithCertificates.filter((student) => student.courseId === selectedCourseId);
+  }, [studentsWithCertificates, selectedCourseId]);
+
+  // Filter by search
+  const filtered = useMemo(() => {
+    if (!search.trim()) return filteredByCourse;
+    const searchLower = search.toLowerCase();
+    return filteredByCourse.filter(
+      (student) =>
+        student.fullName?.toLowerCase().includes(searchLower) ||
+        student.admissionNo?.toLowerCase().includes(searchLower) ||
+        student.fatherName?.toLowerCase().includes(searchLower) ||
+        student.guardianName?.toLowerCase().includes(searchLower)
+    );
+  }, [filteredByCourse, search]);
+
+  const handleViewCertificate = (student: CourseStudent) => {
+    setSelectedStudent(student);
+    setCertificateDialogOpen(true);
+  };
+
+  const handleDownloadCertificate = (student: CourseStudent) => {
+    setSelectedStudent(student);
+    setCertificateDialogOpen(true);
+    // The dialog will handle the download
+  };
+
+  const summary = useMemo(() => {
+    return {
+      total: studentsWithCertificates.length,
+      byCourse: courses?.reduce((acc, course) => {
+        acc[course.id] = studentsWithCertificates.filter(
+          (s) => s.courseId === course.id
+        ).length;
+        return acc;
+      }, {} as Record<string, number>) || {},
+    };
+  }, [studentsWithCertificates, courses]);
+
+  return (
+    <div className="container mx-auto max-w-7xl p-4 md:p-6 space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold leading-tight">{t('courses.courseCertificates')}</h1>
+          <p className="text-muted-foreground">
+            View, preview, and download certificates for completed course students.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Certificates</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between">
+            <div className="text-2xl font-bold">{summary.total}</div>
+            <Award className="h-6 w-6 text-blue-500" />
+          </CardContent>
+        </Card>
+        {courses?.slice(0, 3).map((course) => (
+          <Card key={course.id}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground truncate">
+                {course.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-between">
+              <div className="text-2xl font-bold">{summary.byCourse[course.id] || 0}</div>
+              <GraduationCap className="h-6 w-6 text-emerald-500" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader className="space-y-1 pb-3">
+          <CardTitle className="text-lg font-semibold">Issued Certificates</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Filter by course or search by name, admission number, or certificate number.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label>{t('courses.courseName')}</Label>
+              <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('courses.allCourses')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('courses.allCourses')}</SelectItem>
+                  {(courses || []).map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>{t('common.search')}</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Name, admission #, or course"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-10">
+              <LoadingSpinner />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-10">
+              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">
+                {studentsWithCertificates.length === 0
+                  ? 'No certificates have been issued yet.'
+                  : 'No certificates found matching your filters.'}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('students.name')}</TableHead>
+                    <TableHead>{t('students.fatherName')}</TableHead>
+                    <TableHead>{t('students.admissionNo')}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t('courses.courseName')}</TableHead>
+                    <TableHead className="hidden md:table-cell">Certificate #</TableHead>
+                    <TableHead className="hidden md:table-cell">Issued Date</TableHead>
+                    <TableHead className="text-right w-[100px]">{t('common.actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((student) => (
+                    <TableRow key={student.id}>
+                      <TableCell>
+                        <div className="font-semibold leading-tight">{student.fullName || '-'}</div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {student.fatherName || '-'}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {student.admissionNo || '-'}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {courses?.find((c) => c.id === student.courseId)?.name || '-'}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {student.certificateIssuedDate ? (
+                          <Badge variant="outline" className="font-mono">
+                            {format(new Date(student.certificateIssuedDate), 'yyyy-MM-dd')}
+                          </Badge>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                        {student.certificateIssuedDate
+                          ? format(new Date(student.certificateIssuedDate), 'MMM d, yyyy')
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleViewCertificate(student)}
+                            title="Preview Certificate"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDownloadCertificate(student)}
+                            title="Download PDF"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Certificate PDF Generator Dialog */}
+      {selectedStudent && (
+        <CertificatePdfGenerator
+          courseStudentId={selectedStudent.id}
+          studentName={selectedStudent.fullName || ''}
+          courseName={courses?.find((c) => c.id === selectedStudent.courseId)?.name || ''}
+          courseId={selectedStudent.courseId}
+          isOpen={certificateDialogOpen}
+          onClose={() => {
+            setCertificateDialogOpen(false);
+            setSelectedStudent(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
