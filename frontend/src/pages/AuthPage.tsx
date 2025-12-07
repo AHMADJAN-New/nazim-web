@@ -6,7 +6,6 @@ import { organizationsApi, authApi } from '@/lib/api/client';
 import { validatePasswordStrength } from '@/lib/utils/passwordValidation';
 import { logger } from '@/lib/logger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { authApi } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -88,13 +87,6 @@ export default function AuthPage() {
         console.error('Sign in error:', error);
       }
       const errorMessage = error.message || t('auth.signInFailed') || 'Failed to sign in. Please check your credentials and try again.';
-        // Navigate immediately - no artificial delays
-        navigate('/dashboard', { replace: true });
-      } else {
-        toast.error('Sign in failed. Please try again.');
-      }
-    } catch (error: any) {
-      const errorMessage = error.message || 'Failed to sign in. Please check your credentials and try again.';
 
       if (errorMessage.includes('credentials') || errorMessage.includes('Invalid')) {
         toast.error(t('auth.invalidCredentials') || 'Invalid email or password. Please check your credentials and try again.');
@@ -183,6 +175,7 @@ export default function AuthPage() {
   };
 
   return (
+    <>
     <div 
       className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4" 
       dir="ltr"
@@ -351,6 +344,7 @@ export default function AuthPage() {
           </Tabs>
         </CardContent>
       </Card>
+    </div>
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 p-4">
       {/* Main Container - Responsive design */}
       <div className="w-full max-w-[800px] min-h-[600px] md:h-[600px] flex rounded-[20px] overflow-hidden shadow-2xl">
@@ -467,5 +461,6 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

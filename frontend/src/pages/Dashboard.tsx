@@ -580,36 +580,23 @@ export default function Dashboard() {
               { label: t('nav.staff') || "Staff", icon: GraduationCap, href: "/staff", color: "hover:bg-secondary/10" },
               { label: t('nav.classes') || "Classes", icon: BookOpen, href: "/classes", color: "hover:bg-primary/10" },
               { label: t('dashboard.buildings') || "Buildings", icon: Building, href: "/settings/buildings", color: "hover:bg-accent/10" }
-            ].map((action, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                className={`h-20 flex-col gap-2 transition-all duration-200 ${action.color}`}
-                onClick={() => navigate(action.href)}
-              >
-                <RechartsPieChart>
-                  <Pie
-                    data={leaveRequestsData.leaveStatusData.filter(d => d.value > 0)}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {leaveRequestsData.leaveStatusData.filter(d => d.value > 0).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                </RechartsPieChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            ].map((action, index) => {
+              const IconComponent = action.icon;
+              return (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className={`h-20 flex-col gap-2 transition-all duration-200 ${action.color}`}
+                  onClick={() => navigate(action.href)}
+                >
+                  <IconComponent className="h-6 w-6" />
+                  <span className="text-sm">{action.label}</span>
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Asset Value Chart - Full Width */}
       {assetsData && assetsData.statusData.length > 0 && (
