@@ -169,7 +169,7 @@ function dismiss(toastId?: string | number): void {
  * showToast.success('academic.classes.classCreated', { name: 'Class A' });
  * 
  * // Plain message (not recommended, use translation keys)
- * showToast.error('Something went wrong');
+* showToast.error('errorBoundary.somethingWentWrong');
  * ```
  */
 export const showToast = {

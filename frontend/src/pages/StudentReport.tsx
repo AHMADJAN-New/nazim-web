@@ -38,7 +38,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { format } from 'date-fns';
 
 const statusBadgeVariant = (status?: string) => {
@@ -151,7 +151,7 @@ const StudentReport = () => {
       : schools?.[0];
 
     if (!exportSchool) {
-      toast.error(t('studentReport.schoolRequired') || 'A school is required to export the report.');
+      showToast.error(t('studentReport.schoolRequired') || 'A school is required to export the report.');
       return;
     }
 
@@ -172,12 +172,12 @@ const StudentReport = () => {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      toast.success(t('studentReport.reportExported') || `Report exported as ${format.toUpperCase()}`);
+      showToast.success(t('studentReport.reportExported') || `Report exported as ${format.toUpperCase()}`);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error(error);
       }
-      toast.error(t('studentReport.exportFailed') || 'Failed to export the report. Please try again.');
+      showToast.error(t('studentReport.exportFailed') || 'Failed to export the report. Please try again.');
     }
   };
 
@@ -536,11 +536,11 @@ const StudentReport = () => {
                     <SheetTitle className="text-2xl mb-1">{selectedStudent.fullName}</SheetTitle>
                     <SheetDescription className="text-base">
                       {selectedStudent.studentCode && (
-                        <span className="font-mono font-medium">ID: {selectedStudent.studentCode}</span>
+                        <span className="font-mono font-medium">{t('studentReport.idLabel')}: {selectedStudent.studentCode}</span>
                       )}
                       {selectedStudent.studentCode && selectedStudent.admissionNumber && ' • '}
-                      {selectedStudent.admissionNumber && `Admission #${selectedStudent.admissionNumber}`}
-                      {selectedStudent.cardNumber && ` • Card #${selectedStudent.cardNumber}`}
+                      {selectedStudent.admissionNumber && `${t('studentReport.admissionLabel')}${selectedStudent.admissionNumber}`}
+                      {selectedStudent.cardNumber && ` • ${t('studentReport.cardLabel')}${selectedStudent.cardNumber}`}
                     </SheetDescription>
                   </div>
                 </div>

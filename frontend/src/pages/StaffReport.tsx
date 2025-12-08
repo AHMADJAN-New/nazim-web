@@ -154,7 +154,7 @@ const StaffReport = () => {
       : schools?.[0];
 
     if (!exportSchool) {
-      toast.error('A school is required to export the report.');
+      toast.error(t('staff.schoolRequiredForExport'));
       return;
     }
 
@@ -175,12 +175,12 @@ const StaffReport = () => {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      toast.success(`Report exported as ${format.toUpperCase()}`);
+      toast.success(`${t('staff.reportExportedAs')} ${format.toUpperCase()}`);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error(error);
       }
-      toast.error('Failed to export the report. Please try again.');
+      toast.error(t('staff.failedToExport'));
     }
   };
 
@@ -217,7 +217,7 @@ const StaffReport = () => {
     },
     {
       accessorKey: 'staffCode',
-      header: 'Staff Code',
+      header: t('staff.staffCode'),
       cell: ({ row }) => (
         <div className="font-mono text-sm font-medium">
           {row.original.staffCode || row.original.employeeId || '—'}
@@ -226,35 +226,35 @@ const StaffReport = () => {
     },
     {
       accessorKey: 'employeeId',
-      header: 'Employee ID',
+      header: t('staff.employeeId'),
       cell: ({ row }) => (
         <div className="font-medium">{row.original.employeeId || '—'}</div>
       ),
     },
     {
       accessorKey: 'fullName',
-      header: 'Name',
+      header: t('staff.name'),
       cell: ({ row }) => (
         <div className="font-semibold">{row.original.fullName}</div>
       ),
     },
     {
       accessorKey: 'staffType',
-      header: 'Staff Type',
+      header: t('staff.staffType'),
       cell: ({ row }) => (
         <div className="text-sm">{row.original.staffTypeRelation?.name || row.original.staffType || '—'}</div>
       ),
     },
     {
       accessorKey: 'position',
-      header: 'Position',
+      header: t('staff.position'),
       cell: ({ row }) => (
         <div className="text-sm">{row.original.position || '—'}</div>
       ),
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: t('staff.status'),
       cell: ({ row }) => (
         <Badge variant={statusBadgeVariant(row.original.status)} className="capitalize">
           {formatStatus(row.original.status)}
@@ -263,7 +263,7 @@ const StaffReport = () => {
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: t('staff.actions'),
       cell: ({ row }) => (
         <Button
           variant="ghost"
@@ -272,7 +272,7 @@ const StaffReport = () => {
           className="h-8 w-8 p-0"
         >
           <Eye className="h-4 w-4" />
-          <span className="sr-only">View details</span>
+          <span className="sr-only">{t('staff.viewDetails')}</span>
         </Button>
       ),
     },
@@ -308,9 +308,9 @@ const StaffReport = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold leading-tight">Staff Registration Report</h1>
+          <h1 className="text-3xl font-bold leading-tight">{t('staff.staffRegistrationReport')}</h1>
           <p className="text-muted-foreground">
-            View and export staff registration data with detailed information
+            {t('staff.staffRegistrationReportDescription')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -344,14 +344,14 @@ const StaffReport = () => {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>{t('staff.filters')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by name, employee ID, staff code..."
+                placeholder={t('staff.searchByNamePlaceholder')}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -368,10 +368,10 @@ const StaffReport = () => {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="All Schools" />
+                <SelectValue placeholder={t('staff.allSchools')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Schools</SelectItem>
+                <SelectItem value="all">{t('staff.allSchools')}</SelectItem>
                 {schools?.map((school) => (
                   <SelectItem key={school.id} value={school.id}>
                     {school.schoolName}
@@ -387,15 +387,15 @@ const StaffReport = () => {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="All Status" />
+                <SelectValue placeholder={t('staff.allStatus')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="on_leave">On Leave</SelectItem>
-                <SelectItem value="terminated">Terminated</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="all">{t('staff.allStatus')}</SelectItem>
+                <SelectItem value="active">{t('staff.statusActive')}</SelectItem>
+                <SelectItem value="inactive">{t('staff.statusInactive')}</SelectItem>
+                <SelectItem value="on_leave">{t('staff.statusOnLeave')}</SelectItem>
+                <SelectItem value="terminated">{t('staff.statusTerminated')}</SelectItem>
+                <SelectItem value="suspended">{t('staff.statusSuspended')}</SelectItem>
               </SelectContent>
             </Select>
             <Select
@@ -406,10 +406,10 @@ const StaffReport = () => {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="All Staff Types" />
+                <SelectValue placeholder={t('staff.allStaffTypes')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Staff Types</SelectItem>
+                <SelectItem value="all">{t('staff.allStaffTypes')}</SelectItem>
                 {staffTypes?.map((type) => (
                   <SelectItem key={type.id} value={type.id}>
                     {type.name}
@@ -424,12 +424,12 @@ const StaffReport = () => {
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Staff ({filteredStaff.length})</CardTitle>
+          <CardTitle>{t('staff.management')} ({filteredStaff.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="py-12 flex justify-center">
-              <LoadingSpinner text="Loading staff..." />
+              <LoadingSpinner text={t('staff.loadingStaff')} />
             </div>
           ) : (
             <>
@@ -477,7 +477,7 @@ const StaffReport = () => {
                           colSpan={columns.length}
                           className="h-24 text-center"
                         >
-                          No staff found.
+                          {t('staff.noStaffFound')}
                         </TableCell>
                       </TableRow>
                     )}
@@ -534,10 +534,10 @@ const StaffReport = () => {
                     <SheetTitle className="text-2xl mb-1">{selectedStaff.fullName}</SheetTitle>
                     <SheetDescription className="text-base">
                       {selectedStaff.staffCode && (
-                        <span className="font-mono font-medium">Code: {selectedStaff.staffCode}</span>
+                        <span className="font-mono font-medium">{t('staff.code')}: {selectedStaff.staffCode}</span>
                       )}
                       {selectedStaff.staffCode && selectedStaff.employeeId && ' • '}
-                      {selectedStaff.employeeId && `Employee ID: ${selectedStaff.employeeId}`}
+                      {selectedStaff.employeeId && `${t('staff.employeeId')}: ${selectedStaff.employeeId}`}
                     </SheetDescription>
                   </div>
                 </div>
@@ -546,50 +546,50 @@ const StaffReport = () => {
                 <div className={`space-y-6 ${isRTL ? 'pl-4' : 'pr-4'}`}>
                   {/* Personal Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Personal Information</h3>
+                    <h3 className="text-lg font-semibold">{t('staff.personalInformation')}</h3>
                     <div className="space-y-3">
                       {selectedStaff.staffCode && (
                         <div className="flex items-center justify-between py-2 border-b">
-                          <span className="text-sm font-medium text-muted-foreground">Staff Code</span>
+                          <span className="text-sm font-medium text-muted-foreground">{t('staff.staffCode')}</span>
                           <span className="text-sm font-mono font-medium">{selectedStaff.staffCode}</span>
                         </div>
                       )}
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Employee ID</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.employeeId')}</span>
                         <span className="text-sm font-mono font-medium">{selectedStaff.employeeId || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Full Name</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.fullName')}</span>
                         <span className="text-sm font-medium">{selectedStaff.fullName}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Father Name</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.fatherName')}</span>
                         <span className="text-sm">{selectedStaff.fatherName || '—'}</span>
                       </div>
                       {selectedStaff.grandfatherName && (
                         <div className="flex items-center justify-between py-2 border-b">
-                          <span className="text-sm font-medium text-muted-foreground">Grandfather Name</span>
+                          <span className="text-sm font-medium text-muted-foreground">{t('staff.grandfatherName')}</span>
                           <span className="text-sm">{selectedStaff.grandfatherName}</span>
                         </div>
                       )}
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Birth Date</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.birthDate')}</span>
                         <span className="text-sm">{formatDate(selectedStaff.dateOfBirth ?? selectedStaff.birthDate)}</span>
                       </div>
                       {selectedStaff.birthYear && (
                         <div className="flex items-center justify-between py-2 border-b">
-                          <span className="text-sm font-medium text-muted-foreground">Birth Year</span>
+                          <span className="text-sm font-medium text-muted-foreground">{t('staff.birthYear')}</span>
                           <span className="text-sm">{selectedStaff.birthYear}</span>
                         </div>
                       )}
                       {selectedStaff.tazkiraNumber && (
                         <div className="flex items-center justify-between py-2 border-b">
-                          <span className="text-sm font-medium text-muted-foreground">Tazkira Number</span>
+                          <span className="text-sm font-medium text-muted-foreground">{t('staff.tazkiraNumber')}</span>
                           <span className="text-sm font-mono">{selectedStaff.tazkiraNumber}</span>
                         </div>
                       )}
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Status</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.status')}</span>
                         <Badge variant={statusBadgeVariant(selectedStaff.status)} className="capitalize">
                           {formatStatus(selectedStaff.status)}
                         </Badge>
@@ -599,18 +599,18 @@ const StaffReport = () => {
 
                   {/* Contact Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Contact Information</h3>
+                    <h3 className="text-lg font-semibold">{t('staff.contactInformation')}</h3>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Phone Number</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.phoneNumber')}</span>
                         <span className="text-sm">{selectedStaff.phoneNumber || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Email</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.email')}</span>
                         <span className="text-sm">{selectedStaff.email || '—'}</span>
                       </div>
                       <div className="flex items-start justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Home Address</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.homeAddress')}</span>
                         <span className="text-sm text-right max-w-[60%]">{selectedStaff.homeAddress || selectedStaff.address?.street || '—'}</span>
                       </div>
                     </div>
@@ -618,16 +618,16 @@ const StaffReport = () => {
 
                   {/* Location Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Location Information</h3>
+                    <h3 className="text-lg font-semibold">{t('staff.locationInformation')}</h3>
                     <div className="space-y-3">
                       <div className="flex items-start justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Origin Location</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.originLocation')}</span>
                         <span className="text-sm text-right max-w-[60%]">
                           {buildLocation(selectedStaff.originLocation?.province, selectedStaff.originLocation?.district, selectedStaff.originLocation?.village)}
                         </span>
                       </div>
                       <div className="flex items-start justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Current Location</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.currentLocation')}</span>
                         <span className="text-sm text-right max-w-[60%]">
                           {buildLocation(selectedStaff.currentLocation?.province, selectedStaff.currentLocation?.district, selectedStaff.currentLocation?.village)}
                         </span>
@@ -637,46 +637,46 @@ const StaffReport = () => {
 
                   {/* Education Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Education Information</h3>
+                    <h3 className="text-lg font-semibold">{t('staff.educationInformation')}</h3>
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-sm font-medium mb-2">Religious Education</h4>
+                        <h4 className="text-sm font-medium mb-2">{t('staff.religiousEducationSection')}</h4>
                         <div className="space-y-2 pl-4">
                           <div className="flex items-center justify-between py-1 border-b">
-                            <span className="text-xs text-muted-foreground">Level</span>
+                            <span className="text-xs text-muted-foreground">{t('staff.educationLevel')}</span>
                             <span className="text-xs">{selectedStaff.religiousEducation?.level || '—'}</span>
                           </div>
                           <div className="flex items-center justify-between py-1 border-b">
-                            <span className="text-xs text-muted-foreground">Institution</span>
+                            <span className="text-xs text-muted-foreground">{t('staff.universityInstitution')}</span>
                             <span className="text-xs">{selectedStaff.religiousEducation?.institution || '—'}</span>
                           </div>
                           <div className="flex items-center justify-between py-1 border-b">
-                            <span className="text-xs text-muted-foreground">Graduation Year</span>
+                            <span className="text-xs text-muted-foreground">{t('staff.graduationYear')}</span>
                             <span className="text-xs">{selectedStaff.religiousEducation?.graduationYear || '—'}</span>
                           </div>
                           <div className="flex items-center justify-between py-1 border-b">
-                            <span className="text-xs text-muted-foreground">Department</span>
+                            <span className="text-xs text-muted-foreground">{t('staff.department')}</span>
                             <span className="text-xs">{selectedStaff.religiousEducation?.department || '—'}</span>
                           </div>
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium mb-2">Modern Education</h4>
+                        <h4 className="text-sm font-medium mb-2">{t('staff.modernEducationSection')}</h4>
                         <div className="space-y-2 pl-4">
                           <div className="flex items-center justify-between py-1 border-b">
-                            <span className="text-xs text-muted-foreground">Level</span>
+                            <span className="text-xs text-muted-foreground">{t('staff.educationLevel')}</span>
                             <span className="text-xs">{selectedStaff.modernEducation?.level || '—'}</span>
                           </div>
                           <div className="flex items-center justify-between py-1 border-b">
-                            <span className="text-xs text-muted-foreground">Institution</span>
+                            <span className="text-xs text-muted-foreground">{t('staff.universityInstitution')}</span>
                             <span className="text-xs">{selectedStaff.modernEducation?.institution || '—'}</span>
                           </div>
                           <div className="flex items-center justify-between py-1 border-b">
-                            <span className="text-xs text-muted-foreground">Graduation Year</span>
+                            <span className="text-xs text-muted-foreground">{t('staff.graduationYear')}</span>
                             <span className="text-xs">{selectedStaff.modernEducation?.graduationYear || '—'}</span>
                           </div>
                           <div className="flex items-center justify-between py-1 border-b">
-                            <span className="text-xs text-muted-foreground">Department</span>
+                            <span className="text-xs text-muted-foreground">{t('staff.department')}</span>
                             <span className="text-xs">{selectedStaff.modernEducation?.department || '—'}</span>
                           </div>
                         </div>
@@ -686,10 +686,10 @@ const StaffReport = () => {
 
                   {/* Professional Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Professional Information</h3>
+                    <h3 className="text-lg font-semibold">{t('staff.employmentInformation')}</h3>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Staff Type</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.staffType')}</span>
                         <span className="text-sm">{selectedStaff.staffTypeRelation?.name || selectedStaff.staffType || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
@@ -697,20 +697,20 @@ const StaffReport = () => {
                         <span className="text-sm">{selectedStaff.position || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Duty</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.duty')}</span>
                         <span className="text-sm">{selectedStaff.duty || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">Salary</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.salary')}</span>
                         <span className="text-sm">{selectedStaff.salary || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-muted-foreground">School</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('staff.school')}</span>
                         <span className="text-sm">{selectedStaff.school?.schoolName || '—'}</span>
                       </div>
                       {selectedStaff.teachingSection && (
                         <div className="flex items-center justify-between py-2 border-b">
-                          <span className="text-sm font-medium text-muted-foreground">Teaching Section</span>
+                          <span className="text-sm font-medium text-muted-foreground">{t('staff.teachingSection')}</span>
                           <span className="text-sm">{selectedStaff.teachingSection}</span>
                         </div>
                       )}
@@ -720,10 +720,10 @@ const StaffReport = () => {
                   {/* Additional Information */}
                   {selectedStaff.notes && (
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Additional Information</h3>
+                      <h3 className="text-lg font-semibold">{t('staff.additionalInformation')}</h3>
                       <div className="space-y-3">
                         <div className="flex items-start justify-between py-2 border-b">
-                          <span className="text-sm font-medium text-muted-foreground">Notes</span>
+                          <span className="text-sm font-medium text-muted-foreground">{t('staff.notes')}</span>
                           <span className="text-sm text-right max-w-[60%]">{selectedStaff.notes}</span>
                         </div>
                       </div>

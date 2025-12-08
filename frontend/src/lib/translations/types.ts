@@ -72,6 +72,10 @@ export interface TranslationKeys {
     sectionsInputHint: string;
     none: string;
     statusLabel: string;
+    update: string;
+    create: string;
+    unauthorized: string;
+    to: string;
   };
 
   // Pagination
@@ -442,6 +446,7 @@ export interface TranslationKeys {
     deleteDocumentConfirm: string;
     viewDocument: string;
     viewDocumentError: string;
+    downloadDocumentError: string;
     imageLoadError: string;
     pdfLoadError: string;
     unsupportedFileType: string;
@@ -1132,6 +1137,8 @@ export interface TranslationKeys {
     categoryDescription: string;
     reports: string;
     assetReports: string;
+    updateMaintenance: string;
+    categories: string;
   };
 
   // Short-term Courses
@@ -1356,6 +1363,124 @@ export interface TranslationKeys {
     allStudents: string;
     allClasses: string;
     allSchools: string;
+    leaveGovernance: string;
+    qrReadySlips: string;
+    currentMonth: string;
+    approvedThisYear: string;
+    newRequest: string;
+    history: string;
+    createRequestDescription: string;
+    fastSearchScan: string;
+    scanCardPlaceholder: string;
+    scanCardHint: string;
+    selectClassPlaceholder: string;
+    searchClassesPlaceholder: string;
+    noClassesFound: string;
+    loadingAcademicYear: string;
+    showingClassesFor: string;
+    selectStudentPlaceholder: string;
+    selectClassFirst: string;
+    searchStudentPlaceholder: string;
+    noStudentsInClass: string;
+    selectClassFirstMessage: string;
+    selected: string;
+    leaveType: string;
+    typePlaceholder: string;
+    fullDay: string;
+    partialDay: string;
+    timeBound: string;
+    leaveDuration: string;
+    oneDay: string;
+    twoDays: string;
+    threeDays: string;
+    oneWeek: string;
+    twoWeeks: string;
+    oneMonth: string;
+    startTime: string;
+    endTime: string;
+    reasonPlaceholder: string;
+    approvalNote: string;
+    approvalNotePlaceholder: string;
+    clearForm: string;
+    creating: string;
+    leaveHistory: string;
+    filterDescription: string;
+    month: string;
+    year: string;
+    pageSize: string;
+    dates: string;
+    loadingLeaveRequests: string;
+    noLeaveRequestsYet: string;
+    pageOf: string;
+    prev: string;
+    next: string;
+    studentLeaveHistory: string;
+    viewLeaveTrend: string;
+    totalLeaves: string;
+    monthlyVolume: string;
+    noHistoryYet: string;
+    allLeaves: string;
+    loadingHistory: string;
+    noLeaveHistoryFound: string;
+    scanToVerify: string;
+    leaveRequest: string;
+    code: string;
+    datesLabel: string;
+    academicYearNotLoaded: string;
+    studentNotFound: string;
+    studentFound: string;
+    classNotAvailable: string;
+    studentNotEnrolled: string;
+    couldNotDetermineClass: string;
+    failedToSearchStudent: string;
+    medicalAppointment: string;
+    personal: string;
+    familyEvent: string;
+    travel: string;
+    religious: string;
+    // Reports page
+    reportsTitle: string;
+    reportsSubtitle: string;
+    totalRequests: string;
+    reportFilters: string;
+    filterDescription: string;
+    showFilters: string;
+    hideFilters: string;
+    allStatuses: string;
+    anyStudent: string;
+    anyClass: string;
+    anySchool: string;
+    rowsPerPage: string;
+    today: string;
+    thisMonth: string;
+    exportCsv: string;
+    allRequests: string;
+    dailyBreakdown: string;
+    allLeaveRequests: string;
+    completeListing: string;
+    entries: string;
+    export: string;
+    pendingRequests: string;
+    awaitingApproval: string;
+    noPendingRequests: string;
+    approvedRequests: string;
+    approvedDescription: string;
+    noApprovedRequests: string;
+    rejectedRequests: string;
+    rejectedDescription: string;
+    noRejectedRequests: string;
+    dailyBreakdownTitle: string;
+    dailyBreakdownDescription: string;
+    leaves: string;
+    noDailyRecords: string;
+    noRequestsToExport: string;
+    reportExported: string;
+    noRequestsMatchFilters: string;
+    loading: string;
+    class: string;
+    school: string;
+    from: string;
+    to: string;
   };
 
   // Staff Management
@@ -1421,6 +1546,186 @@ export interface TranslationKeys {
     deleteConfirm: string;
     reports: string;
     staffReports: string;
+    // UI Labels
+    photo: string;
+    name: string;
+    id: string;
+    type: string;
+    status: string;
+    school: string;
+    contact: string;
+    actions: string;
+    // Stats
+    totalStaff: string;
+    active: string;
+    onLeave: string;
+    teachers: string;
+    admins: string;
+    // Form Steps
+    basicInformation: string;
+    basicInformationDescription: string;
+    personalDetails: string;
+    personalDetailsDescription: string;
+    contactLocation: string;
+    contactLocationDescription: string;
+    education: string;
+    educationDescription: string;
+    employment: string;
+    employmentDescription: string;
+    // Form Labels
+    createEmployee: string;
+    createEmployeeDescription: string;
+    editEmployee: string;
+    editEmployeeDescription: string;
+    employeeCode: string;
+    employeeCodePlaceholder: string;
+    employeeCodeHelper: string;
+    selectStaffType: string;
+    selectStaffTypePlaceholder: string;
+    selectSchool: string;
+    selectSchoolPlaceholder: string;
+    noSchool: string;
+    employmentStatus: string;
+    // Personal Details
+    civilId: string;
+    civilIdHelper: string;
+    dateOfBirth: string;
+    dateOfBirthHelper: string;
+    // Location
+    originLocation: string;
+    currentLocation: string;
+    province: string;
+    district: string;
+    village: string;
+    // Education
+    religiousEducationSection: string;
+    modernEducationSection: string;
+    educationLevel: string;
+    universityInstitution: string;
+    graduationYear: string;
+    department: string;
+    // Employment
+    position: string;
+    teachingSection: string;
+    duty: string;
+    salary: string;
+    notes: string;
+    notesPlaceholder: string;
+    // Buttons
+    previous: string;
+    next: string;
+    creating: string;
+    updating: string;
+    updateStaff: string;
+    // Filters
+    allStatus: string;
+    allTypes: string;
+    allSchools: string;
+    clear: string;
+    // Messages
+    loadingStaff: string;
+    noStaffMembersFound: string;
+    noStaffMembersAvailable: string;
+    noPermissionToView: string;
+    pleaseWait: string;
+    pleaseSelectStaffType: string;
+    selectedSchoolNotBelong: string;
+    failedToCreate: string;
+    deleteConfirmMessage: string;
+    deleteConfirmDescription: string;
+    // Status values
+    statusActive: string;
+    statusInactive: string;
+    statusOnLeave: string;
+    statusTerminated: string;
+    statusSuspended: string;
+    // Registration Report
+    registrationReport: string;
+    // Report Page
+    staffRegistrationReport: string;
+    staffRegistrationReportDescription: string;
+    filters: string;
+    searchByNamePlaceholder: string;
+    allStaffTypes: string;
+    staffCode: string;
+    viewDetails: string;
+    // Report Sections
+    personalInformation: string;
+    contactInformation: string;
+    locationInformation: string;
+    educationInformation: string;
+    employmentInformation: string;
+    professionalInformation: string;
+    // Report Labels
+    code: string;
+    fullName: string;
+    birthDate: string;
+    // Export Messages
+    schoolRequiredForExport: string;
+    reportExportedAs: string;
+    failedToExport: string;
+    // Additional
+    additionalInformation: string;
+  };
+
+  // Student Report
+  studentReport: {
+    title: string;
+    subtitle: string;
+    filters: string;
+    searchPlaceholder: string;
+    allSchools: string;
+    allStatus: string;
+    allGenders: string;
+    applied: string;
+    admitted: string;
+    active: string;
+    withdrawn: string;
+    male: string;
+    female: string;
+    students: string;
+    loadingStudents: string;
+    noStudentsFound: string;
+    studentId: string;
+    fullName: string;
+    originLocation: string;
+    birthYear: string;
+    status: string;
+    schoolRequired: string;
+    reportExported: string;
+    exportFailed: string;
+    // Detail Sheet Sections
+    personalInformation: string;
+    guardianInformation: string;
+    academicInformation: string;
+    locationInformation: string;
+    additionalInformation: string;
+    // Detail Sheet Labels
+    fatherName: string;
+    gender: string;
+    age: string;
+    birthDate: string;
+    nationality: string;
+    guardianName: string;
+    relation: string;
+    guardianPhone: string;
+    contactPhone: string;
+    homeAddress: string;
+    school: string;
+    applyingGrade: string;
+    admissionYear: string;
+    admissionFeeStatus: string;
+    previousSchool: string;
+    currentLocation: string;
+    isOrphan: string;
+    yes: string;
+    no: string;
+    disabilityStatus: string;
+    emergencyContact: string;
+    // Detail Sheet Header Labels
+    idLabel: string;
+    admissionLabel: string;
+    cardLabel: string;
   };
 
   // Library Management
@@ -1542,6 +1847,13 @@ export interface TranslationKeys {
     order: string;
     noCategoriesFound: string;
     noCategoriesMessage: string;
+    searchCategoriesPlaceholder: string;
+    totalCategories: string;
+    name: string;
+    code: string;
+    deleteCategoryDescription: string;
+    totalCategoriesLabel: string;
+    categoryDescriptionPlaceholder: string;
     searchCategories: string;
     deleteCategoryConfirm: string;
     categoryInUse: string;
@@ -1832,6 +2144,8 @@ export interface TranslationKeys {
     deleteConfirmTitle: string;
     deleteConfirmDescription: string;
     loadingSchools: string;
+    delete: string;
+    cancel: string;
   };
 
   // Roles Management
@@ -2070,6 +2384,9 @@ export interface TranslationKeys {
     deleteConfirmDescription: string;
     loadingReportTemplates: string;
     unknown: string;
+    active: string;
+    cancel: string;
+    delete: string;
   };
 
   // Profile Management
@@ -2107,6 +2424,13 @@ export interface TranslationKeys {
     cancel: string;
     update: string;
     loadingProfile: string;
+    fullNameRequired: string;
+    fullNameMaxLength: string;
+    invalidEmail: string;
+    phoneMaxLength: string;
+    editProfile: string;
+    updateOwnProfileDescription: string;
+    updateProfileDescription: string;
   };
 
   // Authentication
@@ -2406,6 +2730,40 @@ export interface TranslationKeys {
     disciplineRecordUpdateFailed: string;
     disciplineRecordDeleteFailed: string;
     disciplineRecordResolveFailed: string;
+    // Asset Categories
+    assetCategories: {
+      created: string;
+      updated: string;
+      deleted: string;
+    };
+    // Assets
+    assets: {
+      saved: string;
+      updated: string;
+      removed: string;
+      assignmentSaved: string;
+      assignmentUpdated: string;
+      assignmentRemoved: string;
+      maintenanceSaved: string;
+      maintenanceUpdated: string;
+      maintenanceRemoved: string;
+    };
+    // Certificate Templates
+    certificateTemplates: {
+      created: string;
+      updated: string;
+      deleted: string;
+      defaultUpdated: string;
+      generated: string;
+    };
+    // Course Attendance
+    courseAttendance: {
+      sessionCreated: string;
+      sessionUpdated: string;
+      sessionDeleted: string;
+      recordsSaved: string;
+      sessionClosed: string;
+    };
   };
 
 }

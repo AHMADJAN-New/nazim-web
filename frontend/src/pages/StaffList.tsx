@@ -124,11 +124,11 @@ export function StaffList() {
     const [viewingProfile, setViewingProfile] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState(1);
     const steps = [
-        { id: 1, label: 'Basic Information', icon: User, description: 'Core employee identification and status information' },
-        { id: 2, label: 'Personal Details', icon: User, description: 'Personal information and identification' },
-        { id: 3, label: 'Contact & Location', icon: MapPin, description: 'Contact information and addresses' },
-        { id: 4, label: 'Education', icon: GraduationCap, description: 'Educational background and qualifications' },
-        { id: 5, label: 'Employment', icon: Briefcase, description: 'Employment details and position information' },
+        { id: 1, label: t('staff.basicInformation'), icon: User, description: t('staff.basicInformationDescription') },
+        { id: 2, label: t('staff.personalDetails'), icon: User, description: t('staff.personalDetailsDescription') },
+        { id: 3, label: t('staff.contactLocation'), icon: MapPin, description: t('staff.contactLocationDescription') },
+        { id: 4, label: t('staff.education'), icon: GraduationCap, description: t('staff.educationDescription') },
+        { id: 5, label: t('staff.employment'), icon: Briefcase, description: t('staff.employmentDescription') },
     ];
 
     const { data: organizations } = useOrganizations();
@@ -202,7 +202,7 @@ export function StaffList() {
     const columns: ColumnDef<Staff>[] = [
         {
             accessorKey: 'photo',
-            header: 'Photo',
+            header: t('staff.photo'),
             cell: ({ row }) => {
                 const pictureUrl = row.original.pictureUrl 
                     ? (row.original.pictureUrl.startsWith('http') 
@@ -222,12 +222,12 @@ export function StaffList() {
         },
         {
             accessorKey: 'fullName',
-            header: 'Name',
+            header: t('staff.name'),
             cell: ({ row }) => <span className="font-medium">{row.original.fullName}</span>,
         },
         {
             accessorKey: 'staffCode',
-            header: 'ID',
+            header: t('staff.id'),
             cell: ({ row }) => (
                 <div className="font-mono text-sm font-medium">
                     {row.original.staffCode || row.original.employeeId || '—'}
@@ -236,12 +236,12 @@ export function StaffList() {
         },
         {
             accessorKey: 'employeeId',
-            header: 'Employee ID',
+            header: t('staff.employeeId'),
             cell: ({ row }) => row.original.employeeId,
         },
         {
             accessorKey: 'staffType',
-            header: 'Type',
+            header: t('staff.type'),
             cell: ({ row }) => {
                 const type = staffTypes?.find(t => t.id === row.original.staffTypeId);
                 return type ? <Badge variant="outline">{type.name}</Badge> : '-';
@@ -249,7 +249,7 @@ export function StaffList() {
         },
         {
             accessorKey: 'status',
-            header: 'Status',
+            header: t('staff.status'),
             cell: ({ row }) => {
                 const statusColors: Record<string, string> = {
                     active: 'default',
@@ -267,7 +267,7 @@ export function StaffList() {
         },
         {
             accessorKey: 'school',
-            header: 'School',
+            header: t('staff.school'),
             cell: ({ row }) => {
                 const school = schools?.find(s => s.id === row.original.schoolId);
                 return school ? (school.schoolName || (school as any).school_name) : '-';
@@ -275,7 +275,7 @@ export function StaffList() {
         },
         {
             accessorKey: 'contact',
-            header: 'Contact',
+            header: t('staff.contact'),
             cell: ({ row }) => (
                 <div className="text-sm">
                     {row.original.email && <div>{row.original.email}</div>}
@@ -285,7 +285,7 @@ export function StaffList() {
         },
         {
             id: 'actions',
-            header: () => <div className="text-right">Actions</div>,
+            header: () => <div className="text-right">{t('staff.actions')}</div>,
             cell: ({ row }) => (
                 <div className="flex justify-end gap-2">
                     <Button
@@ -422,7 +422,7 @@ export function StaffList() {
             <div className="container mx-auto p-6">
                 <Card>
                     <CardContent className="p-6">
-                        <div className="text-center text-muted-foreground">You don't have permission to view staff</div>
+                        <div className="text-center text-muted-foreground">{t('staff.noPermissionToView')}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -440,10 +440,10 @@ export function StaffList() {
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 <Users className="h-5 w-5" />
-                                Staff Management
+                                {t('staff.management')}
                             </CardTitle>
                             <CardDescription>
-                                Manage and view all staff members
+                                {t('staff.subtitle')}
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
@@ -451,7 +451,7 @@ export function StaffList() {
                                 <Button variant="outline" asChild>
                                     <Link to="/reports/staff-registrations">
                                         <FileText className="w-4 h-4 mr-2" />
-                                        Registration Report
+                                        {t('staff.registrationReport')}
                                     </Link>
                                 </Button>
                             )}
@@ -463,7 +463,7 @@ export function StaffList() {
                                         e.stopPropagation();
                                         // Ensure profile has organization_id
                                         if (!profile?.organization_id) {
-                                            toast.error('You are not assigned to an organization. Please log out and log back in.');
+                                            toast.error(t('common.notAssignedToOrganization'));
                                             return;
                                         }
                                         console.log('Create staff button clicked');
@@ -472,7 +472,7 @@ export function StaffList() {
                                     disabled={!profile?.organization_id}
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Add Staff
+                                    {t('staff.addStaff')}
                                 </Button>
                             )}
                         </div>
@@ -485,31 +485,31 @@ export function StaffList() {
                             <Card>
                                 <CardContent className="p-4">
                                     <div className="text-2xl font-bold">{stats.total}</div>
-                                    <div className="text-sm text-muted-foreground">Total Staff</div>
+                                    <div className="text-sm text-muted-foreground">{t('staff.totalStaff')}</div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="p-4">
                                     <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-                                    <div className="text-sm text-muted-foreground">Active</div>
+                                    <div className="text-sm text-muted-foreground">{t('staff.active')}</div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="p-4">
                                     <div className="text-2xl font-bold text-orange-600">{stats.onLeave}</div>
-                                    <div className="text-sm text-muted-foreground">On Leave</div>
+                                    <div className="text-sm text-muted-foreground">{t('staff.onLeave')}</div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="p-4">
                                     <div className="text-2xl font-bold text-blue-600">{stats.byType.teacher}</div>
-                                    <div className="text-sm text-muted-foreground">Teachers</div>
+                                    <div className="text-sm text-muted-foreground">{t('staff.teachers')}</div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="p-4">
                                     <div className="text-2xl font-bold text-purple-600">{stats.byType.admin}</div>
-                                    <div className="text-sm text-muted-foreground">Admins</div>
+                                    <div className="text-sm text-muted-foreground">{t('staff.admins')}</div>
                                 </CardContent>
                             </Card>
                         </div>
@@ -528,23 +528,23 @@ export function StaffList() {
                         </div>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-[150px]">
-                                <SelectValue placeholder="Status" />
+                                <SelectValue placeholder={t('staff.status')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
-                                <SelectItem value="on_leave">On Leave</SelectItem>
-                                <SelectItem value="terminated">Terminated</SelectItem>
-                                <SelectItem value="suspended">Suspended</SelectItem>
+                                <SelectItem value="all">{t('staff.allStatus')}</SelectItem>
+                                <SelectItem value="active">{t('staff.statusActive')}</SelectItem>
+                                <SelectItem value="inactive">{t('staff.statusInactive')}</SelectItem>
+                                <SelectItem value="on_leave">{t('staff.statusOnLeave')}</SelectItem>
+                                <SelectItem value="terminated">{t('staff.statusTerminated')}</SelectItem>
+                                <SelectItem value="suspended">{t('staff.statusSuspended')}</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={typeFilter} onValueChange={setTypeFilter}>
                             <SelectTrigger className="w-[150px]">
-                                <SelectValue placeholder="Type" />
+                                <SelectValue placeholder={t('staff.type')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Types</SelectItem>
+                                <SelectItem value="all">{t('staff.allTypes')}</SelectItem>
                                 {staffTypes?.map((type) => (
                                     <SelectItem key={type.id} value={type.id}>
                                         {type.name}
@@ -554,11 +554,11 @@ export function StaffList() {
                         </Select>
                         {schools && schools.length > 0 && (
                             <Select value={schoolFilter} onValueChange={setSchoolFilter}>
-                                <SelectTrigger className="w-[150px]">
-                                    <SelectValue placeholder="School" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Schools</SelectItem>
+                            <SelectTrigger className="w-[150px]">
+                                <SelectValue placeholder={t('staff.school')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">{t('staff.allSchools')}</SelectItem>
                                     {schools.map((school) => (
                                         <SelectItem key={school.id} value={school.id}>
                                             {school.schoolName}
@@ -579,7 +579,7 @@ export function StaffList() {
                                 }}
                             >
                                 <X className="w-4 h-4 mr-2" />
-                                Clear
+                                {t('staff.clear')}
                             </Button>
                         )}
                     </div>
@@ -591,15 +591,15 @@ export function StaffList() {
                 <CardContent className="p-0">
                     {isLoading ? (
                         <div className="p-6">
-                            <LoadingSpinner text="Loading staff..." />
+                            <LoadingSpinner text={t('staff.loadingStaff')} />
                         </div>
                     ) : !staff || (Array.isArray(staff) && filteredStaff.length === 0) ? (
                         <div className="p-6 text-center text-muted-foreground">
                             {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || schoolFilter !== 'all'
-                                ? 'No staff members found matching your filters'
+                                ? t('staff.noStaffMembersFound')
                                 : !staff || staff.length === 0
-                                ? 'No staff members available'
-                                : 'No staff members found matching your filters'}
+                                ? t('staff.noStaffMembersAvailable')
+                                : t('staff.noStaffMembersFound')}
                         </div>
                     ) : (
                         <>
@@ -625,8 +625,8 @@ export function StaffList() {
                                             <TableRow>
                                                 <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
                                                     {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || schoolFilter !== 'all'
-                                                        ? 'No staff members found matching your filters'
-                                                        : 'No staff members available'}
+                                                        ? t('staff.noStaffMembersFound')
+                                                        : t('staff.noStaffMembersAvailable')}
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
@@ -673,13 +673,13 @@ export function StaffList() {
                     <form onSubmit={handleSubmit(async (data) => {
                         // Wait for profile to load
                         if (!profile) {
-                            toast.error('Please wait for your profile to load...');
+                            toast.error(t('staff.pleaseWait'));
                             return;
                         }
 
                         // Validation is handled by react-hook-form, but double-check required fields
                         if (!data.staff_type_id || data.staff_type_id === 'none') {
-                            toast.error('Please select a staff type');
+                            toast.error(t('staff.pleaseSelectStaffType'));
                             setCurrentStep(1); // Go back to step 1 to show the error
                             return;
                         }
@@ -701,7 +701,7 @@ export function StaffList() {
                             }
                             
                             if (!organizationId) {
-                                toast.error('Please select an organization.');
+                                toast.error(t('common.pleaseSelectOrganization'));
                                 return;
                             }
                         } else {
@@ -711,7 +711,7 @@ export function StaffList() {
                             
                             if (!organizationId) {
                                 // This shouldn't happen - backend assigns org on login/register
-                                toast.error('You are not assigned to an organization. Please log out and log back in to refresh your profile.');
+                                toast.error(t('common.notAssignedToOrganization'));
                                 console.error('Profile missing organization_id. Profile:', profile);
                                 return;
                             }
@@ -720,7 +720,7 @@ export function StaffList() {
                             if (schoolId) {
                                 const selectedSchool = schools?.find(s => s.id === schoolId);
                                 if (selectedSchool && selectedSchool.organizationId !== organizationId) {
-                                    toast.error('Selected school does not belong to your organization.');
+                                    toast.error(t('staff.selectedSchoolNotBelong'));
                                     return;
                                 }
                             }
@@ -782,14 +782,14 @@ export function StaffList() {
                             },
                             onError: (error) => {
                                 console.error('Error creating staff:', error);
-                                toast.error(error.message || 'Failed to create staff member. Please try again.');
+                                toast.error(error.message || t('staff.failedToCreate'));
                             },
                         });
                     })}>
                         <DialogHeader>
-                            <DialogTitle>Create Employee</DialogTitle>
+                            <DialogTitle>{t('staff.createEmployee')}</DialogTitle>
                             <DialogDescription>
-                                Fill in the employee information step by step. All required fields are marked with an asterisk (*).
+                                {t('staff.createEmployeeDescription')}
                             </DialogDescription>
                         </DialogHeader>
 
@@ -859,21 +859,21 @@ export function StaffList() {
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="employee_id">Employee Code *</Label>
-                                                        <Input id="employee_id" {...register('employee_id')} placeholder="e.g., EMP-001" />
-                                                        <p className="text-xs text-muted-foreground">Unique identifier for the employee (e.g., EMP-001)</p>
+                                                        <Label htmlFor="employee_id">{t('staff.employeeCode')} *</Label>
+                                                        <Input id="employee_id" {...register('employee_id')} placeholder={t('staff.employeeCodePlaceholder')} />
+                                                        <p className="text-xs text-muted-foreground">{t('staff.employeeCodeHelper')}</p>
                                                         {errors.employee_id && <p className="text-sm text-destructive">{errors.employee_id.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="staff_type_id">Staff Type *</Label>
+                                                        <Label htmlFor="staff_type_id">{t('staff.staffType')} *</Label>
                                                         <Controller
                                                             name="staff_type_id"
                                                             control={control}
                                                             render={({ field }) => (
                                                                 <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
-                                                                    <SelectTrigger><SelectValue placeholder="Select staff type" /></SelectTrigger>
+                                                                    <SelectTrigger><SelectValue placeholder={t('staff.selectStaffType')} /></SelectTrigger>
                                                                     <SelectContent>
-                                                                        <SelectItem value="none">Select a type</SelectItem>
+                                                                        <SelectItem value="none">{t('staff.selectStaffTypePlaceholder')}</SelectItem>
                                                                         {staffTypes?.map((type) => <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>)}
                                                                     </SelectContent>
                                                                 </Select>
@@ -883,15 +883,15 @@ export function StaffList() {
                                                     </div>
                                                     {schools && schools.length > 0 && (
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="school_id">School</Label>
+                                                            <Label htmlFor="school_id">{t('staff.school')}</Label>
                                                             <Controller
                                                                 name="school_id"
                                                                 control={control}
                                                                 render={({ field }) => (
                                                                     <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
-                                                                        <SelectTrigger><SelectValue placeholder="Select school (optional)" /></SelectTrigger>
+                                                                        <SelectTrigger><SelectValue placeholder={t('staff.selectSchool')} /></SelectTrigger>
                                                                         <SelectContent>
-                                                                            <SelectItem value="none">No school</SelectItem>
+                                                                            <SelectItem value="none">{t('staff.noSchool')}</SelectItem>
                                                                             {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
                                                                         </SelectContent>
                                                                     </Select>
@@ -900,7 +900,7 @@ export function StaffList() {
                                                         </div>
                                                     )}
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="status">Employment Status *</Label>
+                                                        <Label htmlFor="status">{t('staff.employmentStatus')} *</Label>
                                                         <Controller
                                                             name="status"
                                                             control={control}
@@ -908,11 +908,11 @@ export function StaffList() {
                                                                 <Select value={field.value} onValueChange={field.onChange}>
                                                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                                                     <SelectContent>
-                                                                        <SelectItem value="active">Active</SelectItem>
-                                                                        <SelectItem value="inactive">Inactive</SelectItem>
-                                                                        <SelectItem value="on_leave">On Leave</SelectItem>
-                                                                        <SelectItem value="terminated">Terminated</SelectItem>
-                                                                        <SelectItem value="suspended">Suspended</SelectItem>
+                                                                        <SelectItem value="active">{t('staff.statusActive')}</SelectItem>
+                                                                        <SelectItem value="inactive">{t('staff.statusInactive')}</SelectItem>
+                                                                        <SelectItem value="on_leave">{t('staff.statusOnLeave')}</SelectItem>
+                                                                        <SelectItem value="terminated">{t('staff.statusTerminated')}</SelectItem>
+                                                                        <SelectItem value="suspended">{t('staff.statusSuspended')}</SelectItem>
                                                                     </SelectContent>
                                                                 </Select>
                                                             )}
@@ -938,32 +938,32 @@ export function StaffList() {
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-3 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="first_name">First Name *</Label>
+                                                        <Label htmlFor="first_name">{t('staff.firstName')} *</Label>
                                                         <Input id="first_name" {...register('first_name')} />
                                                         {errors.first_name && <p className="text-sm text-destructive">{errors.first_name.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="father_name">Father Name *</Label>
+                                                        <Label htmlFor="father_name">{t('staff.fatherName')} *</Label>
                                                         <Input id="father_name" {...register('father_name')} />
                                                         {errors.father_name && <p className="text-sm text-destructive">{errors.father_name.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="grandfather_name">Grandfather Name</Label>
+                                                        <Label htmlFor="grandfather_name">{t('staff.grandfatherName')}</Label>
                                                         <Input id="grandfather_name" {...register('grandfather_name')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="tazkira_number">Civil ID / Tazkira Number</Label>
+                                                        <Label htmlFor="tazkira_number">{t('staff.civilId')}</Label>
                                                         <Input id="tazkira_number" {...register('tazkira_number')} />
-                                                        <p className="text-xs text-muted-foreground">National identification number (Tazkira)</p>
+                                                        <p className="text-xs text-muted-foreground">{t('staff.civilIdHelper')}</p>
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="birth_year">Birth Year</Label>
+                                                        <Label htmlFor="birth_year">{t('staff.birthYear')}</Label>
                                                         <Input id="birth_year" {...register('birth_year')} placeholder="e.g., 1990" />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="birth_date">Date of Birth</Label>
+                                                        <Label htmlFor="birth_date">{t('staff.dateOfBirth')}</Label>
                                                         <Input id="birth_date" type="date" {...register('birth_date')} />
-                                                        <p className="text-xs text-muted-foreground">Employee must be at least 18 years old</p>
+                                                        <p className="text-xs text-muted-foreground">{t('staff.dateOfBirthHelper')}</p>
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -985,42 +985,42 @@ export function StaffList() {
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="email">Email Address</Label>
+                                                        <Label htmlFor="email">{t('staff.email')}</Label>
                                                         <Input id="email" type="email" {...register('email')} />
                                                         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="phone_number">Phone Number</Label>
+                                                        <Label htmlFor="phone_number">{t('staff.phoneNumber')}</Label>
                                                         <Input id="phone_number" {...register('phone_number')} />
                                                     </div>
                                                     <div className="grid gap-2 col-span-2">
-                                                        <Label htmlFor="home_address">Home Address</Label>
+                                                        <Label htmlFor="home_address">{t('staff.homeAddress')}</Label>
                                                         <Input id="home_address" {...register('home_address')} />
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                                                     <div>
-                                                        <h4 className="font-medium mb-3">Origin Location</h4>
+                                                        <h4 className="font-medium mb-3">{t('staff.originLocation')}</h4>
                                                         <div className="grid grid-cols-3 gap-2">
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="origin_province">Province</Label>
+                                                                <Label htmlFor="origin_province">{t('staff.province')}</Label>
                                                                 <Input id="origin_province" {...register('origin_province')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="origin_district">District</Label>
+                                                                <Label htmlFor="origin_district">{t('staff.district')}</Label>
                                                                 <Input id="origin_district" {...register('origin_district')} />
                                                             </div>
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="origin_village">Village</Label>
+                                                                <Label htmlFor="origin_village">{t('staff.village')}</Label>
                                                                 <Input id="origin_village" {...register('origin_village')} />
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-medium mb-3">Current Location</h4>
+                                                        <h4 className="font-medium mb-3">{t('staff.currentLocation')}</h4>
                                                         <div className="grid grid-cols-3 gap-2">
                                                             <div className="grid gap-2">
-                                                                <Label htmlFor="current_province">Province</Label>
+                                                                <Label htmlFor="current_province">{t('staff.province')}</Label>
                                                                 <Input id="current_province" {...register('current_province')} />
                                                             </div>
                                                             <div className="grid gap-2">
@@ -1052,22 +1052,22 @@ export function StaffList() {
                                             </CardHeader>
                                             <CardContent className="space-y-6">
                                                 <div>
-                                                    <h4 className="font-medium mb-3">Religious Education</h4>
+                                                    <h4 className="font-medium mb-3">{t('staff.religiousEducationSection')}</h4>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="religious_education">Education Level</Label>
+                                                            <Label htmlFor="religious_education">{t('staff.educationLevel')}</Label>
                                                             <Input id="religious_education" {...register('religious_education')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="religious_university">University/Institution</Label>
+                                                            <Label htmlFor="religious_university">{t('staff.universityInstitution')}</Label>
                                                             <Input id="religious_university" {...register('religious_university')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="religious_graduation_year">Graduation Year</Label>
+                                                            <Label htmlFor="religious_graduation_year">{t('staff.graduationYear')}</Label>
                                                             <Input id="religious_graduation_year" {...register('religious_graduation_year')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="religious_department">Department</Label>
+                                                            <Label htmlFor="religious_department">{t('staff.department')}</Label>
                                                             <Input id="religious_department" {...register('religious_department')} />
                                                         </div>
                                                     </div>
@@ -1112,24 +1112,24 @@ export function StaffList() {
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="position">Position</Label>
+                                                        <Label htmlFor="position">{t('staff.position')}</Label>
                                                         <Input id="position" {...register('position')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="teaching_section">Teaching Section</Label>
+                                                        <Label htmlFor="teaching_section">{t('staff.teachingSection')}</Label>
                                                         <Input id="teaching_section" {...register('teaching_section')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="duty">Duty</Label>
+                                                        <Label htmlFor="duty">{t('staff.duty')}</Label>
                                                         <Input id="duty" {...register('duty')} />
                                                     </div>
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="salary">Salary</Label>
+                                                        <Label htmlFor="salary">{t('staff.salary')}</Label>
                                                         <Input id="salary" {...register('salary')} />
                                                     </div>
                                                     <div className="grid gap-2 col-span-2">
-                                                        <Label htmlFor="notes">Notes</Label>
-                                                        <Textarea id="notes" {...register('notes')} rows={3} placeholder="Additional notes about this staff member..." />
+                                                        <Label htmlFor="notes">{t('staff.notes')}</Label>
+                                                        <Textarea id="notes" {...register('notes')} rows={3} placeholder={t('staff.notesPlaceholder')} />
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -1161,7 +1161,7 @@ export function StaffList() {
                                 </Button>
                                 {currentStep < steps.length ? (
                                     <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>
-                                        Next
+                                        {t('staff.next')}
                                         <ChevronRight className="h-4 w-4 ml-2" />
                                     </Button>
                                 ) : (
@@ -1169,7 +1169,7 @@ export function StaffList() {
                                         type="submit"
                                         disabled={createStaff.isPending}
                                     >
-                                        {createStaff.isPending ? 'Creating...' : 'Create Staff'}
+                                        {createStaff.isPending ? t('staff.creating') : t('staff.addStaff')}
                                     </Button>
                                 )}
                             </div>
@@ -1190,7 +1190,7 @@ export function StaffList() {
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <form onSubmit={handleSubmit(async (data) => {
                         if (!editingStaff || !data.staff_type_id) {
-                            toast.error('Please select a staff type');
+                            toast.error(t('staff.pleaseSelectStaffType'));
                             return;
                         }
 
@@ -1256,9 +1256,9 @@ export function StaffList() {
                         );
                     })}>
                         <DialogHeader>
-                            <DialogTitle>Edit Employee</DialogTitle>
+                            <DialogTitle>{t('staff.editEmployee')}</DialogTitle>
                             <DialogDescription>
-                                Update the employee information step by step. All required fields are marked with an asterisk (*).
+                                {t('staff.editEmployeeDescription')}
                             </DialogDescription>
                         </DialogHeader>
 
@@ -1321,16 +1321,16 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <User className="h-5 w-5" />
-                                                    Basic Information
+                                                    {t('staff.basicInformation')}
                                                 </CardTitle>
-                                                <CardDescription>Core employee identification and status information</CardDescription>
+                                                <CardDescription>{t('staff.basicInformationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_employee_id">Employee Code *</Label>
-                                                        <Input id="edit_employee_id" {...register('employee_id')} placeholder="e.g., EMP-001" />
-                                                        <p className="text-xs text-muted-foreground">Unique identifier for the employee (e.g., EMP-001)</p>
+                                                        <Label htmlFor="edit_employee_id">{t('staff.employeeCode')} *</Label>
+                                                        <Input id="edit_employee_id" {...register('employee_id')} placeholder={t('staff.employeeCodePlaceholder')} />
+                                                        <p className="text-xs text-muted-foreground">{t('staff.employeeCodeHelper')}</p>
                                                         {errors.employee_id && <p className="text-sm text-destructive">{errors.employee_id.message}</p>}
                                                     </div>
                                                     <div className="grid gap-2">
@@ -1352,15 +1352,15 @@ export function StaffList() {
                                                     </div>
                                                     {schools && schools.length > 0 && (
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="edit_school_id">School</Label>
+                                                            <Label htmlFor="edit_school_id">{t('staff.school')}</Label>
                                                             <Controller
                                                                 name="school_id"
                                                                 control={control}
                                                                 render={({ field }) => (
                                                                     <Select value={field.value || 'none'} onValueChange={(value) => field.onChange(value === 'none' ? null : value)}>
-                                                                        <SelectTrigger><SelectValue placeholder="Select school (optional)" /></SelectTrigger>
+                                                                        <SelectTrigger><SelectValue placeholder={t('staff.selectSchool')} /></SelectTrigger>
                                                                         <SelectContent>
-                                                                            <SelectItem value="none">No school</SelectItem>
+                                                                            <SelectItem value="none">{t('staff.noSchool')}</SelectItem>
                                                                             {schools.map((school) => <SelectItem key={school.id} value={school.id}>{school.schoolName}</SelectItem>)}
                                                                         </SelectContent>
                                                                     </Select>
@@ -1369,7 +1369,7 @@ export function StaffList() {
                                                         </div>
                                                     )}
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor="edit_status">Employment Status *</Label>
+                                                        <Label htmlFor="edit_status">{t('staff.employmentStatus')} *</Label>
                                                         <Controller
                                                             name="status"
                                                             control={control}
@@ -1377,11 +1377,11 @@ export function StaffList() {
                                                                 <Select value={field.value} onValueChange={field.onChange}>
                                                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                                                     <SelectContent>
-                                                                        <SelectItem value="active">Active</SelectItem>
-                                                                        <SelectItem value="inactive">Inactive</SelectItem>
-                                                                        <SelectItem value="on_leave">On Leave</SelectItem>
-                                                                        <SelectItem value="terminated">Terminated</SelectItem>
-                                                                        <SelectItem value="suspended">Suspended</SelectItem>
+                                                                        <SelectItem value="active">{t('staff.statusActive')}</SelectItem>
+                                                                        <SelectItem value="inactive">{t('staff.statusInactive')}</SelectItem>
+                                                                        <SelectItem value="on_leave">{t('staff.statusOnLeave')}</SelectItem>
+                                                                        <SelectItem value="terminated">{t('staff.statusTerminated')}</SelectItem>
+                                                                        <SelectItem value="suspended">{t('staff.statusSuspended')}</SelectItem>
                                                                     </SelectContent>
                                                                 </Select>
                                                             )}
@@ -1515,49 +1515,49 @@ export function StaffList() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <GraduationCap className="h-5 w-5" />
-                                                    Education
+                                                    {t('staff.education')}
                                                 </CardTitle>
-                                                <CardDescription>Educational background and qualifications</CardDescription>
+                                                <CardDescription>{t('staff.educationDescription')}</CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-6">
                                                 <div>
-                                                    <h4 className="font-medium mb-3">Religious Education</h4>
+                                                    <h4 className="font-medium mb-3">{t('staff.religiousEducationSection')}</h4>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="edit_religious_education">Education Level</Label>
+                                                            <Label htmlFor="edit_religious_education">{t('staff.educationLevel')}</Label>
                                                             <Input id="edit_religious_education" {...register('religious_education')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="edit_religious_university">University/Institution</Label>
+                                                            <Label htmlFor="edit_religious_university">{t('staff.universityInstitution')}</Label>
                                                             <Input id="edit_religious_university" {...register('religious_university')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="edit_religious_graduation_year">Graduation Year</Label>
+                                                            <Label htmlFor="edit_religious_graduation_year">{t('staff.graduationYear')}</Label>
                                                             <Input id="edit_religious_graduation_year" {...register('religious_graduation_year')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="edit_religious_department">Department</Label>
+                                                            <Label htmlFor="edit_religious_department">{t('staff.department')}</Label>
                                                             <Input id="edit_religious_department" {...register('religious_department')} />
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className="pt-4 border-t">
-                                                    <h4 className="font-medium mb-3">Modern Education</h4>
+                                                    <h4 className="font-medium mb-3">{t('staff.modernEducationSection')}</h4>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="edit_modern_education">Education Level</Label>
+                                                            <Label htmlFor="edit_modern_education">{t('staff.educationLevel')}</Label>
                                                             <Input id="edit_modern_education" {...register('modern_education')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="edit_modern_school_university">School/University</Label>
+                                                            <Label htmlFor="edit_modern_school_university">{t('staff.modernSchoolUniversity')}</Label>
                                                             <Input id="edit_modern_school_university" {...register('modern_school_university')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="edit_modern_graduation_year">Graduation Year</Label>
+                                                            <Label htmlFor="edit_modern_graduation_year">{t('staff.graduationYear')}</Label>
                                                             <Input id="edit_modern_graduation_year" {...register('modern_graduation_year')} />
                                                         </div>
                                                         <div className="grid gap-2">
-                                                            <Label htmlFor="edit_modern_department">Department</Label>
+                                                            <Label htmlFor="edit_modern_department">{t('staff.department')}</Label>
                                                             <Input id="edit_modern_department" {...register('modern_department')} />
                                                         </div>
                                                     </div>
@@ -1612,7 +1612,7 @@ export function StaffList() {
                                 {currentStep > 1 && (
                                     <Button type="button" variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
                                         <ChevronLeft className="h-4 w-4 mr-2" />
-                                        Previous
+                                        {t('staff.previous')}
                                     </Button>
                                 )}
                             </div>
@@ -1631,12 +1631,12 @@ export function StaffList() {
                                 </Button>
                                 {currentStep < steps.length ? (
                                     <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>
-                                        Next
+                                        {t('staff.next')}
                                         <ChevronRight className="h-4 w-4 ml-2" />
                                     </Button>
                                 ) : (
                                     <Button type="submit" disabled={updateStaff.isPending}>
-                                        {updateStaff.isPending ? 'Updating...' : 'Update Staff'}
+                                        {updateStaff.isPending ? t('staff.updating') : t('staff.updateStaff')}
                                     </Button>
                                 )}
                             </div>
@@ -1651,7 +1651,7 @@ export function StaffList() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this staff member? This action cannot be undone.
+                            {t('staff.deleteConfirmMessage')} {t('staff.deleteConfirmDescription')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

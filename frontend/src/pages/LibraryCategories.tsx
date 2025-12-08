@@ -43,15 +43,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading';
 
-const categorySchema = z.object({
-    name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
-    code: z.string().max(50, 'Code must be 50 characters or less').optional().nullable(),
-    description: z.string().max(500, 'Description must be 500 characters or less').optional().nullable(),
+const categorySchema = (t: (key: string) => string) => z.object({
+    name: z.string().min(1, t('library.categoryNameRequired')).max(100, t('library.categoryNameMaxLength')),
+    code: z.string().max(50, t('library.categoryCodeMaxLength')).optional().nullable(),
+    description: z.string().max(500, t('library.categoryDescriptionMaxLength')).optional().nullable(),
     display_order: z.number().int().min(0).default(0),
     is_active: z.boolean().default(true),
 });
 
-type CategoryFormData = z.infer<typeof categorySchema>;
+type CategoryFormData = z.infer<ReturnType<typeof categorySchema>>;
 
 export default function LibraryCategories() {
     const { t } = useLanguage();
@@ -78,7 +78,7 @@ export default function LibraryCategories() {
         watch,
         formState: { errors },
     } = useForm<CategoryFormData>({
-        resolver: zodResolver(categorySchema),
+        resolver: zodResolver(categorySchema(t)),
         defaultValues: {
             is_active: true,
             display_order: 0,
@@ -202,23 +202,23 @@ export default function LibraryCategories() {
                 <div className="flex items-center gap-3">
                     <BookOpen className="h-8 w-8" />
                     <div>
-                        <h1 className="text-2xl font-semibold">Library Categories</h1>
-                        <p className="text-sm text-muted-foreground">Manage book categories for organizing your library</p>
+                        <h1 className="text-2xl font-semibold">{t('library.libraryCategories')}</h1>
+                        <p className="text-sm text-muted-foreground">{t('library.manageBookCategories')}</p>
                     </div>
                 </div>
                 {hasCreatePermission && (
                     <Button onClick={() => handleOpenDialog()}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Category
+                        {t('library.addCategory')}
                     </Button>
                 )}
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Categories</CardTitle>
+                    <CardTitle>{t('library.categories')}</CardTitle>
                     <CardDescription>
-                        {Array.isArray(categories) ? categories.length : 0} total categories
+                        {Array.isArray(categories) ? categories.length : 0} {t('library.totalCategoriesLabel')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -226,7 +226,7 @@ export default function LibraryCategories() {
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search categories..."
+                                placeholder={t('library.searchCategories')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
@@ -238,19 +238,19 @@ export default function LibraryCategories() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Code</TableHead>
-                                    <TableHead>Description</TableHead>
-                                    <TableHead>Order</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>{t('library.categoryName')}</TableHead>
+                                    <TableHead>{t('library.categoryCode')}</TableHead>
+                                    <TableHead>{t('library.categoryDescription')}</TableHead>
+                                    <TableHead>{t('library.order')}</TableHead>
+                                    <TableHead>{t('library.status')}</TableHead>
+                                    <TableHead className="text-right">{t('common.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredCategories.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                            {searchQuery ? 'No categories found matching your search.' : 'No categories yet. Create your first category to get started.'}
+                                            {searchQuery ? t('library.noCategoriesFound') : t('library.noCategoriesMessage')}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -270,7 +270,7 @@ export default function LibraryCategories() {
                                             <TableCell>{category.display_order}</TableCell>
                                             <TableCell>
                                                 <Badge variant={category.is_active ? 'default' : 'secondary'}>
-                                                    {category.is_active ? 'Active' : 'Inactive'}
+                                                    {category.is_active ? t('library.active') : t('library.inactive')}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -309,24 +309,24 @@ export default function LibraryCategories() {
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>
-                            {selectedCategory ? 'Edit Category' : 'Create Category'}
+                            {selectedCategory ? t('library.editCategory') : t('library.createCategory')}
                         </DialogTitle>
                         <DialogDescription>
                             {selectedCategory
-                                ? 'Update the category information below.'
-                                : 'Add a new category to organize your library books.'}
+                                ? t('library.updateCategoryInfo')
+                                : t('library.addNewCategoryInfo')}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <div className="space-y-4 py-4">
                             <div>
                                 <Label htmlFor="name">
-                                    Name <span className="text-destructive">*</span>
+                                    {t('library.categoryName')} <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="name"
                                     {...register('name')}
-                                    placeholder="e.g., Fiction, Non-Fiction, Reference"
+                                    placeholder={t('library.namePlaceholder')}
                                 />
                                 {errors.name && (
                                     <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
@@ -334,11 +334,11 @@ export default function LibraryCategories() {
                             </div>
 
                             <div>
-                                <Label htmlFor="code">Code</Label>
+                                <Label htmlFor="code">{t('library.categoryCode')}</Label>
                                 <Input
                                     id="code"
                                     {...register('code')}
-                                    placeholder="e.g., FIC, NON-FIC, REF"
+                                    placeholder={t('library.codePlaceholder')}
                                 />
                                 {errors.code && (
                                     <p className="text-sm text-destructive mt-1">{errors.code.message}</p>
@@ -346,11 +346,11 @@ export default function LibraryCategories() {
                             </div>
 
                             <div>
-                                <Label htmlFor="description">Description</Label>
+                                <Label htmlFor="description">{t('library.categoryDescription')}</Label>
                                 <Textarea
                                     id="description"
                                     {...register('description')}
-                                    placeholder="Optional description for this category"
+                                    placeholder={t('library.categoryDescriptionPlaceholder')}
                                     rows={3}
                                 />
                                 {errors.description && (
@@ -360,7 +360,7 @@ export default function LibraryCategories() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="display_order">Display Order</Label>
+                                    <Label htmlFor="display_order">{t('library.displayOrder')}</Label>
                                     <Input
                                         id="display_order"
                                         type="number"
@@ -379,20 +379,20 @@ export default function LibraryCategories() {
                                         onCheckedChange={(checked) => setValue('is_active', checked)}
                                     />
                                     <Label htmlFor="is_active" className="cursor-pointer">
-                                        Active
+                                        {t('library.active')}
                                     </Label>
                                 </div>
                             </div>
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                                Cancel
+                                {t('common.cancel')}
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={createCategory.isPending || updateCategory.isPending}
                             >
-                                {selectedCategory ? 'Update' : 'Create'}
+                                {selectedCategory ? t('library.update') : t('library.create')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -403,20 +403,19 @@ export default function LibraryCategories() {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('library.areYouSure')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will delete the category. Books using this category will have their category set to null.
-                            This action cannot be undone.
+                            {t('library.deleteCategoryConfirm')} {t('library.deleteCategoryDescription')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDelete}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             disabled={deleteCategory.isPending}
                         >
-                            {deleteCategory.isPending ? 'Deleting...' : 'Delete'}
+                            {deleteCategory.isPending ? t('library.deleting') : t('common.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

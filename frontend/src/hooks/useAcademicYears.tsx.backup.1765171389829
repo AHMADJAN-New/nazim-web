@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import { useLanguage } from './useLanguage';
 import { academicYearsApi } from '@/lib/api/client';
 import type * as AcademicYearApi from '@/types/api/academicYear';
 import type { AcademicYear } from '@/types/domain/academicYear';
@@ -66,7 +65,6 @@ export const useCurrentAcademicYear = (organizationId?: string) => {
 export const useCreateAcademicYear = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
-  const { t } = useLanguage();
 
   return useMutation({
     mutationFn: async (academicYearData: { 
@@ -99,15 +97,15 @@ export const useCreateAcademicYear = () => {
 
       // Validation: max 100 characters for name
       if (academicYearData.name.length > 100) {
-        throw new Error(t('academic.academicYears.nameMaxLength'));
+        throw new Error('Name must be 100 characters or less');
       }
 
       // Validate dates are provided
       if (!academicYearData.startDate) {
-        throw new Error(t('academic.academicYears.startDateRequired'));
+        throw new Error('Start date is required');
       }
       if (!academicYearData.endDate) {
-        throw new Error(t('academic.academicYears.endDateRequired'));
+        throw new Error('End date is required');
       }
 
       // Convert dates to Date objects if strings
@@ -128,7 +126,7 @@ export const useCreateAcademicYear = () => {
       }
       
       if (endDate <= startDate) {
-        throw new Error(t('academic.academicYears.dateRangeError'));
+        throw new Error('End date must be after start date');
       }
 
       // Trim whitespace
@@ -169,7 +167,6 @@ export const useCreateAcademicYear = () => {
 export const useUpdateAcademicYear = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
-  const { t } = useLanguage();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<AcademicYear> & { id: string }) => {
@@ -197,7 +194,7 @@ export const useUpdateAcademicYear = () => {
 
       // Validation: max 100 characters for name
       if (updates.name && updates.name.length > 100) {
-        throw new Error(t('academic.academicYears.nameMaxLength'));
+        throw new Error('Name must be 100 characters or less');
       }
 
       // Validation: date range
@@ -214,7 +211,7 @@ export const useUpdateAcademicYear = () => {
       }
       
       if (endDate <= startDate) {
-        throw new Error(t('academic.academicYears.dateRangeError'));
+        throw new Error('End date must be after start date');
       }
 
       // Prepare update data
@@ -250,7 +247,6 @@ export const useUpdateAcademicYear = () => {
 export const useDeleteAcademicYear = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
-  const { t } = useLanguage();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -269,7 +265,7 @@ export const useDeleteAcademicYear = () => {
       // Validate organization access (all users)
       // Note: Global years (organizationId = NULL) cannot be deleted
       if (currentAcademicYear.organizationId === null) {
-        throw new Error(t('academic.academicYears.cannotDeleteGlobal'));
+        throw new Error('Cannot delete global academic years');
       }
       if (currentAcademicYear.organizationId !== profile.organization_id) {
         throw new Error('Cannot delete academic year from different organization');
@@ -277,7 +273,7 @@ export const useDeleteAcademicYear = () => {
 
       // Prevent deletion of current year (warn user)
       if (currentAcademicYear.isCurrent) {
-        throw new Error(t('academic.academicYears.cannotDeleteCurrent'));
+        throw new Error('Cannot delete the current academic year. Please set another year as current first.');
       }
 
       // Delete academic year via Laravel API (soft delete)

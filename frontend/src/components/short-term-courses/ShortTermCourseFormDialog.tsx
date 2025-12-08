@@ -121,9 +121,9 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Course' : 'Create Course'}</DialogTitle>
+          <DialogTitle>{isEdit ? t('courses.editCourse') : 'Create Course'}</DialogTitle>
           <DialogDescription>
-            {isEdit ? 'Update the course details below.' : 'Fill in the details to create a new short-term course.'}
+            {isEdit ? t('courses.updateDetails') : 'Fill in the details to create a new short-term course.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -134,7 +134,7 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
               <Input
                 id="name"
                 placeholder={t('common.courseNameExample')}
-                {...register('name', { required: 'Course name is required' })}
+                {...register('name', { required: t('courses.courseNameRequired') })}
               />
               {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}
             </div>
@@ -245,7 +245,7 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}>
-              {isEdit ? 'Update Course' : 'Create Course'}
+              {isEdit ? t('courses.updateCourse') : 'Create Course'}
             </Button>
           </DialogFooter>
         </form>

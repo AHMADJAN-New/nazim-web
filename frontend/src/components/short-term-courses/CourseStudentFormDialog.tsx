@@ -283,7 +283,7 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
                   <Input
                     id="fullName"
                     placeholder="Student full name"
-                    {...register('fullName', { required: 'Full name is required' })}
+                    {...register('fullName', { required: t('userManagement.fullNameRequired') })}
                   />
                   {errors.fullName && <p className="text-sm text-destructive mt-1">{errors.fullName.message}</p>}
                 </div>

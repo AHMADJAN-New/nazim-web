@@ -378,18 +378,28 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
         ],
       }] : []),
-      ...(hasHostelPermission ? [{
+      ...(hasHostelPermission || hasBuildingsPermission || hasRoomsPermission ? [{
         titleKey: "hostel",
         icon: BedDouble,
         badge: null,
         priority: 3.06,
         children: [
-          {
+          ...(hasHostelPermission ? [{
             title: "Hostel overview",
             titleKey: "hostel.overview",
             url: "/hostel",
             icon: BedDouble,
-          },
+          }] : []),
+          ...(hasBuildingsPermission ? [{
+            title: "Buildings Management",
+            url: "/settings/buildings",
+            icon: Building2,
+          }] : []),
+          ...(hasRoomsPermission ? [{
+            title: "Rooms Management",
+            url: "/settings/rooms",
+            icon: DoorOpen,
+          }] : []),
           ...(hasReportsPermission ? [{
             title: "Hostel reports",
             titleKey: "hostel.reports",
@@ -561,16 +571,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
         priority: 8,
         children: [
           // Only show child items if user has the required permission
-          ...(hasBuildingsPermission ? [{
-            title: "Buildings Management",
-            url: "/settings/buildings",
-            icon: Building2,
-          }] : []),
-          ...(hasRoomsPermission ? [{
-            title: "Rooms Management",
-            url: "/settings/rooms",
-            icon: DoorOpen,
-          }] : []),
           ...(hasBrandingPermission ? [{
             title: "Schools Management",
             url: "/settings/schools",
@@ -637,8 +637,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
       }
 
       if (item.titleKey === 'academicSettings') {
-        // Show if user has any academic-related permission (excluding classes, subjects, and assignments which are in academicManagement)
-        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission;
+        // Show if user has any academic-related permission (excluding classes, subjects, assignments, buildings, and rooms)
+        return hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission;
+      }
+
+      if (item.titleKey === 'hostel') {
+        // Show if user has any hostel-related permission (hostel, buildings, or rooms)
+        return hasHostelPermission || hasBuildingsPermission || hasRoomsPermission;
       }
 
       if (item.titleKey === 'academicManagement') {

@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import { useLanguage } from './useLanguage';
 import { residencyTypesApi } from '@/lib/api/client';
 
 // TypeScript interfaces for Residency Type
@@ -60,7 +59,6 @@ export const useCreateResidencyType = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
   const { orgIds } = useAccessibleOrganizations();
-  const { t } = useLanguage();
 
   return useMutation({
     mutationFn: async (residencyTypeData: ResidencyTypeInsert) => {
@@ -76,12 +74,12 @@ export const useCreateResidencyType = () => {
 
       // Validation: max 100 characters for name
       if (residencyTypeData.name.length > 100) {
-        throw new Error(t('academic.academicYears.nameMaxLength'));
+        throw new Error('Name must be 100 characters or less');
       }
 
       // Validation: max 50 characters for code
       if (residencyTypeData.code.length > 50) {
-        throw new Error(t('academic.classes.codeMaxLength'));
+        throw new Error('Code must be 50 characters or less');
       }
 
       // Trim whitespace
@@ -137,12 +135,12 @@ export const useUpdateResidencyType = () => {
 
       // Validation: max 100 characters for name
       if (updates.name && updates.name.length > 100) {
-        throw new Error(t('academic.academicYears.nameMaxLength'));
+        throw new Error('Name must be 100 characters or less');
       }
 
       // Validation: max 50 characters for code
       if (updates.code && updates.code.length > 50) {
-        throw new Error(t('academic.classes.codeMaxLength'));
+        throw new Error('Code must be 50 characters or less');
       }
 
       // Trim whitespace if name or code is being updated

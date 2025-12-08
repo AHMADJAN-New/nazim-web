@@ -148,7 +148,7 @@ const CourseStudentReports = () => {
       return;
     }
 
-    const headers = ['Name', 'Father Name', 'Admission No', 'Guardian Name', 'Phone', 'Birth Year', 'Age', 'Registered', 'Status', 'Course'];
+    const headers = ['Name', t('staff.fatherName'), 'Admission No', 'Guardian Name', 'Phone', 'Birth Year', 'Age', 'Registered', 'Status', 'Course'];
     const rows = filtered.map((student) => {
       const course = courses?.find((c) => c.id === student.courseId);
       return [

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format, addDays, addWeeks } from 'date-fns';
 import { Calendar, CheckCircle2, Download, Eye, FileText, Loader2, Printer, Shield, UserRound, Zap, Search, Scan } from 'lucide-react';
 import { useLeaveRequests, useCreateLeaveRequest, useApproveLeaveRequest, useRejectLeaveRequest } from '@/hooks/useLeaveRequests';
-import { useStudents } from '@/hooks/useStudents';
+import { useStudents, type Student } from '@/hooks/useStudents';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
@@ -19,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { leaveRequestsApi, studentAdmissionsApi } from '@/lib/api/client';
 import type { LeaveRequest, LeaveRequestInsert } from '@/types/domain/leave';
 import { mapLeaveRequestApiToDomain } from '@/mappers/leaveMapper';
@@ -33,7 +33,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function LeaveManagement() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { data: profile } = useProfile();
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -70,6 +70,7 @@ export default function LeaveManagement() {
 
   // Get all students - will be filtered by class client-side
   const { data: allStudents } = useStudents(undefined, false);
+  const students: Student[] = (allStudents as Student[]) || [];
 
   const createLeave = useCreateLeaveRequest();
   const approveLeave = useApproveLeaveRequest();
@@ -101,18 +102,18 @@ export default function LeaveManagement() {
   // Filter students by selected class
   // When a class is selected, we should ideally filter by class, but for now show all
   // The selected student from search should always be available
-  const filteredStudents = useMemo(() => {
-    if (!allStudents) return [];
+  const filteredStudents = useMemo<Student[]>(() => {
+    if (!students.length) return [];
     // If class is selected, we could filter, but for now show all to ensure searched student is available
     // The selected student ID is preserved even if not in filtered list
-    return allStudents;
-  }, [allStudents]);
+    return students;
+  }, [students]);
 
   // Memoized options for searchable comboboxes
   const studentOptions = useMemo<ComboboxOption[]>(() => {
     if (!filteredStudents) return [];
     return filteredStudents.map(student => {
-      const name = student.fullName || student.full_name || 'Unknown';
+      const name = student.fullName || 'Unknown';
       const code = student.studentCode || student.admissionNumber || '';
       const card = student.cardNumber || '';
       
@@ -136,18 +137,18 @@ export default function LeaveManagement() {
   
   // Ensure selected student is always in options (for when student is selected via search)
   const studentOptionsWithSelected = useMemo<ComboboxOption[]>(() => {
-    if (!selectedStudent) return studentOptions;
+    if (!selectedStudent || !students.length) return studentOptions;
     
     // Check if selected student is already in options
     const hasSelected = studentOptions.some(opt => opt.value === selectedStudent);
     if (hasSelected) return studentOptions;
     
     // If not, find the student and add it
-    const selectedStudentData = allStudents?.find(s => s.id === selectedStudent);
+    const selectedStudentData = students.find(s => s.id === selectedStudent);
     if (selectedStudentData) {
-      const name = selectedStudentData.fullName || selectedStudentData.full_name || 'Unknown';
-      const code = selectedStudentData.studentCode || selectedStudentData.admissionNumber || '';
-      const card = selectedStudentData.cardNumber || '';
+      const name = selectedStudentData.fullName || 'Unknown';
+      const code = (selectedStudentData.studentCode ?? selectedStudentData.admissionNumber) || '';
+      const card = selectedStudentData.cardNumber ?? '';
       
       let displayLabel = name;
       if (code) {
@@ -173,7 +174,7 @@ export default function LeaveManagement() {
 
   const handleCreate = async () => {
     if (!selectedStudent || !startDate || !endDate) {
-      toast.error('Student, start date, and end date are required');
+      showToast.error('leave.requiredFields');
       return;
     }
 
@@ -206,7 +207,7 @@ export default function LeaveManagement() {
       setEndTime('');
       setReason('');
       setApprovalNote('');
-      toast.success('Leave request created successfully');
+      showToast.success('leave.requestCreated');
     } catch (error) {
       // Error is handled by the mutation hook
     }
@@ -233,7 +234,7 @@ export default function LeaveManagement() {
   const handleViewHistory = (request: LeaveRequest) => {
     setHistoryStudent({
       id: request.studentId,
-      name: request.student?.fullName || 'Student',
+      name: request.student?.fullName || t('leave.student'),
       code: request.student?.studentCode || request.student?.admissionNo || undefined,
       className: request.className,
     });
@@ -254,23 +255,23 @@ export default function LeaveManagement() {
   });
 
   const handlePrint = async (request: LeaveRequest) => {
-    const data = await leaveRequestsApi.printData(request.id);
-    const scanUrl = data.scan_url as string;
+    const data = await leaveRequestsApi.printData(request.id) as { scan_url: string };
+    const scanUrl = data.scan_url;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(scanUrl)}`;
     const doc = window.open('', '_blank');
     if (!doc) return;
     doc.document.write(`
-      <html><head><title>Leave Request</title>
+      <html><head><title>${t('leave.leaveRequest')}</title>
       <style>body{font-family: Arial;padding:16px;} .card{border:1px solid #e2e8f0;border-radius:12px;padding:16px;} .row{display:flex;justify-content:space-between;margin-bottom:8px;} .label{color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;} .value{font-weight:600;font-size:14px;} .qr{margin-top:16px;text-align:center;}</style>
       </head><body>
         <div class="card">
-          <div class="row"><div class="label">Student</div><div class="value">${request.student?.fullName || ''}</div></div>
-          <div class="row"><div class="label">Code</div><div class="value">${request.student?.studentCode || ''}</div></div>
-          <div class="row"><div class="label">Class</div><div class="value">${request.className || ''}</div></div>
-          <div class="row"><div class="label">Dates</div><div class="value">${format(request.startDate, 'PP')} → ${format(request.endDate, 'PP')}</div></div>
-          <div class="row"><div class="label">Reason</div><div class="value">${request.reason}</div></div>
+          <div class="row"><div class="label">${t('leave.student')}</div><div class="value">${request.student?.fullName || ''}</div></div>
+          <div class="row"><div class="label">${t('leave.code')}</div><div class="value">${request.student?.studentCode || ''}</div></div>
+          <div class="row"><div class="label">${t('attendancePage.class')}</div><div class="value">${request.className || ''}</div></div>
+          <div class="row"><div class="label">${t('leave.datesLabel')}</div><div class="value">${format(request.startDate, 'PP')} → ${format(request.endDate, 'PP')}</div></div>
+          <div class="row"><div class="label">${t('leave.reason')}</div><div class="value">${request.reason}</div></div>
           <div class="qr"><img src="${qrUrl}" alt="QR" /></div>
-          <p style="text-align:center;color:#475569;font-size:12px">Scan to verify leave (one-time use).</p>
+          <p style="text-align:center;color:#475569;font-size:12px">${t('leave.scanToVerify')}</p>
         </div>
         <script>window.print(); setTimeout(() => window.close(), 400);</script>
       </body></html>
@@ -313,26 +314,26 @@ export default function LeaveManagement() {
     setEndDate(format(end, 'yyyy-MM-dd'));
   };
 
-  const quickEntryOptions = [
-    { label: '1 Day', days: 1 },
-    { label: '2 Days', days: 2 },
-    { label: '3 Days', days: 3 },
-    { label: '1 Week', days: 7 },
-    { label: '2 Weeks', days: 14 },
-    { label: '1 Month', days: 30 },
-  ];
+  const quickEntryOptions = useMemo(() => [
+    { label: t('leave.oneDay'), days: 1 },
+    { label: t('leave.twoDays'), days: 2 },
+    { label: t('leave.threeDays'), days: 3 },
+    { label: t('leave.oneWeek'), days: 7 },
+    { label: t('leave.twoWeeks'), days: 14 },
+    { label: t('leave.oneMonth'), days: 30 },
+  ], [t]);
 
   // Quick reason options for common leave reasons
-  const quickReasonOptions = [
-    { label: 'Sick', reason: 'Sick - Medical condition requiring rest' },
-    { label: 'Getting Outside', reason: 'Getting outside of school - Personal errand' },
-    { label: 'Family Emergency', reason: 'Family emergency - Urgent family matter' },
-    { label: 'Medical Appointment', reason: 'Medical appointment - Doctor visit' },
-    { label: 'Personal', reason: 'Personal - Personal matter' },
-    { label: 'Family Event', reason: 'Family event - Family gathering or celebration' },
-    { label: 'Travel', reason: 'Travel - Out of town travel' },
-    { label: 'Religious', reason: 'Religious - Religious observance or ceremony' },
-  ];
+  const quickReasonOptions = useMemo(() => [
+    { label: t('leave.sick').split(' - ')[0], reason: t('leave.sick') },
+    { label: t('leave.gettingOutside').split(' - ')[0], reason: t('leave.gettingOutside') },
+    { label: t('leave.familyEmergency').split(' - ')[0], reason: t('leave.familyEmergency') },
+    { label: t('leave.medicalAppointment').split(' - ')[0], reason: t('leave.medicalAppointment') },
+    { label: t('leave.personal').split(' - ')[0], reason: t('leave.personal') },
+    { label: t('leave.familyEvent').split(' - ')[0], reason: t('leave.familyEvent') },
+    { label: t('leave.travel').split(' - ')[0], reason: t('leave.travel') },
+    { label: t('leave.religious').split(' - ')[0], reason: t('leave.religious') },
+  ], [t]);
 
   const handleQuickReason = (reasonText: string) => {
     setReason(reasonText);
@@ -345,9 +346,9 @@ export default function LeaveManagement() {
 
   // Fast search handler - search by card number, student code, or admission number
   const handleFastSearch = useCallback(async (searchValue: string) => {
-    if (!searchValue.trim() || !allStudents || !currentAcademicYear || !profile?.organization_id) {
+    if (!searchValue.trim() || !students.length || !currentAcademicYear || !profile?.organization_id) {
       if (!currentAcademicYear) {
-        toast.error('Academic year not loaded. Please wait...');
+        showToast.error('leave.academicYearNotLoaded');
       }
       return;
     }
@@ -357,10 +358,10 @@ export default function LeaveManagement() {
     
     try {
       // Search in all students by card number, student code, or admission number
-      const foundStudent = allStudents.find(student => {
-        const card = (student.cardNumber || '').toLowerCase();
-        const code = (student.studentCode || '').toLowerCase();
-        const admission = (student.admissionNumber || '').toLowerCase();
+      const foundStudent = students.find(student => {
+        const card = (student.cardNumber ?? '').toLowerCase();
+        const code = (student.studentCode ?? '').toLowerCase();
+        const admission = (student.admissionNumber ?? '').toLowerCase();
         const id = student.id.toLowerCase();
         
         return card === trimmedSearch || 
@@ -370,7 +371,7 @@ export default function LeaveManagement() {
       });
 
       if (!foundStudent) {
-        toast.error('Student not found. Please check the card number, student code, or admission number.');
+        showToast.error('leave.studentNotFound');
         setIsSearching(false);
         return;
       }
@@ -400,7 +401,8 @@ export default function LeaveManagement() {
             setSelectedClass(admission.class_id);
             setSelectedStudent(foundStudent.id);
             setFastSearch(''); // Clear search field
-            toast.success(`Found: ${foundStudent.fullName || foundStudent.full_name} - Class: ${classOptions.find(c => c.value === admission.class_id)?.label || 'Unknown'}`);
+            const className = classOptions.find(c => c.value === admission.class_id)?.label || t('leave.unknown');
+            showToast.success('leave.studentFound', { name: foundStudent.fullName, class: className });
             
             // Focus on reason field for quick entry after a brief delay
             setTimeout(() => {
@@ -408,23 +410,23 @@ export default function LeaveManagement() {
               reasonInput?.focus();
             }, 200);
           } else {
-            toast.error('Student found but class not available in current academic year.');
+            showToast.error('leave.classNotAvailable');
           }
         } else {
-          toast.error('Student found but not enrolled in any class for current academic year.');
+          showToast.error('leave.studentNotEnrolled');
         }
       } catch (error: any) {
         if (import.meta.env.DEV) {
           console.error('Failed to fetch student admission:', error);
         }
-        toast.error('Student found but could not determine their class. Please select manually.');
+        showToast.error('leave.couldNotDetermineClass');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to search student');
+      showToast.error(error.message || 'leave.failedToSearchStudent');
     } finally {
       setIsSearching(false);
     }
-  }, [allStudents, currentAcademicYear, profile?.organization_id, classOptions]);
+  }, [students, currentAcademicYear, profile?.organization_id, classOptions, t]);
 
   // Handle Enter key for immediate search (no auto-search on typing)
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -435,24 +437,32 @@ export default function LeaveManagement() {
   };
 
   return (
-    <>
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className={`flex flex-col md:flex-row md:items-center ${isRTL ? 'md:flex-row-reverse' : ''} md:justify-between gap-3 mb-6`}>
+        <div>
+          <h1 className="text-2xl font-bold">{t('leave.title')}</h1>
+          <p className="text-muted-foreground">
+            {t('leave.subtitle')}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-gradient-to-br from-slate-900 to-slate-800 text-white">
             <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white"><Shield className="h-5 w-5" /> Leave governance</CardTitle>
-            <CardDescription className="text-slate-200">Create requests with QR-ready slips for scanning.</CardDescription>
+            <CardTitle className={`flex items-center gap-2 text-white ${isRTL ? 'flex-row-reverse' : ''}`}><Shield className="h-5 w-5" /> {t('leave.leaveGovernance')}</CardTitle>
+            <CardDescription className="text-slate-200">{t('leave.qrReadySlips')}</CardDescription>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Current month</CardDescription>
+            <CardDescription>{t('leave.currentMonth')}</CardDescription>
             <CardTitle className="text-3xl font-bold">{sortedRequests.filter(r => r.startDate.getMonth() === new Date().getMonth()).length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Approved this year</CardDescription>
+            <CardDescription>{t('leave.approvedThisYear')}</CardDescription>
             <CardTitle className="text-3xl font-bold text-green-600">
               {sortedRequests.filter(r => r.status === 'approved' && r.startDate.getFullYear() === new Date().getFullYear()).length}
             </CardTitle>
@@ -460,27 +470,27 @@ export default function LeaveManagement() {
         </Card>
       </div>
 
-      <Tabs defaultValue="create" className="space-y-4">
+          <Tabs defaultValue="create" className="space-y-4">
         <TabsList className="grid grid-cols-2 w-full md:w-auto">
-          <TabsTrigger value="create" className="flex items-center gap-2"><FileText className="h-4 w-4" /> New Request</TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2"><Calendar className="h-4 w-4" /> History</TabsTrigger>
+          <TabsTrigger value="create" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}><FileText className="h-4 w-4" /> {t('leave.newRequest')}</TabsTrigger>
+          <TabsTrigger value="history" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}><Calendar className="h-4 w-4" /> {t('leave.history')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="create">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl font-semibold">Create Leave Request</CardTitle>
-              <CardDescription>Fill in the details below to create a new leave request with QR code for verification.</CardDescription>
+              <CardTitle className="text-xl font-semibold">{t('leave.createRequest')}</CardTitle>
+              <CardDescription>{t('leave.createRequestDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Fast Search Field */}
               <div className="space-y-2">
                 <Label htmlFor="fast-search" className="text-base font-semibold flex items-center gap-2">
                   <Scan className="h-4 w-4" />
-                  Fast Search / Scan
+                  {t('leave.fastSearchScan')}
                 </Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
                   <Input
                     id="fast-search"
                     ref={searchInputRef}
@@ -488,72 +498,73 @@ export default function LeaveManagement() {
                     value={fastSearch}
                     onChange={(e) => setFastSearch(e.target.value)}
                     onKeyDown={handleSearchKeyDown}
-                    placeholder="Scan card or type student code / admission number / card number, then press Enter..."
-                    className="pl-9 pr-4 h-12 text-base"
+                    placeholder={t('leave.scanCardPlaceholder')}
+                    className={`${isRTL ? 'pr-9 pl-4' : 'pl-9 pr-4'} h-12 text-base`}
                     disabled={isSearching || !currentAcademicYear}
                     autoComplete="off"
+                    dir={isRTL ? 'rtl' : 'ltr'}
                   />
                   {isSearching && (
-                    <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    <Loader2 className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground`} />
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Scan a student card or enter their code/admission number, then press <kbd className="px-1.5 py-0.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg">Enter</kbd> to auto-fill class and student
+                  {t('leave.scanCardHint')}
                 </p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="class-select">Class <span className="text-destructive">*</span></Label>
+                <Label htmlFor="class-select">{t('attendancePage.class')} <span className="text-destructive">*</span></Label>
                 <Combobox
                   options={classOptions}
                   value={selectedClass}
                   onValueChange={setSelectedClass}
-                  placeholder="Select class..."
-                  searchPlaceholder="Search classes..."
-                  emptyText={currentAcademicYear ? "No classes found for current academic year." : "Loading academic year..."}
+                  placeholder={t('leave.selectClassPlaceholder')}
+                  searchPlaceholder={t('leave.searchClassesPlaceholder')}
+                  emptyText={currentAcademicYear ? t('leave.noClassesFound') : t('leave.loadingAcademicYear')}
                   disabled={!currentAcademicYear}
                 />
                 {currentAcademicYear && (
                   <p className="text-xs text-muted-foreground">
-                    Showing classes for: {currentAcademicYear.name}
+                    {t('leave.showingClassesFor')} {currentAcademicYear.name}
                   </p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="student-select">Student <span className="text-destructive">*</span></Label>
+                <Label htmlFor="student-select">{t('leave.student')} <span className="text-destructive">*</span></Label>
                 <div key={selectedStudent || 'no-student'}>
                   <Combobox
                     options={studentOptionsWithSelected}
                     value={selectedStudent}
                     onValueChange={setSelectedStudent}
-                    placeholder={selectedClass ? "Select student..." : "Select class first..."}
-                    searchPlaceholder="Search by name, code, or card number..."
-                    emptyText={selectedClass ? "No students found in this class." : "Please select a class first."}
+                    placeholder={selectedClass ? t('leave.selectStudentPlaceholder') : t('leave.selectClassFirst')}
+                    searchPlaceholder={t('leave.searchStudentPlaceholder')}
+                    emptyText={selectedClass ? t('leave.noStudentsInClass') : t('leave.selectClassFirstMessage')}
                     disabled={!selectedClass}
                   />
                 </div>
                 {selectedStudent && (
                   <p className="text-xs text-muted-foreground">
-                    Selected: {studentOptionsWithSelected.find(s => s.value === selectedStudent)?.label || 'Student'}
+                    {t('leave.selected')} {studentOptionsWithSelected.find(s => s.value === selectedStudent)?.label || t('leave.student')}
                   </p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Leave Type</Label>
+                <Label>{t('leave.leaveType')}</Label>
                 <Select value={leaveType} onValueChange={(value) => setLeaveType(value as any)}>
-                  <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('leave.typePlaceholder')} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="full_day">Full day</SelectItem>
-                    <SelectItem value="partial_day">Partial day</SelectItem>
-                    <SelectItem value="time_bound">Time bound</SelectItem>
+                    <SelectItem value="full_day">{t('leave.fullDay')}</SelectItem>
+                    <SelectItem value="partial_day">{t('leave.partialDay')}</SelectItem>
+                    <SelectItem value="time_bound">{t('leave.timeBound')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base font-medium">Leave Duration</Label>
-                  <div className="flex flex-wrap gap-2">
+                <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''} justify-between`}>
+                  <Label className="text-base font-medium">{t('leave.leaveDuration')}</Label>
+                  <div className={`flex flex-wrap gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     {quickEntryOptions.map(option => (
                       <Button
                         key={option.days}
@@ -561,9 +572,9 @@ export default function LeaveManagement() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleQuickEntry(option.days)}
-                        className="h-8 text-xs"
+                        className={`h-8 text-xs ${isRTL ? 'flex-row-reverse' : ''}`}
                       >
-                        <Zap className="h-3 w-3 mr-1" />
+                        <Zap className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
                         {option.label}
                       </Button>
                     ))}
@@ -571,23 +582,25 @@ export default function LeaveManagement() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="start-date">Start Date <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="start-date">{t('leave.startDate')} <span className="text-destructive">*</span></Label>
                     <Input 
                       id="start-date"
                       type="date" 
                       value={startDate} 
                       onChange={e => setStartDate(e.target.value)}
                       min={format(new Date(), 'yyyy-MM-dd')}
+                      dir={isRTL ? 'rtl' : 'ltr'}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="end-date">End Date <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="end-date">{t('leave.endDate')} <span className="text-destructive">*</span></Label>
                     <Input 
                       id="end-date"
                       type="date" 
                       value={endDate} 
                       onChange={e => setEndDate(e.target.value)}
                       min={startDate || format(new Date(), 'yyyy-MM-dd')}
+                      dir={isRTL ? 'rtl' : 'ltr'}
                     />
                   </div>
                 </div>
@@ -595,21 +608,21 @@ export default function LeaveManagement() {
               {leaveType !== 'full_day' && (
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label>Start Time</Label>
-                    <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+                    <Label>{t('leave.startTime')}</Label>
+                    <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} dir={isRTL ? 'rtl' : 'ltr'} />
                   </div>
                   <div className="space-y-2">
-                    <Label>End Time</Label>
-                    <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+                    <Label>{t('leave.endTime')}</Label>
+                    <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} dir={isRTL ? 'rtl' : 'ltr'} />
                   </div>
                 </div>
               )}
               </div>
               
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="reason" className="text-base font-medium">Reason <span className="text-destructive">*</span></Label>
-                  <div className="flex flex-wrap gap-2">
+                <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''} justify-between`}>
+                  <Label htmlFor="reason" className="text-base font-medium">{t('leave.reason')} <span className="text-destructive">*</span></Label>
+                  <div className={`flex flex-wrap gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     {quickReasonOptions.map(option => (
                       <Button
                         key={option.label}
@@ -628,23 +641,25 @@ export default function LeaveManagement() {
                   id="reason"
                   value={reason} 
                   onChange={e => setReason(e.target.value)} 
-                  placeholder="Enter the reason for leave or select a quick reason above..." 
+                  placeholder={t('leave.reasonPlaceholder')} 
                   className="min-h-[100px]"
+                  dir={isRTL ? 'rtl' : 'ltr'}
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="approval-note">Approval Note <span className="text-muted-foreground text-xs font-normal">(optional)</span></Label>
+                <Label htmlFor="approval-note">{t('leave.approvalNote')} <span className="text-muted-foreground text-xs font-normal">({t('common.optional')})</span></Label>
                 <Textarea 
                   id="approval-note"
                   value={approvalNote} 
                   onChange={e => setApprovalNote(e.target.value)} 
-                  placeholder="Add any additional context for approvers or security guards..." 
+                  placeholder={t('leave.approvalNotePlaceholder')} 
                   className="min-h-[80px]"
+                  dir={isRTL ? 'rtl' : 'ltr'}
                 />
               </div>
               
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'} gap-3 pt-4 border-t ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <Button 
                   variant="outline" 
                   onClick={() => {
@@ -660,7 +675,7 @@ export default function LeaveManagement() {
                   }}
                   disabled={createLeave.isPending}
                 >
-                  Clear Form
+                  {t('leave.clearForm')}
                 </Button>
                 <Button 
                   onClick={handleCreate} 
@@ -669,13 +684,13 @@ export default function LeaveManagement() {
                 >
                   {createLeave.isPending ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Creating...
+                      <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                      {t('leave.creating')}
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Create Leave Request
+                      <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                      {t('leave.createRequest')}
                     </>
                   )}
                 </Button>
@@ -687,39 +702,39 @@ export default function LeaveManagement() {
         <TabsContent value="history">
           <Card>
             <CardHeader>
-              <CardTitle>Leave history</CardTitle>
-              <CardDescription>Filter by month/year and approve or reject quickly.</CardDescription>
+              <CardTitle>{t('leave.leaveHistory')}</CardTitle>
+              <CardDescription>{t('leave.filterDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-3 items-end mb-4">
+              <div className={`flex flex-wrap gap-3 items-end mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <div>
-                  <Label>Month</Label>
-                  <Input type="number" min={1} max={12} value={filterMonth || ''} onChange={e => setFilterMonth(e.target.value ? Number(e.target.value) : undefined)} className="w-32" />
+                  <Label>{t('leave.month')}</Label>
+                  <Input type="number" min={1} max={12} value={filterMonth || ''} onChange={e => setFilterMonth(e.target.value ? Number(e.target.value) : undefined)} className="w-32" dir={isRTL ? 'rtl' : 'ltr'} />
                 </div>
                 <div>
-                  <Label>Year</Label>
-                  <Input type="number" value={filterYear || ''} onChange={e => setFilterYear(e.target.value ? Number(e.target.value) : undefined)} className="w-32" />
+                  <Label>{t('leave.year')}</Label>
+                  <Input type="number" value={filterYear || ''} onChange={e => setFilterYear(e.target.value ? Number(e.target.value) : undefined)} className="w-32" dir={isRTL ? 'rtl' : 'ltr'} />
                 </div>
                 <div>
-                  <Label>Page size</Label>
-                  <Input type="number" value={pageSize} onChange={e => setPageSize(Number(e.target.value) || 10)} className="w-28" />
+                  <Label>{t('leave.pageSize')}</Label>
+                  <Input type="number" value={pageSize} onChange={e => setPageSize(Number(e.target.value) || 10)} className="w-28" dir={isRTL ? 'rtl' : 'ltr'} />
                 </div>
               </div>
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Dates</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('leave.student')}</TableHead>
+                      <TableHead>{t('leave.dates')}</TableHead>
+                      <TableHead>{t('leave.reason')}</TableHead>
+                      <TableHead>{t('leave.status')}</TableHead>
+                      <TableHead className={isRTL ? 'text-left' : 'text-right'}>{t('common.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-6 text-slate-500">Loading leave requests...</TableCell>
+                        <TableCell colSpan={5} className="text-center py-6 text-slate-500">{t('leave.loadingLeaveRequests')}</TableCell>
                       </TableRow>
                     ) : sortedRequests.length > 0 ? (
                       sortedRequests.map(request => (
@@ -727,40 +742,40 @@ export default function LeaveManagement() {
                         <TableCell className="space-y-1">
                           <div className="font-semibold flex items-center gap-2">
                             <UserRound className="h-4 w-4 text-slate-500" />
-                            {request.student?.fullName || 'Student'}
+                            {request.student?.fullName || t('leave.student')}
                           </div>
                           <div className="text-xs text-slate-500">{request.student?.studentCode || request.student?.admissionNo}</div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{format(request.startDate, 'PP')} → {format(request.endDate, 'PP')}</div>
-                          <div className="text-xs text-slate-500">{request.className || 'Class'} / {request.schoolName || 'School'}</div>
+                          <div className="text-xs text-slate-500">{request.className || t('attendancePage.class')} / {request.schoolName || t('common.selectSchool')}</div>
                         </TableCell>
                         <TableCell className="max-w-[240px]"><div className="line-clamp-2 text-sm">{request.reason}</div></TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={statusColors[request.status] || ''}>{request.status}</Badge>
+                          <Badge variant="outline" className={statusColors[request.status] || ''}>{t(`leave.${request.status}`)}</Badge>
                         </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button size="sm" variant="outline" onClick={() => handleViewHistory(request)}><Eye className="h-4 w-4 mr-1" />View</Button>
-                          <Button size="sm" variant="secondary" onClick={() => handlePrint(request)}><Printer className="h-4 w-4 mr-1" />Print</Button>
-                          <Button size="sm" variant="outline" onClick={() => handleApprove(request)} disabled={request.status === 'approved'}><CheckCircle2 className="h-4 w-4 mr-1" />Approve</Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleReject(request)} disabled={request.status === 'rejected'}><Download className="h-4 w-4 mr-1" />Reject</Button>
+                        <TableCell className={`${isRTL ? 'text-left' : 'text-right'} ${isRTL ? 'space-x-reverse' : ''} space-x-2`}>
+                          <Button size="sm" variant="outline" onClick={() => handleViewHistory(request)} className={isRTL ? 'flex-row-reverse' : ''}><Eye className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('common.view')}</Button>
+                          <Button size="sm" variant="secondary" onClick={() => handlePrint(request)} className={isRTL ? 'flex-row-reverse' : ''}><Printer className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('common.print')}</Button>
+                          <Button size="sm" variant="outline" onClick={() => handleApprove(request)} disabled={request.status === 'approved'} className={isRTL ? 'flex-row-reverse' : ''}><CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.approved')}</Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleReject(request)} disabled={request.status === 'rejected'} className={isRTL ? 'flex-row-reverse' : ''}><Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.rejected')}</Button>
                         </TableCell>
                       </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-6 text-slate-500">No leave requests yet.</TableCell>
+                        <TableCell colSpan={5} className="text-center py-6 text-slate-500">{t('leave.noLeaveRequestsYet')}</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
               </div>
               {pagination && (
-                <div className="flex justify-between items-center mt-3 text-sm text-slate-600">
-                  <span>Page {page} of {pagination.last_page}</span>
-                  <div className="space-x-2">
-                    <Button size="sm" variant="outline" onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}>Prev</Button>
-                    <Button size="sm" variant="outline" onClick={() => setPage(page + 1)} disabled={page >= (pagination?.last_page || 1)}>Next</Button>
+                <div className={`flex justify-between items-center mt-3 text-sm text-slate-600 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <span>{t('leave.pageOf', { page, total: pagination.last_page })}</span>
+                  <div className={`${isRTL ? 'space-x-reverse' : ''} space-x-2`}>
+                    <Button size="sm" variant="outline" onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}>{t('leave.prev')}</Button>
+                    <Button size="sm" variant="outline" onClick={() => setPage(page + 1)} disabled={page >= (pagination?.last_page || 1)}>{t('leave.next')}</Button>
                   </div>
                 </div>
               )}
@@ -768,80 +783,83 @@ export default function LeaveManagement() {
           </Card>
         </TabsContent>
       </Tabs>
-      </div>
 
       <Sheet open={historyOpen} onOpenChange={(open) => { setHistoryOpen(open); if (!open) setHistoryStudent(null); }}>
-        <SheetContent side="left" className="w-full sm:w-[460px]">
+        <SheetContent 
+          side={isRTL ? 'right' : 'left'} 
+          className="w-full sm:w-[460px]"
+          dir={isRTL ? 'rtl' : 'ltr'}
+        >
           <SheetHeader>
-            <SheetTitle className="flex items-center gap-2 text-lg">
+            <SheetTitle className={`flex items-center gap-2 text-lg ${isRTL ? 'flex-row-reverse' : ''}`}>
               <UserRound className="h-4 w-4 text-slate-500" />
-              {historyStudent?.name || 'Student leave history'}
+              {historyStudent?.name || t('leave.studentLeaveHistory')}
             </SheetTitle>
             <SheetDescription>
-              {historyStudent?.code ? `${historyStudent.code} · ${historyStudent.className || 'Class'}` : 'View a student’s leave trend and approvals.'}
+              {historyStudent?.code ? `${historyStudent.code} · ${historyStudent.className || t('attendancePage.class')}` : t('leave.viewLeaveTrend')}
             </SheetDescription>
           </SheetHeader>
 
           <div className="grid grid-cols-2 gap-3 mt-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>Total leaves</CardDescription>
+                <CardDescription>{t('leave.totalLeaves')}</CardDescription>
                 <CardTitle className="text-2xl">{historySummary.counts.total}</CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>Approved</CardDescription>
+                <CardDescription>{t('leave.approved')}</CardDescription>
                 <CardTitle className="text-2xl text-green-600">{historySummary.counts.approved}</CardTitle>
               </CardHeader>
             </Card>
           </div>
 
           <div className="flex flex-wrap gap-2 mt-3">
-            <Badge variant="outline" className={statusColors.pending}>Pending {historySummary.counts.pending}</Badge>
-            <Badge variant="outline" className={statusColors.rejected}>Rejected {historySummary.counts.rejected}</Badge>
-            <Badge variant="outline" className={statusColors.cancelled}>Cancelled {historySummary.counts.cancelled}</Badge>
+            <Badge variant="outline" className={statusColors.pending}>{t('leave.pending')} {historySummary.counts.pending}</Badge>
+            <Badge variant="outline" className={statusColors.rejected}>{t('leave.rejected')} {historySummary.counts.rejected}</Badge>
+            <Badge variant="outline" className={statusColors.cancelled}>{t('leave.cancelled')} {historySummary.counts.cancelled}</Badge>
           </div>
 
           <div className="mt-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Monthly volume</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">{t('leave.monthlyVolume')}</p>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(historySummary.byMonth).map(([month, count]) => (
-                <div key={month} className="rounded-lg border px-3 py-2 text-sm flex items-center justify-between">
+                <div key={month} className={`rounded-lg border px-3 py-2 text-sm flex items-center ${isRTL ? 'flex-row-reverse' : ''} justify-between`}>
                   <span>{month}</span>
                   <Badge variant="secondary">{count}</Badge>
                 </div>
               ))}
               {!Object.keys(historySummary.byMonth).length && (
-                <div className="text-sm text-slate-500">No history yet.</div>
+                <div className="text-sm text-slate-500">{t('leave.noHistoryYet')}</div>
               )}
             </div>
           </div>
 
           <div className="mt-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">All leaves</p>
-            <ScrollArea className="h-[340px] pr-2">
+            <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">{t('leave.allLeaves')}</p>
+            <ScrollArea className={`h-[340px] ${isRTL ? 'pl-2' : 'pr-2'}`}>
               <div className="space-y-2">
-                {historyLoading && <div className="text-sm text-slate-500">Loading history…</div>}
+                {historyLoading && <div className="text-sm text-slate-500">{t('leave.loadingHistory')}</div>}
                 {!historyLoading && (historyData || []).map(entry => (
                   <div key={entry.id} className="rounded-lg border px-3 py-2">
-                    <div className="flex items-center justify-between">
+                    <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''} justify-between`}>
                       <div>
                         <p className="font-medium text-sm">{format(entry.startDate, 'PP')} → {format(entry.endDate, 'PP')}</p>
                         <p className="text-xs text-slate-500">{entry.reason}</p>
                       </div>
-                      <Badge variant="outline" className={statusColors[entry.status] || ''}>{entry.status}</Badge>
+                      <Badge variant="outline" className={statusColors[entry.status] || ''}>{t(`leave.${entry.status}`)}</Badge>
                     </div>
                   </div>
                 ))}
                 {!historyLoading && !(historyData || []).length && (
-                  <div className="text-sm text-slate-500">No leave history found for this student.</div>
+                  <div className="text-sm text-slate-500">{t('leave.noLeaveHistoryFound')}</div>
                 )}
               </div>
             </ScrollArea>
           </div>
         </SheetContent>
       </Sheet>
-    </>
+    </div>
   );
 }

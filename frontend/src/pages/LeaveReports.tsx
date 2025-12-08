@@ -15,17 +15,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
+import { useLanguage } from '@/hooks/useLanguage';
 import type { LeaveRequest } from '@/types/domain/leave';
 
-const statusChips: Array<{ value: LeaveRequest['status']; label: string; color: string }> = [
-  { value: 'approved', label: 'Approved', color: 'bg-emerald-100 text-emerald-700' },
-  { value: 'pending', label: 'Pending', color: 'bg-amber-100 text-amber-800' },
-  { value: 'rejected', label: 'Rejected', color: 'bg-rose-100 text-rose-800' },
-  { value: 'cancelled', label: 'Cancelled', color: 'bg-slate-100 text-slate-700' },
-];
-
 export default function LeaveReports() {
+  const { t, isRTL } = useLanguage();
+
+  const statusChips: Array<{ value: LeaveRequest['status']; label: string; color: string }> = [
+    { value: 'approved', label: t('leave.approved'), color: 'bg-emerald-100 text-emerald-700' },
+    { value: 'pending', label: t('leave.pending'), color: 'bg-amber-100 text-amber-800' },
+    { value: 'rejected', label: t('leave.rejected'), color: 'bg-rose-100 text-rose-800' },
+    { value: 'cancelled', label: t('leave.cancelled'), color: 'bg-slate-100 text-slate-700' },
+  ];
   const today = format(new Date(), 'yyyy-MM-dd');
   const [statusFilter, setStatusFilter] = useState<'all' | LeaveRequest['status']>('all');
   const [studentId, setStudentId] = useState<string>('');
@@ -94,7 +96,7 @@ export default function LeaveReports() {
 
   const handleExportCsv = () => {
     if (!requests.length) {
-      toast.error('No leave requests to export for the selected filters');
+      showToast.error(t('leave.noRequestsToExport'));
       return;
     }
 
@@ -116,7 +118,7 @@ export default function LeaveReports() {
     link.download = `leave-report-${format(new Date(), 'yyyyMMdd-HHmm')}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success('Report exported');
+    showToast.success(t('leave.reportExported'));
   };
 
   // Filter requests by status for tabs
@@ -125,50 +127,47 @@ export default function LeaveReports() {
   const rejectedRequests = useMemo(() => requests.filter(r => r.status === 'rejected'), [requests]);
 
   return (
-    <div className="space-y-6">
-      {/* Header Card */}
-      <Card className="bg-gradient-to-r from-indigo-600 to-sky-500 text-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-white">
-            <BarChart3 className="h-5 w-5" /> Leave Reports
-          </CardTitle>
-          <CardDescription className="text-indigo-100">
-            Build daily, status, or date-range reports for student leaves.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">{t('leave.reportsTitle')}</h1>
+          <p className="text-muted-foreground">
+            {t('leave.reportsSubtitle')}
+          </p>
+        </div>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Requests</CardDescription>
+            <CardDescription>{t('leave.totalRequests')}</CardDescription>
             <CardTitle className="text-3xl font-bold">{totals.total}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
+            <CardDescription className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              Approved
+              {t('leave.approved')}
             </CardDescription>
             <CardTitle className="text-3xl font-bold text-emerald-600">{totals.approved}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
+            <CardDescription className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <Clock className="h-4 w-4 text-amber-600" />
-              Pending
+              {t('leave.pending')}
             </CardDescription>
             <CardTitle className="text-3xl font-bold text-amber-600">{totals.pending}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
+            <CardDescription className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <XCircle className="h-4 w-4 text-rose-600" />
-              Rejected
+              {t('leave.rejected')}
             </CardDescription>
             <CardTitle className="text-3xl font-bold text-rose-600">{totals.rejected}</CardTitle>
           </CardHeader>
@@ -184,12 +183,12 @@ export default function LeaveReports() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Filter className="h-4 w-4" />
-                    Report Filters
+                    {t('leave.reportFilters')}
                   </CardTitle>
-                  <CardDescription>Filter by status, student, class, or a date range to generate focused reports.</CardDescription>
+                  <CardDescription>{t('leave.filterDescription')}</CardDescription>
                 </div>
                 <Button variant="ghost" size="sm">
-                  {filtersOpen ? 'Hide Filters' : 'Show Filters'}
+                  {filtersOpen ? t('leave.hideFilters') : t('leave.showFilters')}
                 </Button>
               </div>
             </CardHeader>
@@ -197,11 +196,11 @@ export default function LeaveReports() {
           <CollapsibleContent>
             <CardContent className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>{t('leave.status')}</Label>
                 <Select value={statusFilter} onValueChange={val => setStatusFilter(val as any)}>
-                  <SelectTrigger><SelectValue placeholder="All statuses" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('leave.allStatuses')} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="all">{t('leave.allStatus')}</SelectItem>
                     {statusChips.map(status => (
                       <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
                     ))}
@@ -209,9 +208,9 @@ export default function LeaveReports() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Student</Label>
+                <Label>{t('leave.student')}</Label>
                 <Select value={studentId} onValueChange={setStudentId}>
-                  <SelectTrigger><SelectValue placeholder="Any student" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('leave.anyStudent')} /></SelectTrigger>
                   <SelectContent>
                     {(students || []).map(student => (
                       <SelectItem key={student.id} value={student.id}>{student.fullName || student.full_name}</SelectItem>
@@ -220,9 +219,9 @@ export default function LeaveReports() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Class</Label>
+                <Label>{t('leave.class')}</Label>
                 <Select value={classId} onValueChange={setClassId}>
-                  <SelectTrigger><SelectValue placeholder="Any class" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('leave.anyClass')} /></SelectTrigger>
                   <SelectContent>
                     {(classes || []).map(cls => (
                       <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
@@ -231,36 +230,36 @@ export default function LeaveReports() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>School</Label>
+                <Label>{t('leave.school')}</Label>
                 <Select value={schoolId} onValueChange={setSchoolId}>
-                  <SelectTrigger><SelectValue placeholder="Any school" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('leave.anySchool')} /></SelectTrigger>
                   <SelectContent>
                     {(schools || []).map(school => (
-                      <SelectItem key={school.id} value={school.id}>{school.schoolName || 'School'}</SelectItem>
+                      <SelectItem key={school.id} value={school.id}>{school.schoolName || t('leave.school')}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>From</Label>
+                <Label>{t('leave.from')}</Label>
                 <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>To</Label>
+                <Label>{t('leave.to')}</Label>
                 <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Rows per page</Label>
+                <Label>{t('leave.rowsPerPage')}</Label>
                 <Input type="number" min={10} max={100} value={pageSize} onChange={e => setPageSize(Number(e.target.value) || 10)} />
               </div>
               <div className="md:col-span-3 flex flex-wrap gap-2 items-center justify-between">
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handleQuickRange('today')}><CalendarRange className="h-4 w-4 mr-1" />Today</Button>
-                  <Button variant="outline" size="sm" onClick={() => handleQuickRange('month')}><Filter className="h-4 w-4 mr-1" />This month</Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleQuickRange('clear')}><RefreshCcw className="h-4 w-4 mr-1" />Reset</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleQuickRange('today')} className={isRTL ? 'flex-row-reverse' : ''}><CalendarRange className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.today')}</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleQuickRange('month')} className={isRTL ? 'flex-row-reverse' : ''}><Filter className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.thisMonth')}</Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleQuickRange('clear')} className={isRTL ? 'flex-row-reverse' : ''}><RefreshCcw className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.resetFilters')}</Button>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="secondary" size="sm" onClick={handleExportCsv}><Download className="h-4 w-4 mr-1" />Export CSV</Button>
+                  <Button variant="secondary" size="sm" onClick={handleExportCsv} className={isRTL ? 'flex-row-reverse' : ''}><Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('leave.exportCsv')}</Button>
                 </div>
               </div>
             </CardContent>
@@ -271,45 +270,45 @@ export default function LeaveReports() {
       {/* Tabs for different views */}
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="all" className="flex items-center gap-2">
+          <TabsTrigger value="all" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <FileText className="h-4 w-4" />
-            All Requests
+            {t('leave.allRequests')}
             {requests.length > 0 && (
-              <Badge variant="secondary" className="ml-1">
+              <Badge variant="secondary" className={isRTL ? 'mr-1' : 'ml-1'}>
                 {requests.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="pending" className="flex items-center gap-2">
+          <TabsTrigger value="pending" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Clock className="h-4 w-4" />
-            Pending
+            {t('leave.pending')}
             {pendingRequests.length > 0 && (
-              <Badge variant="secondary" className="ml-1">
+              <Badge variant="secondary" className={isRTL ? 'mr-1' : 'ml-1'}>
                 {pendingRequests.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="approved" className="flex items-center gap-2">
+          <TabsTrigger value="approved" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <CheckCircle2 className="h-4 w-4" />
-            Approved
+            {t('leave.approved')}
             {approvedRequests.length > 0 && (
-              <Badge variant="secondary" className="ml-1">
+              <Badge variant="secondary" className={isRTL ? 'mr-1' : 'ml-1'}>
                 {approvedRequests.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="rejected" className="flex items-center gap-2">
+          <TabsTrigger value="rejected" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <XCircle className="h-4 w-4" />
-            Rejected
+            {t('leave.rejected')}
             {rejectedRequests.length > 0 && (
-              <Badge variant="secondary" className="ml-1">
+              <Badge variant="secondary" className={isRTL ? 'mr-1' : 'ml-1'}>
                 {rejectedRequests.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="daily" className="flex items-center gap-2">
+          <TabsTrigger value="daily" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Calendar className="h-4 w-4" />
-            Daily Breakdown
+            {t('leave.dailyBreakdown')}
           </TabsTrigger>
         </TabsList>
 
@@ -319,13 +318,13 @@ export default function LeaveReports() {
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <CardTitle>All Leave Requests</CardTitle>
-                  <CardDescription>Complete listing of all leave requests.</CardDescription>
+                  <CardTitle>{t('leave.allLeaveRequests')}</CardTitle>
+                  <CardDescription>{t('leave.completeListing')}</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">{requests.length} entries</Badge>
-                  <Button variant="outline" size="sm" onClick={handleExportCsv}>
-                    <Download className="h-4 w-4 mr-1" /> Export
+                  <Badge variant="outline" className="text-xs">{requests.length} {t('leave.entries')}</Badge>
+                  <Button variant="outline" size="sm" onClick={handleExportCsv} className={isRTL ? 'flex-row-reverse' : ''}>
+                    <Download className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} /> {t('leave.export')}
                   </Button>
                 </div>
               </div>
@@ -335,42 +334,42 @@ export default function LeaveReports() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Dates</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Reason</TableHead>
+                      <TableHead>{t('leave.student')}</TableHead>
+                      <TableHead>{t('leave.dates')}</TableHead>
+                      <TableHead>{t('leave.status')}</TableHead>
+                      <TableHead>{t('leave.reason')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('leave.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && requests.map(req => (
                       <TableRow key={req.id}>
                         <TableCell>
-                          <div className="font-semibold">{req.student?.fullName || 'Student'}</div>
-                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || 'Class'}</div>
+                          <div className="font-semibold">{req.student?.fullName || t('leave.student')}</div>
+                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('leave.class')}</div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
-                          <div className="text-xs text-slate-500">{req.schoolName || 'School'}</div>
+                          <div className="text-xs text-slate-500">{req.schoolName || t('leave.school')}</div>
                         </TableCell>
                         <TableCell><Badge variant="outline" className="capitalize">{req.status}</Badge></TableCell>
                         <TableCell className="max-w-[280px]"><div className="line-clamp-2 text-sm">{req.reason}</div></TableCell>
                       </TableRow>
                     ))}
                     {!isLoading && !requests.length && (
-                      <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500">No leave requests match these filters.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500">{t('leave.noRequestsMatchFilters')}</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
               </div>
               {pagination && (
                 <div className="flex justify-between items-center mt-3 text-sm text-slate-600">
-                  <span>Page {page} of {pagination.last_page}</span>
+                  <span>{t('leave.pageOf', { page, total: pagination.last_page })}</span>
                   <div className="space-x-2">
-                    <Button size="sm" variant="outline" onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}>Prev</Button>
-                    <Button size="sm" variant="outline" onClick={() => setPage(page + 1)} disabled={page >= (pagination?.last_page || 1)}>Next</Button>
+                    <Button size="sm" variant="outline" onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}>{t('leave.prev')}</Button>
+                    <Button size="sm" variant="outline" onClick={() => setPage(page + 1)} disabled={page >= (pagination?.last_page || 1)}>{t('leave.next')}</Button>
                   </div>
                 </div>
               )}
@@ -384,10 +383,10 @@ export default function LeaveReports() {
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <CardTitle>Pending Requests</CardTitle>
-                  <CardDescription>Leave requests awaiting approval.</CardDescription>
+                  <CardTitle>{t('leave.pendingRequests')}</CardTitle>
+                  <CardDescription>{t('leave.awaitingApproval')}</CardDescription>
                 </div>
-                <Badge variant="outline" className="text-xs">{pendingRequests.length} entries</Badge>
+                <Badge variant="outline" className="text-xs">{pendingRequests.length} {t('leave.entries')}</Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -395,20 +394,20 @@ export default function LeaveReports() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Dates</TableHead>
-                      <TableHead>Reason</TableHead>
+                      <TableHead>{t('leave.student')}</TableHead>
+                      <TableHead>{t('leave.dates')}</TableHead>
+                      <TableHead>{t('leave.reason')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('leave.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && pendingRequests.map(req => (
                       <TableRow key={req.id}>
                         <TableCell>
-                          <div className="font-semibold">{req.student?.fullName || 'Student'}</div>
-                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || 'Class'}</div>
+                          <div className="font-semibold">{req.student?.fullName || t('leave.student')}</div>
+                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('leave.class')}</div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
@@ -417,7 +416,7 @@ export default function LeaveReports() {
                       </TableRow>
                     ))}
                     {!isLoading && !pendingRequests.length && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500">No pending requests.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500">{t('leave.noPendingRequests')}</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -432,10 +431,10 @@ export default function LeaveReports() {
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <CardTitle>Approved Requests</CardTitle>
-                  <CardDescription>Leave requests that have been approved.</CardDescription>
+                  <CardTitle>{t('leave.approvedRequests')}</CardTitle>
+                  <CardDescription>{t('leave.approvedDescription')}</CardDescription>
                 </div>
-                <Badge variant="outline" className="text-xs">{approvedRequests.length} entries</Badge>
+                <Badge variant="outline" className="text-xs">{approvedRequests.length} {t('leave.entries')}</Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -443,20 +442,20 @@ export default function LeaveReports() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Dates</TableHead>
-                      <TableHead>Reason</TableHead>
+                      <TableHead>{t('leave.student')}</TableHead>
+                      <TableHead>{t('leave.dates')}</TableHead>
+                      <TableHead>{t('leave.reason')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('leave.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && approvedRequests.map(req => (
                       <TableRow key={req.id}>
                         <TableCell>
-                          <div className="font-semibold">{req.student?.fullName || 'Student'}</div>
-                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || 'Class'}</div>
+                          <div className="font-semibold">{req.student?.fullName || t('leave.student')}</div>
+                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('leave.class')}</div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
@@ -465,7 +464,7 @@ export default function LeaveReports() {
                       </TableRow>
                     ))}
                     {!isLoading && !approvedRequests.length && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500">No approved requests.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500">{t('leave.noApprovedRequests')}</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -480,10 +479,10 @@ export default function LeaveReports() {
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <CardTitle>Rejected Requests</CardTitle>
-                  <CardDescription>Leave requests that have been rejected.</CardDescription>
+                  <CardTitle>{t('leave.rejectedRequests')}</CardTitle>
+                  <CardDescription>{t('leave.rejectedDescription')}</CardDescription>
                 </div>
-                <Badge variant="outline" className="text-xs">{rejectedRequests.length} entries</Badge>
+                <Badge variant="outline" className="text-xs">{rejectedRequests.length} {t('leave.entries')}</Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -491,20 +490,20 @@ export default function LeaveReports() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Dates</TableHead>
-                      <TableHead>Reason</TableHead>
+                      <TableHead>{t('leave.student')}</TableHead>
+                      <TableHead>{t('leave.dates')}</TableHead>
+                      <TableHead>{t('leave.reason')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />{t('leave.loading')}</TableCell></TableRow>
                     )}
                     {!isLoading && rejectedRequests.map(req => (
                       <TableRow key={req.id}>
                         <TableCell>
-                          <div className="font-semibold">{req.student?.fullName || 'Student'}</div>
-                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || 'Class'}</div>
+                          <div className="font-semibold">{req.student?.fullName || t('leave.student')}</div>
+                          <div className="text-xs text-slate-500">{req.student?.studentCode || req.student?.admissionNo || '—'} · {req.className || t('leave.class')}</div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{format(req.startDate, 'PP')} → {format(req.endDate, 'PP')}</div>
@@ -513,7 +512,7 @@ export default function LeaveReports() {
                       </TableRow>
                     ))}
                     {!isLoading && !rejectedRequests.length && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500">No rejected requests.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-slate-500">{t('leave.noRejectedRequests')}</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -526,8 +525,8 @@ export default function LeaveReports() {
         <TabsContent value="daily" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Daily Breakdown</CardTitle>
-              <CardDescription>Each day with status distribution.</CardDescription>
+              <CardTitle>{t('leave.dailyBreakdownTitle')}</CardTitle>
+              <CardDescription>{t('leave.dailyBreakdownDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px] pr-2">
@@ -540,18 +539,18 @@ export default function LeaveReports() {
                       <div key={group.date} className="rounded-lg border p-3">
                         <div className="flex items-center justify-between mb-2">
                           <div className="font-semibold">{format(new Date(group.date), 'PP')}</div>
-                          <Badge variant="outline" className="text-xs">{group.items.length} leave(s)</Badge>
+                          <Badge variant="outline" className="text-xs">{group.items.length} {t('leave.leaves')}</Badge>
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs">
-                          <Badge variant="outline" className="bg-emerald-100 text-emerald-700">Approved {approved}</Badge>
-                          <Badge variant="outline" className="bg-amber-100 text-amber-700">Pending {pending}</Badge>
-                          <Badge variant="outline" className="bg-rose-100 text-rose-700">Rejected {rejected}</Badge>
+                          <Badge variant="outline" className="bg-emerald-100 text-emerald-700">{t('leave.approved')} {approved}</Badge>
+                          <Badge variant="outline" className="bg-amber-100 text-amber-700">{t('leave.pending')} {pending}</Badge>
+                          <Badge variant="outline" className="bg-rose-100 text-rose-700">{t('leave.rejected')} {rejected}</Badge>
                         </div>
                       </div>
                     );
                   })}
                   {!groupedByDate.length && (
-                    <div className="text-center text-sm text-slate-500 py-8">No daily records to show</div>
+                    <div className="text-center text-sm text-slate-500 py-8">{t('leave.noDailyRecords')}</div>
                   )}
                 </div>
               </ScrollArea>

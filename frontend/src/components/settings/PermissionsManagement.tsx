@@ -37,8 +37,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Search, Shield, Edit, Save, X, Trash2, Building2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useLanguage } from '@/hooks/useLanguage';
+import { showToast } from '@/lib/toast';
 
 export function PermissionsManagement() {
   const { t } = useLanguage();
@@ -266,7 +266,7 @@ export function PermissionsManagement() {
       setShowCreateDialog(false);
       setNewPermission({ name: '', resource: '', action: '', description: '' });
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create permission');
+      showToast.error(error.message || t('toast.permissionCreateFailed'));
     }
   };
 

@@ -181,7 +181,7 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
               <div className="border rounded-md max-h-60 overflow-y-auto">
                 {filteredStudents.length === 0 ? (
                   <div className="p-4 text-center text-sm text-muted-foreground">
-                    {search ? 'No students found' : 'Start typing to search for students'}
+                    {search ? t('students.noStudentsFound') : 'Start typing to search for students'}
                   </div>
                 ) : (
                   <div className="divide-y">
