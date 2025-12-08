@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\IncomeEntry;
 use App\Models\FinanceAccount;
+use App\Models\IncomeCategory;
+use App\Models\FinanceProject;
+use App\Models\Donor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -154,9 +157,41 @@ class IncomeEntryController extends Controller
                 ->find($validated['account_id']);
 
             if (!$account) {
-                return response()->json(['error' => 'Invalid account'], 400);
+                return response()->json(['error' => 'Invalid account - does not belong to your organization'], 400);
             }
 
+            // Verify income category belongs to organization
+            $category = IncomeCategory::whereNull('deleted_at')
+                ->where('organization_id', $profile->organization_id)
+                ->find($validated['income_category_id']);
+
+            if (!$category) {
+                return response()->json(['error' => 'Invalid income category - does not belong to your organization'], 400);
+            }
+
+            // Verify project belongs to organization (if provided)
+            if (!empty($validated['project_id'])) {
+                $project = FinanceProject::whereNull('deleted_at')
+                    ->where('organization_id', $profile->organization_id)
+                    ->find($validated['project_id']);
+
+                if (!$project) {
+                    return response()->json(['error' => 'Invalid project - does not belong to your organization'], 400);
+                }
+            }
+
+            // Verify donor belongs to organization (if provided)
+            if (!empty($validated['donor_id'])) {
+                $donor = Donor::whereNull('deleted_at')
+                    ->where('organization_id', $profile->organization_id)
+                    ->find($validated['donor_id']);
+
+                if (!$donor) {
+                    return response()->json(['error' => 'Invalid donor - does not belong to your organization'], 400);
+                }
+            }
+
+            // Create income entry (model hooks will handle balance updates in transaction)
             $entry = IncomeEntry::create([
                 'organization_id' => $profile->organization_id,
                 'school_id' => $validated['school_id'] ?? null,
@@ -273,7 +308,40 @@ class IncomeEntryController extends Controller
                     ->find($validated['account_id']);
 
                 if (!$account) {
-                    return response()->json(['error' => 'Invalid account'], 400);
+                    return response()->json(['error' => 'Invalid account - does not belong to your organization'], 400);
+                }
+            }
+
+            // Verify income category if changed
+            if (!empty($validated['income_category_id'])) {
+                $category = IncomeCategory::whereNull('deleted_at')
+                    ->where('organization_id', $profile->organization_id)
+                    ->find($validated['income_category_id']);
+
+                if (!$category) {
+                    return response()->json(['error' => 'Invalid income category - does not belong to your organization'], 400);
+                }
+            }
+
+            // Verify project if changed
+            if (array_key_exists('project_id', $validated) && $validated['project_id'] !== null) {
+                $project = FinanceProject::whereNull('deleted_at')
+                    ->where('organization_id', $profile->organization_id)
+                    ->find($validated['project_id']);
+
+                if (!$project) {
+                    return response()->json(['error' => 'Invalid project - does not belong to your organization'], 400);
+                }
+            }
+
+            // Verify donor if changed
+            if (array_key_exists('donor_id', $validated) && $validated['donor_id'] !== null) {
+                $donor = Donor::whereNull('deleted_at')
+                    ->where('organization_id', $profile->organization_id)
+                    ->find($validated['donor_id']);
+
+                if (!$donor) {
+                    return response()->json(['error' => 'Invalid donor - does not belong to your organization'], 400);
                 }
             }
 

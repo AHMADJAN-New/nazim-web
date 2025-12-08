@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ExpenseEntry;
 use App\Models\FinanceAccount;
+use App\Models\ExpenseCategory;
+use App\Models\FinanceProject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -155,7 +157,27 @@ class ExpenseEntryController extends Controller
                 ->find($validated['account_id']);
 
             if (!$account) {
-                return response()->json(['error' => 'Invalid account'], 400);
+                return response()->json(['error' => 'Invalid account - does not belong to your organization'], 400);
+            }
+
+            // Verify expense category belongs to organization
+            $category = ExpenseCategory::whereNull('deleted_at')
+                ->where('organization_id', $profile->organization_id)
+                ->find($validated['expense_category_id']);
+
+            if (!$category) {
+                return response()->json(['error' => 'Invalid expense category - does not belong to your organization'], 400);
+            }
+
+            // Verify project belongs to organization (if provided)
+            if (!empty($validated['project_id'])) {
+                $project = FinanceProject::whereNull('deleted_at')
+                    ->where('organization_id', $profile->organization_id)
+                    ->find($validated['project_id']);
+
+                if (!$project) {
+                    return response()->json(['error' => 'Invalid project - does not belong to your organization'], 400);
+                }
             }
 
             // Check if account has sufficient balance
@@ -163,6 +185,7 @@ class ExpenseEntryController extends Controller
                 return response()->json(['error' => 'Insufficient balance in account'], 400);
             }
 
+            // Create expense entry (model hooks will handle balance updates in transaction)
             $entry = ExpenseEntry::create([
                 'organization_id' => $profile->organization_id,
                 'school_id' => $validated['school_id'] ?? null,
@@ -279,7 +302,29 @@ class ExpenseEntryController extends Controller
                     ->find($validated['account_id']);
 
                 if (!$account) {
-                    return response()->json(['error' => 'Invalid account'], 400);
+                    return response()->json(['error' => 'Invalid account - does not belong to your organization'], 400);
+                }
+            }
+
+            // Verify expense category if changed
+            if (!empty($validated['expense_category_id'])) {
+                $category = ExpenseCategory::whereNull('deleted_at')
+                    ->where('organization_id', $profile->organization_id)
+                    ->find($validated['expense_category_id']);
+
+                if (!$category) {
+                    return response()->json(['error' => 'Invalid expense category - does not belong to your organization'], 400);
+                }
+            }
+
+            // Verify project if changed
+            if (array_key_exists('project_id', $validated) && $validated['project_id'] !== null) {
+                $project = FinanceProject::whereNull('deleted_at')
+                    ->where('organization_id', $profile->organization_id)
+                    ->find($validated['project_id']);
+
+                if (!$project) {
+                    return response()->json(['error' => 'Invalid project - does not belong to your organization'], 400);
                 }
             }
 

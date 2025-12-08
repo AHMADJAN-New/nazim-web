@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class IncomeEntry extends Model
@@ -55,27 +56,37 @@ class IncomeEntry extends Model
             }
         });
 
-        // Update balances when income is created
+        // Update balances when income is created (wrapped in transaction)
         static::created(function ($model) {
-            $model->updateRelatedBalances();
+            DB::transaction(function () use ($model) {
+                $model->updateRelatedBalances();
+            });
         });
 
-        // Update balances when income is updated
+        // Update balances when income is updated (wrapped in transaction)
         static::updated(function ($model) {
-            $model->updateRelatedBalances();
+            DB::transaction(function () use ($model) {
+                $model->updateRelatedBalances();
+            });
         });
 
-        // Update balances when income is deleted
+        // Update balances when income is deleted (wrapped in transaction)
         static::deleted(function ($model) {
-            $model->updateRelatedBalances();
+            DB::transaction(function () use ($model) {
+                $model->updateRelatedBalances();
+            });
         });
     }
 
     /**
      * Update related balances (account, project, donor)
+     * This method should be called within a transaction
      */
     public function updateRelatedBalances()
     {
+        // Refresh relationships to get fresh data
+        $this->load(['account', 'project', 'donor']);
+
         // Update account balance
         if ($this->account) {
             $this->account->recalculateBalance();

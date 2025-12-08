@@ -50,7 +50,7 @@ import {
 } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { Plus, Pencil, Trash2, TrendingDown, Search, Filter } from 'lucide-react';
+import { Plus, Pencil, Trash2, TrendingDown, Search, Filter, Calendar, X } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 export default function ExpenseEntries() {
@@ -68,7 +68,10 @@ export default function ExpenseEntries() {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState<string>('all');
+    const [filterAccount, setFilterAccount] = useState<string>('all');
     const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [dateFrom, setDateFrom] = useState<string>('');
+    const [dateTo, setDateTo] = useState<string>('');
 
     const [formData, setFormData] = useState<ExpenseEntryFormData>({
         accountId: '',
@@ -139,10 +142,28 @@ export default function ExpenseEntries() {
                 entry.expenseCategory?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 entry.paidTo?.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesCategory = filterCategory === 'all' || entry.expenseCategoryId === filterCategory;
+            const matchesAccount = filterAccount === 'all' || entry.accountId === filterAccount;
             const matchesStatus = filterStatus === 'all' || entry.status === filterStatus;
-            return matchesSearch && matchesCategory && matchesStatus;
+            
+            // Date range filter
+            const entryDate = new Date(entry.date);
+            const matchesDateFrom = !dateFrom || entryDate >= new Date(dateFrom);
+            const matchesDateTo = !dateTo || entryDate <= new Date(dateTo);
+            
+            return matchesSearch && matchesCategory && matchesAccount && matchesStatus && matchesDateFrom && matchesDateTo;
         });
-    }, [entries, searchTerm, filterCategory, filterStatus]);
+    }, [entries, searchTerm, filterCategory, filterAccount, filterStatus, dateFrom, dateTo]);
+    
+    const clearFilters = () => {
+        setSearchTerm('');
+        setFilterCategory('all');
+        setFilterAccount('all');
+        setFilterStatus('all');
+        setDateFrom('');
+        setDateTo('');
+    };
+    
+    const hasActiveFilters = searchTerm || filterCategory !== 'all' || filterAccount !== 'all' || filterStatus !== 'all' || dateFrom || dateTo;
 
     const totalExpense = useMemo(() => {
         return filteredEntries
@@ -344,44 +365,107 @@ export default function ExpenseEntries() {
             </div>
 
             {/* Filters */}
-            <div className="flex gap-4 items-center flex-wrap">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder={t('common.search') || 'Search...'}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                    />
-                </div>
-                <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <Select value={filterCategory} onValueChange={setFilterCategory}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder={t('finance.filterByCategory') || 'Filter by category'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">{t('common.all') || 'All Categories'}</SelectItem>
-                            {categories?.map((category) => (
-                                <SelectItem key={category.id} value={category.id}>
-                                    {category.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="w-[150px]">
-                            <SelectValue placeholder={t('finance.filterByStatus') || 'Filter by status'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">{t('common.all') || 'All Statuses'}</SelectItem>
-                            <SelectItem value="approved">{t('finance.approved') || 'Approved'}</SelectItem>
-                            <SelectItem value="pending">{t('finance.pending') || 'Pending'}</SelectItem>
-                            <SelectItem value="rejected">{t('finance.rejected') || 'Rejected'}</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
+            <Card>
+                <CardContent className="pt-4">
+                    <div className="flex flex-wrap gap-4 items-end">
+                        <div className="flex-1 min-w-[200px]">
+                            <Label className="text-xs text-muted-foreground mb-1 block">
+                                {t('common.search') || 'Search'}
+                            </Label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder={t('common.search') || 'Search...'}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
+                        <div className="min-w-[150px]">
+                            <Label className="text-xs text-muted-foreground mb-1 block">
+                                <Calendar className="inline h-3 w-3 mr-1" />
+                                {t('common.from') || 'From'}
+                            </Label>
+                            <Input
+                                type="date"
+                                value={dateFrom}
+                                onChange={(e) => setDateFrom(e.target.value)}
+                            />
+                        </div>
+                        <div className="min-w-[150px]">
+                            <Label className="text-xs text-muted-foreground mb-1 block">
+                                <Calendar className="inline h-3 w-3 mr-1" />
+                                {t('common.to') || 'To'}
+                            </Label>
+                            <Input
+                                type="date"
+                                value={dateTo}
+                                onChange={(e) => setDateTo(e.target.value)}
+                            />
+                        </div>
+                        <div className="min-w-[140px]">
+                            <Label className="text-xs text-muted-foreground mb-1 block">
+                                <Filter className="inline h-3 w-3 mr-1" />
+                                {t('finance.category') || 'Category'}
+                            </Label>
+                            <Select value={filterCategory} onValueChange={setFilterCategory}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={t('common.all') || 'All'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                                    {categories?.map((category) => (
+                                        <SelectItem key={category.id} value={category.id}>
+                                            {category.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="min-w-[140px]">
+                            <Label className="text-xs text-muted-foreground mb-1 block">
+                                {t('finance.account') || 'Account'}
+                            </Label>
+                            <Select value={filterAccount} onValueChange={setFilterAccount}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={t('common.all') || 'All'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                                    {accounts?.map((account) => (
+                                        <SelectItem key={account.id} value={account.id}>
+                                            {account.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="min-w-[120px]">
+                            <Label className="text-xs text-muted-foreground mb-1 block">
+                                {t('common.status') || 'Status'}
+                            </Label>
+                            <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={t('common.all') || 'All'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                                    <SelectItem value="approved">{t('finance.approved') || 'Approved'}</SelectItem>
+                                    <SelectItem value="pending">{t('finance.pending') || 'Pending'}</SelectItem>
+                                    <SelectItem value="rejected">{t('finance.rejected') || 'Rejected'}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {hasActiveFilters && (
+                            <Button variant="outline" size="sm" onClick={clearFilters}>
+                                <X className="h-4 w-4 mr-1" />
+                                {t('common.clearFilters') || 'Clear'}
+                            </Button>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Summary Card */}
             <Card>
