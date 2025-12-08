@@ -265,6 +265,20 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/settings/exams" element={
+                      <PermissionRoute permission="exams.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamsManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/settings/exams/reports" element={
+                      <PermissionRoute permission="exams.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamReports />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     <Route path="/settings/schedule-slots" element={
                       <PermissionRoute permission="schedule_slots.read">
                         <Suspense fallback={<PageSkeleton />}>
