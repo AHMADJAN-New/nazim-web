@@ -2412,6 +2412,7 @@ export const examsApi = {
   list: async (params?: {
     organization_id?: string;
     academic_year_id?: string;
+    status?: string;
   }) => {
     return apiClient.get('/exams', params);
   },
@@ -2424,6 +2425,9 @@ export const examsApi = {
     name: string;
     academic_year_id: string;
     description?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    status?: string;
   }) => {
     return apiClient.post('/exams', data);
   },
@@ -2432,6 +2436,9 @@ export const examsApi = {
     name?: string;
     academic_year_id?: string;
     description?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    status?: string;
   }) => {
     return apiClient.put(`/exams/${id}`, data);
   },
@@ -2440,8 +2447,36 @@ export const examsApi = {
     return apiClient.delete(`/exams/${id}`);
   },
 
+  updateStatus: async (id: string, status: string) => {
+    return apiClient.post(`/exams/${id}/status`, { status });
+  },
+
   report: async (id: string) => {
     return apiClient.get(`/exams/${id}/report`);
+  },
+
+  summaryReport: async (id: string) => {
+    return apiClient.get(`/exams/${id}/reports/summary`);
+  },
+
+  classReport: async (examId: string, classId: string) => {
+    return apiClient.get(`/exams/${examId}/reports/classes/${classId}`);
+  },
+
+  studentReport: async (examId: string, studentId: string) => {
+    return apiClient.get(`/exams/${examId}/reports/students/${studentId}`);
+  },
+
+  enrollmentStats: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/enrollment-stats`);
+  },
+
+  marksProgress: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/marks-progress`);
+  },
+
+  enrollAll: async (examId: string) => {
+    return apiClient.post(`/exams/${examId}/enroll-all`, {});
   },
 };
 
@@ -2457,6 +2492,50 @@ export const examClassesApi = {
 
   delete: async (id: string) => {
     return apiClient.delete(`/exam-classes/${id}`);
+  },
+};
+
+// Exam Times (Timetable) API
+export const examTimesApi = {
+  list: async (examId: string, params?: { 
+    exam_class_id?: string; 
+    date?: string;
+    room_id?: string;
+  }) => {
+    return apiClient.get(`/exams/${examId}/times`, params);
+  },
+
+  create: async (examId: string, data: {
+    exam_class_id: string;
+    exam_subject_id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    room_id?: string | null;
+    invigilator_id?: string | null;
+    notes?: string | null;
+  }) => {
+    return apiClient.post(`/exams/${examId}/times`, data);
+  },
+
+  update: async (id: string, data: {
+    date?: string;
+    start_time?: string;
+    end_time?: string;
+    room_id?: string | null;
+    invigilator_id?: string | null;
+    notes?: string | null;
+    is_locked?: boolean;
+  }) => {
+    return apiClient.put(`/exam-times/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam-times/${id}`);
+  },
+
+  toggleLock: async (id: string) => {
+    return apiClient.post(`/exam-times/${id}/toggle-lock`, {});
   },
 };
 

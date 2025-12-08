@@ -2782,6 +2782,5 @@ export const en: TranslationKeys = {
     noStudentsSelected: 'No students selected. Select students from the left panel.',
     quickEnroll: 'Quick Enroll Single Student',
     quickEnrollDescription: 'Enroll a single student quickly'
->>>>>>> claude/fix-exams-management-017Ewpa2cYAoEs9tn4Rdcpgc
   }
 };

@@ -28,11 +28,23 @@ class PermissionSeeder extends Seeder
             'students' => ['read', 'create', 'update', 'delete'],
             'classes' => ['read', 'create', 'update', 'delete', 'assign', 'copy'],
             'academic_years' => ['read', 'create', 'update', 'delete'],
-            'exams' => ['read', 'create', 'update', 'delete', 'report', 'assign'],
+            // Exam permissions - granular control for different exam operations
+            'exams' => [
+                'read',           // View exams
+                'create',         // Create new exams
+                'update',         // Edit exam details
+                'delete',         // Delete exams
+                'manage',         // Manage exam configuration (classes, subjects)
+                'manage_timetable', // Create/edit exam timetable
+                'enroll_students',  // Enroll/unenroll students
+                'enter_marks',      // Enter and edit marks
+                'view_reports',     // View exam reports
+            ],
             'exam_classes' => ['read', 'create', 'update', 'delete'],
             'exam_subjects' => ['read', 'create', 'update', 'delete'],
             'exam_students' => ['read', 'create', 'update', 'delete'],
             'exam_results' => ['read', 'create', 'update', 'delete'],
+            'exam_times' => ['read', 'create', 'update', 'delete'],
             'schedule_slots' => ['read', 'create', 'update', 'delete'],
             'timetables' => ['read', 'create', 'update', 'delete', 'export'],
             'hostel' => ['read', 'create', 'update', 'delete'],
@@ -84,11 +96,13 @@ class PermissionSeeder extends Seeder
                 'staff.read',
                 'classes.read',
                 'subjects.read',
-                'exams.read', 'exams.report', 'exams.assign',
+                // Exam permissions for staff - can manage enrollment and view reports
+                'exams.read', 'exams.manage', 'exams.enroll_students', 'exams.view_reports',
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
                 'exam_subjects.read', 'exam_subjects.create', 'exam_subjects.update',
                 'exam_students.read', 'exam_students.create', 'exam_students.update',
                 'exam_results.read', 'exam_results.create', 'exam_results.update',
+                'exam_times.read',
                 'academic_years.read',
                 'profiles.read', 'profiles.update',
                 'student_admissions.read', 'student_admissions.create',
@@ -100,11 +114,14 @@ class PermissionSeeder extends Seeder
                 'students.read',
                 'classes.read',
                 'subjects.read', 'subjects.create', 'subjects.update',
-                'exams.read', 'exams.create', 'exams.update', 'exams.report', 'exams.assign',
+                // Exam permissions for teachers - full exam management including marks entry
+                'exams.read', 'exams.create', 'exams.update', 'exams.manage', 
+                'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
                 'exam_subjects.read', 'exam_subjects.create', 'exam_subjects.update',
                 'exam_students.read', 'exam_students.create', 'exam_students.update',
                 'exam_results.read', 'exam_results.create', 'exam_results.update',
+                'exam_times.read', 'exam_times.create', 'exam_times.update',
                 'timetables.read',
                 'schedule_slots.read',
                 'academic_years.read',
@@ -120,6 +137,22 @@ class PermissionSeeder extends Seeder
                 'school_branding.read', // Needed to view schools
                 'assets.read', 'assets.create', 'assets.update', 'assets.delete', // Full asset management access
                 'asset_categories.read', 'asset_categories.create', 'asset_categories.update', 'asset_categories.delete', // Asset category management
+            ],
+            'exam_controller' => [
+                // Dedicated exam controller role - full exam management except deletion
+                'students.read',
+                'classes.read',
+                'subjects.read',
+                'exams.read', 'exams.create', 'exams.update', 'exams.manage',
+                'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
+                'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
+                'exam_subjects.read', 'exam_subjects.create', 'exam_subjects.update',
+                'exam_students.read', 'exam_students.create', 'exam_students.update', 'exam_students.delete',
+                'exam_results.read', 'exam_results.create', 'exam_results.update',
+                'exam_times.read', 'exam_times.create', 'exam_times.update', 'exam_times.delete',
+                'academic_years.read',
+                'profiles.read', 'profiles.update',
+                'rooms.read', // For exam room assignment
             ],
             'hostel_manager' => [
                 'hostel.read',

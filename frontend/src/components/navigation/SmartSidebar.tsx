@@ -195,8 +195,14 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasTeacherSubjectAssignmentsPermission = useHasPermission('teacher_subject_assignments.read');
   const hasTimetablesPermission = useHasPermission('timetables.read');
   const hasExamsPermission = useHasPermission('exams.read');
-  const hasExamsAssignPermission = useHasPermission('exams.assign');
-  const hasExamsUpdatePermission = useHasPermission('exams.update');
+  const hasExamsManagePermission = useHasPermission('exams.manage');
+  const hasExamsTimetablePermission = useHasPermission('exams.manage_timetable');
+  const hasExamsEnrollPermission = useHasPermission('exams.enroll_students');
+  const hasExamsMarksPermission = useHasPermission('exams.enter_marks');
+  const hasExamsReportsPermission = useHasPermission('exams.view_reports');
+  // Legacy compatibility
+  const hasExamsAssignPermission = hasExamsManagePermission || hasExamsEnrollPermission;
+  const hasExamsUpdatePermission = hasExamsMarksPermission;
   const hasLibraryBooksPermission = useHasPermission('library_books.read');
   const hasLibraryCategoriesPermission = useHasPermission('library_categories.read');
   const hasLibraryLoansPermission = useHasPermission('library_loans.read');
@@ -395,25 +401,25 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/exams",
             icon: Trophy,
           }] : []),
-          ...(hasExamsAssignPermission ? [{
+          ...(hasExamsManagePermission ? [{
             title: "Exam Enrollment",
             titleKey: "examEnrollment",
             url: "/exams/enrollment",
             icon: UserPlus,
           }] : []),
-          ...(hasExamsAssignPermission ? [{
+          ...(hasExamsEnrollPermission ? [{
             title: "Student Enrollment",
             titleKey: "examStudentEnrollment",
             url: "/exams/student-enrollment",
             icon: Users,
           }] : []),
-          ...(hasExamsUpdatePermission ? [{
+          ...(hasExamsMarksPermission ? [{
             title: "Exam Marks",
             titleKey: "examMarks",
             url: "/exams/marks",
             icon: NotebookPen,
           }] : []),
-          ...(hasExamsPermission ? [{
+          ...(hasExamsReportsPermission ? [{
             title: "Exam Reports",
             titleKey: "examReports",
             url: "/exams/reports",
@@ -686,7 +692,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       if (item.titleKey === 'exams') {
         // Show if user has any exam-related permission
-        return hasExamsPermission || hasExamsAssignPermission || hasExamsUpdatePermission;
+        return hasExamsPermission || hasExamsManagePermission || hasExamsTimetablePermission || 
+               hasExamsEnrollPermission || hasExamsMarksPermission || hasExamsReportsPermission;
       }
 
       if (item.titleKey === 'hostel') {

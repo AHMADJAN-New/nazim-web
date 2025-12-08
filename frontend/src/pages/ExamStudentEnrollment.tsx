@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   useExams,
+  useExam,
   useExamClasses,
   useExamStudents,
   useEnrollStudent,
   useBulkEnrollStudents,
   useRemoveStudentFromExam,
+  useEnrollAllStudents,
+  useEnrollmentStats,
 } from '@/hooks/useExams';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -29,6 +33,8 @@ import {
   BookOpen,
   UserPlus,
   X,
+  ArrowLeft,
+  UsersRound,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -57,15 +63,23 @@ import {
 
 export function ExamStudentEnrollment() {
   const { t } = useLanguage();
+  const { examId: urlExamId } = useParams<{ examId: string }>();
+  const navigate = useNavigate();
   const { data: profile } = useProfile();
   const organizationId = profile?.organization_id;
 
-  // Data fetching
+  // Data fetching - only fetch exams list if no examId in URL
   const { data: exams, isLoading: examsLoading } = useExams(organizationId);
+  // Fetch single exam if examId is in URL
+  const { data: urlExam, isLoading: urlExamLoading } = useExam(urlExamId);
   
   // State
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [selectedExamClass, setSelectedExamClass] = useState<ExamClass | null>(null);
+  
+  // Fetch enrollment stats when exam is selected
+  const { data: enrollmentStats } = useEnrollmentStats(selectedExam?.id);
+  const enrollAllStudents = useEnrollAllStudents();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -118,6 +132,13 @@ export function ExamStudentEnrollment() {
       return fullName.includes(query) || admissionNo.includes(query);
     });
   }, [availableStudents, searchQuery]);
+
+  // Set exam from URL params when available
+  useEffect(() => {
+    if (urlExam && !selectedExam) {
+      setSelectedExam(urlExam);
+    }
+  }, [urlExam, selectedExam]);
 
   // Auto-select first exam class when exam is selected
   useEffect(() => {
@@ -194,24 +215,43 @@ export function ExamStudentEnrollment() {
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t('exams.studentEnrollment') || 'Student Enrollment'}</h1>
-            <p className="text-muted-foreground mt-1">
-              {t('exams.studentEnrollmentDescription') || 'Enroll students in exams by class'}
-            </p>
-          </div>
-          {selectedExam && selectedExamClass && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className="gap-1 py-1.5 px-3">
-                <GraduationCap className="h-3 w-3" />
-                {selectedExam.name}
-              </Badge>
-              <Badge className="gap-1 py-1.5 px-3">
-                {selectedExamClass.classAcademicYear?.class?.name}
-                {selectedExamClass.classAcademicYear?.sectionName && ` - ${selectedExamClass.classAcademicYear.sectionName}`}
-              </Badge>
+          <div className="flex items-center gap-4">
+            {urlExamId && (
+              <Button variant="ghost" size="icon" onClick={() => navigate('/exams')}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">{t('exams.studentEnrollment') || 'Student Enrollment'}</h1>
+              <p className="text-muted-foreground mt-1">
+                {t('exams.studentEnrollmentDescription') || 'Enroll students in exams by class'}
+              </p>
             </div>
-          )}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedExam && selectedExamClass && (
+              <>
+                <Badge variant="outline" className="gap-1 py-1.5 px-3">
+                  <GraduationCap className="h-3 w-3" />
+                  {selectedExam.name}
+                </Badge>
+                <Badge className="gap-1 py-1.5 px-3">
+                  {selectedExamClass.classAcademicYear?.class?.name}
+                  {selectedExamClass.classAcademicYear?.sectionName && ` - ${selectedExamClass.classAcademicYear.sectionName}`}
+                </Badge>
+              </>
+            )}
+            {selectedExam && hasAssign && (
+              <Button 
+                variant="default"
+                onClick={() => enrollAllStudents.mutate(selectedExam.id)}
+                disabled={enrollAllStudents.isPending}
+              >
+                <UsersRound className="h-4 w-4 mr-2" />
+                {t('exams.enrollAllClasses') || 'Enroll All Classes'}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Stats Cards */}

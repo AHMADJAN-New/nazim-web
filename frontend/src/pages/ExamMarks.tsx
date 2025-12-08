@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   useExams,
+  useExam,
   useExamClasses,
   useExamSubjects,
   useExamStudents,
@@ -8,6 +10,7 @@ import {
   useSaveExamResult,
   useBulkSaveExamResults,
   useUpdateExamResult,
+  useMarksProgress,
 } from '@/hooks/useExams';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -19,7 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Save, UserX } from 'lucide-react';
+import { CheckCircle, Save, UserX, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -126,11 +129,14 @@ function StudentMarksRow({ student, examSubject, examId, result, onMarksChange, 
 
 export function ExamMarks() {
   const { t } = useLanguage();
+  const { examId: urlExamId } = useParams<{ examId: string }>();
+  const navigate = useNavigate();
   const { data: profile } = useProfile();
   const organizationId = profile?.organization_id;
 
   const { data: exams, isLoading: examsLoading } = useExams(organizationId);
-  const [selectedExamId, setSelectedExamId] = useState<string>('');
+  const { data: urlExam } = useExam(urlExamId);
+  const [selectedExamId, setSelectedExamId] = useState<string>(urlExamId || '');
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
 
@@ -146,13 +152,23 @@ export function ExamMarks() {
   const [marksData, setMarksData] = useState<Record<string, { marks: number | null; isAbsent: boolean; remarks: string }>>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  const hasUpdate = useHasPermission('exams.update');
+  const hasUpdate = useHasPermission('exams.enter_marks');
+  
+  // Fetch marks progress for the selected exam
+  const { data: marksProgress } = useMarksProgress(selectedExamId);
+
+  // Set exam from URL params
+  useEffect(() => {
+    if (urlExamId && !selectedExamId) {
+      setSelectedExamId(urlExamId);
+    }
+  }, [urlExamId, selectedExamId]);
 
   useEffect(() => {
-    if (exams && exams.length > 0 && !selectedExamId) {
+    if (exams && exams.length > 0 && !selectedExamId && !urlExamId) {
       setSelectedExamId(exams[0].id);
     }
-  }, [exams, selectedExamId]);
+  }, [exams, selectedExamId, urlExamId]);
 
   useEffect(() => {
     if (examClasses && examClasses.length > 0 && !selectedClassId) {
@@ -241,11 +257,23 @@ export function ExamMarks() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('exams.marks') || 'Exam Marks'}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t('exams.marksDescription') || 'Enter and manage exam marks for students.'}
-          </p>
+        <div className="flex items-center gap-4">
+          {urlExamId && (
+            <Button variant="ghost" size="icon" onClick={() => navigate('/exams')}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
+          <div>
+            <h1 className="text-2xl font-semibold">{t('exams.marks') || 'Exam Marks'}</h1>
+            <p className="text-sm text-muted-foreground">
+              {t('exams.marksDescription') || 'Enter and manage exam marks for students.'}
+              {marksProgress && (
+                <span className="ml-2">
+                  ({t('exams.progress') || 'Progress'}: {marksProgress.totalEntered}/{marksProgress.totalExpected} - {marksProgress.overallPercentage.toFixed(0)}%)
+                </span>
+              )}
+            </p>
+          </div>
         </div>
         {selectedSubject && hasUpdate && (
           <Button onClick={handleBulkSave} disabled={!hasChanges || isSaving || bulkSaveResults.isPending}>

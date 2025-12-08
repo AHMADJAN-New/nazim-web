@@ -2597,6 +2597,5 @@ export const ar: TranslationKeys = {
     noStudentsSelected: 'لم يتم تحديد أي طلاب. حدد الطلاب من اللوحة اليسرى.',
     quickEnroll: 'تسجيل سريع لطالب واحد',
     quickEnrollDescription: 'تسجيل طالب واحد بسرعة'
->>>>>>> claude/fix-exams-management-017Ewpa2cYAoEs9tn4Rdcpgc
   }
 };

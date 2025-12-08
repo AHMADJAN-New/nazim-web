@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { useExams, useCreateExam, useUpdateExam, useDeleteExam } from '@/hooks/useExams';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useExams, useCreateExam, useUpdateExam, useDeleteExam, useUpdateExamStatus } from '@/hooks/useExams';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import type { Exam } from '@/types/domain/exam';
+import type { Exam, ExamStatus } from '@/types/domain/exam';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, Pencil, CheckCircle, Calendar, Settings } from 'lucide-react';
+import { 
+  Trash2, Plus, Pencil, CheckCircle, Calendar, Settings, Users, 
+  ClipboardList, FileText, Clock, MoreHorizontal, Search 
+} from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
@@ -34,9 +38,34 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+const statusConfig: Record<ExamStatus, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+  draft: { label: 'Draft', variant: 'outline' },
+  scheduled: { label: 'Scheduled', variant: 'secondary' },
+  in_progress: { label: 'In Progress', variant: 'default' },
+  completed: { label: 'Completed', variant: 'default' },
+  archived: { label: 'Archived', variant: 'outline' },
+};
+
+const statusTransitions: Record<ExamStatus, ExamStatus[]> = {
+  draft: ['scheduled'],
+  scheduled: ['draft', 'in_progress'],
+  in_progress: ['completed'],
+  completed: ['archived'],
+  archived: [],
+};
 
 export function Exams() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { data: profile } = useProfile();
   const organizationId = profile?.organization_id;
 
@@ -46,20 +75,24 @@ export function Exams() {
   const createExam = useCreateExam();
   const updateExam = useUpdateExam();
   const deleteExam = useDeleteExam();
+  const updateExamStatus = useUpdateExamStatus();
 
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [examToDelete, setExamToDelete] = useState<Exam | null>(null);
-  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
-  const [examToConfig, setExamToConfig] = useState<Exam | null>(null);
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [statusToChange, setStatusToChange] = useState<{ exam: Exam; newStatus: ExamStatus } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ExamStatus | 'all'>('all');
   const [formData, setFormData] = useState({
     name: '',
     academicYearId: '',
     description: '',
     startDate: '',
     endDate: '',
+    status: 'draft' as ExamStatus,
   });
 
   // Set default academic year to current when it's available
@@ -75,6 +108,22 @@ export function Exams() {
   const hasCreate = useHasPermission('exams.create');
   const hasUpdate = useHasPermission('exams.update');
   const hasDelete = useHasPermission('exams.delete');
+  const hasManage = useHasPermission('exams.manage');
+  const hasManageTimetable = useHasPermission('exams.manage_timetable');
+  const hasEnrollStudents = useHasPermission('exams.enroll_students');
+  const hasEnterMarks = useHasPermission('exams.enter_marks');
+  const hasViewReports = useHasPermission('exams.view_reports');
+
+  // Filter exams
+  const filteredExams = useMemo(() => {
+    if (!exams) return [];
+    return exams.filter(exam => {
+      const matchesSearch = exam.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        exam.academicYear?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || exam.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [exams, searchQuery, statusFilter]);
 
   const handleCreate = () => {
     if (!formData.name || !formData.academicYearId) {
@@ -89,7 +138,8 @@ export function Exams() {
         description: formData.description || undefined,
         startDate: formData.startDate ? new Date(formData.startDate) : undefined,
         endDate: formData.endDate ? new Date(formData.endDate) : undefined,
-      } as Parameters<typeof createExam.mutate>[0],
+        status: formData.status,
+      },
       {
         onSuccess: () => {
           showToast.success(t('toast.examCreated') || 'Exam created successfully');
@@ -152,6 +202,24 @@ export function Exams() {
     });
   };
 
+  const handleStatusChange = () => {
+    if (!statusToChange) return;
+
+    updateExamStatus.mutate(
+      { examId: statusToChange.exam.id, status: statusToChange.newStatus },
+      {
+        onSuccess: () => {
+          showToast.success(t('toast.examStatusUpdated') || 'Exam status updated');
+          setIsStatusDialogOpen(false);
+          setStatusToChange(null);
+        },
+        onError: (error: Error) => {
+          showToast.error(error.message || t('toast.examStatusUpdateFailed') || 'Failed to update status');
+        },
+      }
+    );
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -159,6 +227,7 @@ export function Exams() {
       description: '',
       startDate: '',
       endDate: '',
+      status: 'draft',
     });
     setSelectedExam(null);
   };
@@ -171,6 +240,7 @@ export function Exams() {
       description: exam.description || '',
       startDate: exam.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : '',
       endDate: exam.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : '',
+      status: exam.status,
     });
     setIsEditDialogOpen(true);
   };
@@ -178,6 +248,28 @@ export function Exams() {
   const openDeleteDialog = (exam: Exam) => {
     setExamToDelete(exam);
     setIsDeleteDialogOpen(true);
+  };
+
+  const openStatusDialog = (exam: Exam, newStatus: ExamStatus) => {
+    setStatusToChange({ exam, newStatus });
+    setIsStatusDialogOpen(true);
+  };
+
+  const getStatusBadge = (status: ExamStatus) => {
+    const config = statusConfig[status] || statusConfig.draft;
+    return (
+      <Badge variant={config.variant}>
+        {t(`exams.status.${status}`) || config.label}
+      </Badge>
+    );
+  };
+
+  const canEditExam = (exam: Exam) => {
+    return hasUpdate && ['draft', 'scheduled'].includes(exam.status);
+  };
+
+  const canDeleteExam = (exam: Exam) => {
+    return hasDelete && exam.status === 'draft';
   };
 
   return (
@@ -191,7 +283,6 @@ export function Exams() {
         </div>
         {hasCreate && (
           <Button onClick={() => {
-            // Set default academic year when opening create dialog
             setFormData(prev => ({
               ...prev,
               academicYearId: currentAcademicYear?.id || prev.academicYearId,
@@ -204,6 +295,36 @@ export function Exams() {
         )}
       </div>
 
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t('exams.searchPlaceholder') || 'Search exams...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ExamStatus | 'all')}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder={t('exams.filterByStatus') || 'Filter by status'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                <SelectItem value="draft">{t('exams.status.draft') || 'Draft'}</SelectItem>
+                <SelectItem value="scheduled">{t('exams.status.scheduled') || 'Scheduled'}</SelectItem>
+                <SelectItem value="in_progress">{t('exams.status.in_progress') || 'In Progress'}</SelectItem>
+                <SelectItem value="completed">{t('exams.status.completed') || 'Completed'}</SelectItem>
+                <SelectItem value="archived">{t('exams.status.archived') || 'Archived'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>{t('exams.list') || 'Exams List'}</CardTitle>
@@ -214,10 +335,12 @@ export function Exams() {
         <CardContent>
           {isLoading ? (
             <Skeleton className="w-full h-32" />
-          ) : !exams || exams.length === 0 ? (
+          ) : !filteredExams || filteredExams.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-sm text-muted-foreground">
-                {t('exams.noExams') || 'No exams found. Create your first exam to get started.'}
+                {searchQuery || statusFilter !== 'all' 
+                  ? (t('exams.noExamsFiltered') || 'No exams match your filters.')
+                  : (t('exams.noExams') || 'No exams found. Create your first exam to get started.')}
               </p>
             </div>
           ) : (
@@ -226,70 +349,107 @@ export function Exams() {
                 <TableRow>
                   <TableHead>{t('exams.name') || 'Name'}</TableHead>
                   <TableHead>{t('exams.academicYear') || 'Academic Year'}</TableHead>
-                  <TableHead>{t('exams.startDate') || 'Start Date'}</TableHead>
-                  <TableHead>{t('exams.endDate') || 'End Date'}</TableHead>
-                  <TableHead>{t('exams.description') || 'Description'}</TableHead>
+                  <TableHead>{t('exams.status') || 'Status'}</TableHead>
+                  <TableHead>{t('exams.period') || 'Period'}</TableHead>
                   <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {exams.map((exam) => (
+                {filteredExams.map((exam) => (
                   <TableRow key={exam.id}>
                     <TableCell className="font-medium">{exam.name}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{exam.academicYear?.name || 'N/A'}</Badge>
                     </TableCell>
+                    <TableCell>{getStatusBadge(exam.status)}</TableCell>
                     <TableCell>
-                      {exam.startDate ? new Date(exam.startDate).toLocaleDateString() : '—'}
-                    </TableCell>
-                    <TableCell>
-                      {exam.endDate ? new Date(exam.endDate).toLocaleDateString() : '—'}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {exam.description || '—'}
+                      {exam.startDate && exam.endDate ? (
+                        <span className="text-sm">
+                          {new Date(exam.startDate).toLocaleDateString()} - {new Date(exam.endDate).toLocaleDateString()}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {hasUpdate && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setExamToConfig(exam);
-                                setFormData({
-                                  name: exam.name,
-                                  academicYearId: exam.academicYearId,
-                                  description: exam.description || '',
-                                  startDate: exam.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : '',
-                                  endDate: exam.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : '',
-                                });
-                                setIsConfigDialogOpen(true);
-                              }}
-                            >
-                              <Settings className="h-4 w-4 mr-1" />
-                              {t('exams.configure') || 'Configure'}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEditDialog(exam)}
-                            >
-                              <Pencil className="h-4 w-4 mr-1" />
-                              {t('common.edit') || 'Edit'}
-                            </Button>
-                          </>
-                        )}
-                        {hasDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openDeleteDialog(exam)}
-                          >
-                            <Trash2 className="h-4 w-4" />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                        )}
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          
+                          {/* Configuration Actions */}
+                          {hasManage && (
+                            <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/classes-subjects`)}>
+                              <Settings className="h-4 w-4 mr-2" />
+                              {t('exams.classesSubjects') || 'Classes & Subjects'}
+                            </DropdownMenuItem>
+                          )}
+                          {hasManageTimetable && (
+                            <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/timetable`)}>
+                              <Clock className="h-4 w-4 mr-2" />
+                              {t('exams.timetable') || 'Timetable'}
+                            </DropdownMenuItem>
+                          )}
+                          {hasEnrollStudents && (
+                            <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/students`)}>
+                              <Users className="h-4 w-4 mr-2" />
+                              {t('exams.studentEnrollment') || 'Student Enrollment'}
+                            </DropdownMenuItem>
+                          )}
+                          {hasEnterMarks && (
+                            <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/marks`)}>
+                              <ClipboardList className="h-4 w-4 mr-2" />
+                              {t('exams.marks') || 'Marks Entry'}
+                            </DropdownMenuItem>
+                          )}
+                          {hasViewReports && (
+                            <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/reports`)}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              {t('exams.reports') || 'Reports'}
+                            </DropdownMenuItem>
+                          )}
+                          
+                          <DropdownMenuSeparator />
+                          
+                          {/* Status Change Actions */}
+                          {hasUpdate && statusTransitions[exam.status]?.length > 0 && (
+                            <>
+                              <DropdownMenuLabel>{t('exams.changeStatus') || 'Change Status'}</DropdownMenuLabel>
+                              {statusTransitions[exam.status].map(newStatus => (
+                                <DropdownMenuItem 
+                                  key={newStatus}
+                                  onClick={() => openStatusDialog(exam, newStatus)}
+                                >
+                                  {t(`exams.status.${newStatus}`) || statusConfig[newStatus].label}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          
+                          {/* Edit/Delete Actions */}
+                          {canEditExam(exam) && (
+                            <DropdownMenuItem onClick={() => openEditDialog(exam)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              {t('common.edit') || 'Edit'}
+                            </DropdownMenuItem>
+                          )}
+                          {canDeleteExam(exam) && (
+                            <DropdownMenuItem 
+                              onClick={() => openDeleteDialog(exam)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              {t('common.delete') || 'Delete'}
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -461,122 +621,33 @@ export function Exams() {
         </DialogContent>
       </Dialog>
 
-      {/* Configure & Schedule Dialog */}
-      <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              {t('exams.configureAndSchedule') || 'Configure & Schedule Exam'}
-            </DialogTitle>
-            <DialogDescription>
-              {t('exams.configureAndScheduleDescription') || 'Set exam dates, duration, and scheduling details'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6">
-            {examToConfig && (
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <p className="text-sm font-medium">{t('exams.exam') || 'Exam'}: {examToConfig.name}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t('exams.academicYear') || 'Academic Year'}: {examToConfig.academicYear?.name || 'N/A'}
-                </p>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="config-start-date">{t('exams.startDate') || 'Start Date'} *</Label>
-                <Input
-                  id="config-start-date"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t('exams.startDateHint') || 'When the exam period begins'}
-                </p>
-              </div>
-              <div>
-                <Label htmlFor="config-end-date">{t('exams.endDate') || 'End Date'} *</Label>
-                <Input
-                  id="config-end-date"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  min={formData.startDate || undefined}
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t('exams.endDateHint') || 'When the exam period ends'}
-                </p>
-              </div>
-            </div>
-            {formData.startDate && formData.endDate && (
-              <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                  {t('exams.examDuration') || 'Exam Duration'}
-                </p>
-                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                  {(() => {
-                    const start = new Date(formData.startDate);
-                    const end = new Date(formData.endDate);
-                    const diffTime = Math.abs(end.getTime() - start.getTime());
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                    return `${diffDays} ${diffDays === 1 ? t('exams.day') || 'day' : t('exams.days') || 'days'}`;
-                  })()}
-                </p>
-              </div>
-            )}
-            <div>
-              <Label htmlFor="config-description">{t('exams.scheduleNotes') || 'Schedule Notes'}</Label>
-              <Textarea
-                id="config-description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder={t('exams.scheduleNotesPlaceholder') || 'Add any additional notes about the exam schedule...'}
-                rows={3}
-                className="mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setIsConfigDialogOpen(false); setExamToConfig(null); }}>
-              {t('common.cancel') || 'Cancel'}
-            </Button>
-            <Button onClick={() => {
-              if (!examToConfig || !formData.startDate || !formData.endDate) {
-                showToast.error(t('forms.required') || 'Please fill in all required fields');
-                return;
-              }
-              updateExam.mutate(
-                {
-                  id: examToConfig.id,
-                  data: {
-                    name: examToConfig.name,
-                    academicYearId: examToConfig.academicYearId,
-                    description: formData.description || undefined,
-                    startDate: new Date(formData.startDate),
-                    endDate: new Date(formData.endDate),
-                  },
-                },
-                {
-                  onSuccess: () => {
-                    showToast.success(t('toast.examUpdated') || 'Exam scheduled successfully');
-                    setIsConfigDialogOpen(false);
-                    setExamToConfig(null);
-                  },
-                  onError: (error: Error) => {
-                    showToast.error(error.message || t('toast.examUpdateFailed') || 'Failed to schedule exam');
-                  },
-                }
-              );
-            }} disabled={updateExam.isPending}>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              {t('exams.saveSchedule') || 'Save Schedule'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Status Change Dialog */}
+      <AlertDialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('exams.changeStatusConfirm') || 'Change Exam Status'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('exams.changeStatusConfirmMessage') || 'Are you sure you want to change the status of this exam?'}
+              {statusToChange && (
+                <div className="mt-4 space-y-2">
+                  <div className="font-medium">{statusToChange.exam.name}</div>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(statusToChange.exam.status)}
+                    <span>→</span>
+                    {getStatusBadge(statusToChange.newStatus)}
+                  </div>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleStatusChange} disabled={updateExamStatus.isPending}>
+              {t('common.confirm') || 'Confirm'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

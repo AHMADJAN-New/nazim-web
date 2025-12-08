@@ -58,6 +58,7 @@ use App\Http\Controllers\ExamSubjectController;
 use App\Http\Controllers\ExamStudentController;
 use App\Http\Controllers\ExamResultController;
 use App\Http\Controllers\ExamReportController;
+use App\Http\Controllers\ExamTimeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -218,13 +219,37 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Exams
     Route::apiResource('exams', ExamController::class);
+    Route::post('/exams/{exam}/status', [ExamController::class, 'updateStatus']);
+    
+    // Exam Classes
     Route::apiResource('exam-classes', ExamClassController::class)->only(['index', 'store', 'destroy']);
+    
+    // Exam Subjects
     Route::apiResource('exam-subjects', ExamSubjectController::class)->only(['index', 'store', 'update', 'destroy']);
+    
+    // Exam Timetable
+    Route::get('/exams/{exam}/times', [ExamTimeController::class, 'index']);
+    Route::post('/exams/{exam}/times', [ExamTimeController::class, 'store']);
+    Route::put('/exam-times/{examTime}', [ExamTimeController::class, 'update']);
+    Route::delete('/exam-times/{examTime}', [ExamTimeController::class, 'destroy']);
+    Route::post('/exam-times/{examTime}/toggle-lock', [ExamTimeController::class, 'toggleLock']);
+    
+    // Exam Students
     Route::apiResource('exam-students', ExamStudentController::class)->only(['index', 'store', 'destroy']);
     Route::post('/exam-students/bulk-enroll', [ExamStudentController::class, 'bulkEnroll']);
+    Route::post('/exams/{exam}/enroll-all', [ExamStudentController::class, 'enrollAll']);
+    Route::get('/exams/{exam}/enrollment-stats', [ExamStudentController::class, 'stats']);
+    
+    // Exam Results
     Route::apiResource('exam-results', ExamResultController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('/exam-results/bulk-store', [ExamResultController::class, 'bulkStore']);
-    Route::get('/exams/{id}/report', [ExamReportController::class, 'show']);
+    Route::get('/exams/{exam}/marks-progress', [ExamResultController::class, 'progress']);
+    
+    // Exam Reports
+    Route::get('/exams/{exam}/report', [ExamReportController::class, 'show']);
+    Route::get('/exams/{exam}/reports/summary', [ExamReportController::class, 'summary']);
+    Route::get('/exams/{exam}/reports/classes/{class}', [ExamReportController::class, 'classReport']);
+    Route::get('/exams/{exam}/reports/students/{student}', [ExamReportController::class, 'studentReport']);
 
     // Academic Years
     Route::apiResource('academic-years', AcademicYearController::class);
