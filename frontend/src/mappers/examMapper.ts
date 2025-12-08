@@ -7,6 +7,8 @@ export const mapExamApiToDomain = (exam: ExamApi.Exam): Exam => ({
   academicYearId: exam.academic_year_id,
   name: exam.name,
   description: exam.description,
+  startDate: exam.start_date ? new Date(exam.start_date) : null,
+  endDate: exam.end_date ? new Date(exam.end_date) : null,
   createdAt: new Date(exam.created_at),
   updatedAt: new Date(exam.updated_at),
   deletedAt: exam.deleted_at ? new Date(exam.deleted_at) : null,
@@ -25,12 +27,16 @@ export const mapExamDomainToInsert = (exam: Partial<Exam>): Partial<ExamApi.Exam
   name: exam.name!,
   academic_year_id: exam.academicYearId!,
   description: exam.description ?? null,
+  start_date: exam.startDate ? exam.startDate.toISOString().slice(0, 10) : null,
+  end_date: exam.endDate ? exam.endDate.toISOString().slice(0, 10) : null,
 });
 
 export const mapExamDomainToUpdate = (exam: Partial<Exam>): Partial<ExamApi.Exam> => ({
   name: exam.name,
   academic_year_id: exam.academicYearId,
   description: exam.description ?? null,
+  start_date: exam.startDate ? exam.startDate.toISOString().slice(0, 10) : null,
+  end_date: exam.endDate ? exam.endDate.toISOString().slice(0, 10) : null,
 });
 
 export const mapExamClassApiToDomain = (examClass: ExamApi.ExamClass): ExamClass => ({

@@ -8,6 +8,8 @@ export interface Exam {
   academicYearId: string;
   name: string;
   description: string | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;

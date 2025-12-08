@@ -36,6 +36,11 @@ import {
   AcademicYearsManagement,
   ClassesManagement,
   SubjectsManagement,
+  Exams,
+  ExamEnrollment,
+  ExamStudentEnrollment,
+  ExamMarks,
+  ExamReports,
   ScheduleSlotsManagement,
   TeacherSubjectAssignments,
   StaffTypesManagement,
@@ -265,14 +270,35 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
-                    <Route path="/settings/exams" element={
+                    <Route path="/exams" element={
                       <PermissionRoute permission="exams.read">
                         <Suspense fallback={<PageSkeleton />}>
-                          <ExamsManagement />
+                          <Exams />
                         </Suspense>
                       </PermissionRoute>
                     } />
-                    <Route path="/settings/exams/reports" element={
+                    <Route path="/exams/enrollment" element={
+                      <PermissionRoute permission="exams.assign">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamEnrollment />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/student-enrollment" element={
+                      <PermissionRoute permission="exams.assign">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamStudentEnrollment />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/marks" element={
+                      <PermissionRoute permission="exams.update">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamMarks />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/reports" element={
                       <PermissionRoute permission="exams.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamReports />

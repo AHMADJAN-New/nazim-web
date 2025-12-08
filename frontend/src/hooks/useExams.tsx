@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
+import { useLanguage } from './useLanguage';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { examsApi, examClassesApi, examSubjectsApi } from '@/lib/api/client';
@@ -22,12 +23,19 @@ export const useExams = (organizationId?: string) => {
     queryKey: ['exams', organizationId || profile?.organization_id, orgIds.join(',')],
     queryFn: async () => {
       if (!user || !profile || orgsLoading) return [];
-      const params: { organization_id?: string } = {};
-      if (organizationId) {
-        params.organization_id = organizationId;
+      try {
+        const params: { organization_id?: string } = {};
+        if (organizationId) {
+          params.organization_id = organizationId;
+        }
+        const apiExams = await examsApi.list(params);
+        return (apiExams as ExamApi.Exam[]).map(mapExamApiToDomain);
+      } catch (error: any) {
+        if (import.meta.env.DEV) {
+          console.error('[useExams] Error fetching exams:', error);
+        }
+        throw error;
       }
-      const apiExams = await examsApi.list(params);
-      return (apiExams as ExamApi.Exam[]).map(mapExamApiToDomain);
     },
     enabled: !!user && !!profile,
     staleTime: 5 * 60 * 1000,
@@ -38,44 +46,49 @@ export const useExams = (organizationId?: string) => {
 
 export const useCreateExam = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
-    mutationFn: (payload: Partial<Exam>) => examsApi.create(mapExamDomainToInsert(payload)),
-    onSuccess: () => {
-      toast.success('Exam created successfully');
-      queryClient.invalidateQueries({ queryKey: ['exams'] });
+    mutationFn: (payload: { name: string; academicYearId: string; description?: string; startDate?: Date; endDate?: Date }) => {
+      const insertData = mapExamDomainToInsert(payload as Partial<Exam>);
+      return examsApi.create(insertData);
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to create exam');
+    onSuccess: () => {
+      showToast.success(t('toast.examCreated') || 'Exam created successfully');
+      void queryClient.invalidateQueries({ queryKey: ['exams'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.examCreateFailed') || 'Failed to create exam');
     },
   });
 };
 
 export const useUpdateExam = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Exam> }) => examsApi.update(id, mapExamDomainToUpdate(data)),
     onSuccess: () => {
-      toast.success('Exam updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['exams'] });
+      showToast.success(t('toast.examUpdated') || 'Exam updated successfully');
+      void queryClient.invalidateQueries({ queryKey: ['exams'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to update exam');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.examUpdateFailed') || 'Failed to update exam');
     },
   });
 };
 
 export const useDeleteExam = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: (id: string) => examsApi.delete(id),
-    onSuccess: () => {
-      toast.success('Exam deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['exams'] });
-      queryClient.invalidateQueries({ queryKey: ['exam-classes'] });
-      queryClient.invalidateQueries({ queryKey: ['exam-subjects'] });
+    onSuccess: async () => {
+      showToast.success(t('toast.examDeleted') || 'Exam deleted successfully');
+      await queryClient.invalidateQueries({ queryKey: ['exams'] });
+      await queryClient.refetchQueries({ queryKey: ['exams'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to delete exam');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.examDeleteFailed') || 'Failed to delete exam');
     },
   });
 };
@@ -99,29 +112,31 @@ export const useExamClasses = (examId?: string) => {
 
 export const useAssignClassToExam = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: (payload: { exam_id: string; class_academic_year_id: string }) => examClassesApi.create(payload),
     onSuccess: (data: ExamApi.ExamClass) => {
-      toast.success('Class assigned to exam');
-      queryClient.invalidateQueries({ queryKey: ['exam-classes', data.exam_id] });
+      showToast.success(t('toast.classAssigned') || 'Class assigned to exam');
+      void queryClient.invalidateQueries({ queryKey: ['exam-classes', data.exam_id] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to assign class');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.classAssignFailed') || 'Failed to assign class');
     },
   });
 };
 
 export const useRemoveClassFromExam = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: (id: string) => examClassesApi.delete(id),
-    onSuccess: (_data, id) => {
-      toast.success('Class removed from exam');
-      queryClient.invalidateQueries({ queryKey: ['exam-classes'] });
-      queryClient.invalidateQueries({ queryKey: ['exam-subjects'] });
+    onSuccess: async () => {
+      showToast.success(t('toast.classRemoved') || 'Class removed from exam');
+      await queryClient.invalidateQueries({ queryKey: ['exam-classes'] });
+      await queryClient.invalidateQueries({ queryKey: ['exam-subjects'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to remove class');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.classRemoveFailed') || 'Failed to remove class');
     },
   });
 };
@@ -166,6 +181,7 @@ export const useExamReport = (examId?: string) => {
 
 export const useEnrollSubjectToExam = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: (payload: {
       exam_id: string;
@@ -176,31 +192,33 @@ export const useEnrollSubjectToExam = () => {
       scheduled_at?: string | null;
     }) => examSubjectsApi.create(payload),
     onSuccess: (data: ExamApi.ExamSubject) => {
-      toast.success('Subject enrolled for exam');
-      queryClient.invalidateQueries({ queryKey: ['exam-subjects', data.exam_id] });
+      showToast.success(t('toast.subjectEnrolled') || 'Subject enrolled for exam');
+      void queryClient.invalidateQueries({ queryKey: ['exam-subjects', data.exam_id] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to enroll subject');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.subjectEnrollFailed') || 'Failed to enroll subject');
     },
   });
 };
 
 export const useRemoveExamSubject = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: (id: string) => examSubjectsApi.delete(id),
-    onSuccess: () => {
-      toast.success('Subject removed from exam');
-      queryClient.invalidateQueries({ queryKey: ['exam-subjects'] });
+    onSuccess: async () => {
+      showToast.success(t('toast.subjectRemoved') || 'Subject removed from exam');
+      await queryClient.invalidateQueries({ queryKey: ['exam-subjects'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to remove subject');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.subjectRemoveFailed') || 'Failed to remove subject');
     },
   });
 };
 
 export const useUpdateExamSubject = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: ({
       id,
@@ -210,11 +228,11 @@ export const useUpdateExamSubject = () => {
       data: { total_marks?: number | null; passing_marks?: number | null; scheduled_at?: string | null };
     }) => examSubjectsApi.update(id, data),
     onSuccess: () => {
-      toast.success('Exam subject updated');
-      queryClient.invalidateQueries({ queryKey: ['exam-subjects'] });
+      showToast.success(t('toast.examSubjectUpdated') || 'Exam subject updated');
+      void queryClient.invalidateQueries({ queryKey: ['exam-subjects'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to update subject');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.examSubjectUpdateFailed') || 'Failed to update subject');
     },
   });
 };
@@ -246,24 +264,26 @@ export const useExamStudents = (examId?: string, examClassId?: string) => {
 
 export const useEnrollStudent = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: async (data: { exam_id: string; exam_class_id: string; student_admission_id: string }) => {
       const { examStudentsApi } = await import('@/lib/api/client');
       return examStudentsApi.create(data);
     },
     onSuccess: () => {
-      toast.success('Student enrolled successfully');
-      queryClient.invalidateQueries({ queryKey: ['exam-students'] });
-      queryClient.invalidateQueries({ queryKey: ['exams'] });
+      showToast.success(t('toast.studentEnrolled') || 'Student enrolled successfully');
+      void queryClient.invalidateQueries({ queryKey: ['exam-students'] });
+      void queryClient.invalidateQueries({ queryKey: ['exams'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to enroll student');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.studentEnrollFailed') || 'Failed to enroll student');
     },
   });
 };
 
 export const useBulkEnrollStudents = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: async (data: { exam_id: string; exam_class_id: string }) => {
       const { examStudentsApi } = await import('@/lib/api/client');
@@ -272,31 +292,34 @@ export const useBulkEnrollStudents = () => {
     onSuccess: (data: any) => {
       const enrolledCount = data?.enrolled_count || 0;
       const skippedCount = data?.skipped_count || 0;
-      const message = skippedCount > 0 ? `${enrolledCount} students enrolled. ${skippedCount} already enrolled.` : `${enrolledCount} students enrolled.`;
-      toast.success(message);
-      queryClient.invalidateQueries({ queryKey: ['exam-students'] });
-      queryClient.invalidateQueries({ queryKey: ['exams'] });
+      const message = skippedCount > 0 
+        ? t('toast.studentsEnrolledWithSkipped', { enrolled: enrolledCount, skipped: skippedCount }) || `${enrolledCount} students enrolled. ${skippedCount} already enrolled.`
+        : t('toast.studentsEnrolled', { count: enrolledCount }) || `${enrolledCount} students enrolled.`;
+      showToast.success(message);
+      void queryClient.invalidateQueries({ queryKey: ['exam-students'] });
+      void queryClient.invalidateQueries({ queryKey: ['exams'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to enroll students');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.studentsEnrollFailed') || 'Failed to enroll students');
     },
   });
 };
 
 export const useRemoveStudentFromExam = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: async (id: string) => {
       const { examStudentsApi } = await import('@/lib/api/client');
       return examStudentsApi.delete(id);
     },
-    onSuccess: () => {
-      toast.success('Student removed from exam');
-      queryClient.invalidateQueries({ queryKey: ['exam-students'] });
-      queryClient.invalidateQueries({ queryKey: ['exams'] });
+    onSuccess: async () => {
+      showToast.success(t('toast.studentRemoved') || 'Student removed from exam');
+      await queryClient.invalidateQueries({ queryKey: ['exam-students'] });
+      await queryClient.invalidateQueries({ queryKey: ['exams'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to remove student');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.studentRemoveFailed') || 'Failed to remove student');
     },
   });
 };
@@ -328,6 +351,7 @@ export const useExamResults = (examId?: string, examSubjectId?: string, examStud
 
 export const useSaveExamResult = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: async (data: {
       exam_id: string;
@@ -341,18 +365,19 @@ export const useSaveExamResult = () => {
       return examResultsApi.create(data);
     },
     onSuccess: () => {
-      toast.success('Result saved successfully');
-      queryClient.invalidateQueries({ queryKey: ['exam-results'] });
-      queryClient.invalidateQueries({ queryKey: ['exams'] });
+      showToast.success(t('toast.examResultSaved') || 'Result saved successfully');
+      void queryClient.invalidateQueries({ queryKey: ['exam-results'] });
+      void queryClient.invalidateQueries({ queryKey: ['exams'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to save result');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.examResultSaveFailed') || 'Failed to save result');
     },
   });
 };
 
 export const useBulkSaveExamResults = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: async (data: {
       exam_id: string;
@@ -371,18 +396,19 @@ export const useBulkSaveExamResults = () => {
       const createdCount = data?.created_count || 0;
       const updatedCount = data?.updated_count || 0;
       const total = createdCount + updatedCount;
-      toast.success(`${total} results saved successfully`);
-      queryClient.invalidateQueries({ queryKey: ['exam-results'] });
-      queryClient.invalidateQueries({ queryKey: ['exams'] });
+      showToast.success(t('toast.examResultsSaved', { count: total }) || `${total} results saved successfully`);
+      void queryClient.invalidateQueries({ queryKey: ['exam-results'] });
+      void queryClient.invalidateQueries({ queryKey: ['exams'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to save results');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.examResultsSaveFailed') || 'Failed to save results');
     },
   });
 };
 
 export const useUpdateExamResult = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: async ({
       id,
@@ -395,28 +421,29 @@ export const useUpdateExamResult = () => {
       return examResultsApi.update(id, data);
     },
     onSuccess: () => {
-      toast.success('Result updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['exam-results'] });
+      showToast.success(t('toast.examResultUpdated') || 'Result updated successfully');
+      void queryClient.invalidateQueries({ queryKey: ['exam-results'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to update result');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.examResultUpdateFailed') || 'Failed to update result');
     },
   });
 };
 
 export const useDeleteExamResult = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   return useMutation({
     mutationFn: async (id: string) => {
       const { examResultsApi } = await import('@/lib/api/client');
       return examResultsApi.delete(id);
     },
-    onSuccess: () => {
-      toast.success('Result deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['exam-results'] });
+    onSuccess: async () => {
+      showToast.success(t('toast.examResultDeleted') || 'Result deleted successfully');
+      await queryClient.invalidateQueries({ queryKey: ['exam-results'] });
     },
-    onError: (error: any) => {
-      toast.error(error?.message || 'Failed to delete result');
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.examResultDeleteFailed') || 'Failed to delete result');
     },
   });
 };

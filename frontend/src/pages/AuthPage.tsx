@@ -8,16 +8,32 @@ import { logger } from '@/lib/logger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+
+interface Organization {
+  id: string;
+  name: string;
+}
 
 export default function AuthPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user, refreshAuth } = useAuth();
   const [authLoading, setAuthLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
+    fullName: '',
+    phone: '',
+    role: 'student',
+    organizationId: '',
   });
 
   useEffect(() => {
@@ -26,17 +42,25 @@ export default function AuthPage() {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    fetchOrganizations();
+  }, []);
+
   const fetchOrganizations = async () => {
     try {
       // Fetch organizations from Laravel API (public endpoint for signup form)
       const data = await organizationsApi.publicList() as Organization[];
-      setOrganizations(data || []);
+      setOrganizations(Array.isArray(data) ? data : []);
 
       if (!data || data.length === 0) {
-        console.warn('No organizations found in database');
+        if (import.meta.env.DEV) {
+          console.warn('No organizations found in database');
+        }
       }
     } catch (error: any) {
-      console.error('Error fetching organizations:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching organizations:', error);
+      }
       logger.error('Error fetching organizations', error);
       setOrganizations([]);
 
@@ -46,8 +70,10 @@ export default function AuthPage() {
         error?.message?.includes('fetch')) {
         toast.error(t('auth.networkError') || 'Network error: Unable to fetch organizations. Please check your connection and ensure the API server is running.');
       } else {
-        // Other errors - show a generic message
-        console.warn('Could not fetch organizations:', error.message);
+        // Other errors - show a generic message (silently fail for now)
+        if (import.meta.env.DEV) {
+          console.warn('Could not fetch organizations:', error.message);
+        }
       }
     }
   };

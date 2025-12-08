@@ -9,6 +9,8 @@ export interface Exam {
   academic_year_id: string;
   name: string;
   description: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;

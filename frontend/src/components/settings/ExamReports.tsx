@@ -42,7 +42,7 @@ export function ExamReports() {
   }, [report?.classes]);
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Exam insights</h1>

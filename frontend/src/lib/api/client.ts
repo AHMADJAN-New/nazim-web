@@ -335,6 +335,20 @@ export const authApi = {
   }) => {
     return apiClient.post('/auth/change-password', data);
   },
+
+  register: async (data: {
+    email: string;
+    password: string;
+    password_confirmation: string;
+    full_name: string;
+    organization_id?: string;
+  }) => {
+    const response = await apiClient.post<{ user: any; token: string; profile?: any }>('/auth/register', data);
+    if (response.token) {
+      apiClient.setToken(response.token);
+    }
+    return response;
+  },
 };
 
 // Organizations API
@@ -365,6 +379,37 @@ export const organizationsApi = {
 
   statistics: async (id: string) => {
     return apiClient.get(`/organizations/${id}/statistics`);
+  },
+
+  publicList: async () => {
+    // Public endpoint for listing organizations (no auth required)
+    // This makes a direct fetch call without authentication
+    // If the endpoint doesn't exist, return empty array gracefully
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+      const response = await fetch(`${baseUrl}/organizations/public`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        // If endpoint doesn't exist (404) or other error, return empty array
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error(`Failed to fetch organizations: ${response.statusText}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      // If fetch fails (network error, CORS, etc.), return empty array
+      if (import.meta.env.DEV) {
+        console.warn('Could not fetch public organizations list:', error);
+      }
+      return [];
+    }
   },
 };
 

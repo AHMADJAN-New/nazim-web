@@ -52,6 +52,12 @@ use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\CourseDocumentController;
 use App\Http\Controllers\CertificateTemplateController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExamController;
+use App\Http\Controllers\ExamClassController;
+use App\Http\Controllers\ExamSubjectController;
+use App\Http\Controllers\ExamStudentController;
+use App\Http\Controllers\ExamResultController;
+use App\Http\Controllers\ExamReportController;
 
 /*
 |--------------------------------------------------------------------------

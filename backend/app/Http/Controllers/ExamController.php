@@ -32,7 +32,8 @@ class ExamController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $query = Exam::with(['academicYear', 'examClasses.classAcademicYear.class', 'examClasses.classAcademicYear.academicYear'])
+        try {
+            $query = Exam::with(['academicYear'])
             ->whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id);
 
@@ -43,6 +44,14 @@ class ExamController extends Controller
         $exams = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json($exams);
+        } catch (\Exception $e) {
+            Log::error('Error fetching exams: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'user_id' => $user->id,
+                'organization_id' => $profile->organization_id,
+            ]);
+            return response()->json(['error' => 'Failed to fetch exams: ' . $e->getMessage()], 500);
+        }
     }
 
     public function store(Request $request)
@@ -112,15 +121,20 @@ class ExamController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $exam = Exam::with([
-            'academicYear',
-            'examClasses.classAcademicYear.class',
-            'examClasses.classAcademicYear.academicYear',
-            'examSubjects.classSubject.subject'
-        ])->where('organization_id', $profile->organization_id)
+        try {
+            $exam = Exam::with(['academicYear'])
+                ->where('organization_id', $profile->organization_id)
             ->where('id', $id)
             ->whereNull('deleted_at')
             ->first();
+        } catch (\Exception $e) {
+            Log::error('Error fetching exam: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'exam_id' => $id,
+                'user_id' => $user->id,
+            ]);
+            return response()->json(['error' => 'Failed to fetch exam: ' . $e->getMessage()], 500);
+        }
 
         if (!$exam) {
             return response()->json(['error' => 'Exam not found'], 404);
