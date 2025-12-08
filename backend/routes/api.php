@@ -311,4 +311,39 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+
+    // ============================================
+    // Finance Module
+    // ============================================
+    
+    // Finance Accounts (cash locations)
+    Route::apiResource('finance-accounts', \App\Http\Controllers\FinanceAccountController::class);
+
+    // Income Categories
+    Route::apiResource('income-categories', \App\Http\Controllers\IncomeCategoryController::class);
+
+    // Expense Categories
+    Route::apiResource('expense-categories', \App\Http\Controllers\ExpenseCategoryController::class);
+
+    // Finance Projects
+    Route::get('/finance-projects/{id}/summary', [\App\Http\Controllers\FinanceProjectController::class, 'summary']);
+    Route::apiResource('finance-projects', \App\Http\Controllers\FinanceProjectController::class);
+
+    // Donors
+    Route::get('/donors/{id}/summary', [\App\Http\Controllers\DonorController::class, 'summary']);
+    Route::apiResource('donors', \App\Http\Controllers\DonorController::class);
+
+    // Income Entries
+    Route::apiResource('income-entries', \App\Http\Controllers\IncomeEntryController::class);
+
+    // Expense Entries
+    Route::apiResource('expense-entries', \App\Http\Controllers\ExpenseEntryController::class);
+
+    // Finance Reports
+    Route::get('/finance/dashboard', [\App\Http\Controllers\FinanceReportController::class, 'dashboard']);
+    Route::get('/finance/reports/daily-cashbook', [\App\Http\Controllers\FinanceReportController::class, 'dailyCashbook']);
+    Route::get('/finance/reports/income-vs-expense', [\App\Http\Controllers\FinanceReportController::class, 'incomeVsExpense']);
+    Route::get('/finance/reports/project-summary', [\App\Http\Controllers\FinanceReportController::class, 'projectSummary']);
+    Route::get('/finance/reports/donor-summary', [\App\Http\Controllers\FinanceReportController::class, 'donorSummary']);
+    Route::get('/finance/reports/account-balances', [\App\Http\Controllers\FinanceReportController::class, 'accountBalances']);
 });

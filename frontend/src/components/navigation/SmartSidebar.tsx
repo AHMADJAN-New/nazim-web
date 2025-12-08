@@ -197,6 +197,17 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasLibraryLoansPermission = useHasPermission('library_loans.read');
   const hasLibraryPermission = hasLibraryBooksPermission || hasLibraryCategoriesPermission || hasLibraryLoansPermission;
 
+  // Finance permissions
+  const hasFinanceAccountsPermission = useHasPermission('finance_accounts.read');
+  const hasIncomeCategoriesPermission = useHasPermission('income_categories.read');
+  const hasIncomeEntriesPermission = useHasPermission('income_entries.read');
+  const hasExpenseCategoriesPermission = useHasPermission('expense_categories.read');
+  const hasExpenseEntriesPermission = useHasPermission('expense_entries.read');
+  const hasFinanceProjectsPermission = useHasPermission('finance_projects.read');
+  const hasDonorsPermission = useHasPermission('donors.read');
+  const hasFinanceReportsPermission = useHasPermission('finance_reports.read');
+  const hasFinancePermission = hasFinanceAccountsPermission || hasIncomeEntriesPermission || hasExpenseEntriesPermission || hasFinanceProjectsPermission || hasDonorsPermission || hasFinanceReportsPermission;
+
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [navigationContext, setNavigationContext] = useState<NavigationContext>({
@@ -440,6 +451,68 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
         ],
       }] : []),
+      ...(hasFinancePermission ? [{
+        titleKey: "finance",
+        icon: CreditCard,
+        badge: null,
+        priority: 3.075,
+        children: [
+          ...(hasFinanceAccountsPermission ? [{
+            title: "Dashboard",
+            titleKey: "finance.dashboard",
+            url: "/finance/dashboard",
+            icon: Home,
+          }] : []),
+          ...(hasFinanceAccountsPermission ? [{
+            title: "Accounts",
+            titleKey: "finance.accounts",
+            url: "/finance/accounts",
+            icon: LucideIcons.Wallet,
+          }] : []),
+          ...(hasIncomeEntriesPermission ? [{
+            title: "Income",
+            titleKey: "finance.income",
+            url: "/finance/income",
+            icon: LucideIcons.TrendingUp,
+          }] : []),
+          ...(hasIncomeCategoriesPermission ? [{
+            title: "Income Categories",
+            titleKey: "finance.incomeCategories",
+            url: "/finance/income/categories",
+            icon: LucideIcons.Tag,
+          }] : []),
+          ...(hasExpenseEntriesPermission ? [{
+            title: "Expenses",
+            titleKey: "finance.expenses",
+            url: "/finance/expenses",
+            icon: LucideIcons.TrendingDown,
+          }] : []),
+          ...(hasExpenseCategoriesPermission ? [{
+            title: "Expense Categories",
+            titleKey: "finance.expenseCategories",
+            url: "/finance/expenses/categories",
+            icon: LucideIcons.Tags,
+          }] : []),
+          ...(hasFinanceProjectsPermission ? [{
+            title: "Projects",
+            titleKey: "finance.projects",
+            url: "/finance/projects",
+            icon: LucideIcons.FolderKanban,
+          }] : []),
+          ...(hasDonorsPermission ? [{
+            title: "Donors",
+            titleKey: "finance.donors",
+            url: "/finance/donors",
+            icon: Users,
+          }] : []),
+          ...(hasFinanceReportsPermission ? [{
+            title: "Reports",
+            titleKey: "finance.reports",
+            url: "/finance/reports",
+            icon: LucideIcons.BarChart3,
+          }] : []),
+        ],
+      }] : []),
       ...(hasAssetsPermission ? [{
         titleKey: "assets",
         icon: Boxes,
@@ -668,7 +741,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {

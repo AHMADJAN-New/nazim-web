@@ -72,7 +72,17 @@ import {
   AssetAssignments,
   AssetReports,
   AssetCategories,
-  TranslationEditor
+  TranslationEditor,
+  // Finance Module
+  FinanceDashboard,
+  FinanceAccounts,
+  IncomeEntries,
+  IncomeCategories,
+  ExpenseEntries,
+  ExpenseCategories,
+  FinanceProjects,
+  Donors,
+  FinanceReports
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -482,6 +492,77 @@ const App = () => (
                       <PermissionRoute permission="leave_requests.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <LeaveReports />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Finance Module Routes */}
+                    <Route path="/finance" element={
+                      <PermissionRoute permission="finance_accounts.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FinanceDashboard />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/dashboard" element={
+                      <PermissionRoute permission="finance_accounts.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FinanceDashboard />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/accounts" element={
+                      <PermissionRoute permission="finance_accounts.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FinanceAccounts />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/income" element={
+                      <PermissionRoute permission="income_entries.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <IncomeEntries />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/income/categories" element={
+                      <PermissionRoute permission="income_categories.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <IncomeCategories />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/expenses" element={
+                      <PermissionRoute permission="expense_entries.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExpenseEntries />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/expenses/categories" element={
+                      <PermissionRoute permission="expense_categories.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExpenseCategories />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/projects" element={
+                      <PermissionRoute permission="finance_projects.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FinanceProjects />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/donors" element={
+                      <PermissionRoute permission="donors.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <Donors />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/reports" element={
+                      <PermissionRoute permission="finance_reports.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FinanceReports />
                         </Suspense>
                       </PermissionRoute>
                     } />
