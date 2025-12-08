@@ -2597,6 +2597,5 @@ export const ps: TranslationKeys = {
     noStudentsSelected: 'هیڅ زده کونکی غوره نشوی. د کیڼ پینل څخه زده کونکي غوره کړئ.',
     quickEnroll: 'د یو زده کونکي چټکه نوم لیکنه',
     quickEnrollDescription: 'یو زده کونکی چټکه نوم لیکنه'
->>>>>>> claude/fix-exams-management-017Ewpa2cYAoEs9tn4Rdcpgc
   }
 };
