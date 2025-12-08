@@ -5,16 +5,32 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { authApi } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+
+interface Organization {
+  id: string;
+  name: string;
+}
 
 export default function AuthPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user, refreshAuth } = useAuth();
   const [authLoading, setAuthLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
+    fullName: '',
+    phone: '',
+    role: 'student',
+    organizationId: '',
   });
 
   useEffect(() => {

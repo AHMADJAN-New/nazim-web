@@ -43,7 +43,9 @@ import {
   Lock,
   AlertTriangle,
   User,
-  Package
+  Package,
+  NotebookPen,
+  UserPlus
 } from "lucide-react";
 
 import {
@@ -192,6 +194,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasScheduleSlotsPermission = useHasPermission('schedule_slots.read');
   const hasTeacherSubjectAssignmentsPermission = useHasPermission('teacher_subject_assignments.read');
   const hasTimetablesPermission = useHasPermission('timetables.read');
+  const hasExamsPermission = useHasPermission('exams.read');
+  const hasExamsAssignPermission = useHasPermission('exams.assign');
+  const hasExamsUpdatePermission = useHasPermission('exams.update');
   const hasLibraryBooksPermission = useHasPermission('library_books.read');
   const hasLibraryCategoriesPermission = useHasPermission('library_categories.read');
   const hasLibraryLoansPermission = useHasPermission('library_loans.read');
@@ -374,6 +379,44 @@ export const SmartSidebar = memo(function SmartSidebar() {
             title: "Admissions Report",
             titleKey: "admissionsReport",
             url: "/admissions/report",
+            icon: FileText,
+          }] : []),
+        ],
+      }] : []),
+      ...(hasExamsPermission ? [{
+        titleKey: "exams",
+        icon: Trophy,
+        badge: null,
+        priority: 3.055,
+        children: [
+          ...(hasExamsPermission ? [{
+            title: "Exams",
+            titleKey: "exams",
+            url: "/exams",
+            icon: Trophy,
+          }] : []),
+          ...(hasExamsAssignPermission ? [{
+            title: "Exam Enrollment",
+            titleKey: "examEnrollment",
+            url: "/exams/enrollment",
+            icon: UserPlus,
+          }] : []),
+          ...(hasExamsAssignPermission ? [{
+            title: "Student Enrollment",
+            titleKey: "examStudentEnrollment",
+            url: "/exams/student-enrollment",
+            icon: Users,
+          }] : []),
+          ...(hasExamsUpdatePermission ? [{
+            title: "Exam Marks",
+            titleKey: "examMarks",
+            url: "/exams/marks",
+            icon: NotebookPen,
+          }] : []),
+          ...(hasExamsPermission ? [{
+            title: "Exam Reports",
+            titleKey: "examReports",
+            url: "/exams/reports",
             icon: FileText,
           }] : []),
         ],
@@ -637,8 +680,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
       }
 
       if (item.titleKey === 'academicSettings') {
-        // Show if user has any academic-related permission (excluding classes, subjects, assignments, buildings, and rooms)
-        return hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission;
+        // Show if user has any academic-related permission (excluding classes, subjects, assignments, and exams which are in separate menus)
+        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission || hasStaffTypesPermission;
+      }
+
+      if (item.titleKey === 'exams') {
+        // Show if user has any exam-related permission
+        return hasExamsPermission || hasExamsAssignPermission || hasExamsUpdatePermission;
       }
 
       if (item.titleKey === 'hostel') {

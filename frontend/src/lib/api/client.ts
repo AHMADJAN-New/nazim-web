@@ -335,6 +335,20 @@ export const authApi = {
   }) => {
     return apiClient.post('/auth/change-password', data);
   },
+
+  register: async (data: {
+    email: string;
+    password: string;
+    password_confirmation: string;
+    full_name: string;
+    organization_id?: string;
+  }) => {
+    const response = await apiClient.post<{ user: any; token: string; profile?: any }>('/auth/register', data);
+    if (response.token) {
+      apiClient.setToken(response.token);
+    }
+    return response;
+  },
 };
 
 // Organizations API
@@ -365,6 +379,37 @@ export const organizationsApi = {
 
   statistics: async (id: string) => {
     return apiClient.get(`/organizations/${id}/statistics`);
+  },
+
+  publicList: async () => {
+    // Public endpoint for listing organizations (no auth required)
+    // This makes a direct fetch call without authentication
+    // If the endpoint doesn't exist, return empty array gracefully
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+      const response = await fetch(`${baseUrl}/organizations/public`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        // If endpoint doesn't exist (404) or other error, return empty array
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error(`Failed to fetch organizations: ${response.statusText}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      // If fetch fails (network error, CORS, etc.), return empty array
+      if (import.meta.env.DEV) {
+        console.warn('Could not fetch public organizations list:', error);
+      }
+      return [];
+    }
   },
 };
 
@@ -2361,4 +2406,165 @@ export const translationsApi = {
     fa: Record<string, unknown>;
     ar: Record<string, unknown>;
   }) => apiClient.post<{ message: string; languages: string[] }>('/translations', { translations }),
+};
+// Exams API
+export const examsApi = {
+  list: async (params?: {
+    organization_id?: string;
+    academic_year_id?: string;
+  }) => {
+    return apiClient.get('/exams', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/exams/${id}`);
+  },
+
+  create: async (data: {
+    name: string;
+    academic_year_id: string;
+    description?: string | null;
+  }) => {
+    return apiClient.post('/exams', data);
+  },
+
+  update: async (id: string, data: {
+    name?: string;
+    academic_year_id?: string;
+    description?: string | null;
+  }) => {
+    return apiClient.put(`/exams/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exams/${id}`);
+  },
+
+  report: async (id: string) => {
+    return apiClient.get(`/exams/${id}/report`);
+  },
+};
+
+// Exam Classes API
+export const examClassesApi = {
+  list: async (params?: { exam_id?: string }) => {
+    return apiClient.get('/exam-classes', params);
+  },
+
+  create: async (data: { exam_id: string; class_academic_year_id: string }) => {
+    return apiClient.post('/exam-classes', data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam-classes/${id}`);
+  },
+};
+
+// Exam Subjects API
+export const examSubjectsApi = {
+  list: async (params?: { exam_id?: string; exam_class_id?: string }) => {
+    return apiClient.get('/exam-subjects', params);
+  },
+
+  create: async (data: {
+    exam_id: string;
+    exam_class_id: string;
+    class_subject_id: string;
+    total_marks?: number | null;
+    passing_marks?: number | null;
+    scheduled_at?: string | null;
+  }) => {
+    return apiClient.post('/exam-subjects', data);
+  },
+
+  update: async (
+    id: string,
+    data: {
+      total_marks?: number | null;
+      passing_marks?: number | null;
+      scheduled_at?: string | null;
+    }
+  ) => {
+    return apiClient.put(`/exam-subjects/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam-subjects/${id}`);
+  },
+};
+
+// Exam Students API
+export const examStudentsApi = {
+  list: async (params?: { exam_id?: string; exam_class_id?: string }) => {
+    return apiClient.get('/exam-students', params);
+  },
+
+  create: async (data: {
+    exam_id: string;
+    exam_class_id: string;
+    student_admission_id: string;
+  }) => {
+    return apiClient.post('/exam-students', data);
+  },
+
+  bulkEnroll: async (data: {
+    exam_id: string;
+    exam_class_id: string;
+  }) => {
+    return apiClient.post('/exam-students/bulk-enroll', data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam-students/${id}`);
+  },
+};
+
+// Exam Results API
+export const examResultsApi = {
+  list: async (params?: {
+    exam_id?: string;
+    exam_subject_id?: string;
+    exam_student_id?: string;
+  }) => {
+    return apiClient.get('/exam-results', params);
+  },
+
+  create: async (data: {
+    exam_id: string;
+    exam_subject_id: string;
+    exam_student_id: string;
+    marks_obtained?: number | null;
+    is_absent?: boolean;
+    remarks?: string | null;
+  }) => {
+    return apiClient.post('/exam-results', data);
+  },
+
+  bulkStore: async (data: {
+    exam_id: string;
+    exam_subject_id: string;
+    results: Array<{
+      exam_student_id: string;
+      marks_obtained?: number | null;
+      is_absent?: boolean;
+      remarks?: string | null;
+    }>;
+  }) => {
+    return apiClient.post('/exam-results/bulk-store', data);
+  },
+
+  update: async (
+    id: string,
+    data: {
+      marks_obtained?: number | null;
+      is_absent?: boolean;
+      remarks?: string | null;
+    }
+  ) => {
+    return apiClient.put(`/exam-results/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam-results/${id}`);
+  },
 };

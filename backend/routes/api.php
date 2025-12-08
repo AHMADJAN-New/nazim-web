@@ -52,6 +52,12 @@ use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\CourseDocumentController;
 use App\Http\Controllers\CertificateTemplateController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExamController;
+use App\Http\Controllers\ExamClassController;
+use App\Http\Controllers\ExamSubjectController;
+use App\Http\Controllers\ExamStudentController;
+use App\Http\Controllers\ExamResultController;
+use App\Http\Controllers\ExamReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -209,6 +215,16 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Class Subjects
     Route::apiResource('class-subjects', ClassSubjectController::class);
+
+    // Exams
+    Route::apiResource('exams', ExamController::class);
+    Route::apiResource('exam-classes', ExamClassController::class)->only(['index', 'store', 'destroy']);
+    Route::apiResource('exam-subjects', ExamSubjectController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::apiResource('exam-students', ExamStudentController::class)->only(['index', 'store', 'destroy']);
+    Route::post('/exam-students/bulk-enroll', [ExamStudentController::class, 'bulkEnroll']);
+    Route::apiResource('exam-results', ExamResultController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::post('/exam-results/bulk-store', [ExamResultController::class, 'bulkStore']);
+    Route::get('/exams/{id}/report', [ExamReportController::class, 'show']);
 
     // Academic Years
     Route::apiResource('academic-years', AcademicYearController::class);
