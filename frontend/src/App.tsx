@@ -8,7 +8,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { PersistentLayout } from "@/components/layout/PersistentLayout";
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -44,6 +44,7 @@ import {
   ExamClassesSubjectsPage,
   ExamTimetablePage,
   ExamReportsPage,
+  ExamAttendancePage,
   ScheduleSlotsManagement,
   TeacherSubjectAssignments,
   StaffTypesManagement,
@@ -315,6 +316,15 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/exams/:examId/attendance" element={
+                      <PermissionRoute permission="exams.manage_attendance">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamAttendancePage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Attendance route - redirects to exams list where users select an exam */}
+                    <Route path="/exams/attendance" element={<Navigate to="/exams" replace />} />
                     {/* Legacy routes for backward compatibility */}
                     <Route path="/exams/enrollment" element={
                       <PermissionRoute permission="exams.manage">

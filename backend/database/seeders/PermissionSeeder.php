@@ -39,6 +39,8 @@ class PermissionSeeder extends Seeder
                 'enroll_students',  // Enroll/unenroll students
                 'enter_marks',      // Enter and edit marks
                 'view_reports',     // View exam reports
+                'manage_attendance', // Mark/update/delete attendance records
+                'view_attendance_reports', // View attendance reports
             ],
             'exam_classes' => ['read', 'create', 'update', 'delete'],
             'exam_subjects' => ['read', 'create', 'update', 'delete'],
@@ -98,6 +100,7 @@ class PermissionSeeder extends Seeder
                 'subjects.read',
                 // Exam permissions for staff - can manage enrollment and view reports
                 'exams.read', 'exams.manage', 'exams.enroll_students', 'exams.view_reports',
+                'exams.view_attendance_reports', // Can view attendance reports
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
                 'exam_subjects.read', 'exam_subjects.create', 'exam_subjects.update',
                 'exam_students.read', 'exam_students.create', 'exam_students.update',
@@ -114,9 +117,10 @@ class PermissionSeeder extends Seeder
                 'students.read',
                 'classes.read',
                 'subjects.read', 'subjects.create', 'subjects.update',
-                // Exam permissions for teachers - full exam management including marks entry
+                // Exam permissions for teachers - full exam management including marks entry and attendance
                 'exams.read', 'exams.create', 'exams.update', 'exams.manage', 
                 'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
+                'exams.manage_attendance', 'exams.view_attendance_reports', // Attendance permissions
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
                 'exam_subjects.read', 'exam_subjects.create', 'exam_subjects.update',
                 'exam_students.read', 'exam_students.create', 'exam_students.update',
@@ -145,6 +149,7 @@ class PermissionSeeder extends Seeder
                 'subjects.read',
                 'exams.read', 'exams.create', 'exams.update', 'exams.manage',
                 'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
+                'exams.manage_attendance', 'exams.view_attendance_reports', // Full attendance management
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
                 'exam_subjects.read', 'exam_subjects.create', 'exam_subjects.update',
                 'exam_students.read', 'exam_students.create', 'exam_students.update', 'exam_students.delete',

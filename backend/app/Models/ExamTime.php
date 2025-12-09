@@ -105,6 +105,14 @@ class ExamTime extends Model
     }
 
     /**
+     * Get the attendance records for this exam time slot.
+     */
+    public function examAttendances()
+    {
+        return $this->hasMany(ExamAttendance::class, 'exam_time_id');
+    }
+
+    /**
      * Scope to filter by organization.
      */
     public function scopeForOrganization($query, $organizationId)

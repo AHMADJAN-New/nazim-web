@@ -59,6 +59,7 @@ use App\Http\Controllers\ExamStudentController;
 use App\Http\Controllers\ExamResultController;
 use App\Http\Controllers\ExamReportController;
 use App\Http\Controllers\ExamTimeController;
+use App\Http\Controllers\ExamAttendanceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -250,6 +251,18 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/exams/{exam}/reports/summary', [ExamReportController::class, 'summary']);
     Route::get('/exams/{exam}/reports/classes/{class}', [ExamReportController::class, 'classReport']);
     Route::get('/exams/{exam}/reports/students/{student}', [ExamReportController::class, 'studentReport']);
+    
+    // Exam Attendance
+    Route::get('/exams/{exam}/attendance', [ExamAttendanceController::class, 'index']);
+    Route::get('/exams/{exam}/attendance/summary', [ExamAttendanceController::class, 'summary']);
+    Route::get('/exams/{exam}/attendance/class/{classId}', [ExamAttendanceController::class, 'byClass']);
+    Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}', [ExamAttendanceController::class, 'byTimeslot']);
+    Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/students', [ExamAttendanceController::class, 'getTimeslotStudents']);
+    Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/summary', [ExamAttendanceController::class, 'timeslotSummary']);
+    Route::get('/exams/{exam}/attendance/students/{studentId}', [ExamAttendanceController::class, 'studentReport']);
+    Route::post('/exams/{exam}/attendance/mark', [ExamAttendanceController::class, 'mark']);
+    Route::put('/exam-attendance/{id}', [ExamAttendanceController::class, 'update']);
+    Route::delete('/exam-attendance/{id}', [ExamAttendanceController::class, 'destroy']);
 
     // Academic Years
     Route::apiResource('academic-years', AcademicYearController::class);

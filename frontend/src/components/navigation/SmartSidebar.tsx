@@ -200,6 +200,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasExamsEnrollPermission = useHasPermission('exams.enroll_students');
   const hasExamsMarksPermission = useHasPermission('exams.enter_marks');
   const hasExamsReportsPermission = useHasPermission('exams.view_reports');
+  const hasExamsAttendancePermission = useHasPermission('exams.manage_attendance');
+  const hasExamsViewAttendancePermission = useHasPermission('exams.view_attendance_reports');
   // Legacy compatibility
   const hasExamsAssignPermission = hasExamsManagePermission || hasExamsEnrollPermission;
   const hasExamsUpdatePermission = hasExamsMarksPermission;
@@ -424,6 +426,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "examReports",
             url: "/exams/reports",
             icon: FileText,
+          }] : []),
+          ...((hasExamsAttendancePermission || hasExamsViewAttendancePermission) ? [{
+            title: "Exam Attendance",
+            titleKey: "examAttendance",
+            url: "/exams/attendance",
+            icon: UserCheck,
           }] : []),
         ],
       }] : []),
@@ -693,7 +701,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
       if (item.titleKey === 'exams') {
         // Show if user has any exam-related permission
         return hasExamsPermission || hasExamsManagePermission || hasExamsTimetablePermission || 
-               hasExamsEnrollPermission || hasExamsMarksPermission || hasExamsReportsPermission;
+               hasExamsEnrollPermission || hasExamsMarksPermission || hasExamsReportsPermission ||
+               hasExamsAttendancePermission || hasExamsViewAttendancePermission;
       }
 
       if (item.titleKey === 'hostel') {

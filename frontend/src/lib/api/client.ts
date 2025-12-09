@@ -2647,3 +2647,66 @@ export const examResultsApi = {
     return apiClient.delete(`/exam-results/${id}`);
   },
 };
+
+// Exam Attendance API
+export const examAttendanceApi = {
+  list: async (examId: string, params?: {
+    exam_class_id?: string;
+    exam_time_id?: string;
+    exam_subject_id?: string;
+    status?: string;
+    date?: string;
+  }) => {
+    return apiClient.get(`/exams/${examId}/attendance`, params);
+  },
+
+  byClass: async (examId: string, classId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/class/${classId}`);
+  },
+
+  byTimeslot: async (examId: string, examTimeId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/timeslot/${examTimeId}`);
+  },
+
+  getTimeslotStudents: async (examId: string, examTimeId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/timeslot/${examTimeId}/students`);
+  },
+
+  timeslotSummary: async (examId: string, examTimeId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/timeslot/${examTimeId}/summary`);
+  },
+
+  studentReport: async (examId: string, studentId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/students/${studentId}`);
+  },
+
+  summary: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/summary`);
+  },
+
+  mark: async (examId: string, data: {
+    exam_time_id: string;
+    attendances: Array<{
+      student_id: string;
+      status: 'present' | 'absent' | 'late' | 'excused';
+      checked_in_at?: string | null;
+      seat_number?: string | null;
+      notes?: string | null;
+    }>;
+  }) => {
+    return apiClient.post(`/exams/${examId}/attendance/mark`, data);
+  },
+
+  update: async (id: string, data: {
+    status?: 'present' | 'absent' | 'late' | 'excused';
+    checked_in_at?: string | null;
+    seat_number?: string | null;
+    notes?: string | null;
+  }) => {
+    return apiClient.put(`/exam-attendance/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam-attendance/${id}`);
+  },
+};

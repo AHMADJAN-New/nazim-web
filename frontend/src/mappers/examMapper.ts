@@ -3,7 +3,10 @@ import type {
   Exam, ExamClass, ExamSubject, ExamReport, ExamReportClass, ExamReportSubject, 
   ExamStudent, ExamResult, ExamTime, ExamSummaryReport, ClassMarkSheetReport,
   ClassMarkSheetStudent, ClassMarkSheetSubject, StudentResultReport, StudentResultSubject,
-  EnrollmentStats, EnrollmentClassStats, MarksProgress, SubjectProgress
+  EnrollmentStats, EnrollmentClassStats, MarksProgress, SubjectProgress,
+  ExamAttendance, ExamAttendanceSummary, AttendanceClassSummary, AttendanceSubjectSummary,
+  TimeslotStudent, TimeslotStudentsResponse, StudentAttendanceReport, StudentAttendanceSession,
+  TimeslotAttendanceSummary
 } from '@/types/domain/exam';
 
 export const mapExamApiToDomain = (exam: ExamApi.Exam): Exam => ({
@@ -450,4 +453,142 @@ export const mapExamResultApiToDomain = (examResult: ExamApi.ExamResult): ExamRe
         student: examResult.student_admission.student,
       }
     : undefined,
+});
+
+// =========== Exam Attendance Mappers ===========
+
+export const mapExamAttendanceApiToDomain = (attendance: ExamApi.ExamAttendance): ExamAttendance => ({
+  id: attendance.id,
+  organizationId: attendance.organization_id,
+  examId: attendance.exam_id,
+  examTimeId: attendance.exam_time_id,
+  examClassId: attendance.exam_class_id,
+  examSubjectId: attendance.exam_subject_id,
+  studentId: attendance.student_id,
+  status: attendance.status,
+  checkedInAt: attendance.checked_in_at ? new Date(attendance.checked_in_at) : null,
+  seatNumber: attendance.seat_number,
+  notes: attendance.notes,
+  createdAt: new Date(attendance.created_at),
+  updatedAt: new Date(attendance.updated_at),
+  deletedAt: attendance.deleted_at ? new Date(attendance.deleted_at) : null,
+  exam: attendance.exam ? mapExamApiToDomain(attendance.exam) : undefined,
+  examTime: attendance.exam_time ? mapExamTimeApiToDomain(attendance.exam_time) : undefined,
+  examClass: attendance.exam_class ? mapExamClassApiToDomain(attendance.exam_class) : undefined,
+  examSubject: attendance.exam_subject ? mapExamSubjectApiToDomain(attendance.exam_subject) : undefined,
+  student: attendance.student
+    ? {
+        id: attendance.student.id,
+        fullName: attendance.student.full_name,
+        admissionNo: attendance.student.admission_no,
+      }
+    : undefined,
+});
+
+export const mapTimeslotStudentApiToDomain = (student: ExamApi.TimeslotStudent): TimeslotStudent => ({
+  examStudentId: student.exam_student_id,
+  studentId: student.student_id,
+  student: {
+    id: student.student.id,
+    fullName: student.student.full_name,
+    admissionNo: student.student.admission_no,
+  },
+  rollNumber: student.roll_number,
+  attendance: student.attendance
+    ? {
+        id: student.attendance.id,
+        status: student.attendance.status,
+        checkedInAt: student.attendance.checked_in_at ? new Date(student.attendance.checked_in_at) : null,
+        seatNumber: student.attendance.seat_number,
+        notes: student.attendance.notes,
+      }
+    : null,
+});
+
+export const mapTimeslotStudentsResponseApiToDomain = (response: ExamApi.TimeslotStudentsResponse): TimeslotStudentsResponse => ({
+  examTime: {
+    id: response.exam_time.id,
+    date: new Date(response.exam_time.date),
+    startTime: response.exam_time.start_time,
+    endTime: response.exam_time.end_time,
+    examClassId: response.exam_time.exam_class_id,
+    examSubjectId: response.exam_time.exam_subject_id,
+  },
+  students: response.students.map(mapTimeslotStudentApiToDomain),
+  counts: response.counts,
+});
+
+export const mapAttendanceSummaryApiToDomain = (summary: ExamApi.ExamAttendanceSummary): ExamAttendanceSummary => ({
+  exam: summary.exam,
+  totals: {
+    enrolledStudents: summary.totals.enrolled_students,
+    attendanceRecords: summary.totals.attendance_records,
+    present: summary.totals.present,
+    absent: summary.totals.absent,
+    late: summary.totals.late,
+    excused: summary.totals.excused,
+  },
+  byClass: summary.by_class.map((c): AttendanceClassSummary => ({
+    examClassId: c.exam_class_id,
+    className: c.class_name,
+    sectionName: c.section_name,
+    present: c.present,
+    absent: c.absent,
+    late: c.late,
+    excused: c.excused,
+  })),
+  bySubject: summary.by_subject.map((s): AttendanceSubjectSummary => ({
+    examSubjectId: s.exam_subject_id,
+    subjectName: s.subject_name,
+    present: s.present,
+    absent: s.absent,
+    late: s.late,
+    excused: s.excused,
+  })),
+});
+
+export const mapStudentAttendanceReportApiToDomain = (report: ExamApi.StudentAttendanceReport): StudentAttendanceReport => ({
+  exam: report.exam,
+  student: {
+    id: report.student.id,
+    fullName: report.student.full_name,
+    admissionNo: report.student.admission_no,
+  },
+  attendances: report.attendances.map((a): StudentAttendanceSession => ({
+    id: a.id,
+    examTime: {
+      id: a.exam_time.id,
+      date: new Date(a.exam_time.date),
+      startTime: a.exam_time.start_time,
+      endTime: a.exam_time.end_time,
+    },
+    subject: a.subject,
+    class: a.class,
+    status: a.status,
+    checkedInAt: a.checked_in_at ? new Date(a.checked_in_at) : null,
+    seatNumber: a.seat_number,
+    notes: a.notes,
+  })),
+  summary: {
+    totalSessions: report.summary.total_sessions,
+    present: report.summary.present,
+    absent: report.summary.absent,
+    late: report.summary.late,
+    excused: report.summary.excused,
+  },
+});
+
+export const mapTimeslotAttendanceSummaryApiToDomain = (summary: ExamApi.TimeslotAttendanceSummary): TimeslotAttendanceSummary => ({
+  examTime: {
+    id: summary.exam_time.id,
+    date: new Date(summary.exam_time.date),
+    startTime: summary.exam_time.start_time,
+    endTime: summary.exam_time.end_time,
+    room: summary.exam_time.room,
+    invigilator: summary.exam_time.invigilator,
+  },
+  class: summary.class,
+  subject: summary.subject,
+  counts: summary.counts,
+  percentage: summary.percentage,
 });

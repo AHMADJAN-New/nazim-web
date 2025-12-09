@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { 
   Trash2, Plus, Pencil, CheckCircle, Calendar, Settings, Users, 
-  ClipboardList, FileText, Clock, MoreHorizontal, Search 
+  ClipboardList, FileText, Clock, MoreHorizontal, Search, UserCheck
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -113,6 +113,8 @@ export function Exams() {
   const hasEnrollStudents = useHasPermission('exams.enroll_students');
   const hasEnterMarks = useHasPermission('exams.enter_marks');
   const hasViewReports = useHasPermission('exams.view_reports');
+  const hasManageAttendance = useHasPermission('exams.manage_attendance');
+  const hasViewAttendanceReports = useHasPermission('exams.view_attendance_reports');
 
   // Filter exams
   const filteredExams = useMemo(() => {
@@ -411,6 +413,12 @@ export function Exams() {
                             <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/reports`)}>
                               <FileText className="h-4 w-4 mr-2" />
                               {t('exams.reports') || 'Reports'}
+                            </DropdownMenuItem>
+                          )}
+                          {(hasManageAttendance || hasViewAttendanceReports) && (
+                            <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/attendance`)}>
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              {t('exams.attendance.title') || 'Attendance'}
                             </DropdownMenuItem>
                           )}
                           

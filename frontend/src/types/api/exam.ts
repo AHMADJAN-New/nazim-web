@@ -340,3 +340,212 @@ export interface MarksProgress {
   overall_percentage: number;
   subject_progress: SubjectProgress[];
 }
+
+// Exam Attendance types
+export type ExamAttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+
+export interface ExamAttendance {
+  id: string;
+  organization_id: string;
+  exam_id: string;
+  exam_time_id: string;
+  exam_class_id: string;
+  exam_subject_id: string;
+  student_id: string;
+  status: ExamAttendanceStatus;
+  checked_in_at: string | null;
+  seat_number: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+  exam?: Exam;
+  exam_time?: ExamTime;
+  exam_class?: ExamClass;
+  exam_subject?: ExamSubject;
+  student?: {
+    id: string;
+    full_name: string;
+    admission_no: string;
+  };
+}
+
+export interface ExamAttendanceInsert {
+  student_id: string;
+  status: ExamAttendanceStatus;
+  checked_in_at?: string | null;
+  seat_number?: string | null;
+  notes?: string | null;
+}
+
+export interface ExamAttendanceUpdate {
+  status?: ExamAttendanceStatus;
+  checked_in_at?: string | null;
+  seat_number?: string | null;
+  notes?: string | null;
+}
+
+export interface ExamAttendanceBulkMark {
+  exam_time_id: string;
+  attendances: ExamAttendanceInsert[];
+}
+
+// Student with attendance status for timeslot view
+export interface TimeslotStudent {
+  exam_student_id: string;
+  student_id: string;
+  student: {
+    id: string;
+    full_name: string;
+    admission_no: string;
+  };
+  roll_number: string | null;
+  attendance: {
+    id: string;
+    status: ExamAttendanceStatus;
+    checked_in_at: string | null;
+    seat_number: string | null;
+    notes: string | null;
+  } | null;
+}
+
+export interface TimeslotStudentsResponse {
+  exam_time: {
+    id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    exam_class_id: string;
+    exam_subject_id: string;
+  };
+  students: TimeslotStudent[];
+  counts: {
+    total: number;
+    marked: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+}
+
+// Attendance summary types
+export interface AttendanceClassSummary {
+  exam_class_id: string;
+  class_name: string;
+  section_name: string | null;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+}
+
+export interface AttendanceSubjectSummary {
+  exam_subject_id: string;
+  subject_name: string;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+}
+
+export interface ExamAttendanceSummary {
+  exam: {
+    id: string;
+    name: string;
+    status: ExamStatus;
+  };
+  totals: {
+    enrolled_students: number;
+    attendance_records: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+  by_class: AttendanceClassSummary[];
+  by_subject: AttendanceSubjectSummary[];
+}
+
+// Student attendance report
+export interface StudentAttendanceSession {
+  id: string;
+  exam_time: {
+    id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+  };
+  subject: {
+    id: string | null;
+    name: string;
+  };
+  class: {
+    name: string;
+    section: string | null;
+  };
+  status: ExamAttendanceStatus;
+  checked_in_at: string | null;
+  seat_number: string | null;
+  notes: string | null;
+}
+
+export interface StudentAttendanceReport {
+  exam: {
+    id: string;
+    name: string;
+  };
+  student: {
+    id: string;
+    full_name: string;
+    admission_no: string;
+  };
+  attendances: StudentAttendanceSession[];
+  summary: {
+    total_sessions: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+}
+
+// Timeslot attendance summary
+export interface TimeslotAttendanceSummary {
+  exam_time: {
+    id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    room: {
+      id: string;
+      name: string;
+    } | null;
+    invigilator: {
+      id: string;
+      name: string;
+    } | null;
+  };
+  class: {
+    id: string;
+    name: string;
+    section: string | null;
+  };
+  subject: {
+    id: string;
+    name: string;
+  };
+  counts: {
+    enrolled: number;
+    marked: number;
+    unmarked: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+  percentage: {
+    marked: number;
+    present: number;
+  };
+}

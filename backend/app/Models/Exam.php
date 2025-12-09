@@ -107,6 +107,27 @@ class Exam extends Model
         return $this->hasMany(ExamTime::class, 'exam_id');
     }
 
+    public function examAttendances()
+    {
+        return $this->hasMany(ExamAttendance::class, 'exam_id');
+    }
+
+    /**
+     * Check if attendance can be marked for this exam
+     */
+    public function canMarkAttendance(): bool
+    {
+        return in_array($this->status, [self::STATUS_SCHEDULED, self::STATUS_IN_PROGRESS]);
+    }
+
+    /**
+     * Check if exam has any attendance records
+     */
+    public function hasAttendance(): bool
+    {
+        return $this->examAttendances()->whereNull('deleted_at')->exists();
+    }
+
     /**
      * Scope to filter by status
      */

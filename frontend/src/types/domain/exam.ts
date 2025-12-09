@@ -317,3 +317,192 @@ export interface MarksProgress {
   overallPercentage: number;
   subjectProgress: SubjectProgress[];
 }
+
+// Exam Attendance types
+export type ExamAttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+
+export interface ExamAttendance {
+  id: string;
+  organizationId: string;
+  examId: string;
+  examTimeId: string;
+  examClassId: string;
+  examSubjectId: string;
+  studentId: string;
+  status: ExamAttendanceStatus;
+  checkedInAt: Date | null;
+  seatNumber: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+  exam?: Exam;
+  examTime?: ExamTime;
+  examClass?: ExamClass;
+  examSubject?: ExamSubject;
+  student?: {
+    id: string;
+    fullName: string;
+    admissionNo: string;
+  };
+}
+
+// Student with attendance status for timeslot view
+export interface TimeslotStudent {
+  examStudentId: string;
+  studentId: string;
+  student: {
+    id: string;
+    fullName: string;
+    admissionNo: string;
+  };
+  rollNumber: string | null;
+  attendance: {
+    id: string;
+    status: ExamAttendanceStatus;
+    checkedInAt: Date | null;
+    seatNumber: string | null;
+    notes: string | null;
+  } | null;
+}
+
+export interface TimeslotStudentsResponse {
+  examTime: {
+    id: string;
+    date: Date;
+    startTime: string;
+    endTime: string;
+    examClassId: string;
+    examSubjectId: string;
+  };
+  students: TimeslotStudent[];
+  counts: {
+    total: number;
+    marked: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+}
+
+// Attendance summary types
+export interface AttendanceClassSummary {
+  examClassId: string;
+  className: string;
+  sectionName: string | null;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+}
+
+export interface AttendanceSubjectSummary {
+  examSubjectId: string;
+  subjectName: string;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+}
+
+export interface ExamAttendanceSummary {
+  exam: {
+    id: string;
+    name: string;
+    status: ExamStatus;
+  };
+  totals: {
+    enrolledStudents: number;
+    attendanceRecords: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+  byClass: AttendanceClassSummary[];
+  bySubject: AttendanceSubjectSummary[];
+}
+
+// Student attendance report
+export interface StudentAttendanceSession {
+  id: string;
+  examTime: {
+    id: string;
+    date: Date;
+    startTime: string;
+    endTime: string;
+  };
+  subject: {
+    id: string | null;
+    name: string;
+  };
+  class: {
+    name: string;
+    section: string | null;
+  };
+  status: ExamAttendanceStatus;
+  checkedInAt: Date | null;
+  seatNumber: string | null;
+  notes: string | null;
+}
+
+export interface StudentAttendanceReport {
+  exam: {
+    id: string;
+    name: string;
+  };
+  student: {
+    id: string;
+    fullName: string;
+    admissionNo: string;
+  };
+  attendances: StudentAttendanceSession[];
+  summary: {
+    totalSessions: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+}
+
+// Timeslot attendance summary
+export interface TimeslotAttendanceSummary {
+  examTime: {
+    id: string;
+    date: Date;
+    startTime: string;
+    endTime: string;
+    room: {
+      id: string;
+      name: string;
+    } | null;
+    invigilator: {
+      id: string;
+      name: string;
+    } | null;
+  };
+  class: {
+    id: string;
+    name: string;
+    section: string | null;
+  };
+  subject: {
+    id: string;
+    name: string;
+  };
+  counts: {
+    enrolled: number;
+    marked: number;
+    unmarked: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+  percentage: {
+    marked: number;
+    present: number;
+  };
+}

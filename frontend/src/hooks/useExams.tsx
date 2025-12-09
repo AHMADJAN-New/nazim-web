@@ -5,13 +5,15 @@ import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
 import { 
   examsApi, examClassesApi, examSubjectsApi, examTimesApi,
-  examStudentsApi, examResultsApi 
+  examStudentsApi, examResultsApi, examAttendanceApi
 } from '@/lib/api/client';
 import type * as ExamApi from '@/types/api/exam';
 import type { 
   Exam, ExamClass, ExamSubject, ExamReport, ExamTime,
   ExamSummaryReport, ClassMarkSheetReport, StudentResultReport,
-  EnrollmentStats, MarksProgress, ExamStatus
+  EnrollmentStats, MarksProgress, ExamStatus, ExamAttendance,
+  ExamAttendanceSummary, TimeslotStudentsResponse, StudentAttendanceReport,
+  TimeslotAttendanceSummary, ExamAttendanceStatus
 } from '@/types/domain/exam';
 import {
   mapExamApiToDomain,
@@ -28,6 +30,11 @@ import {
   mapStudentResultApiToDomain,
   mapEnrollmentStatsApiToDomain,
   mapMarksProgressApiToDomain,
+  mapExamAttendanceApiToDomain,
+  mapAttendanceSummaryApiToDomain,
+  mapTimeslotStudentsResponseApiToDomain,
+  mapStudentAttendanceReportApiToDomain,
+  mapTimeslotAttendanceSummaryApiToDomain,
 } from '@/mappers/examMapper';
 
 // ========== Exam CRUD Hooks ==========
@@ -713,6 +720,206 @@ export const useDeleteExamResult = () => {
     },
     onError: (error: Error) => {
       showToast.error(error?.message || t('toast.examResultDeleteFailed') || 'Failed to delete result');
+    },
+  });
+};
+
+// ========== Exam Attendance Hooks ==========
+
+export const useExamAttendance = (
+  examId?: string,
+  filters?: {
+    examClassId?: string;
+    examTimeId?: string;
+    examSubjectId?: string;
+    status?: ExamAttendanceStatus;
+    date?: string;
+  }
+) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<ExamAttendance[]>({
+    queryKey: ['exam-attendance', examId, filters, profile?.organization_id],
+    queryFn: async () => {
+      if (!user || !profile || !examId) return [];
+      const params: Record<string, string | undefined> = {};
+      if (filters?.examClassId) params.exam_class_id = filters.examClassId;
+      if (filters?.examTimeId) params.exam_time_id = filters.examTimeId;
+      if (filters?.examSubjectId) params.exam_subject_id = filters.examSubjectId;
+      if (filters?.status) params.status = filters.status;
+      if (filters?.date) params.date = filters.date;
+      
+      const apiAttendances = await examAttendanceApi.list(examId, params);
+      return (apiAttendances as ExamApi.ExamAttendance[]).map(mapExamAttendanceApiToDomain);
+    },
+    enabled: !!user && !!profile && !!examId,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useExamAttendanceSummary = (examId?: string) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<ExamAttendanceSummary | null>({
+    queryKey: ['exam-attendance-summary', examId, profile?.organization_id],
+    queryFn: async () => {
+      if (!user || !profile || !examId) return null;
+      const apiSummary = await examAttendanceApi.summary(examId);
+      return mapAttendanceSummaryApiToDomain(apiSummary as ExamApi.ExamAttendanceSummary);
+    },
+    enabled: !!user && !!profile && !!examId,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useTimeslotStudents = (examId?: string, examTimeId?: string) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<TimeslotStudentsResponse | null>({
+    queryKey: ['timeslot-students', examId, examTimeId, profile?.organization_id],
+    queryFn: async () => {
+      if (!user || !profile || !examId || !examTimeId) return null;
+      const apiResponse = await examAttendanceApi.getTimeslotStudents(examId, examTimeId);
+      return mapTimeslotStudentsResponseApiToDomain(apiResponse as ExamApi.TimeslotStudentsResponse);
+    },
+    enabled: !!user && !!profile && !!examId && !!examTimeId,
+    staleTime: 1 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useTimeslotAttendanceSummary = (examId?: string, examTimeId?: string) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<TimeslotAttendanceSummary | null>({
+    queryKey: ['timeslot-attendance-summary', examId, examTimeId, profile?.organization_id],
+    queryFn: async () => {
+      if (!user || !profile || !examId || !examTimeId) return null;
+      const apiSummary = await examAttendanceApi.timeslotSummary(examId, examTimeId);
+      return mapTimeslotAttendanceSummaryApiToDomain(apiSummary as ExamApi.TimeslotAttendanceSummary);
+    },
+    enabled: !!user && !!profile && !!examId && !!examTimeId,
+    staleTime: 1 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useStudentAttendanceReport = (examId?: string, studentId?: string) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<StudentAttendanceReport | null>({
+    queryKey: ['student-attendance-report', examId, studentId, profile?.organization_id],
+    queryFn: async () => {
+      if (!user || !profile || !examId || !studentId) return null;
+      const apiReport = await examAttendanceApi.studentReport(examId, studentId);
+      return mapStudentAttendanceReportApiToDomain(apiReport as ExamApi.StudentAttendanceReport);
+    },
+    enabled: !!user && !!profile && !!examId && !!studentId,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useMarkExamAttendance = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+  
+  return useMutation({
+    mutationFn: async ({
+      examId,
+      examTimeId,
+      attendances,
+    }: {
+      examId: string;
+      examTimeId: string;
+      attendances: Array<{
+        studentId: string;
+        status: ExamAttendanceStatus;
+        checkedInAt?: Date | null;
+        seatNumber?: string | null;
+        notes?: string | null;
+      }>;
+    }) => {
+      return examAttendanceApi.mark(examId, {
+        exam_time_id: examTimeId,
+        attendances: attendances.map((a) => ({
+          student_id: a.studentId,
+          status: a.status,
+          checked_in_at: a.checkedInAt ? a.checkedInAt.toISOString() : null,
+          seat_number: a.seatNumber ?? null,
+          notes: a.notes ?? null,
+        })),
+      });
+    },
+    onSuccess: (data: unknown) => {
+      const result = data as { created?: number; updated?: number; errors?: unknown[] };
+      const total = (result?.created || 0) + (result?.updated || 0);
+      showToast.success(t('toast.attendanceMarked', { count: total }) || `Attendance marked for ${total} students`);
+      void queryClient.invalidateQueries({ queryKey: ['exam-attendance'] });
+      void queryClient.invalidateQueries({ queryKey: ['timeslot-students'] });
+      void queryClient.invalidateQueries({ queryKey: ['exam-attendance-summary'] });
+      void queryClient.invalidateQueries({ queryKey: ['timeslot-attendance-summary'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.attendanceMarkFailed') || 'Failed to mark attendance');
+    },
+  });
+};
+
+export const useUpdateExamAttendance = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: {
+        status?: ExamAttendanceStatus;
+        checkedInAt?: Date | null;
+        seatNumber?: string | null;
+        notes?: string | null;
+      };
+    }) => {
+      return examAttendanceApi.update(id, {
+        status: data.status,
+        checked_in_at: data.checkedInAt ? data.checkedInAt.toISOString() : null,
+        seat_number: data.seatNumber ?? null,
+        notes: data.notes ?? null,
+      });
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.attendanceUpdated') || 'Attendance updated successfully');
+      void queryClient.invalidateQueries({ queryKey: ['exam-attendance'] });
+      void queryClient.invalidateQueries({ queryKey: ['timeslot-students'] });
+      void queryClient.invalidateQueries({ queryKey: ['exam-attendance-summary'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.attendanceUpdateFailed') || 'Failed to update attendance');
+    },
+  });
+};
+
+export const useDeleteExamAttendance = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return examAttendanceApi.delete(id);
+    },
+    onSuccess: async () => {
+      showToast.success(t('toast.attendanceDeleted') || 'Attendance record deleted');
+      await queryClient.invalidateQueries({ queryKey: ['exam-attendance'] });
+      await queryClient.invalidateQueries({ queryKey: ['timeslot-students'] });
+      await queryClient.invalidateQueries({ queryKey: ['exam-attendance-summary'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.attendanceDeleteFailed') || 'Failed to delete attendance');
     },
   });
 };
