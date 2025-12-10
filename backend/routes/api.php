@@ -60,6 +60,7 @@ use App\Http\Controllers\ExamResultController;
 use App\Http\Controllers\ExamReportController;
 use App\Http\Controllers\ExamTimeController;
 use App\Http\Controllers\ExamAttendanceController;
+use App\Http\Controllers\ExamNumberController;
 
 /*
 |--------------------------------------------------------------------------
@@ -251,6 +252,21 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/exams/{exam}/reports/summary', [ExamReportController::class, 'summary']);
     Route::get('/exams/{exam}/reports/classes/{class}', [ExamReportController::class, 'classReport']);
     Route::get('/exams/{exam}/reports/students/{student}', [ExamReportController::class, 'studentReport']);
+    
+    // Exam Numbers (Roll Numbers & Secret Numbers)
+    Route::get('/exams/{exam}/students-with-numbers', [ExamNumberController::class, 'studentsWithNumbers']);
+    Route::get('/exams/{exam}/roll-numbers/start-from', [ExamNumberController::class, 'rollNumberStartFrom']);
+    Route::post('/exams/{exam}/roll-numbers/preview-auto-assign', [ExamNumberController::class, 'previewRollNumberAssignment']);
+    Route::post('/exams/{exam}/roll-numbers/confirm-auto-assign', [ExamNumberController::class, 'confirmRollNumberAssignment']);
+    Route::patch('/exams/{exam}/students/{examStudent}/roll-number', [ExamNumberController::class, 'updateRollNumber']);
+    Route::get('/exams/{exam}/secret-numbers/start-from', [ExamNumberController::class, 'secretNumberStartFrom']);
+    Route::post('/exams/{exam}/secret-numbers/preview-auto-assign', [ExamNumberController::class, 'previewSecretNumberAssignment']);
+    Route::post('/exams/{exam}/secret-numbers/confirm-auto-assign', [ExamNumberController::class, 'confirmSecretNumberAssignment']);
+    Route::patch('/exams/{exam}/students/{examStudent}/secret-number', [ExamNumberController::class, 'updateSecretNumber']);
+    Route::get('/exams/{exam}/secret-numbers/lookup', [ExamNumberController::class, 'lookupBySecretNumber']);
+    Route::get('/exams/{exam}/reports/roll-numbers', [ExamNumberController::class, 'rollNumberReport']);
+    Route::get('/exams/{exam}/reports/roll-slips', [ExamNumberController::class, 'rollSlipsHtml']);
+    Route::get('/exams/{exam}/reports/secret-labels', [ExamNumberController::class, 'secretLabelsHtml']);
     
     // Exam Attendance
     Route::get('/exams/{exam}/attendance', [ExamAttendanceController::class, 'index']);

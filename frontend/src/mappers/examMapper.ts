@@ -388,6 +388,8 @@ export const mapExamStudentApiToDomain = (examStudent: ExamApi.ExamStudent): Exa
   examClassId: examStudent.exam_class_id,
   studentAdmissionId: examStudent.student_admission_id,
   organizationId: examStudent.organization_id,
+  examRollNumber: examStudent.exam_roll_number ?? null,
+  examSecretNumber: examStudent.exam_secret_number ?? null,
   createdAt: new Date(examStudent.created_at),
   updatedAt: new Date(examStudent.updated_at),
   deletedAt: examStudent.deleted_at ? new Date(examStudent.deleted_at) : null,
@@ -615,4 +617,136 @@ export const mapTimeslotAttendanceSummaryApiToDomain = (summary: ExamApi.Timeslo
   subject: summary.subject,
   counts: summary.counts,
   percentage: summary.percentage,
+});
+
+// ========== Exam Numbers Mappers ==========
+
+import type {
+  StudentWithNumbers,
+  StudentsWithNumbersResponse,
+  NumberAssignmentPreviewItem,
+  NumberAssignmentPreviewResponse,
+  NumberAssignmentConfirmResponse,
+  RollNumberReportStudent,
+  RollNumberReportResponse,
+  RollSlipsHtmlResponse,
+  SecretLabelsHtmlResponse,
+  SecretNumberLookupResponse,
+} from '@/types/domain/exam';
+
+export const mapStudentWithNumbersApiToDomain = (student: ExamApi.StudentWithNumbers): StudentWithNumbers => ({
+  examStudentId: student.exam_student_id,
+  studentId: student.student_id,
+  studentAdmissionId: student.student_admission_id,
+  studentCode: student.student_code,
+  fullName: student.full_name,
+  fatherName: student.father_name,
+  className: student.class_name,
+  section: student.section,
+  examClassId: student.exam_class_id,
+  examRollNumber: student.exam_roll_number,
+  examSecretNumber: student.exam_secret_number,
+  province: student.province,
+  admissionYear: student.admission_year,
+});
+
+export const mapStudentsWithNumbersResponseApiToDomain = (
+  response: ExamApi.StudentsWithNumbersResponse
+): StudentsWithNumbersResponse => ({
+  exam: response.exam,
+  students: response.students.map(mapStudentWithNumbersApiToDomain),
+  summary: {
+    total: response.summary.total,
+    withRollNumber: response.summary.with_roll_number,
+    withSecretNumber: response.summary.with_secret_number,
+    missingRollNumber: response.summary.missing_roll_number,
+    missingSecretNumber: response.summary.missing_secret_number,
+  },
+});
+
+export const mapNumberAssignmentPreviewItemApiToDomain = (
+  item: ExamApi.NumberAssignmentPreviewItem
+): NumberAssignmentPreviewItem => ({
+  examStudentId: item.exam_student_id,
+  studentId: item.student_id,
+  studentName: item.student_name,
+  className: item.class_name,
+  currentRollNumber: item.current_roll_number,
+  newRollNumber: item.new_roll_number,
+  currentSecretNumber: item.current_secret_number,
+  newSecretNumber: item.new_secret_number,
+  willOverride: item.will_override,
+  hasCollision: item.has_collision,
+});
+
+export const mapNumberAssignmentPreviewResponseApiToDomain = (
+  response: ExamApi.NumberAssignmentPreviewResponse
+): NumberAssignmentPreviewResponse => ({
+  total: response.total,
+  willOverrideCount: response.will_override_count,
+  items: response.items.map(mapNumberAssignmentPreviewItemApiToDomain),
+});
+
+export const mapNumberAssignmentConfirmResponseApiToDomain = (
+  response: ExamApi.NumberAssignmentConfirmResponse
+): NumberAssignmentConfirmResponse => ({
+  updated: response.updated,
+  errors: response.errors.map((e) => ({
+    examStudentId: e.exam_student_id,
+    error: e.error,
+  })),
+});
+
+export const mapRollNumberReportStudentApiToDomain = (
+  student: ExamApi.RollNumberReportStudent
+): RollNumberReportStudent => ({
+  examRollNumber: student.exam_roll_number,
+  studentCode: student.student_code,
+  fullName: student.full_name,
+  fatherName: student.father_name,
+  className: student.class_name,
+  section: student.section,
+  province: student.province,
+  admissionYear: student.admission_year,
+});
+
+export const mapRollNumberReportResponseApiToDomain = (
+  response: ExamApi.RollNumberReportResponse
+): RollNumberReportResponse => ({
+  exam: {
+    id: response.exam.id,
+    name: response.exam.name,
+    academicYear: response.exam.academic_year,
+  },
+  students: response.students.map(mapRollNumberReportStudentApiToDomain),
+  total: response.total,
+});
+
+export const mapRollSlipsHtmlResponseApiToDomain = (
+  response: ExamApi.RollSlipsHtmlResponse
+): RollSlipsHtmlResponse => ({
+  html: response.html,
+  totalSlips: response.total_slips,
+});
+
+export const mapSecretLabelsHtmlResponseApiToDomain = (
+  response: ExamApi.SecretLabelsHtmlResponse
+): SecretLabelsHtmlResponse => ({
+  html: response.html,
+  totalLabels: response.total_labels,
+});
+
+export const mapSecretNumberLookupResponseApiToDomain = (
+  response: ExamApi.SecretNumberLookupResponse
+): SecretNumberLookupResponse => ({
+  examStudentId: response.exam_student_id,
+  studentId: response.student_id,
+  studentCode: response.student_code,
+  fullName: response.full_name,
+  fatherName: response.father_name,
+  className: response.class_name,
+  section: response.section,
+  examRollNumber: response.exam_roll_number,
+  examSecretNumber: response.exam_secret_number,
+  exam: response.exam,
 });

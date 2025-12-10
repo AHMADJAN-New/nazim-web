@@ -30,6 +30,9 @@ export const ExamClassesSubjectsPage = lazy(() => import('@/pages/ExamClassesSub
 export const ExamTimetablePage = lazy(() => import('@/pages/ExamTimetablePage').then(module => ({ default: module.ExamTimetablePage })));
 export const ExamReportsPage = lazy(() => import('@/pages/ExamReportsPage').then(module => ({ default: module.ExamReportsPage })));
 export const ExamAttendancePage = lazy(() => import('@/pages/ExamAttendancePage'));
+export const ExamRollNumbersPage = lazy(() => import('@/pages/ExamRollNumbersPage'));
+export const ExamSecretNumbersPage = lazy(() => import('@/pages/ExamSecretNumbersPage'));
+export const ExamNumberReportsPage = lazy(() => import('@/pages/ExamNumberReportsPage'));
 export const ScheduleSlotsManagement = lazy(() => import('@/components/settings/ScheduleSlotsManagement').then(module => ({ default: module.ScheduleSlotsManagement })));
 export const TeacherSubjectAssignments = lazy(() => import('@/components/settings/TeacherSubjectAssignments').then(module => ({ default: module.TeacherSubjectAssignments })));
 export const StaffTypesManagement = lazy(() => import('@/components/settings/StaffTypesManagement').then(module => ({ default: module.StaffTypesManagement })));

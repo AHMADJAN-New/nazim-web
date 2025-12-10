@@ -42,6 +42,11 @@ class PermissionSeeder extends Seeder
                 'view_reports',     // View exam reports
                 'manage_attendance', // Mark/update/delete attendance records
                 'view_attendance_reports', // View attendance reports
+                'roll_numbers.read',    // View roll numbers
+                'roll_numbers.assign',  // Assign/edit roll numbers
+                'secret_numbers.read',  // View secret numbers
+                'secret_numbers.assign', // Assign/edit secret numbers
+                'numbers.print',        // Print roll slips and secret labels
             ],
             'exam_classes' => ['read', 'create', 'update', 'delete'],
             'exam_subjects' => ['read', 'create', 'update', 'delete'],
@@ -102,6 +107,7 @@ class PermissionSeeder extends Seeder
                 // Exam permissions for staff - can manage enrollment and view reports
                 'exams.read', 'exams.assign', 'exams.manage', 'exams.enroll_students', 'exams.view_reports',
                 'exams.view_attendance_reports', // Can view attendance reports
+                'exams.roll_numbers.read', 'exams.secret_numbers.read', // Can view exam numbers
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
                 'exam_subjects.read', 'exam_subjects.create', 'exam_subjects.update',
                 'exam_students.read', 'exam_students.create', 'exam_students.update',
@@ -122,6 +128,9 @@ class PermissionSeeder extends Seeder
                 'exams.read', 'exams.create', 'exams.update', 'exams.assign', 'exams.manage',
                 'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
                 'exams.manage_attendance', 'exams.view_attendance_reports', // Attendance permissions
+                'exams.roll_numbers.read', 'exams.roll_numbers.assign', // Roll number permissions
+                'exams.secret_numbers.read', 'exams.secret_numbers.assign', // Secret number permissions
+                'exams.numbers.print', // Print roll slips and secret labels
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
                 'exam_subjects.read', 'exam_subjects.create', 'exam_subjects.update',
                 'exam_students.read', 'exam_students.create', 'exam_students.update',
@@ -151,6 +160,9 @@ class PermissionSeeder extends Seeder
                 'exams.read', 'exams.create', 'exams.update', 'exams.assign', 'exams.manage',
                 'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
                 'exams.manage_attendance', 'exams.view_attendance_reports', // Full attendance management
+                'exams.roll_numbers.read', 'exams.roll_numbers.assign', // Roll number permissions
+                'exams.secret_numbers.read', 'exams.secret_numbers.assign', // Secret number permissions
+                'exams.numbers.print', // Print roll slips and secret labels
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
                 'exam_subjects.read', 'exam_subjects.create', 'exam_subjects.update',
                 'exam_students.read', 'exam_students.create', 'exam_students.update', 'exam_students.delete',

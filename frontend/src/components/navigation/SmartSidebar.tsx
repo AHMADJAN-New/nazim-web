@@ -46,7 +46,10 @@ import {
   Package,
   NotebookPen,
   UserPlus,
-  BarChart3
+  BarChart3,
+  Hash,
+  KeyRound,
+  Printer
 } from "lucide-react";
 
 import {
@@ -203,6 +206,11 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasExamsReportsPermission = useHasPermission('exams.view_reports');
   const hasExamsAttendancePermission = useHasPermission('exams.manage_attendance');
   const hasExamsViewAttendancePermission = useHasPermission('exams.view_attendance_reports');
+  const hasExamsRollNumbersReadPermission = useHasPermission('exams.roll_numbers.read');
+  const hasExamsRollNumbersAssignPermission = useHasPermission('exams.roll_numbers.assign');
+  const hasExamsSecretNumbersReadPermission = useHasPermission('exams.secret_numbers.read');
+  const hasExamsSecretNumbersAssignPermission = useHasPermission('exams.secret_numbers.assign');
+  const hasExamsNumbersPrintPermission = useHasPermission('exams.numbers.print');
   // Legacy compatibility
   const hasExamsAssignPermission = hasExamsManagePermission || hasExamsEnrollPermission;
   const hasExamsUpdatePermission = hasExamsMarksPermission;
@@ -439,6 +447,24 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "examAttendance",
             url: "/exams/attendance",
             icon: UserCheck,
+          }] : []),
+          ...((hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission) ? [{
+            title: "Roll Numbers",
+            titleKey: "examRollNumbers",
+            url: "/exams/roll-numbers",
+            icon: Hash,
+          }] : []),
+          ...((hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission) ? [{
+            title: "Secret Numbers",
+            titleKey: "examSecretNumbers",
+            url: "/exams/secret-numbers",
+            icon: KeyRound,
+          }] : []),
+          ...((hasExamsRollNumbersReadPermission || hasExamsNumbersPrintPermission) ? [{
+            title: "Number Reports",
+            titleKey: "examNumberReports",
+            url: "/exams/number-reports",
+            icon: Printer,
           }] : []),
         ],
       }] : []),
@@ -709,7 +735,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
         // Show if user has any exam-related permission
         return hasExamsPermission || hasExamsManagePermission || hasExamsTimetablePermission ||
           hasExamsEnrollPermission || hasExamsMarksPermission || hasExamsReportsPermission ||
-          hasExamsAttendancePermission || hasExamsViewAttendancePermission;
+          hasExamsAttendancePermission || hasExamsViewAttendancePermission ||
+          hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission ||
+          hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission ||
+          hasExamsNumbersPrintPermission;
       }
 
       if (item.titleKey === 'hostel') {
