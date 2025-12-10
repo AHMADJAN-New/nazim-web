@@ -34,6 +34,7 @@ class PermissionSeeder extends Seeder
                 'create',         // Create new exams
                 'update',         // Edit exam details
                 'delete',         // Delete exams
+                'assign',         // Assign classes to exams
                 'manage',         // Manage exam configuration (classes, subjects)
                 'manage_timetable', // Create/edit exam timetable
                 'enroll_students',  // Enroll/unenroll students
@@ -99,7 +100,7 @@ class PermissionSeeder extends Seeder
                 'classes.read',
                 'subjects.read',
                 // Exam permissions for staff - can manage enrollment and view reports
-                'exams.read', 'exams.manage', 'exams.enroll_students', 'exams.view_reports',
+                'exams.read', 'exams.assign', 'exams.manage', 'exams.enroll_students', 'exams.view_reports',
                 'exams.view_attendance_reports', // Can view attendance reports
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
                 'exam_subjects.read', 'exam_subjects.create', 'exam_subjects.update',
@@ -118,7 +119,7 @@ class PermissionSeeder extends Seeder
                 'classes.read',
                 'subjects.read', 'subjects.create', 'subjects.update',
                 // Exam permissions for teachers - full exam management including marks entry and attendance
-                'exams.read', 'exams.create', 'exams.update', 'exams.manage', 
+                'exams.read', 'exams.create', 'exams.update', 'exams.assign', 'exams.manage',
                 'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
                 'exams.manage_attendance', 'exams.view_attendance_reports', // Attendance permissions
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
@@ -147,7 +148,7 @@ class PermissionSeeder extends Seeder
                 'students.read',
                 'classes.read',
                 'subjects.read',
-                'exams.read', 'exams.create', 'exams.update', 'exams.manage',
+                'exams.read', 'exams.create', 'exams.update', 'exams.assign', 'exams.manage',
                 'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
                 'exams.manage_attendance', 'exams.view_attendance_reports', // Full attendance management
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',

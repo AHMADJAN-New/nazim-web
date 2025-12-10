@@ -868,6 +868,62 @@ export const useMarkExamAttendance = () => {
   });
 };
 
+export const useScanExamAttendance = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({
+      examId,
+      examTimeId,
+      cardNumber,
+      status,
+      notes,
+    }: {
+      examId: string;
+      examTimeId: string;
+      cardNumber: string;
+      status?: ExamAttendanceStatus;
+      notes?: string | null;
+    }) => {
+      return examAttendanceApi.scan(examId, {
+        exam_time_id: examTimeId,
+        card_number: cardNumber,
+        status: status || 'present',
+        notes: notes || null,
+      });
+    },
+    onSuccess: () => {
+      showToast.success(t('toast.attendanceScanned') || 'Attendance scanned successfully');
+      void queryClient.invalidateQueries({ queryKey: ['exam-attendance'] });
+      void queryClient.invalidateQueries({ queryKey: ['timeslot-students'] });
+      void queryClient.invalidateQueries({ queryKey: ['exam-attendance-summary'] });
+      void queryClient.invalidateQueries({ queryKey: ['timeslot-attendance-summary'] });
+      void queryClient.invalidateQueries({ queryKey: ['exam-attendance-scan-feed'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('toast.attendanceScanFailed') || 'Failed to scan attendance');
+    },
+  });
+};
+
+export const useExamAttendanceScanFeed = (examId?: string, examTimeId?: string, limit: number = 30) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<ExamAttendance[]>({
+    queryKey: ['exam-attendance-scan-feed', examId, examTimeId, profile?.organization_id],
+    queryFn: async () => {
+      if (!user || !profile || !examId || !examTimeId) return [];
+      const scans = await examAttendanceApi.scanFeed(examId, examTimeId, { limit });
+      return (scans as ExamApi.ExamAttendance[]).map(mapExamAttendanceApiToDomain);
+    },
+    enabled: !!user && !!profile && !!examId && !!examTimeId,
+    staleTime: 5 * 1000, // 5 seconds - scan feed updates frequently
+    refetchInterval: 10 * 1000, // Auto-refresh every 10 seconds
+    refetchOnWindowFocus: true,
+  });
+};
+
 export const useUpdateExamAttendance = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();

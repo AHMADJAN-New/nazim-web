@@ -418,7 +418,7 @@ export function Exams() {
                           {(hasManageAttendance || hasViewAttendanceReports) && (
                             <DropdownMenuItem onClick={() => navigate(`/exams/${exam.id}/attendance`)}>
                               <UserCheck className="h-4 w-4 mr-2" />
-                              {t('exams.attendance.title') || 'Attendance'}
+                              {t('exams.markAttendance') || 'Mark Attendance'}
                             </DropdownMenuItem>
                           )}
                           

@@ -118,150 +118,264 @@ class ExamReportController extends Controller
      */
     public function summary(Request $request, string $examId)
     {
-        $user = $request->user();
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        try {
+            $user = $request->user();
+            $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
-            return response()->json(['error' => 'Profile not found'], 404);
-        }
+            if (!$profile) {
+                return response()->json(['error' => 'Profile not found'], 404);
+            }
 
-        if (!$profile->organization_id) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            try {
+                if (!$user->hasPermissionTo('exams.view_reports')) {
+                    return response()->json(['error' => 'This action is unauthorized'], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Permission check failed for exams.view_reports: " . $e->getMessage());
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+
+            $exam = Exam::with('academicYear')
+                ->where('organization_id', $profile->organization_id)
+                ->where('id', $examId)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$exam) {
+                return response()->json(['error' => 'Exam not found'], 404);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error in summary method: ' . $e->getMessage(), [
+                'exam_id' => $examId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'An error occurred while fetching the summary'], 500);
         }
 
         try {
-            if (!$user->hasPermissionTo('exams.view_reports')) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
+            // Get class count
+            $classCount = ExamClass::where('exam_id', $examId)
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Get subject count
+            $subjectCount = ExamSubject::where('exam_id', $examId)
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Get enrolled student count
+            $enrolledStudents = ExamStudent::where('exam_id', $examId)
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Get results statistics
+            $resultStats = ExamResult::where('exam_id', $examId)
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->selectRaw('
+                    COUNT(*) as total_results,
+                    COUNT(CASE WHEN is_absent = true THEN 1 END) as absent_count,
+                    COUNT(CASE WHEN is_absent = false AND marks_obtained IS NOT NULL THEN 1 END) as marks_entered_count
+                ')
+                ->first();
+
+            // Ensure resultStats is not null
+            if (!$resultStats) {
+                $resultStats = (object) [
+                    'total_results' => 0,
+                    'absent_count' => 0,
+                    'marks_entered_count' => 0,
+                ];
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.view_reports: " . $e->getMessage());
-            return response()->json(['error' => 'This action is unauthorized'], 403);
+            Log::error('Error fetching basic stats in summary: ' . $e->getMessage(), [
+                'exam_id' => $examId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            // Set default values
+            $classCount = 0;
+            $subjectCount = 0;
+            $enrolledStudents = 0;
+            $resultStats = (object) [
+                'total_results' => 0,
+                'absent_count' => 0,
+                'marks_entered_count' => 0,
+            ];
         }
 
-        $exam = Exam::with('academicYear')
-            ->where('organization_id', $profile->organization_id)
-            ->where('id', $examId)
-            ->whereNull('deleted_at')
-            ->first();
+        // Calculate pass/fail by student (not by individual subject results)
+        // A student passes if they pass ALL their subjects, fails if they fail ANY subject
+        $passCount = 0;
+        $failCount = 0;
 
-        if (!$exam) {
-            return response()->json(['error' => 'Exam not found'], 404);
+        try {
+            $examStudents = ExamStudent::where('exam_id', $examId)
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->get();
+
+            // Get all exam subjects for this exam, grouped by class
+            $allExamSubjects = ExamSubject::where('exam_id', $examId)
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->get()
+                ->groupBy('exam_class_id');
+
+            foreach ($examStudents as $examStudent) {
+                // Skip if exam_class_id is not set
+                if (!$examStudent->exam_class_id) {
+                    continue;
+                }
+                
+                // Get subjects for this student's class
+                $studentSubjects = $allExamSubjects->get($examStudent->exam_class_id, collect());
+                if ($studentSubjects->isEmpty()) continue;
+
+                $studentPassedAll = true;
+                $studentFailedAny = false;
+                $hasAnyResult = false;
+
+                foreach ($studentSubjects as $examSubject) {
+                    $result = ExamResult::where('exam_student_id', $examStudent->id)
+                        ->where('exam_subject_id', $examSubject->id)
+                        ->whereNull('deleted_at')
+                        ->first();
+
+                    if ($result) {
+                        $hasAnyResult = true;
+                        if ($result->is_absent) {
+                            // Absent counts as fail
+                            $studentPassedAll = false;
+                            $studentFailedAny = true;
+                        } else if ($result->marks_obtained !== null && $examSubject->passing_marks !== null) {
+                            // Check if passed or failed
+                            if ($result->marks_obtained < $examSubject->passing_marks) {
+                                $studentPassedAll = false;
+                                $studentFailedAny = true;
+                            }
+                        }
+                    }
+                }
+
+                // Only count if student has at least one result
+                if ($hasAnyResult) {
+                    if ($studentPassedAll && !$studentFailedAny) {
+                        $passCount++;
+                    } else {
+                        $failCount++;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Error calculating pass/fail stats: ' . $e->getMessage(), [
+                'exam_id' => $examId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            // Continue with default values if calculation fails
         }
 
-        // Get class count
-        $classCount = ExamClass::where('exam_id', $examId)
-            ->where('organization_id', $profile->organization_id)
-            ->whereNull('deleted_at')
-            ->count();
-
-        // Get subject count
-        $subjectCount = ExamSubject::where('exam_id', $examId)
-            ->where('organization_id', $profile->organization_id)
-            ->whereNull('deleted_at')
-            ->count();
-
-        // Get enrolled student count
-        $enrolledStudents = ExamStudent::where('exam_id', $examId)
-            ->where('organization_id', $profile->organization_id)
-            ->whereNull('deleted_at')
-            ->count();
-
-        // Get results statistics
-        $resultStats = ExamResult::where('exam_id', $examId)
-            ->where('organization_id', $profile->organization_id)
-            ->whereNull('deleted_at')
-            ->selectRaw('
-                COUNT(*) as total_results,
-                COUNT(CASE WHEN is_absent = true THEN 1 END) as absent_count,
-                COUNT(CASE WHEN is_absent = false AND marks_obtained IS NOT NULL THEN 1 END) as marks_entered_count
-            ')
-            ->first();
-
-        // Calculate pass/fail by comparing marks_obtained with passing_marks
-        $passFailStats = DB::table('exam_results as er')
-            ->join('exam_subjects as es', 'er.exam_subject_id', '=', 'es.id')
-            ->where('er.exam_id', $examId)
-            ->where('er.organization_id', $profile->organization_id)
-            ->whereNull('er.deleted_at')
-            ->whereNull('es.deleted_at')
-            ->where('er.is_absent', false)
-            ->whereNotNull('er.marks_obtained')
-            ->whereNotNull('es.passing_marks')
-            ->selectRaw('
-                COUNT(CASE WHEN er.marks_obtained >= es.passing_marks THEN 1 END) as pass_count,
-                COUNT(CASE WHEN er.marks_obtained < es.passing_marks THEN 1 END) as fail_count
-            ')
-            ->first();
+        $passFailStats = (object) [
+            'pass_count' => $passCount,
+            'fail_count' => $failCount,
+        ];
 
         // Get average marks
-        $avgMarks = ExamResult::where('exam_id', $examId)
-            ->where('organization_id', $profile->organization_id)
-            ->whereNull('deleted_at')
-            ->where('is_absent', false)
-            ->whereNotNull('marks_obtained')
-            ->avg('marks_obtained');
+        try {
+            $avgMarks = ExamResult::where('exam_id', $examId)
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->where('is_absent', false)
+                ->whereNotNull('marks_obtained')
+                ->avg('marks_obtained');
+        } catch (\Exception $e) {
+            Log::error('Error calculating average marks: ' . $e->getMessage());
+            $avgMarks = null;
+        }
 
         // Get marks distribution
-        $marksDistribution = ExamResult::where('exam_id', $examId)
-            ->where('organization_id', $profile->organization_id)
-            ->whereNull('deleted_at')
-            ->where('is_absent', false)
-            ->whereNotNull('marks_obtained')
-            ->selectRaw("
-                CASE 
-                    WHEN marks_obtained >= 90 THEN '90-100'
-                    WHEN marks_obtained >= 80 THEN '80-89'
-                    WHEN marks_obtained >= 70 THEN '70-79'
-                    WHEN marks_obtained >= 60 THEN '60-69'
-                    WHEN marks_obtained >= 50 THEN '50-59'
-                    WHEN marks_obtained >= 40 THEN '40-49'
-                    ELSE 'Below 40'
-                END as grade_range,
-                COUNT(*) as count
-            ")
-            ->groupBy('grade_range')
-            ->orderByRaw("
-                CASE grade_range
-                    WHEN '90-100' THEN 1
-                    WHEN '80-89' THEN 2
-                    WHEN '70-79' THEN 3
-                    WHEN '60-69' THEN 4
-                    WHEN '50-59' THEN 5
-                    WHEN '40-49' THEN 6
-                    ELSE 7
-                END
-            ")
-            ->get();
+        try {
+            $marksDistribution = ExamResult::where('exam_id', $examId)
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->where('is_absent', false)
+                ->whereNotNull('marks_obtained')
+                ->selectRaw("
+                    CASE 
+                        WHEN marks_obtained >= 90 THEN '90-100'
+                        WHEN marks_obtained >= 80 THEN '80-89'
+                        WHEN marks_obtained >= 70 THEN '70-79'
+                        WHEN marks_obtained >= 60 THEN '60-69'
+                        WHEN marks_obtained >= 50 THEN '50-59'
+                        WHEN marks_obtained >= 40 THEN '40-49'
+                        ELSE 'Below 40'
+                    END as grade_range,
+                    COUNT(*) as count
+                ")
+                ->groupBy('grade_range')
+                ->orderByRaw("
+                    CASE grade_range
+                        WHEN '90-100' THEN 1
+                        WHEN '80-89' THEN 2
+                        WHEN '70-79' THEN 3
+                        WHEN '60-69' THEN 4
+                        WHEN '50-59' THEN 5
+                        WHEN '40-49' THEN 6
+                        ELSE 7
+                    END
+                ")
+                ->get();
+        } catch (\Exception $e) {
+            Log::error('Error calculating marks distribution: ' . $e->getMessage());
+            $marksDistribution = collect([]);
+        }
 
-        return response()->json([
-            'exam' => [
-                'id' => $exam->id,
-                'name' => $exam->name,
-                'status' => $exam->status,
-                'start_date' => $exam->start_date,
-                'end_date' => $exam->end_date,
-                'academic_year' => $exam->academicYear,
-            ],
-            'totals' => [
-                'classes' => $classCount,
-                'subjects' => $subjectCount,
-                'enrolled_students' => $enrolledStudents,
-                'results_entered' => $resultStats->total_results ?? 0,
-                'marks_entered' => $resultStats->marks_entered_count ?? 0,
-                'absent' => $resultStats->absent_count ?? 0,
-            ],
-            'pass_fail' => [
-                'pass_count' => $passFailStats->pass_count ?? 0,
-                'fail_count' => $passFailStats->fail_count ?? 0,
-                'pass_percentage' => ($passFailStats->pass_count + $passFailStats->fail_count) > 0
-                    ? round(($passFailStats->pass_count / ($passFailStats->pass_count + $passFailStats->fail_count)) * 100, 1)
-                    : 0,
-            ],
-            'marks_statistics' => [
-                'average' => $avgMarks ? round($avgMarks, 2) : null,
-                'distribution' => $marksDistribution,
-            ],
-        ]);
+        try {
+            return response()->json([
+                'exam' => [
+                    'id' => $exam->id,
+                    'name' => $exam->name,
+                    'status' => $exam->status,
+                    'start_date' => $exam->start_date,
+                    'end_date' => $exam->end_date,
+                    'academic_year' => $exam->academicYear,
+                ],
+                'totals' => [
+                    'classes' => $classCount ?? 0,
+                    'subjects' => $subjectCount ?? 0,
+                    'enrolled_students' => $enrolledStudents ?? 0,
+                    'results_entered' => $resultStats->total_results ?? 0,
+                    'marks_entered' => $resultStats->marks_entered_count ?? 0,
+                    'absent' => $resultStats->absent_count ?? 0,
+                ],
+                'pass_fail' => [
+                    'pass_count' => $passFailStats?->pass_count ?? 0,
+                    'fail_count' => $passFailStats?->fail_count ?? 0,
+                    'pass_percentage' => (($passFailStats?->pass_count ?? 0) + ($passFailStats?->fail_count ?? 0)) > 0
+                        ? round((($passFailStats->pass_count ?? 0) / (($passFailStats->pass_count ?? 0) + ($passFailStats->fail_count ?? 0))) * 100, 1)
+                        : 0,
+                ],
+                'marks_statistics' => [
+                    'average' => $avgMarks ? round($avgMarks, 2) : null,
+                    'distribution' => $marksDistribution ?? [],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in summary method response: ' . $e->getMessage(), [
+                'exam_id' => $examId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'error' => 'An error occurred while generating the summary report',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

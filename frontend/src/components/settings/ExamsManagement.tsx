@@ -173,6 +173,8 @@ function ExamClassCard({
                           value={draft.scheduledAt}
                           onChange={(e) => onDraftChange(subject.id, { ...draft, scheduledAt: e.target.value })}
                           disabled={!hasAssign}
+                          min={selectedExam?.startDate ? new Date(selectedExam.startDate).toISOString().slice(0, 10) : undefined}
+                          max={selectedExam?.endDate ? new Date(selectedExam.endDate).toISOString().slice(0, 10) : undefined}
                         />
                       </div>
                       <div className="flex gap-2">

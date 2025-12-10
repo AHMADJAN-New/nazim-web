@@ -889,4 +889,184 @@ class ExamAttendanceController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Scan card for attendance (barcode scanning)
+     * POST /api/exams/{exam}/attendance/scan
+     */
+    public function scan(Request $request, string $examId)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('exams.manage_attendance')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for exams.manage_attendance: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'exam_time_id' => 'required|uuid|exists:exam_times,id',
+            'card_number' => 'required|string',
+            'status' => 'nullable|in:present,absent,late,excused',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        // Verify exam belongs to organization
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('id', $examId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        // Check if attendance can be marked
+        if (!$exam->canMarkAttendance()) {
+            return response()->json([
+                'error' => 'Cannot mark attendance for exam in this status',
+                'status' => $exam->status,
+                'allowed_statuses' => [Exam::STATUS_SCHEDULED, Exam::STATUS_IN_PROGRESS],
+            ], 422);
+        }
+
+        // Verify exam time slot
+        $examTime = ExamTime::with(['examClass', 'examSubject'])
+            ->where('id', $validated['exam_time_id'])
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$examTime) {
+            return response()->json(['error' => 'Exam time slot not found or does not belong to this exam'], 404);
+        }
+
+        // Find student by card_number or admission_no
+        $searchTerm = trim($validated['card_number']);
+        $student = Student::where('organization_id', $profile->organization_id)
+            ->where(function ($q) use ($searchTerm) {
+                $q->where('card_number', $searchTerm)
+                    ->orWhere('admission_no', $searchTerm)
+                    ->orWhere('student_code', $searchTerm);
+            })
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$student) {
+            return response()->json(['error' => 'Student not found with this card number or admission number'], 404);
+        }
+
+        // Verify student is enrolled in this exam class
+        $examStudent = ExamStudent::where('exam_id', $examId)
+            ->where('exam_class_id', $examTime->exam_class_id)
+            ->where('organization_id', $profile->organization_id)
+            ->whereHas('studentAdmission', function ($query) use ($student) {
+                $query->where('student_id', $student->id);
+            })
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$examStudent) {
+            return response()->json(['error' => 'Student is not enrolled in this exam class'], 422);
+        }
+
+        // Create or update attendance record
+        $status = $validated['status'] ?? 'present';
+        $attendance = ExamAttendance::updateOrCreate(
+            [
+                'organization_id' => $profile->organization_id,
+                'exam_time_id' => $examTime->id,
+                'student_id' => $student->id,
+            ],
+            [
+                'exam_id' => $examId,
+                'exam_class_id' => $examTime->exam_class_id,
+                'exam_subject_id' => $examTime->exam_subject_id,
+                'status' => $status,
+                'checked_in_at' => now(),
+                'notes' => $validated['notes'] ?? null,
+            ]
+        );
+
+        // Load relationships
+        $attendance->load(['student', 'examTime', 'examClass', 'examSubject']);
+
+        return response()->json($attendance, 200);
+    }
+
+    /**
+     * Get scan feed (recent scans for a timeslot)
+     * GET /api/exams/{exam}/attendance/timeslot/{examTimeId}/scans
+     */
+    public function scanFeed(Request $request, string $examId, string $examTimeId)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for exams.view_attendance_reports: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Verify exam belongs to organization
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('id', $examId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        // Verify exam time slot
+        $examTime = ExamTime::where('id', $examTimeId)
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$examTime) {
+            return response()->json(['error' => 'Exam time slot not found'], 404);
+        }
+
+        $limit = (int) $request->input('limit', 30);
+        $limit = $limit > 100 ? 100 : $limit;
+
+        // Get recent attendance records for this timeslot, ordered by checked_in_at or created_at
+        $scans = ExamAttendance::with(['student:id,full_name,admission_no,card_number,student_code'])
+            ->where('organization_id', $profile->organization_id)
+            ->where('exam_time_id', $examTimeId)
+            ->whereNull('deleted_at')
+            ->orderBy('checked_in_at', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+
+        return response()->json($scans);
+    }
 }

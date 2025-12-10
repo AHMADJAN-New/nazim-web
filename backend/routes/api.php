@@ -259,8 +259,10 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}', [ExamAttendanceController::class, 'byTimeslot']);
     Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/students', [ExamAttendanceController::class, 'getTimeslotStudents']);
     Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/summary', [ExamAttendanceController::class, 'timeslotSummary']);
+    Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/scans', [ExamAttendanceController::class, 'scanFeed']);
     Route::get('/exams/{exam}/attendance/students/{studentId}', [ExamAttendanceController::class, 'studentReport']);
     Route::post('/exams/{exam}/attendance/mark', [ExamAttendanceController::class, 'mark']);
+    Route::post('/exams/{exam}/attendance/scan', [ExamAttendanceController::class, 'scan']);
     Route::put('/exam-attendance/{id}', [ExamAttendanceController::class, 'update']);
     Route::delete('/exam-attendance/{id}', [ExamAttendanceController::class, 'destroy']);
 

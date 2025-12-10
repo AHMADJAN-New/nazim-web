@@ -71,6 +71,7 @@ export function ExamClassesSubjectsPage() {
 
   // Permissions
   const hasManage = useHasPermission('exams.manage');
+  const hasAssign = useHasPermission('exams.assign');
 
   // State
   const [isAddClassDialogOpen, setIsAddClassDialogOpen] = useState(false);
@@ -264,7 +265,7 @@ export function ExamClassesSubjectsPage() {
     );
   }
 
-  const canModify = hasManage && ['draft', 'scheduled'].includes(exam.status);
+  const canModify = (hasManage || hasAssign) && ['draft', 'scheduled'].includes(exam.status);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -322,7 +323,7 @@ export function ExamClassesSubjectsPage() {
               {t('exams.assignedClassesDescription') || 'Classes included in this exam'}
             </CardDescription>
           </div>
-          {canModify && (
+          {canModify && hasAssign && (
             <Button onClick={() => setIsAddClassDialogOpen(true)} disabled={availableClassAcademicYears.length === 0}>
               <Plus className="h-4 w-4 mr-2" />
               {t('exams.addClass') || 'Add Class'}
@@ -418,7 +419,7 @@ export function ExamClassesSubjectsPage() {
                         )}
 
                         {/* Actions */}
-                        {canModify && (
+                        {canModify && hasAssign && (
                           <div className="flex gap-2 pt-2">
                             <Button
                               variant="outline"

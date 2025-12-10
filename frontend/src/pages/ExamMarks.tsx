@@ -51,17 +51,29 @@ function StudentMarksRow({ student, examSubject, examId, result, onMarksChange, 
   }, [result]);
 
   const handleMarksChange = (value: string) => {
-    setMarks(value);
+    // Prevent entering values above max marks
     const numValue = value === '' ? null : Number(value);
+    if (numValue !== null && numValue > maxMarks) {
+      // Don't update if value exceeds max marks
+      return;
+    }
+    setMarks(value);
     onMarksChange(student.id, numValue, isAbsent, remarks);
   };
 
-  const handleAbsentChange = (checked: boolean) => {
-    setIsAbsent(checked);
-    if (checked) {
+  const handlePresentChange = (checked: boolean) => {
+    // checked = true means Present (isAbsent = false)
+    // checked = false means Absent (isAbsent = true)
+    const newIsAbsent = !checked;
+    setIsAbsent(newIsAbsent);
+    if (newIsAbsent) {
+      // Marking as absent - clear marks
       setMarks('');
+      onMarksChange(student.id, null, true, remarks);
+    } else {
+      // Marking as present - keep existing marks if any
+      onMarksChange(student.id, marks ? Number(marks) : null, false, remarks);
     }
-    onMarksChange(student.id, checked ? null : (marks ? Number(marks) : null), checked, remarks);
   };
 
   const handleRemarksChange = (value: string) => {
@@ -76,7 +88,10 @@ function StudentMarksRow({ student, examSubject, examId, result, onMarksChange, 
   return (
     <TableRow>
       <TableCell className="font-medium">
-        {student.studentAdmission?.student?.fullName || student.studentAdmissionId}
+        {student.studentAdmission?.student?.fullName || 
+         (student.studentAdmission?.student as any)?.full_name || 
+         student.studentAdmissionId || 
+         'Unknown Student'}
       </TableCell>
       <TableCell>
         <Input
@@ -86,18 +101,30 @@ function StudentMarksRow({ student, examSubject, examId, result, onMarksChange, 
           disabled={!hasUpdate || isAbsent}
           min={0}
           max={maxMarks}
+          step="0.01"
           className={!isValid ? 'border-destructive' : ''}
           placeholder="0"
+          onBlur={(e) => {
+            // Ensure value doesn't exceed max on blur
+            const value = e.target.value;
+            const numValue = value === '' ? null : Number(value);
+            if (numValue !== null && numValue > maxMarks) {
+              setMarks(maxMarks.toString());
+              onMarksChange(student.id, maxMarks, isAbsent, remarks);
+            }
+          }}
         />
       </TableCell>
       <TableCell>
         <div className="flex items-center space-x-2">
           <Checkbox
-            checked={isAbsent}
-            onCheckedChange={handleAbsentChange}
+            checked={!isAbsent}
+            onCheckedChange={handlePresentChange}
             disabled={!hasUpdate}
           />
-          <Label className="text-sm">{isAbsent ? 'Absent' : 'Present'}</Label>
+          <Label className="text-sm cursor-pointer" onClick={() => hasUpdate && handlePresentChange(!isAbsent)}>
+            {isAbsent ? 'Absent' : 'Present'}
+          </Label>
         </div>
       </TableCell>
       <TableCell>

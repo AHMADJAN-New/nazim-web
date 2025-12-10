@@ -344,6 +344,8 @@ export interface ExamAttendance {
     id: string;
     fullName: string;
     admissionNo: string;
+    cardNumber?: string | null;
+    studentCode?: string | null;
   };
 }
 

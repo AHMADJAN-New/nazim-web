@@ -15,7 +15,7 @@ export function ExamReports() {
   const organizationId = profile?.organization_id;
 
   const { data: exams, isLoading: examsLoading } = useExams(organizationId);
-  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
+  const [selectedExamId, setSelectedExamId] = useState<string>('');
 
   useEffect(() => {
     if (exams && exams.length > 0 && !selectedExamId) {
@@ -49,7 +49,7 @@ export function ExamReports() {
           <p className="text-sm text-muted-foreground">Generate summaries, planned schedules, and grade-ready cards.</p>
         </div>
         <div className="w-full md:w-64">
-          <Select value={selectedExamId} onValueChange={setSelectedExamId} disabled={examsLoading || !exams?.length}>
+          <Select value={selectedExamId || ''} onValueChange={setSelectedExamId} disabled={examsLoading || !exams?.length}>
             <SelectTrigger>
               <SelectValue placeholder="Select exam" />
             </SelectTrigger>

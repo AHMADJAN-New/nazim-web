@@ -142,8 +142,8 @@ export function ExamTimetablePage() {
       date: '',
       startTime: '',
       endTime: '',
-      roomId: '',
-      invigilatorId: '',
+      roomId: 'none',
+      invigilatorId: 'none',
       notes: '',
     });
   };
@@ -168,8 +168,8 @@ export function ExamTimetablePage() {
           date: new Date(formData.date),
           startTime: formData.startTime,
           endTime: formData.endTime,
-          roomId: formData.roomId || null,
-          invigilatorId: formData.invigilatorId || null,
+          roomId: formData.roomId && formData.roomId !== 'none' ? formData.roomId : null,
+          invigilatorId: formData.invigilatorId && formData.invigilatorId !== 'none' ? formData.invigilatorId : null,
           notes: formData.notes || null,
         },
       },
@@ -204,8 +204,8 @@ export function ExamTimetablePage() {
           date: new Date(formData.date),
           startTime: formData.startTime,
           endTime: formData.endTime,
-          roomId: formData.roomId || null,
-          invigilatorId: formData.invigilatorId || null,
+          roomId: formData.roomId && formData.roomId !== 'none' ? formData.roomId : null,
+          invigilatorId: formData.invigilatorId && formData.invigilatorId !== 'none' ? formData.invigilatorId : null,
           notes: formData.notes || null,
         },
       },
@@ -261,8 +261,8 @@ export function ExamTimetablePage() {
       date: new Date(examTime.date).toISOString().slice(0, 10),
       startTime: examTime.startTime,
       endTime: examTime.endTime,
-      roomId: examTime.roomId || '',
-      invigilatorId: examTime.invigilatorId || '',
+      roomId: examTime.roomId || 'none',
+      invigilatorId: examTime.invigilatorId || 'none',
       notes: examTime.notes || '',
     });
     setIsEditDialogOpen(true);
@@ -568,12 +568,12 @@ export function ExamTimetablePage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t('exams.room') || 'Room'}</Label>
-                <Select value={formData.roomId} onValueChange={(v) => setFormData({ ...formData, roomId: v })}>
+                <Select value={formData.roomId || 'none'} onValueChange={(v) => setFormData({ ...formData, roomId: v })}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('exams.selectRoom') || 'Select room'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                    <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
                     {rooms?.map((room) => (
                       <SelectItem key={room.id} value={room.id}>
                         {room.name}
@@ -584,12 +584,12 @@ export function ExamTimetablePage() {
               </div>
               <div>
                 <Label>{t('exams.invigilator') || 'Invigilator'}</Label>
-                <Select value={formData.invigilatorId} onValueChange={(v) => setFormData({ ...formData, invigilatorId: v })}>
+                <Select value={formData.invigilatorId || 'none'} onValueChange={(v) => setFormData({ ...formData, invigilatorId: v })}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('exams.selectInvigilator') || 'Select invigilator'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                    <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
                     {staff?.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.firstName} {s.lastName}
@@ -666,12 +666,12 @@ export function ExamTimetablePage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t('exams.room') || 'Room'}</Label>
-                <Select value={formData.roomId} onValueChange={(v) => setFormData({ ...formData, roomId: v })}>
+                <Select value={formData.roomId || 'none'} onValueChange={(v) => setFormData({ ...formData, roomId: v })}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('exams.selectRoom') || 'Select room'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                    <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
                     {rooms?.map((room) => (
                       <SelectItem key={room.id} value={room.id}>
                         {room.name}
@@ -682,12 +682,12 @@ export function ExamTimetablePage() {
               </div>
               <div>
                 <Label>{t('exams.invigilator') || 'Invigilator'}</Label>
-                <Select value={formData.invigilatorId} onValueChange={(v) => setFormData({ ...formData, invigilatorId: v })}>
+                <Select value={formData.invigilatorId || 'none'} onValueChange={(v) => setFormData({ ...formData, invigilatorId: v })}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('exams.selectInvigilator') || 'Select invigilator'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                    <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
                     {staff?.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.firstName} {s.lastName}

@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useExam, useExamTimes, useTimeslotStudents, useMarkExamAttendance, useExamAttendanceSummary } from '@/hooks/useExams';
+import { useExam, useExamTimes, useTimeslotStudents, useMarkExamAttendance, useExamAttendanceSummary, useExams, useScanExamAttendance, useExamAttendanceScanFeed } from '@/hooks/useExams';
 import { useExamClasses } from '@/hooks/useExams';
+import { useProfile } from '@/hooks/useProfiles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -33,7 +35,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Check, X, Clock, AlertCircle, UserCheck, Users, ChevronDown, Save } from 'lucide-react';
+import { ArrowLeft, Check, X, Clock, AlertCircle, UserCheck, Users, ChevronDown, Save, QrCode, ScanLine, Activity, History } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading';
 import type { ExamAttendanceStatus, TimeslotStudent } from '@/types/domain/exam';
 
@@ -53,9 +57,27 @@ interface AttendanceEntry {
 }
 
 export default function ExamAttendancePage() {
-  const { examId } = useParams<{ examId: string }>();
+  const { examId: examIdFromParams } = useParams<{ examId?: string }>();
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
+  const { data: profile } = useProfile();
+  const organizationId = profile?.organization_id;
+
+  // State for exam selection (when accessed individually)
+  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
+
+  // Determine which exam ID to use: from params (when accessed from exam page) or selected (when accessed individually)
+  const examId = examIdFromParams || selectedExamId || undefined;
+
+  // Fetch all exams for selector (only when accessed individually)
+  const { data: allExams, isLoading: examsLoading } = useExams(organizationId);
+
+  // Auto-select first exam if accessed individually and no exam selected
+  useEffect(() => {
+    if (!examIdFromParams && allExams && allExams.length > 0 && !selectedExamId) {
+      setSelectedExamId(allExams[0].id);
+    }
+  }, [allExams, selectedExamId, examIdFromParams]);
 
   // State
   const [selectedClassId, setSelectedClassId] = useState<string>('');
@@ -64,6 +86,11 @@ export default function ExamAttendancePage() {
   const [attendanceEntries, setAttendanceEntries] = useState<Map<string, AttendanceEntry>>(new Map());
   const [bulkStatusDialogOpen, setBulkStatusDialogOpen] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<ExamAttendanceStatus>('present');
+  const [scanCardNumber, setScanCardNumber] = useState('');
+  const [scanNote, setScanNote] = useState('');
+  const [scanFeedSearch, setScanFeedSearch] = useState('');
+  const [lastScanId, setLastScanId] = useState<string | null>(null);
+  const scanInputRef = useRef<HTMLInputElement | null>(null);
 
   // Queries
   const { data: exam, isLoading: examLoading } = useExam(examId);
@@ -74,11 +101,15 @@ export default function ExamAttendancePage() {
   
   // Mutations
   const markAttendance = useMarkExamAttendance();
+  const scanAttendance = useScanExamAttendance();
+  
+  // Scan feed query
+  const { data: scanFeed = [], isLoading: scanFeedLoading } = useExamAttendanceScanFeed(examId, selectedTimeId, 30);
 
   // Filter times by selected class
   const filteredTimes = useMemo(() => {
-    if (!selectedClassId) return examTimes;
-    return examTimes.filter((time) => time.examClassId === selectedClassId);
+    if (!selectedClassId || selectedClassId === 'all') return examTimes || [];
+    return (examTimes || []).filter((time) => time.examClassId === selectedClassId);
   }, [examTimes, selectedClassId]);
 
   // Get the selected exam time details
@@ -112,10 +143,77 @@ export default function ExamAttendancePage() {
 
   // Handle time selection change
   const handleTimeChange = (timeId: string) => {
-    setSelectedTimeId(timeId);
-    setSelectedStudents(new Set());
-    setAttendanceEntries(new Map());
+    if (timeId && timeId !== 'none') {
+      setSelectedTimeId(timeId);
+      setSelectedStudents(new Set());
+      setAttendanceEntries(new Map());
+      setScanCardNumber('');
+      setScanNote('');
+    } else {
+      setSelectedTimeId(undefined);
+      setSelectedStudents(new Set());
+      setAttendanceEntries(new Map());
+      setScanCardNumber('');
+      setScanNote('');
+    }
   };
+
+  // Auto-focus scan input when time slot is selected
+  useEffect(() => {
+    if (selectedTimeId && scanInputRef.current) {
+      scanInputRef.current.focus();
+    }
+  }, [selectedTimeId]);
+
+  // Handle scan submission
+  const handleScanSubmit = async () => {
+    if (!examId || !selectedTimeId || !scanCardNumber.trim()) {
+      return;
+    }
+
+    try {
+      const result = await scanAttendance.mutateAsync({
+        examId,
+        examTimeId: selectedTimeId,
+        cardNumber: scanCardNumber.trim(),
+        status: 'present',
+        notes: scanNote || null,
+      });
+
+      // Set last scan ID for highlighting
+      if (result && (result as any).id) {
+        setLastScanId((result as any).id);
+        setTimeout(() => setLastScanId(null), 3000);
+      }
+
+      // Clear input and refocus
+      setScanCardNumber('');
+      setScanNote('');
+      if (scanInputRef.current) {
+        scanInputRef.current.focus();
+      }
+
+      // Refetch students to update attendance
+      refetchStudents();
+    } catch (error) {
+      // Error is handled by the mutation's onError
+    }
+  };
+
+  // Filter scan feed by search
+  const filteredScanFeed = useMemo(() => {
+    if (!scanFeed || scanFeed.length === 0) return [];
+    const search = scanFeedSearch.toLowerCase();
+    if (!search) return scanFeed;
+    return scanFeed.filter((record) => {
+      const student = (record as any).student;
+      return (
+        student?.fullName?.toLowerCase().includes(search) ||
+        student?.admissionNo?.toLowerCase().includes(search) ||
+        student?.cardNumber?.toLowerCase().includes(search)
+      );
+    });
+  }, [scanFeed, scanFeedSearch]);
 
   // Handle student selection
   const handleSelectStudent = (studentId: string, checked: boolean) => {
@@ -233,10 +331,31 @@ export default function ExamAttendancePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={() => navigate('/exams')}>
-            <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            Back
-          </Button>
+          {examIdFromParams ? (
+            <Button variant="outline" size="sm" onClick={() => navigate('/exams')}>
+              <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              Back
+            </Button>
+          ) : (
+            <div className="w-64">
+              <Select
+                value={selectedExamId || undefined}
+                onValueChange={(value) => setSelectedExamId(value === 'all' ? undefined : value)}
+                disabled={examsLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('exams.selectExam') || 'Select exam'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(allExams || []).map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name} {e.academicYear ? `(${e.academicYear.name})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <h1 className="text-2xl font-bold">{t('exams.attendance.title') || 'Exam Attendance'}</h1>
             <p className="text-muted-foreground">{exam.name}</p>
@@ -288,12 +407,12 @@ export default function ExamAttendancePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t('exams.class') || 'Class'}</Label>
-              <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+              <Select value={selectedClassId || 'all'} onValueChange={setSelectedClassId}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Classes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Classes</SelectItem>
+                  <SelectItem value="all">All Classes</SelectItem>
                   {examClasses.map((examClass) => (
                     <SelectItem key={examClass.id} value={examClass.id}>
                       {getClassName(examClass.id)}
@@ -305,17 +424,33 @@ export default function ExamAttendancePage() {
 
             <div className="space-y-2">
               <Label>{t('exams.timeSlot') || 'Time Slot'}</Label>
-              <Select value={selectedTimeId} onValueChange={handleTimeChange}>
+              <Select 
+                value={selectedTimeId || undefined} 
+                onValueChange={handleTimeChange}
+                disabled={!examId || filteredTimes.length === 0}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select time slot" />
+                  <SelectValue placeholder={
+                    !examId 
+                      ? (t('exams.selectExamFirst') || 'Select an exam first')
+                      : filteredTimes.length === 0
+                      ? (t('exams.noTimeSlots') || 'No time slots available')
+                      : (t('exams.selectTimeSlot') || 'Select time slot')
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredTimes.map((time) => (
-                    <SelectItem key={time.id} value={time.id}>
-                      {time.date.toLocaleDateString()} - {time.startTime} to {time.endTime}
-                      {time.examSubject?.subject?.name && ` (${time.examSubject.subject.name})`}
-                    </SelectItem>
-                  ))}
+                  {filteredTimes.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      {t('exams.noTimeSlots') || 'No time slots available'}
+                    </div>
+                  ) : (
+                    filteredTimes.map((time) => (
+                      <SelectItem key={time.id} value={time.id}>
+                        {time.date.toLocaleDateString()} - {time.startTime} to {time.endTime}
+                        {time.examSubject?.subject?.name && ` (${time.examSubject.subject.name})`}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -355,149 +490,292 @@ export default function ExamAttendancePage() {
                 <LoadingSpinner />
               </div>
             ) : timeslotData?.students && timeslotData.students.length > 0 ? (
-              <>
-                {/* Bulk Actions */}
-                {canMarkAttendance && (
-                  <div className="flex items-center justify-between mb-4 p-3 bg-muted rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => initializeEntries()}
-                      >
-                        Load Existing
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            Mark All As <ChevronDown className="h-4 w-4 ml-1" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          {Object.entries(STATUS_CONFIG).map(([status, config]) => (
-                            <DropdownMenuItem key={status} onClick={() => markAllAs(status as ExamAttendanceStatus)}>
-                              {config.icon}
-                              <span className="ml-2">{config.label}</span>
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      {selectedStudents.size > 0 && (
+              <Tabs defaultValue="manual" className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="manual" className="flex items-center gap-2">
+                    <UserCheck className="h-4 w-4" />
+                    {t('exams.attendance.manual') || 'Manual'}
+                  </TabsTrigger>
+                  <TabsTrigger value="barcode" className="flex items-center gap-2">
+                    <QrCode className="h-4 w-4" />
+                    {t('exams.attendance.barcode') || 'Barcode'}
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Manual Tab */}
+                <TabsContent value="manual" className="space-y-4">
+                  {/* Bulk Actions */}
+                  {canMarkAttendance && (
+                    <div className="flex items-center justify-between mb-4 p-3 bg-muted rounded-lg">
+                      <div className="flex items-center gap-4">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setBulkStatusDialogOpen(true)}
+                          onClick={() => initializeEntries()}
                         >
-                          Update Selected ({selectedStudents.size})
+                          Load Existing
                         </Button>
-                      )}
-                    </div>
-                    <Button
-                      onClick={handleSaveAttendance}
-                      disabled={markAttendance.isPending || attendanceEntries.size === 0}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {markAttendance.isPending ? 'Saving...' : 'Save Attendance'}
-                    </Button>
-                  </div>
-                )}
-
-                {/* Students Table */}
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        {canMarkAttendance && (
-                          <TableHead className="w-12">
-                            <Checkbox
-                              checked={
-                                timeslotData.students.length > 0 &&
-                                selectedStudents.size === timeslotData.students.length
-                              }
-                              onCheckedChange={handleSelectAll}
-                            />
-                          </TableHead>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              Mark All As <ChevronDown className="h-4 w-4 ml-1" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            {Object.entries(STATUS_CONFIG).map(([status, config]) => (
+                              <DropdownMenuItem key={status} onClick={() => markAllAs(status as ExamAttendanceStatus)}>
+                                {config.icon}
+                                <span className="ml-2">{config.label}</span>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        {selectedStudents.size > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setBulkStatusDialogOpen(true)}
+                          >
+                            Update Selected ({selectedStudents.size})
+                          </Button>
                         )}
-                        <TableHead>Roll</TableHead>
-                        <TableHead>Student</TableHead>
-                        <TableHead>Admission No</TableHead>
-                        <TableHead>Status</TableHead>
-                        {canMarkAttendance && <TableHead>Seat #</TableHead>}
-                        <TableHead>Current</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {timeslotData.students.map((student: TimeslotStudent) => {
-                        const entry = attendanceEntries.get(student.studentId);
-                        return (
-                          <TableRow key={student.studentId}>
-                            {canMarkAttendance && (
-                              <TableCell>
-                                <Checkbox
-                                  checked={selectedStudents.has(student.studentId)}
-                                  onCheckedChange={(checked) =>
-                                    handleSelectStudent(student.studentId, checked as boolean)
-                                  }
-                                />
-                              </TableCell>
-                            )}
-                            <TableCell className="font-mono">{student.rollNumber || '-'}</TableCell>
-                            <TableCell className="font-medium">{student.student.fullName}</TableCell>
-                            <TableCell className="text-muted-foreground">{student.student.admissionNo}</TableCell>
-                            <TableCell>
-                              {canMarkAttendance ? (
-                                <Select
-                                  value={entry?.status || 'present'}
-                                  onValueChange={(value) =>
-                                    updateStudentStatus(student.studentId, value as ExamAttendanceStatus)
-                                  }
-                                >
-                                  <SelectTrigger className="w-32">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Object.entries(STATUS_CONFIG).map(([status, config]) => (
-                                      <SelectItem key={status} value={status}>
-                                        <div className="flex items-center gap-2">
-                                          {config.icon}
-                                          <span>{config.label}</span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <Badge className={STATUS_CONFIG[entry?.status || 'present'].color}>
-                                  {STATUS_CONFIG[entry?.status || 'present'].label}
-                                </Badge>
+                      </div>
+                      <Button
+                        onClick={handleSaveAttendance}
+                        disabled={markAttendance.isPending || attendanceEntries.size === 0}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {markAttendance.isPending ? 'Saving...' : 'Save Attendance'}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Students Table */}
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          {canMarkAttendance && (
+                            <TableHead className="w-12">
+                              <Checkbox
+                                checked={
+                                  timeslotData.students.length > 0 &&
+                                  selectedStudents.size === timeslotData.students.length
+                                }
+                                onCheckedChange={handleSelectAll}
+                              />
+                            </TableHead>
+                          )}
+                          <TableHead>Roll</TableHead>
+                          <TableHead>Student</TableHead>
+                          <TableHead>Admission No</TableHead>
+                          <TableHead>Status</TableHead>
+                          {canMarkAttendance && <TableHead>Seat #</TableHead>}
+                          <TableHead>Current</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {timeslotData.students.map((student: TimeslotStudent) => {
+                          const entry = attendanceEntries.get(student.studentId);
+                          return (
+                            <TableRow key={student.studentId}>
+                              {canMarkAttendance && (
+                                <TableCell>
+                                  <Checkbox
+                                    checked={selectedStudents.has(student.studentId)}
+                                    onCheckedChange={(checked) =>
+                                      handleSelectStudent(student.studentId, checked as boolean)
+                                    }
+                                  />
+                                </TableCell>
                               )}
-                            </TableCell>
-                            {canMarkAttendance && (
+                              <TableCell className="font-mono">{student.rollNumber || '-'}</TableCell>
+                              <TableCell className="font-medium">{student.student.fullName}</TableCell>
+                              <TableCell className="text-muted-foreground">{student.student.admissionNo}</TableCell>
                               <TableCell>
-                                <Input
-                                  className="w-20"
-                                  placeholder="Seat"
-                                  value={entry?.seatNumber || ''}
-                                  onChange={(e) => updateStudentSeatNumber(student.studentId, e.target.value)}
-                                />
+                                {canMarkAttendance ? (
+                                  <Select
+                                    value={entry?.status || 'present'}
+                                    onValueChange={(value) =>
+                                      updateStudentStatus(student.studentId, value as ExamAttendanceStatus)
+                                    }
+                                  >
+                                    <SelectTrigger className="w-32">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Object.entries(STATUS_CONFIG).map(([status, config]) => (
+                                        <SelectItem key={status} value={status}>
+                                          <div className="flex items-center gap-2">
+                                            {config.icon}
+                                            <span>{config.label}</span>
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <Badge className={STATUS_CONFIG[entry?.status || 'present'].color}>
+                                    {STATUS_CONFIG[entry?.status || 'present'].label}
+                                  </Badge>
+                                )}
                               </TableCell>
-                            )}
-                            <TableCell>
-                              {student.attendance ? (
-                                <Badge className={STATUS_CONFIG[student.attendance.status].color}>
-                                  {STATUS_CONFIG[student.attendance.status].label}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">Not marked</span>
+                              {canMarkAttendance && (
+                                <TableCell>
+                                  <Input
+                                    className="w-20"
+                                    placeholder="Seat"
+                                    value={entry?.seatNumber || ''}
+                                    onChange={(e) => updateStudentSeatNumber(student.studentId, e.target.value)}
+                                  />
+                                </TableCell>
                               )}
-                            </TableCell>
+                              <TableCell>
+                                {student.attendance ? (
+                                  <Badge className={STATUS_CONFIG[student.attendance.status].color}>
+                                    {STATUS_CONFIG[student.attendance.status].label}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">Not marked</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+
+                {/* Barcode Tab */}
+                <TabsContent value="barcode" className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <div className="space-y-2">
+                      <Label>{t('exams.attendance.cardNumber') || 'Card Number / Admission No'}</Label>
+                      <Input
+                        ref={scanInputRef}
+                        value={scanCardNumber}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setScanCardNumber(value);
+                          // Auto-submit when barcode scanner adds Enter/newline (fast scanning)
+                          if (value.includes('\n') || value.includes('\r')) {
+                            const cleanValue = value.replace(/[\n\r]/g, '').trim();
+                            if (cleanValue) {
+                              setScanCardNumber(cleanValue);
+                              setTimeout(() => handleScanSubmit(), 0);
+                            }
+                          }
+                        }}
+                        placeholder={t('exams.attendance.scanPrompt') || 'Scan or enter card/admission number'}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleScanSubmit();
+                          }
+                        }}
+                        autoFocus
+                        className="text-lg"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t('exams.attendance.note') || 'Note (Optional)'}</Label>
+                      <Input
+                        value={scanNote}
+                        onChange={(e) => setScanNote(e.target.value)}
+                        placeholder={t('exams.attendance.note') || 'Note'}
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          if (scanInputRef.current) {
+                            scanInputRef.current.focus();
+                          }
+                        }}
+                      >
+                        <Activity className="h-4 w-4 mr-2" />
+                        {t('exams.attendance.focusScanner') || 'Focus Scanner'}
+                      </Button>
+                      <Button
+                        onClick={() => void handleScanSubmit()}
+                        disabled={!selectedTimeId || scanAttendance.isPending || !canMarkAttendance}
+                      >
+                        <ScanLine className="h-4 w-4 mr-2" />
+                        {scanAttendance.isPending ? (t('exams.attendance.scanning') || 'Scanning...') : (t('exams.attendance.recordScan') || 'Record Scan')}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Scan Feed */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <History className="h-4 w-4 text-muted-foreground" />
+                        <p className="font-semibold">{t('exams.attendance.scanFeed') || 'Recent Scans'}</p>
+                      </div>
+                      <Input
+                        placeholder={t('exams.attendance.searchScans') || 'Search scans...'}
+                        value={scanFeedSearch}
+                        onChange={(e) => setScanFeedSearch(e.target.value)}
+                        className="w-48"
+                      />
+                    </div>
+                    <div className="border rounded-md overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t('exams.attendance.student') || 'Student'}</TableHead>
+                            <TableHead>{t('exams.attendance.cardNumber') || 'Card Number'}</TableHead>
+                            <TableHead>{t('exams.attendance.status') || 'Status'}</TableHead>
+                            <TableHead>{t('exams.attendance.time') || 'Time'}</TableHead>
                           </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </>
+                        </TableHeader>
+                        <TableBody>
+                          {scanFeedLoading ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center">
+                                <LoadingSpinner />
+                              </TableCell>
+                            </TableRow>
+                          ) : filteredScanFeed.length > 0 ? (
+                            filteredScanFeed.map((record) => {
+                              const student = (record as any).student;
+                              const checkedInAt = (record as any).checkedInAt ? new Date((record as any).checkedInAt) : new Date(record.createdAt);
+                              return (
+                                <TableRow
+                                  key={record.id}
+                                  className={cn(lastScanId === record.id ? 'bg-primary/5' : undefined)}
+                                >
+                                  <TableCell className="font-medium">
+                                    {student?.fullName || record.studentId}
+                                  </TableCell>
+                                  <TableCell>{student?.cardNumber || student?.admissionNo || '—'}</TableCell>
+                                  <TableCell>
+                                    <Badge className={STATUS_CONFIG[record.status].color}>
+                                      {STATUS_CONFIG[record.status].label}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>{format(checkedInAt, 'pp')}</TableCell>
+                                </TableRow>
+                              );
+                            })
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center text-muted-foreground text-sm">
+                                {scanFeedSearch.trim()
+                                  ? (t('exams.attendance.noScansMatch') || 'No scans match your search')
+                                  : (t('exams.attendance.noScansYet') || 'No scans yet')}
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                 <Users className="h-12 w-12 mb-4" />

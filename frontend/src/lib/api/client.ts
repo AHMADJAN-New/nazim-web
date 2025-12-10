@@ -2697,6 +2697,19 @@ export const examAttendanceApi = {
     return apiClient.post(`/exams/${examId}/attendance/mark`, data);
   },
 
+  scan: async (examId: string, data: {
+    exam_time_id: string;
+    card_number: string;
+    status?: 'present' | 'absent' | 'late' | 'excused';
+    notes?: string | null;
+  }) => {
+    return apiClient.post(`/exams/${examId}/attendance/scan`, data);
+  },
+
+  scanFeed: async (examId: string, examTimeId: string, params?: { limit?: number }) => {
+    return apiClient.get(`/exams/${examId}/attendance/timeslot/${examTimeId}/scans`, params);
+  },
+
   update: async (id: string, data: {
     status?: 'present' | 'absent' | 'late' | 'excused';
     checked_in_at?: string | null;

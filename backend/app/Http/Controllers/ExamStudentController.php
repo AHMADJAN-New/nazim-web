@@ -539,7 +539,7 @@ class ExamStudentController extends Controller
             $availableCount = StudentAdmission::where('class_academic_year_id', $examClass->class_academic_year_id)
                 ->where('organization_id', $profile->organization_id)
                 ->whereNull('deleted_at')
-                ->where('status', 'active')
+                ->where('enrollment_status', 'active')
                 ->count();
 
             $classStats[] = [

@@ -63,6 +63,7 @@ interface ExamClassCardProps {
   examSubjects: ExamSubject[];
   organizationId?: string | null;
   selectedExamId?: string;
+  exam?: Exam | null;
   hasAssign: boolean;
   enrollSubject: ReturnType<typeof useEnrollSubjectToExam>;
   removeSubject: ReturnType<typeof useRemoveExamSubject>;
@@ -78,6 +79,7 @@ function ExamClassCard({
   examSubjects,
   organizationId,
   selectedExamId,
+  exam,
   hasAssign,
   enrollSubject,
   removeSubject,
@@ -405,6 +407,8 @@ function ExamClassCard({
                             onChange={(e) => onDraftChange(subject.id, { ...draft, scheduledAt: e.target.value })}
                             disabled={!hasAssign}
                             className="h-8 text-sm"
+                            min={exam?.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : undefined}
+                            max={exam?.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : undefined}
                           />
                         </div>
                         <div className="flex items-end">
@@ -1045,6 +1049,7 @@ export function ExamEnrollment() {
                           examSubjects={examSubjects || []}
                           organizationId={organizationId}
                           selectedExamId={selectedExam?.id}
+                          exam={selectedExam}
                           hasAssign={hasAssign}
                           enrollSubject={enrollSubject}
                           removeSubject={removeSubject}

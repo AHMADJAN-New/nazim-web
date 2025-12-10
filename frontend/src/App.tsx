@@ -323,8 +323,14 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
-                    {/* Attendance route - redirects to exams list where users select an exam */}
-                    <Route path="/exams/attendance" element={<Navigate to="/exams" replace />} />
+                    {/* Attendance route - can be accessed directly with exam selection */}
+                    <Route path="/exams/attendance" element={
+                      <PermissionRoute permission="exams.manage_attendance">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamAttendancePage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     {/* Legacy routes for backward compatibility */}
                     <Route path="/exams/enrollment" element={
                       <PermissionRoute permission="exams.manage">
@@ -351,6 +357,13 @@ const App = () => (
                       <PermissionRoute permission="exams.view_reports">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamReports />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/analytics" element={
+                      <PermissionRoute permission="exams.view_reports">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamReportsPage />
                         </Suspense>
                       </PermissionRoute>
                     } />

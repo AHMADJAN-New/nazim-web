@@ -45,7 +45,8 @@ import {
   User,
   Package,
   NotebookPen,
-  UserPlus
+  UserPlus,
+  BarChart3
 } from "lucide-react";
 
 import {
@@ -422,10 +423,16 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: NotebookPen,
           }] : []),
           ...(hasExamsReportsPermission ? [{
-            title: "Exam Reports",
-            titleKey: "examReports",
+            title: "Exam Insights",
+            titleKey: "examInsights",
             url: "/exams/reports",
             icon: FileText,
+          }] : []),
+          ...(hasExamsReportsPermission ? [{
+            title: "Exam Analytics",
+            titleKey: "examAnalytics",
+            url: "/exams/analytics",
+            icon: BarChart3,
           }] : []),
           ...((hasExamsAttendancePermission || hasExamsViewAttendancePermission) ? [{
             title: "Exam Attendance",
@@ -700,9 +707,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       if (item.titleKey === 'exams') {
         // Show if user has any exam-related permission
-        return hasExamsPermission || hasExamsManagePermission || hasExamsTimetablePermission || 
-               hasExamsEnrollPermission || hasExamsMarksPermission || hasExamsReportsPermission ||
-               hasExamsAttendancePermission || hasExamsViewAttendancePermission;
+        return hasExamsPermission || hasExamsManagePermission || hasExamsTimetablePermission ||
+          hasExamsEnrollPermission || hasExamsMarksPermission || hasExamsReportsPermission ||
+          hasExamsAttendancePermission || hasExamsViewAttendancePermission;
       }
 
       if (item.titleKey === 'hostel') {

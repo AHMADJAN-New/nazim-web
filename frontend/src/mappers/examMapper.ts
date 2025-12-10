@@ -411,7 +411,18 @@ export const mapExamStudentApiToDomain = (examStudent: ExamApi.ExamStudent): Exa
         deletedAt: examStudent.student_admission.deleted_at
           ? new Date(examStudent.student_admission.deleted_at)
           : null,
-        student: examStudent.student_admission.student,
+        student: examStudent.student_admission.student ? {
+          id: examStudent.student_admission.student.id,
+          fullName: examStudent.student_admission.student.full_name || examStudent.student_admission.student.fullName || '',
+          admissionNumber: examStudent.student_admission.student.admission_no || examStudent.student_admission.student.admissionNumber || '',
+          studentCode: examStudent.student_admission.student.student_code || examStudent.student_admission.student.studentCode || null,
+          cardNumber: examStudent.student_admission.student.card_number || examStudent.student_admission.student.cardNumber || null,
+          fatherName: examStudent.student_admission.student.father_name || examStudent.student_admission.student.fatherName || null,
+          gender: examStudent.student_admission.student.gender || null,
+          admissionYear: examStudent.student_admission.student.admission_year || examStudent.student_admission.student.admissionYear || null,
+          guardianName: examStudent.student_admission.student.guardian_name || examStudent.student_admission.student.guardianName || null,
+          guardianPhone: examStudent.student_admission.student.guardian_phone || examStudent.student_admission.student.guardianPhone || null,
+        } : undefined,
       }
     : undefined,
 });
@@ -450,7 +461,18 @@ export const mapExamResultApiToDomain = (examResult: ExamApi.ExamResult): ExamRe
         deletedAt: examResult.student_admission.deleted_at
           ? new Date(examResult.student_admission.deleted_at)
           : null,
-        student: examResult.student_admission.student,
+        student: examResult.student_admission.student ? {
+          id: examResult.student_admission.student.id,
+          fullName: examResult.student_admission.student.full_name || examResult.student_admission.student.fullName || '',
+          admissionNumber: examResult.student_admission.student.admission_no || examResult.student_admission.student.admissionNumber || '',
+          studentCode: examResult.student_admission.student.student_code || examResult.student_admission.student.studentCode || null,
+          cardNumber: examResult.student_admission.student.card_number || examResult.student_admission.student.cardNumber || null,
+          fatherName: examResult.student_admission.student.father_name || examResult.student_admission.student.fatherName || null,
+          gender: examResult.student_admission.student.gender || null,
+          admissionYear: examResult.student_admission.student.admission_year || examResult.student_admission.student.admissionYear || null,
+          guardianName: examResult.student_admission.student.guardian_name || examResult.student_admission.student.guardianName || null,
+          guardianPhone: examResult.student_admission.student.guardian_phone || examResult.student_admission.student.guardianPhone || null,
+        } : undefined,
       }
     : undefined,
 });
@@ -481,6 +503,8 @@ export const mapExamAttendanceApiToDomain = (attendance: ExamApi.ExamAttendance)
         id: attendance.student.id,
         fullName: attendance.student.full_name,
         admissionNo: attendance.student.admission_no,
+        cardNumber: attendance.student.card_number || null,
+        studentCode: attendance.student.student_code || null,
       }
     : undefined,
 });
