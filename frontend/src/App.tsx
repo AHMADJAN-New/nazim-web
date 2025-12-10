@@ -45,6 +45,9 @@ import {
   ExamTimetablePage,
   ExamReportsPage,
   ExamAttendancePage,
+  QuestionBank,
+  ExamPaperTemplates,
+  ExamPaperPreview,
   ScheduleSlotsManagement,
   TeacherSubjectAssignments,
   StaffTypesManagement,
@@ -328,6 +331,30 @@ const App = () => (
                       <PermissionRoute permission="exams.manage_attendance">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamAttendancePage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Question Bank */}
+                    <Route path="/exams/question-bank" element={
+                      <PermissionRoute permission="exams.questions.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <QuestionBank />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Exam Paper Templates */}
+                    <Route path="/exams/paper-templates" element={
+                      <PermissionRoute permission="exams.papers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamPaperTemplates />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Exam Paper Preview */}
+                    <Route path="/exams/paper-preview/:templateId" element={
+                      <PermissionRoute permission="exams.papers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamPaperPreview />
                         </Suspense>
                       </PermissionRoute>
                     } />

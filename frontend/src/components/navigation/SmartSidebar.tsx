@@ -203,6 +203,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasExamsReportsPermission = useHasPermission('exams.view_reports');
   const hasExamsAttendancePermission = useHasPermission('exams.manage_attendance');
   const hasExamsViewAttendancePermission = useHasPermission('exams.view_attendance_reports');
+  const hasExamsQuestionsPermission = useHasPermission('exams.questions.read');
+  const hasExamsPapersPermission = useHasPermission('exams.papers.read');
   // Legacy compatibility
   const hasExamsAssignPermission = hasExamsManagePermission || hasExamsEnrollPermission;
   const hasExamsUpdatePermission = hasExamsMarksPermission;
@@ -439,6 +441,18 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "examAttendance",
             url: "/exams/attendance",
             icon: UserCheck,
+          }] : []),
+          ...(hasExamsQuestionsPermission ? [{
+            title: "Question Bank",
+            titleKey: "questionBank",
+            url: "/exams/question-bank",
+            icon: LucideIcons.HelpCircle,
+          }] : []),
+          ...(hasExamsPapersPermission ? [{
+            title: "Paper Templates",
+            titleKey: "examPaperTemplates",
+            url: "/exams/paper-templates",
+            icon: LucideIcons.FileText,
           }] : []),
         ],
       }] : []),
@@ -709,7 +723,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
         // Show if user has any exam-related permission
         return hasExamsPermission || hasExamsManagePermission || hasExamsTimetablePermission ||
           hasExamsEnrollPermission || hasExamsMarksPermission || hasExamsReportsPermission ||
-          hasExamsAttendancePermission || hasExamsViewAttendancePermission;
+          hasExamsAttendancePermission || hasExamsViewAttendancePermission ||
+          hasExamsQuestionsPermission || hasExamsPapersPermission;
       }
 
       if (item.titleKey === 'hostel') {

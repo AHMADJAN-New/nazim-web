@@ -81,6 +81,9 @@ class PermissionSeeder extends Seeder
             'course_attendance' => ['read', 'create', 'update', 'delete'],
             'certificate_templates' => ['read', 'create', 'update', 'delete'],
             'course_documents' => ['read', 'create', 'update', 'delete'],
+            // Question Bank & Exam Papers
+            'exams.questions' => ['read', 'create', 'update', 'delete'],
+            'exams.papers' => ['read', 'create', 'update', 'delete'],
         ];
     }
 
@@ -112,6 +115,8 @@ class PermissionSeeder extends Seeder
                 'student_admissions.read', 'student_admissions.create',
                 'assets.read', 'assets.create', 'assets.update', 'assets.delete', // Full asset management access
                 'asset_categories.read', 'asset_categories.create', 'asset_categories.update', 'asset_categories.delete', // Asset category management
+                // Question Bank & Papers - read only for staff
+                'exams.questions.read', 'exams.papers.read',
             ],
             'teacher' => [
                 // Teachers can read and manage academic content
@@ -142,6 +147,9 @@ class PermissionSeeder extends Seeder
                 'school_branding.read', // Needed to view schools
                 'assets.read', 'assets.create', 'assets.update', 'assets.delete', // Full asset management access
                 'asset_categories.read', 'asset_categories.create', 'asset_categories.update', 'asset_categories.delete', // Asset category management
+                // Question Bank & Papers - full access for teachers
+                'exams.questions.read', 'exams.questions.create', 'exams.questions.update', 'exams.questions.delete',
+                'exams.papers.read', 'exams.papers.create', 'exams.papers.update', 'exams.papers.delete',
             ],
             'exam_controller' => [
                 // Dedicated exam controller role - full exam management except deletion
@@ -159,6 +167,9 @@ class PermissionSeeder extends Seeder
                 'academic_years.read',
                 'profiles.read', 'profiles.update',
                 'rooms.read', // For exam room assignment
+                // Question Bank & Papers - full access for exam controller
+                'exams.questions.read', 'exams.questions.create', 'exams.questions.update', 'exams.questions.delete',
+                'exams.papers.read', 'exams.papers.create', 'exams.papers.update', 'exams.papers.delete',
             ],
             'hostel_manager' => [
                 'hostel.read',

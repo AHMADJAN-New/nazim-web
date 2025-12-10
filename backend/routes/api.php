@@ -60,6 +60,9 @@ use App\Http\Controllers\ExamResultController;
 use App\Http\Controllers\ExamReportController;
 use App\Http\Controllers\ExamTimeController;
 use App\Http\Controllers\ExamAttendanceController;
+use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\ExamPaperTemplateController;
+use App\Http\Controllers\ExamPaperPreviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -265,6 +268,35 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/exams/{exam}/attendance/scan', [ExamAttendanceController::class, 'scan']);
     Route::put('/exam-attendance/{id}', [ExamAttendanceController::class, 'update']);
     Route::delete('/exam-attendance/{id}', [ExamAttendanceController::class, 'destroy']);
+
+    // Question Bank
+    Route::get('/exam/questions', [QuestionController::class, 'index']);
+    Route::post('/exam/questions', [QuestionController::class, 'store']);
+    Route::get('/exam/questions/{id}', [QuestionController::class, 'show']);
+    Route::put('/exam/questions/{id}', [QuestionController::class, 'update']);
+    Route::delete('/exam/questions/{id}', [QuestionController::class, 'destroy']);
+    Route::post('/exam/questions/{id}/duplicate', [QuestionController::class, 'duplicate']);
+    Route::post('/exam/questions/bulk-update', [QuestionController::class, 'bulkUpdate']);
+
+    // Exam Paper Templates
+    Route::get('/exam/paper-templates', [ExamPaperTemplateController::class, 'index']);
+    Route::post('/exam/paper-templates', [ExamPaperTemplateController::class, 'store']);
+    Route::get('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'show']);
+    Route::put('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'update']);
+    Route::delete('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'destroy']);
+    Route::post('/exam/paper-templates/{id}/duplicate', [ExamPaperTemplateController::class, 'duplicate']);
+    Route::post('/exam/paper-templates/{id}/items', [ExamPaperTemplateController::class, 'addItem']);
+    Route::put('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'updateItem']);
+    Route::delete('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'removeItem']);
+    Route::post('/exam/paper-templates/{id}/reorder', [ExamPaperTemplateController::class, 'reorderItems']);
+    Route::get('/exams/{examId}/paper-stats', [ExamPaperTemplateController::class, 'examPaperStats']);
+
+    // Exam Paper Preview
+    Route::get('/exam/paper-preview/{templateId}/student', [ExamPaperPreviewController::class, 'studentView']);
+    Route::get('/exam/paper-preview/{templateId}/teacher', [ExamPaperPreviewController::class, 'teacherView']);
+    Route::get('/exam-subjects/{examSubjectId}/paper-preview', [ExamPaperPreviewController::class, 'examSubjectPreview']);
+    Route::get('/exam-subjects/{examSubjectId}/available-templates', [ExamPaperPreviewController::class, 'availableTemplates']);
+    Route::post('/exam-subjects/{examSubjectId}/set-default-template', [ExamPaperPreviewController::class, 'setDefaultTemplate']);
 
     // Academic Years
     Route::apiResource('academic-years', AcademicYearController::class);
