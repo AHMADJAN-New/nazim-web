@@ -226,7 +226,7 @@ class ExamStudentController extends Controller
         $studentAdmissions = StudentAdmission::where('class_academic_year_id', $examClass->class_academic_year_id)
             ->where('organization_id', $profile->organization_id)
             ->whereNull('deleted_at')
-            ->where('status', 'active') // Only enroll active students
+            ->where('enrollment_status', 'active') // Only enroll active students
             ->get();
 
         if ($studentAdmissions->isEmpty()) {
@@ -360,7 +360,7 @@ class ExamStudentController extends Controller
                 $studentAdmissions = StudentAdmission::where('class_academic_year_id', $examClass->class_academic_year_id)
                     ->where('organization_id', $profile->organization_id)
                     ->whereNull('deleted_at')
-                    ->where('status', 'active')
+                    ->where('enrollment_status', 'active')
                     ->get();
 
                 $enrolled = 0;

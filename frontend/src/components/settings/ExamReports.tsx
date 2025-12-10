@@ -1,29 +1,56 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useProfile } from '@/hooks/useProfiles';
-import { useExams, useExamReport } from '@/hooks/useExams';
+import { useExams, useExamReport, useLatestExamFromCurrentYear } from '@/hooks/useExams';
+import { useLanguage } from '@/hooks/useLanguage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BookOpen, Layers, Award, CalendarClock } from 'lucide-react';
+import { Users, BookOpen, Layers, Award, CalendarClock, ArrowLeft } from 'lucide-react';
 
 export function ExamReports() {
+  const { t, isRTL } = useLanguage();
+  const { examId: examIdFromParams } = useParams<{ examId?: string }>();
+  const navigate = useNavigate();
   const { data: profile } = useProfile();
   const organizationId = profile?.organization_id;
 
+  // State for exam selection (when accessed individually)
+  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
+
+  // Determine which exam ID to use: from params (when accessed from exam page) or selected (when accessed individually)
+  const examId = examIdFromParams || selectedExamId || undefined;
+
+  // Fetch all exams for selector (only when accessed individually)
   const { data: exams, isLoading: examsLoading } = useExams(organizationId);
-  const [selectedExamId, setSelectedExamId] = useState<string>('');
+  const latestExam = useLatestExamFromCurrentYear(organizationId);
 
+  // Set exam from URL params (when accessed from exams page)
   useEffect(() => {
-    if (exams && exams.length > 0 && !selectedExamId) {
-      setSelectedExamId(exams[0].id);
+    if (examIdFromParams) {
+      // Clear selectedExamId when URL has examId (use URL examId instead)
+      setSelectedExamId(undefined);
     }
-  }, [exams, selectedExamId]);
+  }, [examIdFromParams]);
 
-  const { data: report, isLoading: reportLoading } = useExamReport(selectedExamId);
+  // Auto-select latest exam from current academic year (only when accessed individually, no URL examId)
+  useEffect(() => {
+    if (!examIdFromParams && !selectedExamId) {
+      if (latestExam) {
+        setSelectedExamId(latestExam.id);
+      } else if (exams && exams.length > 0) {
+        // Fallback to first exam if no current year exam
+        setSelectedExamId(exams[0].id);
+      }
+    }
+  }, [exams, latestExam, selectedExamId, examIdFromParams]);
+
+  const { data: report, isLoading: reportLoading } = useExamReport(examId || undefined);
 
   const totals = useMemo(() => report?.totals || { classes: 0, subjects: 0, students: 0 }, [report]);
   const scheduledSubjects = useMemo(
@@ -41,26 +68,52 @@ export function ExamReports() {
     return flat.slice(0, 5);
   }, [report?.classes]);
 
+  // Get exam name for display
+  const examName = useMemo(() => {
+    if (!examId) return '';
+    return exams?.find(e => e.id === examId)?.name || '';
+  }, [examId, exams]);
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Exam insights</h1>
-          <p className="text-sm text-muted-foreground">Generate summaries, planned schedules, and grade-ready cards.</p>
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {examIdFromParams && (
+            <Button variant="outline" size="sm" onClick={() => navigate('/exams')}>
+              <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              Back
+            </Button>
+          )}
+          <div>
+            <h1 className="text-2xl font-bold">{t('exams.reports') || 'Exam Insights'}</h1>
+            <p className="text-muted-foreground">{examName || (t('exams.reportsDescription') || 'Generate summaries, planned schedules, and grade-ready cards.')}</p>
+          </div>
         </div>
-        <div className="w-full md:w-64">
-          <Select value={selectedExamId || ''} onValueChange={setSelectedExamId} disabled={examsLoading || !exams?.length}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select exam" />
-            </SelectTrigger>
-            <SelectContent>
-              {(exams || []).map((exam) => (
-                <SelectItem key={exam.id} value={exam.id}>
-                  {exam.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-2">
+          {!examIdFromParams && (
+            <div className="w-64">
+              <Select
+                value={selectedExamId || undefined}
+                onValueChange={(value) => setSelectedExamId(value === 'all' ? undefined : value)}
+                disabled={examsLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('exams.selectExam') || 'Select exam'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(exams || []).map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name} {e.academicYear ? `(${e.academicYear.name})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {examId && (
+            <Badge variant="outline">{exams?.find(e => e.id === examId)?.academicYear?.name || 'N/A'}</Badge>
+          )}
         </div>
       </div>
 

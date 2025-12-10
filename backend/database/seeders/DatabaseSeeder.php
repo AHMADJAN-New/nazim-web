@@ -93,6 +93,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 8: Creating academic years...');
         $this->call(AcademicYearSeeder::class);
 
+        // Step 8a: Create exams for organizations
+        $this->command->info('Step 8a: Creating exams...');
+        $this->call(ExamSeeder::class);
+
         // Step 8b: Create schedule slots for organizations
         $this->command->info('Step 8b: Creating schedule slots...');
         $this->call(ScheduleSlotSeeder::class);
@@ -104,6 +108,10 @@ class DatabaseSeeder extends Seeder
         // Step 10: Create subjects for organizations
         $this->command->info('Step 10: Creating subjects...');
         $this->call(SubjectSeeder::class);
+
+        // Step 10a: Assign classes to academic years and assign subjects
+        $this->command->info('Step 10a: Assigning classes to academic years and subjects...');
+        $this->call(ClassAcademicYearSubjectSeeder::class);
 
         // Step 11: Create staff members for organizations
         $this->command->info('Step 11: Creating staff members...');

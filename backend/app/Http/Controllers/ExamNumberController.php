@@ -905,12 +905,12 @@ class ExamNumberController extends Controller
         }
 
         // Get school branding
-        $schoolBranding = DB::table('school_brandings')
+        $schoolBranding = DB::table('school_branding')
             ->where('organization_id', $profile->organization_id)
             ->whereNull('deleted_at')
             ->first();
 
-        $schoolName = $schoolBranding?->name ?? 'School Name';
+        $schoolName = $schoolBranding?->school_name ?? 'School Name';
 
         $query = ExamStudent::with([
             'examClass.classAcademicYear.class',
@@ -943,12 +943,15 @@ class ExamNumberController extends Controller
             $classAcademicYear = $examStudent->examClass?->classAcademicYear;
             $examClass = $examClasses->get($examStudent->exam_class_id);
             
-            $subjects = $examClass?->examSubjects
-                ->whereNull('deleted_at')
-                ->map(fn($es) => $es->subject?->name ?? 'Unknown')
-                ->filter()
-                ->values()
-                ->toArray() ?? [];
+            $subjects = [];
+            if ($examClass && $examClass->examSubjects) {
+                $subjects = $examClass->examSubjects
+                    ->whereNull('deleted_at')
+                    ->map(fn($es) => $es->subject?->name ?? 'Unknown')
+                    ->filter()
+                    ->values()
+                    ->toArray();
+            }
 
             $slips[] = [
                 'exam_roll_number' => $examStudent->exam_roll_number,
@@ -1015,13 +1018,40 @@ class ExamNumberController extends Controller
         $examStudents = $query->get()->sortBy('exam_secret_number')->values();
 
         // Get subject name if filtering by subject
+        // Note: subject_id could be either a subject UUID or exam_subject_id
         $subjectName = null;
         if ($request->filled('subject_id')) {
-            $subject = DB::table('subjects')
-                ->where('id', $request->subject_id)
-                ->whereNull('deleted_at')
-                ->first();
-            $subjectName = $subject?->name;
+            $subjectId = $request->subject_id;
+            
+            // Validate that subject_id is a valid UUID format
+            if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $subjectId)) {
+                // Invalid UUID format - skip subject filtering
+                $subjectName = null;
+            } else {
+                // First try to find it as exam_subject_id (UUID)
+                $examSubject = DB::table('exam_subjects')
+                    ->where('id', $subjectId)
+                    ->where('exam_id', $examId)
+                    ->where('organization_id', $profile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+                
+                if ($examSubject) {
+                    // Get the actual subject name from the related subject
+                    $subject = DB::table('subjects')
+                        ->where('id', $examSubject->subject_id)
+                        ->whereNull('deleted_at')
+                        ->first();
+                    $subjectName = $subject?->name;
+                } else {
+                    // Try as direct subject UUID
+                    $subject = DB::table('subjects')
+                        ->where('id', $subjectId)
+                        ->whereNull('deleted_at')
+                        ->first();
+                    $subjectName = $subject?->name;
+                }
+            }
         }
 
         $labels = [];

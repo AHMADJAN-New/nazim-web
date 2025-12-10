@@ -11,6 +11,7 @@ import {
   useBulkSaveExamResults,
   useUpdateExamResult,
   useMarksProgress,
+  useLatestExamFromCurrentYear,
 } from '@/hooks/useExams';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -162,6 +163,7 @@ export function ExamMarks() {
   const organizationId = profile?.organization_id;
 
   const { data: exams, isLoading: examsLoading } = useExams(organizationId);
+  const latestExam = useLatestExamFromCurrentYear(organizationId);
   const { data: urlExam } = useExam(urlExamId);
   const [selectedExamId, setSelectedExamId] = useState<string>(urlExamId || '');
   const [selectedClassId, setSelectedClassId] = useState<string>('');
@@ -184,18 +186,24 @@ export function ExamMarks() {
   // Fetch marks progress for the selected exam
   const { data: marksProgress } = useMarksProgress(selectedExamId);
 
-  // Set exam from URL params
+  // Set exam from URL params (when accessed from exams page)
   useEffect(() => {
-    if (urlExamId && !selectedExamId) {
+    if (urlExamId) {
       setSelectedExamId(urlExamId);
     }
-  }, [urlExamId, selectedExamId]);
+  }, [urlExamId]);
 
+  // Auto-select latest exam from current academic year (only when accessed individually, no URL examId)
   useEffect(() => {
-    if (exams && exams.length > 0 && !selectedExamId && !urlExamId) {
-      setSelectedExamId(exams[0].id);
+    if (!urlExamId && !selectedExamId) {
+      if (latestExam) {
+        setSelectedExamId(latestExam.id);
+      } else if (exams && exams.length > 0) {
+        // Fallback to first exam if no current year exam
+        setSelectedExamId(exams[0].id);
+      }
     }
-  }, [exams, selectedExamId, urlExamId]);
+  }, [exams, latestExam, selectedExamId, urlExamId]);
 
   useEffect(() => {
     if (examClasses && examClasses.length > 0 && !selectedClassId) {
@@ -326,7 +334,7 @@ export function ExamMarks() {
                 <SelectContent>
                   {(exams || []).map((exam) => (
                     <SelectItem key={exam.id} value={exam.id}>
-                      {exam.name}
+                      {exam.name} {exam.academicYear?.name ? `(${exam.academicYear.name})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>

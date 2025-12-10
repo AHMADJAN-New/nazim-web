@@ -327,12 +327,21 @@ export const useRollSlipsHtml = (examId?: string, examClassId?: string) => {
       if (examClassId) {
         params.exam_class_id = examClassId;
       }
-      const response = await examsApi.rollSlipsHtml(examId, params);
-      return mapRollSlipsHtmlResponseApiToDomain(response as ExamApi.RollSlipsHtmlResponse);
+      try {
+        const response = await examsApi.rollSlipsHtml(examId, params);
+        return mapRollSlipsHtmlResponseApiToDomain(response as ExamApi.RollSlipsHtmlResponse);
+      } catch (error: unknown) {
+        if (import.meta.env.DEV) {
+          console.error('[useRollSlipsHtml] Error fetching roll slips:', error);
+        }
+        // Re-throw error so React Query can track it
+        throw error;
+      }
     },
     enabled: !!user && !!profile && !!examId,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    retry: 1, // Only retry once on failure
   });
 };
 
@@ -354,11 +363,20 @@ export const useSecretLabelsHtml = (
       if (subjectId) {
         params.subject_id = subjectId;
       }
-      const response = await examsApi.secretLabelsHtml(examId, params);
-      return mapSecretLabelsHtmlResponseApiToDomain(response as ExamApi.SecretLabelsHtmlResponse);
+      try {
+        const response = await examsApi.secretLabelsHtml(examId, params);
+        return mapSecretLabelsHtmlResponseApiToDomain(response as ExamApi.SecretLabelsHtmlResponse);
+      } catch (error: unknown) {
+        if (import.meta.env.DEV) {
+          console.error('[useSecretLabelsHtml] Error fetching secret labels:', error);
+        }
+        // Re-throw error so React Query can track it
+        throw error;
+      }
     },
     enabled: !!user && !!profile && !!examId,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    retry: 1, // Only retry once on failure
   });
 };

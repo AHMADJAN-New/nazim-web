@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  useExam, useExams, useExamClasses, useExamSummaryReport,
-  useExamClassReport, useExamStudentReport, useEnrollmentStats, useMarksProgress
+  useExam,
+  useExams,
+  useExamClasses,
+  useExamSummaryReport,
+  useExamClassReport,
+  useExamStudentReport,
+  useEnrollmentStats,
+  useMarksProgress,
+  useLatestExamFromCurrentYear,
 } from '@/hooks/useExams';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { useProfile } from '@/hooks/useProfiles';
@@ -24,7 +31,7 @@ import {
 import { useLanguage } from '@/hooks/useLanguage';
 
 export function ExamReportsPage() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { examId: examIdFromParams } = useParams<{ examId?: string }>();
   const navigate = useNavigate();
   const { data: profile } = useProfile();
@@ -38,13 +45,28 @@ export function ExamReportsPage() {
 
   // Fetch all exams for selector (only when accessed individually)
   const { data: allExams, isLoading: examsLoading } = useExams(organizationId);
+  const latestExam = useLatestExamFromCurrentYear(organizationId);
 
-  // Auto-select first exam if accessed individually and no exam selected
+
+  // Set exam from URL params (when accessed from exams page)
   useEffect(() => {
-    if (!examIdFromParams && allExams && allExams.length > 0 && !selectedExamId) {
-      setSelectedExamId(allExams[0].id);
+    if (examIdFromParams) {
+      // Clear selectedExamId when URL has examId (use URL examId instead)
+      setSelectedExamId(undefined);
     }
-  }, [allExams, selectedExamId, examIdFromParams]);
+  }, [examIdFromParams]);
+
+  // Auto-select latest exam from current academic year (only when accessed individually, no URL examId)
+  useEffect(() => {
+    if (!examIdFromParams && !selectedExamId) {
+      if (latestExam) {
+        setSelectedExamId(latestExam.id);
+      } else if (allExams && allExams.length > 0) {
+        // Fallback to first exam if no current year exam
+        setSelectedExamId(allExams[0].id);
+      }
+    }
+  }, [allExams, latestExam, selectedExamId, examIdFromParams]);
 
   // Data hooks
   const { data: exam, isLoading: examLoading } = useExam(examId || undefined);
@@ -61,105 +83,81 @@ export function ExamReportsPage() {
 
   const isLoading = (examIdFromParams ? examLoading : examsLoading) || summaryLoading;
 
+  // Loading state
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-center h-64">
         <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
 
-  // Show exam selector if accessed individually and no exam selected yet
-  if (!examIdFromParams && (!allExams || allExams.length === 0)) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">{t('exams.noExamsAvailable') || 'No exams available'}</p>
-          <Button variant="link" onClick={() => navigate('/exams')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {t('exams.backToList') || 'Back to Exams'}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!examId) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">{t('exams.selectExamToViewReports') || 'Please select an exam to view reports'}</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Not found state
   if (!exam) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">{t('exams.notFound') || 'Exam not found'}</p>
-          <Button variant="link" onClick={() => navigate('/exams')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {t('exams.backToList') || 'Back to Exams'}
-          </Button>
-        </div>
+      <div className="flex flex-col items-center justify-center h-64">
+        <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-lg font-semibold">{t('exams.notFound') || 'Exam not found'}</h2>
+        <Button variant="outline" onClick={() => navigate('/exams')} className="mt-4">
+          <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+          {t('exams.backToList') || 'Back to Exams'}
+        </Button>
       </div>
     );
   }
 
   if (!hasViewReports) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">{t('common.noPermission') || 'You do not have permission to view reports'}</p>
-          <Button variant="link" onClick={() => navigate('/exams')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {t('exams.backToList') || 'Back to Exams'}
-          </Button>
-        </div>
+      <div className="flex flex-col items-center justify-center h-64">
+        <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-lg font-semibold">{t('common.noPermission') || 'You do not have permission to view reports'}</h2>
+        <Button variant="outline" onClick={() => navigate('/exams')} className="mt-4">
+          <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+          {t('exams.backToList') || 'Back to Exams'}
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/exams')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-semibold">{exam.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t('exams.reportsDescription') || 'View exam reports and analytics'}
-          </p>
-        </div>
-        {/* Exam selector - only show when accessed individually (not from exam page) */}
-        {!examIdFromParams && allExams && allExams.length > 0 && (
-          <div className="w-64">
-            <Select
-              value={selectedExamId || undefined}
-              onValueChange={(value) => setSelectedExamId(value === 'all' ? undefined : value)}
-              disabled={examsLoading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('exams.selectExam') || 'Select exam'} />
-              </SelectTrigger>
-              <SelectContent>
-                {allExams.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.name} {e.academicYear ? `(${e.academicYear.name})` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {examIdFromParams && (
+            <Button variant="outline" size="sm" onClick={() => navigate('/exams')}>
+              <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              Back
+            </Button>
+          )}
+          <div>
+            <h1 className="text-2xl font-bold">{t('exams.reports') || 'Exam Reports'}</h1>
+            <p className="text-muted-foreground">{exam.name}</p>
           </div>
-        )}
-        {examIdFromParams && (
+        </div>
+        <div className="flex items-center gap-2">
+          {!examIdFromParams && (
+            <div className="w-64">
+              <Select
+                value={selectedExamId || undefined}
+                onValueChange={(value) => setSelectedExamId(value === 'all' ? undefined : value)}
+                disabled={examsLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('exams.selectExam') || 'Select exam'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(allExams || []).map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name} {e.academicYear ? `(${e.academicYear.name})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <Badge variant="outline">{exam.academicYear?.name || 'N/A'}</Badge>
-        )}
+        </div>
       </div>
 
       {/* Summary Cards */}

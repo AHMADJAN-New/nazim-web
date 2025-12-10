@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useExam, useExamClasses, useExams } from '@/hooks/useExams';
+import { useExam, useExamClasses, useExams, useLatestExamFromCurrentYear } from '@/hooks/useExams';
 import { useProfile } from '@/hooks/useProfiles';
 import {
   useRollNumberReport,
@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   ArrowLeft, Printer, Download, FileText, Hash, KeyRound,
-  Search, List, Tag
+  Search, List, Tag, AlertCircle
 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import type { RollNumberReportStudent } from '@/types/domain/exam';
@@ -47,13 +47,27 @@ export function ExamNumberReportsPage() {
 
   // Fetch all exams for selector (only when accessed individually)
   const { data: allExams, isLoading: examsLoading } = useExams(organizationId);
+  const latestExam = useLatestExamFromCurrentYear(organizationId);
 
-  // Auto-select first exam if accessed individually and no exam selected
+  // Set exam from URL params (when accessed from exams page)
   useEffect(() => {
-    if (!examIdFromParams && allExams && allExams.length > 0 && !selectedExamId) {
-      setSelectedExamId(allExams[0].id);
+    if (examIdFromParams) {
+      // Clear selectedExamId when URL has examId (use URL examId instead)
+      setSelectedExamId(undefined);
     }
-  }, [allExams, selectedExamId, examIdFromParams]);
+  }, [examIdFromParams]);
+
+  // Auto-select latest exam from current academic year (only when accessed individually, no URL examId)
+  useEffect(() => {
+    if (!examIdFromParams && !selectedExamId) {
+      if (latestExam) {
+        setSelectedExamId(latestExam.id);
+      } else if (allExams && allExams.length > 0) {
+        // Fallback to first exam if no current year exam
+        setSelectedExamId(allExams[0].id);
+      }
+    }
+  }, [allExams, latestExam, selectedExamId, examIdFromParams]);
 
   // State
   const [selectedClassId, setSelectedClassId] = useState<string | undefined>(undefined);
@@ -67,12 +81,12 @@ export function ExamNumberReportsPage() {
   const { data: exam, isLoading: examLoading } = useExam(examId);
   const { data: examClasses } = useExamClasses(examId);
   const { data: reportData, isLoading: reportLoading } = useRollNumberReport(examId, selectedClassId);
-  const { data: rollSlipsHtml, isLoading: rollSlipsLoading } = useRollSlipsHtml(
+  const { data: rollSlipsHtml, isLoading: rollSlipsLoading, error: rollSlipsError } = useRollSlipsHtml(
     examId,
     selectedClassId,
     printType === 'roll-slips' && showPrintPreview
   );
-  const { data: secretLabelsHtml, isLoading: secretLabelsLoading } = useSecretLabelsHtml(
+  const { data: secretLabelsHtml, isLoading: secretLabelsLoading, error: secretLabelsError } = useSecretLabelsHtml(
     examId,
     selectedClassId,
     printType === 'secret-labels' && showPrintPreview
@@ -81,6 +95,64 @@ export function ExamNumberReportsPage() {
   // Permissions
   const hasReadPermission = useHasPermission('exams.roll_numbers.read');
   const hasPrintPermission = useHasPermission('exams.numbers.print');
+
+  // Calculate summary from students data
+  const summary = useMemo(() => {
+    if (!reportData?.students || !Array.isArray(reportData.students)) {
+      return {
+        total: 0,
+        withRollNumber: 0,
+        missingRollNumber: 0,
+        withSecretNumber: 0,
+        missingSecretNumber: 0,
+      };
+    }
+
+    const students = reportData.students;
+    return {
+      total: students.length,
+      withRollNumber: students.filter(s => s.examRollNumber).length,
+      missingRollNumber: students.filter(s => !s.examRollNumber).length,
+      // Note: examSecretNumber may not be available in roll number report
+      withSecretNumber: students.filter(s => (s as any).examSecretNumber).length,
+      missingSecretNumber: students.filter(s => !(s as any).examSecretNumber).length,
+    };
+  }, [reportData?.students]);
+
+  // Calculate class summaries
+  const classSummaries = useMemo(() => {
+    if (!reportData?.students || !Array.isArray(reportData.students)) return [];
+
+    const classMap = new Map<string, {
+      className: string;
+      section: string | null;
+      total: number;
+      withRollNumber: number;
+      withSecretNumber: number;
+    }>();
+
+    reportData.students.forEach(student => {
+      // Use className + section as key to separate sections
+      const key = `${student.className || 'Unknown'}_${student.section || 'no-section'}`;
+      if (!classMap.has(key)) {
+        classMap.set(key, {
+          className: student.className || 'Unknown',
+          section: student.section || null,
+          total: 0,
+          withRollNumber: 0,
+          withSecretNumber: 0,
+        });
+      }
+      const classSummary = classMap.get(key)!;
+      classSummary.total++;
+      if (student.examRollNumber) classSummary.withRollNumber++;
+      // Note: examSecretNumber may not be available in roll number report
+      // This will be 0 if not available, which is fine
+      if ((student as any).examSecretNumber) classSummary.withSecretNumber++;
+    });
+
+    return Array.from(classMap.values());
+  }, [reportData?.students]);
 
   // Filtered students based on search
   const filteredStudents = useMemo(() => {
@@ -219,7 +291,7 @@ export function ExamNumberReportsPage() {
                 <SelectContent>
                   {allExams?.map((e) => (
                     <SelectItem key={e.id} value={e.id}>
-                      {e.name} ({e.status})
+                      {e.name} {e.academicYear?.name ? `(${e.academicYear.name})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -301,7 +373,7 @@ export function ExamNumberReportsPage() {
             </div>
             {reportData && (
               <div className="text-sm text-muted-foreground">
-                {reportData.summary.total} {t('exams.numberReports.students') || 'students'}
+                {summary.total} {t('exams.numberReports.students') || 'students'}
               </div>
             )}
           </div>
@@ -338,7 +410,7 @@ export function ExamNumberReportsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredStudents.length === 0 ? (
-                    <TableRow>
+                    <TableRow key="no-students">
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         {t('exams.numberReports.noStudents') || 'No students found'}
                       </TableCell>
@@ -394,22 +466,22 @@ export function ExamNumberReportsPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">{t('exams.numberReports.totalStudents') || 'Total Students'}</span>
-                      <span className="font-bold text-xl">{reportData.summary.total}</span>
+                      <span className="font-bold text-xl">{summary.total}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">{t('exams.numberReports.withRollNumber') || 'With Roll Number'}</span>
-                      <span className="font-bold text-xl text-green-600">{reportData.summary.withRollNumber}</span>
+                      <span className="font-bold text-xl text-green-600">{summary.withRollNumber}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">{t('exams.numberReports.withoutRollNumber') || 'Without Roll Number'}</span>
-                      <span className="font-bold text-xl text-amber-600">{reportData.summary.missingRollNumber}</span>
+                      <span className="font-bold text-xl text-amber-600">{summary.missingRollNumber}</span>
                     </div>
                     <div className="pt-2 border-t">
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">{t('exams.numberReports.progress') || 'Progress'}</span>
                         <span className="font-bold text-xl">
-                          {reportData.summary.total > 0
-                            ? Math.round((reportData.summary.withRollNumber / reportData.summary.total) * 100)
+                          {summary.total > 0
+                            ? Math.round((summary.withRollNumber / summary.total) * 100)
                             : 0}%
                         </span>
                       </div>
@@ -432,22 +504,22 @@ export function ExamNumberReportsPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">{t('exams.numberReports.totalStudents') || 'Total Students'}</span>
-                      <span className="font-bold text-xl">{reportData.summary.total}</span>
+                      <span className="font-bold text-xl">{summary.total}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">{t('exams.numberReports.withSecretNumber') || 'With Secret Number'}</span>
-                      <span className="font-bold text-xl text-green-600">{reportData.summary.withSecretNumber}</span>
+                      <span className="font-bold text-xl text-green-600">{summary.withSecretNumber}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">{t('exams.numberReports.withoutSecretNumber') || 'Without Secret Number'}</span>
-                      <span className="font-bold text-xl text-amber-600">{reportData.summary.missingSecretNumber}</span>
+                      <span className="font-bold text-xl text-amber-600">{summary.missingSecretNumber}</span>
                     </div>
                     <div className="pt-2 border-t">
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">{t('exams.numberReports.progress') || 'Progress'}</span>
                         <span className="font-bold text-xl">
-                          {reportData.summary.total > 0
-                            ? Math.round((reportData.summary.withSecretNumber / reportData.summary.total) * 100)
+                          {summary.total > 0
+                            ? Math.round((summary.withSecretNumber / summary.total) * 100)
                             : 0}%
                         </span>
                       </div>
@@ -458,7 +530,7 @@ export function ExamNumberReportsPage() {
             </Card>
 
             {/* Class Breakdown */}
-            {reportData?.classSummaries && reportData.classSummaries.length > 0 && (
+            {classSummaries && classSummaries.length > 0 && (
               <Card className="md:col-span-2">
                 <CardHeader>
                   <CardTitle className="text-lg">{t('exams.numberReports.classBreakdown') || 'Class Breakdown'}</CardTitle>
@@ -475,8 +547,8 @@ export function ExamNumberReportsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {reportData.classSummaries.map((cs) => (
-                        <TableRow key={cs.examClassId}>
+                      {classSummaries.map((cs, index) => (
+                        <TableRow key={index}>
                           <TableCell>
                             {cs.className}
                             {cs.section && <span className="text-muted-foreground"> - {cs.section}</span>}
@@ -533,13 +605,30 @@ export function ExamNumberReportsPage() {
               <div className="flex items-center justify-center h-full">
                 <Skeleton className="h-8 w-32" />
               </div>
+            ) : (printType === 'roll-slips' && rollSlipsError) || (printType === 'secret-labels' && secretLabelsError) ? (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  {t('exams.numberReports.errorLoadingPreview') || 'Error Loading Preview'}
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  {t('exams.numberReports.errorLoadingPreviewDescription') || 'Failed to load the print preview. Please try again or contact support if the issue persists.'}
+                </p>
+                <Button variant="outline" onClick={() => {
+                  // Retry by closing and reopening
+                  setShowPrintPreview(false);
+                  setTimeout(() => setShowPrintPreview(true), 100);
+                }}>
+                  {t('common.retry') || 'Retry'}
+                </Button>
+              </div>
             ) : (
               <div
                 className="p-4"
                 dangerouslySetInnerHTML={{
                   __html: printType === 'roll-slips'
-                    ? (rollSlipsHtml?.html || '<p>No content available</p>')
-                    : (secretLabelsHtml?.html || '<p>No content available</p>'),
+                    ? (rollSlipsHtml?.html || '<p class="text-center text-muted-foreground p-8">No content available. Please ensure roll numbers are assigned.</p>')
+                    : (secretLabelsHtml?.html || '<p class="text-center text-muted-foreground p-8">No content available. Please ensure secret numbers are assigned.</p>'),
                 }}
               />
             )}

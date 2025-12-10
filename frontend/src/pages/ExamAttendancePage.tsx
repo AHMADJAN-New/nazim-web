@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useExam, useExamTimes, useTimeslotStudents, useMarkExamAttendance, useExamAttendanceSummary, useExams, useScanExamAttendance, useExamAttendanceScanFeed } from '@/hooks/useExams';
+import { useExam, useExamTimes, useTimeslotStudents, useMarkExamAttendance, useExamAttendanceSummary, useExams, useScanExamAttendance, useExamAttendanceScanFeed, useLatestExamFromCurrentYear } from '@/hooks/useExams';
 import { useExamClasses } from '@/hooks/useExams';
 import { useProfile } from '@/hooks/useProfiles';
 import { Button } from '@/components/ui/button';
@@ -71,13 +71,27 @@ export default function ExamAttendancePage() {
 
   // Fetch all exams for selector (only when accessed individually)
   const { data: allExams, isLoading: examsLoading } = useExams(organizationId);
+  const latestExam = useLatestExamFromCurrentYear(organizationId);
 
-  // Auto-select first exam if accessed individually and no exam selected
+  // Set exam from URL params (when accessed from exams page)
   useEffect(() => {
-    if (!examIdFromParams && allExams && allExams.length > 0 && !selectedExamId) {
-      setSelectedExamId(allExams[0].id);
+    if (examIdFromParams) {
+      // Clear selectedExamId when URL has examId (use URL examId instead)
+      setSelectedExamId(undefined);
     }
-  }, [allExams, selectedExamId, examIdFromParams]);
+  }, [examIdFromParams]);
+
+  // Auto-select latest exam from current academic year (only when accessed individually, no URL examId)
+  useEffect(() => {
+    if (!examIdFromParams && !selectedExamId) {
+      if (latestExam) {
+        setSelectedExamId(latestExam.id);
+      } else if (allExams && allExams.length > 0) {
+        // Fallback to first exam if no current year exam
+        setSelectedExamId(allExams[0].id);
+      }
+    }
+  }, [allExams, latestExam, selectedExamId, examIdFromParams]);
 
   // State
   const [selectedClassId, setSelectedClassId] = useState<string>('');

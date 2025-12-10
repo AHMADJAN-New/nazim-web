@@ -1,8 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from './useLanguage';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
+import { useCurrentAcademicYear } from './useAcademicYears';
 import { 
   examsApi, examClassesApi, examSubjectsApi, examTimesApi,
   examStudentsApi, examResultsApi, examAttendanceApi
@@ -66,6 +68,35 @@ export const useExams = (organizationId?: string) => {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+};
+
+/**
+ * Get the latest exam from the current academic year
+ * Returns the exam with the most recent start date (or created date if no start date)
+ */
+export const useLatestExamFromCurrentYear = (organizationId?: string) => {
+  const { data: exams } = useExams(organizationId);
+  const { data: currentAcademicYear } = useCurrentAcademicYear(organizationId);
+
+  return useMemo(() => {
+    if (!exams || !currentAcademicYear) return null;
+
+    // Filter exams for current academic year
+    const currentYearExams = exams.filter(
+      exam => exam.academicYear?.id === currentAcademicYear.id
+    );
+
+    if (currentYearExams.length === 0) return null;
+
+    // Sort by start date (most recent first), then by created date
+    const sorted = [...currentYearExams].sort((a, b) => {
+      const aDate = a.startDate ? new Date(a.startDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const bDate = b.startDate ? new Date(b.startDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return bDate - aDate; // Most recent first
+    });
+
+    return sorted[0];
+  }, [exams, currentAcademicYear]);
 };
 
 export const useExam = (examId?: string) => {
