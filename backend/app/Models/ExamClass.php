@@ -55,4 +55,14 @@ class ExamClass extends Model
     {
         return $this->hasMany(ExamSubject::class, 'exam_class_id');
     }
+
+    public function examTimes()
+    {
+        return $this->hasMany(ExamTime::class, 'exam_class_id');
+    }
+
+    public function examStudents()
+    {
+        return $this->hasMany(ExamStudent::class, 'exam_class_id');
+    }
 }

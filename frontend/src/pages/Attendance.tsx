@@ -39,6 +39,8 @@ export default function Attendance() {
   const [scanCardNumber, setScanCardNumber] = useState('');
   const [scanNote, setScanNote] = useState('');
   const [lastScanId, setLastScanId] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null); // Instant feedback label
+  const [studentCache, setStudentCache] = useState<Map<string, any>>(new Map()); // Cache: cardNumber -> student
   const scanInputRef = useRef<HTMLInputElement | null>(null);
   const [attendanceState, setAttendanceState] = useState<Record<string, AttendanceRecordInsert>>({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -100,6 +102,25 @@ export default function Attendance() {
       setAttendanceState(mapped);
     }
   }, [session]);
+
+  // Cache students when roster is loaded
+  useEffect(() => {
+    if (roster && roster.length > 0) {
+      const cache = new Map<string, any>();
+      roster.forEach((student) => {
+        if (student.card_number) {
+          cache.set(student.card_number, student);
+        }
+        if (student.student_code) {
+          cache.set(student.student_code, student);
+        }
+        if (student.admission_no) {
+          cache.set(student.admission_no, student);
+        }
+      });
+      setStudentCache(cache);
+    }
+  }, [roster]);
 
   useEffect(() => {
     if (scanInputRef.current) {
@@ -224,12 +245,28 @@ export default function Attendance() {
 
   const handleScanSubmit = async () => {
     if (!scanCardNumber.trim()) {
-      toast.error(t('attendancePage.scanPrompt'));
+      setScanError(t('attendancePage.scanPrompt') || 'Please enter a card number');
+      setTimeout(() => setScanError(null), 2000);
+      return;
+    }
+    
+    const scannedValue = scanCardNumber.trim();
+    setScanError(null);
+    
+    // Check cache first for instant feedback
+    const foundStudent = studentCache.get(scannedValue);
+    if (!foundStudent && roster && roster.length > 0) {
+      // Student not found in cache - show instant feedback
+      setScanError(t('attendancePage.studentNotFound') || 'Student not found');
+      setTimeout(() => setScanError(null), 2000);
+      setScanCardNumber('');
+      if (scanInputRef.current) {
+        scanInputRef.current.focus();
+      }
       return;
     }
     
     // Store the scanned value and clear input immediately for fast scanning
-    const scannedValue = scanCardNumber.trim();
     setScanCardNumber('');
     
     // Focus input immediately for next scan
@@ -243,12 +280,14 @@ export default function Attendance() {
       {
         onSuccess: (result) => {
           setLastScanId((result as any)?.id || null);
+          setTimeout(() => setLastScanId(null), 3000);
           // Clear note after successful scan
           setScanNote('');
         },
         onError: (error: any) => {
-          // Show error but don't block next scan
-          toast.error(error.message || t('common.error'));
+          // Show instant feedback instead of toast
+          setScanError(error.message || t('common.error') || 'Failed to scan');
+          setTimeout(() => setScanError(null), 2000);
         },
       }
     );
@@ -524,30 +563,40 @@ export default function Attendance() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                 <div className="space-y-2">
                   <Label>{t('attendancePage.cardNumberLabel')}</Label>
-                  <Input
-                    ref={scanInputRef}
-                    value={scanCardNumber}
-                    onChange={e => {
-                      const value = e.target.value;
-                      setScanCardNumber(value);
-                      // Auto-submit when barcode scanner adds Enter/newline (fast scanning)
-                      if (value.includes('\n') || value.includes('\r')) {
-                        const cleanValue = value.replace(/[\n\r]/g, '').trim();
-                        if (cleanValue) {
-                          setScanCardNumber(cleanValue);
-                          setTimeout(() => handleScanSubmit(), 0);
+                  <div className="relative">
+                    <Input
+                      ref={scanInputRef}
+                      value={scanCardNumber}
+                      onChange={e => {
+                        const value = e.target.value;
+                        setScanCardNumber(value);
+                        setScanError(null); // Clear error on input
+                        // Auto-submit when barcode scanner adds Enter/newline (fast scanning)
+                        if (value.includes('\n') || value.includes('\r')) {
+                          const cleanValue = value.replace(/[\n\r]/g, '').trim();
+                          if (cleanValue) {
+                            setScanCardNumber(cleanValue);
+                            setTimeout(() => handleScanSubmit(), 0);
+                          }
                         }
-                      }
-                    }}
-                    placeholder={t('attendancePage.scanPrompt') || 'Scan or enter card/admission/code'}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleScanSubmit();
-                      }
-                    }}
-                    autoFocus
-                  />
+                      }}
+                      placeholder={t('attendancePage.scanPrompt') || 'Scan or enter card/admission/code'}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleScanSubmit();
+                        }
+                      }}
+                      autoFocus
+                      className="text-lg"
+                    />
+                    {/* Instant feedback label */}
+                    {scanError && (
+                      <div className="absolute -bottom-6 left-0 right-0 text-sm text-red-600 font-medium animate-in fade-in">
+                        {scanError}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>{t('attendancePage.noteLabel')}</Label>

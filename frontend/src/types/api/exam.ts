@@ -3,6 +3,9 @@ import type { ClassAcademicYear } from './class';
 import type { Subject, ClassSubject } from './subject';
 import type { StudentAdmission } from './student';
 
+// Exam status values
+export type ExamStatus = 'draft' | 'scheduled' | 'in_progress' | 'completed' | 'archived';
+
 export interface Exam {
   id: string;
   organization_id: string | null;
@@ -11,6 +14,7 @@ export interface Exam {
   description: string | null;
   start_date?: string | null;
   end_date?: string | null;
+  status: ExamStatus;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
@@ -48,6 +52,60 @@ export interface ExamSubject {
   exam_class?: ExamClass;
 }
 
+// Exam Time (Timetable) types
+export interface ExamTime {
+  id: string;
+  organization_id: string;
+  exam_id: string;
+  exam_class_id: string;
+  exam_subject_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  room_id?: string | null;
+  invigilator_id?: string | null;
+  notes?: string | null;
+  is_locked: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+  exam?: Exam;
+  exam_class?: ExamClass;
+  exam_subject?: ExamSubject;
+  room?: {
+    id: string;
+    name: string;
+    building_id?: string;
+  };
+  invigilator?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    full_name?: string;
+  };
+}
+
+export interface ExamTimeInsert {
+  exam_class_id: string;
+  exam_subject_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  room_id?: string | null;
+  invigilator_id?: string | null;
+  notes?: string | null;
+}
+
+export interface ExamTimeUpdate {
+  date?: string;
+  start_time?: string;
+  end_time?: string;
+  room_id?: string | null;
+  invigilator_id?: string | null;
+  notes?: string | null;
+  is_locked?: boolean;
+}
+
 export interface ExamReportSubject {
   id: string;
   class_subject_id: string;
@@ -78,18 +136,268 @@ export interface ExamReport {
   };
 }
 
+// Summary report types
+export interface ExamSummaryReport {
+  exam: {
+    id: string;
+    name: string;
+    status: ExamStatus;
+    start_date: string | null;
+    end_date: string | null;
+    academic_year?: AcademicYear;
+  };
+  totals: {
+    classes: number;
+    subjects: number;
+    enrolled_students: number;
+    results_entered: number;
+    marks_entered: number;
+    absent: number;
+  };
+  pass_fail: {
+    pass_count: number;
+    fail_count: number;
+    pass_percentage: number;
+  };
+  marks_statistics: {
+    average: number | null;
+    distribution: Array<{
+      grade_range: string;
+      count: number;
+    }>;
+  };
+}
+
+// Class mark sheet types
+export interface ClassMarkSheetSubject {
+  exam_subject_id: string;
+  subject_name: string;
+  total_marks: number | null;
+  passing_marks: number | null;
+  marks_obtained: number | null;
+  is_absent: boolean;
+  is_pass: boolean | null;
+}
+
+export interface ClassMarkSheetStudent {
+  exam_student_id: string;
+  student: {
+    id: string | null;
+    full_name: string;
+    admission_no: string | null;
+    roll_number: string | null;
+  };
+  subjects: ClassMarkSheetSubject[];
+  totals: {
+    obtained: number;
+    maximum: number;
+    percentage: number;
+  };
+  is_absent_in_any: boolean;
+}
+
+export interface ClassMarkSheetReport {
+  exam: {
+    id: string;
+    name: string;
+    status: ExamStatus;
+  };
+  class: {
+    id: string;
+    name: string;
+    section: string | null;
+  };
+  subjects: Array<{
+    id: string;
+    name: string;
+    total_marks: number | null;
+    passing_marks: number | null;
+  }>;
+  students: ClassMarkSheetStudent[];
+  summary: {
+    total_students: number;
+    subjects_count: number;
+  };
+}
+
+// Student result types
+export interface StudentResultSubject {
+  exam_subject_id: string;
+  subject: {
+    id: string | null;
+    name: string;
+    code: string | null;
+  };
+  marks: {
+    obtained: number | null;
+    total: number | null;
+    passing: number | null;
+    percentage: number | null;
+  };
+  is_absent: boolean;
+  is_pass: boolean | null;
+  remarks: string | null;
+}
+
+export interface StudentResultReport {
+  exam: {
+    id: string;
+    name: string;
+    status: ExamStatus;
+    start_date: string | null;
+    end_date: string | null;
+    academic_year: string | null;
+  };
+  student: {
+    id: string | null;
+    full_name: string;
+    admission_no: string | null;
+    roll_number: string | null;
+    class: string | null;
+    section: string | null;
+  };
+  subjects: StudentResultSubject[];
+  summary: {
+    total_subjects: number;
+    passed_subjects: number;
+    failed_subjects: number;
+    absent_subjects: number;
+    total_marks_obtained: number;
+    total_maximum_marks: number;
+    overall_percentage: number;
+    overall_result: 'Pass' | 'Fail';
+  };
+}
+
 export interface ExamStudent {
   id: string;
   exam_id: string;
   exam_class_id: string;
   student_admission_id: string;
   organization_id: string | null;
+  exam_roll_number: string | null;
+  exam_secret_number: string | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
   exam?: Exam;
   exam_class?: ExamClass;
   student_admission?: StudentAdmission;
+}
+
+// Exam Numbers Types
+export interface StudentWithNumbers {
+  exam_student_id: string;
+  student_id: string | null;
+  student_admission_id: string | null;
+  student_code: string | null;
+  full_name: string;
+  father_name: string | null;
+  class_name: string;
+  section: string | null;
+  exam_class_id: string | null;
+  exam_roll_number: string | null;
+  exam_secret_number: string | null;
+  province: string | null;
+  admission_year: number | null;
+}
+
+export interface StudentsWithNumbersResponse {
+  exam: {
+    id: string;
+    name: string;
+    status: ExamStatus;
+  };
+  students: StudentWithNumbers[];
+  summary: {
+    total: number;
+    with_roll_number: number;
+    with_secret_number: number;
+    missing_roll_number: number;
+    missing_secret_number: number;
+  };
+}
+
+export interface NumberAssignmentPreviewItem {
+  exam_student_id: string;
+  student_id: string | null;
+  student_name: string;
+  class_name: string;
+  current_roll_number?: string | null;
+  new_roll_number?: string;
+  current_secret_number?: string | null;
+  new_secret_number?: string;
+  will_override: boolean;
+  has_collision: boolean;
+}
+
+export interface NumberAssignmentPreviewResponse {
+  total: number;
+  will_override_count: number;
+  items: NumberAssignmentPreviewItem[];
+}
+
+export interface NumberAssignmentConfirmItem {
+  exam_student_id: string;
+  new_roll_number?: string;
+  new_secret_number?: string;
+}
+
+export interface NumberAssignmentConfirmResponse {
+  updated: number;
+  errors: Array<{
+    exam_student_id: string;
+    error: string;
+  }>;
+}
+
+export interface RollNumberReportStudent {
+  exam_student_id?: string;
+  exam_roll_number: string;
+  exam_secret_number?: string | null;
+  student_code: string | null;
+  full_name: string;
+  father_name: string | null;
+  class_name: string;
+  section: string | null;
+  province: string | null;
+  admission_year: number | null;
+}
+
+export interface RollNumberReportResponse {
+  exam: {
+    id: string;
+    name: string;
+    academic_year: string | null;
+  };
+  students: RollNumberReportStudent[];
+  total: number;
+}
+
+export interface RollSlipsHtmlResponse {
+  html: string;
+  total_slips: number;
+}
+
+export interface SecretLabelsHtmlResponse {
+  html: string;
+  total_labels: number;
+}
+
+export interface SecretNumberLookupResponse {
+  exam_student_id: string;
+  student_id: string | null;
+  student_code: string | null;
+  full_name: string;
+  father_name: string | null;
+  class_name: string;
+  section: string | null;
+  exam_roll_number: string | null;
+  exam_secret_number: string;
+  exam: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface ExamResult {
@@ -109,4 +417,257 @@ export interface ExamResult {
   exam_subject?: ExamSubject;
   exam_student?: ExamStudent;
   student_admission?: StudentAdmission;
+}
+
+// Enrollment stats types
+export interface EnrollmentClassStats {
+  exam_class_id: string;
+  class_name: string;
+  section_name: string | null;
+  enrolled_count: number;
+  available_count: number;
+  enrollment_percentage: number;
+}
+
+export interface EnrollmentStats {
+  exam_id: string;
+  total_enrolled: number;
+  total_available: number;
+  overall_percentage: number;
+  class_stats: EnrollmentClassStats[];
+}
+
+// Marks progress types
+export interface SubjectProgress {
+  exam_subject_id: string;
+  subject_name: string;
+  class_name: string;
+  enrolled_count: number;
+  results_count: number;
+  percentage: number;
+  is_complete: boolean;
+}
+
+export interface MarksProgress {
+  exam_id: string;
+  exam_name: string;
+  exam_status: ExamStatus;
+  total_expected: number;
+  total_entered: number;
+  overall_percentage: number;
+  subject_progress: SubjectProgress[];
+}
+
+// Exam Attendance types
+export type ExamAttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+
+export interface ExamAttendance {
+  id: string;
+  organization_id: string;
+  exam_id: string;
+  exam_time_id: string;
+  exam_class_id: string;
+  exam_subject_id: string;
+  student_id: string;
+  status: ExamAttendanceStatus;
+  checked_in_at: string | null;
+  seat_number: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+  exam?: Exam;
+  exam_time?: ExamTime;
+  exam_class?: ExamClass;
+  exam_subject?: ExamSubject;
+  student?: {
+    id: string;
+    full_name: string;
+    father_name?: string | null;
+    admission_no: string;
+    card_number?: string | null;
+    student_code?: string | null;
+  };
+  roll_number?: string | null;
+}
+
+export interface ExamAttendanceInsert {
+  student_id: string;
+  status: ExamAttendanceStatus;
+  checked_in_at?: string | null;
+  seat_number?: string | null;
+  notes?: string | null;
+}
+
+export interface ExamAttendanceUpdate {
+  status?: ExamAttendanceStatus;
+  checked_in_at?: string | null;
+  seat_number?: string | null;
+  notes?: string | null;
+}
+
+export interface ExamAttendanceBulkMark {
+  exam_time_id: string;
+  attendances: ExamAttendanceInsert[];
+}
+
+// Student with attendance status for timeslot view
+export interface TimeslotStudent {
+  exam_student_id: string;
+  student_id: string;
+  student: {
+    id: string;
+    full_name: string;
+    father_name: string | null;
+    admission_no: string;
+  };
+  roll_number: string | null;
+  attendance: {
+    id: string;
+    status: ExamAttendanceStatus;
+    checked_in_at: string | null;
+    seat_number: string | null;
+    notes: string | null;
+  } | null;
+}
+
+export interface TimeslotStudentsResponse {
+  exam_time: {
+    id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    exam_class_id: string;
+    exam_subject_id: string;
+  };
+  students: TimeslotStudent[];
+  counts: {
+    total: number;
+    marked: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+}
+
+// Attendance summary types
+export interface AttendanceClassSummary {
+  exam_class_id: string;
+  class_name: string;
+  section_name: string | null;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+}
+
+export interface AttendanceSubjectSummary {
+  exam_subject_id: string;
+  subject_name: string;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+}
+
+export interface ExamAttendanceSummary {
+  exam: {
+    id: string;
+    name: string;
+    status: ExamStatus;
+  };
+  totals: {
+    enrolled_students: number;
+    attendance_records: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+  by_class: AttendanceClassSummary[];
+  by_subject: AttendanceSubjectSummary[];
+}
+
+// Student attendance report
+export interface StudentAttendanceSession {
+  id: string;
+  exam_time: {
+    id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+  };
+  subject: {
+    id: string | null;
+    name: string;
+  };
+  class: {
+    name: string;
+    section: string | null;
+  };
+  status: ExamAttendanceStatus;
+  checked_in_at: string | null;
+  seat_number: string | null;
+  notes: string | null;
+}
+
+export interface StudentAttendanceReport {
+  exam: {
+    id: string;
+    name: string;
+  };
+  student: {
+    id: string;
+    full_name: string;
+    admission_no: string;
+  };
+  attendances: StudentAttendanceSession[];
+  summary: {
+    total_sessions: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+}
+
+// Timeslot attendance summary
+export interface TimeslotAttendanceSummary {
+  exam_time: {
+    id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    room: {
+      id: string;
+      name: string;
+    } | null;
+    invigilator: {
+      id: string;
+      name: string;
+    } | null;
+  };
+  class: {
+    id: string;
+    name: string;
+    section: string | null;
+  };
+  subject: {
+    id: string;
+    name: string;
+  };
+  counts: {
+    enrolled: number;
+    marked: number;
+    unmarked: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+  percentage: {
+    marked: number;
+    present: number;
+  };
 }

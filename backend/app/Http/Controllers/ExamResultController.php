@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Exam;
 use App\Models\ExamResult;
 use App\Models\ExamSubject;
 use App\Models\ExamStudent;
@@ -77,11 +78,11 @@ class ExamResultController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('exams.update')) {
+            if (!$user->hasPermissionTo('exams.enter_marks')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.update: " . $e->getMessage());
+            Log::warning("Permission check failed for exams.enter_marks: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -94,25 +95,65 @@ class ExamResultController extends Controller
             'remarks' => 'nullable|string|max:500',
         ]);
 
+        // Verify exam belongs to organization and check status
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('id', $validated['exam_id'])
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        // Check if marks entry is allowed based on status
+        if ($exam->isConfigurationLocked()) {
+            return response()->json([
+                'error' => 'Cannot enter marks for a completed or archived exam',
+                'status' => $exam->status
+            ], 422);
+        }
+
+        // For strict enforcement, marks can only be entered when exam is in_progress
+        // But we allow it for draft/scheduled for flexibility during setup
+        // Uncomment below for strict enforcement:
+        // if (!$exam->canEnterMarks()) {
+        //     return response()->json([
+        //         'error' => 'Marks can only be entered when exam is in progress',
+        //         'status' => $exam->status
+        //     ], 422);
+        // }
+
         // Verify exam subject belongs to exam
-        $examSubject = ExamSubject::find($validated['exam_subject_id']);
-        if (!$examSubject || $examSubject->exam_id !== $validated['exam_id']) {
+        $examSubject = ExamSubject::where('id', $validated['exam_subject_id'])
+            ->where('exam_id', $validated['exam_id'])
+            ->where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$examSubject) {
             return response()->json(['error' => 'Exam subject does not belong to this exam'], 400);
         }
 
         // Verify exam student belongs to exam
-        $examStudent = ExamStudent::with('studentAdmission')->find($validated['exam_student_id']);
-        if (!$examStudent || $examStudent->exam_id !== $validated['exam_id']) {
+        $examStudent = ExamStudent::with('studentAdmission')
+            ->where('id', $validated['exam_student_id'])
+            ->where('exam_id', $validated['exam_id'])
+            ->where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$examStudent) {
             return response()->json(['error' => 'Student is not enrolled in this exam'], 400);
         }
 
         // Validate marks against total marks if provided
-        if (isset($validated['marks_obtained']) && $examSubject->total_marks !== null) {
-            if ($validated['marks_obtained'] > $examSubject->total_marks) {
+        if (isset($validated['marks_obtained']) && $validated['marks_obtained'] !== null) {
+            if ($examSubject->total_marks !== null && $validated['marks_obtained'] > $examSubject->total_marks) {
                 return response()->json([
                     'error' => 'Marks obtained cannot exceed total marks',
+                    'marks_obtained' => $validated['marks_obtained'],
                     'total_marks' => $examSubject->total_marks
-                ], 400);
+                ], 422);
             }
         }
 
@@ -182,11 +223,11 @@ class ExamResultController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('exams.update')) {
+            if (!$user->hasPermissionTo('exams.enter_marks')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.update: " . $e->getMessage());
+            Log::warning("Permission check failed for exams.enter_marks: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -200,9 +241,31 @@ class ExamResultController extends Controller
             'results.*.remarks' => 'nullable|string|max:500',
         ]);
 
+        // Verify exam and check status
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('id', $validated['exam_id'])
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        if ($exam->isConfigurationLocked()) {
+            return response()->json([
+                'error' => 'Cannot enter marks for a completed or archived exam',
+                'status' => $exam->status
+            ], 422);
+        }
+
         // Verify exam subject
-        $examSubject = ExamSubject::find($validated['exam_subject_id']);
-        if (!$examSubject || $examSubject->exam_id !== $validated['exam_id']) {
+        $examSubject = ExamSubject::where('id', $validated['exam_subject_id'])
+            ->where('exam_id', $validated['exam_id'])
+            ->where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$examSubject) {
             return response()->json(['error' => 'Exam subject does not belong to this exam'], 400);
         }
 
@@ -214,8 +277,14 @@ class ExamResultController extends Controller
         try {
             foreach ($validated['results'] as $resultData) {
                 // Verify exam student
-                $examStudent = ExamStudent::with('studentAdmission')->find($resultData['exam_student_id']);
-                if (!$examStudent || $examStudent->exam_id !== $validated['exam_id']) {
+                $examStudent = ExamStudent::with('studentAdmission')
+                    ->where('id', $resultData['exam_student_id'])
+                    ->where('exam_id', $validated['exam_id'])
+                    ->where('organization_id', $profile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if (!$examStudent) {
                     $errors[] = [
                         'exam_student_id' => $resultData['exam_student_id'],
                         'error' => 'Student is not enrolled in this exam'
@@ -224,19 +293,22 @@ class ExamResultController extends Controller
                 }
 
                 // Validate marks against total marks
-                if (isset($resultData['marks_obtained']) && $examSubject->total_marks !== null) {
-                    if ($resultData['marks_obtained'] > $examSubject->total_marks) {
+                $marksObtained = $resultData['marks_obtained'] ?? null;
+                $isAbsent = $resultData['is_absent'] ?? false;
+
+                if (!$isAbsent && $marksObtained !== null && $examSubject->total_marks !== null) {
+                    if ($marksObtained > $examSubject->total_marks) {
                         $errors[] = [
                             'exam_student_id' => $resultData['exam_student_id'],
-                            'error' => 'Marks obtained cannot exceed total marks'
+                            'error' => "Marks obtained ({$marksObtained}) cannot exceed total marks ({$examSubject->total_marks})"
                         ];
                         continue;
                     }
                 }
 
                 // If student is marked absent, set marks to null
-                if (isset($resultData['is_absent']) && $resultData['is_absent']) {
-                    $resultData['marks_obtained'] = null;
+                if ($isAbsent) {
+                    $marksObtained = null;
                 }
 
                 // Check if result already exists
@@ -247,8 +319,8 @@ class ExamResultController extends Controller
 
                 if ($existingResult) {
                     $existingResult->update([
-                        'marks_obtained' => $resultData['marks_obtained'] ?? null,
-                        'is_absent' => $resultData['is_absent'] ?? false,
+                        'marks_obtained' => $marksObtained,
+                        'is_absent' => $isAbsent,
                         'remarks' => $resultData['remarks'] ?? null,
                     ]);
                     $updated[] = $existingResult->id;
@@ -258,8 +330,8 @@ class ExamResultController extends Controller
                         'exam_subject_id' => $validated['exam_subject_id'],
                         'exam_student_id' => $resultData['exam_student_id'],
                         'student_admission_id' => $examStudent->student_admission_id,
-                        'marks_obtained' => $resultData['marks_obtained'] ?? null,
-                        'is_absent' => $resultData['is_absent'] ?? false,
+                        'marks_obtained' => $marksObtained,
+                        'is_absent' => $isAbsent,
                         'remarks' => $resultData['remarks'] ?? null,
                         'organization_id' => $profile->organization_id,
                     ]);
@@ -302,11 +374,11 @@ class ExamResultController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('exams.update')) {
+            if (!$user->hasPermissionTo('exams.enter_marks')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.update: " . $e->getMessage());
+            Log::warning("Permission check failed for exams.enter_marks: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -319,6 +391,15 @@ class ExamResultController extends Controller
             return response()->json(['error' => 'Exam result not found'], 404);
         }
 
+        // Check exam status
+        $exam = Exam::find($result->exam_id);
+        if ($exam && $exam->isConfigurationLocked()) {
+            return response()->json([
+                'error' => 'Cannot modify marks for a completed or archived exam',
+                'status' => $exam->status
+            ], 422);
+        }
+
         $validated = $request->validate([
             'marks_obtained' => 'nullable|numeric|min:0',
             'is_absent' => 'boolean',
@@ -327,17 +408,21 @@ class ExamResultController extends Controller
 
         // Validate marks against total marks
         $examSubject = ExamSubject::find($result->exam_subject_id);
-        if (isset($validated['marks_obtained']) && $examSubject && $examSubject->total_marks !== null) {
-            if ($validated['marks_obtained'] > $examSubject->total_marks) {
+        $isAbsent = $validated['is_absent'] ?? $result->is_absent;
+        $marksObtained = $validated['marks_obtained'] ?? null;
+
+        if (!$isAbsent && $marksObtained !== null && $examSubject && $examSubject->total_marks !== null) {
+            if ($marksObtained > $examSubject->total_marks) {
                 return response()->json([
                     'error' => 'Marks obtained cannot exceed total marks',
+                    'marks_obtained' => $marksObtained,
                     'total_marks' => $examSubject->total_marks
-                ], 400);
+                ], 422);
             }
         }
 
         // If student is marked absent, set marks to null
-        if (isset($validated['is_absent']) && $validated['is_absent']) {
+        if ($isAbsent) {
             $validated['marks_obtained'] = null;
         }
 
@@ -369,11 +454,11 @@ class ExamResultController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('exams.delete')) {
+            if (!$user->hasPermissionTo('exams.enter_marks')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for exams.delete: " . $e->getMessage());
+            Log::warning("Permission check failed for exams.enter_marks: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -386,8 +471,102 @@ class ExamResultController extends Controller
             return response()->json(['error' => 'Exam result not found'], 404);
         }
 
+        // Check exam status
+        $exam = Exam::find($result->exam_id);
+        if ($exam && $exam->isConfigurationLocked()) {
+            return response()->json([
+                'error' => 'Cannot delete marks for a completed or archived exam',
+                'status' => $exam->status
+            ], 422);
+        }
+
         $result->delete();
 
-        return response()->json(['message' => 'Exam result deleted']);
+        return response()->noContent();
+    }
+
+    /**
+     * Get marks entry progress for an exam
+     */
+    public function progress(Request $request, string $examId)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('exams.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for exams.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('id', $examId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        // Get all exam subjects with their class info
+        $examSubjects = ExamSubject::with(['subject', 'examClass.classAcademicYear.class'])
+            ->where('exam_id', $examId)
+            ->where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->get();
+
+        $subjectProgress = [];
+        $totalExpected = 0;
+        $totalEntered = 0;
+
+        foreach ($examSubjects as $examSubject) {
+            // Count enrolled students for this exam class
+            $enrolledCount = ExamStudent::where('exam_class_id', $examSubject->exam_class_id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Count results entered for this subject
+            $resultsCount = ExamResult::where('exam_subject_id', $examSubject->id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            $subjectProgress[] = [
+                'exam_subject_id' => $examSubject->id,
+                'subject_name' => $examSubject->subject?->name ?? 'Unknown',
+                'class_name' => $examSubject->examClass?->classAcademicYear?->class?->name ?? 'Unknown',
+                'enrolled_count' => $enrolledCount,
+                'results_count' => $resultsCount,
+                'percentage' => $enrolledCount > 0 
+                    ? round(($resultsCount / $enrolledCount) * 100, 1) 
+                    : 0,
+                'is_complete' => $enrolledCount > 0 && $resultsCount >= $enrolledCount,
+            ];
+
+            $totalExpected += $enrolledCount;
+            $totalEntered += $resultsCount;
+        }
+
+        return response()->json([
+            'exam_id' => $examId,
+            'exam_name' => $exam->name,
+            'exam_status' => $exam->status,
+            'total_expected' => $totalExpected,
+            'total_entered' => $totalEntered,
+            'overall_percentage' => $totalExpected > 0 
+                ? round(($totalEntered / $totalExpected) * 100, 1) 
+                : 0,
+            'subject_progress' => $subjectProgress,
+        ]);
     }
 }

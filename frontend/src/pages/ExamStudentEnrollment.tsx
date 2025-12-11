@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   useExams,
+  useExam,
   useExamClasses,
   useExamStudents,
   useEnrollStudent,
   useBulkEnrollStudents,
   useRemoveStudentFromExam,
+  useEnrollAllStudents,
+  useEnrollmentStats,
+  useLatestExamFromCurrentYear,
 } from '@/hooks/useExams';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -29,6 +34,8 @@ import {
   BookOpen,
   UserPlus,
   X,
+  ArrowLeft,
+  UsersRound,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -57,15 +64,24 @@ import {
 
 export function ExamStudentEnrollment() {
   const { t } = useLanguage();
+  const { examId: urlExamId } = useParams<{ examId: string }>();
+  const navigate = useNavigate();
   const { data: profile } = useProfile();
   const organizationId = profile?.organization_id;
 
-  // Data fetching
+  // Data fetching - only fetch exams list if no examId in URL
   const { data: exams, isLoading: examsLoading } = useExams(organizationId);
+  const latestExam = useLatestExamFromCurrentYear(organizationId);
+  // Fetch single exam if examId is in URL
+  const { data: urlExam, isLoading: urlExamLoading } = useExam(urlExamId);
   
   // State
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [selectedExamClass, setSelectedExamClass] = useState<ExamClass | null>(null);
+  
+  // Fetch enrollment stats when exam is selected
+  const { data: enrollmentStats } = useEnrollmentStats(selectedExam?.id);
+  const enrollAllStudents = useEnrollAllStudents();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -88,24 +104,72 @@ export function ExamStudentEnrollment() {
 
   // Filter students by class academic year and exclude already enrolled
   const availableStudents = useMemo(() => {
-    if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
-    if (!selectedExamClass?.classAcademicYearId) return [];
+    if (!studentAdmissions || !Array.isArray(studentAdmissions)) {
+      if (import.meta.env.DEV) {
+        console.log('[ExamStudentEnrollment] No student admissions data');
+      }
+      return [];
+    }
+    if (!selectedExamClass?.classAcademicYearId) {
+      if (import.meta.env.DEV) {
+        console.log('[ExamStudentEnrollment] No exam class selected or missing classAcademicYearId');
+      }
+      return [];
+    }
     
-    // Filter by class academic year
-    const classStudents = studentAdmissions.filter(sa => 
-      sa.classAcademicYearId === selectedExamClass.classAcademicYearId
-    );
+    if (import.meta.env.DEV) {
+      console.log('[ExamStudentEnrollment] Filtering students:', {
+        totalAdmissions: studentAdmissions.length,
+        classAcademicYearId: selectedExamClass.classAcademicYearId,
+        examClassId: selectedExamClass.id,
+      });
+    }
+    
+    // Filter by class academic year and enrollment status = 'active'
+    const classStudents = studentAdmissions.filter(sa => {
+      const matchesClass = sa.classAcademicYearId === selectedExamClass.classAcademicYearId;
+      const isActive = sa.enrollmentStatus === 'active';
+      
+      if (import.meta.env.DEV && matchesClass && !isActive) {
+        console.log('[ExamStudentEnrollment] Student found but not active:', {
+          studentId: sa.studentId,
+          enrollmentStatus: sa.enrollmentStatus,
+          classAcademicYearId: sa.classAcademicYearId,
+        });
+      }
+      
+      return matchesClass && isActive;
+    });
+    
+    if (import.meta.env.DEV) {
+      console.log('[ExamStudentEnrollment] Students after class and status filter:', classStudents.length);
+    }
     
     // Filter out already enrolled students
-    if (!enrolledStudents || !Array.isArray(enrolledStudents)) return classStudents;
+    if (!enrolledStudents || !Array.isArray(enrolledStudents)) {
+      if (import.meta.env.DEV) {
+        console.log('[ExamStudentEnrollment] No enrolled students data, returning all class students');
+      }
+      return classStudents;
+    }
     
     const enrolledAdmissionIds = new Set(
       enrolledStudents.map(es => es.studentAdmissionId)
     );
     
-    return classStudents.filter(sa => 
+    const available = classStudents.filter(sa => 
       sa.id && !enrolledAdmissionIds.has(sa.id)
     );
+    
+    if (import.meta.env.DEV) {
+      console.log('[ExamStudentEnrollment] Final available students:', {
+        total: available.length,
+        enrolled: enrolledAdmissionIds.size,
+        filtered: classStudents.length - available.length,
+      });
+    }
+    
+    return available;
   }, [studentAdmissions, enrolledStudents, selectedExamClass?.classAcademicYearId]);
 
   // Filter students by search query
@@ -118,6 +182,25 @@ export function ExamStudentEnrollment() {
       return fullName.includes(query) || admissionNo.includes(query);
     });
   }, [availableStudents, searchQuery]);
+
+  // Set exam from URL params (when accessed from exams page)
+  useEffect(() => {
+    if (urlExamId && urlExam) {
+      setSelectedExam(urlExam);
+    }
+  }, [urlExamId, urlExam]);
+
+  // Auto-select latest exam from current academic year (only when accessed individually, no URL examId)
+  useEffect(() => {
+    if (!urlExamId && !selectedExam) {
+      if (latestExam) {
+        setSelectedExam(latestExam);
+      } else if (exams && exams.length > 0) {
+        // Fallback to first exam if no current year exam
+        setSelectedExam(exams[0]);
+      }
+    }
+  }, [exams, latestExam, selectedExam, urlExamId]);
 
   // Auto-select first exam class when exam is selected
   useEffect(() => {
@@ -194,24 +277,43 @@ export function ExamStudentEnrollment() {
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t('exams.studentEnrollment') || 'Student Enrollment'}</h1>
-            <p className="text-muted-foreground mt-1">
-              {t('exams.studentEnrollmentDescription') || 'Enroll students in exams by class'}
-            </p>
-          </div>
-          {selectedExam && selectedExamClass && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className="gap-1 py-1.5 px-3">
-                <GraduationCap className="h-3 w-3" />
-                {selectedExam.name}
-              </Badge>
-              <Badge className="gap-1 py-1.5 px-3">
-                {selectedExamClass.classAcademicYear?.class?.name}
-                {selectedExamClass.classAcademicYear?.sectionName && ` - ${selectedExamClass.classAcademicYear.sectionName}`}
-              </Badge>
+          <div className="flex items-center gap-4">
+            {urlExamId && (
+              <Button variant="ghost" size="icon" onClick={() => navigate('/exams')}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">{t('exams.studentEnrollment') || 'Student Enrollment'}</h1>
+              <p className="text-muted-foreground mt-1">
+                {t('exams.studentEnrollmentDescription') || 'Enroll students in exams by class'}
+              </p>
             </div>
-          )}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedExam && selectedExamClass && (
+              <>
+                <Badge variant="outline" className="gap-1 py-1.5 px-3">
+                  <GraduationCap className="h-3 w-3" />
+                  {selectedExam.name}
+                </Badge>
+                <Badge className="gap-1 py-1.5 px-3">
+                  {selectedExamClass.classAcademicYear?.class?.name}
+                  {selectedExamClass.classAcademicYear?.sectionName && ` - ${selectedExamClass.classAcademicYear.sectionName}`}
+                </Badge>
+              </>
+            )}
+            {selectedExam && hasAssign && (
+              <Button 
+                variant="default"
+                onClick={() => enrollAllStudents.mutate(selectedExam.id)}
+                disabled={enrollAllStudents.isPending}
+              >
+                <UsersRound className="h-4 w-4 mr-2" />
+                {t('exams.enrollAllClasses') || 'Enroll All Classes'}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -436,10 +538,24 @@ export function ExamStudentEnrollment() {
                         {admissionsLoading ? (
                           <Skeleton className="h-64 w-full" />
                         ) : filteredAvailableStudents.length === 0 ? (
-                          <div className="p-8 text-sm text-muted-foreground text-center rounded-lg border-2 border-dashed">
-                            {searchQuery 
-                              ? t('exams.noStudentsMatchSearch') || 'No students match your search'
-                              : t('exams.allStudentsEnrolled') || 'All students enrolled'}
+                          <div className="p-8 text-sm text-muted-foreground text-center rounded-lg border-2 border-dashed space-y-3">
+                            <div>
+                              <p className="font-medium mb-2">
+                                {searchQuery 
+                                  ? t('exams.noStudentsMatchSearch') || 'No students match your search'
+                                  : t('exams.allStudentsEnrolled') || 'No students available for enrollment'}
+                              </p>
+                              {!searchQuery && (
+                                <div className="text-xs space-y-1 mt-3">
+                                  <p className="font-medium">{t('exams.possibleReasons') || 'Possible reasons:'}</p>
+                                  <ul className="list-disc list-inside space-y-1 text-left max-w-md mx-auto">
+                                    <li>{t('exams.noStudentsHint1') || 'No students are assigned to this class for the selected academic year'}</li>
+                                    <li>{t('exams.noStudentsHint2') || 'All students in this class are already enrolled'}</li>
+                                    <li>{t('exams.noStudentsHint3') || 'Students may not have active enrollment status'}</li>
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <ScrollArea className="h-[400px] border rounded-lg p-3">

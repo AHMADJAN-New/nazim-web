@@ -66,4 +66,14 @@ class ExamSubject extends Model
     {
         return $this->belongsTo(Subject::class, 'subject_id');
     }
+
+    public function examTimes()
+    {
+        return $this->hasMany(ExamTime::class, 'exam_subject_id');
+    }
+
+    public function examResults()
+    {
+        return $this->hasMany(ExamResult::class, 'exam_subject_id');
+    }
 }

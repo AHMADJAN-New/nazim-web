@@ -58,6 +58,9 @@ use App\Http\Controllers\ExamSubjectController;
 use App\Http\Controllers\ExamStudentController;
 use App\Http\Controllers\ExamResultController;
 use App\Http\Controllers\ExamReportController;
+use App\Http\Controllers\ExamTimeController;
+use App\Http\Controllers\ExamAttendanceController;
+use App\Http\Controllers\ExamNumberController;
 
 /*
 |--------------------------------------------------------------------------
@@ -218,13 +221,66 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Exams
     Route::apiResource('exams', ExamController::class);
+    Route::post('/exams/{exam}/status', [ExamController::class, 'updateStatus']);
+    
+    // Exam Classes
     Route::apiResource('exam-classes', ExamClassController::class)->only(['index', 'store', 'destroy']);
+    
+    // Exam Subjects
     Route::apiResource('exam-subjects', ExamSubjectController::class)->only(['index', 'store', 'update', 'destroy']);
+    
+    // Exam Timetable
+    Route::get('/exams/{exam}/times', [ExamTimeController::class, 'index']);
+    Route::post('/exams/{exam}/times', [ExamTimeController::class, 'store']);
+    Route::put('/exam-times/{examTime}', [ExamTimeController::class, 'update']);
+    Route::delete('/exam-times/{examTime}', [ExamTimeController::class, 'destroy']);
+    Route::post('/exam-times/{examTime}/toggle-lock', [ExamTimeController::class, 'toggleLock']);
+    
+    // Exam Students
     Route::apiResource('exam-students', ExamStudentController::class)->only(['index', 'store', 'destroy']);
     Route::post('/exam-students/bulk-enroll', [ExamStudentController::class, 'bulkEnroll']);
+    Route::post('/exams/{exam}/enroll-all', [ExamStudentController::class, 'enrollAll']);
+    Route::get('/exams/{exam}/enrollment-stats', [ExamStudentController::class, 'stats']);
+    
+    // Exam Results
     Route::apiResource('exam-results', ExamResultController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('/exam-results/bulk-store', [ExamResultController::class, 'bulkStore']);
-    Route::get('/exams/{id}/report', [ExamReportController::class, 'show']);
+    Route::get('/exams/{exam}/marks-progress', [ExamResultController::class, 'progress']);
+    
+    // Exam Reports
+    Route::get('/exams/{exam}/report', [ExamReportController::class, 'show']);
+    Route::get('/exams/{exam}/reports/summary', [ExamReportController::class, 'summary']);
+    Route::get('/exams/{exam}/reports/classes/{class}', [ExamReportController::class, 'classReport']);
+    Route::get('/exams/{exam}/reports/students/{student}', [ExamReportController::class, 'studentReport']);
+    
+    // Exam Numbers (Roll Numbers & Secret Numbers)
+    Route::get('/exams/{exam}/students-with-numbers', [ExamNumberController::class, 'studentsWithNumbers']);
+    Route::get('/exams/{exam}/roll-numbers/start-from', [ExamNumberController::class, 'rollNumberStartFrom']);
+    Route::post('/exams/{exam}/roll-numbers/preview-auto-assign', [ExamNumberController::class, 'previewRollNumberAssignment']);
+    Route::post('/exams/{exam}/roll-numbers/confirm-auto-assign', [ExamNumberController::class, 'confirmRollNumberAssignment']);
+    Route::patch('/exams/{exam}/students/{examStudent}/roll-number', [ExamNumberController::class, 'updateRollNumber']);
+    Route::get('/exams/{exam}/secret-numbers/start-from', [ExamNumberController::class, 'secretNumberStartFrom']);
+    Route::post('/exams/{exam}/secret-numbers/preview-auto-assign', [ExamNumberController::class, 'previewSecretNumberAssignment']);
+    Route::post('/exams/{exam}/secret-numbers/confirm-auto-assign', [ExamNumberController::class, 'confirmSecretNumberAssignment']);
+    Route::patch('/exams/{exam}/students/{examStudent}/secret-number', [ExamNumberController::class, 'updateSecretNumber']);
+    Route::get('/exams/{exam}/secret-numbers/lookup', [ExamNumberController::class, 'lookupBySecretNumber']);
+    Route::get('/exams/{exam}/reports/roll-numbers', [ExamNumberController::class, 'rollNumberReport']);
+    Route::get('/exams/{exam}/reports/roll-slips', [ExamNumberController::class, 'rollSlipsHtml']);
+    Route::get('/exams/{exam}/reports/secret-labels', [ExamNumberController::class, 'secretLabelsHtml']);
+    
+    // Exam Attendance
+    Route::get('/exams/{exam}/attendance', [ExamAttendanceController::class, 'index']);
+    Route::get('/exams/{exam}/attendance/summary', [ExamAttendanceController::class, 'summary']);
+    Route::get('/exams/{exam}/attendance/class/{classId}', [ExamAttendanceController::class, 'byClass']);
+    Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}', [ExamAttendanceController::class, 'byTimeslot']);
+    Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/students', [ExamAttendanceController::class, 'getTimeslotStudents']);
+    Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/summary', [ExamAttendanceController::class, 'timeslotSummary']);
+    Route::get('/exams/{exam}/attendance/timeslot/{examTimeId}/scans', [ExamAttendanceController::class, 'scanFeed']);
+    Route::get('/exams/{exam}/attendance/students/{studentId}', [ExamAttendanceController::class, 'studentReport']);
+    Route::post('/exams/{exam}/attendance/mark', [ExamAttendanceController::class, 'mark']);
+    Route::post('/exams/{exam}/attendance/scan', [ExamAttendanceController::class, 'scan']);
+    Route::put('/exam-attendance/{id}', [ExamAttendanceController::class, 'update']);
+    Route::delete('/exam-attendance/{id}', [ExamAttendanceController::class, 'destroy']);
 
     // Academic Years
     Route::apiResource('academic-years', AcademicYearController::class);

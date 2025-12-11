@@ -2412,6 +2412,7 @@ export const examsApi = {
   list: async (params?: {
     organization_id?: string;
     academic_year_id?: string;
+    status?: string;
   }) => {
     return apiClient.get('/exams', params);
   },
@@ -2424,6 +2425,9 @@ export const examsApi = {
     name: string;
     academic_year_id: string;
     description?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    status?: string;
   }) => {
     return apiClient.post('/exams', data);
   },
@@ -2432,6 +2436,9 @@ export const examsApi = {
     name?: string;
     academic_year_id?: string;
     description?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    status?: string;
   }) => {
     return apiClient.put(`/exams/${id}`, data);
   },
@@ -2440,8 +2447,107 @@ export const examsApi = {
     return apiClient.delete(`/exams/${id}`);
   },
 
+  updateStatus: async (id: string, status: string) => {
+    return apiClient.post(`/exams/${id}/status`, { status });
+  },
+
   report: async (id: string) => {
     return apiClient.get(`/exams/${id}/report`);
+  },
+
+  summaryReport: async (id: string) => {
+    return apiClient.get(`/exams/${id}/reports/summary`);
+  },
+
+  classReport: async (examId: string, classId: string) => {
+    return apiClient.get(`/exams/${examId}/reports/classes/${classId}`);
+  },
+
+  studentReport: async (examId: string, studentId: string) => {
+    return apiClient.get(`/exams/${examId}/reports/students/${studentId}`);
+  },
+
+  enrollmentStats: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/enrollment-stats`);
+  },
+
+  marksProgress: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/marks-progress`);
+  },
+
+  enrollAll: async (examId: string) => {
+    return apiClient.post(`/exams/${examId}/enroll-all`, {});
+  },
+
+  // Exam Numbers
+  studentsWithNumbers: async (examId: string, params?: { exam_class_id?: string }) => {
+    return apiClient.get(`/exams/${examId}/students-with-numbers`, params);
+  },
+
+  rollNumberStartFrom: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/roll-numbers/start-from`);
+  },
+
+  previewRollNumberAssignment: async (examId: string, data: {
+    exam_class_id?: string;
+    start_from: string;
+    scope: 'exam' | 'class';
+    override_existing?: boolean;
+  }) => {
+    return apiClient.post(`/exams/${examId}/roll-numbers/preview-auto-assign`, data);
+  },
+
+  confirmRollNumberAssignment: async (examId: string, data: {
+    items: Array<{ exam_student_id: string; new_roll_number: string }>;
+  }) => {
+    return apiClient.post(`/exams/${examId}/roll-numbers/confirm-auto-assign`, data);
+  },
+
+  updateRollNumber: async (examId: string, examStudentId: string, data: {
+    exam_roll_number: string | null;
+  }) => {
+    return apiClient.patch(`/exams/${examId}/students/${examStudentId}/roll-number`, data);
+  },
+
+  secretNumberStartFrom: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/secret-numbers/start-from`);
+  },
+
+  previewSecretNumberAssignment: async (examId: string, data: {
+    exam_class_id?: string;
+    start_from: string;
+    scope: 'exam' | 'class';
+    override_existing?: boolean;
+  }) => {
+    return apiClient.post(`/exams/${examId}/secret-numbers/preview-auto-assign`, data);
+  },
+
+  confirmSecretNumberAssignment: async (examId: string, data: {
+    items: Array<{ exam_student_id: string; new_secret_number: string }>;
+  }) => {
+    return apiClient.post(`/exams/${examId}/secret-numbers/confirm-auto-assign`, data);
+  },
+
+  updateSecretNumber: async (examId: string, examStudentId: string, data: {
+    exam_secret_number: string | null;
+  }) => {
+    return apiClient.patch(`/exams/${examId}/students/${examStudentId}/secret-number`, data);
+  },
+
+  lookupBySecretNumber: async (examId: string, secretNumber: string) => {
+    return apiClient.get(`/exams/${examId}/secret-numbers/lookup`, { secret_number: secretNumber });
+  },
+
+  rollNumberReport: async (examId: string, params?: { exam_class_id?: string }) => {
+    return apiClient.get(`/exams/${examId}/reports/roll-numbers`, params);
+  },
+
+  rollSlipsHtml: async (examId: string, params?: { exam_class_id?: string }) => {
+    return apiClient.get(`/exams/${examId}/reports/roll-slips`, params);
+  },
+
+  secretLabelsHtml: async (examId: string, params?: { exam_class_id?: string; subject_id?: string }) => {
+    return apiClient.get(`/exams/${examId}/reports/secret-labels`, params);
   },
 };
 
@@ -2457,6 +2563,50 @@ export const examClassesApi = {
 
   delete: async (id: string) => {
     return apiClient.delete(`/exam-classes/${id}`);
+  },
+};
+
+// Exam Times (Timetable) API
+export const examTimesApi = {
+  list: async (examId: string, params?: { 
+    exam_class_id?: string; 
+    date?: string;
+    room_id?: string;
+  }) => {
+    return apiClient.get(`/exams/${examId}/times`, params);
+  },
+
+  create: async (examId: string, data: {
+    exam_class_id: string;
+    exam_subject_id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    room_id?: string | null;
+    invigilator_id?: string | null;
+    notes?: string | null;
+  }) => {
+    return apiClient.post(`/exams/${examId}/times`, data);
+  },
+
+  update: async (id: string, data: {
+    date?: string;
+    start_time?: string;
+    end_time?: string;
+    room_id?: string | null;
+    invigilator_id?: string | null;
+    notes?: string | null;
+    is_locked?: boolean;
+  }) => {
+    return apiClient.put(`/exam-times/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam-times/${id}`);
+  },
+
+  toggleLock: async (id: string) => {
+    return apiClient.post(`/exam-times/${id}/toggle-lock`, {});
   },
 };
 
@@ -2566,5 +2716,81 @@ export const examResultsApi = {
 
   delete: async (id: string) => {
     return apiClient.delete(`/exam-results/${id}`);
+  },
+};
+
+// Exam Attendance API
+export const examAttendanceApi = {
+  list: async (examId: string, params?: {
+    exam_class_id?: string;
+    exam_time_id?: string;
+    exam_subject_id?: string;
+    status?: string;
+    date?: string;
+  }) => {
+    return apiClient.get(`/exams/${examId}/attendance`, params);
+  },
+
+  byClass: async (examId: string, classId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/class/${classId}`);
+  },
+
+  byTimeslot: async (examId: string, examTimeId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/timeslot/${examTimeId}`);
+  },
+
+  getTimeslotStudents: async (examId: string, examTimeId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/timeslot/${examTimeId}/students`);
+  },
+
+  timeslotSummary: async (examId: string, examTimeId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/timeslot/${examTimeId}/summary`);
+  },
+
+  studentReport: async (examId: string, studentId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/students/${studentId}`);
+  },
+
+  summary: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/attendance/summary`);
+  },
+
+  mark: async (examId: string, data: {
+    exam_time_id: string;
+    attendances: Array<{
+      student_id: string;
+      status: 'present' | 'absent' | 'late' | 'excused';
+      checked_in_at?: string | null;
+      seat_number?: string | null;
+      notes?: string | null;
+    }>;
+  }) => {
+    return apiClient.post(`/exams/${examId}/attendance/mark`, data);
+  },
+
+  scan: async (examId: string, data: {
+    exam_time_id: string;
+    roll_number: string;
+    status?: 'present' | 'absent' | 'late' | 'excused';
+    notes?: string | null;
+  }) => {
+    return apiClient.post(`/exams/${examId}/attendance/scan`, data);
+  },
+
+  scanFeed: async (examId: string, examTimeId: string, params?: { limit?: number }) => {
+    return apiClient.get(`/exams/${examId}/attendance/timeslot/${examTimeId}/scans`, params);
+  },
+
+  update: async (id: string, data: {
+    status?: 'present' | 'absent' | 'late' | 'excused';
+    checked_in_at?: string | null;
+    seat_number?: string | null;
+    notes?: string | null;
+  }) => {
+    return apiClient.put(`/exam-attendance/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam-attendance/${id}`);
   },
 };

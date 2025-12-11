@@ -8,7 +8,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { PersistentLayout } from "@/components/layout/PersistentLayout";
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -41,6 +41,13 @@ import {
   ExamStudentEnrollment,
   ExamMarks,
   ExamReports,
+  ExamClassesSubjectsPage,
+  ExamTimetablePage,
+  ExamReportsPage,
+  ExamAttendancePage,
+  ExamRollNumbersPage,
+  ExamSecretNumbersPage,
+  ExamNumberReportsPage,
   ScheduleSlotsManagement,
   TeacherSubjectAssignments,
   StaffTypesManagement,
@@ -277,31 +284,135 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/exams/:examId/classes-subjects" element={
+                      <PermissionRoute permission="exams.manage">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamClassesSubjectsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/:examId/timetable" element={
+                      <PermissionRoute permission="exams.manage_timetable">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamTimetablePage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/:examId/students" element={
+                      <PermissionRoute permission="exams.enroll_students">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamStudentEnrollment />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/:examId/marks" element={
+                      <PermissionRoute permission="exams.enter_marks">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamMarks />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/:examId/reports" element={
+                      <PermissionRoute permission="exams.view_reports">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamReportsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/:examId/attendance" element={
+                      <PermissionRoute permission="exams.manage_attendance">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamAttendancePage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Attendance route - can be accessed directly with exam selection */}
+                    <Route path="/exams/attendance" element={
+                      <PermissionRoute permission="exams.manage_attendance">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamAttendancePage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Roll Number Assignment */}
+                    <Route path="/exams/:examId/roll-numbers" element={
+                      <PermissionRoute permission="exams.roll_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamRollNumbersPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Secret Number Assignment */}
+                    <Route path="/exams/:examId/secret-numbers" element={
+                      <PermissionRoute permission="exams.secret_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamSecretNumbersPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Number Reports (Roll Slips, Secret Labels) */}
+                    <Route path="/exams/:examId/number-reports" element={
+                      <PermissionRoute permission="exams.roll_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamNumberReportsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Direct access routes for exam numbers - with exam selection */}
+                    <Route path="/exams/roll-numbers" element={
+                      <PermissionRoute permission="exams.roll_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamRollNumbersPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/secret-numbers" element={
+                      <PermissionRoute permission="exams.secret_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamSecretNumbersPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/number-reports" element={
+                      <PermissionRoute permission="exams.roll_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamNumberReportsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Legacy routes for backward compatibility */}
                     <Route path="/exams/enrollment" element={
-                      <PermissionRoute permission="exams.assign">
+                      <PermissionRoute permission="exams.manage">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamEnrollment />
                         </Suspense>
                       </PermissionRoute>
                     } />
                     <Route path="/exams/student-enrollment" element={
-                      <PermissionRoute permission="exams.assign">
+                      <PermissionRoute permission="exams.enroll_students">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamStudentEnrollment />
                         </Suspense>
                       </PermissionRoute>
                     } />
                     <Route path="/exams/marks" element={
-                      <PermissionRoute permission="exams.update">
+                      <PermissionRoute permission="exams.enter_marks">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamMarks />
                         </Suspense>
                       </PermissionRoute>
                     } />
                     <Route path="/exams/reports" element={
-                      <PermissionRoute permission="exams.read">
+                      <PermissionRoute permission="exams.view_reports">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamReports />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/analytics" element={
+                      <PermissionRoute permission="exams.view_reports">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamReportsPage />
                         </Suspense>
                       </PermissionRoute>
                     } />
