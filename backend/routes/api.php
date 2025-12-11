@@ -61,6 +61,7 @@ use App\Http\Controllers\ExamReportController;
 use App\Http\Controllers\ExamTimeController;
 use App\Http\Controllers\ExamAttendanceController;
 use App\Http\Controllers\ExamNumberController;
+use App\Http\Controllers\GradeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -252,6 +253,8 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/exams/{exam}/reports/summary', [ExamReportController::class, 'summary']);
     Route::get('/exams/{exam}/reports/classes/{class}', [ExamReportController::class, 'classReport']);
     Route::get('/exams/{exam}/reports/students/{student}', [ExamReportController::class, 'studentReport']);
+    Route::get('/exams/{exam}/reports/classes/{class}/consolidated', [ExamReportController::class, 'consolidatedClassReport']);
+    Route::get('/exams/{exam}/reports/classes/{class}/subjects/{subject}', [ExamReportController::class, 'classSubjectMarkSheet']);
     
     // Exam Numbers (Roll Numbers & Secret Numbers)
     Route::get('/exams/{exam}/students-with-numbers', [ExamNumberController::class, 'studentsWithNumbers']);
@@ -284,6 +287,9 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Academic Years
     Route::apiResource('academic-years', AcademicYearController::class);
+
+    // Grades (Academic Settings)
+    Route::apiResource('grades', GradeController::class);
 
     // Timetables
     Route::apiResource('timetables', TimetableController::class);
