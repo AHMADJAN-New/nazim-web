@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, BarChart3 } from 'lucide-react';
+import { FileText, BarChart3, User } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
 
@@ -9,6 +9,7 @@ export default function ExamReportsHub() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const canViewReports = useHasPermission('exams.read');
+  const canViewStudents = useHasPermission('students.read');
 
   const reportTypes = [
     {
@@ -19,6 +20,7 @@ export default function ExamReportsHub() {
       path: '/exams/reports/consolidated',
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
+      show: canViewReports,
     },
     {
       id: 'class-subject',
@@ -28,8 +30,19 @@ export default function ExamReportsHub() {
       path: '/exams/reports/class-subject',
       color: 'text-green-600',
       bgColor: 'bg-green-50',
+      show: canViewReports,
     },
-  ];
+    {
+      id: 'student-report',
+      title: t('studentReportCard.title'),
+      description: t('studentReportCard.selectStudentPrompt'),
+      icon: User,
+      path: '/exams/reports/student',
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      show: canViewStudents,
+    },
+  ].filter(report => report.show);
 
   if (!canViewReports) {
     return (

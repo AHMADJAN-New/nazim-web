@@ -52,6 +52,7 @@ import {
   ExamReportsHub,
   ConsolidatedMarkSheet,
   ClassSubjectMarkSheet,
+  StudentExamReport,
   ScheduleSlotsManagement,
   TeacherSubjectAssignments,
   StaffTypesManagement,
@@ -402,6 +403,13 @@ const App = () => (
                       <PermissionRoute permission="exams.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ClassSubjectMarkSheet />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/reports/student" element={
+                      <PermissionRoute permission="students.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <StudentExamReport />
                         </Suspense>
                       </PermissionRoute>
                     } />
