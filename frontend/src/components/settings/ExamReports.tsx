@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProfile } from '@/hooks/useProfiles';
-import { useExams, useExamReport, useLatestExamFromCurrentYear } from '@/hooks/useExams';
+import { useExams, useExamReport, useLatestExamFromCurrentYear, useMarksProgress } from '@/hooks/useExams';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BookOpen, Layers, Award, CalendarClock, ArrowLeft } from 'lucide-react';
+import { Users, BookOpen, Layers, Award, CalendarClock, ArrowLeft, CheckCircle } from 'lucide-react';
 
 export function ExamReports() {
   const { t, isRTL } = useLanguage();
@@ -51,8 +51,19 @@ export function ExamReports() {
   }, [exams, latestExam, selectedExamId, examIdFromParams]);
 
   const { data: report, isLoading: reportLoading } = useExamReport(examId || undefined);
+  const { data: marksProgress, isLoading: marksProgressLoading } = useMarksProgress(examId || undefined);
 
   const totals = useMemo(() => report?.totals || { classes: 0, subjects: 0, students: 0 }, [report]);
+
+  // Create a map of examSubjectId -> progress data for quick lookup
+  const subjectProgressMap = useMemo(() => {
+    if (!marksProgress?.subjectProgress) return new Map();
+    const map = new Map();
+    marksProgress.subjectProgress.forEach((sp) => {
+      map.set(sp.examSubjectId, sp);
+    });
+    return map;
+  }, [marksProgress]);
   const scheduledSubjects = useMemo(
     () =>
       report?.classes.flatMap((examClass) => examClass.subjects.filter((s) => !!s.scheduledAt))?.length || 0,
@@ -296,42 +307,89 @@ export function ExamReports() {
           <Card>
             <CardHeader>
               <CardTitle>Grade card drafts</CardTitle>
-              <CardDescription>Preview per-class grade cards and attendance placeholders.</CardDescription>
+              <CardDescription>Preview per-class grade cards with marks entry status and completion.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {reportLoading && <Skeleton className="h-32 w-full" />}
-              {!reportLoading && (!report || report.classes.length === 0) && (
+              {(reportLoading || marksProgressLoading) && <Skeleton className="h-32 w-full" />}
+              {!reportLoading && !marksProgressLoading && (!report || report.classes.length === 0) && (
                 <p className="text-sm text-muted-foreground">Select an exam with assigned classes.</p>
               )}
-              {!reportLoading && report && report.classes.length > 0 && (
+              {!reportLoading && !marksProgressLoading && report && report.classes.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {report.classes.map((examClass) => (
-                    <Card key={examClass.id} className="border-dashed">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">{examClass.className}</CardTitle>
-                        <CardDescription>{examClass.studentCount} students</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {examClass.subjects.length === 0 && (
-                          <p className="text-sm text-muted-foreground">No subjects enrolled for this class.</p>
-                        )}
-                        {examClass.subjects.map((subject) => (
-                          <div key={subject.id} className="rounded-md border px-3 py-2 flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-sm">{subject.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Total {subject.totalMarks ?? '—'} • Passing {subject.passingMarks ?? '—'}
-                              </p>
-                            </div>
-                            <Badge variant="secondary" className="text-xs">
-                              <Award className="h-3 w-3 mr-1" />
-                              {subject.scheduledAt ? 'Ready for marks' : 'Awaiting schedule'}
-                            </Badge>
-                          </div>
-                        ))}
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {report.classes.map((examClass) => {
+                    // Count completed subjects for this class
+                    const completedCount = examClass.subjects.filter((subject) => {
+                      const progress = subjectProgressMap.get(subject.id);
+                      return progress?.isComplete ?? false;
+                    }).length;
+                    const totalSubjects = examClass.subjects.length;
+
+                    return (
+                      <Card key={examClass.id} className="border-dashed">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base">{examClass.className}</CardTitle>
+                          <CardDescription>
+                            {examClass.studentCount} students • {completedCount}/{totalSubjects} subjects complete
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {examClass.subjects.length === 0 && (
+                            <p className="text-sm text-muted-foreground">No subjects enrolled for this class.</p>
+                          )}
+                          {examClass.subjects.map((subject) => {
+                            const progress = subjectProgressMap.get(subject.id);
+                            const isComplete = progress?.isComplete ?? false;
+                            const hasScheduled = !!subject.scheduledAt;
+                            const hasProgress = progress !== undefined;
+                            const resultsCount = progress?.resultsCount ?? 0;
+                            const enrolledCount = progress?.enrolledCount ?? 0;
+                            const percentage = progress?.percentage ?? 0;
+
+                            // Determine status badge
+                            let statusText = 'Awaiting schedule';
+                            let statusVariant: 'default' | 'secondary' | 'outline' | 'destructive' = 'outline';
+                            let statusIcon = Award;
+
+                            if (isComplete) {
+                              statusText = 'Marks complete';
+                              statusVariant = 'default';
+                              statusIcon = CheckCircle;
+                            } else if (hasProgress && resultsCount > 0) {
+                              statusText = `${percentage.toFixed(0)}% entered`;
+                              statusVariant = 'secondary';
+                            } else if (hasScheduled) {
+                              statusText = 'Ready for marks';
+                              statusVariant = 'secondary';
+                            }
+
+                            return (
+                              <div key={subject.id} className="rounded-md border px-3 py-2 flex items-center justify-between">
+                                <div className="flex-1">
+                                  <p className="font-medium text-sm">{subject.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Total {subject.totalMarks ?? '—'} • Passing {subject.passingMarks ?? '—'}
+                                    {hasProgress && (
+                                      <span className="ml-2">
+                                        • {resultsCount}/{enrolledCount} entered
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                                <Badge variant={statusVariant} className="text-xs flex items-center gap-1">
+                                  {statusIcon === CheckCircle ? (
+                                    <CheckCircle className="h-3 w-3" />
+                                  ) : (
+                                    <Award className="h-3 w-3" />
+                                  )}
+                                  {statusText}
+                                </Badge>
+                              </div>
+                            );
+                          })}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

@@ -11,6 +11,7 @@ import {
   useEnrollSubjectToExam,
   useRemoveExamSubject,
   useUpdateExamSubject,
+  useMarksProgress,
 } from '@/hooks/useExams';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
@@ -27,7 +28,7 @@ import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, CheckCircle, CalendarDays, NotebookPen } from 'lucide-react';
+import { Trash2, Plus, CheckCircle, CalendarDays, NotebookPen, Award } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -259,6 +260,17 @@ export function ExamsManagement() {
   const { data: examClasses, isLoading: classesLoading } = useExamClasses(selectedExam?.id);
   const { data: examSubjects } = useExamSubjects(selectedExam?.id);
   const { data: availableClasses } = useClassAcademicYears(selectedExam?.academicYearId, organizationId);
+  const { data: marksProgress, isLoading: marksProgressLoading } = useMarksProgress(selectedExam?.id);
+
+  // Create a map of examSubjectId -> progress data for quick lookup
+  const subjectProgressMap = useMemo(() => {
+    if (!marksProgress?.subjectProgress) return new Map();
+    const map = new Map();
+    marksProgress.subjectProgress.forEach((sp) => {
+      map.set(sp.examSubjectId, sp);
+    });
+    return map;
+  }, [marksProgress]);
 
   useEffect(() => {
     const nextDrafts: Record<string, { totalMarks: string; passingMarks: string; scheduledAt: string }> = {};
@@ -551,7 +563,7 @@ export function ExamsManagement() {
           <Card>
             <CardHeader>
               <CardTitle>Grade cards preview</CardTitle>
-              <CardDescription>Track scheduled subjects, total and passing marks, and mark entry readiness.</CardDescription>
+              <CardDescription>Track scheduled subjects, total and passing marks, and mark entry completion status.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {!selectedExam && <p className="text-sm text-muted-foreground">Select an exam to view its grade cards.</p>}
@@ -562,15 +574,23 @@ export function ExamsManagement() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {examClasses.map((examClass) => {
                     const subjectsForClass = (examSubjects || []).filter((s) => s.examClassId === examClass.id);
+                    
+                    // Count completed subjects for this class
+                    const completedCount = subjectsForClass.filter((subject) => {
+                      const progress = subjectProgressMap.get(subject.id);
+                      return progress?.isComplete ?? false;
+                    }).length;
+                    const totalSubjects = subjectsForClass.length;
+
                     return (
                       <Card key={examClass.id} className="border-dashed">
                         <CardHeader>
                           <CardTitle className="text-base">{examClass.classAcademicYear?.class?.name || 'Class'}</CardTitle>
                           <CardDescription>
-                            {subjectsForClass.length} subjects ·
-                            {subjectDrafts && subjectsForClass.some((s) => subjectDrafts[s.id]?.scheduledAt)
-                              ? ' schedules ready'
-                              : ' scheduling pending'}
+                            {subjectsForClass.length} subjects · {completedCount}/{totalSubjects} complete
+                            {draftSubjects && subjectsForClass.some((s) => draftSubjects[s.id]?.scheduledAt)
+                              ? ' · schedules ready'
+                              : ' · scheduling pending'}
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-2">
@@ -578,20 +598,61 @@ export function ExamsManagement() {
                             <p className="text-sm text-muted-foreground">No subjects enrolled.</p>
                           )}
                           {subjectsForClass.map((subject) => {
-                            const draft = subjectDrafts[subject.id];
-                            const badgeLabel = draft?.scheduledAt ? `Scheduled ${draft.scheduledAt}` : 'Not scheduled';
+                            const draft = draftSubjects[subject.id];
+                            const progress = subjectProgressMap.get(subject.id);
+                            const isComplete = progress?.isComplete ?? false;
+                            const hasScheduled = !!draft?.scheduledAt || !!subject.scheduledAt;
+                            const hasProgress = progress !== undefined;
+                            const resultsCount = progress?.resultsCount ?? 0;
+                            const enrolledCount = progress?.enrolledCount ?? 0;
+                            const percentage = progress?.percentage ?? 0;
+
+                            // Determine status badge
+                            let badgeLabel = 'Not scheduled';
+                            let badgeVariant: 'default' | 'secondary' | 'outline' | 'destructive' = 'outline';
+                            let badgeIcon = Award;
+                            let badgeClassName = '';
+
+                            if (isComplete) {
+                              badgeLabel = 'Marks complete';
+                              badgeVariant = 'default';
+                              badgeIcon = CheckCircle;
+                              badgeClassName = 'border-green-200';
+                            } else if (hasProgress && resultsCount > 0) {
+                              badgeLabel = `${percentage.toFixed(0)}% entered`;
+                              badgeVariant = 'secondary';
+                              badgeClassName = 'border-blue-200';
+                            } else if (hasScheduled) {
+                              badgeLabel = draft?.scheduledAt ? `Scheduled ${draft.scheduledAt}` : 'Ready for marks';
+                              badgeVariant = 'outline';
+                              badgeClassName = 'border-green-200';
+                            }
+
                             return (
                               <div
                                 key={subject.id}
                                 className="flex items-center justify-between rounded-md border px-3 py-2"
                               >
-                                <div>
+                                <div className="flex-1">
                                   <p className="font-medium text-sm">{subject.subject?.name || subject.subjectId}</p>
                                   <p className="text-xs text-muted-foreground">
-                                    Max {draft?.totalMarks || '—'} • Pass {draft?.passingMarks || '—'}
+                                    Max {draft?.totalMarks || subject.totalMarks || '—'} • Pass {draft?.passingMarks || subject.passingMarks || '—'}
+                                    {hasProgress && (
+                                      <span className="ml-2">
+                                        • {resultsCount}/{enrolledCount} entered
+                                      </span>
+                                    )}
                                   </p>
                                 </div>
-                                <Badge variant="outline" className={cn('text-xs', draft?.scheduledAt ? 'border-green-200' : '')}>
+                                <Badge 
+                                  variant={badgeVariant} 
+                                  className={cn('text-xs flex items-center gap-1', badgeClassName)}
+                                >
+                                  {badgeIcon === CheckCircle ? (
+                                    <CheckCircle className="h-3 w-3" />
+                                  ) : (
+                                    <Award className="h-3 w-3" />
+                                  )}
                                   {badgeLabel}
                                 </Badge>
                               </div>
