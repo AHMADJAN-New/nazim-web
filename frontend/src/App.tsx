@@ -45,6 +45,9 @@ import {
   ExamTimetablePage,
   ExamReportsPage,
   ExamAttendancePage,
+  ExamRollNumbersPage,
+  ExamSecretNumbersPage,
+  ExamNumberReportsPage,
   ScheduleSlotsManagement,
   TeacherSubjectAssignments,
   StaffTypesManagement,
@@ -328,6 +331,52 @@ const App = () => (
                       <PermissionRoute permission="exams.manage_attendance">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamAttendancePage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Roll Number Assignment */}
+                    <Route path="/exams/:examId/roll-numbers" element={
+                      <PermissionRoute permission="exams.roll_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamRollNumbersPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Secret Number Assignment */}
+                    <Route path="/exams/:examId/secret-numbers" element={
+                      <PermissionRoute permission="exams.secret_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamSecretNumbersPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Number Reports (Roll Slips, Secret Labels) */}
+                    <Route path="/exams/:examId/number-reports" element={
+                      <PermissionRoute permission="exams.roll_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamNumberReportsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Direct access routes for exam numbers - with exam selection */}
+                    <Route path="/exams/roll-numbers" element={
+                      <PermissionRoute permission="exams.roll_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamRollNumbersPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/secret-numbers" element={
+                      <PermissionRoute permission="exams.secret_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamSecretNumbersPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/number-reports" element={
+                      <PermissionRoute permission="exams.roll_numbers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamNumberReportsPage />
                         </Suspense>
                       </PermissionRoute>
                     } />

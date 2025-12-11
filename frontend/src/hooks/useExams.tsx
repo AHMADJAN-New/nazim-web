@@ -1,14 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { showToast } from '@/lib/toast';
 import { useLanguage } from './useLanguage';
 import { useAuth } from './useAuth';
 import { useAccessibleOrganizations } from './useAccessibleOrganizations';
-import { 
+import { useCurrentAcademicYear } from './useAcademicYears';
+import {
   examsApi, examClassesApi, examSubjectsApi, examTimesApi,
   examStudentsApi, examResultsApi, examAttendanceApi
 } from '@/lib/api/client';
 import type * as ExamApi from '@/types/api/exam';
-import type { 
+import type {
   Exam, ExamClass, ExamSubject, ExamReport, ExamTime,
   ExamSummaryReport, ClassMarkSheetReport, StudentResultReport,
   EnrollmentStats, MarksProgress, ExamStatus, ExamAttendance,
@@ -68,6 +70,35 @@ export const useExams = (organizationId?: string) => {
   });
 };
 
+/**
+ * Get the latest exam from the current academic year
+ * Returns the exam with the most recent start date (or created date if no start date)
+ */
+export const useLatestExamFromCurrentYear = (organizationId?: string) => {
+  const { data: exams } = useExams(organizationId);
+  const { data: currentAcademicYear } = useCurrentAcademicYear(organizationId);
+
+  return useMemo(() => {
+    if (!exams || !currentAcademicYear) return null;
+
+    // Filter exams for current academic year
+    const currentYearExams = exams.filter(
+      exam => exam.academicYear?.id === currentAcademicYear.id
+    );
+
+    if (currentYearExams.length === 0) return null;
+
+    // Sort by start date (most recent first), then by created date
+    const sorted = [...currentYearExams].sort((a, b) => {
+      const aDate = a.startDate ? new Date(a.startDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const bDate = b.startDate ? new Date(b.startDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return bDate - aDate; // Most recent first
+    });
+
+    return sorted[0];
+  }, [exams, currentAcademicYear]);
+};
+
 export const useExam = (examId?: string) => {
   const { user, profile } = useAuth();
 
@@ -96,11 +127,11 @@ export const useCreateExam = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   return useMutation({
-    mutationFn: (payload: { 
-      name: string; 
-      academicYearId: string; 
-      description?: string; 
-      startDate?: Date; 
+    mutationFn: (payload: {
+      name: string;
+      academicYearId: string;
+      description?: string;
+      startDate?: Date;
       endDate?: Date;
       status?: ExamStatus;
     }) => {
@@ -121,7 +152,7 @@ export const useUpdateExam = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Exam> }) => 
+    mutationFn: ({ id, data }: { id: string; data: Partial<Exam> }) =>
       examsApi.update(id, mapExamDomainToUpdate(data) as Parameters<typeof examsApi.update>[1]),
     onSuccess: () => {
       showToast.success(t('toast.examUpdated') || 'Exam updated successfully');
@@ -138,7 +169,7 @@ export const useUpdateExamStatus = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   return useMutation({
-    mutationFn: ({ examId, status }: { examId: string; status: ExamStatus }) => 
+    mutationFn: ({ examId, status }: { examId: string; status: ExamStatus }) =>
       examsApi.updateStatus(examId, status),
     onSuccess: () => {
       showToast.success(t('toast.examStatusUpdated') || 'Exam status updated successfully');
@@ -190,7 +221,7 @@ export const useAssignClassToExam = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   return useMutation({
-    mutationFn: (payload: { exam_id: string; class_academic_year_id: string }) => 
+    mutationFn: (payload: { exam_id: string; class_academic_year_id: string }) =>
       examClassesApi.create(payload),
     onSuccess: (data: unknown) => {
       const result = data as ExamApi.ExamClass;
@@ -546,9 +577,9 @@ export const useBulkEnrollStudents = () => {
       const result = data as { enrolled_count?: number; skipped_count?: number };
       const enrolledCount = result?.enrolled_count || 0;
       const skippedCount = result?.skipped_count || 0;
-      const message = skippedCount > 0 
-        ? t('toast.studentsEnrolledWithSkipped', { enrolled: enrolledCount, skipped: skippedCount }) || 
-          `${enrolledCount} students enrolled. ${skippedCount} already enrolled.`
+      const message = skippedCount > 0
+        ? t('toast.studentsEnrolledWithSkipped', { enrolled: enrolledCount, skipped: skippedCount }) ||
+        `${enrolledCount} students enrolled. ${skippedCount} already enrolled.`
         : t('toast.studentsEnrolled', { count: enrolledCount }) || `${enrolledCount} students enrolled.`;
       showToast.success(message);
       void queryClient.invalidateQueries({ queryKey: ['exam-students'] });
@@ -572,7 +603,7 @@ export const useEnrollAllStudents = () => {
       const enrolled = result?.summary?.total_enrolled || 0;
       const skipped = result?.summary?.total_skipped || 0;
       showToast.success(
-        t('toast.allStudentsEnrolled', { enrolled, skipped }) || 
+        t('toast.allStudentsEnrolled', { enrolled, skipped }) ||
         `Enrolled ${enrolled} students across all classes. ${skipped} already enrolled.`
       );
       void queryClient.invalidateQueries({ queryKey: ['exam-students'] });
@@ -748,7 +779,7 @@ export const useExamAttendance = (
       if (filters?.examSubjectId) params.exam_subject_id = filters.examSubjectId;
       if (filters?.status) params.status = filters.status;
       if (filters?.date) params.date = filters.date;
-      
+
       const apiAttendances = await examAttendanceApi.list(examId, params);
       return (apiAttendances as ExamApi.ExamAttendance[]).map(mapExamAttendanceApiToDomain);
     },
@@ -825,7 +856,7 @@ export const useStudentAttendanceReport = (examId?: string, studentId?: string) 
 export const useMarkExamAttendance = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
-  
+
   return useMutation({
     mutationFn: async ({
       examId,
@@ -876,25 +907,25 @@ export const useScanExamAttendance = () => {
     mutationFn: async ({
       examId,
       examTimeId,
-      cardNumber,
+      rollNumber,
       status,
       notes,
     }: {
       examId: string;
       examTimeId: string;
-      cardNumber: string;
+      rollNumber: string;
       status?: ExamAttendanceStatus;
       notes?: string | null;
     }) => {
       return examAttendanceApi.scan(examId, {
         exam_time_id: examTimeId,
-        card_number: cardNumber,
+        roll_number: rollNumber,
         status: status || 'present',
         notes: notes || null,
       });
     },
     onSuccess: () => {
-      showToast.success(t('toast.attendanceScanned') || 'Attendance scanned successfully');
+      // Don't show toast for background operations - use instant feedback instead
       void queryClient.invalidateQueries({ queryKey: ['exam-attendance'] });
       void queryClient.invalidateQueries({ queryKey: ['timeslot-students'] });
       void queryClient.invalidateQueries({ queryKey: ['exam-attendance-summary'] });
@@ -902,7 +933,10 @@ export const useScanExamAttendance = () => {
       void queryClient.invalidateQueries({ queryKey: ['exam-attendance-scan-feed'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.attendanceScanFailed') || 'Failed to scan attendance');
+      // Error handling is done in component with instant feedback
+      if (import.meta.env.DEV) {
+        console.error('Attendance scan error:', error);
+      }
     },
   });
 };

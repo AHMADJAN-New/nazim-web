@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useExams, useCreateExam, useUpdateExam, useDeleteExam, useUpdateExamStatus } from '@/hooks/useExams';
+import { useExams, useCreateExam, useUpdateExam, useDeleteExam, useUpdateExamStatus, useExamClasses, useExamSummaryReport } from '@/hooks/useExams';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { 
   Trash2, Plus, Pencil, CheckCircle, Calendar, Settings, Users, 
-  ClipboardList, FileText, Clock, MoreHorizontal, Search, UserCheck
+  ClipboardList, FileText, Clock, MoreHorizontal, Search, UserCheck,
+  ChevronDown, ChevronUp, BookOpen, GraduationCap
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -63,6 +64,118 @@ const statusTransitions: Record<ExamStatus, ExamStatus[]> = {
   archived: [],
 };
 
+interface ExpandedRowContentProps {
+  exam: Exam;
+}
+
+function ExpandedRowContent({ exam }: ExpandedRowContentProps) {
+  const { t } = useLanguage();
+  const { data: examClasses, isLoading: classesLoading } = useExamClasses(exam.id);
+  const { data: summaryReport, isLoading: summaryLoading } = useExamSummaryReport(exam.id);
+
+  const isLoading = classesLoading || summaryLoading;
+
+  return (
+    <div className="bg-muted/20 border-t px-4 py-3">
+      <div className="flex items-start gap-6 flex-wrap">
+        {/* Description Section */}
+        {exam.description && (
+          <div className="flex-shrink-0 min-w-[200px]">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground">{t('exams.description') || 'Description'}</span>
+            </div>
+            <p className="text-sm leading-relaxed">{exam.description}</p>
+          </div>
+        )}
+
+        {/* Stats Section */}
+        {summaryReport && (
+          <div className="flex-shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground">{t('exams.statistics') || 'Statistics'}</span>
+            </div>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">{t('exams.classes') || 'Classes'}:</span>
+                <span className="text-sm font-semibold">{summaryReport.totals.classes || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">{t('exams.subjects') || 'Subjects'}:</span>
+                <span className="text-sm font-semibold">{summaryReport.totals.subjects || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">{t('exams.students') || 'Students'}:</span>
+                <span className="text-sm font-semibold">{summaryReport.totals.enrolledStudents || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">{t('exams.results') || 'Results'}:</span>
+                <span className="text-sm font-semibold">{summaryReport.totals.resultsEntered || 0}</span>
+              </div>
+              {summaryReport.passFail && (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">{t('exams.passed') || 'Passed'}:</span>
+                    <span className="text-sm font-semibold text-green-600 dark:text-green-400">
+                      {summaryReport.passFail.passCount || 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">{t('exams.failed') || 'Failed'}:</span>
+                    <span className="text-sm font-semibold text-red-600 dark:text-red-400">
+                      {summaryReport.passFail.failCount || 0}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Classes Section */}
+        <div className="flex-1 min-w-[300px]">
+          <div className="flex items-center gap-2 mb-2">
+            <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground">
+              {t('exams.classes') || 'Classes'} ({examClasses?.length || 0})
+            </span>
+          </div>
+          {isLoading ? (
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+          ) : !examClasses || examClasses.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">
+              {t('exams.noClassesAssigned') || 'No classes assigned'}
+            </p>
+          ) : (
+            <div className="flex gap-2 flex-wrap">
+              {examClasses.map((examClass) => (
+                <Badge
+                  key={examClass.id}
+                  variant="outline"
+                  className="flex items-center gap-1.5 px-2.5 py-1 bg-card hover:bg-muted/50 transition-colors"
+                >
+                  <BookOpen className="h-3 w-3 text-primary" />
+                  <span className="text-xs">
+                    {examClass.classAcademicYear?.class?.name || 'Unknown'}
+                    {examClass.classAcademicYear?.sectionName && (
+                      <span className="text-muted-foreground"> - {examClass.classAcademicYear.sectionName}</span>
+                    )}
+                  </span>
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Exams() {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -86,6 +199,7 @@ export function Exams() {
   const [statusToChange, setStatusToChange] = useState<{ exam: Exam; newStatus: ExamStatus } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ExamStatus | 'all'>('all');
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     name: '',
     academicYearId: '',
@@ -274,6 +388,20 @@ export function Exams() {
     return hasDelete && exam.status === 'draft';
   };
 
+  const toggleRow = (examId: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(examId)) {
+        newSet.delete(examId);
+      } else {
+        newSet.add(examId);
+      }
+      return newSet;
+    });
+  };
+
+  const isRowExpanded = (examId: string) => expandedRows.has(examId);
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -349,6 +477,7 @@ export function Exams() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12"></TableHead>
                   <TableHead>{t('exams.name') || 'Name'}</TableHead>
                   <TableHead>{t('exams.academicYear') || 'Academic Year'}</TableHead>
                   <TableHead>{t('exams.status') || 'Status'}</TableHead>
@@ -357,18 +486,50 @@ export function Exams() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredExams.map((exam) => (
-                  <TableRow key={exam.id}>
-                    <TableCell className="font-medium">{exam.name}</TableCell>
+                {filteredExams.map((exam) => {
+                  const isExpanded = isRowExpanded(exam.id);
+                  return (
+                    <Fragment key={exam.id}>
+                      <TableRow className="cursor-pointer hover:bg-muted/50">
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => toggleRow(exam.id)}
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                        <TableCell 
+                          className="font-medium cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => toggleRow(exam.id)}
+                        >
+                          {exam.name}
+                        </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{exam.academicYear?.name || 'N/A'}</Badge>
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                        {exam.academicYear?.name || 'N/A'}
+                      </Badge>
                     </TableCell>
                     <TableCell>{getStatusBadge(exam.status)}</TableCell>
                     <TableCell>
                       {exam.startDate && exam.endDate ? (
-                        <span className="text-sm">
-                          {new Date(exam.startDate).toLocaleDateString()} - {new Date(exam.endDate).toLocaleDateString()}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {new Date(exam.startDate).toLocaleDateString()}
+                          </Badge>
+                          <span className="text-muted-foreground">→</span>
+                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {new Date(exam.endDate).toLocaleDateString()}
+                          </Badge>
+                        </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
@@ -460,7 +621,16 @@ export function Exams() {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                  {isExpanded && (
+                    <TableRow key={`${exam.id}-expanded`}>
+                      <TableCell colSpan={6} className="p-0">
+                        <ExpandedRowContent exam={exam} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                    </Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

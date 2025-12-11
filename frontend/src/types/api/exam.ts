@@ -275,12 +275,129 @@ export interface ExamStudent {
   exam_class_id: string;
   student_admission_id: string;
   organization_id: string | null;
+  exam_roll_number: string | null;
+  exam_secret_number: string | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
   exam?: Exam;
   exam_class?: ExamClass;
   student_admission?: StudentAdmission;
+}
+
+// Exam Numbers Types
+export interface StudentWithNumbers {
+  exam_student_id: string;
+  student_id: string | null;
+  student_admission_id: string | null;
+  student_code: string | null;
+  full_name: string;
+  father_name: string | null;
+  class_name: string;
+  section: string | null;
+  exam_class_id: string | null;
+  exam_roll_number: string | null;
+  exam_secret_number: string | null;
+  province: string | null;
+  admission_year: number | null;
+}
+
+export interface StudentsWithNumbersResponse {
+  exam: {
+    id: string;
+    name: string;
+    status: ExamStatus;
+  };
+  students: StudentWithNumbers[];
+  summary: {
+    total: number;
+    with_roll_number: number;
+    with_secret_number: number;
+    missing_roll_number: number;
+    missing_secret_number: number;
+  };
+}
+
+export interface NumberAssignmentPreviewItem {
+  exam_student_id: string;
+  student_id: string | null;
+  student_name: string;
+  class_name: string;
+  current_roll_number?: string | null;
+  new_roll_number?: string;
+  current_secret_number?: string | null;
+  new_secret_number?: string;
+  will_override: boolean;
+  has_collision: boolean;
+}
+
+export interface NumberAssignmentPreviewResponse {
+  total: number;
+  will_override_count: number;
+  items: NumberAssignmentPreviewItem[];
+}
+
+export interface NumberAssignmentConfirmItem {
+  exam_student_id: string;
+  new_roll_number?: string;
+  new_secret_number?: string;
+}
+
+export interface NumberAssignmentConfirmResponse {
+  updated: number;
+  errors: Array<{
+    exam_student_id: string;
+    error: string;
+  }>;
+}
+
+export interface RollNumberReportStudent {
+  exam_student_id?: string;
+  exam_roll_number: string;
+  exam_secret_number?: string | null;
+  student_code: string | null;
+  full_name: string;
+  father_name: string | null;
+  class_name: string;
+  section: string | null;
+  province: string | null;
+  admission_year: number | null;
+}
+
+export interface RollNumberReportResponse {
+  exam: {
+    id: string;
+    name: string;
+    academic_year: string | null;
+  };
+  students: RollNumberReportStudent[];
+  total: number;
+}
+
+export interface RollSlipsHtmlResponse {
+  html: string;
+  total_slips: number;
+}
+
+export interface SecretLabelsHtmlResponse {
+  html: string;
+  total_labels: number;
+}
+
+export interface SecretNumberLookupResponse {
+  exam_student_id: string;
+  student_id: string | null;
+  student_code: string | null;
+  full_name: string;
+  father_name: string | null;
+  class_name: string;
+  section: string | null;
+  exam_roll_number: string | null;
+  exam_secret_number: string;
+  exam: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface ExamResult {
@@ -366,8 +483,12 @@ export interface ExamAttendance {
   student?: {
     id: string;
     full_name: string;
+    father_name?: string | null;
     admission_no: string;
+    card_number?: string | null;
+    student_code?: string | null;
   };
+  roll_number?: string | null;
 }
 
 export interface ExamAttendanceInsert {
@@ -397,6 +518,7 @@ export interface TimeslotStudent {
   student: {
     id: string;
     full_name: string;
+    father_name: string | null;
     admission_no: string;
   };
   roll_number: string | null;

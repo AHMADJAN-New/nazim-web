@@ -252,12 +252,129 @@ export interface ExamStudent {
   examClassId: string;
   studentAdmissionId: string;
   organizationId: string | null;
+  examRollNumber: string | null;
+  examSecretNumber: string | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
   exam?: Exam;
   examClass?: ExamClass;
   studentAdmission?: StudentAdmission;
+}
+
+// Exam Numbers Domain Types
+export interface StudentWithNumbers {
+  examStudentId: string;
+  studentId: string | null;
+  studentAdmissionId: string | null;
+  studentCode: string | null;
+  fullName: string;
+  fatherName: string | null;
+  className: string;
+  section: string | null;
+  examClassId: string | null;
+  examRollNumber: string | null;
+  examSecretNumber: string | null;
+  province: string | null;
+  admissionYear: number | null;
+}
+
+export interface StudentsWithNumbersResponse {
+  exam: {
+    id: string;
+    name: string;
+    status: ExamStatus;
+  };
+  students: StudentWithNumbers[];
+  summary: {
+    total: number;
+    withRollNumber: number;
+    withSecretNumber: number;
+    missingRollNumber: number;
+    missingSecretNumber: number;
+  };
+}
+
+export interface NumberAssignmentPreviewItem {
+  examStudentId: string;
+  studentId: string | null;
+  studentName: string;
+  className: string;
+  currentRollNumber?: string | null;
+  newRollNumber?: string;
+  currentSecretNumber?: string | null;
+  newSecretNumber?: string;
+  willOverride: boolean;
+  hasCollision: boolean;
+}
+
+export interface NumberAssignmentPreviewResponse {
+  total: number;
+  willOverrideCount: number;
+  items: NumberAssignmentPreviewItem[];
+}
+
+export interface NumberAssignmentConfirmItem {
+  examStudentId: string;
+  newRollNumber?: string;
+  newSecretNumber?: string;
+}
+
+export interface NumberAssignmentConfirmResponse {
+  updated: number;
+  errors: Array<{
+    examStudentId: string;
+    error: string;
+  }>;
+}
+
+export interface RollNumberReportStudent {
+  examStudentId?: string;
+  examRollNumber: string;
+  examSecretNumber?: string | null;
+  studentCode: string | null;
+  fullName: string;
+  fatherName: string | null;
+  className: string;
+  section: string | null;
+  province: string | null;
+  admissionYear: number | null;
+}
+
+export interface RollNumberReportResponse {
+  exam: {
+    id: string;
+    name: string;
+    academicYear: string | null;
+  };
+  students: RollNumberReportStudent[];
+  total: number;
+}
+
+export interface RollSlipsHtmlResponse {
+  html: string;
+  totalSlips: number;
+}
+
+export interface SecretLabelsHtmlResponse {
+  html: string;
+  totalLabels: number;
+}
+
+export interface SecretNumberLookupResponse {
+  examStudentId: string;
+  studentId: string | null;
+  studentCode: string | null;
+  fullName: string;
+  fatherName: string | null;
+  className: string;
+  section: string | null;
+  examRollNumber: string | null;
+  examSecretNumber: string;
+  exam: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface ExamResult {
@@ -343,10 +460,12 @@ export interface ExamAttendance {
   student?: {
     id: string;
     fullName: string;
+    fatherName?: string | null;
     admissionNo: string;
     cardNumber?: string | null;
     studentCode?: string | null;
   };
+  rollNumber?: string | null;
 }
 
 // Student with attendance status for timeslot view
@@ -356,6 +475,7 @@ export interface TimeslotStudent {
   student: {
     id: string;
     fullName: string;
+    fatherName: string | null;
     admissionNo: string;
   };
   rollNumber: string | null;

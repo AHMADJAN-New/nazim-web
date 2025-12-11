@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useExam, useExamTimes, useTimeslotStudents, useMarkExamAttendance, useExamAttendanceSummary, useExams, useScanExamAttendance, useExamAttendanceScanFeed } from '@/hooks/useExams';
+import { useExam, useExamTimes, useTimeslotStudents, useMarkExamAttendance, useExamAttendanceSummary, useExams, useScanExamAttendance, useExamAttendanceScanFeed, useLatestExamFromCurrentYear } from '@/hooks/useExams';
 import { useExamClasses } from '@/hooks/useExams';
 import { useProfile } from '@/hooks/useProfiles';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Check, X, Clock, AlertCircle, UserCheck, Users, ChevronDown, Save, QrCode, ScanLine, Activity, History } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { ArrowLeft, Check, X, Clock, AlertCircle, UserCheck, Users, ChevronDown, Save, QrCode, ScanLine, Activity, History, Lock, Unlock } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -71,25 +81,44 @@ export default function ExamAttendancePage() {
 
   // Fetch all exams for selector (only when accessed individually)
   const { data: allExams, isLoading: examsLoading } = useExams(organizationId);
+  const latestExam = useLatestExamFromCurrentYear(organizationId);
 
-  // Auto-select first exam if accessed individually and no exam selected
+  // Set exam from URL params (when accessed from exams page)
   useEffect(() => {
-    if (!examIdFromParams && allExams && allExams.length > 0 && !selectedExamId) {
-      setSelectedExamId(allExams[0].id);
+    if (examIdFromParams) {
+      // Clear selectedExamId when URL has examId (use URL examId instead)
+      setSelectedExamId(undefined);
     }
-  }, [allExams, selectedExamId, examIdFromParams]);
+  }, [examIdFromParams]);
+
+  // Auto-select latest exam from current academic year (only when accessed individually, no URL examId)
+  useEffect(() => {
+    if (!examIdFromParams && !selectedExamId) {
+      if (latestExam) {
+        setSelectedExamId(latestExam.id);
+      } else if (allExams && allExams.length > 0) {
+        // Fallback to first exam if no current year exam
+        setSelectedExamId(allExams[0].id);
+      }
+    }
+  }, [allExams, latestExam, selectedExamId, examIdFromParams]);
 
   // State
-  const [selectedClassId, setSelectedClassId] = useState<string>('');
+  const [selectedClassId, setSelectedClassId] = useState<string>('all');
   const [selectedTimeId, setSelectedTimeId] = useState<string>('');
+  const [selectedTimeIds, setSelectedTimeIds] = useState<Set<string>>(new Set()); // Multiple time slots
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
   const [attendanceEntries, setAttendanceEntries] = useState<Map<string, AttendanceEntry>>(new Map());
   const [bulkStatusDialogOpen, setBulkStatusDialogOpen] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<ExamAttendanceStatus>('present');
-  const [scanCardNumber, setScanCardNumber] = useState('');
+  const [scanRollNumber, setScanRollNumber] = useState('');
   const [scanNote, setScanNote] = useState('');
   const [scanFeedSearch, setScanFeedSearch] = useState('');
   const [lastScanId, setLastScanId] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null); // Instant feedback label
+  const [studentCache, setStudentCache] = useState<Map<string, Map<string, any>>>(new Map()); // Cache: timeId -> rollNumber -> student
+  const [isAttendanceLocked, setIsAttendanceLocked] = useState<boolean>(false);
+  const [unlockDialogOpen, setUnlockDialogOpen] = useState<boolean>(false);
   const scanInputRef = useRef<HTMLInputElement | null>(null);
 
   // Queries
@@ -106,6 +135,23 @@ export default function ExamAttendancePage() {
   // Scan feed query
   const { data: scanFeed = [], isLoading: scanFeedLoading } = useExamAttendanceScanFeed(examId, selectedTimeId, 30);
 
+  // Cache students when time slot is selected
+  useEffect(() => {
+    if (timeslotData?.students && selectedTimeId) {
+      const rollNumberMap = new Map<string, any>();
+      timeslotData.students.forEach((student) => {
+        if (student.rollNumber) {
+          rollNumberMap.set(student.rollNumber, student);
+        }
+      });
+      setStudentCache((prev) => {
+        const newCache = new Map(prev);
+        newCache.set(selectedTimeId, rollNumberMap);
+        return newCache;
+      });
+    }
+  }, [timeslotData, selectedTimeId]);
+
   // Filter times by selected class
   const filteredTimes = useMemo(() => {
     if (!selectedClassId || selectedClassId === 'all') return examTimes || [];
@@ -116,6 +162,18 @@ export default function ExamAttendancePage() {
   const selectedExamTime = useMemo(() => {
     return examTimes.find((t) => t.id === selectedTimeId);
   }, [examTimes, selectedTimeId]);
+
+  // Check if attendance is locked (exam is completed or archived)
+  const isAttendanceLockedForExam = useMemo(() => {
+    if (!exam) return false;
+    return exam.status === 'completed' || exam.status === 'archived';
+  }, [exam]);
+
+  // Check if attendance can be marked
+  const canMarkAttendance = useMemo(() => {
+    if (!exam) return false;
+    return !isAttendanceLockedForExam && !isAttendanceLocked && (exam.status === 'scheduled' || exam.status === 'in_progress');
+  }, [exam, isAttendanceLockedForExam, isAttendanceLocked]);
 
   // Get class name for display
   const getClassName = (classId: string) => {
@@ -141,21 +199,47 @@ export default function ExamAttendancePage() {
     setAttendanceEntries(newEntries);
   };
 
-  // Handle time selection change
+  // Handle time selection change (single selection for backward compatibility)
   const handleTimeChange = (timeId: string) => {
     if (timeId && timeId !== 'none') {
       setSelectedTimeId(timeId);
+      setSelectedTimeIds(new Set([timeId]));
       setSelectedStudents(new Set());
       setAttendanceEntries(new Map());
-      setScanCardNumber('');
+      setScanRollNumber('');
       setScanNote('');
+      setScanError(null);
     } else {
       setSelectedTimeId(undefined);
+      setSelectedTimeIds(new Set());
       setSelectedStudents(new Set());
       setAttendanceEntries(new Map());
-      setScanCardNumber('');
+      setScanRollNumber('');
       setScanNote('');
+      setScanError(null);
     }
+  };
+
+  // Handle multiple time slot selection (for fast attendance)
+  const handleTimeSlotToggle = (timeId: string) => {
+    setSelectedTimeIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(timeId)) {
+        newSet.delete(timeId);
+        if (newSet.size === 0) {
+          setSelectedTimeId(undefined);
+        } else {
+          // Set first remaining as primary
+          setSelectedTimeId(Array.from(newSet)[0]);
+        }
+      } else {
+        newSet.add(timeId);
+        if (!selectedTimeId) {
+          setSelectedTimeId(timeId);
+        }
+      }
+      return newSet;
+    });
   };
 
   // Auto-focus scan input when time slot is selected
@@ -165,38 +249,76 @@ export default function ExamAttendancePage() {
     }
   }, [selectedTimeId]);
 
-  // Handle scan submission
+  // Handle scan submission with caching and multi-slot support
   const handleScanSubmit = async () => {
-    if (!examId || !selectedTimeId || !scanCardNumber.trim()) {
+    if (!examId || selectedTimeIds.size === 0 || !scanRollNumber.trim()) {
       return;
     }
 
-    try {
-      const result = await scanAttendance.mutateAsync({
-        examId,
-        examTimeId: selectedTimeId,
-        cardNumber: scanCardNumber.trim(),
-        status: 'present',
-        notes: scanNote || null,
-      });
+    const rollNumber = scanRollNumber.trim();
+    setScanError(null);
 
-      // Set last scan ID for highlighting
-      if (result && (result as any).id) {
-        setLastScanId((result as any).id);
-        setTimeout(() => setLastScanId(null), 3000);
+    // Check cache first for instant feedback
+    let foundInCache = false;
+    const foundStudents: Array<{ timeId: string; student: any }> = [];
+
+    for (const timeId of selectedTimeIds) {
+      const cache = studentCache.get(timeId);
+      if (cache?.has(rollNumber)) {
+        foundInCache = true;
+        foundStudents.push({ timeId, student: cache.get(rollNumber) });
       }
+    }
 
-      // Clear input and refocus
-      setScanCardNumber('');
-      setScanNote('');
+    if (!foundInCache && selectedTimeIds.size > 0) {
+      // Student not found in cache - show instant feedback
+      setScanError('Student not found');
+      setTimeout(() => setScanError(null), 2000);
+      setScanRollNumber('');
       if (scanInputRef.current) {
         scanInputRef.current.focus();
       }
+      return;
+    }
 
-      // Refetch students to update attendance
-      refetchStudents();
-    } catch (error) {
-      // Error is handled by the mutation's onError
+    // Mark attendance for all selected time slots in background
+    const promises = foundStudents.map(({ timeId, student }) => {
+      return scanAttendance.mutateAsync({
+        examId,
+        examTimeId: timeId,
+        rollNumber: rollNumber,
+        status: 'present',
+        notes: scanNote || null,
+      }).catch((error) => {
+        // Silently handle errors for background operations
+        if (import.meta.env.DEV) {
+          console.error(`Failed to mark attendance for time ${timeId}:`, error);
+        }
+        return null;
+      });
+    });
+
+    // Wait for all to complete (non-blocking)
+    Promise.all(promises).then((results) => {
+      const successCount = results.filter((r) => r !== null).length;
+      if (successCount > 0) {
+        // Set last scan ID for highlighting
+        const firstResult = results.find((r) => r !== null);
+        if (firstResult && (firstResult as any).id) {
+          setLastScanId((firstResult as any).id);
+          setTimeout(() => setLastScanId(null), 3000);
+        }
+      }
+      
+      // Refetch students to update attendance (background)
+      void refetchStudents();
+    });
+
+    // Clear input and refocus immediately (don't wait for API)
+    setScanRollNumber('');
+    setScanNote('');
+    if (scanInputRef.current) {
+      scanInputRef.current.focus();
     }
   };
 
@@ -301,7 +423,7 @@ export default function ExamAttendancePage() {
   };
 
   // Check if attendance can be marked
-  const canMarkAttendance = exam && ['scheduled', 'in_progress'].includes(exam.status);
+  // canMarkAttendance is already defined above with lock checks
 
   // Loading state
   if (examLoading) {
@@ -339,8 +461,8 @@ export default function ExamAttendancePage() {
           ) : (
             <div className="w-64">
               <Select
-                value={selectedExamId || undefined}
-                onValueChange={(value) => setSelectedExamId(value === 'all' ? undefined : value)}
+                value={selectedExamId || ''}
+                onValueChange={(value) => setSelectedExamId(value === '' ? undefined : value)}
                 disabled={examsLoading}
               >
                 <SelectTrigger>
@@ -407,7 +529,7 @@ export default function ExamAttendancePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t('exams.class') || 'Class'}</Label>
-              <Select value={selectedClassId || 'all'} onValueChange={setSelectedClassId}>
+              <Select value={selectedClassId} onValueChange={setSelectedClassId}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Classes" />
                 </SelectTrigger>
@@ -425,7 +547,7 @@ export default function ExamAttendancePage() {
             <div className="space-y-2">
               <Label>{t('exams.timeSlot') || 'Time Slot'}</Label>
               <Select 
-                value={selectedTimeId || undefined} 
+                value={selectedTimeId || ''} 
                 onValueChange={handleTimeChange}
                 disabled={!examId || filteredTimes.length === 0}
               >
@@ -446,7 +568,7 @@ export default function ExamAttendancePage() {
                   ) : (
                     filteredTimes.map((time) => (
                       <SelectItem key={time.id} value={time.id}>
-                        {time.date.toLocaleDateString()} - {time.startTime} to {time.endTime}
+                        {format(new Date(time.date), 'MMM dd')} - {time.startTime} to {time.endTime}
                         {time.examSubject?.subject?.name && ` (${time.examSubject.subject.name})`}
                       </SelectItem>
                     ))
@@ -463,14 +585,26 @@ export default function ExamAttendancePage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <UserCheck className="h-5 w-5" />
-                  {t('exams.attendance.markAttendance') || 'Mark Attendance'}
-                </CardTitle>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2">
+                    {isAttendanceLockedForExam || isAttendanceLocked ? (
+                      <Lock className="h-5 w-5 text-amber-600" />
+                    ) : (
+                      <UserCheck className="h-5 w-5" />
+                    )}
+                    {t('exams.attendance.markAttendance') || 'Mark Attendance'}
+                  </CardTitle>
+                  {(isAttendanceLockedForExam || isAttendanceLocked) && (
+                    <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50">
+                      <Lock className="h-3 w-3 mr-1" />
+                      {t('exams.attendance.locked') || 'Locked'}
+                    </Badge>
+                  )}
+                </div>
                 {selectedExamTime && (
-                  <CardDescription>
-                    {selectedExamTime.date.toLocaleDateString()} | {selectedExamTime.startTime} - {selectedExamTime.endTime}
+                  <CardDescription className="mt-1">
+                    {format(new Date(selectedExamTime.date), 'MMM dd, yyyy')} | {selectedExamTime.startTime} - {selectedExamTime.endTime}
                     {selectedExamTime.examSubject?.subject?.name && ` | ${selectedExamTime.examSubject.subject.name}`}
                   </CardDescription>
                 )}
@@ -480,6 +614,17 @@ export default function ExamAttendancePage() {
                   <div className="text-sm text-muted-foreground">
                     <span className="font-medium">{timeslotData.counts.marked}</span> / {timeslotData.counts.total} marked
                   </div>
+                )}
+                {canMarkAttendance && (isAttendanceLockedForExam || isAttendanceLocked) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUnlockDialogOpen(true)}
+                    className="gap-2"
+                  >
+                    <Unlock className="h-4 w-4" />
+                    {t('exams.attendance.unlock') || 'Unlock'}
+                  </Button>
                 )}
               </div>
             </div>
@@ -566,10 +711,11 @@ export default function ExamAttendancePage() {
                               />
                             </TableHead>
                           )}
-                          <TableHead>Roll</TableHead>
-                          <TableHead>Student</TableHead>
-                          <TableHead>Admission No</TableHead>
-                          <TableHead>Status</TableHead>
+                          <TableHead>{t('exams.studentName') || 'Student Name'}</TableHead>
+                          <TableHead>{t('exams.fatherName') || 'Father Name'}</TableHead>
+                          <TableHead>{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</TableHead>
+                          <TableHead>{t('exams.studentCode') || 'Admission No'}</TableHead>
+                          <TableHead>{t('exams.attendance.status') || 'Status'}</TableHead>
                           {canMarkAttendance && <TableHead>Seat #</TableHead>}
                           <TableHead>Current</TableHead>
                         </TableRow>
@@ -589,13 +735,14 @@ export default function ExamAttendancePage() {
                                   />
                                 </TableCell>
                               )}
-                              <TableCell className="font-mono">{student.rollNumber || '-'}</TableCell>
                               <TableCell className="font-medium">{student.student.fullName}</TableCell>
-                              <TableCell className="text-muted-foreground">{student.student.admissionNo}</TableCell>
+                              <TableCell className="text-muted-foreground">{student.student.fatherName || '-'}</TableCell>
+                              <TableCell className="font-mono">{student.rollNumber || '-'}</TableCell>
+                              <TableCell className="text-muted-foreground">{student.student.admissionNo || '-'}</TableCell>
                               <TableCell>
                                 {canMarkAttendance ? (
                                   <Select
-                                    value={entry?.status || 'present'}
+                                    value={(entry?.status || student.attendance?.status || 'present') as string}
                                     onValueChange={(value) =>
                                       updateStudentStatus(student.studentId, value as ExamAttendanceStatus)
                                     }
@@ -649,34 +796,83 @@ export default function ExamAttendancePage() {
 
                 {/* Barcode Tab */}
                 <TabsContent value="barcode" className="space-y-4">
+                  {/* Multi-slot selection for fast attendance */}
+                  {examTimes.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm">{t('exams.attendance.selectTimeSlots') || 'Select Time Slots (Multiple)'}</CardTitle>
+                        <CardDescription>
+                          {t('exams.attendance.multiSlotHint') || 'Select multiple time slots to mark attendance for all at once'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                          {filteredTimes.map((time) => (
+                            <Button
+                              key={time.id}
+                              variant={selectedTimeIds.has(time.id) ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => handleTimeSlotToggle(time.id)}
+                              className="text-xs flex flex-col items-start h-auto py-2 px-3"
+                            >
+                              <div className="flex items-center gap-1">
+                                {format(new Date(time.date), 'MMM dd')} {time.startTime}
+                                {selectedTimeIds.has(time.id) && <Check className="h-3 w-3 ml-1" />}
+                              </div>
+                              {time.examSubject?.subject?.name && (
+                                <div className="text-[10px] opacity-80 mt-0.5 font-normal">
+                                  {time.examSubject.subject.name}
+                                </div>
+                              )}
+                            </Button>
+                          ))}
+                        </div>
+                        {selectedTimeIds.size > 0 && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {t('exams.attendance.selectedSlots') || 'Selected'}: {selectedTimeIds.size} {t('exams.attendance.timeSlot') || 'time slot(s)'}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                     <div className="space-y-2">
-                      <Label>{t('exams.attendance.cardNumber') || 'Card Number / Admission No'}</Label>
-                      <Input
-                        ref={scanInputRef}
-                        value={scanCardNumber}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setScanCardNumber(value);
-                          // Auto-submit when barcode scanner adds Enter/newline (fast scanning)
-                          if (value.includes('\n') || value.includes('\r')) {
-                            const cleanValue = value.replace(/[\n\r]/g, '').trim();
-                            if (cleanValue) {
-                              setScanCardNumber(cleanValue);
-                              setTimeout(() => handleScanSubmit(), 0);
+                      <Label>{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</Label>
+                      <div className="relative">
+                        <Input
+                          ref={scanInputRef}
+                          value={scanRollNumber}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setScanRollNumber(value);
+                            setScanError(null); // Clear error on input
+                            // Auto-submit when barcode scanner adds Enter/newline (fast scanning)
+                            if (value.includes('\n') || value.includes('\r')) {
+                              const cleanValue = value.replace(/[\n\r]/g, '').trim();
+                              if (cleanValue) {
+                                setScanRollNumber(cleanValue);
+                                setTimeout(() => handleScanSubmit(), 0);
+                              }
                             }
-                          }
-                        }}
-                        placeholder={t('exams.attendance.scanPrompt') || 'Scan or enter card/admission number'}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleScanSubmit();
-                          }
-                        }}
-                        autoFocus
-                        className="text-lg"
-                      />
+                          }}
+                          placeholder={t('exams.attendance.scanRollNumber') || 'Scan or enter roll number'}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleScanSubmit();
+                            }
+                          }}
+                          autoFocus
+                          className="text-lg"
+                        />
+                        {/* Instant feedback label */}
+                        {scanError && (
+                          <div className="absolute -bottom-6 left-0 right-0 text-sm text-red-600 font-medium animate-in fade-in">
+                            {scanError}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>{t('exams.attendance.note') || 'Note (Optional)'}</Label>
@@ -700,7 +896,7 @@ export default function ExamAttendancePage() {
                       </Button>
                       <Button
                         onClick={() => void handleScanSubmit()}
-                        disabled={!selectedTimeId || scanAttendance.isPending || !canMarkAttendance}
+                        disabled={selectedTimeIds.size === 0 || scanAttendance.isPending || !canMarkAttendance}
                       >
                         <ScanLine className="h-4 w-4 mr-2" />
                         {scanAttendance.isPending ? (t('exams.attendance.scanning') || 'Scanning...') : (t('exams.attendance.recordScan') || 'Record Scan')}
@@ -726,8 +922,10 @@ export default function ExamAttendancePage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>{t('exams.attendance.student') || 'Student'}</TableHead>
-                            <TableHead>{t('exams.attendance.cardNumber') || 'Card Number'}</TableHead>
+                            <TableHead>{t('exams.studentName') || 'Student Name'}</TableHead>
+                            <TableHead>{t('exams.fatherName') || 'Father Name'}</TableHead>
+                            <TableHead>{t('exams.rollNumbers.rollNumber') || 'Roll Number'}</TableHead>
+                            <TableHead>{t('exams.studentCode') || 'Admission No'}</TableHead>
                             <TableHead>{t('exams.attendance.status') || 'Status'}</TableHead>
                             <TableHead>{t('exams.attendance.time') || 'Time'}</TableHead>
                           </TableRow>
@@ -741,8 +939,8 @@ export default function ExamAttendancePage() {
                             </TableRow>
                           ) : filteredScanFeed.length > 0 ? (
                             filteredScanFeed.map((record) => {
-                              const student = (record as any).student;
-                              const checkedInAt = (record as any).checkedInAt ? new Date((record as any).checkedInAt) : new Date(record.createdAt);
+                              const student = record.student;
+                              const checkedInAt = record.checkedInAt ? new Date(record.checkedInAt) : new Date(record.createdAt);
                               return (
                                 <TableRow
                                   key={record.id}
@@ -751,7 +949,15 @@ export default function ExamAttendancePage() {
                                   <TableCell className="font-medium">
                                     {student?.fullName || record.studentId}
                                   </TableCell>
-                                  <TableCell>{student?.cardNumber || student?.admissionNo || '—'}</TableCell>
+                                  <TableCell className="text-muted-foreground">
+                                    {student?.fatherName || '—'}
+                                  </TableCell>
+                                  <TableCell className="font-mono">
+                                    {record.rollNumber || '—'}
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground">
+                                    {student?.admissionNo || student?.studentCode || '—'}
+                                  </TableCell>
                                   <TableCell>
                                     <Badge className={STATUS_CONFIG[record.status].color}>
                                       {STATUS_CONFIG[record.status].label}
@@ -763,7 +969,7 @@ export default function ExamAttendancePage() {
                             })
                           ) : (
                             <TableRow>
-                              <TableCell colSpan={4} className="text-center text-muted-foreground text-sm">
+                              <TableCell colSpan={6} className="text-center text-muted-foreground text-sm">
                                 {scanFeedSearch.trim()
                                   ? (t('exams.attendance.noScansMatch') || 'No scans match your search')
                                   : (t('exams.attendance.noScansYet') || 'No scans yet')}
@@ -808,7 +1014,7 @@ export default function ExamAttendancePage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={bulkStatus} onValueChange={(v) => setBulkStatus(v as ExamAttendanceStatus)}>
+              <Select value={bulkStatus || 'present'} onValueChange={(v) => setBulkStatus((v || 'present') as ExamAttendanceStatus)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -833,6 +1039,36 @@ export default function ExamAttendancePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Unlock Attendance Confirmation Dialog */}
+      <AlertDialog open={unlockDialogOpen} onOpenChange={setUnlockDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Unlock className="h-5 w-5 text-amber-600" />
+              {t('exams.attendance.unlockAttendance') || 'Unlock Attendance'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isAttendanceLockedForExam
+                ? t('exams.attendance.unlockExamMessage') || 'This exam is completed or archived. Are you sure you want to unlock attendance marking? This will allow modifications to attendance records.'
+                : t('exams.attendance.unlockMessage') || 'Are you sure you want to unlock attendance marking? This will allow modifications to attendance records.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setIsAttendanceLocked(false);
+                setUnlockDialogOpen(false);
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              <Unlock className="h-4 w-4 mr-2" />
+              {t('exams.attendance.confirmUnlock') || 'Unlock'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

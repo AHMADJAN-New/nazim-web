@@ -237,7 +237,7 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'Exam time slot not found'], 404);
         }
 
-        // Get enrolled students for this class
+        // Get enrolled students for this class (include roll numbers for fast lookup)
         $examStudents = ExamStudent::with(['studentAdmission.student'])
             ->where('exam_id', $examId)
             ->where('exam_class_id', $examTime->exam_class_id)
@@ -265,9 +265,12 @@ class ExamAttendanceController extends Controller
                 'student' => [
                     'id' => $student->id,
                     'full_name' => $student->full_name,
+                    'father_name' => $student->father_name,
                     'admission_no' => $student->admission_no,
+                    'student_code' => $student->student_code,
+                    'card_number' => $student->card_number,
                 ],
-                'roll_number' => $examStudent->studentAdmission->roll_number ?? null,
+                'roll_number' => $examStudent->exam_roll_number,
                 'attendance' => $attendance ? [
                     'id' => $attendance->id,
                     'status' => $attendance->status,
@@ -918,7 +921,7 @@ class ExamAttendanceController extends Controller
 
         $validated = $request->validate([
             'exam_time_id' => 'required|uuid|exists:exam_times,id',
-            'card_number' => 'required|string',
+            'roll_number' => 'required|string',
             'status' => 'nullable|in:present,absent,late,excused',
             'notes' => 'nullable|string|max:1000',
         ]);
@@ -954,33 +957,53 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'Exam time slot not found or does not belong to this exam'], 404);
         }
 
-        // Find student by card_number or admission_no
-        $searchTerm = trim($validated['card_number']);
-        $student = Student::where('organization_id', $profile->organization_id)
-            ->where(function ($q) use ($searchTerm) {
-                $q->where('card_number', $searchTerm)
-                    ->orWhere('admission_no', $searchTerm)
-                    ->orWhere('student_code', $searchTerm);
-            })
-            ->whereNull('deleted_at')
-            ->first();
+        // Find student by exam_roll_number (primary method for exam attendance)
+        $rollNumber = trim($validated['roll_number']);
 
-        if (!$student) {
-            return response()->json(['error' => 'Student not found with this card number or admission number'], 404);
-        }
-
-        // Verify student is enrolled in this exam class
-        $examStudent = ExamStudent::where('exam_id', $examId)
+        // First, find the exam student by roll number
+        $examStudent = ExamStudent::with(['studentAdmission.student'])
+            ->where('exam_id', $examId)
             ->where('exam_class_id', $examTime->exam_class_id)
             ->where('organization_id', $profile->organization_id)
-            ->whereHas('studentAdmission', function ($query) use ($student) {
-                $query->where('student_id', $student->id);
-            })
+            ->where('exam_roll_number', $rollNumber)
             ->whereNull('deleted_at')
             ->first();
 
         if (!$examStudent) {
-            return response()->json(['error' => 'Student is not enrolled in this exam class'], 422);
+            // Fallback: try to find by student code or admission number if roll number not found
+            $searchTerm = $rollNumber;
+            $student = Student::where('organization_id', $profile->organization_id)
+                ->where(function ($q) use ($searchTerm) {
+                    $q->where('student_code', $searchTerm)
+                        ->orWhere('admission_no', $searchTerm)
+                        ->orWhere('card_number', $searchTerm);
+                })
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$student) {
+                return response()->json(['error' => 'Student not found'], 404);
+            }
+
+            // Find exam student by student ID
+            $examStudent = ExamStudent::with(['studentAdmission.student'])
+                ->where('exam_id', $examId)
+                ->where('exam_class_id', $examTime->exam_class_id)
+                ->where('organization_id', $profile->organization_id)
+                ->whereHas('studentAdmission', function ($query) use ($student) {
+                    $query->where('student_id', $student->id);
+                })
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$examStudent) {
+                return response()->json(['error' => 'Student is not enrolled in this exam class'], 422);
+            }
+        }
+
+        $student = $examStudent->studentAdmission?->student;
+        if (!$student) {
+            return response()->json(['error' => 'Student data not found'], 404);
         }
 
         // Create or update attendance record
@@ -1001,10 +1024,17 @@ class ExamAttendanceController extends Controller
             ]
         );
 
-        // Load relationships
+        // Load relationships and get roll number
         $attendance->load(['student', 'examTime', 'examClass', 'examSubject']);
 
-        return response()->json($attendance, 200);
+        // Get roll number from exam student
+        $rollNumber = $examStudent->exam_roll_number;
+
+        // Add roll number to response
+        $attendanceData = $attendance->toArray();
+        $attendanceData['roll_number'] = $rollNumber;
+
+        return response()->json($attendanceData, 200);
     }
 
     /**
@@ -1058,7 +1088,7 @@ class ExamAttendanceController extends Controller
         $limit = $limit > 100 ? 100 : $limit;
 
         // Get recent attendance records for this timeslot, ordered by checked_in_at or created_at
-        $scans = ExamAttendance::with(['student:id,full_name,admission_no,card_number,student_code'])
+        $scans = ExamAttendance::with(['student:id,full_name,father_name,admission_no,card_number,student_code'])
             ->where('organization_id', $profile->organization_id)
             ->where('exam_time_id', $examTimeId)
             ->whereNull('deleted_at')
@@ -1067,6 +1097,34 @@ class ExamAttendanceController extends Controller
             ->limit($limit)
             ->get();
 
-        return response()->json($scans);
+        // Add roll numbers and ensure student data is properly included
+        $scansWithRollNumbers = $scans->map(function ($scan) use ($examId) {
+            $examStudent = ExamStudent::where('exam_id', $examId)
+                ->where('exam_class_id', $scan->exam_class_id)
+                ->whereHas('studentAdmission', function ($query) use ($scan) {
+                    $query->where('student_id', $scan->student_id);
+                })
+                ->whereNull('deleted_at')
+                ->first();
+
+            $scanData = $scan->toArray();
+            $scanData['roll_number'] = $examStudent?->exam_roll_number ?? null;
+
+            // Ensure student data is properly included with all fields
+            if ($scan->student) {
+                $scanData['student'] = [
+                    'id' => $scan->student->id,
+                    'full_name' => $scan->student->full_name,
+                    'father_name' => $scan->student->father_name,
+                    'admission_no' => $scan->student->admission_no,
+                    'card_number' => $scan->student->card_number,
+                    'student_code' => $scan->student->student_code,
+                ];
+            }
+
+            return $scanData;
+        });
+
+        return response()->json($scansWithRollNumbers);
     }
 }

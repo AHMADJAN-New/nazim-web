@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   useExam, useExamClasses, useExamSubjects, useExamTimes,
-  useCreateExamTime, useUpdateExamTime, useDeleteExamTime, useToggleExamTimeLock
+  useCreateExamTime, useUpdateExamTime, useDeleteExamTime, useToggleExamTimeLock,
+  useExams, useLatestExamFromCurrentYear
 } from '@/hooks/useExams';
 import { useRooms } from '@/hooks/useRooms';
 import { useStaff } from '@/hooks/useStaff';
@@ -45,10 +46,40 @@ import type { ExamTime, ExamClass, ExamSubject } from '@/types/domain/exam';
 
 export function ExamTimetablePage() {
   const { t } = useLanguage();
-  const { examId } = useParams<{ examId: string }>();
+  const { examId: examIdFromParams } = useParams<{ examId?: string }>();
   const navigate = useNavigate();
   const { data: profile } = useProfile();
   const organizationId = profile?.organization_id;
+
+  // State for exam selection (when accessed individually)
+  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
+
+  // Determine which exam ID to use: from params (when accessed from exam page) or selected (when accessed individually)
+  const examId = examIdFromParams || selectedExamId || undefined;
+
+  // Fetch all exams for selector (only when accessed individually)
+  const { data: allExams, isLoading: examsLoading } = useExams(organizationId);
+  const latestExam = useLatestExamFromCurrentYear(organizationId);
+
+  // Set exam from URL params (when accessed from exams page)
+  useEffect(() => {
+    if (examIdFromParams) {
+      // Clear selectedExamId when URL has examId (use URL examId instead)
+      setSelectedExamId(undefined);
+    }
+  }, [examIdFromParams]);
+
+  // Auto-select latest exam from current academic year (only when accessed individually, no URL examId)
+  useEffect(() => {
+    if (!examIdFromParams && !selectedExamId) {
+      if (latestExam) {
+        setSelectedExamId(latestExam.id);
+      } else if (allExams && allExams.length > 0) {
+        // Fallback to first exam if no current year exam
+        setSelectedExamId(allExams[0].id);
+      }
+    }
+  }, [allExams, latestExam, selectedExamId, examIdFromParams]);
 
   // Data hooks
   const { data: exam, isLoading: examLoading } = useExam(examId);
@@ -268,13 +299,38 @@ export function ExamTimetablePage() {
     setIsEditDialogOpen(true);
   };
 
-  const isLoading = examLoading || timesLoading;
+  const isLoading = (examIdFromParams ? examLoading : examsLoading) || timesLoading;
 
   if (isLoading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  // Show exam selector if accessed individually and no exam selected yet
+  if (!examIdFromParams && (!allExams || allExams.length === 0)) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">{t('exams.noExamsAvailable') || 'No exams available'}</p>
+          <Button variant="link" onClick={() => navigate('/exams')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {t('exams.backToList') || 'Back to Exams'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!examId) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">{t('exams.selectExamToViewTimetable') || 'Please select an exam to view timetable'}</p>
+        </div>
       </div>
     );
   }
@@ -316,6 +372,34 @@ export function ExamTimetablePage() {
           </Badge>
         )}
       </div>
+
+      {/* Exam Selector - only show when accessed directly (without examId in URL) */}
+      {!examIdFromParams && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t('exams.selectExam') || 'Select Exam'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="w-full max-w-md">
+              <Select
+                value={selectedExamId || ''}
+                onValueChange={(v) => setSelectedExamId(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('exams.selectExamPlaceholder') || 'Select an exam...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {allExams?.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name} {e.academicYear?.name ? `(${e.academicYear.name})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters and Actions */}
       <Card>

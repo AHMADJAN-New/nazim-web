@@ -2478,6 +2478,77 @@ export const examsApi = {
   enrollAll: async (examId: string) => {
     return apiClient.post(`/exams/${examId}/enroll-all`, {});
   },
+
+  // Exam Numbers
+  studentsWithNumbers: async (examId: string, params?: { exam_class_id?: string }) => {
+    return apiClient.get(`/exams/${examId}/students-with-numbers`, params);
+  },
+
+  rollNumberStartFrom: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/roll-numbers/start-from`);
+  },
+
+  previewRollNumberAssignment: async (examId: string, data: {
+    exam_class_id?: string;
+    start_from: string;
+    scope: 'exam' | 'class';
+    override_existing?: boolean;
+  }) => {
+    return apiClient.post(`/exams/${examId}/roll-numbers/preview-auto-assign`, data);
+  },
+
+  confirmRollNumberAssignment: async (examId: string, data: {
+    items: Array<{ exam_student_id: string; new_roll_number: string }>;
+  }) => {
+    return apiClient.post(`/exams/${examId}/roll-numbers/confirm-auto-assign`, data);
+  },
+
+  updateRollNumber: async (examId: string, examStudentId: string, data: {
+    exam_roll_number: string | null;
+  }) => {
+    return apiClient.patch(`/exams/${examId}/students/${examStudentId}/roll-number`, data);
+  },
+
+  secretNumberStartFrom: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/secret-numbers/start-from`);
+  },
+
+  previewSecretNumberAssignment: async (examId: string, data: {
+    exam_class_id?: string;
+    start_from: string;
+    scope: 'exam' | 'class';
+    override_existing?: boolean;
+  }) => {
+    return apiClient.post(`/exams/${examId}/secret-numbers/preview-auto-assign`, data);
+  },
+
+  confirmSecretNumberAssignment: async (examId: string, data: {
+    items: Array<{ exam_student_id: string; new_secret_number: string }>;
+  }) => {
+    return apiClient.post(`/exams/${examId}/secret-numbers/confirm-auto-assign`, data);
+  },
+
+  updateSecretNumber: async (examId: string, examStudentId: string, data: {
+    exam_secret_number: string | null;
+  }) => {
+    return apiClient.patch(`/exams/${examId}/students/${examStudentId}/secret-number`, data);
+  },
+
+  lookupBySecretNumber: async (examId: string, secretNumber: string) => {
+    return apiClient.get(`/exams/${examId}/secret-numbers/lookup`, { secret_number: secretNumber });
+  },
+
+  rollNumberReport: async (examId: string, params?: { exam_class_id?: string }) => {
+    return apiClient.get(`/exams/${examId}/reports/roll-numbers`, params);
+  },
+
+  rollSlipsHtml: async (examId: string, params?: { exam_class_id?: string }) => {
+    return apiClient.get(`/exams/${examId}/reports/roll-slips`, params);
+  },
+
+  secretLabelsHtml: async (examId: string, params?: { exam_class_id?: string; subject_id?: string }) => {
+    return apiClient.get(`/exams/${examId}/reports/secret-labels`, params);
+  },
 };
 
 // Exam Classes API
@@ -2699,7 +2770,7 @@ export const examAttendanceApi = {
 
   scan: async (examId: string, data: {
     exam_time_id: string;
-    card_number: string;
+    roll_number: string;
     status?: 'present' | 'absent' | 'late' | 'excused';
     notes?: string | null;
   }) => {

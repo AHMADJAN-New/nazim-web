@@ -1,6 +1,6 @@
 import type * as ExamApi from '@/types/api/exam';
-import type { 
-  Exam, ExamClass, ExamSubject, ExamReport, ExamReportClass, ExamReportSubject, 
+import type {
+  Exam, ExamClass, ExamSubject, ExamReport, ExamReportClass, ExamReportSubject,
   ExamStudent, ExamResult, ExamTime, ExamSummaryReport, ClassMarkSheetReport,
   ClassMarkSheetStudent, ClassMarkSheetSubject, StudentResultReport, StudentResultSubject,
   EnrollmentStats, EnrollmentClassStats, MarksProgress, SubjectProgress,
@@ -23,12 +23,12 @@ export const mapExamApiToDomain = (exam: ExamApi.Exam): Exam => ({
   deletedAt: exam.deleted_at ? new Date(exam.deleted_at) : null,
   academicYear: exam.academic_year
     ? {
-        id: exam.academic_year.id,
-        name: exam.academic_year.name,
-        startDate: new Date(exam.academic_year.start_date),
-        endDate: new Date(exam.academic_year.end_date),
-        isCurrent: exam.academic_year.is_current,
-      }
+      id: exam.academic_year.id,
+      name: exam.academic_year.name,
+      startDate: new Date(exam.academic_year.start_date),
+      endDate: new Date(exam.academic_year.end_date),
+      isCurrent: exam.academic_year.is_current,
+    }
     : undefined,
 });
 
@@ -60,33 +60,33 @@ export const mapExamClassApiToDomain = (examClass: ExamApi.ExamClass): ExamClass
   deletedAt: examClass.deleted_at ? new Date(examClass.deleted_at) : null,
   classAcademicYear: examClass.class_academic_year
     ? {
-        id: examClass.class_academic_year.id,
-        classId: examClass.class_academic_year.class_id,
-        academicYearId: examClass.class_academic_year.academic_year_id,
-        organizationId: examClass.class_academic_year.organization_id,
-        sectionName: examClass.class_academic_year.section_name,
-        teacherId: examClass.class_academic_year.teacher_id,
-        roomId: examClass.class_academic_year.room_id,
-        capacity: examClass.class_academic_year.capacity,
-        currentStudentCount: examClass.class_academic_year.current_student_count ?? 0,
-        isActive: examClass.class_academic_year.is_active ?? true,
-        notes: examClass.class_academic_year.notes,
-        createdAt: new Date(examClass.class_academic_year.created_at),
-        updatedAt: new Date(examClass.class_academic_year.updated_at),
-        deletedAt: examClass.class_academic_year.deleted_at
-          ? new Date(examClass.class_academic_year.deleted_at)
-          : null,
-        class: examClass.class_academic_year.class,
-        academicYear: examClass.class_academic_year.academic_year
-          ? {
-              id: examClass.class_academic_year.academic_year.id,
-              name: examClass.class_academic_year.academic_year.name,
-              startDate: new Date(examClass.class_academic_year.academic_year.start_date),
-              endDate: new Date(examClass.class_academic_year.academic_year.end_date),
-              isCurrent: examClass.class_academic_year.academic_year.is_current,
-            }
-          : undefined,
-      }
+      id: examClass.class_academic_year.id,
+      classId: examClass.class_academic_year.class_id,
+      academicYearId: examClass.class_academic_year.academic_year_id,
+      organizationId: examClass.class_academic_year.organization_id,
+      sectionName: examClass.class_academic_year.section_name,
+      teacherId: examClass.class_academic_year.teacher_id,
+      roomId: examClass.class_academic_year.room_id,
+      capacity: examClass.class_academic_year.capacity,
+      currentStudentCount: examClass.class_academic_year.current_student_count ?? 0,
+      isActive: examClass.class_academic_year.is_active ?? true,
+      notes: examClass.class_academic_year.notes,
+      createdAt: new Date(examClass.class_academic_year.created_at),
+      updatedAt: new Date(examClass.class_academic_year.updated_at),
+      deletedAt: examClass.class_academic_year.deleted_at
+        ? new Date(examClass.class_academic_year.deleted_at)
+        : null,
+      class: examClass.class_academic_year.class,
+      academicYear: examClass.class_academic_year.academic_year
+        ? {
+          id: examClass.class_academic_year.academic_year.id,
+          name: examClass.class_academic_year.academic_year.name,
+          startDate: new Date(examClass.class_academic_year.academic_year.start_date),
+          endDate: new Date(examClass.class_academic_year.academic_year.end_date),
+          isCurrent: examClass.class_academic_year.academic_year.is_current,
+        }
+        : undefined,
+    }
     : undefined,
 });
 
@@ -105,36 +105,36 @@ export const mapExamSubjectApiToDomain = (examSubject: ExamApi.ExamSubject): Exa
   deletedAt: examSubject.deleted_at ? new Date(examSubject.deleted_at) : null,
   subject: examSubject.subject
     ? {
-        id: examSubject.subject.id,
-        organizationId: examSubject.subject.organization_id,
-        name: examSubject.subject.name,
-        code: examSubject.subject.code,
-        description: examSubject.subject.description,
-        isActive: examSubject.subject.is_active,
-        createdAt: new Date(examSubject.subject.created_at),
-        updatedAt: new Date(examSubject.subject.updated_at),
-        deletedAt: examSubject.subject.deleted_at ? new Date(examSubject.subject.deleted_at) : null,
-      }
+      id: examSubject.subject.id,
+      organizationId: examSubject.subject.organization_id,
+      name: examSubject.subject.name,
+      code: examSubject.subject.code,
+      description: examSubject.subject.description,
+      isActive: examSubject.subject.is_active,
+      createdAt: new Date(examSubject.subject.created_at),
+      updatedAt: new Date(examSubject.subject.updated_at),
+      deletedAt: examSubject.subject.deleted_at ? new Date(examSubject.subject.deleted_at) : null,
+    }
     : undefined,
   classSubject: examSubject.class_subject
     ? {
-        id: examSubject.class_subject.id,
-        classSubjectTemplateId: examSubject.class_subject.class_subject_template_id,
-        classAcademicYearId: examSubject.class_subject.class_academic_year_id,
-        subjectId: examSubject.class_subject.subject_id,
-        organizationId: examSubject.class_subject.organization_id,
-        teacherId: examSubject.class_subject.teacher_id,
-        roomId: examSubject.class_subject.room_id,
-        credits: examSubject.class_subject.credits,
-        hoursPerWeek: examSubject.class_subject.hours_per_week,
-        isRequired: examSubject.class_subject.is_required,
-        notes: examSubject.class_subject.notes,
-        createdAt: new Date(examSubject.class_subject.created_at),
-        updatedAt: new Date(examSubject.class_subject.updated_at),
-        deletedAt: examSubject.class_subject.deleted_at
-          ? new Date(examSubject.class_subject.deleted_at)
-          : null,
-      }
+      id: examSubject.class_subject.id,
+      classSubjectTemplateId: examSubject.class_subject.class_subject_template_id,
+      classAcademicYearId: examSubject.class_subject.class_academic_year_id,
+      subjectId: examSubject.class_subject.subject_id,
+      organizationId: examSubject.class_subject.organization_id,
+      teacherId: examSubject.class_subject.teacher_id,
+      roomId: examSubject.class_subject.room_id,
+      credits: examSubject.class_subject.credits,
+      hoursPerWeek: examSubject.class_subject.hours_per_week,
+      isRequired: examSubject.class_subject.is_required,
+      notes: examSubject.class_subject.notes,
+      createdAt: new Date(examSubject.class_subject.created_at),
+      updatedAt: new Date(examSubject.class_subject.updated_at),
+      deletedAt: examSubject.class_subject.deleted_at
+        ? new Date(examSubject.class_subject.deleted_at)
+        : null,
+    }
     : undefined,
   examClass: examSubject.exam_class ? mapExamClassApiToDomain(examSubject.exam_class) : undefined,
 });
@@ -161,18 +161,18 @@ export const mapExamTimeApiToDomain = (examTime: ExamApi.ExamTime): ExamTime => 
   examSubject: examTime.exam_subject ? mapExamSubjectApiToDomain(examTime.exam_subject) : undefined,
   room: examTime.room
     ? {
-        id: examTime.room.id,
-        name: examTime.room.name,
-        buildingId: examTime.room.building_id,
-      }
+      id: examTime.room.id,
+      name: examTime.room.name,
+      buildingId: examTime.room.building_id,
+    }
     : undefined,
   invigilator: examTime.invigilator
     ? {
-        id: examTime.invigilator.id,
-        firstName: examTime.invigilator.first_name,
-        lastName: examTime.invigilator.last_name,
-        fullName: examTime.invigilator.full_name,
-      }
+      id: examTime.invigilator.id,
+      firstName: examTime.invigilator.first_name,
+      lastName: examTime.invigilator.last_name,
+      fullName: examTime.invigilator.full_name,
+    }
     : undefined,
 });
 
@@ -239,12 +239,12 @@ export const mapExamSummaryReportApiToDomain = (report: ExamApi.ExamSummaryRepor
     endDate: report.exam.end_date ? new Date(report.exam.end_date) : null,
     academicYear: report.exam.academic_year
       ? {
-          id: report.exam.academic_year.id,
-          name: report.exam.academic_year.name,
-          startDate: new Date(report.exam.academic_year.start_date),
-          endDate: new Date(report.exam.academic_year.end_date),
-          isCurrent: report.exam.academic_year.is_current,
-        }
+        id: report.exam.academic_year.id,
+        name: report.exam.academic_year.name,
+        startDate: new Date(report.exam.academic_year.start_date),
+        endDate: new Date(report.exam.academic_year.end_date),
+        isCurrent: report.exam.academic_year.is_current,
+      }
       : undefined,
   },
   totals: {
@@ -388,6 +388,8 @@ export const mapExamStudentApiToDomain = (examStudent: ExamApi.ExamStudent): Exa
   examClassId: examStudent.exam_class_id,
   studentAdmissionId: examStudent.student_admission_id,
   organizationId: examStudent.organization_id,
+  examRollNumber: examStudent.exam_roll_number ?? null,
+  examSecretNumber: examStudent.exam_secret_number ?? null,
   createdAt: new Date(examStudent.created_at),
   updatedAt: new Date(examStudent.updated_at),
   deletedAt: examStudent.deleted_at ? new Date(examStudent.deleted_at) : null,
@@ -395,35 +397,35 @@ export const mapExamStudentApiToDomain = (examStudent: ExamApi.ExamStudent): Exa
   examClass: examStudent.exam_class ? mapExamClassApiToDomain(examStudent.exam_class) : undefined,
   studentAdmission: examStudent.student_admission
     ? {
-        id: examStudent.student_admission.id,
-        organizationId: examStudent.student_admission.organization_id,
-        schoolId: examStudent.student_admission.school_id,
-        studentId: examStudent.student_admission.student_id,
-        academicYearId: examStudent.student_admission.academic_year_id,
-        classId: examStudent.student_admission.class_id,
-        classAcademicYearId: examStudent.student_admission.class_academic_year_id,
-        admissionDate: new Date(examStudent.student_admission.admission_date),
-        status: examStudent.student_admission.status,
-        rollNumber: examStudent.student_admission.roll_number,
-        remarks: examStudent.student_admission.remarks,
-        createdAt: new Date(examStudent.student_admission.created_at),
-        updatedAt: new Date(examStudent.student_admission.updated_at),
-        deletedAt: examStudent.student_admission.deleted_at
-          ? new Date(examStudent.student_admission.deleted_at)
-          : null,
-        student: examStudent.student_admission.student ? {
-          id: examStudent.student_admission.student.id,
-          fullName: examStudent.student_admission.student.full_name || examStudent.student_admission.student.fullName || '',
-          admissionNumber: examStudent.student_admission.student.admission_no || examStudent.student_admission.student.admissionNumber || '',
-          studentCode: examStudent.student_admission.student.student_code || examStudent.student_admission.student.studentCode || null,
-          cardNumber: examStudent.student_admission.student.card_number || examStudent.student_admission.student.cardNumber || null,
-          fatherName: examStudent.student_admission.student.father_name || examStudent.student_admission.student.fatherName || null,
-          gender: examStudent.student_admission.student.gender || null,
-          admissionYear: examStudent.student_admission.student.admission_year || examStudent.student_admission.student.admissionYear || null,
-          guardianName: examStudent.student_admission.student.guardian_name || examStudent.student_admission.student.guardianName || null,
-          guardianPhone: examStudent.student_admission.student.guardian_phone || examStudent.student_admission.student.guardianPhone || null,
-        } : undefined,
-      }
+      id: examStudent.student_admission.id,
+      organizationId: examStudent.student_admission.organization_id,
+      schoolId: examStudent.student_admission.school_id,
+      studentId: examStudent.student_admission.student_id,
+      academicYearId: examStudent.student_admission.academic_year_id,
+      classId: examStudent.student_admission.class_id,
+      classAcademicYearId: examStudent.student_admission.class_academic_year_id,
+      admissionDate: new Date(examStudent.student_admission.admission_date),
+      status: examStudent.student_admission.status,
+      rollNumber: examStudent.student_admission.roll_number,
+      remarks: examStudent.student_admission.remarks,
+      createdAt: new Date(examStudent.student_admission.created_at),
+      updatedAt: new Date(examStudent.student_admission.updated_at),
+      deletedAt: examStudent.student_admission.deleted_at
+        ? new Date(examStudent.student_admission.deleted_at)
+        : null,
+      student: examStudent.student_admission.student ? {
+        id: examStudent.student_admission.student.id,
+        fullName: examStudent.student_admission.student.full_name || examStudent.student_admission.student.fullName || '',
+        admissionNumber: examStudent.student_admission.student.admission_no || examStudent.student_admission.student.admissionNumber || '',
+        studentCode: examStudent.student_admission.student.student_code || examStudent.student_admission.student.studentCode || null,
+        cardNumber: examStudent.student_admission.student.card_number || examStudent.student_admission.student.cardNumber || null,
+        fatherName: examStudent.student_admission.student.father_name || examStudent.student_admission.student.fatherName || null,
+        gender: examStudent.student_admission.student.gender || null,
+        admissionYear: examStudent.student_admission.student.admission_year || examStudent.student_admission.student.admissionYear || null,
+        guardianName: examStudent.student_admission.student.guardian_name || examStudent.student_admission.student.guardianName || null,
+        guardianPhone: examStudent.student_admission.student.guardian_phone || examStudent.student_admission.student.guardianPhone || null,
+      } : undefined,
+    }
     : undefined,
 });
 
@@ -445,35 +447,35 @@ export const mapExamResultApiToDomain = (examResult: ExamApi.ExamResult): ExamRe
   examStudent: examResult.exam_student ? mapExamStudentApiToDomain(examResult.exam_student) : undefined,
   studentAdmission: examResult.student_admission
     ? {
-        id: examResult.student_admission.id,
-        organizationId: examResult.student_admission.organization_id,
-        schoolId: examResult.student_admission.school_id,
-        studentId: examResult.student_admission.student_id,
-        academicYearId: examResult.student_admission.academic_year_id,
-        classId: examResult.student_admission.class_id,
-        classAcademicYearId: examResult.student_admission.class_academic_year_id,
-        admissionDate: new Date(examResult.student_admission.admission_date),
-        status: examResult.student_admission.status,
-        rollNumber: examResult.student_admission.roll_number,
-        remarks: examResult.student_admission.remarks,
-        createdAt: new Date(examResult.student_admission.created_at),
-        updatedAt: new Date(examResult.student_admission.updated_at),
-        deletedAt: examResult.student_admission.deleted_at
-          ? new Date(examResult.student_admission.deleted_at)
-          : null,
-        student: examResult.student_admission.student ? {
-          id: examResult.student_admission.student.id,
-          fullName: examResult.student_admission.student.full_name || examResult.student_admission.student.fullName || '',
-          admissionNumber: examResult.student_admission.student.admission_no || examResult.student_admission.student.admissionNumber || '',
-          studentCode: examResult.student_admission.student.student_code || examResult.student_admission.student.studentCode || null,
-          cardNumber: examResult.student_admission.student.card_number || examResult.student_admission.student.cardNumber || null,
-          fatherName: examResult.student_admission.student.father_name || examResult.student_admission.student.fatherName || null,
-          gender: examResult.student_admission.student.gender || null,
-          admissionYear: examResult.student_admission.student.admission_year || examResult.student_admission.student.admissionYear || null,
-          guardianName: examResult.student_admission.student.guardian_name || examResult.student_admission.student.guardianName || null,
-          guardianPhone: examResult.student_admission.student.guardian_phone || examResult.student_admission.student.guardianPhone || null,
-        } : undefined,
-      }
+      id: examResult.student_admission.id,
+      organizationId: examResult.student_admission.organization_id,
+      schoolId: examResult.student_admission.school_id,
+      studentId: examResult.student_admission.student_id,
+      academicYearId: examResult.student_admission.academic_year_id,
+      classId: examResult.student_admission.class_id,
+      classAcademicYearId: examResult.student_admission.class_academic_year_id,
+      admissionDate: new Date(examResult.student_admission.admission_date),
+      status: examResult.student_admission.status,
+      rollNumber: examResult.student_admission.roll_number,
+      remarks: examResult.student_admission.remarks,
+      createdAt: new Date(examResult.student_admission.created_at),
+      updatedAt: new Date(examResult.student_admission.updated_at),
+      deletedAt: examResult.student_admission.deleted_at
+        ? new Date(examResult.student_admission.deleted_at)
+        : null,
+      student: examResult.student_admission.student ? {
+        id: examResult.student_admission.student.id,
+        fullName: examResult.student_admission.student.full_name || examResult.student_admission.student.fullName || '',
+        admissionNumber: examResult.student_admission.student.admission_no || examResult.student_admission.student.admissionNumber || '',
+        studentCode: examResult.student_admission.student.student_code || examResult.student_admission.student.studentCode || null,
+        cardNumber: examResult.student_admission.student.card_number || examResult.student_admission.student.cardNumber || null,
+        fatherName: examResult.student_admission.student.father_name || examResult.student_admission.student.fatherName || null,
+        gender: examResult.student_admission.student.gender || null,
+        admissionYear: examResult.student_admission.student.admission_year || examResult.student_admission.student.admissionYear || null,
+        guardianName: examResult.student_admission.student.guardian_name || examResult.student_admission.student.guardianName || null,
+        guardianPhone: examResult.student_admission.student.guardian_phone || examResult.student_admission.student.guardianPhone || null,
+      } : undefined,
+    }
     : undefined,
 });
 
@@ -498,14 +500,16 @@ export const mapExamAttendanceApiToDomain = (attendance: ExamApi.ExamAttendance)
   examTime: attendance.exam_time ? mapExamTimeApiToDomain(attendance.exam_time) : undefined,
   examClass: attendance.exam_class ? mapExamClassApiToDomain(attendance.exam_class) : undefined,
   examSubject: attendance.exam_subject ? mapExamSubjectApiToDomain(attendance.exam_subject) : undefined,
+  rollNumber: (attendance as any).roll_number ?? null,
   student: attendance.student
     ? {
-        id: attendance.student.id,
-        fullName: attendance.student.full_name,
-        admissionNo: attendance.student.admission_no,
-        cardNumber: attendance.student.card_number || null,
-        studentCode: attendance.student.student_code || null,
-      }
+      id: attendance.student.id,
+      fullName: attendance.student.full_name,
+      fatherName: attendance.student.father_name ?? null,
+      admissionNo: attendance.student.admission_no,
+      cardNumber: attendance.student.card_number || null,
+      studentCode: attendance.student.student_code || null,
+    }
     : undefined,
 });
 
@@ -515,17 +519,18 @@ export const mapTimeslotStudentApiToDomain = (student: ExamApi.TimeslotStudent):
   student: {
     id: student.student.id,
     fullName: student.student.full_name,
+    fatherName: student.student.father_name ?? null,
     admissionNo: student.student.admission_no,
   },
   rollNumber: student.roll_number,
   attendance: student.attendance
     ? {
-        id: student.attendance.id,
-        status: student.attendance.status,
-        checkedInAt: student.attendance.checked_in_at ? new Date(student.attendance.checked_in_at) : null,
-        seatNumber: student.attendance.seat_number,
-        notes: student.attendance.notes,
-      }
+      id: student.attendance.id,
+      status: student.attendance.status,
+      checkedInAt: student.attendance.checked_in_at ? new Date(student.attendance.checked_in_at) : null,
+      seatNumber: student.attendance.seat_number,
+      notes: student.attendance.notes,
+    }
     : null,
 });
 
@@ -615,4 +620,138 @@ export const mapTimeslotAttendanceSummaryApiToDomain = (summary: ExamApi.Timeslo
   subject: summary.subject,
   counts: summary.counts,
   percentage: summary.percentage,
+});
+
+// ========== Exam Numbers Mappers ==========
+
+import type {
+  StudentWithNumbers,
+  StudentsWithNumbersResponse,
+  NumberAssignmentPreviewItem,
+  NumberAssignmentPreviewResponse,
+  NumberAssignmentConfirmResponse,
+  RollNumberReportStudent,
+  RollNumberReportResponse,
+  RollSlipsHtmlResponse,
+  SecretLabelsHtmlResponse,
+  SecretNumberLookupResponse,
+} from '@/types/domain/exam';
+
+export const mapStudentWithNumbersApiToDomain = (student: ExamApi.StudentWithNumbers): StudentWithNumbers => ({
+  examStudentId: student.exam_student_id,
+  studentId: student.student_id,
+  studentAdmissionId: student.student_admission_id,
+  studentCode: student.student_code,
+  fullName: student.full_name,
+  fatherName: student.father_name,
+  className: student.class_name,
+  section: student.section,
+  examClassId: student.exam_class_id,
+  examRollNumber: student.exam_roll_number,
+  examSecretNumber: student.exam_secret_number,
+  province: student.province,
+  admissionYear: student.admission_year,
+});
+
+export const mapStudentsWithNumbersResponseApiToDomain = (
+  response: ExamApi.StudentsWithNumbersResponse
+): StudentsWithNumbersResponse => ({
+  exam: response.exam,
+  students: response.students.map(mapStudentWithNumbersApiToDomain),
+  summary: {
+    total: response.summary.total,
+    withRollNumber: response.summary.with_roll_number,
+    withSecretNumber: response.summary.with_secret_number,
+    missingRollNumber: response.summary.missing_roll_number,
+    missingSecretNumber: response.summary.missing_secret_number,
+  },
+});
+
+export const mapNumberAssignmentPreviewItemApiToDomain = (
+  item: ExamApi.NumberAssignmentPreviewItem
+): NumberAssignmentPreviewItem => ({
+  examStudentId: item.exam_student_id,
+  studentId: item.student_id,
+  studentName: item.student_name,
+  className: item.class_name,
+  currentRollNumber: item.current_roll_number,
+  newRollNumber: item.new_roll_number,
+  currentSecretNumber: item.current_secret_number,
+  newSecretNumber: item.new_secret_number,
+  willOverride: item.will_override,
+  hasCollision: item.has_collision,
+});
+
+export const mapNumberAssignmentPreviewResponseApiToDomain = (
+  response: ExamApi.NumberAssignmentPreviewResponse
+): NumberAssignmentPreviewResponse => ({
+  total: response.total,
+  willOverrideCount: response.will_override_count,
+  items: response.items.map(mapNumberAssignmentPreviewItemApiToDomain),
+});
+
+export const mapNumberAssignmentConfirmResponseApiToDomain = (
+  response: ExamApi.NumberAssignmentConfirmResponse
+): NumberAssignmentConfirmResponse => ({
+  updated: response.updated,
+  errors: response.errors.map((e) => ({
+    examStudentId: e.exam_student_id,
+    error: e.error,
+  })),
+});
+
+export const mapRollNumberReportStudentApiToDomain = (
+  student: ExamApi.RollNumberReportStudent
+): RollNumberReportStudent => ({
+  examStudentId: student.exam_student_id,
+  examRollNumber: student.exam_roll_number,
+  examSecretNumber: student.exam_secret_number ?? null,
+  studentCode: student.student_code,
+  fullName: student.full_name,
+  fatherName: student.father_name,
+  className: student.class_name,
+  section: student.section,
+  province: student.province,
+  admissionYear: student.admission_year,
+});
+
+export const mapRollNumberReportResponseApiToDomain = (
+  response: ExamApi.RollNumberReportResponse
+): RollNumberReportResponse => ({
+  exam: {
+    id: response.exam.id,
+    name: response.exam.name,
+    academicYear: response.exam.academic_year,
+  },
+  students: response.students.map(mapRollNumberReportStudentApiToDomain),
+  total: response.total,
+});
+
+export const mapRollSlipsHtmlResponseApiToDomain = (
+  response: ExamApi.RollSlipsHtmlResponse
+): RollSlipsHtmlResponse => ({
+  html: response.html,
+  totalSlips: response.total_slips,
+});
+
+export const mapSecretLabelsHtmlResponseApiToDomain = (
+  response: ExamApi.SecretLabelsHtmlResponse
+): SecretLabelsHtmlResponse => ({
+  html: response.html,
+  totalLabels: response.total_labels,
+});
+
+export const mapSecretNumberLookupResponseApiToDomain = (
+  response: ExamApi.SecretNumberLookupResponse
+): SecretNumberLookupResponse => ({
+  examStudentId: response.exam_student_id,
+  studentId: response.student_id,
+  studentCode: response.student_code,
+  fullName: response.full_name,
+  fatherName: response.father_name,
+  className: response.class_name,
+  section: response.section,
+  examRollNumber: response.exam_roll_number,
+  examSecretNumber: response.exam_secret_number,
+  exam: response.exam,
 });
