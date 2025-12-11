@@ -214,6 +214,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   // Legacy compatibility
   const hasExamsAssignPermission = hasExamsManagePermission || hasExamsEnrollPermission;
   const hasExamsUpdatePermission = hasExamsMarksPermission;
+  const hasGradesPermission = useHasPermission('grades.read');
   const hasLibraryBooksPermission = useHasPermission('library_books.read');
   const hasLibraryCategoriesPermission = useHasPermission('library_categories.read');
   const hasLibraryLoansPermission = useHasPermission('library_loans.read');
@@ -441,6 +442,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "examAnalytics",
             url: "/exams/analytics",
             icon: BarChart3,
+          }] : []),
+          ...(hasExamsReportsPermission ? [{
+            title: "Exam Reports Hub",
+            titleKey: "examReportsHub",
+            url: "/exams/reports-hub",
+            icon: FileText,
           }] : []),
           ...((hasExamsAttendancePermission || hasExamsViewAttendancePermission) ? [{
             title: "Exam Attendance",
@@ -688,6 +695,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/settings/staff-types",
             icon: Users,
           }] : []),
+          ...(hasGradesPermission ? [{
+            title: "Grades Management",
+            titleKey: "grades.management",
+            url: "/settings/grades",
+            icon: Trophy,
+          }] : []),
         ],
       },
     ];
@@ -728,7 +741,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       if (item.titleKey === 'academicSettings') {
         // Show if user has any academic-related permission (excluding classes, subjects, assignments, and exams which are in separate menus)
-        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission || hasStaffTypesPermission;
+        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission || hasStaffTypesPermission || hasGradesPermission;
       }
 
       if (item.titleKey === 'exams') {

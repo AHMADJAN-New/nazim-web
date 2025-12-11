@@ -48,6 +48,10 @@ import {
   ExamRollNumbersPage,
   ExamSecretNumbersPage,
   ExamNumberReportsPage,
+  GradesManagement,
+  ExamReportsHub,
+  ConsolidatedMarkSheet,
+  ClassSubjectMarkSheet,
   ScheduleSlotsManagement,
   TeacherSubjectAssignments,
   StaffTypesManagement,
@@ -380,6 +384,27 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/exams/reports-hub" element={
+                      <PermissionRoute permission="exams.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamReportsHub />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/reports/consolidated" element={
+                      <PermissionRoute permission="exams.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ConsolidatedMarkSheet />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/reports/class-subject" element={
+                      <PermissionRoute permission="exams.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ClassSubjectMarkSheet />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     {/* Legacy routes for backward compatibility */}
                     <Route path="/exams/enrollment" element={
                       <PermissionRoute permission="exams.manage">
@@ -434,6 +459,13 @@ const App = () => (
                       <PermissionRoute permission="staff_types.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <StaffTypesManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/settings/grades" element={
+                      <PermissionRoute permission="grades.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <GradesManagement />
                         </Suspense>
                       </PermissionRoute>
                     } />
