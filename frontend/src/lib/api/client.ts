@@ -2549,6 +2549,25 @@ export const examsApi = {
   secretLabelsHtml: async (examId: string, params?: { exam_class_id?: string; subject_id?: string }) => {
     return apiClient.get(`/exams/${examId}/reports/secret-labels`, params);
   },
+
+  // New Report Methods
+  consolidatedClassReport: async (examId: string, classId: string) => {
+    return apiClient.get(`/exams/${examId}/reports/classes/${classId}/consolidated`);
+  },
+
+  classSubjectMarkSheet: async (
+    examId: string,
+    classId: string,
+    subjectId: string,
+    params?: {
+      sort_by?: 'roll' | 'marks' | 'father_name';
+      sort_order?: 'asc' | 'desc';
+      show_secret_number?: boolean;
+      show_rank?: boolean;
+    }
+  ) => {
+    return apiClient.get(`/exams/${examId}/reports/classes/${classId}/subjects/${subjectId}`, params);
+  },
 };
 
 // Exam Classes API
@@ -2792,5 +2811,46 @@ export const examAttendanceApi = {
 
   delete: async (id: string) => {
     return apiClient.delete(`/exam-attendance/${id}`);
+  },
+};
+
+// Grades API
+export const gradesApi = {
+  list: async (params?: { organization_id?: string }) => {
+    return apiClient.get('/grades', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/grades/${id}`);
+  },
+
+  create: async (data: {
+    name_en: string;
+    name_ar: string;
+    name_ps: string;
+    name_fa: string;
+    min_percentage: number;
+    max_percentage: number;
+    order: number;
+    is_pass: boolean;
+  }) => {
+    return apiClient.post('/grades', data);
+  },
+
+  update: async (id: string, data: {
+    name_en?: string;
+    name_ar?: string;
+    name_ps?: string;
+    name_fa?: string;
+    min_percentage?: number;
+    max_percentage?: number;
+    order?: number;
+    is_pass?: boolean;
+  }) => {
+    return apiClient.put(`/grades/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/grades/${id}`);
   },
 };
