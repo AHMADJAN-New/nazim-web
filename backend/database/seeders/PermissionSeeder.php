@@ -28,6 +28,7 @@ class PermissionSeeder extends Seeder
             'students' => ['read', 'create', 'update', 'delete'],
             'classes' => ['read', 'create', 'update', 'delete', 'assign', 'copy'],
             'academic_years' => ['read', 'create', 'update', 'delete'],
+            'grades' => ['read', 'create', 'update', 'delete'],
             // Exam permissions - granular control for different exam operations
             'exams' => [
                 'read',           // View exams
@@ -39,7 +40,11 @@ class PermissionSeeder extends Seeder
                 'manage_timetable', // Create/edit exam timetable
                 'enroll_students',  // Enroll/unenroll students
                 'enter_marks',      // Enter and edit marks
-                'view_reports',     // View exam reports
+                'view_reports',     // View exam reports (summary, class reports, student reports)
+                'view_grade_cards', // View and generate grade cards
+                'view_consolidated_reports', // View consolidated mark sheets
+                'view_class_reports', // View class-specific reports
+                'view_student_reports', // View individual student reports
                 'manage_attendance', // Mark/update/delete attendance records
                 'view_attendance_reports', // View attendance reports
                 'roll_numbers.read',    // View roll numbers
@@ -106,6 +111,7 @@ class PermissionSeeder extends Seeder
                 'subjects.read',
                 // Exam permissions for staff - can manage enrollment and view reports
                 'exams.read', 'exams.assign', 'exams.manage', 'exams.enroll_students', 'exams.view_reports',
+                'exams.view_grade_cards', 'exams.view_consolidated_reports', 'exams.view_class_reports', 'exams.view_student_reports',
                 'exams.view_attendance_reports', // Can view attendance reports
                 'exams.roll_numbers.read', 'exams.secret_numbers.read', // Can view exam numbers
                 'exam_classes.read', 'exam_classes.create', 'exam_classes.update',
@@ -114,6 +120,7 @@ class PermissionSeeder extends Seeder
                 'exam_results.read', 'exam_results.create', 'exam_results.update',
                 'exam_times.read',
                 'academic_years.read',
+                'grades.read', 'grades.create', 'grades.update', 'grades.delete',
                 'profiles.read', 'profiles.update',
                 'student_admissions.read', 'student_admissions.create',
                 'assets.read', 'assets.create', 'assets.update', 'assets.delete', // Full asset management access
@@ -127,6 +134,7 @@ class PermissionSeeder extends Seeder
                 // Exam permissions for teachers - full exam management including marks entry and attendance
                 'exams.read', 'exams.create', 'exams.update', 'exams.assign', 'exams.manage',
                 'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
+                'exams.view_grade_cards', 'exams.view_consolidated_reports', 'exams.view_class_reports', 'exams.view_student_reports',
                 'exams.manage_attendance', 'exams.view_attendance_reports', // Attendance permissions
                 'exams.roll_numbers.read', 'exams.roll_numbers.assign', // Roll number permissions
                 'exams.secret_numbers.read', 'exams.secret_numbers.assign', // Secret number permissions
@@ -139,6 +147,7 @@ class PermissionSeeder extends Seeder
                 'timetables.read',
                 'schedule_slots.read',
                 'academic_years.read',
+                'grades.read', 'grades.create', 'grades.update', 'grades.delete',
                 'profiles.read', 'profiles.update',
                 'teacher_subject_assignments.read', 'teacher_subject_assignments.create',
                 'attendance_sessions.read', 'attendance_sessions.create', 'attendance_sessions.update',
@@ -159,6 +168,7 @@ class PermissionSeeder extends Seeder
                 'subjects.read',
                 'exams.read', 'exams.create', 'exams.update', 'exams.assign', 'exams.manage',
                 'exams.manage_timetable', 'exams.enroll_students', 'exams.enter_marks', 'exams.view_reports',
+                'exams.view_grade_cards', 'exams.view_consolidated_reports', 'exams.view_class_reports', 'exams.view_student_reports',
                 'exams.manage_attendance', 'exams.view_attendance_reports', // Full attendance management
                 'exams.roll_numbers.read', 'exams.roll_numbers.assign', // Roll number permissions
                 'exams.secret_numbers.read', 'exams.secret_numbers.assign', // Secret number permissions
@@ -169,6 +179,7 @@ class PermissionSeeder extends Seeder
                 'exam_results.read', 'exam_results.create', 'exam_results.update',
                 'exam_times.read', 'exam_times.create', 'exam_times.update', 'exam_times.delete',
                 'academic_years.read',
+                'grades.read', 'grades.create', 'grades.update', 'grades.delete',
                 'profiles.read', 'profiles.update',
                 'rooms.read', // For exam room assignment
             ],

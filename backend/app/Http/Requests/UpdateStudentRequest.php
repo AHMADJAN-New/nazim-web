@@ -34,9 +34,16 @@ class UpdateStudentRequest extends FormRequest
         return [
             'admission_no' => [
                 'sometimes',
+                'required',
                 'string',
+                'min:1',
                 'max:100',
                 function ($attribute, $value, $fail) use ($organizationId, $studentId) {
+                    // Don't allow empty strings
+                    if (trim($value) === '') {
+                        $fail('The admission number cannot be empty.');
+                        return;
+                    }
                     if ($organizationId) {
                         $exists = DB::table('students')
                             ->where('admission_no', $value)
@@ -68,8 +75,28 @@ class UpdateStudentRequest extends FormRequest
                     }
                 },
             ],
-            'full_name' => 'sometimes|string|max:150',
-            'father_name' => 'sometimes|string|max:150',
+            'full_name' => [
+                'sometimes',
+                'string',
+                'max:150',
+                function ($attribute, $value, $fail) {
+                    // Don't allow empty strings
+                    if (trim($value) === '') {
+                        $fail('The full name cannot be empty.');
+                    }
+                },
+            ],
+            'father_name' => [
+                'sometimes',
+                'string',
+                'max:150',
+                function ($attribute, $value, $fail) {
+                    // Don't allow empty strings
+                    if (trim($value) === '') {
+                        $fail('The father name cannot be empty.');
+                    }
+                },
+            ],
             'gender' => 'sometimes|string|in:male,female',
             // Prevent organization_id changes
             'organization_id' => 'prohibited',

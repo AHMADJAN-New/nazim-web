@@ -77,9 +77,10 @@ import {
 interface NavigationChild {
   title: string;
   titleKey?: string; // Translation key for the title
-  url: string;
+  url?: string; // URL for navigation (optional if it has children)
   icon: LucideIcon;
   contextual?: boolean;
+  children?: NavigationChild[]; // Support nested children for submenus
 }
 
 interface NavigationItem {
@@ -204,6 +205,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasExamsEnrollPermission = useHasPermission('exams.enroll_students');
   const hasExamsMarksPermission = useHasPermission('exams.enter_marks');
   const hasExamsReportsPermission = useHasPermission('exams.view_reports');
+  const hasExamsViewGradeCardsPermission = useHasPermission('exams.view_grade_cards');
+  const hasExamsViewConsolidatedReportsPermission = useHasPermission('exams.view_consolidated_reports');
+  const hasExamsViewClassReportsPermission = useHasPermission('exams.view_class_reports');
+  const hasExamsViewStudentReportsPermission = useHasPermission('exams.view_student_reports');
   const hasExamsAttendancePermission = useHasPermission('exams.manage_attendance');
   const hasExamsViewAttendancePermission = useHasPermission('exams.view_attendance_reports');
   const hasExamsRollNumbersReadPermission = useHasPermission('exams.roll_numbers.read');
@@ -431,24 +436,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/exams/marks",
             icon: NotebookPen,
           }] : []),
-          ...(hasExamsReportsPermission ? [{
-            title: "Exam Insights",
-            titleKey: "examInsights",
-            url: "/exams/reports",
-            icon: FileText,
-          }] : []),
-          ...(hasExamsReportsPermission ? [{
-            title: "Exam Analytics",
-            titleKey: "examAnalytics",
-            url: "/exams/analytics",
-            icon: BarChart3,
-          }] : []),
-          ...(hasExamsReportsPermission ? [{
-            title: "Exam Reports Hub",
-            titleKey: "examReportsHub",
-            url: "/exams/reports-hub",
-            icon: FileText,
-          }] : []),
           ...((hasExamsAttendancePermission || hasExamsViewAttendancePermission) ? [{
             title: "Exam Attendance",
             titleKey: "examAttendance",
@@ -467,11 +454,49 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/exams/secret-numbers",
             icon: KeyRound,
           }] : []),
-          ...((hasExamsRollNumbersReadPermission || hasExamsNumbersPrintPermission) ? [{
-            title: "Number Reports",
-            titleKey: "examNumberReports",
-            url: "/exams/number-reports",
-            icon: Printer,
+          // Reports Submenu - at the end
+          ...((hasExamsReportsPermission || hasExamsViewGradeCardsPermission || hasExamsViewConsolidatedReportsPermission || hasExamsViewClassReportsPermission || hasExamsViewStudentReportsPermission || hasExamsNumbersPrintPermission) ? [{
+            title: "Reports",
+            titleKey: "examReports",
+            icon: FileText,
+            children: [
+              ...(hasExamsReportsPermission ? [{
+                title: "Exam Insights",
+                titleKey: "examInsights",
+                url: "/exams/reports",
+                icon: FileText,
+              }] : []),
+              ...(hasExamsReportsPermission ? [{
+                title: "Exam Analytics",
+                titleKey: "examAnalytics",
+                url: "/exams/analytics",
+                icon: BarChart3,
+              }] : []),
+              ...(hasExamsViewConsolidatedReportsPermission ? [{
+                title: "Consolidated Mark Sheet",
+                titleKey: "consolidatedMarkSheet",
+                url: "/exams/reports/consolidated",
+                icon: LucideIcons.FileText,
+              }] : []),
+              ...(hasExamsViewClassReportsPermission ? [{
+                title: "Class Subject Mark Sheet",
+                titleKey: "classSubjectMarkSheet",
+                url: "/exams/reports/class-subject",
+                icon: LucideIcons.BarChart3,
+              }] : []),
+              ...(hasExamsViewStudentReportsPermission ? [{
+                title: "Student Report Card",
+                titleKey: "studentReportCard",
+                url: "/exams/reports/student",
+                icon: LucideIcons.User,
+              }] : []),
+              ...((hasExamsRollNumbersReadPermission || hasExamsNumbersPrintPermission) ? [{
+                title: "Number Reports",
+                titleKey: "examNumberReports",
+                url: "/exams/number-reports",
+                icon: Printer,
+              }] : []),
+            ],
           }] : []),
         ],
       }] : []),
@@ -748,6 +773,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
         // Show if user has any exam-related permission
         return hasExamsPermission || hasExamsManagePermission || hasExamsTimetablePermission ||
           hasExamsEnrollPermission || hasExamsMarksPermission || hasExamsReportsPermission ||
+          hasExamsViewGradeCardsPermission || hasExamsViewConsolidatedReportsPermission ||
+          hasExamsViewClassReportsPermission || hasExamsViewStudentReportsPermission ||
           hasExamsAttendancePermission || hasExamsViewAttendancePermission ||
           hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission ||
           hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission ||
@@ -882,8 +909,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
   // The sidebar will update when permissions are available, but won't disappear
 
   const isActive = useCallback((path: string) => currentPath === path, [currentPath]);
-  const isChildActive = useCallback((children?: Array<{ url: string }>) =>
-    children?.some(child => currentPath.startsWith(child.url)) || false, [currentPath]);
+  const isChildActive = useCallback((children?: Array<{ url?: string; children?: NavigationChild[] }>) => {
+    if (!children) return false;
+    const checkChildren = (items: Array<{ url?: string; children?: NavigationChild[] }>): boolean => {
+      return items.some(child => {
+        // Check if current path matches this child's URL
+        if (child.url && currentPath.startsWith(child.url)) return true;
+        // Recursively check nested children
+        if (child.children && checkChildren(child.children)) return true;
+        return false;
+      });
+    };
+    return checkChildren(children);
+  }, [currentPath]);
 
   const getNavCls = useCallback(({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50", []);
@@ -928,23 +966,66 @@ export const SmartSidebar = memo(function SmartSidebar() {
             {!collapsed && (
               <CollapsibleContent>
                 <SidebarMenu className={`${isRTL ? 'mr-4 border-r' : 'ml-4 border-l'} border-sidebar-border`}>
-                  {item.children.map((child: NavigationChild) => (
-                    <SidebarMenuItem key={child.url}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={child.url}
-                          className={getNavCls({ isActive: isActive(child.url) })}
-                          end={child.url === '/'}
-                        >
-                          <child.icon className="h-4 w-4" />
-                          <span>{child.title}</span>
-                          {child.contextual && navigationContext.currentModule.includes('attendance') && (
-                            <Star className="h-3 w-3 text-warning ml-auto" />
-                          )}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {item.children.map((child: NavigationChild) => {
+                    // If child has nested children, render as collapsible submenu
+                    if (child.children && child.children.length > 0) {
+                      const childKey = child.url || child.titleKey || child.title;
+                      const isChildExpanded = expandedItems.includes(childKey) || isChildActive(child.children);
+                      return (
+                        <Collapsible key={childKey} open={isChildExpanded} onOpenChange={() => toggleExpanded(childKey)}>
+                          <SidebarMenuItem>
+                            <CollapsibleTrigger asChild>
+                              <SidebarMenuButton className={getNavCls({ isActive: isChildActive(child.children) })}>
+                                <child.icon className="h-4 w-4" />
+                                <span className="flex-1">{child.title}</span>
+                                {isChildExpanded ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenu className={`${isRTL ? 'mr-4 border-r' : 'ml-4 border-l'} border-sidebar-border`}>
+                                {child.children.map((grandchild: NavigationChild) => (
+                                  <SidebarMenuItem key={grandchild.url || grandchild.titleKey || grandchild.title}>
+                                    <SidebarMenuButton asChild>
+                                      <NavLink
+                                        to={grandchild.url || '#'}
+                                        className={getNavCls({ isActive: isActive(grandchild.url || '#') })}
+                                        end={(grandchild.url || '#') === '/'}
+                                      >
+                                        <grandchild.icon className="h-4 w-4" />
+                                        <span>{grandchild.title}</span>
+                                      </NavLink>
+                                    </SidebarMenuButton>
+                                  </SidebarMenuItem>
+                                ))}
+                              </SidebarMenu>
+                            </CollapsibleContent>
+                          </SidebarMenuItem>
+                        </Collapsible>
+                      );
+                    }
+                    // Regular child item with URL
+                    return (
+                      <SidebarMenuItem key={child.url || child.titleKey || child.title}>
+                        <SidebarMenuButton asChild>
+                          <NavLink
+                            to={child.url || '#'}
+                            className={getNavCls({ isActive: isActive(child.url || '#') })}
+                            end={(child.url || '#') === '/'}
+                          >
+                            <child.icon className="h-4 w-4" />
+                            <span>{child.title}</span>
+                            {child.contextual && navigationContext.currentModule.includes('attendance') && (
+                              <Star className="h-3 w-3 text-warning ml-auto" />
+                            )}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </SidebarMenu>
               </CollapsibleContent>
             )}

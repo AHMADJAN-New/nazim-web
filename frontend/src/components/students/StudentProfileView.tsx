@@ -254,20 +254,62 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
 
   const [pictureUrl, setPictureUrl] = useState<string | null>(null);
 
-  // Fetch signed URL for student picture (bucket is private)
+  // Fetch student picture with authentication headers and convert to blob URL
   useEffect(() => {
-    if (!student?.picturePath || !student?.organizationId) {
+    if (!student?.id || !student?.picturePath) {
       setPictureUrl(null);
       return;
     }
 
-    // Use Laravel API endpoint for student picture
-    if (student?.id) {
-      setPictureUrl(`/api/students/${student.id}/picture`);
-    } else {
-      setPictureUrl(null);
-    }
-  }, [student?.id]);
+    let currentBlobUrl: string | null = null;
+
+    // Fetch image with authentication headers
+    const fetchImage = async () => {
+      try {
+        const { apiClient } = await import('@/lib/api/client');
+        const token = apiClient.getToken();
+        const url = `/api/students/${student.id}/picture`;
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'image/*',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          // 404 is expected if student has no picture - don't treat as error
+          if (response.status === 404) {
+            setPictureUrl(null);
+            return;
+          }
+          throw new Error(`Failed to fetch image: ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        currentBlobUrl = blobUrl;
+        setPictureUrl(blobUrl);
+      } catch (error) {
+        // Only log non-404 errors
+        if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+          console.error('Failed to fetch student picture:', error);
+        }
+        setPictureUrl(null);
+      }
+    };
+    
+    fetchImage();
+    
+    // Cleanup blob URL on unmount or when student changes
+    return () => {
+      if (currentBlobUrl) {
+        URL.revokeObjectURL(currentBlobUrl);
+      }
+    };
+  }, [student?.id, student?.picturePath]);
 
   const guardianPictureUrl = useMemo(() => {
     if (!student?.guardianPicturePath) return null;

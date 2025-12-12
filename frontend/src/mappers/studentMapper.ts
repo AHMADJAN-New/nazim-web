@@ -173,11 +173,14 @@ export function mapStudentApiToDomain(api: StudentApi.Student): Student {
  * Convert Domain Student model to API StudentInsert payload
  */
 export function mapStudentDomainToInsert(domain: Partial<Student>): StudentApi.StudentInsert {
+  // Build full_name from fullName or firstName + lastName, but don't allow empty
+  const fullName = domain.fullName || `${domain.firstName || ''} ${domain.lastName || ''}`.trim();
+  
   return {
     admission_no: domain.admissionNumber || '',
     student_code: domain.studentCode || null,
-    full_name: domain.fullName || `${domain.firstName || ''} ${domain.lastName || ''}`.trim(),
-    father_name: domain.fatherName || '',
+    full_name: fullName || null, // Use null instead of empty string
+    father_name: domain.fatherName || null, // Use null instead of empty string
     gender: domain.gender || 'male',
     organization_id: domain.organizationId || null,
     school_id: domain.schoolId || null,
@@ -229,7 +232,32 @@ export function mapStudentDomainToInsert(domain: Partial<Student>): StudentApi.S
 
 /**
  * Convert Domain Student model to API StudentUpdate payload
+ * Only includes fields that are actually provided (not undefined)
  */
 export function mapStudentDomainToUpdate(domain: Partial<Student>): StudentApi.StudentUpdate {
-  return mapStudentDomainToInsert(domain);
+  const insertData = mapStudentDomainToInsert(domain);
+  
+  // Filter out undefined values - only send fields that are explicitly set
+  const updateData: StudentApi.StudentUpdate = {};
+  Object.entries(insertData).forEach(([key, value]) => {
+    // Include the field if it's not undefined
+    // For required fields like admission_no, full_name, father_name, if they're empty string or null, don't include them
+    if (value !== undefined) {
+      if (key === 'admission_no' && (value === '' || value === null)) {
+        // Skip empty admission_no - it's required and shouldn't be set to empty
+        return;
+      }
+      if (key === 'full_name' && (value === '' || value === null || (typeof value === 'string' && value.trim() === ''))) {
+        // Skip empty full_name - it's required and shouldn't be set to empty
+        return;
+      }
+      if (key === 'father_name' && (value === '' || value === null || (typeof value === 'string' && value.trim() === ''))) {
+        // Skip empty father_name - it's required and shouldn't be set to empty
+        return;
+      }
+      updateData[key as keyof StudentApi.StudentUpdate] = value;
+    }
+  });
+  
+  return updateData;
 }

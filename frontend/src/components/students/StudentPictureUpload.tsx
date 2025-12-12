@@ -37,14 +37,71 @@ export function StudentPictureUpload({
 
     const [imageUrl, setImageUrl] = useState<string | null>(null);
 
-    // Fetch picture URL from Laravel API
+    // Fetch picture with authentication headers and convert to blob URL
     useEffect(() => {
         if (studentId && !previewUrl) {
-            // Use Laravel API endpoint for student picture
-            const pictureUrl = `/api/students/${studentId}/picture`;
-            setImageUrl(pictureUrl);
-            setImageError(false);
+            let currentBlobUrl: string | null = null;
+            
+            // Fetch image with authentication headers
+            const fetchImage = async () => {
+                try {
+                    const { apiClient } = await import('@/lib/api/client');
+                    // Get the token from apiClient
+                    const token = apiClient.getToken();
+                    // Use relative URL - Vite proxy will handle it
+                    const url = `/api/students/${studentId}/picture`;
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'image/*',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                        },
+                        credentials: 'include',
+                    });
+                    
+                    if (!response.ok) {
+                        // 404 is expected if student has no picture - don't treat as error
+                        if (response.status === 404) {
+                            setImageUrl(null);
+                            setImageError(false);
+                            return;
+                        }
+                        throw new Error(`Failed to fetch image: ${response.status}`);
+                    }
+                    
+                    const blob = await response.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    currentBlobUrl = blobUrl;
+                    setImageUrl(blobUrl);
+                    setImageError(false);
+                } catch (error) {
+                    // Only log non-404 errors
+                    if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+                        console.error('Failed to fetch student picture:', error);
+                    }
+                    // Don't set error state for 404 - it just means no picture exists
+                    if (error instanceof Error && error.message.includes('404')) {
+                        setImageUrl(null);
+                        setImageError(false);
+                    } else {
+                        setImageError(true);
+                    }
+                }
+            };
+            
+            fetchImage();
+            
+            // Cleanup blob URL on unmount or when studentId changes
+            return () => {
+                if (currentBlobUrl) {
+                    URL.revokeObjectURL(currentBlobUrl);
+                }
+            };
         } else {
+            if (imageUrl && imageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(imageUrl);
+            }
             setImageUrl(null);
         }
     }, [studentId, previewUrl]);
@@ -52,7 +109,7 @@ export function StudentPictureUpload({
     const resolvedPreview = useMemo(() => {
         // If user selected a new file, show that preview
         if (previewUrl) return previewUrl;
-        // Otherwise, show existing image from storage (signed URL)
+        // Otherwise, show existing image from blob URL
         if (imageUrl && !imageError) {
             return imageUrl;
         }
@@ -81,8 +138,45 @@ export function StudentPictureUpload({
             setPreviewUrl(null); // Clear preview so it shows the uploaded image
             setImageError(false);
             
-            // Update image URL to use Laravel API endpoint
-            setImageUrl(`/api/students/${studentId}/picture`);
+            // Re-fetch the image as a blob URL after upload
+            // This ensures the image displays correctly with authentication
+            const fetchImage = async () => {
+                try {
+                    const { apiClient } = await import('@/lib/api/client');
+                    const token = apiClient.getToken();
+                    const url = `/api/students/${studentId}/picture?t=${Date.now()}`; // Cache busting
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'image/*',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                        },
+                        credentials: 'include',
+                    });
+                    
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        // Clean up old blob URL if it exists
+                        if (imageUrl && imageUrl.startsWith('blob:')) {
+                            URL.revokeObjectURL(imageUrl);
+                        }
+                        setImageUrl(blobUrl);
+                        setImageError(false);
+                    } else {
+                        setImageUrl(null);
+                        setImageError(false);
+                    }
+                } catch (error) {
+                    if (import.meta.env.DEV) {
+                        console.error('Failed to fetch uploaded picture:', error);
+                    }
+                    setImageError(true);
+                }
+            };
+            
+            await fetchImage();
             
             // Clear the file input
             const input = document.getElementById('student-picture-input') as HTMLInputElement;

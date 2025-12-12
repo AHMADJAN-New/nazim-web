@@ -309,10 +309,89 @@ class StudentController extends Controller
 
         $validated = $request->validated();
 
+        // DEBUG: Log all received data
+        Log::info('Student Update Request', [
+            'student_id' => $id,
+            'user_id' => $user->id,
+            'received_fields' => array_keys($validated),
+            'received_data' => $validated,
+        ]);
+
+        // Get current student data for comparison
+        $currentData = $student->toArray();
+        Log::info('Current Student Data', [
+            'student_id' => $id,
+            'current_data' => $currentData,
+        ]);
+
         // Remove organization_id from update data to prevent changes
         unset($validated['organization_id']);
 
-        $student->update($validated);
+        // Filter out empty strings for required fields - convert to null or skip
+        // admission_no should not be empty - if it is, don't update it
+        if (isset($validated['admission_no']) && (trim($validated['admission_no']) === '' || $validated['admission_no'] === null)) {
+            unset($validated['admission_no']);
+        }
+
+        // CRITICAL: Prevent overwriting full_name with empty string
+        // full_name is required and should never be set to empty
+        if (isset($validated['full_name']) && (trim($validated['full_name']) === '' || $validated['full_name'] === null)) {
+            unset($validated['full_name']);
+        }
+
+        // CRITICAL: Prevent overwriting father_name with empty string
+        // father_name is required and should never be set to empty
+        if (isset($validated['father_name']) && (trim($validated['father_name']) === '' || $validated['father_name'] === null)) {
+            unset($validated['father_name']);
+        }
+
+        // Only update fields that are actually provided AND different from current values
+        $updateData = [];
+        foreach ($validated as $key => $value) {
+            // Skip null values unless they're explicitly being set to null for nullable fields
+            if ($value === null && !in_array($key, ['school_id', 'card_number', 'grandfather_name', 'mother_name', 'birth_year', 'birth_date', 'age', 'admission_year', 'orig_province', 'orig_district', 'orig_village', 'curr_province', 'curr_district', 'curr_village', 'nationality', 'preferred_language', 'previous_school', 'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_tazkira', 'guardian_picture_path', 'home_address', 'zamin_name', 'zamin_phone', 'zamin_tazkira', 'zamin_address', 'applying_grade', 'disability_status', 'emergency_contact_name', 'emergency_contact_phone', 'family_income', 'picture_path'])) {
+                continue;
+            }
+
+            // Compare with current value - only include if different
+            $currentValue = $currentData[$key] ?? null;
+            
+            // Normalize values for comparison (handle empty strings, null, etc.)
+            $normalizedNew = is_string($value) ? trim($value) : $value;
+            $normalizedCurrent = is_string($currentValue) ? trim($currentValue) : $currentValue;
+            
+            // Convert empty strings to null for comparison
+            if ($normalizedNew === '') $normalizedNew = null;
+            if ($normalizedCurrent === '') $normalizedCurrent = null;
+            
+            // Only add to updateData if value has actually changed
+            if ($normalizedNew !== $normalizedCurrent) {
+                $updateData[$key] = $value;
+            }
+        }
+
+        // DEBUG: Log what will be updated
+        Log::info('Student Update - Fields to Update', [
+            'student_id' => $id,
+            'fields_to_update' => array_keys($updateData),
+            'update_data' => $updateData,
+            'fields_unchanged' => array_diff(array_keys($validated), array_keys($updateData)),
+        ]);
+
+        // Only update if there's data to update
+        if (!empty($updateData)) {
+            $student->update($updateData);
+            Log::info('Student Update - Success', [
+                'student_id' => $id,
+                'updated_fields' => array_keys($updateData),
+            ]);
+        } else {
+            Log::info('Student Update - No Changes', [
+                'student_id' => $id,
+                'message' => 'No fields changed, skipping update',
+            ]);
+        }
+        
         $student->load(['organization', 'school']);
 
         return response()->json($student);
@@ -456,17 +535,29 @@ class StudentController extends Controller
                 return response()->json(['error' => 'Cannot update student from different organization'], 403);
             }
 
-            // Validate the file
-            $validated = $request->validate([
-                'file' => 'required|file|max:5120|mimes:jpeg,jpg,png,gif,webp',
-            ]);
+            // Validate the file - use image validation instead of mimes to avoid MIME type guessing
+            // Don't use isValid() as it may trigger finfo class usage
+            if (!$request->hasFile('file')) {
+                return response()->json(['error' => 'No file provided'], 422);
+            }
 
             $file = $request->file('file');
             if (!$file) {
                 return response()->json(['error' => 'No file provided'], 422);
             }
 
-            $extension = $file->getClientOriginalExtension();
+            // Check file size (max 5MB = 5120 KB)
+            if ($file->getSize() > 5120 * 1024) {
+                return response()->json(['error' => 'File size exceeds maximum allowed size of 5MB'], 422);
+            }
+
+            // Check extension instead of MIME type to avoid php_fileinfo dependency
+            $extension = strtolower($file->getClientOriginalExtension());
+            $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            if (!in_array($extension, $allowedExtensions)) {
+                return response()->json(['error' => 'The file must be an image (jpg, jpeg, png, gif, or webp).'], 422);
+            }
+
             $timestamp = time();
             $filename = "{$timestamp}_{$id}.{$extension}";
             $path = "{$student->organization_id}/students/{$id}/pictures/{$filename}";
@@ -476,11 +567,49 @@ class StudentController extends Controller
                 Storage::disk('local')->delete($student->picture_path);
             }
 
-            // Store new picture
-            Storage::disk('local')->put($path, file_get_contents($file));
+            // Store new picture - use move_uploaded_file() directly to avoid any MIME type detection
+            // This completely bypasses Laravel's file handling that might use finfo
+            try {
+                // Get the full storage path
+                $storagePath = storage_path('app/' . $path);
+                $storageDir = dirname($storagePath);
+                
+                // Create directory if it doesn't exist
+                if (!is_dir($storageDir)) {
+                    mkdir($storageDir, 0755, true);
+                }
+                
+                // Move the uploaded file directly using PHP's move_uploaded_file()
+                // This avoids any Laravel methods that might trigger finfo
+                $tempPath = $file->getPathname(); // Use getPathname() instead of getRealPath()
+                if (!move_uploaded_file($tempPath, $storagePath)) {
+                    // Fallback: try copy if move fails (for non-uploaded files in testing)
+                    if (!copy($tempPath, $storagePath)) {
+                        return response()->json(['error' => 'Failed to store file'], 500);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Error storing student picture: ' . $e->getMessage(), [
+                    'student_id' => $id,
+                    'path' => $path,
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                return response()->json(['error' => 'Failed to store file: ' . $e->getMessage()], 500);
+            }
 
             // Update student record
+            $oldPicturePath = $student->picture_path;
             $student->update(['picture_path' => $path]);
+
+            // DEBUG: Log picture upload
+            Log::info('Student Picture Upload', [
+                'student_id' => $id,
+                'user_id' => $user->id,
+                'old_picture_path' => $oldPicturePath,
+                'new_picture_path' => $path,
+                'file_size' => $file->getSize(),
+                'file_extension' => $extension,
+            ]);
 
             return response()->json([
                 'message' => 'Picture uploaded successfully',
@@ -535,24 +664,68 @@ class StudentController extends Controller
 
             // If no picture_path, return 404
             if (!$student->picture_path) {
+                Log::info('Student picture requested but no picture_path', ['student_id' => $id]);
                 abort(404, 'Picture not found');
             }
 
             // Check if file exists
             if (!Storage::disk('local')->exists($student->picture_path)) {
+                Log::warning('Student picture file not found on disk', [
+                    'student_id' => $id,
+                    'picture_path' => $student->picture_path,
+                    'storage_path' => storage_path('app/' . $student->picture_path),
+                ]);
                 abort(404, 'Picture file not found');
             }
 
-            $file = Storage::disk('local')->get($student->picture_path);
-            $mimeType = Storage::disk('local')->mimeType($student->picture_path) ?? 'image/jpeg';
+            // Try to get the file content
+            try {
+                $file = Storage::disk('local')->get($student->picture_path);
+            } catch (\Exception $e) {
+                Log::error('Error reading student picture file', [
+                    'student_id' => $id,
+                    'picture_path' => $student->picture_path,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                abort(500, 'Error reading picture file');
+            }
+            
+            if (!$file) {
+                Log::error('Student picture file is empty', [
+                    'student_id' => $id,
+                    'picture_path' => $student->picture_path,
+                ]);
+                abort(404, 'Picture file is empty');
+            }
+            
+            // Determine MIME type from file extension (avoid mimeType() which requires finfo class)
+            $extension = pathinfo($student->picture_path, PATHINFO_EXTENSION);
+            $mimeTypes = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+            ];
+            $mimeType = $mimeTypes[strtolower($extension)] ?? 'image/jpeg';
 
             return response($file, 200)
                 ->header('Content-Type', $mimeType)
                 ->header('Content-Disposition', 'inline; filename="' . basename($student->picture_path) . '"')
                 ->header('Cache-Control', 'public, max-age=3600');
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            // Re-throw HTTP exceptions (abort calls)
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('Error getting student picture: ' . $e->getMessage());
-            abort(404, 'Picture not found');
+            Log::error('Error getting student picture', [
+                'student_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            abort(500, 'Error getting student picture: ' . $e->getMessage());
         }
     }
 

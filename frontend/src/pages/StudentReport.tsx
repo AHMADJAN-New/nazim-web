@@ -80,6 +80,92 @@ const buildLocation = (province?: string | null, district?: string | null, villa
   return parts.length ? parts.join(', ') : '—';
 };
 
+// Component for authenticated student picture display
+const StudentAvatar = ({ student }: { student: Student }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+
+  // Fetch image with authentication when component mounts
+  useEffect(() => {
+    if (!student.picturePath || !student.id) {
+      setImageUrl(null);
+      return;
+    }
+
+    let currentBlobUrl: string | null = null;
+
+    const fetchImage = async () => {
+      try {
+        const { apiClient } = await import('@/lib/api/client');
+        const token = apiClient.getToken();
+        const url = `/api/students/${student.id}/picture`;
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'image/*',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setImageUrl(null);
+            setImageError(false);
+            return;
+          }
+          throw new Error(`Failed to fetch image: ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        currentBlobUrl = blobUrl;
+        setImageUrl(blobUrl);
+        setImageError(false);
+      } catch (error) {
+        if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+          console.error('Failed to fetch student picture:', error);
+        }
+        setImageUrl(null);
+        setImageError(true);
+      }
+    };
+    
+    fetchImage();
+    
+    return () => {
+      if (currentBlobUrl) {
+        URL.revokeObjectURL(currentBlobUrl);
+      }
+    };
+  }, [student.id, student.picturePath]);
+
+  return (
+    <div className="flex items-center justify-center">
+      {imageUrl && !imageError ? (
+        <img
+          src={imageUrl}
+          alt={student.fullName}
+          className="w-10 h-10 rounded-full object-cover border-2 border-border"
+          onError={() => {
+            setImageError(true);
+            if (imageUrl && imageUrl.startsWith('blob:')) {
+              URL.revokeObjectURL(imageUrl);
+            }
+            setImageUrl(null);
+          }}
+        />
+      ) : null}
+      <div 
+        className={`w-10 h-10 rounded-full bg-muted flex items-center justify-center border-2 border-border ${imageUrl && !imageError ? 'hidden' : 'flex'}`}
+      >
+        <User className="h-5 w-5 text-muted-foreground" />
+      </div>
+    </div>
+  );
+};
+
 const StudentReport = () => {
   const { t, isRTL } = useLanguage();
   const { data: profile } = useProfile();
@@ -187,29 +273,7 @@ const StudentReport = () => {
       header: '',
       cell: ({ row }) => {
         const student = row.original;
-        return (
-          <div className="flex items-center justify-center">
-            {student.picturePath ? (
-              <img
-                src={`/api/students/${student.id}/picture`}
-                alt={student.fullName}
-                className="w-10 h-10 rounded-full object-cover border-2 border-border"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  if (target.nextElementSibling) {
-                    (target.nextElementSibling as HTMLElement).style.display = 'flex';
-                  }
-                }}
-              />
-            ) : null}
-            <div 
-              className={`w-10 h-10 rounded-full bg-muted flex items-center justify-center border-2 border-border ${student.picturePath ? 'hidden' : 'flex'}`}
-            >
-              <User className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </div>
-        );
+        return <StudentAvatar student={student} />;
       },
     },
     {

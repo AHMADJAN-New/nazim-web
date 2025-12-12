@@ -61,6 +61,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 2f: Seeding assets...');
         $this->call(AssetSeeder::class);
 
+        // Step 2g: Seed grades for all organizations
+        $this->command->info('Step 2g: Seeding grades...');
+        $this->call(GradeSeeder::class);
+
         // Step 3: Create users for Organization 1
         $this->command->info('Step 3: Creating users for Organization One...');
         $this->createUsersForOrganization($org1, [

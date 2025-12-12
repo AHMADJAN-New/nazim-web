@@ -14,14 +14,30 @@ export const useStudentPictureUpload = () => {
     
     return useMutation({
         mutationFn: async ({ studentId, organizationId, schoolId, file }: UploadStudentPictureArgs) => {
+            // DEBUG: Log picture upload
+            if (import.meta.env.DEV) {
+                console.log('[Picture Upload] Starting upload', {
+                    studentId,
+                    organizationId,
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileType: file.type,
+                });
+            }
+
             const formData = new FormData();
             formData.append('file', file);
 
             // Don't set Content-Type header - browser will set it automatically with boundary for FormData
             const response = await apiClient.post(`/students/${studentId}/picture`, formData);
 
-            // Invalidate student queries to refresh the data
-            void queryClient.invalidateQueries({ queryKey: ['students'] });
+            // DEBUG: Log success
+            if (import.meta.env.DEV) {
+                console.log('[Picture Upload] Upload successful', {
+                    studentId,
+                    picturePath: response.picture_path,
+                });
+            }
 
             // Return picture URL and path
             const pictureUrl = `/api/students/${studentId}/picture`;
@@ -30,10 +46,17 @@ export const useStudentPictureUpload = () => {
                 picturePath: response.picture_path,
             };
         },
-        onSuccess: () => {
+        onSuccess: async () => {
             showToast.success('toast.pictureUploaded');
+            // Invalidate and refetch student queries to refresh the data immediately
+            await queryClient.invalidateQueries({ queryKey: ['students'] });
+            await queryClient.refetchQueries({ queryKey: ['students'] });
         },
         onError: (error: Error) => {
+            // DEBUG: Log error
+            if (import.meta.env.DEV) {
+                console.error('[Picture Upload] Upload failed', error);
+            }
             showToast.error(error.message || 'toast.pictureUploadFailed');
         },
     });

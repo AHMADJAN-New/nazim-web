@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { studentSchema, type StudentFormData } from '@/lib/validations';
-import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -39,6 +39,14 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
 import StudentFormDialog from '@/components/students/StudentFormDialog';
@@ -52,24 +60,132 @@ import { toast } from 'sonner';
 
 // Helper function to convert StudentFormData to domain Student format
 const cleanStudentData = (data: StudentFormData): Partial<Student> => {
-  const cleaned: any = { ...data };
+  const cleaned: Partial<Student> = {};
 
-  // List of optional fields that should be null if empty
-  const optionalFields = [
-    'cardNumber', 'grandfatherName', 'motherName', 'birthYear', 'birthDate',
-    'admissionYear', 'origProvince', 'origDistrict', 'origVillage',
-    'currProvince', 'currDistrict', 'currVillage', 'nationality',
-    'preferredLanguage', 'previousSchool', 'guardianName', 'guardianRelation',
-    'guardianPhone', 'guardianTazkira', 'guardianPicturePath', 'homeAddress',
-    'zaminName', 'zaminPhone', 'zaminTazkira', 'zaminAddress', 'applyingGrade',
-    'disabilityStatus', 'emergencyContactName', 'emergencyContactPhone', 'familyIncome'
-  ];
+  // Map snake_case form fields to camelCase domain fields ONLY
+  // Don't keep both formats - only camelCase for domain model
+  if (data.admission_no !== undefined) {
+    cleaned.admissionNumber = data.admission_no?.trim() || '';
+  }
+  if (data.card_number !== undefined) {
+    cleaned.cardNumber = data.card_number || null;
+  }
+  if (data.full_name !== undefined) {
+    cleaned.fullName = data.full_name?.trim() || '';
+  }
+  if (data.father_name !== undefined) {
+    cleaned.fatherName = data.father_name?.trim() || '';
+  }
+  if (data.grandfather_name !== undefined) {
+    cleaned.grandfatherName = data.grandfather_name || null;
+  }
+  if (data.mother_name !== undefined) {
+    cleaned.motherName = data.mother_name || null;
+  }
+  if (data.birth_year !== undefined) {
+    cleaned.birthYear = data.birth_year || null;
+  }
+  if (data.birth_date !== undefined) {
+    cleaned.birthDate = data.birth_date || null;
+  }
+  if (data.admission_year !== undefined) {
+    cleaned.admissionYear = data.admission_year || null;
+  }
+  if (data.orig_province !== undefined) {
+    cleaned.origProvince = data.orig_province || null;
+  }
+  if (data.orig_district !== undefined) {
+    cleaned.origDistrict = data.orig_district || null;
+  }
+  if (data.orig_village !== undefined) {
+    cleaned.origVillage = data.orig_village || null;
+  }
+  if (data.curr_province !== undefined) {
+    cleaned.currProvince = data.curr_province || null;
+  }
+  if (data.curr_district !== undefined) {
+    cleaned.currDistrict = data.curr_district || null;
+  }
+  if (data.curr_village !== undefined) {
+    cleaned.currVillage = data.curr_village || null;
+  }
+  if (data.preferred_language !== undefined) {
+    cleaned.preferredLanguage = data.preferred_language || null;
+  }
+  if (data.previous_school !== undefined) {
+    cleaned.previousSchool = data.previous_school || null;
+  }
+  if (data.guardian_name !== undefined) {
+    cleaned.guardianName = data.guardian_name || null;
+  }
+  if (data.guardian_relation !== undefined) {
+    cleaned.guardianRelation = data.guardian_relation || null;
+  }
+  if (data.guardian_phone !== undefined) {
+    cleaned.guardianPhone = data.guardian_phone || null;
+  }
+  if (data.guardian_tazkira !== undefined) {
+    cleaned.guardianTazkira = data.guardian_tazkira || null;
+  }
+  if (data.guardian_picture_path !== undefined) {
+    cleaned.guardianPicturePath = data.guardian_picture_path || null;
+  }
+  if (data.home_address !== undefined) {
+    cleaned.homeAddress = data.home_address || null;
+  }
+  if (data.zamin_name !== undefined) {
+    cleaned.zaminName = data.zamin_name || null;
+  }
+  if (data.zamin_phone !== undefined) {
+    cleaned.zaminPhone = data.zamin_phone || null;
+  }
+  if (data.zamin_tazkira !== undefined) {
+    cleaned.zaminTazkira = data.zamin_tazkira || null;
+  }
+  if (data.zamin_address !== undefined) {
+    cleaned.zaminAddress = data.zamin_address || null;
+  }
+  if (data.applying_grade !== undefined) {
+    cleaned.applyingGrade = data.applying_grade || null;
+  }
+  if (data.disability_status !== undefined) {
+    cleaned.disabilityStatus = data.disability_status || null;
+  }
+  if (data.emergency_contact_name !== undefined) {
+    cleaned.emergencyContactName = data.emergency_contact_name || null;
+  }
+  if (data.emergency_contact_phone !== undefined) {
+    cleaned.emergencyContactPhone = data.emergency_contact_phone || null;
+  }
+  if (data.family_income !== undefined) {
+    cleaned.familyIncome = data.family_income || null;
+  }
+  if (data.school_id !== undefined) {
+    cleaned.schoolId = data.school_id || null;
+  }
+  if (data.gender !== undefined) {
+    cleaned.gender = data.gender;
+  }
+  if (data.age !== undefined) {
+    cleaned.age = data.age || null;
+  }
+  if (data.is_orphan !== undefined) {
+    cleaned.isOrphan = data.is_orphan;
+  }
+  if (data.admission_fee_status !== undefined) {
+    cleaned.admissionFeeStatus = data.admission_fee_status;
+  }
+  if (data.student_status !== undefined) {
+    cleaned.status = data.student_status as Student['status'];
+  }
+  if (data.nationality !== undefined) {
+    cleaned.nationality = data.nationality || null;
+  }
 
-  optionalFields.forEach(field => {
-    if (cleaned[field] === '' || (typeof cleaned[field] === 'string' && cleaned[field].trim() === '')) {
-      cleaned[field] = null;
-    }
-  });
+  // Ensure admissionNumber is never empty string - if empty, don't include it in update
+  if (cleaned.admissionNumber === '' || cleaned.admissionNumber === null) {
+    delete cleaned.admissionNumber;
+  }
 
   return cleaned;
 };
@@ -148,7 +264,7 @@ export function Students() {
     },
   });
 
-  const onDialogSubmit = async (values: any, isEdit: boolean, pictureFile?: File | null) => {
+  const onDialogSubmit = async (values: StudentFormData, isEdit: boolean, pictureFile?: File | null) => {
     // Use same cleaning as existing submit
     const cleanedData = cleanStudentData(values as StudentFormData);
     // Resolve organizationId respecting multi-tenancy
@@ -177,33 +293,182 @@ export function Students() {
     if (isEdit && selectedStudent) {
       // Remove organizationId from update payload - it should never be updated
       const { organizationId: _, ...updatePayload } = payload;
-      await new Promise<void>((resolve, reject) => {
-        updateStudent.mutate(
-          { id: selectedStudent.id, data: updatePayload },
-          {
-            onSuccess: async (updatedStudent) => {
-              // Upload picture if one was selected during edit
-              if (pictureFile && updatedStudent?.id && organizationId) {
-                try {
-                  await pictureUpload.mutateAsync({
-                    file: pictureFile,
-                    studentId: updatedStudent.id,
-                    organizationId,
-                    schoolId: cleanedData.schoolId || null,
-                  });
-                } catch (error) {
-                  if (import.meta.env.DEV) {
-                    console.error('Failed to upload picture:', error);
-                  }
-                  // Don't reject the whole mutation if picture upload fails
-                }
-              }
-              resolve();
-            },
-            onError: () => reject()
+      
+      // DEBUG: Log original student data and form data
+      if (import.meta.env.DEV) {
+        console.log('[Student Update] Original Student Data:', selectedStudent);
+        console.log('[Student Update] Form Payload (after cleanStudentData):', updatePayload);
+      }
+      
+      // Only send changed fields - compare with original student data
+      // CRITICAL: Both selectedStudent and updatePayload are now in camelCase domain format
+      const changedFields: Partial<Student> = {};
+      const unchangedFields: string[] = [];
+      
+      // Normalize values for comparison
+      const normalizeValue = (val: any): any => {
+        if (val === undefined || val === null || val === '') return null;
+        if (typeof val === 'string') {
+          const trimmed = val.trim();
+          return trimmed === '' ? null : trimmed;
+        }
+        if (val instanceof Date) return val.toISOString();
+        return val;
+      };
+      
+      // Compare each field in updatePayload with selectedStudent
+      Object.keys(updatePayload).forEach((key) => {
+        const domainKey = key as keyof Student;
+        const newValue = updatePayload[domainKey];
+        const oldValue = selectedStudent[domainKey];
+        
+        const normalizedNew = normalizeValue(newValue);
+        const normalizedOld = normalizeValue(oldValue);
+        
+        // Only include if value has actually changed
+        if (normalizedNew !== normalizedOld) {
+          // CRITICAL: Don't send null values that would overwrite existing data
+          // Only send if new value is explicitly provided and different
+          if (normalizedNew !== null || normalizedOld === null) {
+            changedFields[domainKey] = newValue;
+            if (import.meta.env.DEV) {
+              console.log(`[Student Update] Field Changed: ${domainKey}`, {
+                old: normalizedOld,
+                new: normalizedNew,
+              });
+            }
+          } else {
+            // New value is null but old value exists - don't overwrite
+            if (import.meta.env.DEV) {
+              console.log(`[Student Update] Field Skipped (null would overwrite): ${domainKey}`, {
+                old: normalizedOld,
+                new: normalizedNew,
+              });
+            }
+            unchangedFields.push(domainKey);
           }
-        );
+        } else {
+          unchangedFields.push(domainKey);
+        }
       });
+      
+      // CRITICAL: Only send fields that were actually in the form values
+      // Remove any fields from changedFields that weren't explicitly in the form
+      const fieldsToRemove: string[] = [];
+      Object.keys(changedFields).forEach((key) => {
+        // Map camelCase domain keys back to snake_case form keys
+        const formKeyMap: Record<string, string> = {
+          'admissionNumber': 'admission_no',
+          'cardNumber': 'card_number',
+          'fullName': 'full_name',
+          'fatherName': 'father_name',
+          'grandfatherName': 'grandfather_name',
+          'motherName': 'mother_name',
+          'birthYear': 'birth_year',
+          'birthDate': 'birth_date',
+          'admissionYear': 'admission_year',
+          'origProvince': 'orig_province',
+          'origDistrict': 'orig_district',
+          'origVillage': 'orig_village',
+          'currProvince': 'curr_province',
+          'currDistrict': 'curr_district',
+          'currVillage': 'curr_village',
+          'preferredLanguage': 'preferred_language',
+          'previousSchool': 'previous_school',
+          'guardianName': 'guardian_name',
+          'guardianRelation': 'guardian_relation',
+          'guardianPhone': 'guardian_phone',
+          'guardianTazkira': 'guardian_tazkira',
+          'guardianPicturePath': 'guardian_picture_path',
+          'homeAddress': 'home_address',
+          'zaminName': 'zamin_name',
+          'zaminPhone': 'zamin_phone',
+          'zaminTazkira': 'zamin_tazkira',
+          'zaminAddress': 'zamin_address',
+          'applyingGrade': 'applying_grade',
+          'disabilityStatus': 'disability_status',
+          'emergencyContactName': 'emergency_contact_name',
+          'emergencyContactPhone': 'emergency_contact_phone',
+          'familyIncome': 'family_income',
+          'schoolId': 'school_id',
+          'isOrphan': 'is_orphan',
+          'admissionFeeStatus': 'admission_fee_status',
+          'status': 'student_status',
+        };
+        
+        const formKey = formKeyMap[key] || key;
+        // If the field wasn't in the form values, don't send it
+        // This prevents sending fields that weren't actually changed by the user
+        if (!(formKey in values) && key !== 'organizationId') {
+          if (import.meta.env.DEV) {
+            console.log(`[Student Update] Removing ${key} from changes - not in form values`, {
+              formKey,
+              inValues: formKey in values,
+            });
+          }
+          fieldsToRemove.push(key);
+        }
+      });
+      
+      fieldsToRemove.forEach((key) => {
+        delete changedFields[key as keyof Student];
+        unchangedFields.push(key);
+      });
+      
+      // DEBUG: Log what will be sent
+      if (import.meta.env.DEV) {
+        console.log('[Student Update] Changed Fields:', Object.keys(changedFields));
+        console.log('[Student Update] Unchanged Fields:', unchangedFields);
+        console.log('[Student Update] Payload to Send:', changedFields);
+      }
+      
+      // Only update if there are changes
+      if (Object.keys(changedFields).length > 0) {
+        await new Promise<void>((resolve, reject) => {
+          updateStudent.mutate(
+            { id: selectedStudent.id, data: changedFields },
+            {
+              onSuccess: async (updatedStudent) => {
+                // Upload picture if one was selected during edit (don't error if no picture)
+                if (pictureFile && updatedStudent?.id && organizationId) {
+                  try {
+                    await pictureUpload.mutateAsync({
+                      file: pictureFile,
+                      studentId: updatedStudent.id,
+                      organizationId,
+                      schoolId: cleanedData.schoolId || null,
+                    });
+                  } catch (error) {
+                    // Silently fail - picture upload is optional
+                    if (import.meta.env.DEV) {
+                      console.warn('Picture upload failed (non-critical):', error);
+                    }
+                  }
+                }
+                resolve();
+              },
+              onError: () => reject()
+            }
+          );
+        });
+      } else {
+        // No changes to student data, but still try to upload picture if provided
+        if (pictureFile && selectedStudent.id && organizationId) {
+          try {
+            await pictureUpload.mutateAsync({
+              file: pictureFile,
+              studentId: selectedStudent.id,
+              organizationId,
+              schoolId: cleanedData.schoolId || null,
+            });
+          } catch (error) {
+            // Silently fail - picture upload is optional
+            if (import.meta.env.DEV) {
+              console.warn('Picture upload failed (non-critical):', error);
+            }
+          }
+        }
+      }
     } else {
       await new Promise<void>((resolve, reject) => {
         createStudent.mutate(payload, {
@@ -265,11 +530,18 @@ export function Students() {
   };
 
   const handleEdit = (student: Student) => {
+    // DEBUG: Log the student being edited
+    if (import.meta.env.DEV) {
+      console.log('[handleEdit] Setting selectedStudent:', student);
+      console.log('[handleEdit] Student fields:', {
+        fullName: student.fullName,
+        fatherName: student.fatherName,
+        schoolId: student.schoolId,
+        admissionNumber: student.admissionNumber,
+      });
+    }
     setSelectedStudent(student);
-    reset({
-      ...student,
-      age: student.age ?? undefined,
-    });
+    // Note: The form will be reset by StudentFormDialog component
     setIsEditOpen(true);
   };
 
@@ -359,7 +631,12 @@ export function Students() {
         
         return true;
       })
-      .sort((a, b) => a.admissionNumber.localeCompare(b.admissionNumber));
+      .sort((a, b) => {
+        // Handle cases where admissionNumber might be undefined
+        const aAdmission = a.admissionNumber || '';
+        const bAdmission = b.admissionNumber || '';
+        return aAdmission.localeCompare(bAdmission);
+      });
   }, [students, statusFilter, genderFilter, schoolFilter, searchQuery]);
 
   // Define columns for DataTable
@@ -427,63 +704,52 @@ export function Students() {
       id: 'actions',
       header: () => <div className="text-right">{t('students.actions') || 'Actions'}</div>,
       cell: ({ row }) => (
-        <div className="flex justify-end gap-1 flex-wrap">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => handleView(row.original)}
-            title={t('students.viewProfile') || 'View Profile'}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => handlePrint(row.original)}
-            title={t('students.printProfile') || 'Print Profile'}
-          >
-            <Printer className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setDocumentsDialogStudent(row.original)}
-            title={t('students.studentDocuments') || 'Documents'}
-          >
-            <FileText className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setHistoryDialogStudent(row.original)}
-            title={t('students.educationalHistory') || 'History'}
-          >
-            <BookOpen className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setDisciplineDialogStudent(row.original)}
-            title={t('students.disciplineRecords') || 'Discipline'}
-          >
-            <AlertTriangle className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => handleEdit(row.original)}
-            title={t('common.edit') || 'Edit'}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => handleDelete(row.original)}
-            title={t('common.delete') || 'Delete'}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">{t('common.actions') || 'Actions'}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleView(row.original)}>
+                <Eye className="mr-2 h-4 w-4" />
+                {t('students.viewProfile') || 'View Profile'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handlePrint(row.original)}>
+                <Printer className="mr-2 h-4 w-4" />
+                {t('students.printProfile') || 'Print Profile'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setDocumentsDialogStudent(row.original)}>
+                <FileText className="mr-2 h-4 w-4" />
+                {t('students.studentDocuments') || 'Documents'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setHistoryDialogStudent(row.original)}>
+                <BookOpen className="mr-2 h-4 w-4" />
+                {t('students.educationalHistory') || 'Educational History'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDisciplineDialogStudent(row.original)}>
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                {t('students.disciplineRecords') || 'Discipline Records'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleEdit(row.original)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                {t('common.edit') || 'Edit'}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleDelete(row.original)}
+                className="text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t('common.delete') || 'Delete'}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ),
     },

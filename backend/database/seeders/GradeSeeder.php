@@ -13,10 +13,10 @@ class GradeSeeder extends Seeder
      *
      * Creates default Islamic school grades for each organization:
      * - ممتاز (Excellent): 80-100%
-     * - جدا جید (Very Good): 70-79.99%
+     * - جید جدا (Very Good): 70-79.99%
      * - جید (Good): 60-69.99%
-     * - مقبول (Acceptable): 45-59.99%
-     * - راسب (Fail): 0-44.99%
+     * - مقبول (Pass): 40-59.99%
+     * - راسب (Fail): 0-39.99%
      */
     public function run(): void
     {
@@ -59,6 +59,7 @@ class GradeSeeder extends Seeder
         $createdCount = 0;
 
         // Define default Islamic school grades
+        // Based on: ممتاز 80+, جید جدا 70+, جید 60+, مقبول 40+, راسب -40
         $grades = [
             [
                 'name_en' => 'Excellent',
@@ -72,9 +73,9 @@ class GradeSeeder extends Seeder
             ],
             [
                 'name_en' => 'Very Good',
-                'name_ar' => 'جدا جید',
-                'name_ps' => 'جدا جید',
-                'name_fa' => 'جدا جید',
+                'name_ar' => 'جید جدا',
+                'name_ps' => 'جید جدا',
+                'name_fa' => 'جید جدا',
                 'min_percentage' => 70.00,
                 'max_percentage' => 79.99,
                 'order' => 4,
@@ -91,11 +92,11 @@ class GradeSeeder extends Seeder
                 'is_pass' => true,
             ],
             [
-                'name_en' => 'Acceptable',
+                'name_en' => 'Pass',
                 'name_ar' => 'مقبول',
                 'name_ps' => 'مقبول',
                 'name_fa' => 'مقبول',
-                'min_percentage' => 45.00,
+                'min_percentage' => 40.00,
                 'max_percentage' => 59.99,
                 'order' => 2,
                 'is_pass' => true,
@@ -106,7 +107,7 @@ class GradeSeeder extends Seeder
                 'name_ps' => 'راسب',
                 'name_fa' => 'راسب',
                 'min_percentage' => 0.00,
-                'max_percentage' => 44.99,
+                'max_percentage' => 39.99,
                 'order' => 1,
                 'is_pass' => false,
             ],
