@@ -22,6 +22,7 @@ class FinanceProject extends Model
         'id',
         'organization_id',
         'school_id',
+        'currency_id',
         'name',
         'code',
         'description',
@@ -74,6 +75,14 @@ class FinanceProject extends Model
     public function school()
     {
         return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    /**
+     * Get the currency for the project
+     */
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency_id');
     }
 
     /**

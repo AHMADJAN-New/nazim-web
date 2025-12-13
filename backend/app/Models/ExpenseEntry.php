@@ -23,6 +23,7 @@ class ExpenseEntry extends Model
         'id',
         'organization_id',
         'school_id',
+        'currency_id',
         'account_id',
         'expense_category_id',
         'project_id',
@@ -115,6 +116,14 @@ class ExpenseEntry extends Model
     public function school()
     {
         return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    /**
+     * Get the currency for the entry
+     */
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency_id');
     }
 
     /**

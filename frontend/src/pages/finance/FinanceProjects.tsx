@@ -38,6 +38,7 @@ import {
     type FinanceProject,
     type FinanceProjectFormData,
 } from '@/hooks/useFinance';
+import { useCurrencies } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, FolderKanban, TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
@@ -46,6 +47,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 export default function FinanceProjects() {
     const { t } = useLanguage();
     const { data: projects, isLoading } = useFinanceProjects();
+    const { data: currencies } = useCurrencies({ isActive: true });
     const createProject = useCreateFinanceProject();
     const updateProject = useUpdateFinanceProject();
     const deleteProject = useDeleteFinanceProject();
@@ -57,9 +59,10 @@ export default function FinanceProjects() {
     const [formData, setFormData] = useState<FinanceProjectFormData>({
         name: '',
         description: '',
+        currencyId: null,
         startDate: null,
         endDate: null,
-        targetAmount: null,
+        budgetAmount: null,
         isActive: true,
     });
 
@@ -67,9 +70,10 @@ export default function FinanceProjects() {
         setFormData({
             name: '',
             description: '',
+            currencyId: null,
             startDate: null,
             endDate: null,
-            targetAmount: null,
+            budgetAmount: null,
             isActive: true,
         });
     };
@@ -98,9 +102,10 @@ export default function FinanceProjects() {
         setFormData({
             name: project.name,
             description: project.description || '',
+            currencyId: project.currencyId || null,
             startDate: project.startDate ? project.startDate.toISOString().split('T')[0] : null,
             endDate: project.endDate ? project.endDate.toISOString().split('T')[0] : null,
-            targetAmount: project.targetAmount,
+            budgetAmount: project.budgetAmount,
             isActive: project.isActive,
         });
     };
@@ -153,17 +158,38 @@ export default function FinanceProjects() {
                     />
                 </div>
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="targetAmount">{t('finance.targetAmount') || 'Target Amount'}</Label>
-                <Input
-                    id="targetAmount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.targetAmount || ''}
-                    onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value ? parseFloat(e.target.value) : null })}
-                    placeholder={t('finance.targetAmountPlaceholder') || 'Optional target amount...'}
-                />
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="currencyId">{t('finance.currency') || 'Currency'}</Label>
+                    <Select
+                        value={formData.currencyId || ''}
+                        onValueChange={(value) => setFormData({ ...formData, currencyId: value || null })}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                            {currencies?.map((currency) => (
+                                <SelectItem key={currency.id} value={currency.id}>
+                                    {currency.code} - {currency.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="budgetAmount">{t('finance.budgetAmount') || 'Budget Amount'}</Label>
+                    <Input
+                        id="budgetAmount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.budgetAmount || ''}
+                        onChange={(e) => setFormData({ ...formData, budgetAmount: e.target.value ? parseFloat(e.target.value) : null })}
+                        placeholder={t('finance.budgetAmountPlaceholder') || 'Optional budget amount...'}
+                    />
+                </div>
             </div>
             <div className="flex items-center space-x-2">
                 <Switch
@@ -183,16 +209,16 @@ export default function FinanceProjects() {
     );
 
     const calculateProgress = (project: FinanceProject) => {
-        if (!project.targetAmount || project.targetAmount === 0) return null;
-        return Math.min((project.totalIncome / project.targetAmount) * 100, 100);
+        if (!project.budgetAmount || project.budgetAmount === 0) return null;
+        return Math.min((project.totalIncome / project.budgetAmount) * 100, 100);
     };
 
     return (
-        <div className="space-y-6">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
+                    <h1 className="text-2xl font-bold">
                         {t('finance.projects') || 'Projects & Funds'}
                     </h1>
                     <p className="text-muted-foreground">
@@ -262,7 +288,7 @@ export default function FinanceProjects() {
                                             <Progress value={progress} />
                                             <div className="flex justify-between text-xs text-muted-foreground">
                                                 <span>{formatCurrency(project.totalIncome)}</span>
-                                                <span>{t('finance.of') || 'of'} {formatCurrency(project.targetAmount!)}</span>
+                                                <span>{t('finance.of') || 'of'} {formatCurrency(project.budgetAmount!)}</span>
                                             </div>
                                         </div>
                                     )}

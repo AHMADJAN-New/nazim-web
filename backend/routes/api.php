@@ -424,4 +424,11 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/finance/reports/project-summary', [\App\Http\Controllers\FinanceReportController::class, 'projectSummary']);
     Route::get('/finance/reports/donor-summary', [\App\Http\Controllers\FinanceReportController::class, 'donorSummary']);
     Route::get('/finance/reports/account-balances', [\App\Http\Controllers\FinanceReportController::class, 'accountBalances']);
+
+    // Currency Management
+    Route::apiResource('currencies', \App\Http\Controllers\CurrencyController::class);
+    
+    // Exchange Rate Management
+    Route::apiResource('exchange-rates', \App\Http\Controllers\ExchangeRateController::class);
+    Route::post('/exchange-rates/convert', [\App\Http\Controllers\ExchangeRateController::class, 'convert']);
 });

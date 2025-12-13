@@ -48,6 +48,7 @@ import {
     type ExpenseEntry,
     type ExpenseEntryFormData,
 } from '@/hooks/useFinance';
+import { useCurrencies } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, TrendingDown, Search, Filter, Calendar, X } from 'lucide-react';
@@ -59,6 +60,7 @@ export default function ExpenseEntries() {
     const { data: accounts } = useFinanceAccounts();
     const { data: categories } = useExpenseCategories();
     const { data: projects } = useFinanceProjects();
+    const { data: currencies } = useCurrencies({ isActive: true });
     const createEntry = useCreateExpenseEntry();
     const updateEntry = useUpdateExpenseEntry();
     const deleteEntry = useDeleteExpenseEntry();
@@ -76,6 +78,7 @@ export default function ExpenseEntries() {
     const [formData, setFormData] = useState<ExpenseEntryFormData>({
         accountId: '',
         expenseCategoryId: '',
+        currencyId: null,
         projectId: null,
         amount: 0,
         date: new Date().toISOString().split('T')[0],
@@ -89,6 +92,7 @@ export default function ExpenseEntries() {
         setFormData({
             accountId: '',
             expenseCategoryId: '',
+            currencyId: null,
             projectId: null,
             amount: 0,
             date: new Date().toISOString().split('T')[0],
@@ -123,6 +127,7 @@ export default function ExpenseEntries() {
         setFormData({
             accountId: entry.accountId,
             expenseCategoryId: entry.expenseCategoryId,
+            currencyId: entry.currencyId || null,
             projectId: entry.projectId || null,
             amount: entry.amount,
             date: entry.date.toISOString().split('T')[0],
@@ -144,16 +149,16 @@ export default function ExpenseEntries() {
             const matchesCategory = filterCategory === 'all' || entry.expenseCategoryId === filterCategory;
             const matchesAccount = filterAccount === 'all' || entry.accountId === filterAccount;
             const matchesStatus = filterStatus === 'all' || entry.status === filterStatus;
-            
+
             // Date range filter
             const entryDate = new Date(entry.date);
             const matchesDateFrom = !dateFrom || entryDate >= new Date(dateFrom);
             const matchesDateTo = !dateTo || entryDate <= new Date(dateTo);
-            
+
             return matchesSearch && matchesCategory && matchesAccount && matchesStatus && matchesDateFrom && matchesDateTo;
         });
     }, [entries, searchTerm, filterCategory, filterAccount, filterStatus, dateFrom, dateTo]);
-    
+
     const clearFilters = () => {
         setSearchTerm('');
         setFilterCategory('all');
@@ -162,7 +167,7 @@ export default function ExpenseEntries() {
         setDateFrom('');
         setDateTo('');
     };
-    
+
     const hasActiveFilters = searchTerm || filterCategory !== 'all' || filterAccount !== 'all' || filterStatus !== 'all' || dateFrom || dateTo;
 
     const totalExpense = useMemo(() => {
@@ -326,7 +331,7 @@ export default function ExpenseEntries() {
             </div>
             <DialogFooter>
                 <Button onClick={onSubmit} disabled={loading || !formData.accountId || !formData.expenseCategoryId || formData.amount <= 0}>
-                    {loading ? <LoadingSpinner className="mr-2 h-4 w-4" /> : null}
+                    {loading ? <LoadingSpinner size="sm" /> : null}
                     {editEntry ? t('common.update') || 'Update' : t('common.create') || 'Create'}
                 </Button>
             </DialogFooter>
@@ -334,11 +339,11 @@ export default function ExpenseEntries() {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
+                    <h1 className="text-2xl font-bold">
                         {t('finance.expenseEntries') || 'Expense Entries'}
                     </h1>
                     <p className="text-muted-foreground">

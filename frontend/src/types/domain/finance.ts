@@ -5,6 +5,7 @@ export interface FinanceAccount {
     id: string;
     organizationId: string;
     schoolId: string | null;
+    currencyId: string | null;
     name: string;
     code: string | null;
     type: 'cash' | 'fund';
@@ -20,6 +21,7 @@ export type FinanceAccountFormData = {
     name: string;
     code?: string | null;
     type?: 'cash' | 'fund';
+    currencyId?: string | null;
     schoolId?: string | null;
     description?: string | null;
     openingBalance?: number;
@@ -81,6 +83,7 @@ export interface FinanceProject {
     id: string;
     organizationId: string;
     schoolId: string | null;
+    currencyId: string | null;
     name: string;
     code: string | null;
     description: string | null;
@@ -101,6 +104,7 @@ export interface FinanceProject {
 export type FinanceProjectFormData = {
     name: string;
     code?: string | null;
+    currencyId?: string | null;
     schoolId?: string | null;
     description?: string | null;
     budgetAmount?: number | null;
@@ -148,6 +152,7 @@ export interface IncomeEntry {
     id: string;
     organizationId: string;
     schoolId: string | null;
+    currencyId: string | null;
     accountId: string;
     incomeCategoryId: string;
     projectId: string | null;
@@ -171,6 +176,7 @@ export interface IncomeEntry {
 export type IncomeEntryFormData = {
     accountId: string;
     incomeCategoryId: string;
+    currencyId?: string | null;
     amount: number;
     date: string;
     schoolId?: string | null;
@@ -188,6 +194,7 @@ export interface ExpenseEntry {
     id: string;
     organizationId: string;
     schoolId: string | null;
+    currencyId: string | null;
     accountId: string;
     expenseCategoryId: string;
     projectId: string | null;
@@ -212,6 +219,7 @@ export interface ExpenseEntry {
 export type ExpenseEntryFormData = {
     accountId: string;
     expenseCategoryId: string;
+    currencyId?: string | null;
     amount: number;
     date: string;
     schoolId?: string | null;
@@ -220,6 +228,7 @@ export type ExpenseEntryFormData = {
     description?: string | null;
     paidTo?: string | null;
     paymentMethod?: PaymentMethod;
+    status?: ExpenseStatus;
 };
 
 // Finance Dashboard

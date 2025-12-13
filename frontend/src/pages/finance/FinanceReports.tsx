@@ -62,9 +62,9 @@ export default function FinanceReports() {
         endDate: today.toISOString().split('T')[0],
     });
 
-    const { data: cashbook, isLoading: cashbookLoading } = useDailyCashbook(dateRange.startDate, dateRange.endDate);
+    const { data: cashbook, isLoading: cashbookLoading } = useDailyCashbook(dateRange.endDate);
     const { data: incomeVsExpense, isLoading: iveLoading } = useIncomeVsExpenseReport(dateRange.startDate, dateRange.endDate);
-    const { data: projectSummary, isLoading: projectLoading } = useProjectSummaryReport(dateRange.startDate, dateRange.endDate);
+    const { data: projectSummary, isLoading: projectLoading } = useProjectSummaryReport();
     const { data: donorSummary, isLoading: donorLoading } = useDonorSummaryReport(dateRange.startDate, dateRange.endDate);
     const { data: accountBalances, isLoading: accountLoading } = useAccountBalancesReport();
 
@@ -193,11 +193,11 @@ export default function FinanceReports() {
         const chartData = useMemo(() => {
             if (!incomeVsExpense) return [];
             const combined: { category: string; income?: number; expense?: number }[] = [];
-            
+
             incomeVsExpense.incomeByCategory.forEach(item => {
                 combined.push({ category: item.name, income: item.total });
             });
-            
+
             incomeVsExpense.expenseByCategory.forEach(item => {
                 const existing = combined.find(c => c.category === item.name);
                 if (existing) {
@@ -206,7 +206,7 @@ export default function FinanceReports() {
                     combined.push({ category: item.name, expense: item.total });
                 }
             });
-            
+
             return combined;
         }, [incomeVsExpense]);
 
@@ -587,10 +587,10 @@ export default function FinanceReports() {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">
+                <h1 className="text-2xl font-bold">
                     {t('finance.reports') || 'Finance Reports'}
                 </h1>
                 <p className="text-muted-foreground">

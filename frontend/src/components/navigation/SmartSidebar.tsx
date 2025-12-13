@@ -234,7 +234,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasFinanceProjectsPermission = useHasPermission('finance_projects.read');
   const hasDonorsPermission = useHasPermission('donors.read');
   const hasFinanceReportsPermission = useHasPermission('finance_reports.read');
-  const hasFinancePermission = hasFinanceAccountsPermission || hasIncomeEntriesPermission || hasExpenseEntriesPermission || hasFinanceProjectsPermission || hasDonorsPermission || hasFinanceReportsPermission;
+  const hasCurrenciesPermission = useHasPermission('currencies.read');
+  const hasExchangeRatesPermission = useHasPermission('exchange_rates.read');
+  const hasFinancePermission = hasFinanceAccountsPermission || hasIncomeEntriesPermission || hasExpenseEntriesPermission || hasFinanceProjectsPermission || hasDonorsPermission || hasFinanceReportsPermission || hasCurrenciesPermission || hasExchangeRatesPermission;
 
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -626,6 +628,18 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "finance.donors",
             url: "/finance/donors",
             icon: Users,
+          }] : []),
+          ...(hasCurrenciesPermission ? [{
+            title: "Currencies",
+            titleKey: "finance.currencies",
+            url: "/finance/currencies",
+            icon: LucideIcons.Coins,
+          }] : []),
+          ...(hasExchangeRatesPermission ? [{
+            title: "Exchange Rates",
+            titleKey: "finance.exchangeRates",
+            url: "/finance/exchange-rates",
+            icon: LucideIcons.ArrowRightLeft,
           }] : []),
           ...(hasFinanceReportsPermission ? [{
             title: "Reports",

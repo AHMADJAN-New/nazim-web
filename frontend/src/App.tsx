@@ -98,6 +98,8 @@ import {
   ExpenseEntries,
   ExpenseCategories,
   FinanceProjects,
+  Currencies,
+  ExchangeRates,
   Donors,
   FinanceReports
 } from "@/components/LazyComponents";
@@ -747,6 +749,20 @@ const App = () => (
                       <PermissionRoute permission="donors.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <Donors />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/currencies" element={
+                      <PermissionRoute permission="currencies.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <Currencies />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/exchange-rates" element={
+                      <PermissionRoute permission="exchange_rates.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExchangeRates />
                         </Suspense>
                       </PermissionRoute>
                     } />

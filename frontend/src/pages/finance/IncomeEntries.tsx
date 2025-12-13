@@ -49,10 +49,12 @@ import {
     type IncomeEntry,
     type IncomeEntryFormData,
 } from '@/hooks/useFinance';
+import { useCurrencies } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, TrendingUp, Search, Filter, Calendar, X } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import type { PaymentMethod } from '@/types/domain/finance';
 
 export default function IncomeEntries() {
     const { t } = useLanguage();
@@ -61,6 +63,7 @@ export default function IncomeEntries() {
     const { data: categories } = useIncomeCategories();
     const { data: projects } = useFinanceProjects();
     const { data: donors } = useDonors();
+    const { data: currencies } = useCurrencies({ isActive: true });
     const createEntry = useCreateIncomeEntry();
     const updateEntry = useUpdateIncomeEntry();
     const deleteEntry = useDeleteIncomeEntry();
@@ -77,6 +80,7 @@ export default function IncomeEntries() {
     const [formData, setFormData] = useState<IncomeEntryFormData>({
         accountId: '',
         incomeCategoryId: '',
+        currencyId: null,
         projectId: null,
         donorId: null,
         amount: 0,
@@ -90,6 +94,7 @@ export default function IncomeEntries() {
         setFormData({
             accountId: '',
             incomeCategoryId: '',
+            currencyId: null,
             projectId: null,
             donorId: null,
             amount: 0,
@@ -124,6 +129,7 @@ export default function IncomeEntries() {
         setFormData({
             accountId: entry.accountId,
             incomeCategoryId: entry.incomeCategoryId,
+            currencyId: entry.currencyId || null,
             projectId: entry.projectId || null,
             donorId: entry.donorId || null,
             amount: entry.amount,
@@ -144,16 +150,16 @@ export default function IncomeEntries() {
                 entry.donor?.name.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesCategory = filterCategory === 'all' || entry.incomeCategoryId === filterCategory;
             const matchesAccount = filterAccount === 'all' || entry.accountId === filterAccount;
-            
+
             // Date range filter
             const entryDate = new Date(entry.date);
             const matchesDateFrom = !dateFrom || entryDate >= new Date(dateFrom);
             const matchesDateTo = !dateTo || entryDate <= new Date(dateTo);
-            
+
             return matchesSearch && matchesCategory && matchesAccount && matchesDateFrom && matchesDateTo;
         });
     }, [entries, searchTerm, filterCategory, filterAccount, dateFrom, dateTo]);
-    
+
     const clearFilters = () => {
         setSearchTerm('');
         setFilterCategory('all');
@@ -161,7 +167,7 @@ export default function IncomeEntries() {
         setDateFrom('');
         setDateTo('');
     };
-    
+
     const hasActiveFilters = searchTerm || filterCategory !== 'all' || filterAccount !== 'all' || dateFrom || dateTo;
 
     const totalIncome = useMemo(() => {
@@ -245,6 +251,27 @@ export default function IncomeEntries() {
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                    <Label htmlFor="currencyId">{t('finance.currency') || 'Currency'}</Label>
+                    <Select
+                        value={formData.currencyId || ''}
+                        onValueChange={(value) => setFormData({ ...formData, currencyId: value || null })}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                            {currencies?.map((currency) => (
+                                <SelectItem key={currency.id} value={currency.id}>
+                                    {currency.code} - {currency.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                     <Label htmlFor="projectId">{t('finance.project') || 'Project'}</Label>
                     <Select
                         value={formData.projectId || 'none'}
@@ -297,7 +324,7 @@ export default function IncomeEntries() {
                     <Label htmlFor="paymentMethod">{t('finance.paymentMethod') || 'Payment Method'}</Label>
                     <Select
                         value={formData.paymentMethod || 'cash'}
-                        onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}
+                        onValueChange={(value: PaymentMethod) => setFormData({ ...formData, paymentMethod: value })}
                     >
                         <SelectTrigger>
                             <SelectValue />
@@ -322,7 +349,7 @@ export default function IncomeEntries() {
             </div>
             <DialogFooter>
                 <Button onClick={onSubmit} disabled={loading || !formData.accountId || !formData.incomeCategoryId || formData.amount <= 0}>
-                    {loading ? <LoadingSpinner className="mr-2 h-4 w-4" /> : null}
+                    {loading ? <LoadingSpinner size="sm" /> : null}
                     {editEntry ? t('common.update') || 'Update' : t('common.create') || 'Create'}
                 </Button>
             </DialogFooter>
@@ -330,11 +357,11 @@ export default function IncomeEntries() {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
+                    <h1 className="text-2xl font-bold">
                         {t('finance.incomeEntries') || 'Income Entries'}
                     </h1>
                     <p className="text-muted-foreground">

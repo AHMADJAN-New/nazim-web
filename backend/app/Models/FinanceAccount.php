@@ -22,6 +22,7 @@ class FinanceAccount extends Model
         'id',
         'organization_id',
         'school_id',
+        'currency_id',
         'name',
         'code',
         'type',
@@ -72,6 +73,14 @@ class FinanceAccount extends Model
     public function school()
     {
         return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    /**
+     * Get the currency for the account
+     */
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency_id');
     }
 
     /**

@@ -1,5 +1,5 @@
 /**
- * Finance Accounts Page - Manage cash locations
+ * Exchange Rates Page - Manage currency exchange rates
  */
 
 import { useState } from 'react';
@@ -39,82 +39,79 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import {
-    useFinanceAccounts,
-    useCreateFinanceAccount,
-    useUpdateFinanceAccount,
-    useDeleteFinanceAccount,
-    type FinanceAccount,
-    type FinanceAccountFormData,
-} from '@/hooks/useFinance';
-import { useCurrencies } from '@/hooks/useCurrencies';
+    useExchangeRates,
+    useCreateExchangeRate,
+    useUpdateExchangeRate,
+    useDeleteExchangeRate,
+    useCurrencies,
+    type ExchangeRate,
+    type ExchangeRateFormData,
+} from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { Plus, Pencil, Trash2, Wallet } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { Plus, Pencil, Trash2, ArrowRightLeft } from 'lucide-react';
 
-export default function FinanceAccounts() {
+export default function ExchangeRates() {
     const { t } = useLanguage();
-    const { data: accounts, isLoading } = useFinanceAccounts();
+    const { data: exchangeRates, isLoading } = useExchangeRates();
     const { data: currencies } = useCurrencies({ isActive: true });
-    const createAccount = useCreateFinanceAccount();
-    const updateAccount = useUpdateFinanceAccount();
-    const deleteAccount = useDeleteFinanceAccount();
+    const createRate = useCreateExchangeRate();
+    const updateRate = useUpdateExchangeRate();
+    const deleteRate = useDeleteExchangeRate();
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [editAccount, setEditAccount] = useState<FinanceAccount | null>(null);
+    const [editRate, setEditRate] = useState<ExchangeRate | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
-    const [formData, setFormData] = useState<FinanceAccountFormData>({
-        name: '',
-        code: '',
-        type: 'cash',
-        currencyId: '',
-        description: '',
-        openingBalance: 0,
+    const [formData, setFormData] = useState<ExchangeRateFormData>({
+        fromCurrencyId: '',
+        toCurrencyId: '',
+        rate: 0,
+        effectiveDate: new Date().toISOString().split('T')[0],
+        notes: '',
         isActive: true,
     });
 
     const resetForm = () => {
         setFormData({
-            name: '',
-            code: '',
-            type: 'cash',
-            currencyId: '',
-            description: '',
-            openingBalance: 0,
+            fromCurrencyId: '',
+            toCurrencyId: '',
+            rate: 0,
+            effectiveDate: new Date().toISOString().split('T')[0],
+            notes: '',
             isActive: true,
         });
     };
 
     const handleCreate = async () => {
-        await createAccount.mutateAsync(formData);
+        if (!formData.fromCurrencyId || !formData.toCurrencyId || formData.rate <= 0) return;
+        await createRate.mutateAsync(formData);
         setIsCreateOpen(false);
         resetForm();
     };
 
     const handleUpdate = async () => {
-        if (!editAccount) return;
-        await updateAccount.mutateAsync({ id: editAccount.id, ...formData });
-        setEditAccount(null);
+        if (!editRate || !formData.fromCurrencyId || !formData.toCurrencyId || formData.rate <= 0) return;
+        await updateRate.mutateAsync({ id: editRate.id, ...formData });
+        setEditRate(null);
         resetForm();
     };
 
     const handleDelete = async () => {
         if (!deleteId) return;
-        await deleteAccount.mutateAsync(deleteId);
+        await deleteRate.mutateAsync(deleteId);
         setDeleteId(null);
     };
 
-    const openEditDialog = (account: FinanceAccount) => {
-        setEditAccount(account);
+    const openEditDialog = (rate: ExchangeRate) => {
+        setEditRate(rate);
         setFormData({
-            name: account.name,
-            code: account.code || '',
-            type: account.type,
-            currencyId: account.currencyId || '',
-            description: account.description || '',
-            openingBalance: account.openingBalance,
-            isActive: account.isActive,
+            fromCurrencyId: rate.fromCurrencyId,
+            toCurrencyId: rate.toCurrencyId,
+            rate: rate.rate,
+            effectiveDate: rate.effectiveDate.toISOString().split('T')[0],
+            notes: rate.notes || '',
+            isActive: rate.isActive,
         });
     };
 
@@ -126,55 +123,38 @@ export default function FinanceAccounts() {
         );
     }
 
-    const AccountForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
+    const RateForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
         <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
-                    <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder={t('finance.accountNamePlaceholder') || 'e.g., Main Cash Box'}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="code">{t('common.code') || 'Code'}</Label>
-                    <Input
-                        id="code"
-                        value={formData.code || ''}
-                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                        placeholder={t('finance.accountCodePlaceholder') || 'e.g., MAIN_CASH'}
-                    />
-                </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="type">{t('common.type') || 'Type'}</Label>
+                    <Label htmlFor="fromCurrencyId">{t('finance.fromCurrency') || 'From Currency'} *</Label>
                     <Select
-                        value={formData.type}
-                        onValueChange={(value: 'cash' | 'fund') => setFormData({ ...formData, type: value })}
-                    >
-                        <SelectTrigger>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="cash">{t('finance.cash') || 'Cash'}</SelectItem>
-                            <SelectItem value="fund">{t('finance.fund') || 'Fund'}</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="currencyId">{t('finance.currency') || 'Currency'}</Label>
-                    <Select
-                        value={formData.currencyId || ''}
-                        onValueChange={(value) => setFormData({ ...formData, currencyId: value })}
+                        value={formData.fromCurrencyId}
+                        onValueChange={(value) => setFormData({ ...formData, fromCurrencyId: value })}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
                         </SelectTrigger>
                         <SelectContent>
-                            {currencies?.map((currency) => (
+                            {currencies?.filter(c => c.id !== formData.toCurrencyId).map((currency) => (
+                                <SelectItem key={currency.id} value={currency.id}>
+                                    {currency.code} - {currency.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="toCurrencyId">{t('finance.toCurrency') || 'To Currency'} *</Label>
+                    <Select
+                        value={formData.toCurrencyId}
+                        onValueChange={(value) => setFormData({ ...formData, toCurrencyId: value })}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {currencies?.filter(c => c.id !== formData.fromCurrencyId).map((currency) => (
                                 <SelectItem key={currency.id} value={currency.id}>
                                     {currency.code} - {currency.name}
                                 </SelectItem>
@@ -185,24 +165,37 @@ export default function FinanceAccounts() {
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="openingBalance">{t('finance.openingBalance') || 'Opening Balance'}</Label>
+                    <Label htmlFor="rate">{t('finance.exchangeRate') || 'Exchange Rate'} *</Label>
                     <Input
-                        id="openingBalance"
+                        id="rate"
                         type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.openingBalance}
-                        onChange={(e) => setFormData({ ...formData, openingBalance: parseFloat(e.target.value) || 0 })}
+                        min="0.000001"
+                        step="0.000001"
+                        value={formData.rate || ''}
+                        onChange={(e) => setFormData({ ...formData, rate: parseFloat(e.target.value) || 0 })}
+                        placeholder="1.0"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        {t('finance.exchangeRateHint') || '1 from currency = rate to currency'}
+                    </p>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="effectiveDate">{t('finance.effectiveDate') || 'Effective Date'} *</Label>
+                    <Input
+                        id="effectiveDate"
+                        type="date"
+                        value={formData.effectiveDate}
+                        onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
                     />
                 </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="description">{t('common.description') || 'Description'}</Label>
+                <Label htmlFor="notes">{t('common.notes') || 'Notes'}</Label>
                 <Textarea
-                    id="description"
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder={t('finance.accountDescriptionPlaceholder') || 'Description of this account...'}
+                    id="notes"
+                    value={formData.notes || ''}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder={t('finance.rateNotesPlaceholder') || 'Optional notes about this rate...'}
                 />
             </div>
             <div className="flex items-center space-x-2">
@@ -214,9 +207,9 @@ export default function FinanceAccounts() {
                 <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
             </div>
             <DialogFooter>
-                <Button onClick={onSubmit} disabled={loading || !formData.name}>
+                <Button onClick={onSubmit} disabled={loading || !formData.fromCurrencyId || !formData.toCurrencyId || formData.rate <= 0}>
                     {loading ? <LoadingSpinner className="mr-2 h-4 w-4" /> : null}
-                    {editAccount ? t('common.update') || 'Update' : t('common.create') || 'Create'}
+                    {editRate ? t('common.update') || 'Update' : t('common.create') || 'Create'}
                 </Button>
             </DialogFooter>
         </div>
@@ -228,72 +221,70 @@ export default function FinanceAccounts() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold">
-                        {t('finance.accounts') || 'Finance Accounts'}
+                        {t('finance.exchangeRates') || 'Exchange Rates'}
                     </h1>
                     <p className="text-muted-foreground">
-                        {t('finance.accountsDescription') || 'Manage your cash locations and funds'}
+                        {t('finance.exchangeRatesDescription') || 'Manage currency exchange rates for conversion'}
                     </p>
                 </div>
                 <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
-                            {t('finance.addAccount') || 'Add Account'}
+                            {t('finance.addExchangeRate') || 'Add Exchange Rate'}
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>{t('finance.addAccount') || 'Add Account'}</DialogTitle>
+                            <DialogTitle>{t('finance.addExchangeRate') || 'Add Exchange Rate'}</DialogTitle>
                             <DialogDescription>
-                                {t('finance.addAccountDescription') || 'Create a new cash location or fund'}
+                                {t('finance.addExchangeRateDescription') || 'Create a new exchange rate'}
                             </DialogDescription>
                         </DialogHeader>
-                        <AccountForm onSubmit={handleCreate} isLoading={createAccount.isPending} />
+                        <RateForm onSubmit={handleCreate} isLoading={createRate.isPending} />
                     </DialogContent>
                 </Dialog>
             </div>
 
-            {/* Accounts Table */}
+            {/* Exchange Rates Table */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Wallet className="h-5 w-5" />
-                        {t('finance.allAccounts') || 'All Accounts'}
+                        <ArrowRightLeft className="h-5 w-5" />
+                        {t('finance.allExchangeRates') || 'All Exchange Rates'}
                     </CardTitle>
                     <CardDescription>
-                        {accounts?.length || 0} {t('finance.accountsFound') || 'accounts found'}
+                        {exchangeRates?.length || 0} {t('finance.ratesFound') || 'rates found'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>{t('common.name') || 'Name'}</TableHead>
-                                <TableHead>{t('common.code') || 'Code'}</TableHead>
-                                <TableHead>{t('common.type') || 'Type'}</TableHead>
-                                <TableHead className="text-right">{t('finance.openingBalance') || 'Opening Balance'}</TableHead>
-                                <TableHead className="text-right">{t('finance.currentBalance') || 'Current Balance'}</TableHead>
+                                <TableHead>{t('finance.fromCurrency') || 'From'}</TableHead>
+                                <TableHead>{t('finance.toCurrency') || 'To'}</TableHead>
+                                <TableHead>{t('finance.exchangeRate') || 'Rate'}</TableHead>
+                                <TableHead>{t('finance.effectiveDate') || 'Effective Date'}</TableHead>
+                                <TableHead>{t('common.notes') || 'Notes'}</TableHead>
                                 <TableHead>{t('common.status') || 'Status'}</TableHead>
                                 <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {accounts?.map((account) => (
-                                <TableRow key={account.id}>
-                                    <TableCell className="font-medium">{account.name}</TableCell>
-                                    <TableCell>{account.code || '-'}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">
-                                            {account.type === 'cash' ? t('finance.cash') || 'Cash' : t('finance.fund') || 'Fund'}
-                                        </Badge>
+                            {exchangeRates?.map((rate) => (
+                                <TableRow key={rate.id}>
+                                    <TableCell className="font-medium">
+                                        {rate.fromCurrency?.code || rate.fromCurrencyId}
                                     </TableCell>
-                                    <TableCell className="text-right">{formatCurrency(account.openingBalance)}</TableCell>
-                                    <TableCell className="text-right font-medium">
-                                        {formatCurrency(account.currentBalance)}
+                                    <TableCell className="font-medium">
+                                        {rate.toCurrency?.code || rate.toCurrencyId}
                                     </TableCell>
+                                    <TableCell>{rate.rate.toFixed(6)}</TableCell>
+                                    <TableCell>{rate.effectiveDate.toLocaleDateString()}</TableCell>
+                                    <TableCell className="max-w-xs truncate">{rate.notes || '-'}</TableCell>
                                     <TableCell>
-                                        <Badge variant={account.isActive ? 'default' : 'secondary'}>
-                                            {account.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
+                                        <Badge variant={rate.isActive ? 'default' : 'secondary'}>
+                                            {rate.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -301,14 +292,14 @@ export default function FinanceAccounts() {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => openEditDialog(account)}
+                                                onClick={() => openEditDialog(rate)}
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => setDeleteId(account.id)}
+                                                onClick={() => setDeleteId(rate.id)}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -316,10 +307,10 @@ export default function FinanceAccounts() {
                                     </TableCell>
                                 </TableRow>
                             ))}
-                            {(!accounts || accounts.length === 0) && (
+                            {(!exchangeRates || exchangeRates.length === 0) && (
                                 <TableRow>
                                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                                        {t('finance.noAccounts') || 'No accounts found'}
+                                        {t('finance.noExchangeRates') || 'No exchange rates found'}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -329,15 +320,15 @@ export default function FinanceAccounts() {
             </Card>
 
             {/* Edit Dialog */}
-            <Dialog open={!!editAccount} onOpenChange={(open) => { if (!open) { setEditAccount(null); resetForm(); } }}>
+            <Dialog open={!!editRate} onOpenChange={(open) => { if (!open) { setEditRate(null); resetForm(); } }}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('finance.editAccount') || 'Edit Account'}</DialogTitle>
+                        <DialogTitle>{t('finance.editExchangeRate') || 'Edit Exchange Rate'}</DialogTitle>
                         <DialogDescription>
-                            {t('finance.editAccountDescription') || 'Update account details'}
+                            {t('finance.editExchangeRateDescription') || 'Update exchange rate details'}
                         </DialogDescription>
                     </DialogHeader>
-                    <AccountForm onSubmit={handleUpdate} isLoading={updateAccount.isPending} />
+                    <RateForm onSubmit={handleUpdate} isLoading={updateRate.isPending} />
                 </DialogContent>
             </Dialog>
 
@@ -347,7 +338,7 @@ export default function FinanceAccounts() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {t('finance.deleteAccountWarning') || 'Are you sure you want to delete this account? This action cannot be undone.'}
+                            {t('finance.deleteExchangeRateWarning') || 'Are you sure you want to delete this exchange rate? This action cannot be undone.'}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -361,3 +352,4 @@ export default function FinanceAccounts() {
         </div>
     );
 }
+

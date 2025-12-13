@@ -5,6 +5,7 @@ export interface FinanceAccount {
     id: string;
     organization_id: string;
     school_id: string | null;
+    currency_id: string | null;
     name: string;
     code: string | null;
     type: 'cash' | 'fund';
@@ -21,6 +22,7 @@ export interface FinanceAccountInsert {
     name: string;
     code?: string | null;
     type?: 'cash' | 'fund';
+    currency_id?: string | null;
     school_id?: string | null;
     description?: string | null;
     opening_balance?: number;
@@ -88,6 +90,7 @@ export interface FinanceProject {
     id: string;
     organization_id: string;
     school_id: string | null;
+    currency_id: string | null;
     name: string;
     code: string | null;
     description: string | null;
@@ -106,6 +109,7 @@ export interface FinanceProject {
 export interface FinanceProjectInsert {
     name: string;
     code?: string | null;
+    currency_id?: string | null;
     school_id?: string | null;
     description?: string | null;
     budget_amount?: number | null;
@@ -153,6 +157,7 @@ export interface IncomeEntry {
     id: string;
     organization_id: string;
     school_id: string | null;
+    currency_id: string | null;
     account_id: string;
     income_category_id: string;
     project_id: string | null;
@@ -177,6 +182,7 @@ export interface IncomeEntry {
 export interface IncomeEntryInsert {
     account_id: string;
     income_category_id: string;
+    currency_id?: string | null;
     amount: number;
     date: string;
     school_id?: string | null;
@@ -194,6 +200,7 @@ export interface ExpenseEntry {
     id: string;
     organization_id: string;
     school_id: string | null;
+    currency_id: string | null;
     account_id: string;
     expense_category_id: string;
     project_id: string | null;
@@ -219,6 +226,7 @@ export interface ExpenseEntry {
 export interface ExpenseEntryInsert {
     account_id: string;
     expense_category_id: string;
+    currency_id?: string | null;
     amount: number;
     date: string;
     school_id?: string | null;

@@ -52,15 +52,17 @@ export default function FinanceDashboard() {
     const isPositive = netThisMonth >= 0;
 
     return (
-        <div className="space-y-6">
+        <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">
-                    {t('finance.dashboard') || 'Finance Dashboard'}
-                </h1>
-                <p className="text-muted-foreground">
-                    {t('finance.dashboardDescription') || 'Overview of your organization\'s finances'}
-                </p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-bold">
+                        {t('finance.dashboard') || 'Finance Dashboard'}
+                    </h1>
+                    <p className="text-muted-foreground">
+                        {t('finance.dashboardDescription') || 'Overview of your organization\'s finances'}
+                    </p>
+                </div>
             </div>
 
             {/* Summary Cards */}

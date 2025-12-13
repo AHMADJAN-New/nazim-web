@@ -1,5 +1,5 @@
 /**
- * Income Categories Page - Manage income category types
+ * Currencies Page - Manage currencies for multi-currency support
  */
 
 import { useState } from 'react';
@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
     Dialog,
@@ -38,73 +37,77 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import {
-    useIncomeCategories,
-    useCreateIncomeCategory,
-    useUpdateIncomeCategory,
-    useDeleteIncomeCategory,
-    type IncomeCategory,
-    type IncomeCategoryFormData,
-} from '@/hooks/useFinance';
+    useCurrencies,
+    useCreateCurrency,
+    useUpdateCurrency,
+    useDeleteCurrency,
+    type Currency,
+    type CurrencyFormData,
+} from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { Plus, Pencil, Trash2, Tag } from 'lucide-react';
+import { Plus, Pencil, Trash2, Coins, Star } from 'lucide-react';
 
-export default function IncomeCategories() {
+export default function Currencies() {
     const { t } = useLanguage();
-    const { data: categories, isLoading } = useIncomeCategories();
-    const createCategory = useCreateIncomeCategory();
-    const updateCategory = useUpdateIncomeCategory();
-    const deleteCategory = useDeleteIncomeCategory();
+    const { data: currencies, isLoading } = useCurrencies();
+    const createCurrency = useCreateCurrency();
+    const updateCurrency = useUpdateCurrency();
+    const deleteCurrency = useDeleteCurrency();
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [editCategory, setEditCategory] = useState<IncomeCategory | null>(null);
+    const [editCurrency, setEditCurrency] = useState<Currency | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
-    const [formData, setFormData] = useState<IncomeCategoryFormData>({
-        name: '',
+    const [formData, setFormData] = useState<CurrencyFormData>({
         code: '',
-        description: '',
-        isRestricted: false,
+        name: '',
+        symbol: '',
+        decimalPlaces: 2,
+        isBase: false,
         isActive: true,
     });
 
     const resetForm = () => {
         setFormData({
-            name: '',
             code: '',
-            description: '',
-            isRestricted: false,
+            name: '',
+            symbol: '',
+            decimalPlaces: 2,
+            isBase: false,
             isActive: true,
         });
     };
 
     const handleCreate = async () => {
-        await createCategory.mutateAsync(formData);
+        if (!formData.code || !formData.name) return;
+        await createCurrency.mutateAsync(formData);
         setIsCreateOpen(false);
         resetForm();
     };
 
     const handleUpdate = async () => {
-        if (!editCategory) return;
-        await updateCategory.mutateAsync({ id: editCategory.id, ...formData });
-        setEditCategory(null);
+        if (!editCurrency || !formData.code || !formData.name) return;
+        await updateCurrency.mutateAsync({ id: editCurrency.id, ...formData });
+        setEditCurrency(null);
         resetForm();
     };
 
     const handleDelete = async () => {
         if (!deleteId) return;
-        await deleteCategory.mutateAsync(deleteId);
+        await deleteCurrency.mutateAsync(deleteId);
         setDeleteId(null);
     };
 
-    const openEditDialog = (category: IncomeCategory) => {
-        setEditCategory(category);
+    const openEditDialog = (currency: Currency) => {
+        setEditCurrency(currency);
         setFormData({
-            name: category.name,
-            code: category.code || '',
-            description: category.description || '',
-            isRestricted: category.isRestricted,
-            isActive: category.isActive,
+            code: currency.code,
+            name: currency.name,
+            symbol: currency.symbol || '',
+            decimalPlaces: currency.decimalPlaces,
+            isBase: currency.isBase,
+            isActive: currency.isActive,
         });
     };
 
@@ -116,45 +119,64 @@ export default function IncomeCategories() {
         );
     }
 
-    const CategoryForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
+    const CurrencyForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
         <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="code">{t('finance.currencyCode') || 'Currency Code'} *</Label>
+                    <Input
+                        id="code"
+                        value={formData.code}
+                        onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                        placeholder="USD"
+                        maxLength={3}
+                        disabled={!!editCurrency}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        {t('finance.currencyCodeHint') || 'ISO 4217 code (3 letters)'}
+                    </p>
+                </div>
                 <div className="space-y-2">
                     <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
                     <Input
                         id="name"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder={t('finance.categoryNamePlaceholder') || 'e.g., General Donation'}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="code">{t('common.code') || 'Code'}</Label>
-                    <Input
-                        id="code"
-                        value={formData.code || ''}
-                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                        placeholder={t('finance.categoryCodePlaceholder') || 'e.g., GEN_DON'}
+                        placeholder={t('finance.currencyNamePlaceholder') || 'e.g., US Dollar'}
                     />
                 </div>
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="description">{t('common.description') || 'Description'}</Label>
-                <Textarea
-                    id="description"
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder={t('finance.categoryDescriptionPlaceholder') || 'Description of this category...'}
-                />
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="symbol">{t('finance.currencySymbol') || 'Symbol'}</Label>
+                    <Input
+                        id="symbol"
+                        value={formData.symbol || ''}
+                        onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
+                        placeholder="$"
+                        maxLength={10}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="decimalPlaces">{t('finance.decimalPlaces') || 'Decimal Places'}</Label>
+                    <Input
+                        id="decimalPlaces"
+                        type="number"
+                        min="0"
+                        max="6"
+                        value={formData.decimalPlaces}
+                        onChange={(e) => setFormData({ ...formData, decimalPlaces: parseInt(e.target.value) || 2 })}
+                    />
+                </div>
             </div>
             <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                     <Switch
-                        id="isRestricted"
-                        checked={formData.isRestricted}
-                        onCheckedChange={(checked) => setFormData({ ...formData, isRestricted: checked })}
+                        id="isBase"
+                        checked={formData.isBase}
+                        onCheckedChange={(checked) => setFormData({ ...formData, isBase: checked })}
                     />
-                    <Label htmlFor="isRestricted">{t('finance.restricted') || 'Restricted (e.g., Zakat, Waqf)'}</Label>
+                    <Label htmlFor="isBase">{t('finance.baseCurrency') || 'Base Currency'}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                     <Switch
@@ -166,9 +188,9 @@ export default function IncomeCategories() {
                 </div>
             </div>
             <DialogFooter>
-                <Button onClick={onSubmit} disabled={loading || !formData.name}>
+                <Button onClick={onSubmit} disabled={loading || !formData.code || !formData.name}>
                     {loading ? <LoadingSpinner className="mr-2 h-4 w-4" /> : null}
-                    {editCategory ? t('common.update') || 'Update' : t('common.create') || 'Create'}
+                    {editCurrency ? t('common.update') || 'Update' : t('common.create') || 'Create'}
                 </Button>
             </DialogFooter>
         </div>
@@ -180,70 +202,75 @@ export default function IncomeCategories() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold">
-                        {t('finance.incomeCategories') || 'Income Categories'}
+                        {t('finance.currencies') || 'Currencies'}
                     </h1>
                     <p className="text-muted-foreground">
-                        {t('finance.incomeCategoriesDescription') || 'Manage types of income'}
+                        {t('finance.currenciesDescription') || 'Manage currencies for multi-currency support'}
                     </p>
                 </div>
                 <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
-                            {t('finance.addCategory') || 'Add Category'}
+                            {t('finance.addCurrency') || 'Add Currency'}
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>{t('finance.addIncomeCategory') || 'Add Income Category'}</DialogTitle>
+                            <DialogTitle>{t('finance.addCurrency') || 'Add Currency'}</DialogTitle>
                             <DialogDescription>
-                                {t('finance.addIncomeCategoryDescription') || 'Create a new income category'}
+                                {t('finance.addCurrencyDescription') || 'Create a new currency'}
                             </DialogDescription>
                         </DialogHeader>
-                        <CategoryForm onSubmit={handleCreate} isLoading={createCategory.isPending} />
+                        <CurrencyForm onSubmit={handleCreate} isLoading={createCurrency.isPending} />
                     </DialogContent>
                 </Dialog>
             </div>
 
-            {/* Categories Table */}
+            {/* Currencies Table */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Tag className="h-5 w-5" />
-                        {t('finance.allIncomeCategories') || 'All Income Categories'}
+                        <Coins className="h-5 w-5" />
+                        {t('finance.allCurrencies') || 'All Currencies'}
                     </CardTitle>
                     <CardDescription>
-                        {categories?.length || 0} {t('finance.categoriesFound') || 'categories found'}
+                        {currencies?.length || 0} {t('finance.currenciesFound') || 'currencies found'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead>{t('finance.currencyCode') || 'Code'}</TableHead>
                                 <TableHead>{t('common.name') || 'Name'}</TableHead>
-                                <TableHead>{t('common.code') || 'Code'}</TableHead>
-                                <TableHead>{t('common.description') || 'Description'}</TableHead>
-                                <TableHead>{t('finance.restricted') || 'Restricted'}</TableHead>
+                                <TableHead>{t('finance.currencySymbol') || 'Symbol'}</TableHead>
+                                <TableHead>{t('finance.decimalPlaces') || 'Decimals'}</TableHead>
+                                <TableHead>{t('finance.baseCurrency') || 'Base'}</TableHead>
                                 <TableHead>{t('common.status') || 'Status'}</TableHead>
                                 <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {categories?.map((category) => (
-                                <TableRow key={category.id}>
-                                    <TableCell className="font-medium">{category.name}</TableCell>
-                                    <TableCell>{category.code || '-'}</TableCell>
-                                    <TableCell className="max-w-xs truncate">{category.description || '-'}</TableCell>
+                            {currencies?.map((currency) => (
+                                <TableRow key={currency.id}>
+                                    <TableCell className="font-medium">{currency.code}</TableCell>
+                                    <TableCell>{currency.name}</TableCell>
+                                    <TableCell>{currency.symbol || '-'}</TableCell>
+                                    <TableCell>{currency.decimalPlaces}</TableCell>
                                     <TableCell>
-                                        {category.isRestricted ? (
-                                            <Badge variant="secondary">{t('common.yes') || 'Yes'}</Badge>
+                                        {currency.isBase ? (
+                                            <Badge variant="default" className="gap-1">
+                                                <Star className="h-3 w-3" />
+                                                {t('common.yes') || 'Yes'}
+                                            </Badge>
                                         ) : (
                                             <span className="text-muted-foreground">-</span>
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={category.isActive ? 'default' : 'secondary'}>
-                                            {category.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
+                                        <Badge variant={currency.isActive ? 'default' : 'secondary'}>
+                                            {currency.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -251,14 +278,15 @@ export default function IncomeCategories() {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => openEditDialog(category)}
+                                                onClick={() => openEditDialog(currency)}
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => setDeleteId(category.id)}
+                                                onClick={() => setDeleteId(currency.id)}
+                                                disabled={currency.isBase}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -266,10 +294,10 @@ export default function IncomeCategories() {
                                     </TableCell>
                                 </TableRow>
                             ))}
-                            {(!categories || categories.length === 0) && (
+                            {(!currencies || currencies.length === 0) && (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                        {t('finance.noCategories') || 'No categories found'}
+                                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                        {t('finance.noCurrencies') || 'No currencies found'}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -279,15 +307,15 @@ export default function IncomeCategories() {
             </Card>
 
             {/* Edit Dialog */}
-            <Dialog open={!!editCategory} onOpenChange={(open) => { if (!open) { setEditCategory(null); resetForm(); } }}>
+            <Dialog open={!!editCurrency} onOpenChange={(open) => { if (!open) { setEditCurrency(null); resetForm(); } }}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('finance.editCategory') || 'Edit Category'}</DialogTitle>
+                        <DialogTitle>{t('finance.editCurrency') || 'Edit Currency'}</DialogTitle>
                         <DialogDescription>
-                            {t('finance.editCategoryDescription') || 'Update category details'}
+                            {t('finance.editCurrencyDescription') || 'Update currency details'}
                         </DialogDescription>
                     </DialogHeader>
-                    <CategoryForm onSubmit={handleUpdate} isLoading={updateCategory.isPending} />
+                    <CurrencyForm onSubmit={handleUpdate} isLoading={updateCurrency.isPending} />
                 </DialogContent>
             </Dialog>
 
@@ -297,7 +325,7 @@ export default function IncomeCategories() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {t('finance.deleteCategoryWarning') || 'Are you sure you want to delete this category? This action cannot be undone.'}
+                            {t('finance.deleteCurrencyWarning') || 'Are you sure you want to delete this currency? This action cannot be undone.'}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -311,3 +339,4 @@ export default function IncomeCategories() {
         </div>
     );
 }
+

@@ -393,7 +393,7 @@ export const organizationsApi = {
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!response.ok) {
         // If endpoint doesn't exist (404) or other error, return empty array
         if (response.status === 404) {
@@ -401,7 +401,7 @@ export const organizationsApi = {
         }
         throw new Error(`Failed to fetch organizations: ${response.statusText}`);
       }
-      
+
       return response.json();
     } catch (error) {
       // If fetch fails (network error, CORS, etc.), return empty array
@@ -2587,8 +2587,8 @@ export const examClassesApi = {
 
 // Exam Times (Timetable) API
 export const examTimesApi = {
-  list: async (examId: string, params?: { 
-    exam_class_id?: string; 
+  list: async (examId: string, params?: {
+    exam_class_id?: string;
     date?: string;
     room_id?: string;
   }) => {
@@ -2951,6 +2951,32 @@ export const expenseEntriesApi = {
   create: async (data: any) => apiClient.post('/expense-entries', data),
   update: async (id: string, data: any) => apiClient.put(`/expense-entries/${id}`, data),
   delete: async (id: string) => apiClient.delete(`/expense-entries/${id}`),
+};
+
+// Currencies API
+export const currenciesApi = {
+  list: async (params?: { is_active?: boolean; is_base?: boolean }) =>
+    apiClient.get('/currencies', params),
+  get: async (id: string) => apiClient.get(`/currencies/${id}`),
+  create: async (data: any) => apiClient.post('/currencies', data),
+  update: async (id: string, data: any) => apiClient.put(`/currencies/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/currencies/${id}`),
+};
+
+// Exchange Rates API
+export const exchangeRatesApi = {
+  list: async (params?: {
+    from_currency_id?: string;
+    to_currency_id?: string;
+    effective_date?: string;
+    is_active?: boolean;
+  }) => apiClient.get('/exchange-rates', params),
+  get: async (id: string) => apiClient.get(`/exchange-rates/${id}`),
+  create: async (data: any) => apiClient.post('/exchange-rates', data),
+  update: async (id: string, data: any) => apiClient.put(`/exchange-rates/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/exchange-rates/${id}`),
+  convert: async (data: { from_currency_id: string; to_currency_id: string; amount: number; date?: string }) =>
+    apiClient.post('/exchange-rates/convert', data),
 };
 
 // Finance Reports API

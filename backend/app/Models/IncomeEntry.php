@@ -23,6 +23,7 @@ class IncomeEntry extends Model
         'id',
         'organization_id',
         'school_id',
+        'currency_id',
         'account_id',
         'income_category_id',
         'project_id',
@@ -117,6 +118,14 @@ class IncomeEntry extends Model
     public function school()
     {
         return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    /**
+     * Get the currency for the entry
+     */
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency_id');
     }
 
     /**

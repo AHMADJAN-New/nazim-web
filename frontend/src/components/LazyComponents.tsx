@@ -83,6 +83,8 @@ export const ExpenseEntries = lazy(() => import('@/pages/finance/ExpenseEntries'
 export const ExpenseCategories = lazy(() => import('@/pages/finance/ExpenseCategories'));
 export const FinanceProjects = lazy(() => import('@/pages/finance/FinanceProjects'));
 export const Donors = lazy(() => import('@/pages/finance/Donors'));
+export const Currencies = lazy(() => import('@/pages/finance/Currencies'));
+export const ExchangeRates = lazy(() => import('@/pages/finance/ExchangeRates'));
 export const FinanceReports = lazy(() => import('@/pages/finance/FinanceReports'));
 
 // Re-export loading components for backward compatibility

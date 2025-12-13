@@ -91,6 +91,22 @@ class PermissionSeeder extends Seeder
             'course_attendance' => ['read', 'create', 'update', 'delete'],
             'certificate_templates' => ['read', 'create', 'update', 'delete'],
             'course_documents' => ['read', 'create', 'update', 'delete'],
+            // Finance Module permissions
+            'finance_accounts' => ['read', 'create', 'update', 'delete'],
+            'income_entries' => ['read', 'create', 'update', 'delete'],
+            'income_categories' => ['read', 'create', 'update', 'delete'],
+            'expense_entries' => ['read', 'create', 'update', 'delete'],
+            'expense_categories' => ['read', 'create', 'update', 'delete'],
+            'finance_projects' => ['read', 'create', 'update', 'delete'],
+            'donors' => ['read', 'create', 'update', 'delete'],
+            'finance_reports' => ['read'],
+            // Legacy finance permissions (kept for backward compatibility)
+            'finance_income' => ['read', 'create', 'update', 'delete'],
+            'finance_expense' => ['read', 'create', 'update', 'delete'],
+            'finance_donors' => ['read', 'create', 'update', 'delete'],
+            // Currency and Exchange Rate permissions
+            'currencies' => ['read', 'create', 'update', 'delete'],
+            'exchange_rates' => ['read', 'create', 'update', 'delete'],
         ];
     }
 
