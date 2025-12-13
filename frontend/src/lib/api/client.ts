@@ -2854,3 +2854,115 @@ export const gradesApi = {
     return apiClient.delete(`/grades/${id}`);
   },
 };
+
+
+// ============================================
+// Finance Module APIs
+// ============================================
+
+// Finance Accounts API
+export const financeAccountsApi = {
+  list: async (params?: { school_id?: string; type?: string; is_active?: boolean }) =>
+    apiClient.get('/finance-accounts', params),
+  get: async (id: string) => apiClient.get(`/finance-accounts/${id}`),
+  create: async (data: any) => apiClient.post('/finance-accounts', data),
+  update: async (id: string, data: any) => apiClient.put(`/finance-accounts/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/finance-accounts/${id}`),
+};
+
+// Income Categories API
+export const incomeCategoriesApi = {
+  list: async (params?: { school_id?: string; is_active?: boolean }) =>
+    apiClient.get('/income-categories', params),
+  get: async (id: string) => apiClient.get(`/income-categories/${id}`),
+  create: async (data: any) => apiClient.post('/income-categories', data),
+  update: async (id: string, data: any) => apiClient.put(`/income-categories/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/income-categories/${id}`),
+};
+
+// Expense Categories API
+export const expenseCategoriesApi = {
+  list: async (params?: { school_id?: string; is_active?: boolean }) =>
+    apiClient.get('/expense-categories', params),
+  get: async (id: string) => apiClient.get(`/expense-categories/${id}`),
+  create: async (data: any) => apiClient.post('/expense-categories', data),
+  update: async (id: string, data: any) => apiClient.put(`/expense-categories/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/expense-categories/${id}`),
+};
+
+// Finance Projects API
+export const financeProjectsApi = {
+  list: async (params?: { school_id?: string; status?: string; is_active?: boolean }) =>
+    apiClient.get('/finance-projects', params),
+  get: async (id: string) => apiClient.get(`/finance-projects/${id}`),
+  create: async (data: any) => apiClient.post('/finance-projects', data),
+  update: async (id: string, data: any) => apiClient.put(`/finance-projects/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/finance-projects/${id}`),
+  summary: async (id: string) => apiClient.get(`/finance-projects/${id}/summary`),
+};
+
+// Donors API
+export const donorsApi = {
+  list: async (params?: { type?: string; is_active?: boolean; search?: string }) =>
+    apiClient.get('/donors', params),
+  get: async (id: string) => apiClient.get(`/donors/${id}`),
+  create: async (data: any) => apiClient.post('/donors', data),
+  update: async (id: string, data: any) => apiClient.put(`/donors/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/donors/${id}`),
+  summary: async (id: string, params?: { start_date?: string; end_date?: string }) =>
+    apiClient.get(`/donors/${id}/summary`, params),
+};
+
+// Income Entries API
+export const incomeEntriesApi = {
+  list: async (params?: {
+    school_id?: string;
+    account_id?: string;
+    income_category_id?: string;
+    project_id?: string;
+    donor_id?: string;
+    date_from?: string;
+    date_to?: string;
+    search?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/income-entries', params),
+  get: async (id: string) => apiClient.get(`/income-entries/${id}`),
+  create: async (data: any) => apiClient.post('/income-entries', data),
+  update: async (id: string, data: any) => apiClient.put(`/income-entries/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/income-entries/${id}`),
+};
+
+// Expense Entries API
+export const expenseEntriesApi = {
+  list: async (params?: {
+    school_id?: string;
+    account_id?: string;
+    expense_category_id?: string;
+    project_id?: string;
+    status?: string;
+    date_from?: string;
+    date_to?: string;
+    search?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/expense-entries', params),
+  get: async (id: string) => apiClient.get(`/expense-entries/${id}`),
+  create: async (data: any) => apiClient.post('/expense-entries', data),
+  update: async (id: string, data: any) => apiClient.put(`/expense-entries/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/expense-entries/${id}`),
+};
+
+// Finance Reports API
+export const financeReportsApi = {
+  dashboard: async () => apiClient.get('/finance/dashboard'),
+  dailyCashbook: async (params: { date: string; account_id?: string }) =>
+    apiClient.get('/finance/reports/daily-cashbook', params),
+  incomeVsExpense: async (params: { start_date: string; end_date: string; school_id?: string }) =>
+    apiClient.get('/finance/reports/income-vs-expense', params),
+  projectSummary: async (params?: { status?: string }) =>
+    apiClient.get('/finance/reports/project-summary', params),
+  donorSummary: async (params?: { start_date?: string; end_date?: string }) =>
+    apiClient.get('/finance/reports/donor-summary', params),
+  accountBalances: async () => apiClient.get('/finance/reports/account-balances'),
+};

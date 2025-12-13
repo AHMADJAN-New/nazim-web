@@ -74,6 +74,17 @@ export const AssetReports = lazy(() => import('@/pages/AssetReports').then(modul
 export const AssetCategories = lazy(() => import('@/pages/AssetCategories').then(module => ({ default: module.default })));
 export const TranslationEditor = lazy(() => import('@/pages/TranslationEditor'));
 
+// Finance Module
+export const FinanceDashboard = lazy(() => import('@/pages/finance/FinanceDashboard'));
+export const FinanceAccounts = lazy(() => import('@/pages/finance/FinanceAccounts'));
+export const IncomeEntries = lazy(() => import('@/pages/finance/IncomeEntries'));
+export const IncomeCategories = lazy(() => import('@/pages/finance/IncomeCategories'));
+export const ExpenseEntries = lazy(() => import('@/pages/finance/ExpenseEntries'));
+export const ExpenseCategories = lazy(() => import('@/pages/finance/ExpenseCategories'));
+export const FinanceProjects = lazy(() => import('@/pages/finance/FinanceProjects'));
+export const Donors = lazy(() => import('@/pages/finance/Donors'));
+export const FinanceReports = lazy(() => import('@/pages/finance/FinanceReports'));
+
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
 
