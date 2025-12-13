@@ -102,87 +102,106 @@ export default function FinanceReports() {
                 <div className="flex items-center justify-center h-64">
                     <LoadingSpinner />
                 </div>
-            ) : cashbook ? (
+            ) : cashbook && cashbook.cashbook.length > 0 ? (
                 <>
-                    {/* Summary */}
-                    <div className="grid gap-4 md:grid-cols-4">
-                        <Card>
-                            <CardContent className="pt-6">
-                                <div className="text-sm text-muted-foreground">{t('finance.openingBalance') || 'Opening Balance'}</div>
-                                <div className="text-2xl font-bold">{formatCurrency(cashbook.openingBalance)}</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="pt-6">
-                                <div className="text-sm text-muted-foreground">{t('finance.totalIncome') || 'Total Income'}</div>
-                                <div className="text-2xl font-bold text-green-600">+{formatCurrency(cashbook.totalIncome)}</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="pt-6">
-                                <div className="text-sm text-muted-foreground">{t('finance.totalExpenses') || 'Total Expenses'}</div>
-                                <div className="text-2xl font-bold text-red-600">-{formatCurrency(cashbook.totalExpense)}</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="pt-6">
-                                <div className="text-sm text-muted-foreground">{t('finance.closingBalance') || 'Closing Balance'}</div>
-                                <div className="text-2xl font-bold">{formatCurrency(cashbook.closingBalance)}</div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                    {cashbook.cashbook.map((cb, idx) => {
+                        // Combine income and expenses into a single entries array for display
+                        const allEntries = [
+                            ...cb.income.map(e => ({ ...e, type: 'income' as const, categoryName: e.incomeCategory?.name || '-' })),
+                            ...cb.expenses.map(e => ({ ...e, type: 'expense' as const, categoryName: e.expenseCategory?.name || '-' })),
+                        ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-                    {/* Transactions */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>{t('finance.transactions') || 'Transactions'}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>{t('common.date') || 'Date'}</TableHead>
-                                        <TableHead>{t('common.type') || 'Type'}</TableHead>
-                                        <TableHead>{t('finance.category') || 'Category'}</TableHead>
-                                        <TableHead>{t('common.description') || 'Description'}</TableHead>
-                                        <TableHead className="text-right">{t('finance.amount') || 'Amount'}</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {cashbook.entries.map((entry) => (
-                                        <TableRow key={entry.id}>
-                                            <TableCell>{formatDate(entry.date)}</TableCell>
-                                            <TableCell>
-                                                {entry.type === 'income' ? (
-                                                    <span className="flex items-center gap-1 text-green-600">
-                                                        <TrendingUp className="h-4 w-4" />
-                                                        {t('finance.income') || 'Income'}
-                                                    </span>
-                                                ) : (
-                                                    <span className="flex items-center gap-1 text-red-600">
-                                                        <TrendingDown className="h-4 w-4" />
-                                                        {t('finance.expense') || 'Expense'}
-                                                    </span>
+                        return (
+                            <div key={cb.account.id} className="space-y-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>{cb.account.name} - {t('finance.dailyCashbook') || 'Daily Cashbook'}</CardTitle>
+                                        <CardDescription>{formatDate(cashbook.date)}</CardDescription>
+                                    </CardHeader>
+                                </Card>
+
+                                {/* Summary */}
+                                <div className="grid gap-4 md:grid-cols-4">
+                                    <Card>
+                                        <CardContent className="pt-6">
+                                            <div className="text-sm text-muted-foreground">{t('finance.openingBalance') || 'Opening Balance'}</div>
+                                            <div className="text-2xl font-bold">{formatCurrency(cb.openingBalance)}</div>
+                                        </CardContent>
+                                    </Card>
+                                    <Card>
+                                        <CardContent className="pt-6">
+                                            <div className="text-sm text-muted-foreground">{t('finance.totalIncome') || 'Total Income'}</div>
+                                            <div className="text-2xl font-bold text-green-600">+{formatCurrency(cb.totalIncome)}</div>
+                                        </CardContent>
+                                    </Card>
+                                    <Card>
+                                        <CardContent className="pt-6">
+                                            <div className="text-sm text-muted-foreground">{t('finance.totalExpenses') || 'Total Expenses'}</div>
+                                            <div className="text-2xl font-bold text-red-600">-{formatCurrency(cb.totalExpense)}</div>
+                                        </CardContent>
+                                    </Card>
+                                    <Card>
+                                        <CardContent className="pt-6">
+                                            <div className="text-sm text-muted-foreground">{t('finance.closingBalance') || 'Closing Balance'}</div>
+                                            <div className="text-2xl font-bold">{formatCurrency(cb.closingBalance)}</div>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+
+                                {/* Transactions */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>{t('finance.transactions') || 'Transactions'}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>{t('common.date') || 'Date'}</TableHead>
+                                                    <TableHead>{t('common.type') || 'Type'}</TableHead>
+                                                    <TableHead>{t('finance.category') || 'Category'}</TableHead>
+                                                    <TableHead>{t('common.description') || 'Description'}</TableHead>
+                                                    <TableHead className="text-right">{t('finance.amount') || 'Amount'}</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {allEntries.map((entry) => (
+                                                    <TableRow key={entry.id}>
+                                                        <TableCell>{formatDate(entry.date)}</TableCell>
+                                                        <TableCell>
+                                                            {entry.type === 'income' ? (
+                                                                <span className="flex items-center gap-1 text-green-600">
+                                                                    <TrendingUp className="h-4 w-4" />
+                                                                    {t('finance.income') || 'Income'}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="flex items-center gap-1 text-red-600">
+                                                                    <TrendingDown className="h-4 w-4" />
+                                                                    {t('finance.expense') || 'Expense'}
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>{entry.categoryName}</TableCell>
+                                                        <TableCell>{entry.description || '-'}</TableCell>
+                                                        <TableCell className={`text-right font-medium ${entry.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {entry.type === 'income' ? '+' : '-'}{formatCurrency(entry.amount)}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                                {allEntries.length === 0 && (
+                                                    <TableRow>
+                                                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                                            {t('finance.noTransactions') || 'No transactions found'}
+                                                        </TableCell>
+                                                    </TableRow>
                                                 )}
-                                            </TableCell>
-                                            <TableCell>{entry.categoryName}</TableCell>
-                                            <TableCell>{entry.description || '-'}</TableCell>
-                                            <TableCell className={`text-right font-medium ${entry.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                                {entry.type === 'income' ? '+' : '-'}{formatCurrency(entry.amount)}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                    {cashbook.entries.length === 0 && (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                                                {t('finance.noTransactions') || 'No transactions found'}
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        );
+                    })}
                 </>
             ) : null}
         </div>
@@ -224,20 +243,20 @@ export default function FinanceReports() {
                             <Card>
                                 <CardContent className="pt-6">
                                     <div className="text-sm text-muted-foreground">{t('finance.totalIncome') || 'Total Income'}</div>
-                                    <div className="text-2xl font-bold text-green-600">{formatCurrency(incomeVsExpense.totalIncome)}</div>
+                                    <div className="text-2xl font-bold text-green-600">{formatCurrency(incomeVsExpense.summary.totalIncome)}</div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="pt-6">
                                     <div className="text-sm text-muted-foreground">{t('finance.totalExpenses') || 'Total Expenses'}</div>
-                                    <div className="text-2xl font-bold text-red-600">{formatCurrency(incomeVsExpense.totalExpense)}</div>
+                                    <div className="text-2xl font-bold text-red-600">{formatCurrency(incomeVsExpense.summary.totalExpense)}</div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="pt-6">
                                     <div className="text-sm text-muted-foreground">{t('finance.netBalance') || 'Net Balance'}</div>
-                                    <div className={`text-2xl font-bold ${incomeVsExpense.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {formatCurrency(incomeVsExpense.netBalance)}
+                                    <div className={`text-2xl font-bold ${incomeVsExpense.summary.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {formatCurrency(incomeVsExpense.summary.net)}
                                     </div>
                                 </CardContent>
                             </Card>
