@@ -20,7 +20,8 @@ export default function DmsSettings() {
   });
 
   return (
-    <Card>
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+      <Card>
       <CardHeader>
         <CardTitle>Numbering & Security Settings</CardTitle>
       </CardHeader>
@@ -58,5 +59,6 @@ export default function DmsSettings() {
         <Button onClick={() => mutation.mutate(form)}>Save settings</Button>
       </CardContent>
     </Card>
+    </div>
   );
 }

@@ -20,6 +20,7 @@ class IncomingDocument extends Model
         'id',
         'organization_id',
         'school_id',
+        'academic_year_id',
         'security_level_key',
         'indoc_prefix',
         'indoc_number',
@@ -32,6 +33,9 @@ class IncomingDocument extends Model
         'sender_org',
         'sender_address',
         'subject',
+        'description',
+        'pages_count',
+        'attachments_count',
         'received_date',
         'routing_department_id',
         'assigned_to_user_id',
@@ -56,5 +60,15 @@ class IncomingDocument extends Model
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class, 'academic_year_id');
+    }
+
+    public function routingDepartment()
+    {
+        return $this->belongsTo(Department::class, 'routing_department_id');
     }
 }

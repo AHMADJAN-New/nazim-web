@@ -28,7 +28,7 @@ class IncomingDocumentsController extends BaseDmsController
         [$user, $profile, $schoolIds] = $context;
 
         $query = IncomingDocument::query()
-            ->with(['routingDepartment'])
+            ->with(['routingDepartment', 'academicYear'])
             ->where('organization_id', $profile->organization_id);
 
         if (!empty($schoolIds)) {
@@ -97,7 +97,7 @@ class IncomingDocumentsController extends BaseDmsController
         $this->authorize('create', IncomingDocument::class);
         [$user, $profile, $schoolIds] = $context;
 
-        $data = $request->validate([
+        $validationRules = [
             'security_level_key' => ['nullable', 'string'],
             'indoc_prefix' => ['nullable', 'string'],
             'external_doc_number' => ['nullable', 'string'],
@@ -106,6 +106,9 @@ class IncomingDocumentsController extends BaseDmsController
             'sender_org' => ['nullable', 'string', 'max:255'],
             'sender_address' => ['nullable', 'string', 'max:255'],
             'subject' => ['nullable', 'string', 'max:500'],
+            'description' => ['nullable', 'string'],
+            'pages_count' => ['nullable', 'integer', 'min:0'],
+            'attachments_count' => ['nullable', 'integer', 'min:0'],
             'received_date' => ['required', 'date'],
             'routing_department_id' => ['nullable', 'uuid'],
             'assigned_to_user_id' => ['nullable', 'uuid'],
@@ -114,7 +117,14 @@ class IncomingDocumentsController extends BaseDmsController
             'is_manual_number' => ['boolean'],
             'manual_indoc_number' => ['nullable', 'string'],
             'school_id' => ['nullable', 'uuid'],
-        ]);
+        ];
+
+        // Only validate academic_year_id if column exists
+        if (\Schema::hasColumn('incoming_documents', 'academic_year_id')) {
+            $validationRules['academic_year_id'] = ['nullable', 'uuid', 'exists:academic_years,id'];
+        }
+
+        $data = $request->validate($validationRules);
 
         if ($response = $this->ensureSchoolAccess($data['school_id'] ?? null, $schoolIds)) {
             return $response;
@@ -125,7 +135,19 @@ class IncomingDocumentsController extends BaseDmsController
                 ['organization_id' => $profile->organization_id, 'school_id' => $data['school_id'] ?? null],
                 []
             );
-            $yearKey = $this->numberingService->getYearKey($settings->year_mode ?? 'gregorian');
+            
+            // Get academic year if provided and column exists
+            $academicYear = null;
+            if (!empty($data['academic_year_id']) && \Schema::hasColumn('incoming_documents', 'academic_year_id')) {
+                $academicYear = \App\Models\AcademicYear::where('id', $data['academic_year_id'])
+                    ->where('organization_id', $profile->organization_id)
+                    ->first();
+            }
+            
+            $yearKey = $this->numberingService->getYearKey(
+                $settings->year_mode ?? 'gregorian',
+                $academicYear
+            );
             $sequence = $this->numberingService->generateIncomingNumber(
                 $profile->organization_id,
                 $data['school_id'] ?? null,
@@ -138,6 +160,21 @@ class IncomingDocumentsController extends BaseDmsController
             $data['manual_indoc_number'] = null;
         } else {
             $data['full_indoc_number'] = $data['manual_indoc_number'];
+        }
+        
+        // Set academic_year_id if not provided, use current academic year
+        // Only set if column exists (migration may not have run yet)
+        if (empty($data['academic_year_id']) && \Schema::hasColumn('incoming_documents', 'academic_year_id')) {
+            $currentAcademicYear = \App\Models\AcademicYear::where('organization_id', $profile->organization_id)
+                ->where('is_current', true)
+                ->whereNull('deleted_at')
+                ->first();
+            if ($currentAcademicYear) {
+                $data['academic_year_id'] = $currentAcademicYear->id;
+            }
+        } elseif (!\Schema::hasColumn('incoming_documents', 'academic_year_id')) {
+            // Remove academic_year_id from data if column doesn't exist
+            unset($data['academic_year_id']);
         }
 
         $data['organization_id'] = $profile->organization_id;

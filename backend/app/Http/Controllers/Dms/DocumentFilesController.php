@@ -28,7 +28,8 @@ class DocumentFilesController extends BaseDmsController
             'owner_id' => ['required', 'uuid'],
         ]);
 
-        $document = $this->resolveOwnerDocument($request->owner_type, $request->owner_id, $profile->organization_id, $schoolIds, $user);
+        // For file listing, allow if user created the document or has clearance
+        $document = $this->resolveOwnerDocument($request->owner_type, $request->owner_id, $profile->organization_id, $schoolIds, $user, true);
 
         $files = DocumentFile::where('organization_id', $profile->organization_id)
             ->where('owner_type', $request->owner_type)
@@ -36,9 +37,12 @@ class DocumentFilesController extends BaseDmsController
             ->orderByDesc('version')
             ->get();
 
-        $files->each(fn ($file) => $this->authorize('view', $file));
+        // Filter files that user can view (use Gate::allows instead of authorize to avoid exceptions)
+        $accessibleFiles = $files->filter(function ($file) use ($user) {
+            return \Illuminate\Support\Facades\Gate::forUser($user)->allows('view', $file);
+        });
 
-        return $files;
+        return $accessibleFiles->values();
     }
 
     public function store(Request $request)
@@ -59,7 +63,8 @@ class DocumentFilesController extends BaseDmsController
         $file = $request->file('file');
         $path = $file->store('document-files');
 
-        $document = $this->resolveOwnerDocument($data['owner_type'], $data['owner_id'], $profile->organization_id, $schoolIds, $user);
+        // For file uploads, allow if user created the document or has clearance
+        $document = $this->resolveOwnerDocument($data['owner_type'], $data['owner_id'], $profile->organization_id, $schoolIds, $user, true);
 
         $tempModel = new DocumentFile(['owner_type' => $data['owner_type'], 'owner_id' => $document->id]);
         $this->authorize('create', $tempModel);
@@ -103,7 +108,7 @@ class DocumentFilesController extends BaseDmsController
         return Storage::download($file->storage_path, $file->original_name);
     }
 
-    private function resolveOwnerDocument(string $ownerType, string $ownerId, string $organizationId, array $schoolIds, $user)
+    private function resolveOwnerDocument(string $ownerType, string $ownerId, string $organizationId, array $schoolIds, $user, bool $skipSecurityCheck = false)
     {
         $model = $ownerType === 'incoming' ? IncomingDocument::class : OutgoingDocument::class;
         $document = $model::where('id', $ownerId)
@@ -115,8 +120,17 @@ class DocumentFilesController extends BaseDmsController
             abort($response->getStatusCode(), $payload['error'] ?? 'School not accessible');
         }
 
-        if ($document->security_level_key && !$this->securityGateService->canView($user, $document->security_level_key, $document->organization_id)) {
-            abort(403, 'Insufficient clearance');
+        // For file operations, allow access if:
+        // 1. User created the document (created_by = user->id), OR
+        // 2. User has clearance to view the document, OR
+        // 3. Document has no security level
+        if (!$skipSecurityCheck && $document->security_level_key) {
+            $userCreatedDocument = isset($document->created_by) && $document->created_by === $user->id;
+            $hasClearance = $this->securityGateService->canView($user, $document->security_level_key, $document->organization_id);
+            
+            if (!$userCreatedDocument && !$hasClearance) {
+                abort(403, 'Insufficient clearance');
+            }
         }
 
         return $document;

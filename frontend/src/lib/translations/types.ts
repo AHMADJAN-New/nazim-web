@@ -143,6 +143,17 @@ export interface TranslationKeys {
     certificateTemplates: string;
     courseDocuments: string;
     courseReports: string;
+    documentSystem: string;
+    "dms.dashboard": string;
+    "dms.incoming": string;
+    "dms.outgoing": string;
+    "dms.issueLetter": string;
+    "dms.templates": string;
+    "dms.letterheads": string;
+    "dms.departments": string;
+    "dms.archive": string;
+    "dms.reports": string;
+    "dms.settings": string;
   };
 
   attendancePage: {
@@ -2683,6 +2694,11 @@ export interface TranslationKeys {
     // Student Picture
     pictureUploaded: string;
     pictureUploadFailed: string;
+    // File Upload/Download
+    fileUploaded: string;
+    fileUploadFailed: string;
+    fileDownloaded: string;
+    fileDownloadFailed: string;
     // Report Templates
     reportTemplateCreated: string;
     reportTemplateUpdated: string;
@@ -2811,6 +2827,13 @@ export interface TranslationKeys {
     documentUploaded: string;
     documentDeleted: string;
     documentUploadFailed: string;
+    // DMS Documents
+    documentCreated: string;
+    documentUpdated: string;
+    documentCreateFailed: string;
+    documentUpdateFailed: string;
+    pdfGenerated: string;
+    pdfGenerateFailed: string;
     documentDeleteFailed: string;
     educationalHistoryAdded: string;
     educationalHistoryUpdated: string;

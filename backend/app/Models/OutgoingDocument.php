@@ -20,6 +20,7 @@ class OutgoingDocument extends Model
         'id',
         'organization_id',
         'school_id',
+        'academic_year_id',
         'security_level_key',
         'outdoc_prefix',
         'outdoc_number',
@@ -32,6 +33,9 @@ class OutgoingDocument extends Model
         'external_recipient_org',
         'recipient_address',
         'subject',
+        'description',
+        'pages_count',
+        'attachments_count',
         'body_html',
         'pdf_path',
         'issue_date',
@@ -57,5 +61,10 @@ class OutgoingDocument extends Model
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class, 'academic_year_id');
     }
 }

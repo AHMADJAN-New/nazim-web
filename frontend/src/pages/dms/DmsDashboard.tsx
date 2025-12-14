@@ -27,11 +27,11 @@ export default function DmsDashboard() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Document System Dashboard</h1>
-          <p className="text-muted-foreground">Quick glance across incoming, outgoing, and pending routed documents.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Document System Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Quick glance across incoming, outgoing, and pending routed documents.</p>
         </div>
       </div>
 

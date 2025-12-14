@@ -7,7 +7,8 @@ export default function DmsReports() {
   const { data } = useQuery({ queryKey: ["dms", "distribution"], queryFn: dmsApi.distribution, staleTime: 120_000 });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+      <div className="grid gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Incoming by department</CardTitle>
@@ -79,6 +80,7 @@ export default function DmsReports() {
           </Table>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

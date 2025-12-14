@@ -28,7 +28,8 @@ export default function TemplatesPage() {
   });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
+      <div className="grid gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>Templates</CardTitle>
@@ -83,6 +84,7 @@ export default function TemplatesPage() {
           </Button>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

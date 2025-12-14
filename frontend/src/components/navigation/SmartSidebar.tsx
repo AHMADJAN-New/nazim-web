@@ -238,6 +238,17 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasExchangeRatesPermission = useHasPermission('exchange_rates.read');
   const hasFinancePermission = hasFinanceAccountsPermission || hasIncomeEntriesPermission || hasExpenseEntriesPermission || hasFinanceProjectsPermission || hasDonorsPermission || hasFinanceReportsPermission || hasCurrenciesPermission || hasExchangeRatesPermission;
 
+  // DMS (Document Management System) permissions
+  const hasDmsIncomingPermission = useHasPermission('dms.incoming.read');
+  const hasDmsOutgoingPermission = useHasPermission('dms.outgoing.read');
+  const hasDmsTemplatesPermission = useHasPermission('dms.templates.read');
+  const hasDmsLetterheadsPermission = useHasPermission('dms.letterheads.read');
+  const hasDmsDepartmentsPermission = useHasPermission('dms.departments.read');
+  const hasDmsReportsPermission = useHasPermission('dms.reports.read');
+  const hasDmsSettingsPermission = useHasPermission('dms.settings.read');
+  const hasDmsArchivePermission = useHasPermission('dms.archive.read');
+  const hasDmsPermission = hasDmsIncomingPermission || hasDmsOutgoingPermission || hasDmsTemplatesPermission || hasDmsLetterheadsPermission || hasDmsDepartmentsPermission || hasDmsReportsPermission || hasDmsSettingsPermission || hasDmsArchivePermission;
+
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [navigationContext, setNavigationContext] = useState<NavigationContext>({
@@ -649,6 +660,74 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
         ],
       }] : []),
+      ...(hasDmsPermission ? [{
+        titleKey: "document-system",
+        icon: FileText,
+        badge: null,
+        priority: 3.085,
+        children: [
+          ...(hasDmsIncomingPermission || hasDmsOutgoingPermission ? [{
+            title: "DMS Dashboard",
+            titleKey: "dms.dashboard",
+            url: "/dms/dashboard",
+            icon: Home,
+          }] : []),
+          ...(hasDmsIncomingPermission ? [{
+            title: "Incoming",
+            titleKey: "dms.incoming",
+            url: "/dms/incoming",
+            icon: FileText,
+          }] : []),
+          ...(hasDmsOutgoingPermission ? [{
+            title: "Outgoing",
+            titleKey: "dms.outgoing",
+            url: "/dms/outgoing",
+            icon: FileText,
+          }] : []),
+          ...(hasDmsOutgoingPermission ? [{
+            title: "Issue Letter",
+            titleKey: "dms.issueLetter",
+            url: "/dms/issue-letter",
+            icon: MessageSquare,
+          }] : []),
+          ...(hasDmsTemplatesPermission ? [{
+            title: "Templates",
+            titleKey: "dms.templates",
+            url: "/dms/templates",
+            icon: BookOpen,
+          }] : []),
+          ...(hasDmsLetterheadsPermission ? [{
+            title: "Letterheads",
+            titleKey: "dms.letterheads",
+            url: "/dms/letterheads",
+            icon: Trophy,
+          }] : []),
+          ...(hasDmsDepartmentsPermission ? [{
+            title: "Departments",
+            titleKey: "dms.departments",
+            url: "/dms/departments",
+            icon: Building,
+          }] : []),
+          ...(hasDmsArchivePermission ? [{
+            title: "Archive",
+            titleKey: "dms.archive",
+            url: "/dms/archive",
+            icon: Package,
+          }] : []),
+          ...(hasDmsReportsPermission ? [{
+            title: "Reports",
+            titleKey: "dms.reports",
+            url: "/dms/reports",
+            icon: LucideIcons.BarChart3,
+          }] : []),
+          ...(hasDmsSettingsPermission ? [{
+            title: "Settings",
+            titleKey: "dms.settings",
+            url: "/dms/settings",
+            icon: Settings,
+          }] : []),
+        ],
+      }] : []),
       ...(hasAssetsPermission ? [{
         titleKey: "assets",
         icon: Boxes,
@@ -895,7 +974,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {

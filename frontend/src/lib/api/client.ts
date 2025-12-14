@@ -2997,7 +2997,7 @@ export const financeReportsApi = {
 export const dmsApi = {
   dashboard: async () => apiClient.get('/dms/dashboard'),
   distribution: async () => apiClient.get('/dms/reports/distribution'),
-  archive: async (q: string) => apiClient.get('/dms/archive', { q }),
+  archive: async (params?: Record<string, any>) => apiClient.get('/dms/archive', params),
 
   incoming: {
     list: async (params?: Record<string, any>) => apiClient.get('/dms/incoming', params),
