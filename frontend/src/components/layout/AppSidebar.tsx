@@ -99,6 +99,23 @@ const navigationItems: NavigationItem[] = [
         icon: DoorOpen,
       },
     ],
+  },
+  {
+    titleKey: "document-system",
+    icon: FileText,
+    badge: { text: "MVP", variant: "secondary" },
+    roles: ["admin", "teacher", "staff", "librarian"],
+    children: [
+      { title: "DMS Dashboard", url: "/dms/dashboard", icon: Home },
+      { title: "Incoming", url: "/dms/incoming", icon: FileText },
+      { title: "Outgoing", url: "/dms/outgoing", icon: FileText },
+      { title: "Issue Letter", url: "/dms/issue-letter", icon: MessageSquare },
+      { title: "Templates", url: "/dms/templates", icon: BookOpen },
+      { title: "Letterheads", url: "/dms/letterheads", icon: Trophy },
+      { title: "Archive", url: "/dms/archive", icon: Package },
+      { title: "Reports", url: "/dms/reports", icon: BarChart3 },
+      { title: "Settings", url: "/dms/settings", icon: Settings },
+    ],
   }
 ];
 

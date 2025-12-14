@@ -90,6 +90,15 @@ import {
   AssetReports,
   AssetCategories,
   TranslationEditor,
+  DmsDashboard,
+  IncomingDocuments,
+  OutgoingDocuments,
+  IssueLetter,
+  TemplatesPage,
+  LetterheadsPage,
+  ArchiveSearchPage,
+  DmsReportsPage,
+  DmsSettingsPage,
   // Finance Module
   FinanceDashboard,
   FinanceAccounts,
@@ -687,6 +696,52 @@ const App = () => (
                           <LeaveReports />
                         </Suspense>
                       </PermissionRoute>
+                    } />
+                    {/* Document Management System Routes */}
+                    <Route path="/dms/dashboard" element={
+                      <Suspense fallback={<DashboardSkeleton />}>
+                        <DmsDashboard />
+                      </Suspense>
+                    } />
+                    <Route path="/dms/incoming" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <IncomingDocuments />
+                      </Suspense>
+                    } />
+                    <Route path="/dms/outgoing" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <OutgoingDocuments />
+                      </Suspense>
+                    } />
+                    <Route path="/dms/issue-letter" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <IssueLetter />
+                      </Suspense>
+                    } />
+                    <Route path="/dms/templates" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <TemplatesPage />
+                      </Suspense>
+                    } />
+                    <Route path="/dms/letterheads" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <LetterheadsPage />
+                      </Suspense>
+                    } />
+                    <Route path="/dms/archive" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <ArchiveSearchPage />
+                      </Suspense>
+                    } />
+                    <Route path="/dms/reports" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <DmsReportsPage />
+                      </Suspense>
+                    } />
+                    <Route path="/dms/settings" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <DmsSettingsPage />
+                      </Suspense>
                     } />
                     {/* Finance Module Routes */}
                     <Route path="/finance" element={
