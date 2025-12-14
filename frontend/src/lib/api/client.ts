@@ -2992,3 +2992,54 @@ export const financeReportsApi = {
     apiClient.get('/finance/reports/donor-summary', params),
   accountBalances: async () => apiClient.get('/finance/reports/account-balances'),
 };
+
+// Document Management System API
+export const dmsApi = {
+  dashboard: async () => apiClient.get('/dms/dashboard'),
+  distribution: async () => apiClient.get('/dms/reports/distribution'),
+  archive: async (params?: Record<string, any>) => apiClient.get('/dms/archive', params),
+
+  incoming: {
+    list: async (params?: Record<string, any>) => apiClient.get('/dms/incoming', params),
+    get: async (id: string) => apiClient.get(`/dms/incoming/${id}`),
+    create: async (data: any) => apiClient.post('/dms/incoming', data),
+    update: async (id: string, data: any) => apiClient.put(`/dms/incoming/${id}`, data),
+  },
+
+  outgoing: {
+    list: async (params?: Record<string, any>) => apiClient.get('/dms/outgoing', params),
+    get: async (id: string) => apiClient.get(`/dms/outgoing/${id}`),
+    create: async (data: any) => apiClient.post('/dms/outgoing', data),
+    update: async (id: string, data: any) => apiClient.put(`/dms/outgoing/${id}`, data),
+    generatePdf: async (id: string) => apiClient.post(`/dms/outgoing/${id}/generate-pdf`),
+  },
+
+  templates: {
+    list: async (params?: Record<string, any>) => apiClient.get('/dms/templates', params),
+    create: async (data: any) => apiClient.post('/dms/templates', data),
+    update: async (id: string, data: any) => apiClient.put(`/dms/templates/${id}`, data),
+  },
+
+  letterheads: {
+    list: async () => apiClient.get('/dms/letterheads'),
+    create: async (data: FormData) => apiClient.post('/dms/letterheads', data),
+    update: async (id: string, data: FormData) => apiClient.put(`/dms/letterheads/${id}`, data),
+    download: async (id: string) => apiClient.requestFile(`/dms/letterheads/${id}/download`, { method: 'GET' }),
+  },
+
+  settings: {
+    get: async (params?: { school_id?: string }) => apiClient.get('/dms/settings', params),
+    update: async (data: any) => apiClient.put('/dms/settings', data),
+  },
+
+  departments: {
+    list: async () => apiClient.get('/dms/departments'),
+    create: async (data: any) => apiClient.post('/dms/departments', data),
+  },
+
+  files: {
+    list: async (params: { owner_type: 'incoming' | 'outgoing'; owner_id: string }) => apiClient.get('/dms/files', params),
+    upload: async (data: FormData) => apiClient.post('/dms/files', data),
+    download: async (id: string) => apiClient.requestFile(`/dms/files/${id}/download`, { method: 'GET' }),
+  },
+};

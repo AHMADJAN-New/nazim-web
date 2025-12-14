@@ -107,6 +107,16 @@ class PermissionSeeder extends Seeder
             // Currency and Exchange Rate permissions
             'currencies' => ['read', 'create', 'update', 'delete'],
             'exchange_rates' => ['read', 'create', 'update', 'delete'],
+            // Document Management System (DMS) permissions
+            'dms.incoming' => ['read', 'create', 'update', 'delete'],
+            'dms.outgoing' => ['read', 'create', 'update', 'delete'],
+            'dms.templates' => ['read', 'create', 'update', 'delete'],
+            'dms.letterheads' => ['read', 'create', 'update', 'delete', 'manage'],
+            'dms.departments' => ['read', 'create', 'update', 'delete'],
+            'dms.files' => ['read', 'create', 'update', 'delete', 'download'],
+            'dms.reports' => ['read'],
+            'dms.settings' => ['read', 'manage'],
+            'dms.archive' => ['read', 'search'],
         ];
     }
 
@@ -141,6 +151,16 @@ class PermissionSeeder extends Seeder
                 'student_admissions.read', 'student_admissions.create',
                 'assets.read', 'assets.create', 'assets.update', 'assets.delete', // Full asset management access
                 'asset_categories.read', 'asset_categories.create', 'asset_categories.update', 'asset_categories.delete', // Asset category management
+                // DMS permissions for staff - can manage documents, create letters
+                'dms.incoming.read', 'dms.incoming.create', 'dms.incoming.update',
+                'dms.outgoing.read', 'dms.outgoing.create', 'dms.outgoing.update',
+                'dms.templates.read', 'dms.templates.create', 'dms.templates.update',
+                'dms.letterheads.read',
+                'dms.departments.read',
+                'dms.files.read', 'dms.files.create', 'dms.files.download',
+                'dms.reports.read',
+                'dms.archive.read', 'dms.archive.search',
+                'dms.settings.read',
             ],
             'teacher' => [
                 // Teachers can read and manage academic content
@@ -176,6 +196,16 @@ class PermissionSeeder extends Seeder
                 'school_branding.read', // Needed to view schools
                 'assets.read', 'assets.create', 'assets.update', 'assets.delete', // Full asset management access
                 'asset_categories.read', 'asset_categories.create', 'asset_categories.update', 'asset_categories.delete', // Asset category management
+                // DMS permissions for teachers - can read documents, create letters for students
+                'dms.incoming.read',
+                'dms.outgoing.read', 'dms.outgoing.create',
+                'dms.templates.read',
+                'dms.letterheads.read',
+                'dms.departments.read',
+                'dms.files.read', 'dms.files.download',
+                'dms.reports.read',
+                'dms.archive.read', 'dms.archive.search',
+                'dms.settings.read',
             ],
             'exam_controller' => [
                 // Dedicated exam controller role - full exam management except deletion
@@ -204,6 +234,25 @@ class PermissionSeeder extends Seeder
                 'rooms.read', 'rooms.create', 'rooms.update',
                 'student_admissions.read', 'student_admissions.update',
                 'reports.read',
+            ],
+            'librarian' => [
+                // Librarians manage library and can access DMS for document management
+                'library_categories.read', 'library_categories.create', 'library_categories.update', 'library_categories.delete',
+                'library_books.read', 'library_books.create', 'library_books.update', 'library_books.delete',
+                'library_loans.read', 'library_loans.create', 'library_loans.update',
+                'students.read',
+                'staff.read',
+                'profiles.read',
+                // DMS permissions for librarians - can manage all documents
+                'dms.incoming.read', 'dms.incoming.create', 'dms.incoming.update',
+                'dms.outgoing.read', 'dms.outgoing.create', 'dms.outgoing.update',
+                'dms.templates.read', 'dms.templates.create', 'dms.templates.update',
+                'dms.letterheads.read',
+                'dms.departments.read',
+                'dms.files.read', 'dms.files.create', 'dms.files.update', 'dms.files.download',
+                'dms.reports.read',
+                'dms.archive.read', 'dms.archive.search',
+                'dms.settings.read',
             ],
         ];
     }

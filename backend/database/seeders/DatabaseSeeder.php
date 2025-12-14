@@ -45,6 +45,14 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 2b: Ensuring role permissions for all organizations...');
         $this->assignPermissionsForAllOrganizations();
 
+        // Step 2b2: Seed DMS security levels for all organizations
+        $this->command->info('Step 2b2: Seeding DMS security levels...');
+        $this->call(SecurityLevelSeeder::class);
+
+        // Step 2b3: Seed DMS document settings for all organizations
+        $this->command->info('Step 2b3: Seeding DMS document settings...');
+        $this->call(DocumentSettingsSeeder::class);
+
         // Step 2c: Seed library categories for all organizations
         $this->command->info('Step 2c: Seeding library categories...');
         $this->call(LibraryCategorySeeder::class);

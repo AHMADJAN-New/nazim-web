@@ -17,6 +17,7 @@ class Profile extends Model
         'email',
         'full_name',
         'role',
+        'clearance_level_key',
         'organization_id',
         'phone',
         'avatar_url',

@@ -88,6 +88,18 @@ export const ExchangeRates = lazy(() => import('@/pages/finance/ExchangeRates'))
 export const FinanceReports = lazy(() => import('@/pages/finance/FinanceReports'));
 export const FinanceSettings = lazy(() => import('@/pages/finance/FinanceSettings'));
 
+// Document Management System
+export const DmsDashboard = lazy(() => import('@/pages/dms/DmsDashboard'));
+export const IncomingDocuments = lazy(() => import('@/pages/dms/IncomingDocuments'));
+export const OutgoingDocuments = lazy(() => import('@/pages/dms/OutgoingDocuments'));
+export const IssueLetter = lazy(() => import('@/pages/dms/IssueLetter'));
+export const TemplatesPage = lazy(() => import('@/pages/dms/TemplatesPage'));
+export const LetterheadsPage = lazy(() => import('@/pages/dms/LetterheadsPage'));
+export const DepartmentsPage = lazy(() => import('@/pages/dms/DepartmentsPage'));
+export const ArchiveSearchPage = lazy(() => import('@/pages/dms/ArchiveSearch'));
+export const DmsReportsPage = lazy(() => import('@/pages/dms/DmsReports'));
+export const DmsSettingsPage = lazy(() => import('@/pages/dms/DmsSettings'));
+
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
 
