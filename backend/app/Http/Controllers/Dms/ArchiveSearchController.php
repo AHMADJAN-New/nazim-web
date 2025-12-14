@@ -11,7 +11,7 @@ class ArchiveSearchController extends BaseDmsController
 {
     public function __invoke(Request $request)
     {
-        $context = $this->requireOrganizationContext($request, 'dms.incoming.read');
+        $context = $this->requireOrganizationContext($request, 'dms.archive.search');
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }

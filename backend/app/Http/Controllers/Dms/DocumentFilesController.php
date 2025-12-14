@@ -17,7 +17,7 @@ class DocumentFilesController extends BaseDmsController
 
     public function index(Request $request)
     {
-        $context = $this->requireOrganizationContext($request, 'dms.incoming.read');
+        $context = $this->requireOrganizationContext($request, 'dms.files.read');
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
@@ -43,7 +43,7 @@ class DocumentFilesController extends BaseDmsController
 
     public function store(Request $request)
     {
-        $context = $this->requireOrganizationContext($request, 'dms.incoming.update');
+        $context = $this->requireOrganizationContext($request, 'dms.files.create');
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
@@ -87,7 +87,7 @@ class DocumentFilesController extends BaseDmsController
 
     public function download(string $id, Request $request)
     {
-        $context = $this->requireOrganizationContext($request, 'dms.incoming.read');
+        $context = $this->requireOrganizationContext($request, 'dms.files.download');
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
