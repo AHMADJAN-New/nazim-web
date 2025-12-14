@@ -62,6 +62,15 @@ use App\Http\Controllers\ExamTimeController;
 use App\Http\Controllers\ExamAttendanceController;
 use App\Http\Controllers\ExamNumberController;
 use App\Http\Controllers\GradeController;
+use App\Http\Controllers\Dms\ArchiveSearchController;
+use App\Http\Controllers\Dms\DepartmentsController as DmsDepartmentsController;
+use App\Http\Controllers\Dms\DocumentFilesController;
+use App\Http\Controllers\Dms\DocumentReportsController;
+use App\Http\Controllers\Dms\DocumentSettingsController;
+use App\Http\Controllers\Dms\IncomingDocumentsController;
+use App\Http\Controllers\Dms\LetterheadsController;
+use App\Http\Controllers\Dms\LetterTemplatesController;
+use App\Http\Controllers\Dms\OutgoingDocumentsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -431,4 +440,39 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     // Exchange Rate Management
     Route::apiResource('exchange-rates', \App\Http\Controllers\ExchangeRateController::class);
     Route::post('/exchange-rates/convert', [\App\Http\Controllers\ExchangeRateController::class, 'convert']);
+
+    // Document Management System (DMS)
+    Route::get('/dms/dashboard', [DocumentReportsController::class, 'dashboard']);
+    Route::get('/dms/reports/distribution', [DocumentReportsController::class, 'distribution']);
+    Route::get('/dms/archive', ArchiveSearchController::class);
+
+    Route::get('/dms/settings', [DocumentSettingsController::class, 'show']);
+    Route::put('/dms/settings', [DocumentSettingsController::class, 'update']);
+
+    Route::get('/dms/departments', [DmsDepartmentsController::class, 'index']);
+    Route::post('/dms/departments', [DmsDepartmentsController::class, 'store']);
+
+    Route::get('/dms/incoming', [IncomingDocumentsController::class, 'index']);
+    Route::post('/dms/incoming', [IncomingDocumentsController::class, 'store']);
+    Route::get('/dms/incoming/{id}', [IncomingDocumentsController::class, 'show']);
+    Route::put('/dms/incoming/{id}', [IncomingDocumentsController::class, 'update']);
+
+    Route::get('/dms/outgoing', [OutgoingDocumentsController::class, 'index']);
+    Route::post('/dms/outgoing', [OutgoingDocumentsController::class, 'store']);
+    Route::get('/dms/outgoing/{id}', [OutgoingDocumentsController::class, 'show']);
+    Route::put('/dms/outgoing/{id}', [OutgoingDocumentsController::class, 'update']);
+    Route::post('/dms/outgoing/{id}/generate-pdf', [OutgoingDocumentsController::class, 'generatePdf']);
+
+    Route::get('/dms/templates', [LetterTemplatesController::class, 'index']);
+    Route::post('/dms/templates', [LetterTemplatesController::class, 'store']);
+    Route::put('/dms/templates/{id}', [LetterTemplatesController::class, 'update']);
+
+    Route::get('/dms/letterheads', [LetterheadsController::class, 'index']);
+    Route::post('/dms/letterheads', [LetterheadsController::class, 'store']);
+    Route::put('/dms/letterheads/{id}', [LetterheadsController::class, 'update']);
+    Route::get('/dms/letterheads/{id}/download', [LetterheadsController::class, 'download']);
+
+    Route::get('/dms/files', [DocumentFilesController::class, 'index']);
+    Route::post('/dms/files', [DocumentFilesController::class, 'store']);
+    Route::get('/dms/files/{id}/download', [DocumentFilesController::class, 'download']);
 });
