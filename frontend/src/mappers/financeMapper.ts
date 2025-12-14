@@ -49,6 +49,13 @@ export function mapFinanceAccountApiToDomain(api: FinanceApi.FinanceAccount): Fi
         isActive: api.is_active,
         createdAt: new Date(api.created_at),
         updatedAt: new Date(api.updated_at),
+        // Relations
+        currency: api.currency ? {
+            id: api.currency.id,
+            code: api.currency.code,
+            name: api.currency.name,
+            symbol: api.currency.symbol,
+        } : null,
     };
 }
 
@@ -290,6 +297,12 @@ export function mapExpenseEntryApiToDomain(api: FinanceApi.ExpenseEntry): Expens
         account: api.account ? mapFinanceAccountApiToDomain(api.account) : undefined,
         expenseCategory: api.expense_category ? mapExpenseCategoryApiToDomain(api.expense_category) : undefined,
         project: api.project ? mapFinanceProjectApiToDomain(api.project) : null,
+        currency: api.currency ? {
+            id: api.currency.id,
+            code: api.currency.code,
+            name: api.currency.name,
+            symbol: api.currency.symbol,
+        } : null,
         approvedBy: api.approved_by || null,
     };
 }

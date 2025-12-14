@@ -101,7 +101,8 @@ import {
   Currencies,
   ExchangeRates,
   Donors,
-  FinanceReports
+  FinanceReports,
+  FinanceSettings
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -770,6 +771,13 @@ const App = () => (
                       <PermissionRoute permission="finance_reports.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <FinanceReports />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/settings" element={
+                      <PermissionRoute permission="currencies.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FinanceSettings />
                         </Suspense>
                       </PermissionRoute>
                     } />

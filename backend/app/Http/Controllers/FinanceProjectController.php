@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FinanceProject;
+use App\Models\Currency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -56,7 +57,7 @@ class FinanceProjectController extends Controller
                 $query->where('is_active', filter_var($validated['is_active'], FILTER_VALIDATE_BOOLEAN));
             }
 
-            $projects = $query->orderBy('name')->get();
+            $projects = $query->with('currency')->orderBy('name')->get();
 
             return response()->json($projects);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -100,6 +101,7 @@ class FinanceProjectController extends Controller
                 'code' => ['nullable', 'string', 'max:50', Rule::unique('finance_projects')->where(function ($query) use ($profile) {
                     return $query->where('organization_id', $profile->organization_id)->whereNull('deleted_at');
                 })],
+                'currency_id' => 'nullable|uuid|exists:currencies,id',
                 'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'description' => 'nullable|string',
                 'budget_amount' => 'nullable|numeric|min:0',
@@ -109,9 +111,21 @@ class FinanceProjectController extends Controller
                 'is_active' => 'nullable|boolean',
             ]);
 
+            // Verify currency belongs to organization if provided
+            if (!empty($validated['currency_id'])) {
+                $currency = Currency::where('organization_id', $profile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->find($validated['currency_id']);
+
+                if (!$currency) {
+                    return response()->json(['error' => 'Currency not found or does not belong to your organization'], 404);
+                }
+            }
+
             $project = FinanceProject::create([
                 'organization_id' => $profile->organization_id,
                 'school_id' => $validated['school_id'] ?? null,
+                'currency_id' => $validated['currency_id'] ?? null,
                 'name' => trim($validated['name']),
                 'code' => $validated['code'] ?? null,
                 'description' => $validated['description'] ?? null,
@@ -121,6 +135,8 @@ class FinanceProjectController extends Controller
                 'status' => $validated['status'] ?? 'active',
                 'is_active' => $validated['is_active'] ?? true,
             ]);
+
+            $project->load('currency');
 
             return response()->json($project, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -157,6 +173,7 @@ class FinanceProjectController extends Controller
 
             $project = FinanceProject::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->with('currency')
                 ->find($id);
 
             if (!$project) {
@@ -204,6 +221,7 @@ class FinanceProjectController extends Controller
                 'code' => ['nullable', 'string', 'max:50', Rule::unique('finance_projects')->where(function ($query) use ($profile) {
                     return $query->where('organization_id', $profile->organization_id)->whereNull('deleted_at');
                 })->ignore($id)],
+                'currency_id' => 'nullable|uuid|exists:currencies,id',
                 'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'description' => 'nullable|string',
                 'budget_amount' => 'nullable|numeric|min:0',
@@ -213,11 +231,23 @@ class FinanceProjectController extends Controller
                 'is_active' => 'nullable|boolean',
             ]);
 
+            // Verify currency belongs to organization if being updated
+            if (isset($validated['currency_id'])) {
+                $currency = Currency::where('organization_id', $profile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->find($validated['currency_id']);
+
+                if (!$currency) {
+                    return response()->json(['error' => 'Currency not found or does not belong to your organization'], 404);
+                }
+            }
+
             if (isset($validated['name'])) {
                 $validated['name'] = trim($validated['name']);
             }
 
             $project->update($validated);
+            $project->load('currency');
 
             return response()->json($project);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -300,6 +330,7 @@ class FinanceProjectController extends Controller
 
             $project = FinanceProject::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->with('currency')
                 ->find($id);
 
             if (!$project) {
@@ -308,6 +339,7 @@ class FinanceProjectController extends Controller
 
             // Recalculate totals to ensure accuracy
             $totals = $project->recalculateTotals();
+            $project->load('currency');
 
             return response()->json([
                 'project' => $project,

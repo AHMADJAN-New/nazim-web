@@ -16,6 +16,8 @@ export interface FinanceAccount {
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
+    // Loaded relations
+    currency?: { id: string; code: string; name: string; symbol: string | null };
 }
 
 export interface FinanceAccountInsert {
@@ -221,6 +223,7 @@ export interface ExpenseEntry {
     account?: FinanceAccount;
     expense_category?: ExpenseCategory;
     project?: FinanceProject;
+    currency?: { id: string; code: string; name: string; symbol: string | null };
     approved_by?: { id: string; name: string; email: string };
 }
 

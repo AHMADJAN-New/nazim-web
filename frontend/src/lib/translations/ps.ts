@@ -2703,7 +2703,18 @@ export const ps: TranslationKeys = {
     donated: 'مرسته شوې',
     accountDetails: 'د حساب تفصیلات',
     balanceDistribution: 'د بیلانس وېش',
-    noAccountData: 'د حساب معلومات شتون نلري'
+    noAccountData: 'د حساب معلومات شتون نلري',
+    settings: 'تنظیمات',
+    settingsDescription: 'د اسعارو، کټګوریو او د تبادلې نرخونو مدیریت',
+    currencies: 'اسعار',
+    exchangeRates: 'د تبادلې نرخونه',
+    viewAll: 'ټول وګورئ',
+    viewReport: 'راپور وګورئ',
+    viewAllIncome: 'ټول عاید وګورئ',
+    viewAllAccounts: 'ټول حسابونه وګورئ',
+    totalAccounts: '{count} حساب',
+    monthlyExpenses: 'میاشتنی لګښتونه',
+    reverse: 'برعکس'
   },
   // Exams
   exams: {

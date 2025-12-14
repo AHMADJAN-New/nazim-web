@@ -153,6 +153,18 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 19: Seeding finance accounts...');
         $this->call(FinanceAccountSeeder::class);
 
+        // Step 20: Seed exchange rates for all organizations
+        $this->command->info('Step 20: Seeding exchange rates...');
+        $this->call(ExchangeRateSeeder::class);
+
+        // Step 21: Seed donors for all organizations
+        $this->command->info('Step 21: Seeding donors...');
+        $this->call(DonorSeeder::class);
+
+        // Step 22: Seed finance projects for all organizations
+        $this->command->info('Step 22: Seeding finance projects...');
+        $this->call(FinanceProjectSeeder::class);
+
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');
         $this->command->info('');

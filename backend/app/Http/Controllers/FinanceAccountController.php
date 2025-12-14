@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FinanceAccount;
+use App\Models\Currency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -56,7 +57,7 @@ class FinanceAccountController extends Controller
                 $query->where('is_active', filter_var($validated['is_active'], FILTER_VALIDATE_BOOLEAN));
             }
 
-            $accounts = $query->orderBy('name')->get();
+            $accounts = $query->with('currency')->orderBy('name')->get();
 
             return response()->json($accounts);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -102,15 +103,28 @@ class FinanceAccountController extends Controller
                     return $query->where('organization_id', $profile->organization_id)->whereNull('deleted_at');
                 })],
                 'type' => 'nullable|in:cash,fund',
+                'currency_id' => 'nullable|uuid|exists:currencies,id',
                 'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'description' => 'nullable|string',
                 'opening_balance' => 'nullable|numeric|min:0',
                 'is_active' => 'nullable|boolean',
             ]);
 
+            // Verify currency belongs to organization if provided
+            if (!empty($validated['currency_id'])) {
+                $currency = Currency::where('organization_id', $profile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->find($validated['currency_id']);
+
+                if (!$currency) {
+                    return response()->json(['error' => 'Currency not found or does not belong to your organization'], 404);
+                }
+            }
+
             $account = FinanceAccount::create([
                 'organization_id' => $profile->organization_id,
                 'school_id' => $validated['school_id'] ?? null,
+                'currency_id' => $validated['currency_id'] ?? null,
                 'name' => trim($validated['name']),
                 'code' => $validated['code'] ?? null,
                 'type' => $validated['type'] ?? 'cash',
@@ -119,6 +133,8 @@ class FinanceAccountController extends Controller
                 'current_balance' => $validated['opening_balance'] ?? 0,
                 'is_active' => $validated['is_active'] ?? true,
             ]);
+
+            $account->load('currency');
 
             return response()->json($account, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -159,6 +175,7 @@ class FinanceAccountController extends Controller
 
             $account = FinanceAccount::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->with('currency')
                 ->find($id);
 
             if (!$account) {
@@ -211,11 +228,23 @@ class FinanceAccountController extends Controller
                     return $query->where('organization_id', $profile->organization_id)->whereNull('deleted_at');
                 })->ignore($id)],
                 'type' => 'nullable|in:cash,fund',
+                'currency_id' => 'nullable|uuid|exists:currencies,id',
                 'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'description' => 'nullable|string',
                 'opening_balance' => 'nullable|numeric|min:0',
                 'is_active' => 'nullable|boolean',
             ]);
+
+            // Verify currency belongs to organization if being updated
+            if (isset($validated['currency_id'])) {
+                $currency = Currency::where('organization_id', $profile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->find($validated['currency_id']);
+
+                if (!$currency) {
+                    return response()->json(['error' => 'Currency not found or does not belong to your organization'], 404);
+                }
+            }
 
             if (isset($validated['name'])) {
                 $validated['name'] = trim($validated['name']);
@@ -228,6 +257,8 @@ class FinanceAccountController extends Controller
             if (isset($validated['opening_balance']) && $validated['opening_balance'] != $oldOpeningBalance) {
                 $account->recalculateBalance();
             }
+
+            $account->load('currency');
 
             return response()->json($account);
         } catch (\Illuminate\Validation\ValidationException $e) {

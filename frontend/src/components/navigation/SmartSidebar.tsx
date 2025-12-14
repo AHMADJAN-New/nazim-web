@@ -599,23 +599,11 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/finance/income",
             icon: LucideIcons.TrendingUp,
           }] : []),
-          ...(hasIncomeCategoriesPermission ? [{
-            title: "Income Categories",
-            titleKey: "finance.incomeCategories",
-            url: "/finance/income/categories",
-            icon: LucideIcons.Tag,
-          }] : []),
           ...(hasExpenseEntriesPermission ? [{
             title: "Expenses",
             titleKey: "finance.expenses",
             url: "/finance/expenses",
             icon: LucideIcons.TrendingDown,
-          }] : []),
-          ...(hasExpenseCategoriesPermission ? [{
-            title: "Expense Categories",
-            titleKey: "finance.expenseCategories",
-            url: "/finance/expenses/categories",
-            icon: LucideIcons.Tags,
           }] : []),
           ...(hasFinanceProjectsPermission ? [{
             title: "Projects",
@@ -629,23 +617,19 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/finance/donors",
             icon: Users,
           }] : []),
-          ...(hasCurrenciesPermission ? [{
-            title: "Currencies",
-            titleKey: "finance.currencies",
-            url: "/finance/currencies",
-            icon: LucideIcons.Coins,
-          }] : []),
-          ...(hasExchangeRatesPermission ? [{
-            title: "Exchange Rates",
-            titleKey: "finance.exchangeRates",
-            url: "/finance/exchange-rates",
-            icon: LucideIcons.ArrowRightLeft,
-          }] : []),
           ...(hasFinanceReportsPermission ? [{
             title: "Reports",
             titleKey: "finance.reports",
             url: "/finance/reports",
             icon: LucideIcons.BarChart3,
+          }] : []),
+          // Settings submenu - only show if user has at least one settings permission
+          ...((hasCurrenciesPermission || hasIncomeCategoriesPermission || 
+               hasExpenseCategoriesPermission || hasExchangeRatesPermission) ? [{
+            title: "Settings",
+            titleKey: "finance.settings",
+            url: "/finance/settings",
+            icon: LucideIcons.Settings,
           }] : []),
         ],
       }] : []),

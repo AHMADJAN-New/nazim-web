@@ -282,42 +282,85 @@ export default function ExchangeRates() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {exchangeRates?.map((rate) => (
-                                <TableRow key={rate.id}>
-                                    <TableCell className="font-medium">
-                                        {rate.fromCurrency?.code || rate.fromCurrencyId}
-                                    </TableCell>
-                                    <TableCell className="font-medium">
-                                        {rate.toCurrency?.code || rate.toCurrencyId}
-                                    </TableCell>
-                                    <TableCell>{rate.rate.toFixed(6)}</TableCell>
-                                    <TableCell>{rate.effectiveDate.toLocaleDateString()}</TableCell>
-                                    <TableCell className="max-w-xs truncate">{rate.notes || '-'}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={rate.isActive ? 'default' : 'secondary'}>
-                                            {rate.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openEditDialog(rate)}
+                            {exchangeRates?.map((rate) => {
+                                // Determine if this is a reverse rate (check notes)
+                                const isReverse = rate.notes?.toLowerCase().includes('reverse');
+                                
+                                // Get currency colors
+                                const getCurrencyColor = (code: string) => {
+                                    const colors: Record<string, string> = {
+                                        'USD': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                                        'AFN': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                                        'PKR': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+                                        'SAR': 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+                                    };
+                                    return colors[code] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+                                };
+
+                                const fromCode = rate.fromCurrency?.code || 'N/A';
+                                const toCode = rate.toCurrency?.code || 'N/A';
+
+                                return (
+                                    <TableRow key={rate.id}>
+                                        <TableCell>
+                                            <Badge className={getCurrencyColor(fromCode)}>
+                                                {fromCode}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge className={getCurrencyColor(toCode)}>
+                                                {toCode}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-semibold">{rate.rate.toFixed(2)}</span>
+                                                {isReverse && (
+                                                    <Badge variant="outline" className="text-xs">
+                                                        {t('finance.reverse') || 'Reverse'}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className="font-normal">
+                                                {rate.effectiveDate.toLocaleDateString()}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="max-w-xs truncate">{rate.notes || '-'}</TableCell>
+                                        <TableCell>
+                                            <Badge 
+                                                variant={rate.isActive ? 'default' : 'secondary'}
+                                                className={
+                                                    rate.isActive 
+                                                        ? 'bg-green-500 hover:bg-green-600 text-white dark:bg-green-600 dark:hover:bg-green-700' 
+                                                        : 'bg-gray-500 hover:bg-gray-600 text-white dark:bg-gray-600 dark:hover:bg-gray-700'
+                                                }
                                             >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => setDeleteId(rate.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                                                {rate.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => openEditDialog(rate)}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => setDeleteId(rate.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
                             {(!exchangeRates || exchangeRates.length === 0) && (
                                 <TableRow>
                                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">

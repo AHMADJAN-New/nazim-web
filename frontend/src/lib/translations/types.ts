@@ -3057,6 +3057,17 @@ export interface TranslationKeys {
     accountDetails: string;
     balanceDistribution: string;
     noAccountData: string;
+    settings: string;
+    settingsDescription: string;
+    currencies: string;
+    exchangeRates: string;
+    viewAll: string;
+    viewReport: string;
+    viewAllIncome: string;
+    viewAllAccounts: string;
+    totalAccounts: string;
+    monthlyExpenses: string;
+    reverse: string;
   };
 
   // Exams

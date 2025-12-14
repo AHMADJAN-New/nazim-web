@@ -6,6 +6,7 @@ use App\Models\ExpenseEntry;
 use App\Models\FinanceAccount;
 use App\Models\ExpenseCategory;
 use App\Models\FinanceProject;
+use App\Models\ExchangeRate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -52,7 +53,7 @@ class ExpenseEntryController extends Controller
 
             $query = ExpenseEntry::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
-                ->with(['account', 'expenseCategory', 'project', 'approvedBy']);
+                ->with(['account', 'expenseCategory', 'project', 'approvedBy', 'currency']);
 
             if (!empty($validated['school_id'])) {
                 $query->where('school_id', $validated['school_id']);
@@ -141,6 +142,7 @@ class ExpenseEntryController extends Controller
             $validated = $request->validate([
                 'account_id' => 'required|uuid|exists:finance_accounts,id',
                 'expense_category_id' => 'required|uuid|exists:expense_categories,id',
+                'currency_id' => 'nullable|uuid|exists:currencies,id',
                 'amount' => 'required|numeric|min:0.01',
                 'date' => 'required|date',
                 'school_id' => 'nullable|uuid|exists:school_branding,id',
@@ -169,6 +171,58 @@ class ExpenseEntryController extends Controller
                 return response()->json(['error' => 'Invalid expense category - does not belong to your organization'], 400);
             }
 
+            // Handle currency_id - ALWAYS ensure it's set (never allow NULL)
+            $currencyId = $validated['currency_id'] ?? null;
+            if (!$currencyId) {
+                // Try account's currency first
+                $currencyId = $account->currency_id;
+
+                // If account has no currency, use base currency
+                if (!$currencyId) {
+                    $baseCurrency = \App\Models\Currency::where('organization_id', $profile->organization_id)
+                        ->where('is_base', true)
+                        ->where('is_active', true)
+                        ->whereNull('deleted_at')
+                        ->first();
+                    if ($baseCurrency) {
+                        $currencyId = $baseCurrency->id;
+                    }
+                }
+            }
+
+            // CRITICAL: Always require currency_id - never allow NULL
+            if (!$currencyId) {
+                return response()->json(['error' => 'Currency is required. Please select a currency or ensure a base currency is configured.'], 400);
+            }
+
+            // Verify currency belongs to organization
+            $currency = \App\Models\Currency::whereNull('deleted_at')
+                ->where('organization_id', $profile->organization_id)
+                ->find($currencyId);
+
+            if (!$currency) {
+                return response()->json(['error' => 'Invalid currency - does not belong to your organization'], 400);
+            }
+
+            // Validate exchange rate if entry currency differs from account currency
+            if ($account->currency_id && $currencyId !== $account->currency_id) {
+                $rate = ExchangeRate::getRate(
+                    $profile->organization_id,
+                    $currencyId,
+                    $account->currency_id,
+                    $validated['date']
+                );
+
+                if ($rate === null) {
+                    $fromCurrencyName = $currency->name ?? $currency->code ?? 'Unknown';
+                    $toCurrency = \App\Models\Currency::find($account->currency_id);
+                    $toCurrencyName = $toCurrency ? ($toCurrency->name ?? $toCurrency->code ?? 'Unknown') : 'Unknown';
+                    return response()->json([
+                        'error' => "Exchange rate not found for converting from {$fromCurrencyName} to {$toCurrencyName} on {$validated['date']}"
+                    ], 422);
+                }
+            }
+
             // Verify project belongs to organization (if provided)
             if (!empty($validated['project_id'])) {
                 $project = FinanceProject::whereNull('deleted_at')
@@ -180,8 +234,23 @@ class ExpenseEntryController extends Controller
                 }
             }
 
-            // Check if account has sufficient balance
-            if ($account->current_balance < $validated['amount']) {
+            // Check if account has sufficient balance (convert expense amount to account currency if needed)
+            $expenseAmount = (float) $validated['amount'];
+            if ($account->currency_id && $currencyId !== $account->currency_id) {
+                // Convert expense amount to account currency for comparison
+                $rate = ExchangeRate::getRate(
+                    $profile->organization_id,
+                    $currencyId,
+                    $account->currency_id,
+                    $validated['date']
+                );
+                if ($rate !== null) {
+                    $expenseAmount = $expenseAmount * $rate;
+                }
+                // If rate not found, use original amount (will fail balance check if currencies differ)
+            }
+            
+            if ($account->current_balance < $expenseAmount) {
                 return response()->json(['error' => 'Insufficient balance in account'], 400);
             }
 
@@ -189,6 +258,7 @@ class ExpenseEntryController extends Controller
             $entry = ExpenseEntry::create([
                 'organization_id' => $profile->organization_id,
                 'school_id' => $validated['school_id'] ?? null,
+                'currency_id' => $currencyId,
                 'account_id' => $validated['account_id'],
                 'expense_category_id' => $validated['expense_category_id'],
                 'project_id' => $validated['project_id'] ?? null,
@@ -202,7 +272,7 @@ class ExpenseEntryController extends Controller
             ]);
 
             // Load relationships for response
-            $entry->load(['account', 'expenseCategory', 'project', 'approvedBy']);
+            $entry->load(['account', 'expenseCategory', 'project', 'approvedBy', 'currency']);
 
             return response()->json($entry, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -239,7 +309,7 @@ class ExpenseEntryController extends Controller
 
             $entry = ExpenseEntry::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
-                ->with(['account', 'expenseCategory', 'project', 'approvedBy'])
+                ->with(['account', 'expenseCategory', 'project', 'approvedBy', 'currency'])
                 ->find($id);
 
             if (!$entry) {
@@ -285,6 +355,7 @@ class ExpenseEntryController extends Controller
             $validated = $request->validate([
                 'account_id' => 'sometimes|uuid|exists:finance_accounts,id',
                 'expense_category_id' => 'sometimes|uuid|exists:expense_categories,id',
+                'currency_id' => 'nullable|uuid|exists:currencies,id',
                 'amount' => 'sometimes|numeric|min:0.01',
                 'date' => 'sometimes|date',
                 'school_id' => 'nullable|uuid|exists:school_branding,id',
@@ -328,8 +399,99 @@ class ExpenseEntryController extends Controller
                 }
             }
 
+            // Handle currency_id - ALWAYS ensure it's set (never allow NULL)
+            if (array_key_exists('currency_id', $validated)) {
+                $currencyId = $validated['currency_id'];
+
+                // If currency_id is explicitly set to null, try to get from account or base currency
+                if (!$currencyId) {
+                    $accountForValidation = !empty($validated['account_id']) 
+                        ? FinanceAccount::whereNull('deleted_at')
+                            ->where('organization_id', $profile->organization_id)
+                            ->find($validated['account_id'])
+                        : $entry->account;
+                    $currencyId = $accountForValidation ? $accountForValidation->currency_id : null;
+
+                    if (!$currencyId) {
+                        $baseCurrency = \App\Models\Currency::where('organization_id', $profile->organization_id)
+                            ->where('is_base', true)
+                            ->where('is_active', true)
+                            ->whereNull('deleted_at')
+                            ->first();
+                        if ($baseCurrency) {
+                            $currencyId = $baseCurrency->id;
+                        }
+                    }
+                }
+
+                // CRITICAL: Always require currency_id - never allow NULL
+                if (!$currencyId) {
+                    return response()->json(['error' => 'Currency is required. Please select a currency or ensure a base currency is configured.'], 400);
+                }
+
+                // Verify currency belongs to organization
+                $currency = \App\Models\Currency::whereNull('deleted_at')
+                    ->where('organization_id', $profile->organization_id)
+                    ->find($currencyId);
+
+                if (!$currency) {
+                    return response()->json(['error' => 'Invalid currency - does not belong to your organization'], 400);
+                }
+
+                // Get account for exchange rate validation
+                $accountForValidation = !empty($validated['account_id']) 
+                    ? FinanceAccount::whereNull('deleted_at')
+                        ->where('organization_id', $profile->organization_id)
+                        ->find($validated['account_id'])
+                    : $entry->account;
+
+                // Validate exchange rate if entry currency differs from account currency
+                if ($accountForValidation && $accountForValidation->currency_id && $currencyId !== $accountForValidation->currency_id) {
+                    $entryDate = $validated['date'] ?? $entry->date->toDateString();
+                    $rate = ExchangeRate::getRate(
+                        $profile->organization_id,
+                        $currencyId,
+                        $accountForValidation->currency_id,
+                        $entryDate
+                    );
+
+                    if ($rate === null) {
+                        $fromCurrencyName = $currency->name ?? $currency->code ?? 'Unknown';
+                        $toCurrency = \App\Models\Currency::find($accountForValidation->currency_id);
+                        $toCurrencyName = $toCurrency ? ($toCurrency->name ?? $toCurrency->code ?? 'Unknown') : 'Unknown';
+                        return response()->json([
+                            'error' => "Exchange rate not found for converting from {$fromCurrencyName} to {$toCurrencyName} on {$entryDate}"
+                        ], 422);
+                    }
+                }
+
+                $validated['currency_id'] = $currencyId;
+            } else {
+                // If currency_id is not in the update, ensure existing entry has one
+                // This handles cases where old entries might have NULL currency_id
+                if (!$entry->currency_id) {
+                    $accountForValidation = $entry->account;
+                    $currencyId = $accountForValidation ? $accountForValidation->currency_id : null;
+
+                    if (!$currencyId) {
+                        $baseCurrency = \App\Models\Currency::where('organization_id', $profile->organization_id)
+                            ->where('is_base', true)
+                            ->where('is_active', true)
+                            ->whereNull('deleted_at')
+                            ->first();
+                        if ($baseCurrency) {
+                            $currencyId = $baseCurrency->id;
+                        }
+                    }
+
+                    if ($currencyId) {
+                        $validated['currency_id'] = $currencyId;
+                    }
+                }
+            }
+
             $entry->update($validated);
-            $entry->load(['account', 'expenseCategory', 'project', 'approvedBy']);
+            $entry->load(['account', 'expenseCategory', 'project', 'approvedBy', 'currency']);
 
             return response()->json($entry);
         } catch (\Illuminate\Validation\ValidationException $e) {

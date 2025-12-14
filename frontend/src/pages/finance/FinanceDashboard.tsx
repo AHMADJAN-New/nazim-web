@@ -31,6 +31,7 @@ import {
     MoreVertical,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 import {
     ChartContainer,
     ChartTooltip,
@@ -52,6 +53,7 @@ const calculatePercentageChange = (current: number, previous: number = 0): numbe
 
 export default function FinanceDashboard() {
     const { t } = useLanguage();
+    const navigate = useNavigate();
     const { data: dashboard, isLoading, error } = useFinanceDashboard();
 
     // Calculate totals and percentages
@@ -171,13 +173,23 @@ export default function FinanceDashboard() {
                         </div>
                     </CardContent>
                     <CardFooter className="flex gap-2 pt-0">
-                        <Button variant="outline" size="sm" className="flex-1">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => navigate('/finance/income')}
+                        >
                             <ArrowUpRight className="h-4 w-4 mr-1" />
-                            Transfer
+                            {t('finance.addIncome') || 'Add Income'}
                         </Button>
-                        <Button variant="outline" size="sm" className="flex-1">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => navigate('/finance/expenses')}
+                        >
                             <ArrowDownRight className="h-4 w-4 mr-1" />
-                            Request
+                            {t('finance.addExpense') || 'Add Expense'}
                         </Button>
                     </CardFooter>
                 </Card>
@@ -312,10 +324,15 @@ export default function FinanceDashboard() {
                         </div>
                     </CardContent>
                     <CardFooter className="pt-0">
-                        <p className="text-xs text-muted-foreground flex items-center gap-2">
-                            <FileText className="h-3 w-3" />
-                            Income streams growing steadily. Monitor your accounts for better efficiency.
-                        </p>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => navigate('/finance/income')}
+                        >
+                            {t('finance.viewAllIncome') || 'View All Income'}
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
                     </CardFooter>
                 </Card>
 
@@ -326,8 +343,12 @@ export default function FinanceDashboard() {
                             <CardTitle className="text-lg">{t('finance.monthlyExpenses') || 'Monthly Expenses'}</CardTitle>
                             <CardDescription>Last 6 months</CardDescription>
                         </div>
-                        <Button variant="outline" size="sm">
-                            View Report
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate('/finance/reports')}
+                        >
+                            {t('finance.viewReport') || 'View Report'}
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -470,9 +491,16 @@ export default function FinanceDashboard() {
                 {/* Recent Transactions */}
                 <Card className="md:col-span-2">
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="text-lg">Transactions</CardTitle>
-                        <Button variant="outline" size="sm">
-                            View All
+                        <CardTitle className="text-lg">{t('finance.transactions') || 'Transactions'}</CardTitle>
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                                // Navigate to income or expenses page - could be enhanced to show combined view
+                                navigate('/finance/income');
+                            }}
+                        >
+                            {t('finance.viewAll') || 'View All'}
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -561,13 +589,20 @@ export default function FinanceDashboard() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle className="text-lg">Account Balances</CardTitle>
+                            <CardTitle className="text-lg">{t('finance.accountBalances') || 'Account Balances'}</CardTitle>
                             <CardDescription>
-                                A total of {dashboard.accountBalances.length} account{dashboard.accountBalances.length !== 1 ? 's' : ''}
+                                {dashboard.accountBalances.length === 1 
+                                    ? t('finance.totalAccounts', { count: 1 }) || 'A total of 1 account'
+                                    : t('finance.totalAccounts', { count: dashboard.accountBalances.length }) || 
+                                      `A total of ${dashboard.accountBalances.length} accounts`}
                             </CardDescription>
                         </div>
-                        <Button variant="outline" size="sm">
-                            + Add New
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate('/finance/accounts')}
+                        >
+                            {t('finance.addNew') || '+ Add New'}
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -600,8 +635,13 @@ export default function FinanceDashboard() {
                             </div>
                         ))}
                         {dashboard.accountBalances.length > 2 && (
-                            <Button variant="outline" className="w-full" size="sm">
-                                View All Accounts
+                            <Button 
+                                variant="outline" 
+                                className="w-full" 
+                                size="sm"
+                                onClick={() => navigate('/finance/accounts')}
+                            >
+                                {t('finance.viewAllAccounts') || 'View All Accounts'}
                             </Button>
                         )}
                     </CardContent>

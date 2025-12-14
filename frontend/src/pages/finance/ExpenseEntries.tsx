@@ -85,6 +85,7 @@ export default function ExpenseEntries() {
         referenceNo: '',
         description: '',
         paidTo: '',
+        paymentMethod: 'cash',
         status: 'approved',
     });
 
@@ -99,6 +100,7 @@ export default function ExpenseEntries() {
             referenceNo: '',
             description: '',
             paidTo: '',
+            paymentMethod: 'cash',
             status: 'approved',
         });
     };
@@ -167,6 +169,19 @@ export default function ExpenseEntries() {
         setDateFrom('');
         setDateTo('');
     };
+
+    // Get base currency and selected account for currency selection
+    const baseCurrency = useMemo(() => {
+        return currencies?.find(c => c.isBase && c.isActive) || null;
+    }, [currencies]);
+
+    const selectedAccount = useMemo(() => {
+        return accounts?.find(a => a.id === formData.accountId) || null;
+    }, [accounts, formData.accountId]);
+
+    const defaultCurrencyId = useMemo(() => {
+        return selectedAccount?.currencyId || baseCurrency?.id || null;
+    }, [selectedAccount, baseCurrency]);
 
     const hasActiveFilters = searchTerm || filterCategory !== 'all' || filterAccount !== 'all' || filterStatus !== 'all' || dateFrom || dateTo;
 
@@ -283,6 +298,37 @@ export default function ExpenseEntries() {
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                    <Label htmlFor="currencyId">{t('finance.currency') || 'Currency'}</Label>
+                    <Select
+                        value={formData.currencyId || defaultCurrencyId || 'none'}
+                        onValueChange={(value) => setFormData({ ...formData, currencyId: value === 'none' ? null : value })}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {selectedAccount?.currencyId && (
+                                <SelectItem value={selectedAccount.currencyId}>
+                                    {currencies?.find(c => c.id === selectedAccount.currencyId)?.code || 'N/A'} - {currencies?.find(c => c.id === selectedAccount.currencyId)?.name || 'Account Currency'}
+                                </SelectItem>
+                            )}
+                            {baseCurrency && (!selectedAccount?.currencyId || selectedAccount.currencyId !== baseCurrency.id) && (
+                                <SelectItem value={baseCurrency.id}>
+                                    {baseCurrency.code} - {baseCurrency.name} {t('finance.baseCurrency') || '(Base)'}
+                                </SelectItem>
+                            )}
+                            {currencies?.filter(c => 
+                                c.id !== selectedAccount?.currencyId && 
+                                c.id !== baseCurrency?.id
+                            ).map((currency) => (
+                                <SelectItem key={currency.id} value={currency.id}>
+                                    {currency.code} - {currency.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
                     <Label htmlFor="projectId">{t('finance.project') || 'Project'}</Label>
                     <Select
                         value={formData.projectId || 'none'}
@@ -301,6 +347,8 @@ export default function ExpenseEntries() {
                         </SelectContent>
                     </Select>
                 </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="paidTo">{t('finance.paidTo') || 'Paid To'}</Label>
                     <Input
@@ -309,6 +357,23 @@ export default function ExpenseEntries() {
                         onChange={(e) => setFormData({ ...formData, paidTo: e.target.value })}
                         placeholder={t('finance.paidToPlaceholder') || 'Person or vendor name...'}
                     />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="paymentMethod">{t('finance.paymentMethod') || 'Payment Method'}</Label>
+                    <Select
+                        value={formData.paymentMethod || 'cash'}
+                        onValueChange={(value: 'cash' | 'bank_transfer' | 'cheque' | 'other') => setFormData({ ...formData, paymentMethod: value })}
+                    >
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="cash">{t('finance.cash') || 'Cash'}</SelectItem>
+                            <SelectItem value="bank_transfer">{t('finance.bankTransfer') || 'Bank Transfer'}</SelectItem>
+                            <SelectItem value="cheque">{t('finance.cheque') || 'Cheque'}</SelectItem>
+                            <SelectItem value="other">{t('common.other') || 'Other'}</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

@@ -86,6 +86,7 @@ export const Donors = lazy(() => import('@/pages/finance/Donors'));
 export const Currencies = lazy(() => import('@/pages/finance/Currencies'));
 export const ExchangeRates = lazy(() => import('@/pages/finance/ExchangeRates'));
 export const FinanceReports = lazy(() => import('@/pages/finance/FinanceReports'));
+export const FinanceSettings = lazy(() => import('@/pages/finance/FinanceSettings'));
 
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';

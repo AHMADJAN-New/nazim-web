@@ -15,6 +15,8 @@ export interface FinanceAccount {
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
+    // Loaded relations
+    currency?: { id: string; code: string; name: string; symbol: string | null } | null;
 }
 
 export type FinanceAccountFormData = {
@@ -214,6 +216,7 @@ export interface ExpenseEntry {
     account?: FinanceAccount;
     expenseCategory?: ExpenseCategory;
     project?: FinanceProject | null;
+    currency?: { id: string; code: string; name: string; symbol: string | null } | null;
     approvedBy?: { id: string; name: string; email: string } | null;
 }
 

@@ -2704,7 +2704,18 @@ export const ar: TranslationKeys = {
     donated: 'تبرع',
     accountDetails: 'تفاصيل الحساب',
     balanceDistribution: 'توزيع الرصيد',
-    noAccountData: 'لا توجد بيانات للحساب'
+    noAccountData: 'لا توجد بيانات للحساب',
+    settings: 'الإعدادات',
+    settingsDescription: 'إدارة العملات والفئات وأسعار الصرف',
+    currencies: 'العملات',
+    exchangeRates: 'أسعار الصرف',
+    viewAll: 'عرض الكل',
+    viewReport: 'عرض التقرير',
+    viewAllIncome: 'عرض جميع الدخل',
+    viewAllAccounts: 'عرض جميع الحسابات',
+    totalAccounts: '{count} حساب',
+    monthlyExpenses: 'المصروفات الشهرية',
+    reverse: 'عكسي'
   },
   // Exams
   exams: {

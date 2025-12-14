@@ -2970,7 +2970,18 @@ export const en: TranslationKeys = {
     donated: 'Donated',
     accountDetails: 'Account Details',
     balanceDistribution: 'Balance Distribution',
-    noAccountData: 'No account data available'
+    noAccountData: 'No account data available',
+    settings: 'Settings',
+    settingsDescription: 'Manage currencies, categories, and exchange rates',
+    currencies: 'Currencies',
+    exchangeRates: 'Exchange Rates',
+    viewAll: 'View All',
+    viewReport: 'View Report',
+    viewAllIncome: 'View All Income',
+    viewAllAccounts: 'View All Accounts',
+    totalAccounts: 'A total of {count} account',
+    monthlyExpenses: 'Monthly Expenses',
+    reverse: 'Reverse'
   },
   // Exams
   exams: {

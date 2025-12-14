@@ -7,6 +7,7 @@ use App\Models\FinanceAccount;
 use App\Models\IncomeCategory;
 use App\Models\FinanceProject;
 use App\Models\Donor;
+use App\Models\ExchangeRate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -193,6 +194,25 @@ class IncomeEntryController extends Controller
 
             if (!$currency) {
                 return response()->json(['error' => 'Invalid currency - does not belong to your organization'], 400);
+            }
+
+            // Validate exchange rate if entry currency differs from account currency
+            if ($account->currency_id && $currencyId !== $account->currency_id) {
+                $rate = ExchangeRate::getRate(
+                    $profile->organization_id,
+                    $currencyId,
+                    $account->currency_id,
+                    $validated['date']
+                );
+
+                if ($rate === null) {
+                    $fromCurrencyName = $currency->name ?? $currency->code ?? 'Unknown';
+                    $toCurrency = \App\Models\Currency::find($account->currency_id);
+                    $toCurrencyName = $toCurrency ? ($toCurrency->name ?? $toCurrency->code ?? 'Unknown') : 'Unknown';
+                    return response()->json([
+                        'error' => "Exchange rate not found for converting from {$fromCurrencyName} to {$toCurrencyName} on {$validated['date']}"
+                    ], 422);
+                }
             }
 
             // Verify income category belongs to organization
@@ -415,6 +435,33 @@ class IncomeEntryController extends Controller
 
                 if (!$currency) {
                     return response()->json(['error' => 'Invalid currency - does not belong to your organization'], 400);
+                }
+
+                // Get account for exchange rate validation
+                $accountForValidation = !empty($validated['account_id']) 
+                    ? FinanceAccount::whereNull('deleted_at')
+                        ->where('organization_id', $profile->organization_id)
+                        ->find($validated['account_id'])
+                    : $entry->account;
+
+                // Validate exchange rate if entry currency differs from account currency
+                if ($accountForValidation && $accountForValidation->currency_id && $currencyId !== $accountForValidation->currency_id) {
+                    $entryDate = $validated['date'] ?? $entry->date->toDateString();
+                    $rate = ExchangeRate::getRate(
+                        $profile->organization_id,
+                        $currencyId,
+                        $accountForValidation->currency_id,
+                        $entryDate
+                    );
+
+                    if ($rate === null) {
+                        $fromCurrencyName = $currency->name ?? $currency->code ?? 'Unknown';
+                        $toCurrency = \App\Models\Currency::find($accountForValidation->currency_id);
+                        $toCurrencyName = $toCurrency ? ($toCurrency->name ?? $toCurrency->code ?? 'Unknown') : 'Unknown';
+                        return response()->json([
+                            'error' => "Exchange rate not found for converting from {$fromCurrencyName} to {$toCurrencyName} on {$entryDate}"
+                        ], 422);
+                    }
                 }
 
                 $validated['currency_id'] = $currencyId;

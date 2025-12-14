@@ -2706,7 +2706,18 @@ export const fa: TranslationKeys = {
     donated: 'کمک شده',
     accountDetails: 'جزئیات حساب',
     balanceDistribution: 'توزیع موجودی',
-    noAccountData: 'داده حسابی موجود نیست'
+    noAccountData: 'داده حسابی موجود نیست',
+    settings: 'تنظیمات',
+    settingsDescription: 'مدیریت ارزها، دسته‌بندی‌ها و نرخ‌های ارز',
+    currencies: 'ارزها',
+    exchangeRates: 'نرخ‌های ارز',
+    viewAll: 'مشاهده همه',
+    viewReport: 'مشاهده گزارش',
+    viewAllIncome: 'مشاهده همه درآمدها',
+    viewAllAccounts: 'مشاهده همه حساب‌ها',
+    totalAccounts: '{count} حساب',
+    monthlyExpenses: 'هزینه‌های ماهانه',
+    reverse: 'معکوس'
   },
   // Exams
   exams: {

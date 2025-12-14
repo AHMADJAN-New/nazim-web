@@ -361,15 +361,24 @@ class ExchangeRateController extends Controller
                 'date' => 'nullable|date',
             ]);
 
+            $date = $validated['date'] ?? now()->toDateString();
             $rate = ExchangeRate::getRate(
                 $profile->organization_id,
                 $validated['from_currency_id'],
                 $validated['to_currency_id'],
-                $validated['date'] ?? now()->toDateString()
+                $date
             );
 
             if ($rate === null) {
-                return response()->json(['error' => 'Exchange rate not found for this currency pair'], 404);
+                // Load currency names for better error message
+                $fromCurrency = Currency::find($validated['from_currency_id']);
+                $toCurrency = Currency::find($validated['to_currency_id']);
+                $fromCurrencyName = $fromCurrency ? ($fromCurrency->name ?? $fromCurrency->code ?? 'Unknown') : 'Unknown';
+                $toCurrencyName = $toCurrency ? ($toCurrency->name ?? $toCurrency->code ?? 'Unknown') : 'Unknown';
+                
+                return response()->json([
+                    'error' => "Exchange rate not found for converting from {$fromCurrencyName} to {$toCurrencyName} on {$date}"
+                ], 404);
             }
 
             $convertedAmount = $validated['amount'] * $rate;
