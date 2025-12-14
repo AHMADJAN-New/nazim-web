@@ -483,9 +483,9 @@ export const StudentFormDialog = memo(function StudentFormDialog({ open, onOpenC
                             <div className="mt-2">
                                 <StudentPictureUpload
                                     studentId={student?.id}
-                                    organizationId={student?.organization_id || profile?.organization_id}
-                                    schoolId={student?.school_id || formValues.school_id || null}
-                                    currentFileName={student?.picture_path || null}
+                                    organizationId={student?.organizationId || profile?.organization_id}
+                                    schoolId={student?.schoolId || formValues.school_id || null}
+                                    currentFileName={student?.picturePath || null}
                                     onFileSelected={setSelectedPictureFile}
                                     allowUploadWithoutStudent={!isEdit}
                                 />

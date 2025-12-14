@@ -55,7 +55,7 @@ class StudentAdmissionController extends Controller
         }
 
         $query = StudentAdmission::with([
-            'student:id,full_name,admission_no,gender,admission_year,guardian_phone,guardian_name,card_number,father_name',
+            'student:id,full_name,admission_no,student_code,gender,admission_year,guardian_phone,guardian_name,card_number,father_name,picture_path',
             'organization',
             'school',
             'academicYear',

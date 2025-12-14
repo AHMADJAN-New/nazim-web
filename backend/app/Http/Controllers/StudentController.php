@@ -650,6 +650,29 @@ class StudentController extends Controller
                 abort(404, 'Profile not found');
             }
 
+            // Require organization_id for all users
+            if (!$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            // Check permission - context already set by middleware
+            try {
+                if (!$user->hasPermissionTo('students.read')) {
+                    return response()->json([
+                        'error' => 'Access Denied',
+                        'message' => 'You do not have permission to access this resource.',
+                        'required_permission' => 'students.read'
+                    ], 403);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Permission check failed for students.read: " . $e->getMessage());
+                return response()->json([
+                    'error' => 'Access Denied',
+                    'message' => 'You do not have permission to access this resource.',
+                    'required_permission' => 'students.read'
+                ], 403);
+            }
+
             $student = Student::whereNull('deleted_at')->find($id);
 
             if (!$student) {
@@ -668,33 +691,45 @@ class StudentController extends Controller
                 abort(404, 'Picture not found');
             }
 
-            // Check if file exists
-            if (!Storage::disk('local')->exists($student->picture_path)) {
+            // Normalize path separators for Windows compatibility
+            // Convert forward slashes to DIRECTORY_SEPARATOR
+            $normalizedPath = str_replace('/', DIRECTORY_SEPARATOR, $student->picture_path);
+            $fullPath = storage_path('app' . DIRECTORY_SEPARATOR . $normalizedPath);
+
+            // Check if file exists using file_exists() for better Windows compatibility
+            if (!file_exists($fullPath)) {
                 Log::warning('Student picture file not found on disk', [
                     'student_id' => $id,
                     'picture_path' => $student->picture_path,
-                    'storage_path' => storage_path('app/' . $student->picture_path),
+                    'normalized_path' => $normalizedPath,
+                    'full_path' => $fullPath,
+                    'file_exists' => file_exists($fullPath),
                 ]);
                 abort(404, 'Picture file not found');
             }
 
-            // Try to get the file content
+            // Try to get the file content using file_get_contents for better Windows compatibility
             try {
-                $file = Storage::disk('local')->get($student->picture_path);
+                $file = file_get_contents($fullPath);
+                if ($file === false) {
+                    throw new \Exception('Failed to read file contents');
+                }
             } catch (\Exception $e) {
                 Log::error('Error reading student picture file', [
                     'student_id' => $id,
                     'picture_path' => $student->picture_path,
+                    'full_path' => $fullPath,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
                 abort(500, 'Error reading picture file');
             }
             
-            if (!$file) {
+            if (!$file || empty($file)) {
                 Log::error('Student picture file is empty', [
                     'student_id' => $id,
                     'picture_path' => $student->picture_path,
+                    'full_path' => $fullPath,
                 ]);
                 abort(404, 'Picture file is empty');
             }

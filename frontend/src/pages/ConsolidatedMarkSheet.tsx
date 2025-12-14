@@ -13,7 +13,11 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
-import { FileDown, Printer, Search, Award, TrendingUp, TrendingDown } from 'lucide-react';
+import { useDataTable } from '@/hooks/use-data-table';
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { ColumnDef } from '@tanstack/react-table';
+import { FileDown, Printer, Search, Award, TrendingUp, TrendingDown, UserRound } from 'lucide-react';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useProfile } from '@/hooks/useProfiles';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
@@ -123,11 +127,93 @@ function ClassReportTab({ examClass, examId, academicYear, selectedExam }: { exa
   );
 }
 
+// Component for displaying student picture in mark sheet table cell
+function MarkSheetPictureCell({ studentId, picturePath, studentName }: { studentId?: string; picturePath?: string | null; studentName?: string }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    // Only fetch if we have studentId (we'll try to fetch even if picturePath is not provided)
+    const hasPicture = studentId;
+    
+    if (hasPicture) {
+      let currentBlobUrl: string | null = null;
+
+      const fetchImage = async () => {
+        try {
+          const { apiClient } = await import('@/lib/api/client');
+          const token = apiClient.getToken();
+          const url = `/api/students/${studentId}/picture`;
+          
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'image/*',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            },
+            credentials: 'include',
+          });
+          
+          if (!response.ok) {
+            if (response.status === 404) {
+              setImageError(true);
+              return;
+            }
+            throw new Error(`Failed to fetch image: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          currentBlobUrl = blobUrl;
+          setImageUrl(blobUrl);
+          setImageError(false);
+        } catch (error) {
+          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+            console.error('Failed to fetch student picture:', error);
+          }
+          setImageError(true);
+        }
+      };
+      
+      fetchImage();
+      
+      return () => {
+        if (currentBlobUrl) {
+          URL.revokeObjectURL(currentBlobUrl);
+        }
+      };
+    } else {
+      // No student ID or picture path, show placeholder immediately
+      setImageUrl(null);
+      setImageError(true);
+    }
+  }, [studentId, picturePath]);
+
+  return (
+    <div className="flex items-center justify-center w-10 h-10">
+      {imageUrl && !imageError ? (
+        <img
+          src={imageUrl}
+          alt={studentName || 'Student'}
+          className="w-10 h-10 rounded-full object-cover border-2 border-border"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border-2 border-border">
+          <UserRound className="h-5 w-5 text-muted-foreground" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Reusable Mark Sheet Component
 function MarkSheetTable({ report, academicYear, selectedExam }: { report: ReportData; academicYear?: any; selectedExam?: any }) {
   const { t, language } = useLanguage();
   const { data: profile } = useProfile();
   const { data: grades } = useGrades(profile?.organization_id);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const sortedStudents = useMemo(() => {
     if (!report.students) return [];
@@ -142,6 +228,202 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
     });
     return studentsWithGrades.sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
   }, [report.students, grades, language]);
+
+  // Paginate students
+  const paginatedStudents = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return sortedStudents.slice(startIndex, endIndex);
+  }, [sortedStudents, page, pageSize]);
+
+  // Calculate pagination meta
+  const paginationMeta = useMemo(() => {
+    const total = sortedStudents.length;
+    const lastPage = Math.ceil(total / pageSize);
+    return {
+      current_page: page,
+      per_page: pageSize,
+      total,
+      last_page: lastPage,
+      from: sortedStudents.length > 0 ? (page - 1) * pageSize + 1 : 0,
+      to: Math.min(page * pageSize, total),
+    };
+  }, [sortedStudents.length, page, pageSize]);
+
+  // Define columns for DataTable
+  const columns: ColumnDef<any>[] = useMemo(() => {
+    const baseColumns: ColumnDef<any>[] = [
+      {
+        id: 'rank',
+        header: () => <div className="w-12">{t('examReports.rank')}</div>,
+        cell: ({ row }) => {
+          const globalIndex = sortedStudents.findIndex(s => 
+            ((s as any).id && row.original.id && (s as any).id === row.original.id) ||
+            (s.roll_number === row.original.roll_number && s.admission_no === row.original.admission_no)
+          );
+          const rank = globalIndex >= 0 ? globalIndex + 1 : row.index + 1 + (page - 1) * pageSize;
+          return (
+            <div className="font-medium w-12">
+              {rank === 1 && <Award className="h-4 w-4 text-yellow-500 inline mr-1" />}
+              {rank}
+            </div>
+          );
+        },
+      },
+      {
+        id: 'picture',
+        header: () => <div className="w-12">{t('students.picture') || 'Picture'}</div>,
+        cell: ({ row }) => {
+          const student = row.original;
+          return (
+            <MarkSheetPictureCell 
+              studentId={(student as any).id || (student as any).student_id}
+              picturePath={(student as any).picture_path || (student as any).picturePath}
+              studentName={student.student_name}
+            />
+          );
+        },
+      },
+      {
+        accessorKey: 'student_name',
+        header: t('examReports.studentName'),
+        cell: ({ row }) => row.original.student_name,
+      },
+      {
+        accessorKey: 'roll_number',
+        header: t('examReports.rollNumber'),
+        cell: ({ row }) => row.original.roll_number || '-',
+      },
+    ];
+
+    // Add subject columns dynamically
+    if (report.subjects) {
+      report.subjects.forEach((subject: any, subjectIndex: number) => {
+        baseColumns.push({
+          id: `subject-${subject.id || subject.subject_id || subjectIndex}`,
+          header: () => <div className="text-center">{subject.name}</div>,
+          cell: ({ row }) => {
+            const student = row.original;
+            const subjectMark = student.subjects?.find((s: any) => 
+              s.subject_id === subject.subject_id || s.subject_id === subject.id
+            );
+            return (
+              <div className="text-center">
+                {subjectMark ? (
+                  subjectMark.is_absent ? (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      {t('examReports.absent') || 'Absent'}
+                    </Badge>
+                  ) : subjectMark.marks_obtained !== null ? (
+                    <Badge 
+                      variant={subjectMark.is_pass ? 'default' : 'destructive'}
+                      className="font-semibold"
+                    >
+                      {subjectMark.marks_obtained}/{subjectMark.total_marks}
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )}
+              </div>
+            );
+          },
+        });
+      });
+    }
+
+    // Add total, percentage, grade, and result columns
+    baseColumns.push(
+      {
+        id: 'total_marks',
+        header: () => <div className="text-center">{t('examReports.totalMarks')}</div>,
+        cell: ({ row }) => {
+          const student = row.original;
+          return (
+            <div className="text-center font-medium">
+              {student.total_obtained}/{student.total_maximum}
+            </div>
+          );
+        },
+      },
+      {
+        id: 'percentage',
+        header: () => <div className="text-center">{t('examReports.percentage')}</div>,
+        cell: ({ row }) => {
+          const student = row.original;
+          return (
+            <div className="text-center font-semibold">
+              {student.percentage?.toFixed(2)}%
+            </div>
+          );
+        },
+      },
+      {
+        id: 'grade',
+        header: () => <div className="text-center">{t('examReports.grade')}</div>,
+        cell: ({ row }) => {
+          const student = row.original;
+          return (
+            <div className="text-center">
+              {student.grade && student.grade !== '-' ? (
+                <Badge variant={(student.gradeDetails?.isPass ?? student.result === 'Pass') ? 'default' : 'destructive'}>
+                  {student.grade}
+                </Badge>
+              ) : (
+                '-'
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        id: 'result',
+        header: () => <div className="text-center">{t('examReports.result')}</div>,
+        cell: ({ row }) => {
+          const student = row.original;
+          return (
+            <div className="text-center">
+              {student.result === 'Pass' ? (
+                <Badge variant="default" className="gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  {t('examReports.pass')}
+                </Badge>
+              ) : student.result === 'Fail' ? (
+                <Badge variant="destructive" className="gap-1">
+                  <TrendingDown className="h-3 w-3" />
+                  {t('examReports.fail')}
+                </Badge>
+              ) : (
+                <Badge variant="outline">{t('examReports.incomplete') || 'Incomplete'}</Badge>
+              )}
+            </div>
+          );
+        },
+      }
+    );
+
+    return baseColumns;
+  }, [t, report.subjects, sortedStudents, page, pageSize]);
+
+  // Use DataTable hook for pagination integration
+  const { table } = useDataTable({
+    data: paginatedStudents,
+    columns,
+    pageCount: paginationMeta.last_page,
+    paginationMeta,
+    initialState: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
+    },
+    onPaginationChange: (newPagination) => {
+      setPage(newPagination.pageIndex + 1);
+      setPageSize(newPagination.pageSize);
+    },
+  });
 
   return (
     <>
@@ -201,97 +483,10 @@ function MarkSheetTable({ report, academicYear, selectedExam }: { report: Report
       {/* Student Results Table */}
       <Card className="print:shadow-none">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">{t('examReports.rank')}</TableHead>
-                  <TableHead>{t('examReports.studentName')}</TableHead>
-                  <TableHead>{t('examReports.rollNumber')}</TableHead>
-                  {report.subjects?.map((subject: any, subjectIndex: number) => (
-                    <TableHead key={subject.id || subject.subject_id || `subject-${subjectIndex}`} className="text-center">
-                      {subject.name}
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-center">{t('examReports.totalMarks')}</TableHead>
-                  <TableHead className="text-center">{t('examReports.percentage')}</TableHead>
-                  <TableHead className="text-center">{t('examReports.grade')}</TableHead>
-                  <TableHead className="text-center">{t('examReports.result')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedStudents.map((student: any, index: number) => {
-                  const rank = index + 1;
-                  
-                  return (
-                    <TableRow key={student.roll_number || student.admission_no || `student-${index}`}>
-                      <TableCell className="font-medium">
-                        {rank === 1 && <Award className="h-4 w-4 text-yellow-500 inline mr-1" />}
-                        {rank}
-                      </TableCell>
-                      <TableCell>{student.student_name}</TableCell>
-                      <TableCell>{student.roll_number || '-'}</TableCell>
-                      {report.subjects?.map((subject: any, subjectIndex: number) => {
-                        const subjectMark = student.subjects?.find((s: any) => s.subject_id === subject.subject_id || s.subject_id === subject.id);
-                        return (
-                          <TableCell key={subject.id || subject.subject_id || `subject-${subjectIndex}`} className="text-center">
-                            {subjectMark ? (
-                              subjectMark.is_absent ? (
-                                <Badge variant="outline" className="text-muted-foreground">
-                                  {t('examReports.absent') || 'Absent'}
-                                </Badge>
-                              ) : subjectMark.marks_obtained !== null ? (
-                                <Badge 
-                                  variant={subjectMark.is_pass ? 'default' : 'destructive'}
-                                  className="font-semibold"
-                                >
-                                  {subjectMark.marks_obtained}/{subjectMark.total_marks}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                        );
-                      })}
-                      <TableCell className="text-center font-medium">
-                        {student.total_obtained}/{student.total_maximum}
-                      </TableCell>
-                      <TableCell className="text-center font-semibold">
-                        {student.percentage?.toFixed(2)}%
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {student.grade && student.grade !== '-' ? (
-                          <Badge variant={(student.gradeDetails?.isPass ?? student.result === 'Pass') ? 'default' : 'destructive'}>
-                            {student.grade}
-                          </Badge>
-                        ) : (
-                          '-'
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {student.result === 'Pass' ? (
-                          <Badge variant="default" className="gap-1">
-                            <TrendingUp className="h-3 w-3" />
-                            {t('examReports.pass')}
-                          </Badge>
-                        ) : student.result === 'Fail' ? (
-                          <Badge variant="destructive" className="gap-1">
-                            <TrendingDown className="h-3 w-3" />
-                            {t('examReports.fail')}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">{t('examReports.incomplete') || 'Incomplete'}</Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable 
+            table={table}
+            actionBar={<DataTablePagination table={table} />}
+          />
         </CardContent>
       </Card>
     </>

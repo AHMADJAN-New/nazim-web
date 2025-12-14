@@ -34,6 +34,7 @@ export interface StudentAdmission {
     admission_year: string | null;
     guardian_name: string | null;
     guardian_phone: string | null;
+    picture_path: string | null;
   };
   organization?: {
     id: string;

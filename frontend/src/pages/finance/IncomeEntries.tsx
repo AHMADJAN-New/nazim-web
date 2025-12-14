@@ -253,14 +253,14 @@ export default function IncomeEntries() {
                 <div className="space-y-2">
                     <Label htmlFor="currencyId">{t('finance.currency') || 'Currency'}</Label>
                     <Select
-                        value={formData.currencyId || ''}
-                        onValueChange={(value) => setFormData({ ...formData, currencyId: value || null })}
+                        value={formData.currencyId || 'none'}
+                        onValueChange={(value) => setFormData({ ...formData, currencyId: value === 'none' ? null : value })}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                            <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
                             {currencies?.map((currency) => (
                                 <SelectItem key={currency.id} value={currency.id}>
                                     {currency.code} - {currency.name}

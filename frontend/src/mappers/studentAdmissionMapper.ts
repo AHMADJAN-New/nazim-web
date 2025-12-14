@@ -39,6 +39,7 @@ export function mapStudentAdmissionApiToDomain(api: StudentAdmissionApi.StudentA
       admissionYear: api.student.admission_year,
       guardianName: api.student.guardian_name || null,
       guardianPhone: api.student.guardian_phone,
+      picturePath: api.student.picture_path || null,
     } : undefined,
     organization: api.organization,
     academicYear: api.academic_year ? {

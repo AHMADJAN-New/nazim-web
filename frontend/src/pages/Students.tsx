@@ -205,6 +205,86 @@ const statusBadge = (status: Student['status']) => {
   }
 };
 
+// Component for displaying student picture in table cell
+function StudentPictureCell({ student }: { student: Student }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  
+  useEffect(() => {
+    // Only fetch if picturePath exists and is not empty
+    const hasPicture = student.picturePath && student.picturePath.trim() !== '' && student.id;
+    
+    if (hasPicture) {
+      let currentBlobUrl: string | null = null;
+      
+      const fetchImage = async () => {
+        try {
+          const { apiClient } = await import('@/lib/api/client');
+          const token = apiClient.getToken();
+          const url = `/api/students/${student.id}/picture`;
+          
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'image/*',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            },
+            credentials: 'include',
+          });
+          
+          if (!response.ok) {
+            if (response.status === 404) {
+              setImageError(true);
+              return;
+            }
+            throw new Error(`Failed to fetch image: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          currentBlobUrl = blobUrl;
+          setImageUrl(blobUrl);
+          setImageError(false);
+        } catch (error) {
+          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+            console.error('Failed to fetch student picture:', error);
+          }
+          setImageError(true);
+        }
+      };
+      
+      fetchImage();
+      
+      return () => {
+        if (currentBlobUrl) {
+          URL.revokeObjectURL(currentBlobUrl);
+        }
+      };
+    } else {
+      // No picture path, show placeholder immediately
+      setImageUrl(null);
+      setImageError(true);
+    }
+  }, [student.id, student.picturePath]);
+  
+  return (
+    <div className="flex items-center justify-center w-12 h-12">
+      {imageUrl && !imageError ? (
+        <img
+          src={imageUrl}
+          alt={student.fullName}
+          className="w-12 h-12 rounded-full object-cover border-2 border-border"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-border">
+          <UserRound className="h-6 w-6 text-muted-foreground" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Students() {
   const { t, isRTL } = useLanguage();
   const { data: profile } = useProfile();
@@ -642,6 +722,11 @@ export function Students() {
   // Define columns for DataTable
   const columns: ColumnDef<Student>[] = [
     {
+      id: 'picture',
+      header: t('students.picture') || 'Picture',
+      cell: ({ row }) => <StudentPictureCell student={row.original} />,
+    },
+    {
       accessorKey: 'admissionNumber',
       header: t('students.admissionNumber') || 'Admission #',
       cell: ({ row }) => <span className="font-medium">{row.original.admissionNumber}</span>,
@@ -704,46 +789,45 @@ export function Students() {
       id: 'actions',
       header: () => <div className="text-right">{t('students.actions') || 'Actions'}</div>,
       cell: ({ row }) => (
-        <div className="flex justify-end">
+        <div className="text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="sm">
                 <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">{t('common.actions') || 'Actions'}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleView(row.original)}>
-                <Eye className="mr-2 h-4 w-4" />
+                <Eye className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                 {t('students.viewProfile') || 'View Profile'}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handlePrint(row.original)}>
-                <Printer className="mr-2 h-4 w-4" />
+                <Printer className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                 {t('students.printProfile') || 'Print Profile'}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setDocumentsDialogStudent(row.original)}>
-                <FileText className="mr-2 h-4 w-4" />
+                <FileText className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                 {t('students.studentDocuments') || 'Documents'}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setHistoryDialogStudent(row.original)}>
-                <BookOpen className="mr-2 h-4 w-4" />
+                <BookOpen className="mr-2 h-4 w-4 text-purple-600 dark:text-purple-400" />
                 {t('students.educationalHistory') || 'Educational History'}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setDisciplineDialogStudent(row.original)}>
-                <AlertTriangle className="mr-2 h-4 w-4" />
+                <AlertTriangle className="mr-2 h-4 w-4 text-orange-600 dark:text-orange-400" />
                 {t('students.disciplineRecords') || 'Discipline Records'}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleEdit(row.original)}>
-                <Pencil className="mr-2 h-4 w-4" />
+                <Pencil className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                 {t('common.edit') || 'Edit'}
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => handleDelete(row.original)}
-                className="text-destructive"
+                className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 {t('common.delete') || 'Delete'}
@@ -909,6 +993,7 @@ export function Students() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>{t('students.picture') || 'Picture'}</TableHead>
                         <TableHead>{t('students.admissionNo') || 'Admission #'}</TableHead>
                         <TableHead>{t('students.student') || 'Student'}</TableHead>
                         <TableHead>{t('students.school') || 'School'}</TableHead>
@@ -920,7 +1005,14 @@ export function Students() {
                     <TableBody>
                       {filteredStudents.length > 0 ? (
                         filteredStudents.map((student) => (
-                          <TableRow key={student.id}>
+                          <TableRow 
+                            key={student.id}
+                            onClick={() => handleView(student)}
+                            className="cursor-pointer hover:bg-muted/50"
+                          >
+                            <TableCell>
+                              <StudentPictureCell student={student} />
+                            </TableCell>
                             <TableCell className="font-medium">{student.admissionNumber}</TableCell>
                             <TableCell>
                               <div className="space-y-1 min-w-[200px]">
@@ -956,71 +1048,57 @@ export function Students() {
                               </Badge>
                             </TableCell>
                             <TableCell>{student.applyingGrade || '—'}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-1 flex-wrap">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  onClick={() => handleView(student)}
-                                  title={t('students.viewProfile') || 'View Profile'}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  onClick={() => handlePrint(student)}
-                                  title={t('students.printProfile') || 'Print Profile'}
-                                >
-                                  <Printer className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  onClick={() => setDocumentsDialogStudent(student)}
-                                  title={t('students.studentDocuments') || 'Documents'}
-                                >
-                                  <FileText className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  onClick={() => setHistoryDialogStudent(student)}
-                                  title={t('students.educationalHistory') || 'History'}
-                                >
-                                  <BookOpen className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  onClick={() => setDisciplineDialogStudent(student)}
-                                  title={t('students.disciplineRecords') || 'Discipline'}
-                                >
-                                  <AlertTriangle className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  onClick={() => handleEdit(student)}
-                                  title={t('common.edit') || 'Edit'}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  onClick={() => handleDelete(student)}
-                                  title={t('common.delete') || 'Delete'}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleView(student)}>
+                                    <Eye className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    {t('students.viewProfile') || 'View Profile'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handlePrint(student)}>
+                                    <Printer className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    {t('students.printProfile') || 'Print Profile'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => setDocumentsDialogStudent(student)}>
+                                    <FileText className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    {t('students.studentDocuments') || 'Documents'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setHistoryDialogStudent(student)}>
+                                    <BookOpen className="mr-2 h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                    {t('students.educationalHistory') || 'Educational History'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setDisciplineDialogStudent(student)}>
+                                    <AlertTriangle className="mr-2 h-4 w-4 text-orange-600 dark:text-orange-400" />
+                                    {t('students.disciplineRecords') || 'Discipline Records'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleEdit(student)}>
+                                    <Pencil className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    {t('common.edit') || 'Edit'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDelete(student)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    {t('common.delete') || 'Delete'}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="h-24 text-center">
+                          <TableCell colSpan={7} className="h-24 text-center">
                             {t('students.noDataFound') || 'No data found.'}
                           </TableCell>
                         </TableRow>

@@ -9,9 +9,10 @@ interface DataTableProps<TData> {
   actionBar?: ReactNode;
   children?: ReactNode;
   className?: string;
+  onRowClick?: (row: TData) => void;
 }
 
-export function DataTable<TData>({ table, actionBar, children, className }: DataTableProps<TData>) {
+export function DataTable<TData>({ table, actionBar, children, className, onRowClick }: DataTableProps<TData>) {
   return (
     <div className={cn('space-y-3', className)}>
       {children}
@@ -35,7 +36,12 @@ export function DataTable<TData>({ table, actionBar, children, className }: Data
             <TableBody>
               {table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                  <TableRow 
+                    key={row.id} 
+                    data-state={row.getIsSelected() && 'selected'}
+                    onClick={() => onRowClick?.(row.original)}
+                    className={onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>{cell.column.columnDef.cell?.({ row })}</TableCell>
                     ))}

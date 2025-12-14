@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, UserRound } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -204,8 +204,94 @@ export function StudentAdmissions() {
       });
   }, [admissions, schoolFilter, statusFilter, residencyFilter, searchQuery]);
 
+  // Component for displaying student picture in admission table cell
+  const AdmissionPictureCell = ({ admission }: { admission: StudentAdmission }) => {
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [imageError, setImageError] = useState(false);
+    const student = admission.student;
+    
+    useEffect(() => {
+      // Only fetch if student exists, has picturePath, and it's not empty
+      const hasPicture = student?.picturePath && student.picturePath.trim() !== '' && student?.id;
+      
+      if (hasPicture) {
+        let currentBlobUrl: string | null = null;
+        
+        const fetchImage = async () => {
+          try {
+            const { apiClient } = await import('@/lib/api/client');
+            const token = apiClient.getToken();
+            const url = `/api/students/${student.id}/picture`;
+            
+            const response = await fetch(url, {
+              method: 'GET',
+              headers: {
+                'Accept': 'image/*',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+              },
+              credentials: 'include',
+            });
+            
+            if (!response.ok) {
+              if (response.status === 404) {
+                setImageError(true);
+                return;
+              }
+              throw new Error(`Failed to fetch image: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            currentBlobUrl = blobUrl;
+            setImageUrl(blobUrl);
+            setImageError(false);
+          } catch (error) {
+            if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+              console.error('Failed to fetch student picture:', error);
+            }
+            setImageError(true);
+          }
+        };
+        
+        fetchImage();
+        
+        return () => {
+          if (currentBlobUrl) {
+            URL.revokeObjectURL(currentBlobUrl);
+          }
+        };
+      } else {
+        // No picture path or no student, show placeholder immediately
+        setImageUrl(null);
+        setImageError(true);
+      }
+    }, [student?.id, student?.picturePath]);
+    
+    return (
+      <div className="flex items-center justify-center w-12 h-12">
+        {imageUrl && !imageError ? (
+          <img
+            src={imageUrl}
+            alt={student?.fullName || 'Student'}
+            className="w-12 h-12 rounded-full object-cover border-2 border-border"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-border">
+            <UserRound className="h-6 w-6 text-muted-foreground" />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Define columns for DataTable
   const columns: ColumnDef<StudentAdmission>[] = [
+    {
+      id: 'picture',
+      header: t('students.picture') || 'Picture',
+      cell: ({ row }) => <AdmissionPictureCell admission={row.original} />,
+    },
     {
       accessorKey: 'studentCode',
       header: 'ID',

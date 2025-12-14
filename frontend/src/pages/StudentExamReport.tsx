@@ -66,6 +66,96 @@ type StudentReportData = {
   };
 };
 
+// Component for authenticated student picture display in report card
+const ReportCardStudentAvatar = ({ studentId, picturePath }: { studentId?: string | null; picturePath?: string | null }) => {
+  const { t } = useLanguage();
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    // Only fetch if picturePath exists and is not empty
+    const hasPicture = picturePath && picturePath.trim() !== '' && studentId;
+    
+    if (hasPicture) {
+      let currentBlobUrl: string | null = null;
+
+      const fetchImage = async () => {
+        try {
+          const { apiClient } = await import('@/lib/api/client');
+          const token = apiClient.getToken();
+          const url = `/api/students/${studentId}/picture`;
+          
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'image/*',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            },
+            credentials: 'include',
+          });
+          
+          if (!response.ok) {
+            if (response.status === 404) {
+              setImageUrl(null);
+              setImageError(false);
+              return;
+            }
+            throw new Error(`Failed to fetch image: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          currentBlobUrl = blobUrl;
+          setImageUrl(blobUrl);
+          setImageError(false);
+        } catch (error) {
+          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+            console.error('Failed to fetch student picture:', error);
+          }
+          setImageUrl(null);
+          setImageError(true);
+        }
+      };
+      
+      fetchImage();
+      
+      return () => {
+        if (currentBlobUrl) {
+          URL.revokeObjectURL(currentBlobUrl);
+        }
+      };
+    } else {
+      // No picture path, show placeholder immediately
+      setImageUrl(null);
+      setImageError(false);
+    }
+  }, [studentId, picturePath]);
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="w-32 h-32 rounded-lg border-2 border-border overflow-hidden bg-muted/20 flex items-center justify-center">
+        {imageUrl && !imageError ? (
+          <img
+            src={imageUrl}
+            alt="Student"
+            className="w-full h-full object-cover"
+            onError={() => {
+              setImageError(true);
+              if (imageUrl && imageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(imageUrl);
+              }
+              setImageUrl(null);
+            }}
+          />
+        ) : (
+          <User className="h-16 w-16 text-muted-foreground/50" />
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground mt-2">{t('studentReportCard.studentPhoto')}</p>
+    </div>
+  );
+};
+
 // Reusable Grade Card Component
 function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t }: {
   reportData: StudentReportData | null;
@@ -128,13 +218,11 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
         {/* Student Information Section */}
         <CardContent className="pt-6">
           <div className="grid md:grid-cols-[auto_1fr] gap-6">
-            {/* Student Photo Placeholder */}
-            <div className="flex flex-col items-center">
-              <div className="w-32 h-32 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center bg-muted/20">
-                <User className="h-16 w-16 text-muted-foreground/50" />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">{t('studentReportCard.studentPhoto')}</p>
-            </div>
+            {/* Student Photo */}
+            <ReportCardStudentAvatar 
+              studentId={reportData.student?.id || (selectedStudent && 'id' in selectedStudent ? selectedStudent.id : null)}
+              picturePath={(selectedStudent && 'picturePath' in selectedStudent ? selectedStudent.picturePath : null)}
+            />
 
             {/* Student Details */}
             <div>

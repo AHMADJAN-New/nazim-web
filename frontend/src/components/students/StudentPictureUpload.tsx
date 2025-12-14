@@ -38,8 +38,12 @@ export function StudentPictureUpload({
     const [imageUrl, setImageUrl] = useState<string | null>(null);
 
     // Fetch picture with authentication headers and convert to blob URL
+    // Only fetch if studentId exists AND currentFileName exists (student has a picture)
     useEffect(() => {
-        if (studentId && !previewUrl) {
+        // Only fetch if student has a picture path (currentFileName is not null/empty)
+        const hasPicture = currentFileName && currentFileName.trim() !== '' && studentId && !previewUrl;
+        
+        if (hasPicture) {
             let currentBlobUrl: string | null = null;
             
             // Fetch image with authentication headers
@@ -99,12 +103,14 @@ export function StudentPictureUpload({
                 }
             };
         } else {
+            // No picture path, clear image URL and show placeholder
             if (imageUrl && imageUrl.startsWith('blob:')) {
                 URL.revokeObjectURL(imageUrl);
             }
             setImageUrl(null);
+            setImageError(false); // Not an error - just no picture
         }
-    }, [studentId, previewUrl]);
+    }, [studentId, currentFileName, previewUrl]);
 
     const resolvedPreview = useMemo(() => {
         // If user selected a new file, show that preview
@@ -116,8 +122,36 @@ export function StudentPictureUpload({
         return null;
     }, [previewUrl, imageUrl, imageError]);
 
-    const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0] || null;
+        
+        if (f) {
+            // Validate file size (max 5MB = 5120 KB, matching backend validation)
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+            if (f.size > MAX_FILE_SIZE) {
+                const { showToast } = await import('@/lib/toast');
+                const fileSizeMB = (f.size / (1024 * 1024)).toFixed(2);
+                showToast.error(`File size exceeds maximum allowed size of 5MB. Selected file is ${fileSizeMB}MB.`);
+                e.target.value = ''; // Clear the input
+                setFile(null);
+                setPreviewUrl(null);
+                onFileSelected?.(null);
+                return;
+            }
+            
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(f.type)) {
+                const { showToast } = await import('@/lib/toast');
+                showToast.error('The file must be an image (jpg, jpeg, png, gif, or webp).');
+                e.target.value = ''; // Clear the input
+                setFile(null);
+                setPreviewUrl(null);
+                onFileSelected?.(null);
+                return;
+            }
+        }
+        
         setFile(f);
         if (f) {
             const reader = new FileReader();

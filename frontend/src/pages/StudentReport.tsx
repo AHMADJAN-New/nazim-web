@@ -81,73 +81,86 @@ const buildLocation = (province?: string | null, district?: string | null, villa
 };
 
 // Component for authenticated student picture display
-const StudentAvatar = ({ student }: { student: Student }) => {
+const StudentAvatar = ({ student, size = 'md' }: { student: Student; size?: 'sm' | 'md' | 'lg' }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
 
+  // Size classes
+  const sizeClasses = {
+    sm: { container: 'w-10 h-10', icon: 'h-5 w-5' },
+    md: { container: 'w-20 h-20', icon: 'h-10 w-10' },
+    lg: { container: 'w-32 h-32', icon: 'h-16 w-16' },
+  };
+
+  const classes = sizeClasses[size];
+
   // Fetch image with authentication when component mounts
   useEffect(() => {
-    if (!student.picturePath || !student.id) {
-      setImageUrl(null);
-      return;
-    }
+    // Only fetch if picturePath exists and is not empty
+    const hasPicture = student.picturePath && student.picturePath.trim() !== '' && student.id;
+    
+    if (hasPicture) {
+      let currentBlobUrl: string | null = null;
 
-    let currentBlobUrl: string | null = null;
-
-    const fetchImage = async () => {
-      try {
-        const { apiClient } = await import('@/lib/api/client');
-        const token = apiClient.getToken();
-        const url = `/api/students/${student.id}/picture`;
-        
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Accept': 'image/*',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          },
-          credentials: 'include',
-        });
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            setImageUrl(null);
-            setImageError(false);
-            return;
+      const fetchImage = async () => {
+        try {
+          const { apiClient } = await import('@/lib/api/client');
+          const token = apiClient.getToken();
+          const url = `/api/students/${student.id}/picture`;
+          
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'image/*',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            },
+            credentials: 'include',
+          });
+          
+          if (!response.ok) {
+            if (response.status === 404) {
+              setImageUrl(null);
+              setImageError(false);
+              return;
+            }
+            throw new Error(`Failed to fetch image: ${response.status}`);
           }
-          throw new Error(`Failed to fetch image: ${response.status}`);
+          
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          currentBlobUrl = blobUrl;
+          setImageUrl(blobUrl);
+          setImageError(false);
+        } catch (error) {
+          if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
+            console.error('Failed to fetch student picture:', error);
+          }
+          setImageUrl(null);
+          setImageError(true);
         }
-        
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        currentBlobUrl = blobUrl;
-        setImageUrl(blobUrl);
-        setImageError(false);
-      } catch (error) {
-        if (import.meta.env.DEV && error instanceof Error && !error.message.includes('404')) {
-          console.error('Failed to fetch student picture:', error);
+      };
+      
+      fetchImage();
+      
+      return () => {
+        if (currentBlobUrl) {
+          URL.revokeObjectURL(currentBlobUrl);
         }
-        setImageUrl(null);
-        setImageError(true);
-      }
-    };
-    
-    fetchImage();
-    
-    return () => {
-      if (currentBlobUrl) {
-        URL.revokeObjectURL(currentBlobUrl);
-      }
-    };
+      };
+    } else {
+      // No picture path, show placeholder immediately
+      setImageUrl(null);
+      setImageError(false);
+    }
   }, [student.id, student.picturePath]);
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="relative">
       {imageUrl && !imageError ? (
         <img
           src={imageUrl}
           alt={student.fullName}
-          className="w-10 h-10 rounded-full object-cover border-2 border-border"
+          className={`${classes.container} rounded-full object-cover border-2 border-border`}
           onError={() => {
             setImageError(true);
             if (imageUrl && imageUrl.startsWith('blob:')) {
@@ -158,9 +171,9 @@ const StudentAvatar = ({ student }: { student: Student }) => {
         />
       ) : null}
       <div 
-        className={`w-10 h-10 rounded-full bg-muted flex items-center justify-center border-2 border-border ${imageUrl && !imageError ? 'hidden' : 'flex'}`}
+        className={`${classes.container} rounded-full bg-muted flex items-center justify-center border-2 border-border ${imageUrl && !imageError ? 'hidden' : 'flex'}`}
       >
-        <User className="h-5 w-5 text-muted-foreground" />
+        <User className={`${classes.icon} text-muted-foreground`} />
       </div>
     </div>
   );
@@ -575,27 +588,7 @@ const StudentReport = () => {
               <SheetHeader className="pb-4 border-b">
                 <div className="flex items-start gap-4">
                   {/* Student Image */}
-                  <div className="relative">
-                    {selectedStudent.picturePath ? (
-                      <img
-                        src={`/api/students/${selectedStudent.id}/picture`}
-                        alt={selectedStudent.fullName}
-                        className="w-20 h-20 rounded-full object-cover border-2 border-border"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          if (target.nextElementSibling) {
-                            (target.nextElementSibling as HTMLElement).style.display = 'flex';
-                          }
-                        }}
-                      />
-                    ) : null}
-                    <div 
-                      className={`w-20 h-20 rounded-full bg-muted flex items-center justify-center border-2 border-border ${selectedStudent.picturePath ? 'hidden' : 'flex'}`}
-                    >
-                      <User className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                  </div>
+                  <StudentAvatar student={selectedStudent} size="md" />
                   <div className="flex-1">
                     <SheetTitle className="text-2xl mb-1">{selectedStudent.fullName}</SheetTitle>
                     <SheetDescription className="text-base">

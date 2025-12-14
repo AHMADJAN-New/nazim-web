@@ -827,9 +827,11 @@ class ExamReportController extends Controller
             }
 
             return [
+                'id' => $examStudent->studentAdmission?->student?->id,
                 'roll_number' => $examStudent->roll_number,
                 'student_name' => $examStudent->studentAdmission?->student?->full_name ?? 'Unknown',
                 'admission_no' => $examStudent->studentAdmission?->admission_no,
+                'picture_path' => $examStudent->studentAdmission?->student?->picture_path,
                 'subjects' => $subjects,
                 'total_obtained' => $totalObtained,
                 'total_maximum' => $totalMax,
@@ -980,10 +982,12 @@ class ExamReportController extends Controller
             }
 
             return [
+                'id' => $examStudent->studentAdmission?->student?->id,
                 'roll_number' => $examStudent->roll_number,
                 'student_name' => $examStudent->studentAdmission?->student?->full_name ?? 'Unknown',
                 'father_name' => $examStudent->studentAdmission?->student?->father_name,
                 'admission_no' => $examStudent->studentAdmission?->admission_no,
+                'picture_path' => $examStudent->studentAdmission?->student?->picture_path,
                 'marks_obtained' => $marks,
                 'total_marks' => $examSubject->total_marks,
                 'passing_marks' => $examSubject->passing_marks,
