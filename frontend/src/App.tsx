@@ -96,6 +96,7 @@ import {
   IssueLetter,
   TemplatesPage,
   LetterheadsPage,
+  DepartmentsPage,
   ArchiveSearchPage,
   DmsReportsPage,
   DmsSettingsPage,
@@ -726,6 +727,11 @@ const App = () => (
                     <Route path="/dms/letterheads" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <LetterheadsPage />
+                      </Suspense>
+                    } />
+                    <Route path="/dms/departments" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <DepartmentsPage />
                       </Suspense>
                     } />
                     <Route path="/dms/archive" element={

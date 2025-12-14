@@ -112,6 +112,7 @@ const navigationItems: NavigationItem[] = [
       { title: "Issue Letter", url: "/dms/issue-letter", icon: MessageSquare },
       { title: "Templates", url: "/dms/templates", icon: BookOpen },
       { title: "Letterheads", url: "/dms/letterheads", icon: Trophy },
+      { title: "Departments", url: "/dms/departments", icon: Building },
       { title: "Archive", url: "/dms/archive", icon: Package },
       { title: "Reports", url: "/dms/reports", icon: BarChart3 },
       { title: "Settings", url: "/dms/settings", icon: Settings },

@@ -107,6 +107,16 @@ class PermissionSeeder extends Seeder
             // Currency and Exchange Rate permissions
             'currencies' => ['read', 'create', 'update', 'delete'],
             'exchange_rates' => ['read', 'create', 'update', 'delete'],
+            // Document Management System (DMS) permissions
+            'dms_incoming' => ['read', 'create', 'update', 'delete'],
+            'dms_outgoing' => ['read', 'create', 'update', 'delete'],
+            'dms_templates' => ['read', 'create', 'update', 'delete'],
+            'dms_letterheads' => ['read', 'create', 'update', 'delete', 'manage'],
+            'dms_departments' => ['read', 'create', 'update', 'delete'],
+            'dms_files' => ['read', 'create', 'delete', 'download'],
+            'dms_reports' => ['read'],
+            'dms_settings' => ['read', 'manage'],
+            'dms_security' => ['manage_clearance'],
         ];
     }
 
