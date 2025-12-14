@@ -170,6 +170,7 @@ export interface IncomeEntry {
     incomeCategory?: IncomeCategory;
     project?: FinanceProject | null;
     donor?: Donor | null;
+    currency?: { id: string; code: string; name: string; symbol: string | null } | null;
     receivedBy?: { id: string; name: string; email: string } | null;
 }
 

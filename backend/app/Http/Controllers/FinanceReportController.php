@@ -34,11 +34,11 @@ class FinanceReportController extends Controller
             }
 
             try {
-                if (!$user->hasPermissionTo('finance_reports.read')) {
+                if (!$user->hasPermissionTo('reports.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
-                \Log::warning("Permission check failed for finance_reports.read: " . $e->getMessage());
+                \Log::warning("Permission check failed for reports.read: " . $e->getMessage());
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
@@ -134,6 +134,7 @@ class FinanceReportController extends Controller
                 ->where('income_entries.organization_id', $orgId)
                 ->whereBetween('income_entries.date', [$currentMonthStart, $currentMonthEnd])
                 ->join('income_categories', 'income_entries.income_category_id', '=', 'income_categories.id')
+                ->where('income_categories.organization_id', $orgId)
                 ->whereNull('income_categories.deleted_at')
                 ->select('income_categories.id', 'income_categories.name', 'income_entries.amount', 'income_entries.currency_id', 'income_entries.date')
                 ->get();
@@ -160,6 +161,7 @@ class FinanceReportController extends Controller
                 ->where('expense_entries.status', 'approved')
                 ->whereBetween('expense_entries.date', [$currentMonthStart, $currentMonthEnd])
                 ->join('expense_categories', 'expense_entries.expense_category_id', '=', 'expense_categories.id')
+                ->where('expense_categories.organization_id', $orgId)
                 ->whereNull('expense_categories.deleted_at')
                 ->select('expense_categories.id', 'expense_categories.name', 'expense_entries.amount', 'expense_entries.currency_id', 'expense_entries.date')
                 ->get();
@@ -219,11 +221,11 @@ class FinanceReportController extends Controller
                     'active_projects' => $activeProjects,
                     'active_donors' => $activeDonors,
                 ],
-                'account_balances' => $accountBalances,
-                'income_by_category' => $incomeByCategory,
-                'expense_by_category' => $expenseByCategory,
-                'recent_income' => $recentIncome,
-                'recent_expenses' => $recentExpenses,
+                'account_balances' => $accountBalances->toArray(),
+                'income_by_category' => $incomeByCategory->toArray(),
+                'expense_by_category' => $expenseByCategory->toArray(),
+                'recent_income' => $recentIncome->toArray(),
+                'recent_expenses' => $recentExpenses->toArray(),
             ]);
         } catch (\Exception $e) {
             \Log::error('FinanceReportController@dashboard error: ' . $e->getMessage());
@@ -648,5 +650,36 @@ class FinanceReportController extends Controller
             \Log::error('FinanceReportController@accountBalances error: ' . $e->getMessage());
             return response()->json(['error' => 'An error occurred while generating account balances'], 500);
         }
+    }
+
+    /**
+     * Convert amount from one currency to another
+     */
+    private function convertAmount($amount, $fromCurrencyId, $toCurrencyId, $organizationId, $date = null)
+    {
+        if (!$fromCurrencyId || !$toCurrencyId || $fromCurrencyId === $toCurrencyId) {
+            return (float) $amount;
+        }
+
+        // Format date if provided
+        $dateString = null;
+        if ($date) {
+            if (is_string($date)) {
+                $dateString = $date;
+            } elseif (is_object($date) && method_exists($date, 'format')) {
+                $dateString = $date->format('Y-m-d');
+            } else {
+                $dateString = now()->toDateString();
+            }
+        }
+
+        $rate = ExchangeRate::getRate($organizationId, $fromCurrencyId, $toCurrencyId, $dateString);
+
+        if ($rate === null) {
+            // If no rate found, return original amount (no conversion)
+            return (float) $amount;
+        }
+
+        return (float) $amount * $rate;
     }
 }

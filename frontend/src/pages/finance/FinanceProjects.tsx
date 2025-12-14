@@ -11,6 +11,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -118,8 +125,14 @@ export default function FinanceProjects() {
         );
     }
 
-    const ProjectForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
-        <div className="space-y-4">
+    const renderProjectForm = (onSubmit: () => void, loading: boolean) => (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSubmit();
+            }}
+            className="space-y-4"
+        >
             <div className="space-y-2">
                 <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
                 <Input
@@ -162,14 +175,14 @@ export default function FinanceProjects() {
                 <div className="space-y-2">
                     <Label htmlFor="currencyId">{t('finance.currency') || 'Currency'}</Label>
                     <Select
-                        value={formData.currencyId || ''}
-                        onValueChange={(value) => setFormData({ ...formData, currencyId: value || null })}
+                        value={formData.currencyId || 'none'}
+                        onValueChange={(value) => setFormData({ ...formData, currencyId: value === 'none' ? null : value })}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                            <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
                             {currencies?.map((currency) => (
                                 <SelectItem key={currency.id} value={currency.id}>
                                     {currency.code} - {currency.name}
@@ -200,12 +213,11 @@ export default function FinanceProjects() {
                 <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
             </div>
             <DialogFooter>
-                <Button onClick={onSubmit} disabled={loading || !formData.name}>
-                    {loading ? <LoadingSpinner className="mr-2 h-4 w-4" /> : null}
+                <Button type="submit" disabled={loading || !formData.name.trim()}>
                     {editProject ? t('common.update') || 'Update' : t('common.create') || 'Create'}
                 </Button>
             </DialogFooter>
-        </div>
+        </form>
     );
 
     const calculateProgress = (project: FinanceProject) => {
@@ -239,35 +251,35 @@ export default function FinanceProjects() {
                                 {t('finance.addProjectDescription') || 'Create a new project or fund'}
                             </DialogDescription>
                         </DialogHeader>
-                        <ProjectForm onSubmit={handleCreate} isLoading={createProject.isPending} />
+                        {renderProjectForm(handleCreate, createProject.isPending)}
                     </DialogContent>
                 </Dialog>
             </div>
 
             {/* Projects Grid */}
             {projects && projects.length > 0 ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
                     {projects.map((project) => {
                         const progress = calculateProgress(project);
                         const netBalance = project.totalIncome - project.totalExpense;
 
                         return (
-                            <Card key={project.id} className="relative">
-                                <CardHeader className="pb-2">
+                            <Card key={project.id} className="relative h-full flex flex-col">
+                                <CardHeader className="pb-3">
                                     <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <FolderKanban className="h-5 w-5 text-muted-foreground" />
-                                            <CardTitle className="text-lg">{project.name}</CardTitle>
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <FolderKanban className="h-6 w-6 text-muted-foreground flex-shrink-0" />
+                                            <CardTitle className="text-xl font-semibold truncate">{project.name}</CardTitle>
                                         </div>
-                                        <Badge variant={project.isActive ? 'default' : 'secondary'}>
+                                        <Badge variant={project.isActive ? 'default' : 'secondary'} className="flex-shrink-0 ml-2">
                                             {project.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
                                         </Badge>
                                     </div>
                                     {project.description && (
-                                        <CardDescription className="mt-1">{project.description}</CardDescription>
+                                        <CardDescription className="mt-2 line-clamp-2">{project.description}</CardDescription>
                                     )}
                                 </CardHeader>
-                                <CardContent className="space-y-4">
+                                <CardContent className="space-y-5 flex-1">
                                     {/* Date Range */}
                                     {(project.startDate || project.endDate) && (
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -294,33 +306,40 @@ export default function FinanceProjects() {
                                     )}
 
                                     {/* Financial Summary */}
-                                    <div className="grid grid-cols-3 gap-2 pt-2 border-t">
-                                        <div className="text-center">
-                                            <div className="flex items-center justify-center gap-1 text-green-600">
-                                                <TrendingUp className="h-3 w-3" />
-                                                <span className="text-xs">{t('finance.income') || 'Income'}</span>
+                                    <div className="grid grid-cols-3 gap-3 pt-3 border-t">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="flex items-center gap-1.5">
+                                                <TrendingUp className="h-3.5 w-3.5 text-green-600" />
+                                                <span className="text-xs font-medium text-muted-foreground">{t('finance.income') || 'Income'}</span>
                                             </div>
-                                            <p className="text-sm font-medium text-green-600">
+                                            <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-3 py-1.5 text-sm font-semibold">
                                                 {formatCurrency(project.totalIncome)}
-                                            </p>
+                                            </Badge>
                                         </div>
-                                        <div className="text-center">
-                                            <div className="flex items-center justify-center gap-1 text-red-600">
-                                                <TrendingDown className="h-3 w-3" />
-                                                <span className="text-xs">{t('finance.expense') || 'Expense'}</span>
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="flex items-center gap-1.5">
+                                                <TrendingDown className="h-3.5 w-3.5 text-red-600" />
+                                                <span className="text-xs font-medium text-muted-foreground">{t('finance.expense') || 'Expense'}</span>
                                             </div>
-                                            <p className="text-sm font-medium text-red-600">
+                                            <Badge variant="outline" className="bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 py-1.5 text-sm font-semibold">
                                                 {formatCurrency(project.totalExpense)}
-                                            </p>
+                                            </Badge>
                                         </div>
-                                        <div className="text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <DollarSign className="h-3 w-3" />
-                                                <span className="text-xs">{t('finance.balance') || 'Balance'}</span>
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="flex items-center gap-1.5">
+                                                <DollarSign className="h-3.5 w-3.5 text-blue-600" />
+                                                <span className="text-xs font-medium text-muted-foreground">{t('finance.balance') || 'Balance'}</span>
                                             </div>
-                                            <p className={`text-sm font-medium ${netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            <Badge 
+                                                variant="outline" 
+                                                className={`px-3 py-1.5 text-sm font-semibold ${
+                                                    netBalance >= 0 
+                                                        ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400' 
+                                                        : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
+                                                }`}
+                                            >
                                                 {formatCurrency(netBalance)}
-                                            </p>
+                                            </Badge>
                                         </div>
                                     </div>
 
@@ -367,7 +386,7 @@ export default function FinanceProjects() {
                             {t('finance.editProjectDescription') || 'Update project details'}
                         </DialogDescription>
                     </DialogHeader>
-                    <ProjectForm onSubmit={handleUpdate} isLoading={updateProject.isPending} />
+                    {renderProjectForm(handleUpdate, updateProject.isPending)}
                 </DialogContent>
             </Dialog>
 

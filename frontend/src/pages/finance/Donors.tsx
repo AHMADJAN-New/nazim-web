@@ -139,8 +139,14 @@ export default function Donors() {
         );
     }
 
-    const DonorForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
-        <div className="space-y-4">
+    const renderDonorForm = (onSubmit: () => void, loading: boolean) => (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSubmit();
+            }}
+            className="space-y-4"
+        >
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
@@ -149,6 +155,7 @@ export default function Donors() {
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder={t('finance.donorNamePlaceholder') || 'Full name...'}
+                        required
                     />
                 </div>
                 <div className="space-y-2">
@@ -195,7 +202,8 @@ export default function Donors() {
                     value={formData.address || ''}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     placeholder={t('finance.addressPlaceholder') || 'Full address...'}
-                    rows={2}
+                    rows={3}
+                    className="resize-y"
                 />
             </div>
             <div className="space-y-2">
@@ -205,7 +213,8 @@ export default function Donors() {
                     value={formData.notes || ''}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     placeholder={t('finance.notesPlaceholder') || 'Additional notes...'}
-                    rows={2}
+                    rows={3}
+                    className="resize-y"
                 />
             </div>
             <div className="flex items-center space-x-2">
@@ -217,12 +226,11 @@ export default function Donors() {
                 <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
             </div>
             <DialogFooter>
-                <Button onClick={onSubmit} disabled={loading || !formData.name}>
-                    {loading ? <LoadingSpinner className="mr-2 h-4 w-4" /> : null}
+                <Button type="submit" disabled={loading || !formData.name.trim()}>
                     {editDonor ? t('common.update') || 'Update' : t('common.create') || 'Create'}
                 </Button>
             </DialogFooter>
-        </div>
+        </form>
     );
 
     return (
@@ -251,7 +259,7 @@ export default function Donors() {
                                 {t('finance.addDonorDescription') || 'Add a new donor to your records'}
                             </DialogDescription>
                         </DialogHeader>
-                        <DonorForm onSubmit={handleCreate} isLoading={createDonor.isPending} />
+                        {renderDonorForm(handleCreate, createDonor.isPending)}
                     </DialogContent>
                 </Dialog>
             </div>
@@ -386,7 +394,7 @@ export default function Donors() {
                             {t('finance.editDonorDescription') || 'Update donor details'}
                         </DialogDescription>
                     </DialogHeader>
-                    <DonorForm onSubmit={handleUpdate} isLoading={updateDonor.isPending} />
+                    {renderDonorForm(handleUpdate, updateDonor.isPending)}
                 </DialogContent>
             </Dialog>
 

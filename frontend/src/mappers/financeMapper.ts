@@ -236,6 +236,12 @@ export function mapIncomeEntryApiToDomain(api: FinanceApi.IncomeEntry): IncomeEn
         incomeCategory: api.income_category ? mapIncomeCategoryApiToDomain(api.income_category) : undefined,
         project: api.project ? mapFinanceProjectApiToDomain(api.project) : null,
         donor: api.donor ? mapDonorApiToDomain(api.donor) : null,
+        currency: api.currency ? {
+            id: api.currency.id,
+            code: api.currency.code,
+            name: api.currency.name,
+            symbol: api.currency.symbol,
+        } : null,
         receivedBy: api.received_by || null,
     };
 }
@@ -318,24 +324,34 @@ export function mapFinanceDashboardApiToDomain(api: FinanceApi.FinanceDashboard)
             activeProjects: api.summary.active_projects,
             activeDonors: api.summary.active_donors,
         },
-        accountBalances: api.account_balances.map(ab => ({
-            id: ab.id,
-            name: ab.name,
-            currentBalance: parseDecimal(ab.current_balance),
-            type: ab.type,
-        })),
-        incomeByCategory: api.income_by_category.map(ic => ({
-            id: ic.id,
-            name: ic.name,
-            total: parseDecimal(ic.total),
-        })),
-        expenseByCategory: api.expense_by_category.map(ec => ({
-            id: ec.id,
-            name: ec.name,
-            total: parseDecimal(ec.total),
-        })),
-        recentIncome: api.recent_income.map(mapIncomeEntryApiToDomain),
-        recentExpenses: api.recent_expenses.map(mapExpenseEntryApiToDomain),
+        accountBalances: Array.isArray(api.account_balances) 
+            ? api.account_balances.map(ab => ({
+                id: ab.id,
+                name: ab.name,
+                currentBalance: parseDecimal(ab.current_balance),
+                type: ab.type,
+            }))
+            : [],
+        incomeByCategory: Array.isArray(api.income_by_category)
+            ? api.income_by_category.map(ic => ({
+                id: ic.id,
+                name: ic.name,
+                total: parseDecimal(ic.total),
+            }))
+            : [],
+        expenseByCategory: Array.isArray(api.expense_by_category)
+            ? api.expense_by_category.map(ec => ({
+                id: ec.id,
+                name: ec.name,
+                total: parseDecimal(ec.total),
+            }))
+            : [],
+        recentIncome: Array.isArray(api.recent_income)
+            ? api.recent_income.map(mapIncomeEntryApiToDomain)
+            : [],
+        recentExpenses: Array.isArray(api.recent_expenses)
+            ? api.recent_expenses.map(mapExpenseEntryApiToDomain)
+            : [],
     };
 }
 

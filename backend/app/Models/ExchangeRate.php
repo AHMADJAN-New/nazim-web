@@ -104,7 +104,7 @@ class ExchangeRate extends Model
     /**
      * Get the most recent active rate between two currencies
      */
-    public static function getRate($organizationId, $fromCurrencyId, $toCurrencyId, $date = null)
+    public static function getRate($organizationId, $fromCurrencyId, $toCurrencyId, $date = null, $visited = [])
     {
         $date = $date ?? now()->toDateString();
 
@@ -113,12 +113,20 @@ class ExchangeRate extends Model
             return 1.0;
         }
 
+        // Prevent infinite loops by tracking visited currency pairs
+        $key = $fromCurrencyId . '_' . $toCurrencyId;
+        if (in_array($key, $visited)) {
+            return null; // Already visited this pair, prevent infinite loop
+        }
+        $visited[] = $key;
+
         // Direct rate
         $rate = static::where('organization_id', $organizationId)
             ->where('from_currency_id', $fromCurrencyId)
             ->where('to_currency_id', $toCurrencyId)
             ->where('effective_date', '<=', $date)
             ->where('is_active', true)
+            ->whereNull('deleted_at')
             ->orderBy('effective_date', 'desc')
             ->first();
 
@@ -132,6 +140,7 @@ class ExchangeRate extends Model
             ->where('to_currency_id', $fromCurrencyId)
             ->where('effective_date', '<=', $date)
             ->where('is_active', true)
+            ->whereNull('deleted_at')
             ->orderBy('effective_date', 'desc')
             ->first();
 
@@ -139,17 +148,19 @@ class ExchangeRate extends Model
             return 1.0 / (float) $reverseRate->rate;
         }
 
-        // Try to find rate through base currency
+        // Try to find rate through base currency (only if neither currency is the base)
         $baseCurrency = Currency::where('organization_id', $organizationId)
             ->where('is_base', true)
             ->where('is_active', true)
+            ->whereNull('deleted_at')
             ->first();
 
-        if ($baseCurrency) {
-            $fromToBase = static::getRate($organizationId, $fromCurrencyId, $baseCurrency->id, $date);
-            $baseToTo = static::getRate($organizationId, $baseCurrency->id, $toCurrencyId, $date);
+        if ($baseCurrency && $fromCurrencyId !== $baseCurrency->id && $toCurrencyId !== $baseCurrency->id) {
+            // Only try base currency conversion if neither currency is the base
+            $fromToBase = static::getRate($organizationId, $fromCurrencyId, $baseCurrency->id, $date, $visited);
+            $baseToTo = static::getRate($organizationId, $baseCurrency->id, $toCurrencyId, $date, $visited);
 
-            if ($fromToBase && $baseToTo) {
+            if ($fromToBase !== null && $baseToTo !== null) {
                 return $fromToBase * $baseToTo;
             }
         }

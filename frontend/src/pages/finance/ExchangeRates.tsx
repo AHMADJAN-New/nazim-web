@@ -123,8 +123,14 @@ export default function ExchangeRates() {
         );
     }
 
-    const RateForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
-        <div className="space-y-4">
+    const renderRateForm = (onSubmit: () => void, loading: boolean) => (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSubmit();
+            }}
+            className="space-y-4"
+        >
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="fromCurrencyId">{t('finance.fromCurrency') || 'From Currency'} *</Label>
@@ -174,6 +180,7 @@ export default function ExchangeRates() {
                         value={formData.rate || ''}
                         onChange={(e) => setFormData({ ...formData, rate: parseFloat(e.target.value) || 0 })}
                         placeholder="1.0"
+                        required
                     />
                     <p className="text-xs text-muted-foreground">
                         {t('finance.exchangeRateHint') || '1 from currency = rate to currency'}
@@ -186,6 +193,7 @@ export default function ExchangeRates() {
                         type="date"
                         value={formData.effectiveDate}
                         onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
+                        required
                     />
                 </div>
             </div>
@@ -196,6 +204,7 @@ export default function ExchangeRates() {
                     value={formData.notes || ''}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     placeholder={t('finance.rateNotesPlaceholder') || 'Optional notes about this rate...'}
+                    rows={3}
                 />
             </div>
             <div className="flex items-center space-x-2">
@@ -207,12 +216,14 @@ export default function ExchangeRates() {
                 <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
             </div>
             <DialogFooter>
-                <Button onClick={onSubmit} disabled={loading || !formData.fromCurrencyId || !formData.toCurrencyId || formData.rate <= 0}>
-                    {loading ? <LoadingSpinner className="mr-2 h-4 w-4" /> : null}
+                <Button 
+                    type="submit" 
+                    disabled={loading || !formData.fromCurrencyId || !formData.toCurrencyId || formData.rate <= 0}
+                >
                     {editRate ? t('common.update') || 'Update' : t('common.create') || 'Create'}
                 </Button>
             </DialogFooter>
-        </div>
+        </form>
     );
 
     return (
@@ -241,7 +252,7 @@ export default function ExchangeRates() {
                                 {t('finance.addExchangeRateDescription') || 'Create a new exchange rate'}
                             </DialogDescription>
                         </DialogHeader>
-                        <RateForm onSubmit={handleCreate} isLoading={createRate.isPending} />
+                        {renderRateForm(handleCreate, createRate.isPending)}
                     </DialogContent>
                 </Dialog>
             </div>
@@ -328,7 +339,7 @@ export default function ExchangeRates() {
                             {t('finance.editExchangeRateDescription') || 'Update exchange rate details'}
                         </DialogDescription>
                     </DialogHeader>
-                    <RateForm onSubmit={handleUpdate} isLoading={updateRate.isPending} />
+                    {renderRateForm(handleUpdate, updateRate.isPending)}
                 </DialogContent>
             </Dialog>
 

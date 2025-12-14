@@ -2,7 +2,7 @@
  * Income Entries Page - View and manage income records
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,10 +49,10 @@ import {
     type IncomeEntry,
     type IncomeEntryFormData,
 } from '@/hooks/useFinance';
-import { useCurrencies } from '@/hooks/useCurrencies';
+import { useCurrencies, useConvertCurrency } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { Plus, Pencil, Trash2, TrendingUp, Search, Filter, Calendar, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, TrendingUp, Search, Filter, Calendar, X, DollarSign } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { PaymentMethod } from '@/types/domain/finance';
 
@@ -170,9 +170,151 @@ export default function IncomeEntries() {
 
     const hasActiveFilters = searchTerm || filterCategory !== 'all' || filterAccount !== 'all' || dateFrom || dateTo;
 
-    const totalIncome = useMemo(() => {
-        return filteredEntries.reduce((sum, entry) => sum + entry.amount, 0);
-    }, [filteredEntries]);
+    const convertCurrency = useConvertCurrency();
+    const [convertedTotals, setConvertedTotals] = useState<Record<string, number>>({});
+    const [isConverting, setIsConverting] = useState(false);
+
+    // Get base currency
+    const baseCurrency = useMemo(() => {
+        return currencies?.find(c => c.isBase) || null;
+    }, [currencies]);
+
+    // Filter active items (must be before conditional return)
+    const activeAccounts = useMemo(() => accounts?.filter(a => a.isActive) || [], [accounts]);
+    const activeCategories = useMemo(() => categories?.filter(c => c.isActive) || [], [categories]);
+    const activeProjects = useMemo(() => projects?.filter(p => p.isActive) || [], [projects]);
+    const activeDonors = useMemo(() => donors?.filter(d => d.isActive) || [], [donors]);
+
+    // Auto-select currency based on selected account
+    const selectedAccount = useMemo(() => {
+        return activeAccounts.find(a => a.id === formData.accountId);
+    }, [activeAccounts, formData.accountId]);
+
+    // Get default currency for display (account's currency or base currency)
+    const defaultCurrencyId = useMemo(() => {
+        return selectedAccount?.currencyId || baseCurrency?.id || null;
+    }, [selectedAccount, baseCurrency]);
+
+    // Calculate totals per currency
+    const totalsByCurrency = useMemo(() => {
+        const totals: Record<string, { amount: number; currency: { id: string; code: string; name: string; symbol: string | null } }> = {};
+        
+        filteredEntries.forEach(entry => {
+            const currencyId = entry.currencyId || baseCurrency?.id || 'unknown';
+            const currency = entry.currency || baseCurrency || { id: currencyId, code: 'N/A', name: 'Unknown', symbol: null };
+            
+            if (!totals[currencyId]) {
+                totals[currencyId] = {
+                    amount: 0,
+                    currency: {
+                        id: currency.id,
+                        code: currency.code,
+                        name: currency.name,
+                        symbol: currency.symbol,
+                    },
+                };
+            }
+            totals[currencyId].amount += entry.amount;
+        });
+        
+        return totals;
+    }, [filteredEntries, baseCurrency]);
+
+    // Convert all currency totals to base currency
+    useEffect(() => {
+        if (!baseCurrency || Object.keys(totalsByCurrency).length === 0) {
+            setConvertedTotals({});
+            return;
+        }
+
+        let isCancelled = false;
+
+        const convertAll = async () => {
+            setIsConverting(true);
+            const converted: Record<string, number> = {};
+            
+            // Get the most recent date from entries for conversion
+            const mostRecentDate = filteredEntries.length > 0
+                ? new Date(Math.max(...filteredEntries.map(e => new Date(e.date).getTime())))
+                : new Date();
+            const conversionDate = mostRecentDate.toISOString().split('T')[0];
+            
+            for (const [currencyId, data] of Object.entries(totalsByCurrency)) {
+                if (isCancelled) break;
+                
+                // If currency is base currency or unknown, no conversion needed
+                if (currencyId === baseCurrency.id || currencyId === 'unknown') {
+                    converted[currencyId] = data.amount;
+                } else {
+                    try {
+                        // Only convert if currencies are different
+                        if (currencyId !== baseCurrency.id) {
+                            const result = await convertCurrency.mutateAsync({
+                                fromCurrencyId: currencyId,
+                                toCurrencyId: baseCurrency.id,
+                                amount: data.amount,
+                                date: conversionDate,
+                            });
+                            converted[currencyId] = result.converted_amount || data.amount;
+                        } else {
+                            converted[currencyId] = data.amount;
+                        }
+                    } catch (error) {
+                        // If conversion fails, use original amount
+                        if (import.meta.env.DEV) {
+                            console.warn(`Failed to convert ${currencyId} to base currency:`, error);
+                        }
+                        converted[currencyId] = data.amount;
+                    }
+                }
+            }
+            
+            if (!isCancelled) {
+                setConvertedTotals(converted);
+                setIsConverting(false);
+            }
+        };
+
+        convertAll();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [totalsByCurrency, baseCurrency?.id, filteredEntries.length]);
+
+    // Calculate total in base currency
+    const totalIncomeInBaseCurrency = useMemo(() => {
+        return Object.values(convertedTotals).reduce((sum, amount) => sum + amount, 0);
+    }, [convertedTotals]);
+
+    // Format currency amount with symbol
+    const formatCurrencyAmount = (amount: number, currency: { code: string; symbol: string | null } | null) => {
+        if (!currency) {
+            return formatCurrency(amount);
+        }
+        const symbol = currency.symbol || currency.code;
+        return `${symbol} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    // Auto-set currency when account is selected (only when creating new entry, not editing)
+    useEffect(() => {
+        if (editEntry) return; // Don't auto-set when editing
+        
+        const accountCurrencyId = selectedAccount?.currencyId;
+        
+        // Only set if we have a default currency and form is being created
+        setFormData(prev => {
+            // If currency is already set, don't change it
+            if (prev.currencyId) return prev;
+            
+            // Set to account currency if available, otherwise base currency
+            const newCurrencyId = accountCurrencyId || baseCurrency?.id || null;
+            if (newCurrencyId && newCurrencyId !== prev.currencyId) {
+                return { ...prev, currencyId: newCurrencyId };
+            }
+            return prev;
+        });
+    }, [selectedAccount?.currencyId, baseCurrency?.id, editEntry]); // Don't include formData.currencyId to avoid loop
 
     if (isLoading) {
         return (
@@ -182,13 +324,14 @@ export default function IncomeEntries() {
         );
     }
 
-    const activeAccounts = accounts?.filter(a => a.isActive) || [];
-    const activeCategories = categories?.filter(c => c.isActive) || [];
-    const activeProjects = projects?.filter(p => p.isActive) || [];
-    const activeDonors = donors?.filter(d => d.isActive) || [];
-
-    const EntryForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+    const renderEntryForm = (onSubmit: () => void, loading: boolean) => (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSubmit();
+            }}
+            className="space-y-4 max-h-[70vh] overflow-y-auto pr-2"
+        >
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="accountId">{t('finance.account') || 'Account'} *</Label>
@@ -253,21 +396,38 @@ export default function IncomeEntries() {
                 <div className="space-y-2">
                     <Label htmlFor="currencyId">{t('finance.currency') || 'Currency'}</Label>
                     <Select
-                        value={formData.currencyId || 'none'}
+                        value={formData.currencyId || defaultCurrencyId || 'none'}
                         onValueChange={(value) => setFormData({ ...formData, currencyId: value === 'none' ? null : value })}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
-                            {currencies?.map((currency) => (
+                            {selectedAccount?.currencyId && (
+                                <SelectItem value={selectedAccount.currencyId}>
+                                    {currencies?.find(c => c.id === selectedAccount.currencyId)?.code || 'N/A'} - {currencies?.find(c => c.id === selectedAccount.currencyId)?.name || 'Account Currency'}
+                                </SelectItem>
+                            )}
+                            {baseCurrency && (!selectedAccount?.currencyId || selectedAccount.currencyId !== baseCurrency.id) && (
+                                <SelectItem value={baseCurrency.id}>
+                                    {baseCurrency.code} - {baseCurrency.name} {t('finance.baseCurrency') || '(Base)'}
+                                </SelectItem>
+                            )}
+                            {currencies?.filter(c => 
+                                c.id !== selectedAccount?.currencyId && 
+                                c.id !== baseCurrency?.id
+                            ).map((currency) => (
                                 <SelectItem key={currency.id} value={currency.id}>
                                     {currency.code} - {currency.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
+                    {selectedAccount?.currencyId && !formData.currencyId && (
+                        <p className="text-xs text-muted-foreground">
+                            {t('finance.accountCurrencyHint') || 'Default: Account currency'}
+                        </p>
+                    )}
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -348,12 +508,11 @@ export default function IncomeEntries() {
                 />
             </div>
             <DialogFooter>
-                <Button onClick={onSubmit} disabled={loading || !formData.accountId || !formData.incomeCategoryId || formData.amount <= 0}>
-                    {loading ? <LoadingSpinner size="sm" /> : null}
+                <Button type="submit" disabled={loading || !formData.accountId || !formData.incomeCategoryId || formData.amount <= 0}>
                     {editEntry ? t('common.update') || 'Update' : t('common.create') || 'Create'}
                 </Button>
             </DialogFooter>
-        </div>
+        </form>
     );
 
     return (
@@ -382,7 +541,7 @@ export default function IncomeEntries() {
                                 {t('finance.addIncomeDescription') || 'Record a new income entry'}
                             </DialogDescription>
                         </DialogHeader>
-                        <EntryForm onSubmit={handleCreate} isLoading={createEntry.isPending} />
+                        {renderEntryForm(handleCreate, createEntry.isPending)}
                     </DialogContent>
                 </Dialog>
             </div>
@@ -474,23 +633,58 @@ export default function IncomeEntries() {
                 </CardContent>
             </Card>
 
-            {/* Summary Card */}
-            <Card>
-                <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                            <TrendingUp className="h-5 w-5 text-green-500" />
-                            {t('finance.totalIncome') || 'Total Income'}
-                        </CardTitle>
-                        <span className="text-2xl font-bold text-green-600">
-                            {formatCurrency(totalIncome)}
-                        </span>
-                    </div>
-                    <CardDescription>
-                        {filteredEntries.length} {t('finance.entriesFound') || 'entries found'}
-                    </CardDescription>
-                </CardHeader>
-            </Card>
+            {/* Currency Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {Object.entries(totalsByCurrency).map(([currencyId, data]) => (
+                    <Card key={currencyId}>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                <DollarSign className="h-4 w-4" />
+                                {data.currency.code}
+                            </CardTitle>
+                            <div className="mt-2">
+                                <div className="text-2xl font-bold text-green-600">
+                                    {formatCurrencyAmount(data.amount, data.currency)}
+                                </div>
+                                {baseCurrency && currencyId !== baseCurrency.id && convertedTotals[currencyId] && (
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                        ≈ {formatCurrencyAmount(convertedTotals[currencyId], baseCurrency)}
+                                    </div>
+                                )}
+                            </div>
+                        </CardHeader>
+                    </Card>
+                ))}
+            </div>
+
+            {/* Total in Base Currency */}
+            {baseCurrency && (
+                <Card>
+                    <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="flex items-center gap-2">
+                                <TrendingUp className="h-5 w-5 text-green-500" />
+                                {t('finance.totalIncome') || 'Total Income'} ({baseCurrency.code})
+                            </CardTitle>
+                            <span className="text-2xl font-bold text-green-600">
+                                {isConverting ? (
+                                    <LoadingSpinner size="sm" />
+                                ) : (
+                                    formatCurrencyAmount(totalIncomeInBaseCurrency, baseCurrency)
+                                )}
+                            </span>
+                        </div>
+                        <CardDescription>
+                            {filteredEntries.length} {t('finance.entriesFound') || 'entries found'}
+                            {Object.keys(totalsByCurrency).length > 1 && (
+                                <span className="ml-2">
+                                    ({Object.keys(totalsByCurrency).length} {t('finance.currencies') || 'currencies'})
+                                </span>
+                            )}
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            )}
 
             {/* Entries Table */}
             <Card>
@@ -503,6 +697,7 @@ export default function IncomeEntries() {
                                 <TableHead>{t('finance.account') || 'Account'}</TableHead>
                                 <TableHead>{t('finance.donor') || 'Donor'}</TableHead>
                                 <TableHead>{t('finance.project') || 'Project'}</TableHead>
+                                <TableHead>{t('finance.currency') || 'Currency'}</TableHead>
                                 <TableHead className="text-right">{t('finance.amount') || 'Amount'}</TableHead>
                                 <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
                             </TableRow>
@@ -512,15 +707,46 @@ export default function IncomeEntries() {
                                 <TableRow key={entry.id}>
                                     <TableCell>{formatDate(entry.date)}</TableCell>
                                     <TableCell>
-                                        <Badge variant="outline">
+                                        <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">
                                             {entry.incomeCategory?.name || '-'}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>{entry.account?.name || '-'}</TableCell>
-                                    <TableCell>{entry.donor?.name || '-'}</TableCell>
-                                    <TableCell>{entry.project?.name || '-'}</TableCell>
-                                    <TableCell className="text-right font-medium text-green-600">
-                                        +{formatCurrency(entry.amount)}
+                                    <TableCell>
+                                        {entry.account?.name ? (
+                                            <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400">
+                                                {entry.account.name}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-muted-foreground">-</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {entry.donor?.name ? (
+                                            <Badge variant="outline" className="bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400">
+                                                {entry.donor.name}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-muted-foreground">-</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {entry.project?.name ? (
+                                            <Badge variant="outline" className="bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400">
+                                                {entry.project.name}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-muted-foreground">-</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline" className="bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400">
+                                            {entry.currency?.code || baseCurrency?.code || 'N/A'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-semibold">
+                                            +{formatCurrencyAmount(entry.amount, entry.currency || baseCurrency)}
+                                        </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
@@ -544,7 +770,7 @@ export default function IncomeEntries() {
                             ))}
                             {filteredEntries.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                                         {t('finance.noIncome') || 'No income entries found'}
                                     </TableCell>
                                 </TableRow>
@@ -563,7 +789,7 @@ export default function IncomeEntries() {
                             {t('finance.editIncomeDescription') || 'Update income entry details'}
                         </DialogDescription>
                     </DialogHeader>
-                    <EntryForm onSubmit={handleUpdate} isLoading={updateEntry.isPending} />
+                    {renderEntryForm(handleUpdate, updateEntry.isPending)}
                 </DialogContent>
             </Dialog>
 

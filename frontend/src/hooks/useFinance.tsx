@@ -352,8 +352,9 @@ export const useFinanceProjects = (params?: { schoolId?: string; status?: string
             return (data as FinanceApi.FinanceProject[]).map(mapFinanceProjectApiToDomain);
         },
         enabled: !!user && !!profile?.organization_id,
-        staleTime: 5 * 60 * 1000,
-        refetchOnWindowFocus: false,
+        staleTime: 30 * 1000, // 30 seconds - shorter for more frequent updates
+        refetchOnWindowFocus: true, // Refetch when window regains focus
+        refetchInterval: 60 * 1000, // Auto-refetch every 60 seconds
     });
 };
 
@@ -367,9 +368,10 @@ export const useCreateFinanceProject = () => {
             const result = await financeProjectsApi.create(apiData);
             return mapFinanceProjectApiToDomain(result as FinanceApi.FinanceProject);
         },
-        onSuccess: () => {
+        onSuccess: async () => {
             showToast.success(t('toast.financeProjectCreated') || 'Project created successfully');
-            void queryClient.invalidateQueries({ queryKey: ['finance-projects'] });
+            await queryClient.invalidateQueries({ queryKey: ['finance-projects'] });
+            await queryClient.refetchQueries({ queryKey: ['finance-projects'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to create project');
@@ -387,9 +389,10 @@ export const useUpdateFinanceProject = () => {
             const result = await financeProjectsApi.update(id, apiData);
             return mapFinanceProjectApiToDomain(result as FinanceApi.FinanceProject);
         },
-        onSuccess: () => {
+        onSuccess: async () => {
             showToast.success(t('toast.financeProjectUpdated') || 'Project updated successfully');
-            void queryClient.invalidateQueries({ queryKey: ['finance-projects'] });
+            await queryClient.invalidateQueries({ queryKey: ['finance-projects'] });
+            await queryClient.refetchQueries({ queryKey: ['finance-projects'] });
         },
         onError: (error: Error) => {
             showToast.error(error.message || 'Failed to update project');

@@ -113,53 +113,6 @@ export default function ExpenseCategories() {
         );
     }
 
-    const CategoryForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
-        <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
-                    <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder={t('finance.categoryNamePlaceholder') || 'e.g., Salaries'}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="code">{t('common.code') || 'Code'}</Label>
-                    <Input
-                        id="code"
-                        value={formData.code || ''}
-                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                        placeholder={t('finance.categoryCodePlaceholder') || 'e.g., SAL'}
-                    />
-                </div>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="description">{t('common.description') || 'Description'}</Label>
-                <Textarea
-                    id="description"
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder={t('finance.categoryDescriptionPlaceholder') || 'Description of this category...'}
-                />
-            </div>
-            <div className="flex items-center space-x-2">
-                <Switch
-                    id="isActive"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                />
-                <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
-            </div>
-            <DialogFooter>
-                <Button onClick={onSubmit} disabled={loading || !formData.name}>
-                    {loading ? <LoadingSpinner className="mr-2 h-4 w-4" /> : null}
-                    {editCategory ? t('common.update') || 'Update' : t('common.create') || 'Create'}
-                </Button>
-            </DialogFooter>
-        </div>
-    );
 
     return (
         <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
@@ -187,7 +140,59 @@ export default function ExpenseCategories() {
                                 {t('finance.addExpenseCategoryDescription') || 'Create a new expense category'}
                             </DialogDescription>
                         </DialogHeader>
-                        <CategoryForm onSubmit={handleCreate} isLoading={createCategory.isPending} />
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                handleCreate();
+                            }}
+                            className="space-y-4"
+                        >
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
+                                    <Input
+                                        id="name"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        placeholder={t('finance.categoryNamePlaceholder') || 'e.g., Salaries'}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="code">{t('common.code') || 'Code'}</Label>
+                                    <Input
+                                        id="code"
+                                        value={formData.code || ''}
+                                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                                        placeholder={t('finance.categoryCodePlaceholder') || 'e.g., SAL'}
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="description">{t('common.description') || 'Description'}</Label>
+                                <Textarea
+                                    id="description"
+                                    value={formData.description || ''}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    placeholder={t('finance.categoryDescriptionPlaceholder') || 'Description of this category...'}
+                                    rows={4}
+                                    className="resize-y min-h-[100px]"
+                                />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="isActive"
+                                    checked={formData.isActive}
+                                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                                />
+                                <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
+                            </div>
+                            <DialogFooter>
+                                <Button type="submit" disabled={createCategory.isPending || !formData.name.trim()}>
+                                    {t('common.create') || 'Create'}
+                                </Button>
+                            </DialogFooter>
+                        </form>
                     </DialogContent>
                 </Dialog>
             </div>
@@ -266,7 +271,59 @@ export default function ExpenseCategories() {
                             {t('finance.editCategoryDescription') || 'Update category details'}
                         </DialogDescription>
                     </DialogHeader>
-                    <CategoryForm onSubmit={handleUpdate} isLoading={updateCategory.isPending} />
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleUpdate();
+                        }}
+                        className="space-y-4"
+                    >
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-name">{t('common.name') || 'Name'} *</Label>
+                                <Input
+                                    id="edit-name"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder={t('finance.categoryNamePlaceholder') || 'e.g., Salaries'}
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-code">{t('common.code') || 'Code'}</Label>
+                                <Input
+                                    id="edit-code"
+                                    value={formData.code || ''}
+                                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                                    placeholder={t('finance.categoryCodePlaceholder') || 'e.g., SAL'}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-description">{t('common.description') || 'Description'}</Label>
+                            <Textarea
+                                id="edit-description"
+                                value={formData.description || ''}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                placeholder={t('finance.categoryDescriptionPlaceholder') || 'Description of this category...'}
+                                rows={4}
+                                className="resize-y min-h-[100px]"
+                            />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Switch
+                                id="edit-isActive"
+                                checked={formData.isActive}
+                                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                            />
+                            <Label htmlFor="edit-isActive">{t('common.active') || 'Active'}</Label>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" disabled={updateCategory.isPending || !formData.name.trim()}>
+                                {t('common.update') || 'Update'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 

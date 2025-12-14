@@ -53,7 +53,7 @@ class IncomeEntryController extends Controller
 
             $query = IncomeEntry::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
-                ->with(['account', 'incomeCategory', 'project', 'donor', 'receivedBy']);
+                ->with(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency']);
 
             if (!empty($validated['school_id'])) {
                 $query->where('school_id', $validated['school_id']);
@@ -141,6 +141,7 @@ class IncomeEntryController extends Controller
             $validated = $request->validate([
                 'account_id' => 'required|uuid|exists:finance_accounts,id',
                 'income_category_id' => 'required|uuid|exists:income_categories,id',
+                'currency_id' => 'nullable|uuid|exists:currencies,id',
                 'amount' => 'required|numeric|min:0.01',
                 'date' => 'required|date',
                 'school_id' => 'nullable|uuid|exists:school_branding,id',
@@ -158,6 +159,40 @@ class IncomeEntryController extends Controller
 
             if (!$account) {
                 return response()->json(['error' => 'Invalid account - does not belong to your organization'], 400);
+            }
+
+            // ALWAYS set currency_id - default to account's currency or base currency if not provided
+            // This ensures historical transactions maintain their currency even if base currency changes
+            $currencyId = $validated['currency_id'] ?? null;
+            if (!$currencyId) {
+                // Try account's currency first
+                $currencyId = $account->currency_id;
+
+                // If account has no currency, use base currency
+                if (!$currencyId) {
+                    $baseCurrency = \App\Models\Currency::where('organization_id', $profile->organization_id)
+                        ->where('is_base', true)
+                        ->where('is_active', true)
+                        ->whereNull('deleted_at')
+                        ->first();
+                    if ($baseCurrency) {
+                        $currencyId = $baseCurrency->id;
+                    }
+                }
+            }
+
+            // CRITICAL: Always require currency_id - never allow NULL
+            if (!$currencyId) {
+                return response()->json(['error' => 'Currency is required. Please select a currency or ensure a base currency is configured.'], 400);
+            }
+
+            // Verify currency belongs to organization
+            $currency = \App\Models\Currency::whereNull('deleted_at')
+                ->where('organization_id', $profile->organization_id)
+                ->find($currencyId);
+
+            if (!$currency) {
+                return response()->json(['error' => 'Invalid currency - does not belong to your organization'], 400);
             }
 
             // Verify income category belongs to organization
@@ -195,6 +230,7 @@ class IncomeEntryController extends Controller
             $entry = IncomeEntry::create([
                 'organization_id' => $profile->organization_id,
                 'school_id' => $validated['school_id'] ?? null,
+                'currency_id' => $currencyId,
                 'account_id' => $validated['account_id'],
                 'income_category_id' => $validated['income_category_id'],
                 'project_id' => $validated['project_id'] ?? null,
@@ -208,7 +244,7 @@ class IncomeEntryController extends Controller
             ]);
 
             // Load relationships for response
-            $entry->load(['account', 'incomeCategory', 'project', 'donor', 'receivedBy']);
+            $entry->load(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency']);
 
             return response()->json($entry, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -245,7 +281,7 @@ class IncomeEntryController extends Controller
 
             $entry = IncomeEntry::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
-                ->with(['account', 'incomeCategory', 'project', 'donor', 'receivedBy'])
+                ->with(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency'])
                 ->find($id);
 
             if (!$entry) {
@@ -291,6 +327,7 @@ class IncomeEntryController extends Controller
             $validated = $request->validate([
                 'account_id' => 'sometimes|uuid|exists:finance_accounts,id',
                 'income_category_id' => 'sometimes|uuid|exists:income_categories,id',
+                'currency_id' => 'nullable|uuid|exists:currencies,id',
                 'amount' => 'sometimes|numeric|min:0.01',
                 'date' => 'sometimes|date',
                 'school_id' => 'nullable|uuid|exists:school_branding,id',
@@ -345,8 +382,68 @@ class IncomeEntryController extends Controller
                 }
             }
 
+            // Handle currency_id - ALWAYS ensure it's set (never allow NULL)
+            if (array_key_exists('currency_id', $validated)) {
+                $currencyId = $validated['currency_id'];
+
+                // If currency_id is explicitly set to null, try to get from account or base currency
+                if (!$currencyId) {
+                    $account = $entry->account;
+                    $currencyId = $account->currency_id;
+
+                    if (!$currencyId) {
+                        $baseCurrency = \App\Models\Currency::where('organization_id', $profile->organization_id)
+                            ->where('is_base', true)
+                            ->where('is_active', true)
+                            ->whereNull('deleted_at')
+                            ->first();
+                        if ($baseCurrency) {
+                            $currencyId = $baseCurrency->id;
+                        }
+                    }
+                }
+
+                // CRITICAL: Always require currency_id - never allow NULL
+                if (!$currencyId) {
+                    return response()->json(['error' => 'Currency is required. Please select a currency or ensure a base currency is configured.'], 400);
+                }
+
+                // Verify currency belongs to organization
+                $currency = \App\Models\Currency::whereNull('deleted_at')
+                    ->where('organization_id', $profile->organization_id)
+                    ->find($currencyId);
+
+                if (!$currency) {
+                    return response()->json(['error' => 'Invalid currency - does not belong to your organization'], 400);
+                }
+
+                $validated['currency_id'] = $currencyId;
+            } else {
+                // If currency_id is not in the update, ensure existing entry has one
+                // This handles cases where old entries might have NULL currency_id
+                if (!$entry->currency_id) {
+                    $account = $entry->account;
+                    $currencyId = $account->currency_id;
+
+                    if (!$currencyId) {
+                        $baseCurrency = \App\Models\Currency::where('organization_id', $profile->organization_id)
+                            ->where('is_base', true)
+                            ->where('is_active', true)
+                            ->whereNull('deleted_at')
+                            ->first();
+                        if ($baseCurrency) {
+                            $currencyId = $baseCurrency->id;
+                        }
+                    }
+
+                    if ($currencyId) {
+                        $validated['currency_id'] = $currencyId;
+                    }
+                }
+            }
+
             $entry->update($validated);
-            $entry->load(['account', 'incomeCategory', 'project', 'donor', 'receivedBy']);
+            $entry->load(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency']);
 
             return response()->json($entry);
         } catch (\Illuminate\Validation\ValidationException $e) {

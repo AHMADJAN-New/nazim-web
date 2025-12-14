@@ -126,8 +126,14 @@ export default function FinanceAccounts() {
         );
     }
 
-    const AccountForm = ({ onSubmit, isLoading: loading }: { onSubmit: () => void; isLoading: boolean }) => (
-        <div className="space-y-4">
+    const renderAccountForm = (onSubmit: () => void, loading: boolean) => (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSubmit();
+            }}
+            className="space-y-4"
+        >
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="name">{t('common.name') || 'Name'} *</Label>
@@ -214,12 +220,11 @@ export default function FinanceAccounts() {
                 <Label htmlFor="isActive">{t('common.active') || 'Active'}</Label>
             </div>
             <DialogFooter>
-                <Button onClick={onSubmit} disabled={loading || !formData.name}>
-                    {loading ? <LoadingSpinner className="mr-2 h-4 w-4" /> : null}
+                <Button type="submit" disabled={loading || !formData.name.trim()}>
                     {editAccount ? t('common.update') || 'Update' : t('common.create') || 'Create'}
                 </Button>
             </DialogFooter>
-        </div>
+        </form>
     );
 
     return (
@@ -248,7 +253,7 @@ export default function FinanceAccounts() {
                                 {t('finance.addAccountDescription') || 'Create a new cash location or fund'}
                             </DialogDescription>
                         </DialogHeader>
-                        <AccountForm onSubmit={handleCreate} isLoading={createAccount.isPending} />
+                        {renderAccountForm(handleCreate, createAccount.isPending)}
                     </DialogContent>
                 </Dialog>
             </div>
@@ -281,18 +286,53 @@ export default function FinanceAccounts() {
                             {accounts?.map((account) => (
                                 <TableRow key={account.id}>
                                     <TableCell className="font-medium">{account.name}</TableCell>
-                                    <TableCell>{account.code || '-'}</TableCell>
                                     <TableCell>
-                                        <Badge variant="outline">
+                                        {account.code ? (
+                                            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">
+                                                {account.code}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-muted-foreground">-</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge 
+                                            variant="outline"
+                                            className={
+                                                account.type === 'cash' 
+                                                    ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400'
+                                                    : 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400'
+                                            }
+                                        >
                                             {account.type === 'cash' ? t('finance.cash') || 'Cash' : t('finance.fund') || 'Fund'}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="text-right">{formatCurrency(account.openingBalance)}</TableCell>
-                                    <TableCell className="text-right font-medium">
-                                        {formatCurrency(account.currentBalance)}
+                                    <TableCell className="text-right">
+                                        <Badge variant="outline" className="bg-slate-50 dark:bg-slate-950/30 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400 font-medium">
+                                            {formatCurrency(account.openingBalance)}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Badge 
+                                            variant="outline" 
+                                            className={`font-semibold ${
+                                                account.currentBalance >= 0
+                                                    ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
+                                                    : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
+                                            }`}
+                                        >
+                                            {formatCurrency(account.currentBalance)}
+                                        </Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={account.isActive ? 'default' : 'secondary'}>
+                                        <Badge 
+                                            variant={account.isActive ? 'default' : 'secondary'}
+                                            className={
+                                                account.isActive
+                                                    ? 'bg-green-500 hover:bg-green-600 text-white border-0'
+                                                    : 'bg-gray-500 hover:bg-gray-600 text-white border-0'
+                                            }
+                                        >
                                             {account.isActive ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
                                         </Badge>
                                     </TableCell>
@@ -337,7 +377,7 @@ export default function FinanceAccounts() {
                             {t('finance.editAccountDescription') || 'Update account details'}
                         </DialogDescription>
                     </DialogHeader>
-                    <AccountForm onSubmit={handleUpdate} isLoading={updateAccount.isPending} />
+                    {renderAccountForm(handleUpdate, updateAccount.isPending)}
                 </DialogContent>
             </Dialog>
 
