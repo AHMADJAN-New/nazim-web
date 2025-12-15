@@ -460,12 +460,12 @@ export function QuestionBank() {
           control={form.control}
           name="classAcademicYearId"
           render={({ field }) => (
-            <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || null)}>
+            <Select value={field.value || '__none__'} onValueChange={(val) => field.onChange(val === '__none__' ? null : val)}>
               <SelectTrigger>
                 <SelectValue placeholder={t('questionBank.selectClass') || 'Select class (optional)'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t('common.all') || 'All Classes'}</SelectItem>
+                <SelectItem value="__none__">{t('common.all') || 'All Classes'}</SelectItem>
                 {(classAcademicYears || []).map(cay => (
                   <SelectItem key={cay.id} value={cay.id}>
                     {cay.className}
@@ -1004,7 +1004,7 @@ export function QuestionBank() {
                   <div className="space-y-2">
                     {selectedQuestion.options.map((opt, idx) => (
                       <div 
-                        key={idx}
+                        key={`${opt.key}-${idx}`}
                         className={cn(
                           "flex items-center gap-2 p-2 rounded",
                           opt.isCorrect && "bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800"

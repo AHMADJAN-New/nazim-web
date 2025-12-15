@@ -112,6 +112,10 @@ export interface TranslationKeys {
     examInsights: string;
     examAnalytics: string;
     examAttendance: string;
+    examManagement: string;
+    examRollNumbers: string;
+    examSecretNumbers: string;
+    questionsAndPapers: string;
     questionBank: string;
     examPaperTemplates: string;
     finance: string;

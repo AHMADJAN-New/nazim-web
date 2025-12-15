@@ -1380,6 +1380,10 @@ export const en: TranslationKeys = {
     examInsights: 'Exam Insights',
     examAnalytics: 'Exam Analytics',
     examAttendance: 'Exam Attendance',
+    examManagement: 'Exam Management',
+    examRollNumbers: 'Roll Numbers',
+    examSecretNumbers: 'Secret Numbers',
+    questionsAndPapers: 'Questions & Papers',
     questionBank: 'Question Bank',
     examPaperTemplates: 'Paper Templates',
     finance: 'Finance',
@@ -3160,7 +3164,6 @@ export const en: TranslationKeys = {
     quickEnrollDescription: 'Enroll a single student quickly'
   },
 
-<<<<<<< HEAD
   grades: {
     management: 'Grade Management',
     title: 'Grades',

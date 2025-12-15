@@ -446,18 +446,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/exams",
             icon: Trophy,
           }] : []),
-          ...(hasExamsManagePermission ? [{
-            title: "Exam Enrollment",
-            titleKey: "examEnrollment",
-            url: "/exams/enrollment",
-            icon: UserPlus,
-          }] : []),
-          ...(hasExamsEnrollPermission ? [{
-            title: "Student Enrollment",
-            titleKey: "examStudentEnrollment",
-            url: "/exams/student-enrollment",
-            icon: Users,
-          }] : []),
           ...(hasExamsMarksPermission ? [{
             title: "Exam Marks",
             titleKey: "examMarks",
@@ -470,29 +458,57 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/exams/attendance",
             icon: UserCheck,
           }] : []),
-          ...((hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission) ? [{
-            title: "Roll Numbers",
-            titleKey: "examRollNumbers",
-            url: "/exams/roll-numbers",
-            icon: Hash,
+          // Exam Management Submenu (Enrollment, Student Enrollment, Roll Numbers, Secret Numbers)
+          ...((hasExamsManagePermission || hasExamsEnrollPermission || hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission || hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission) ? [{
+            title: "Exam Management",
+            titleKey: "examManagement",
+            icon: LucideIcons.Settings,
+            children: [
+              ...(hasExamsManagePermission ? [{
+                title: "Exam Enrollment",
+                titleKey: "examEnrollment",
+                url: "/exams/enrollment",
+                icon: UserPlus,
+              }] : []),
+              ...(hasExamsEnrollPermission ? [{
+                title: "Student Enrollment",
+                titleKey: "examStudentEnrollment",
+                url: "/exams/student-enrollment",
+                icon: Users,
+              }] : []),
+              ...((hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission) ? [{
+                title: "Roll Numbers",
+                titleKey: "examRollNumbers",
+                url: "/exams/roll-numbers",
+                icon: Hash,
+              }] : []),
+              ...((hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission) ? [{
+                title: "Secret Numbers",
+                titleKey: "examSecretNumbers",
+                url: "/exams/secret-numbers",
+                icon: KeyRound,
+              }] : []),
+            ],
           }] : []),
-          ...((hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission) ? [{
-            title: "Secret Numbers",
-            titleKey: "examSecretNumbers",
-            url: "/exams/secret-numbers",
-            icon: KeyRound,
-          }] : []),
-          ...(hasExamsQuestionsPermission ? [{
-            title: "Question Bank",
-            titleKey: "questionBank",
-            url: "/exams/question-bank",
-            icon: LucideIcons.HelpCircle,
-          }] : []),
-          ...(hasExamsPapersPermission ? [{
-            title: "Paper Templates",
-            titleKey: "examPaperTemplates",
-            url: "/exams/paper-templates",
-            icon: LucideIcons.FileText,
+          // Questions & Papers Submenu
+          ...((hasExamsQuestionsPermission || hasExamsPapersPermission) ? [{
+            title: "Questions & Papers",
+            titleKey: "questionsAndPapers",
+            icon: LucideIcons.BookOpen,
+            children: [
+              ...(hasExamsQuestionsPermission ? [{
+                title: "Question Bank",
+                titleKey: "questionBank",
+                url: "/exams/question-bank",
+                icon: LucideIcons.HelpCircle,
+              }] : []),
+              ...(hasExamsPapersPermission ? [{
+                title: "Paper Templates",
+                titleKey: "examPaperTemplates",
+                url: "/exams/paper-templates",
+                icon: LucideIcons.FileText,
+              }] : []),
+            ],
           }] : []),
           // Reports Submenu - at the end
           ...((hasExamsReportsPermission || hasExamsViewGradeCardsPermission || hasExamsViewConsolidatedReportsPermission || hasExamsViewClassReportsPermission || hasExamsViewStudentReportsPermission || hasExamsNumbersPrintPermission) ? [{
@@ -651,13 +667,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
             icon: LucideIcons.BarChart3,
           }] : []),
           // Settings submenu - only show if user has at least one settings permission
-          ...((hasCurrenciesPermission || hasIncomeCategoriesPermission || 
-               hasExpenseCategoriesPermission || hasExchangeRatesPermission) ? [{
-            title: "Settings",
-            titleKey: "finance.settings",
-            url: "/finance/settings",
-            icon: LucideIcons.Settings,
-          }] : []),
+          ...((hasCurrenciesPermission || hasIncomeCategoriesPermission ||
+            hasExpenseCategoriesPermission || hasExchangeRatesPermission) ? [{
+              title: "Settings",
+              titleKey: "finance.settings",
+              url: "/finance/settings",
+              icon: LucideIcons.Settings,
+            }] : []),
         ],
       }] : []),
       ...(hasDmsPermission ? [{
@@ -952,6 +968,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission ||
           hasExamsNumbersPrintPermission ||
           hasExamsQuestionsPermission || hasExamsPapersPermission;
+        // Note: examManagement submenu visibility is already handled by its permission checks above
       }
 
       if (item.titleKey === 'hostel') {
@@ -1150,7 +1167,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                             <CollapsibleTrigger asChild>
                               <SidebarMenuButton className={getNavCls({ isActive: isChildActive(child.children) })}>
                                 <child.icon className="h-4 w-4" />
-                                <span className="flex-1">{child.title}</span>
+                                <span className="flex-1">{child.titleKey ? t(`nav.${child.titleKey}`) : child.title}</span>
                                 {isChildExpanded ? (
                                   <ChevronDown className="h-4 w-4" />
                                 ) : (
@@ -1169,7 +1186,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                                         end={(grandchild.url || '#') === '/'}
                                       >
                                         <grandchild.icon className="h-4 w-4" />
-                                        <span>{grandchild.title}</span>
+                                        <span>{grandchild.titleKey ? t(`nav.${grandchild.titleKey}`) : grandchild.title}</span>
                                       </NavLink>
                                     </SidebarMenuButton>
                                   </SidebarMenuItem>
@@ -1190,7 +1207,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                             end={(child.url || '#') === '/'}
                           >
                             <child.icon className="h-4 w-4" />
-                            <span>{child.title}</span>
+                            <span>{child.titleKey ? t(`nav.${child.titleKey}`) : child.title}</span>
                             {child.contextual && navigationContext.currentModule.includes('attendance') && (
                               <Star className="h-3 w-3 text-warning ml-auto" />
                             )}
