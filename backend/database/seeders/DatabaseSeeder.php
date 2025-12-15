@@ -53,6 +53,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 2b3: Seeding DMS document settings...');
         $this->call(DocumentSettingsSeeder::class);
 
+        // Step 2b4: Seed DMS letter types for all organizations
+        $this->command->info('Step 2b4: Seeding DMS letter types...');
+        $this->call(LetterTypeSeeder::class);
+
         // Step 2c: Seed library categories for all organizations
         $this->command->info('Step 2c: Seeding library categories...');
         $this->call(LibraryCategorySeeder::class);
@@ -172,6 +176,14 @@ class DatabaseSeeder extends Seeder
         // Step 22: Seed finance projects for all organizations
         $this->command->info('Step 22: Seeding finance projects...');
         $this->call(FinanceProjectSeeder::class);
+
+        // Step 23: Seed incoming documents for all organizations
+        $this->command->info('Step 23: Seeding incoming documents...');
+        $this->call(IncomingDocumentSeeder::class);
+
+        // Step 24: Seed outgoing documents for all organizations
+        $this->command->info('Step 24: Seeding outgoing documents...');
+        $this->call(OutgoingDocumentSeeder::class);
 
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');

@@ -10,6 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 import { showToast } from "@/lib/toast";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -18,7 +27,7 @@ import { useAcademicYears, useCurrentAcademicYear } from "@/hooks/useAcademicYea
 import { DocumentNumberBadge } from "@/components/dms/DocumentNumberBadge";
 import { SecurityBadge } from "@/components/dms/SecurityBadge";
 import { ImageFileUploader } from "@/components/dms/ImageFileUploader";
-import { FileText, Upload, Search, Plus, X, Eye, File, Download, Image as ImageIcon, Maximize2, X as XIcon } from "lucide-react";
+import { FileText, Upload, Search, Plus, X, Eye, File, Download, Image as ImageIcon, Maximize2, X as XIcon, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RichTextEditor } from "@/components/dms/RichTextEditor";
@@ -32,15 +41,15 @@ const statusOptions = [
 ];
 
 // Attachment Card Component
-function AttachmentCard({ 
-  file, 
-  onPreview, 
-  onDownload, 
-  canPreview, 
-  isImageFile, 
+function AttachmentCard({
+  file,
+  onPreview,
+  onDownload,
+  canPreview,
+  isImageFile,
   isPdfFile,
-  previewLoading 
-}: { 
+  previewLoading
+}: {
   file: any;
   onPreview: (file: any) => void;
   onDownload: (id: string, name: string) => void;
@@ -110,7 +119,7 @@ function AttachmentCard({
           {file.original_name}
         </p>
         <p className="text-xs text-muted-foreground mb-3">
-          {(file.size_bytes / 1024).toFixed(2)} KB • v{file.version}
+          {file.size_bytes ? `${(file.size_bytes / 1024).toFixed(2)} KB • ` : ''}v{file.version}
         </p>
         <div className="flex items-center gap-2">
           {canPreview(file.mime_type) && (
@@ -163,7 +172,7 @@ function DocumentViewContent({ doc }: { doc: IncomingDocument }) {
   const { data: files = [] } = useQuery<Array<{
     id: string;
     original_name: string;
-    size_bytes: number;
+    size_bytes?: number | null;
     version: number;
     mime_type?: string;
   }>>({
@@ -321,7 +330,7 @@ function DocumentViewContent({ doc }: { doc: IncomingDocument }) {
           <Separator />
           <div>
             <Label className="text-muted-foreground mb-2 block">Description / Content</Label>
-            <div 
+            <div
               className="prose prose-sm max-w-none p-4 border rounded-lg bg-muted/50"
               dangerouslySetInnerHTML={{ __html: doc.description }}
             />
@@ -436,20 +445,24 @@ export default function IncomingDocuments() {
   const { t } = useLanguage();
   const { profile } = useAuth();
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState({ 
-    subject: "", 
-    sender_org: "", 
-    status: "", 
+  const [filters, setFilters] = useState({
+    subject: "",
+    sender_org: "",
+    status: "",
     security_level_key: "",
     academic_year_id: "",
   });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [uploadDocId, setUploadDocId] = useState<string | null>(null);
   const [viewDoc, setViewDoc] = useState<IncomingDocument | null>(null);
+  const [editDoc, setEditDoc] = useState<IncomingDocument | null>(null);
+  const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
 
   // Get academic years
   const { data: academicYears } = useAcademicYears(profile?.organization_id);
@@ -474,9 +487,9 @@ export default function IncomingDocuments() {
   const { data, isLoading } = useQuery<PaginatedResponse<IncomingDocument> | IncomingDocument[]>({
     queryKey: ["dms", "incoming", apiFilters, page, pageSize],
     queryFn: async (): Promise<PaginatedResponse<IncomingDocument> | IncomingDocument[]> => {
-      const response = await dmsApi.incoming.list({ 
-        ...apiFilters, 
-        page, 
+      const response = await dmsApi.incoming.list({
+        ...apiFilters,
+        page,
         per_page: pageSize,
         paginate: true,
       });
@@ -509,9 +522,9 @@ export default function IncomingDocuments() {
         setIsUploadDialogOpen(true);
       }
       // Reset form and close dialog
-      setNewDoc({ 
-        subject: "", 
-        sender_org: "", 
+      setNewDoc({
+        subject: "",
+        sender_org: "",
         sender_name: "",
         sender_address: "",
         received_date: "",
@@ -533,9 +546,51 @@ export default function IncomingDocuments() {
     onError: (err: any) => showToast.error(err.message || t('toast.documentCreateFailed') || 'Failed to save document'),
   });
 
-  const [newDoc, setNewDoc] = useState({ 
-    subject: "", 
-    sender_org: "", 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) => dmsApi.incoming.update(id, payload),
+    onSuccess: () => {
+      showToast.success(t('toast.documentUpdated') || 'Incoming document updated successfully');
+      queryClient.invalidateQueries({ queryKey: ["dms", "incoming"] });
+      setIsEditDialogOpen(false);
+      setEditDoc(null);
+      setNewDoc({
+        subject: "",
+        sender_org: "",
+        sender_name: "",
+        sender_address: "",
+        received_date: "",
+        description: "",
+        pages_count: "",
+        attachments_count: "0",
+        is_manual_number: false,
+        manual_indoc_number: "",
+        external_doc_number: "",
+        external_doc_date: "",
+        security_level_key: "",
+        routing_department_id: "",
+        status: "pending",
+        notes: "",
+        academic_year_id: currentAcademicYear?.id || "",
+      });
+    },
+    onError: (err: any) => showToast.error(err.message || t('toast.documentUpdateFailed') || 'Failed to update document'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => dmsApi.incoming.delete(id),
+    onSuccess: async () => {
+      showToast.success(t('toast.documentDeleted') || 'Incoming document deleted successfully');
+      await queryClient.invalidateQueries({ queryKey: ["dms", "incoming"] });
+      await queryClient.refetchQueries({ queryKey: ["dms", "incoming"] });
+      setIsDeleteDialogOpen(false);
+      setDeleteDocId(null);
+    },
+    onError: (err: any) => showToast.error(err.message || t('toast.documentDeleteFailed') || 'Failed to delete document'),
+  });
+
+  const [newDoc, setNewDoc] = useState({
+    subject: "",
+    sender_org: "",
     sender_name: "",
     sender_address: "",
     received_date: "",
@@ -558,9 +613,9 @@ export default function IncomingDocuments() {
     setIsDialogOpen(open);
     if (!open) {
       // Reset form when dialog closes
-      setNewDoc({ 
-        subject: "", 
-        sender_org: "", 
+      setNewDoc({
+        subject: "",
+        sender_org: "",
         sender_name: "",
         sender_address: "",
         received_date: "",
@@ -595,6 +650,67 @@ export default function IncomingDocuments() {
   const openViewDialog = (doc: IncomingDocument) => {
     setViewDoc(doc);
     setIsViewDialogOpen(true);
+  };
+
+  const openEditDialog = (doc: IncomingDocument) => {
+    setEditDoc(doc);
+    setNewDoc({
+      subject: doc.subject || "",
+      sender_org: doc.sender_org || "",
+      sender_name: doc.sender_name || "",
+      sender_address: doc.sender_address || "",
+      received_date: doc.received_date || "",
+      description: doc.description || "",
+      pages_count: doc.pages_count?.toString() || "",
+      attachments_count: doc.attachments_count?.toString() || "0",
+      is_manual_number: !!doc.manual_indoc_number,
+      manual_indoc_number: doc.manual_indoc_number || "",
+      external_doc_number: doc.external_doc_number || "",
+      external_doc_date: doc.external_doc_date || "",
+      security_level_key: doc.security_level_key || "",
+      routing_department_id: doc.routing_department_id || "",
+      status: doc.status || "pending",
+      notes: doc.notes || "",
+      academic_year_id: doc.academic_year_id || currentAcademicYear?.id || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (docId: string) => {
+    setDeleteDocId(docId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleEditDialogClose = (open: boolean) => {
+    setIsEditDialogOpen(open);
+    if (!open) {
+      setEditDoc(null);
+      setNewDoc({
+        subject: "",
+        sender_org: "",
+        sender_name: "",
+        sender_address: "",
+        received_date: "",
+        description: "",
+        pages_count: "",
+        attachments_count: "0",
+        is_manual_number: false,
+        manual_indoc_number: "",
+        external_doc_number: "",
+        external_doc_date: "",
+        security_level_key: "",
+        routing_department_id: "",
+        status: "pending",
+        notes: "",
+        academic_year_id: currentAcademicYear?.id || "",
+      });
+    }
+  };
+
+  const handleDelete = () => {
+    if (deleteDocId) {
+      deleteMutation.mutate(deleteDocId);
+    }
   };
 
   // Generate page numbers for pagination
@@ -1045,24 +1161,37 @@ export default function IncomingDocuments() {
                       </TableCell>
                       <TableCell className="text-right">{formatDate(doc.received_date)}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => openViewDialog(doc)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openUploadDialog(doc.id)}
-                          >
-                            <Upload className="h-4 w-4 mr-1" />
-                            Files
-                          </Button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openViewDialog(doc)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              {t('common.view') || 'View'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditDialog(doc)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              {t('common.edit') || 'Edit'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openUploadDialog(doc.id)}>
+                              <Upload className="h-4 w-4 mr-2" />
+                              {t('dms.uploadFiles') || 'Upload Files'}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => openDeleteDialog(doc.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              {t('common.delete') || 'Delete'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}

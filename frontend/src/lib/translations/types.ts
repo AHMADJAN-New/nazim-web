@@ -150,6 +150,7 @@ export interface TranslationKeys {
     "dms.issueLetter": string;
     "dms.templates": string;
     "dms.letterheads": string;
+    "dms.letterTypes": string;
     "dms.departments": string;
     "dms.archive": string;
     "dms.reports": string;
@@ -2835,6 +2836,24 @@ export interface TranslationKeys {
     pdfGenerated: string;
     pdfGenerateFailed: string;
     documentDeleteFailed: string;
+    // DMS Templates
+    templateCreated: string;
+    templateUpdated: string;
+    templateDeleted: string;
+    templateDuplicated: string;
+    templateCreateFailed: string;
+    templateUpdateFailed: string;
+    templateDeleteFailed: string;
+    // DMS Letterheads
+    letterheadCreated: string;
+    letterheadUpdated: string;
+    letterheadDeleted: string;
+    letterheadCreateFailed: string;
+    letterheadUpdateFailed: string;
+    letterheadDeleteFailed: string;
+    // DMS Letters
+    letterIssued: string;
+    letterIssueFailed: string;
     educationalHistoryAdded: string;
     educationalHistoryUpdated: string;
     educationalHistoryDeleted: string;

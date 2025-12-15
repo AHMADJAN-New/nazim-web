@@ -70,6 +70,7 @@ use App\Http\Controllers\Dms\DocumentSettingsController;
 use App\Http\Controllers\Dms\IncomingDocumentsController;
 use App\Http\Controllers\Dms\LetterheadsController;
 use App\Http\Controllers\Dms\LetterTemplatesController;
+use App\Http\Controllers\Dms\LetterTypesController;
 use App\Http\Controllers\Dms\OutgoingDocumentsController;
 
 /*
@@ -232,31 +233,31 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     // Exams
     Route::apiResource('exams', ExamController::class);
     Route::post('/exams/{exam}/status', [ExamController::class, 'updateStatus']);
-    
+
     // Exam Classes
     Route::apiResource('exam-classes', ExamClassController::class)->only(['index', 'store', 'destroy']);
-    
+
     // Exam Subjects
     Route::apiResource('exam-subjects', ExamSubjectController::class)->only(['index', 'store', 'update', 'destroy']);
-    
+
     // Exam Timetable
     Route::get('/exams/{exam}/times', [ExamTimeController::class, 'index']);
     Route::post('/exams/{exam}/times', [ExamTimeController::class, 'store']);
     Route::put('/exam-times/{examTime}', [ExamTimeController::class, 'update']);
     Route::delete('/exam-times/{examTime}', [ExamTimeController::class, 'destroy']);
     Route::post('/exam-times/{examTime}/toggle-lock', [ExamTimeController::class, 'toggleLock']);
-    
+
     // Exam Students
     Route::apiResource('exam-students', ExamStudentController::class)->only(['index', 'store', 'destroy']);
     Route::post('/exam-students/bulk-enroll', [ExamStudentController::class, 'bulkEnroll']);
     Route::post('/exams/{exam}/enroll-all', [ExamStudentController::class, 'enrollAll']);
     Route::get('/exams/{exam}/enrollment-stats', [ExamStudentController::class, 'stats']);
-    
+
     // Exam Results
     Route::apiResource('exam-results', ExamResultController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('/exam-results/bulk-store', [ExamResultController::class, 'bulkStore']);
     Route::get('/exams/{exam}/marks-progress', [ExamResultController::class, 'progress']);
-    
+
     // Exam Reports
     Route::get('/exams/{exam}/report', [ExamReportController::class, 'show']);
     Route::get('/exams/{exam}/reports/summary', [ExamReportController::class, 'summary']);
@@ -264,7 +265,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/exams/{exam}/reports/students/{student}', [ExamReportController::class, 'studentReport']);
     Route::get('/exams/{exam}/reports/classes/{class}/consolidated', [ExamReportController::class, 'consolidatedClassReport']);
     Route::get('/exams/{exam}/reports/classes/{class}/subjects/{subject}', [ExamReportController::class, 'classSubjectMarkSheet']);
-    
+
     // Exam Numbers (Roll Numbers & Secret Numbers)
     Route::get('/exams/{exam}/students-with-numbers', [ExamNumberController::class, 'studentsWithNumbers']);
     Route::get('/exams/{exam}/roll-numbers/start-from', [ExamNumberController::class, 'rollNumberStartFrom']);
@@ -279,7 +280,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/exams/{exam}/reports/roll-numbers', [ExamNumberController::class, 'rollNumberReport']);
     Route::get('/exams/{exam}/reports/roll-slips', [ExamNumberController::class, 'rollSlipsHtml']);
     Route::get('/exams/{exam}/reports/secret-labels', [ExamNumberController::class, 'secretLabelsHtml']);
-    
+
     // Exam Attendance
     Route::get('/exams/{exam}/attendance', [ExamAttendanceController::class, 'index']);
     Route::get('/exams/{exam}/attendance/summary', [ExamAttendanceController::class, 'summary']);
@@ -402,7 +403,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     // ============================================
     // Finance Module
     // ============================================
-    
+
     // Finance Accounts (cash locations)
     Route::apiResource('finance-accounts', \App\Http\Controllers\FinanceAccountController::class);
 
@@ -436,7 +437,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Currency Management
     Route::apiResource('currencies', \App\Http\Controllers\CurrencyController::class);
-    
+
     // Exchange Rate Management
     Route::apiResource('exchange-rates', \App\Http\Controllers\ExchangeRateController::class);
     Route::post('/exchange-rates/convert', [\App\Http\Controllers\ExchangeRateController::class, 'convert']);
@@ -461,16 +462,28 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/dms/outgoing', [OutgoingDocumentsController::class, 'store']);
     Route::get('/dms/outgoing/{id}', [OutgoingDocumentsController::class, 'show']);
     Route::put('/dms/outgoing/{id}', [OutgoingDocumentsController::class, 'update']);
-    Route::post('/dms/outgoing/{id}/generate-pdf', [OutgoingDocumentsController::class, 'generatePdf']);
 
     Route::get('/dms/templates', [LetterTemplatesController::class, 'index']);
     Route::post('/dms/templates', [LetterTemplatesController::class, 'store']);
+    Route::get('/dms/templates/{id}', [LetterTemplatesController::class, 'show']);
     Route::put('/dms/templates/{id}', [LetterTemplatesController::class, 'update']);
+    Route::delete('/dms/templates/{id}', [LetterTemplatesController::class, 'destroy']);
+    Route::post('/dms/templates/{id}/duplicate', [LetterTemplatesController::class, 'duplicate']);
+    Route::post('/dms/templates/{id}/preview', [LetterTemplatesController::class, 'preview']);
 
     Route::get('/dms/letterheads', [LetterheadsController::class, 'index']);
     Route::post('/dms/letterheads', [LetterheadsController::class, 'store']);
+    Route::get('/dms/letterheads/{id}', [LetterheadsController::class, 'show']);
     Route::put('/dms/letterheads/{id}', [LetterheadsController::class, 'update']);
+    Route::delete('/dms/letterheads/{id}', [LetterheadsController::class, 'destroy']);
     Route::get('/dms/letterheads/{id}/download', [LetterheadsController::class, 'download']);
+    Route::get('/dms/letterheads/{id}/preview', [LetterheadsController::class, 'preview']);
+
+    Route::get('/dms/letter-types', [LetterTypesController::class, 'index']);
+    Route::post('/dms/letter-types', [LetterTypesController::class, 'store']);
+    Route::get('/dms/letter-types/{id}', [LetterTypesController::class, 'show']);
+    Route::put('/dms/letter-types/{id}', [LetterTypesController::class, 'update']);
+    Route::delete('/dms/letter-types/{id}', [LetterTypesController::class, 'destroy']);
 
     Route::get('/dms/files', [DocumentFilesController::class, 'index']);
     Route::post('/dms/files', [DocumentFilesController::class, 'store']);

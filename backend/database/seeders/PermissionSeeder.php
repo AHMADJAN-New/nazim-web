@@ -109,9 +109,10 @@ class PermissionSeeder extends Seeder
             'exchange_rates' => ['read', 'create', 'update', 'delete'],
             // Document Management System (DMS) permissions
             'dms.incoming' => ['read', 'create', 'update', 'delete'],
-            'dms.outgoing' => ['read', 'create', 'update', 'delete'],
+            'dms.outgoing' => ['read', 'create', 'update', 'delete', 'generate_pdf'],
             'dms.templates' => ['read', 'create', 'update', 'delete'],
             'dms.letterheads' => ['read', 'create', 'update', 'delete', 'manage'],
+            'dms.letter_types' => ['read', 'create', 'update', 'delete'],
             'dms.departments' => ['read', 'create', 'update', 'delete'],
             'dms.files' => ['read', 'create', 'update', 'delete', 'download'],
             'dms.reports' => ['read'],
@@ -153,9 +154,10 @@ class PermissionSeeder extends Seeder
                 'asset_categories.read', 'asset_categories.create', 'asset_categories.update', 'asset_categories.delete', // Asset category management
                 // DMS permissions for staff - can manage documents, create letters
                 'dms.incoming.read', 'dms.incoming.create', 'dms.incoming.update',
-                'dms.outgoing.read', 'dms.outgoing.create', 'dms.outgoing.update',
+                'dms.outgoing.read', 'dms.outgoing.create', 'dms.outgoing.update', 'dms.outgoing.generate_pdf',
                 'dms.templates.read', 'dms.templates.create', 'dms.templates.update',
                 'dms.letterheads.read',
+                'dms.letter_types.read', 'dms.letter_types.create', 'dms.letter_types.update',
                 'dms.departments.read',
                 'dms.files.read', 'dms.files.create', 'dms.files.download',
                 'dms.reports.read',
@@ -198,9 +200,10 @@ class PermissionSeeder extends Seeder
                 'asset_categories.read', 'asset_categories.create', 'asset_categories.update', 'asset_categories.delete', // Asset category management
                 // DMS permissions for teachers - can read documents, create letters for students
                 'dms.incoming.read',
-                'dms.outgoing.read', 'dms.outgoing.create',
+                'dms.outgoing.read', 'dms.outgoing.create', 'dms.outgoing.generate_pdf',
                 'dms.templates.read',
                 'dms.letterheads.read',
+                'dms.letter_types.read',
                 'dms.departments.read',
                 'dms.files.read', 'dms.files.download',
                 'dms.reports.read',
@@ -245,9 +248,10 @@ class PermissionSeeder extends Seeder
                 'profiles.read',
                 // DMS permissions for librarians - can manage all documents
                 'dms.incoming.read', 'dms.incoming.create', 'dms.incoming.update',
-                'dms.outgoing.read', 'dms.outgoing.create', 'dms.outgoing.update',
+                'dms.outgoing.read', 'dms.outgoing.create', 'dms.outgoing.update', 'dms.outgoing.generate_pdf',
                 'dms.templates.read', 'dms.templates.create', 'dms.templates.update',
                 'dms.letterheads.read',
+                'dms.letter_types.read', 'dms.letter_types.create', 'dms.letter_types.update',
                 'dms.departments.read',
                 'dms.files.read', 'dms.files.create', 'dms.files.update', 'dms.files.download',
                 'dms.reports.read',

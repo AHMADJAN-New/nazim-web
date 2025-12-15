@@ -49,7 +49,8 @@ import {
   BarChart3,
   Hash,
   KeyRound,
-  Printer
+  Printer,
+  Tag
 } from "lucide-react";
 
 import {
@@ -243,11 +244,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasDmsOutgoingPermission = useHasPermission('dms.outgoing.read');
   const hasDmsTemplatesPermission = useHasPermission('dms.templates.read');
   const hasDmsLetterheadsPermission = useHasPermission('dms.letterheads.read');
+  const hasDmsLetterTypesPermission = useHasPermission('dms.letter_types.read');
   const hasDmsDepartmentsPermission = useHasPermission('dms.departments.read');
   const hasDmsReportsPermission = useHasPermission('dms.reports.read');
   const hasDmsSettingsPermission = useHasPermission('dms.settings.read');
   const hasDmsArchivePermission = useHasPermission('dms.archive.read');
-  const hasDmsPermission = hasDmsIncomingPermission || hasDmsOutgoingPermission || hasDmsTemplatesPermission || hasDmsLetterheadsPermission || hasDmsDepartmentsPermission || hasDmsReportsPermission || hasDmsSettingsPermission || hasDmsArchivePermission;
+  const hasDmsPermission = hasDmsIncomingPermission || hasDmsOutgoingPermission || hasDmsTemplatesPermission || hasDmsLetterheadsPermission || hasDmsLetterTypesPermission || hasDmsDepartmentsPermission || hasDmsReportsPermission || hasDmsSettingsPermission || hasDmsArchivePermission;
 
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -685,6 +687,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "dms.letterheads",
             url: "/dms/letterheads",
             icon: Trophy,
+          }] : []),
+          ...(hasDmsLetterTypesPermission ? [{
+            title: "Letter Types",
+            titleKey: "dms.letterTypes",
+            url: "/dms/letter-types",
+            icon: Tag,
           }] : []),
           ...(hasDmsDepartmentsPermission ? [{
             title: "Departments",

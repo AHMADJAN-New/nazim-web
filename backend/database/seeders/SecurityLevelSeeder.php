@@ -13,7 +13,16 @@ class SecurityLevelSeeder extends Seeder
      */
     public function run(): void
     {
-        $organizations = DB::table('organizations')->get();
+        $this->command->info('Seeding security levels...');
+
+        $organizations = DB::table('organizations')
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($organizations->isEmpty()) {
+            $this->command->warn('No organizations found. Please run DatabaseSeeder first.');
+            return;
+        }
 
         $securityLevels = [
             [
@@ -48,10 +57,26 @@ class SecurityLevelSeeder extends Seeder
             ],
         ];
 
+        $totalCreated = 0;
+
         foreach ($organizations as $org) {
+            $this->command->info("Creating security levels for {$org->name}...");
+            $created = 0;
+
             foreach ($securityLevels as $level) {
+                // Check if security level already exists
+                $exists = DB::table('security_levels')
+                    ->where('organization_id', $org->id)
+                    ->where('key', $level['key'])
+                    ->exists();
+
+                if ($exists) {
+                    $this->command->info("  ⚠ Security level '{$level['key']}' already exists for {$org->name}. Skipping.");
+                    continue;
+                }
+
                 DB::table('security_levels')->insert([
-                    'id' => Str::uuid(),
+                    'id' => (string) Str::uuid(),
                     'organization_id' => $org->id,
                     'key' => $level['key'],
                     'label' => $level['label'],
@@ -60,9 +85,15 @@ class SecurityLevelSeeder extends Seeder
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+                $created++;
+                $this->command->info("  ✓ Created security level: {$level['label']} ({$level['key']})");
             }
+
+            $totalCreated += $created;
+            $this->command->info("  → Created {$created} security level(s) for {$org->name}");
         }
 
-        $this->command->info('Security levels seeded successfully for all organizations.');
+        $this->command->info("✅ Security levels seeded successfully. Total created: {$totalCreated}");
     }
 }

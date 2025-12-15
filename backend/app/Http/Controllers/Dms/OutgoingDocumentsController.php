@@ -5,20 +5,17 @@ namespace App\Http\Controllers\Dms;
 use App\Models\OutgoingDocument;
 use App\Models\DocumentFile;
 use App\Models\DocumentSetting;
-use App\Services\DocumentPdfService;
 use App\Services\DocumentNumberingService;
-use App\Services\DocumentRenderingService;
 use App\Services\SecurityGateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class OutgoingDocumentsController extends BaseDmsController
 {
     public function __construct(
         private DocumentNumberingService $numberingService,
-        private SecurityGateService $securityGateService,
-        private DocumentRenderingService $renderingService,
-        private DocumentPdfService $pdfService
+        private SecurityGateService $securityGateService
     ) {
     }
 
@@ -118,7 +115,7 @@ class OutgoingDocumentsController extends BaseDmsController
         ];
 
         // Only validate academic_year_id if column exists
-        if (\Schema::hasColumn('outgoing_documents', 'academic_year_id')) {
+        if (Schema::hasColumn('outgoing_documents', 'academic_year_id')) {
             $validationRules['academic_year_id'] = ['nullable', 'uuid', 'exists:academic_years,id'];
         }
 
@@ -133,15 +130,15 @@ class OutgoingDocumentsController extends BaseDmsController
                 ['organization_id' => $profile->organization_id, 'school_id' => $data['school_id'] ?? null],
                 []
             );
-            
+
             // Get academic year if provided and column exists
             $academicYear = null;
-            if (!empty($data['academic_year_id']) && \Schema::hasColumn('outgoing_documents', 'academic_year_id')) {
+            if (!empty($data['academic_year_id']) && Schema::hasColumn('outgoing_documents', 'academic_year_id')) {
                 $academicYear = \App\Models\AcademicYear::where('id', $data['academic_year_id'])
                     ->where('organization_id', $profile->organization_id)
                     ->first();
             }
-            
+
             $yearKey = $this->numberingService->getYearKey(
                 $settings->year_mode ?? 'gregorian',
                 $academicYear
@@ -159,10 +156,10 @@ class OutgoingDocumentsController extends BaseDmsController
         } else {
             $data['full_outdoc_number'] = $data['manual_outdoc_number'];
         }
-        
+
         // Set academic_year_id if not provided, use current academic year
         // Only set if column exists (migration may not have run yet)
-        if (empty($data['academic_year_id']) && \Schema::hasColumn('outgoing_documents', 'academic_year_id')) {
+        if (empty($data['academic_year_id']) && Schema::hasColumn('outgoing_documents', 'academic_year_id')) {
             $currentAcademicYear = \App\Models\AcademicYear::where('organization_id', $profile->organization_id)
                 ->where('is_current', true)
                 ->whereNull('deleted_at')
@@ -170,7 +167,7 @@ class OutgoingDocumentsController extends BaseDmsController
             if ($currentAcademicYear) {
                 $data['academic_year_id'] = $currentAcademicYear->id;
             }
-        } elseif (!\Schema::hasColumn('outgoing_documents', 'academic_year_id')) {
+        } elseif (!Schema::hasColumn('outgoing_documents', 'academic_year_id')) {
             // Remove academic_year_id from data if column doesn't exist
             unset($data['academic_year_id']);
         }
@@ -258,53 +255,5 @@ class OutgoingDocumentsController extends BaseDmsController
         return $doc;
     }
 
-    public function generatePdf(string $id, Request $request)
-    {
-        $context = $this->requireOrganizationContext($request, 'dms.outgoing.update');
-        if ($context instanceof \Illuminate\Http\JsonResponse) {
-            return $context;
-        }
-        [$user, $profile, $schoolIds] = $context;
-
-        $doc = OutgoingDocument::where('id', $id)
-            ->where('organization_id', $profile->organization_id)
-            ->firstOrFail();
-
-        $this->authorize('update', $doc);
-
-        if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
-            return $response;
-        }
-
-        $html = $this->renderingService->render($doc->body_html ?? '', [
-            'page_layout' => $doc->page_layout ?? 'A4_portrait',
-            'table_payload' => $doc->table_payload ?? null,
-        ]);
-
-        $pdfPath = $this->pdfService->generate($html, $doc->page_layout ?? 'A4_portrait');
-
-        $latestVersion = DocumentFile::where('owner_type', 'outgoing')
-            ->where('owner_id', $doc->id)
-            ->max('version') ?? 0;
-
-        $file = DocumentFile::create([
-            'organization_id' => $profile->organization_id,
-            'school_id' => $doc->school_id,
-            'owner_type' => 'outgoing',
-            'owner_id' => $doc->id,
-            'file_type' => 'generated_pdf',
-            'original_name' => $doc->subject ? $doc->subject . '.pdf' : 'document.pdf',
-            'mime_type' => 'application/pdf',
-            'size_bytes' => null,
-            'storage_path' => $pdfPath,
-            'version' => $latestVersion + 1,
-            'uploaded_by_user_id' => $user->id,
-        ]);
-
-        $doc->pdf_path = $pdfPath;
-        $doc->save();
-
-        return response()->json(['file' => $file, 'pdf_path' => $pdfPath]);
-    }
 
 }

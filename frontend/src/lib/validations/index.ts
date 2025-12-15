@@ -4,6 +4,7 @@
 
 // Common utilities
 export * from './common';
+export * from './dms';
 
 // Student validation
 export * from './student';

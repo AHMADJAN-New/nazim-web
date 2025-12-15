@@ -21,6 +21,8 @@ class OutgoingDocument extends Model
         'organization_id',
         'school_id',
         'academic_year_id',
+        'template_id',
+        'letterhead_id',
         'security_level_key',
         'outdoc_prefix',
         'outdoc_number',
@@ -43,6 +45,7 @@ class OutgoingDocument extends Model
         'status',
         'announcement_scope',
         'table_payload',
+        'template_variables',
     ];
 
     protected $casts = [
@@ -50,6 +53,7 @@ class OutgoingDocument extends Model
         'issue_date' => 'date',
         'announcement_scope' => 'array',
         'table_payload' => 'array',
+        'template_variables' => 'array',
     ];
 
     protected static function boot()
@@ -66,5 +70,21 @@ class OutgoingDocument extends Model
     public function academicYear()
     {
         return $this->belongsTo(AcademicYear::class, 'academic_year_id');
+    }
+
+    /**
+     * Get the template associated with this document.
+     */
+    public function template()
+    {
+        return $this->belongsTo(LetterTemplate::class, 'template_id');
+    }
+
+    /**
+     * Get the letterhead associated with this document.
+     */
+    public function letterhead()
+    {
+        return $this->belongsTo(Letterhead::class, 'letterhead_id');
     }
 }

@@ -95,6 +95,7 @@ export const OutgoingDocuments = lazy(() => import('@/pages/dms/OutgoingDocument
 export const IssueLetter = lazy(() => import('@/pages/dms/IssueLetter'));
 export const TemplatesPage = lazy(() => import('@/pages/dms/TemplatesPage'));
 export const LetterheadsPage = lazy(() => import('@/pages/dms/LetterheadsPage'));
+export const LetterTypesPage = lazy(() => import('@/pages/dms/LetterTypesPage'));
 export const DepartmentsPage = lazy(() => import('@/pages/dms/DepartmentsPage'));
 export const ArchiveSearchPage = lazy(() => import('@/pages/dms/ArchiveSearch'));
 export const DmsReportsPage = lazy(() => import('@/pages/dms/DmsReports'));

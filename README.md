@@ -18,7 +18,7 @@
 
 ---
 
-## ?? Table of Contents
+## 📋 Table of Contents
 
 - [About](#about)
 - [Features](#features)
@@ -38,115 +38,123 @@
 
 ---
 
-## < About
+## 📖 About
 
-**Nazim** (F8E) is a modern, full-featured school management system specifically designed for Islamic schools, madrasas, and religious educational institutions. Built with scalability and multi-tenancy in mind, Nazim helps educational institutions manage students, staff, academic programs, timetables, and comprehensive reportingall in one unified platform.
+**Nazim** is a modern, full-featured school management system specifically designed for Islamic schools, madrasas, and religious educational institutions. Built with scalability and multi-tenancy in mind, Nazim helps educational institutions manage students, staff, academic programs, timetables, and comprehensive reporting—all in one unified platform.
 
 ### Why Nazim?
 
-- **<? Multi-Tenant Architecture**: Supports multiple organizations with complete data isolation
-- **= Security First**: Organization-scoped permissions, role-based access control
-- **<
- Internationalization**: Built-in support for Arabic, English, and Pashto
-- **=? Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
-- **? High Performance**: Optimized queries, caching, and lazy loading
-- **<? Modern UI**: Beautiful, intuitive interface built with shadcn/ui
+- **🏢 Multi-Tenant Architecture**: Supports multiple organizations with complete data isolation
+- **🔒 Security First**: Organization-scoped permissions, role-based access control
+- **🌍 Internationalization**: Built-in support for Arabic, English, Pashto, and Farsi
+- **📱 Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
+- **⚡ High Performance**: Optimized queries, caching, and lazy loading
+- **🎨 Modern UI**: Beautiful, intuitive interface built with shadcn/ui
 
 ---
 
-## ( Features
+## ✨ Features
 
-### =h
-<? Student Management
--  Complete student profiles with photos and documents
--  Admission management with multiple statuses
--  Educational history tracking
--  Discipline records management
--  Guardian and emergency contact information
--  Orphan status and financial aid tracking
--  Advanced search and filtering
--  Bulk import/export capabilities
+### 👥 Student Management
 
-### =h
-<? Staff Management
--  Comprehensive staff profiles
--  Multiple staff types (teachers, admin, accountant, librarian)
--  Religious and modern education background tracking
--  Document management
--  Assignment to schools and subjects
--  Timetable preferences
+- Complete student profiles with photos and documents
+- Admission management with multiple statuses
+- Educational history tracking
+- Discipline records management
+- Guardian and emergency contact information
+- Orphan status and financial aid tracking
+- Advanced search and filtering
+- Bulk import/export capabilities
 
-### =? Academic Management
--  Academic year management with current year tracking
--  Class management with grade levels
--  Subject management and curriculum planning
--  Class sections with capacity management
--  Teacher-subject assignments
--  Room and building management
--  Residency type management (day scholar, boarder)
+### 👨‍🏫 Staff Management
 
-### =? Timetable & Scheduling
--  Flexible timetable generation
--  Schedule slot management
--  Teacher availability preferences
--  Conflict detection and resolution
--  Multiple timetable types
+- Comprehensive staff profiles
+- Multiple staff types (teachers, admin, accountant, librarian)
+- Religious and modern education background tracking
+- Document management
+- Assignment to schools and subjects
+- Timetable preferences
 
-### <? Organization Management
--  Multi-organization support
--  School branding and customization
--  Organization-specific settings
--  User assignment to organizations
--  Super admin with cross-organization access
+### 📚 Academic Management
 
-### =? Reports & Analytics
--  Student statistics and demographics
--  Staff distribution reports
--  Admission trends
--  Custom report templates
--  Print-ready formats with Arabic support
+- Academic year management with current year tracking
+- Class management with grade levels
+- Subject management and curriculum planning
+- Class sections with capacity management
+- Teacher-subject assignments
+- Room and building management
+- Residency type management (day scholar, boarder)
 
-### = Security & Permissions
--  Role-based access control (RBAC)
--  Organization-scoped permissions
--  JWT token-based authentication
--  Audit logging
--  Data encryption
+### 📅 Timetable & Scheduling
 
-### <? User Experience
--  Dark mode support
--  RTL (Right-to-Left) language support
--  Keyboard shortcuts
--  Context menus
--  Real-time notifications
--  Responsive data tables with sorting and filtering
+- Flexible timetable generation
+- Schedule slot management
+- Teacher availability preferences
+- Conflict detection and resolution
+- Multiple timetable types
+
+### 🏛️ Organization Management
+
+- Multi-organization support
+- School branding and customization
+- Organization-specific settings
+- User assignment to organizations
+- Super admin with cross-organization access
+
+### 📊 Reports & Analytics
+
+- Student statistics and demographics
+- Staff distribution reports
+- Admission trends
+- Custom report templates
+- Print-ready formats with Arabic support
+
+### 🔐 Security & Permissions
+
+- Role-based access control (RBAC) with Spatie Laravel Permission
+- Organization-scoped permissions
+- JWT token-based authentication (Laravel Sanctum)
+- Audit logging
+- Data encryption
+
+### 🎯 User Experience
+
+- Dark mode support
+- RTL (Right-to-Left) language support
+- Keyboard shortcuts
+- Context menus
+- Real-time notifications
+- Responsive data tables with sorting and filtering
 
 ---
 
-## =? Tech Stack
+## 🛠️ Tech Stack
 
 ### Backend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Laravel** | 12.x | PHP framework for robust API development |
-| **PostgreSQL** | 15+ | Primary database with UUID support |
-| **Sanctum** | 4.x | API authentication with Bearer tokens |
-| **Spatie Permissions** | 6.x | Organization-scoped role/permission system |
-| **PHP** | 8.2+ | Server-side scripting language |
+
+| Technology             | Version | Purpose                                    |
+| ---------------------- | ------- | ------------------------------------------ |
+| **Laravel**            | 12.x    | PHP framework for robust API development   |
+| **PostgreSQL**         | 15+     | Primary database with UUID support         |
+| **Sanctum**            | 4.x     | API authentication with Bearer tokens      |
+| **Spatie Permissions** | 6.x     | Organization-scoped role/permission system |
+| **PHP**                | 8.2+    | Server-side scripting language             |
 
 ### Frontend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **React** | 18.x | UI library for building interactive interfaces |
-| **TypeScript** | 5.x | Type-safe JavaScript |
-| **Vite** | 5.x | Fast build tool and dev server |
-| **TanStack Query** | 5.x | Data fetching and state management |
-| **React Router** | 6.x | Client-side routing |
-| **shadcn/ui** | Latest | Beautiful UI components (Radix + Tailwind) |
-| **Tailwind CSS** | 3.x | Utility-first CSS framework |
-| **Zod** | 3.x | Schema validation |
+
+| Technology         | Version | Purpose                                        |
+| ------------------ | ------- | ---------------------------------------------- |
+| **React**          | 18.x    | UI library for building interactive interfaces |
+| **TypeScript**     | 5.x     | Type-safe JavaScript                           |
+| **Vite**           | 5.x     | Fast build tool and dev server                 |
+| **TanStack Query** | 5.x     | Data fetching and state management             |
+| **React Router**   | 6.x     | Client-side routing                            |
+| **shadcn/ui**      | Latest  | Beautiful UI components (Radix + Tailwind)     |
+| **Tailwind CSS**   | 3.x     | Utility-first CSS framework                    |
+| **Zod**            | 3.x     | Schema validation                              |
 
 ### DevOps & Tools
+
 - **Git** - Version control
 - **Composer** - PHP dependency manager
 - **npm** - JavaScript package manager
@@ -154,11 +162,12 @@
 
 ---
 
-## ?? Prerequisites
+## 📋 Prerequisites
 
 Before you begin, ensure you have the following installed:
 
 ### Required
+
 - **PHP** >= 8.2 with extensions:
   - BCMath
   - Ctype
@@ -179,24 +188,25 @@ Before you begin, ensure you have the following installed:
 - **PostgreSQL** >= 15
 
 ### Optional but Recommended
+
 - **Git** >= 2.x
 - **Docker** & **Docker Compose** (for containerized setup)
 - **Redis** (for caching and queues)
 
 ---
 
-## =? Installation
+## 🚀 Installation
 
 ### Method 1: Manual Installation (Recommended for Development)
 
-#### 1? Clone the Repository
+#### 1️⃣ Clone the Repository
 
 ```bash
 git clone https://github.com/yourusername/nazim-web.git
 cd nazim-web
 ```
 
-#### 2? Backend Setup (Laravel)
+#### 2️⃣ Backend Setup (Laravel)
 
 ```bash
 # Navigate to backend directory
@@ -237,7 +247,7 @@ php artisan serve
 # Backend will run on http://localhost:8000
 ```
 
-#### 3? Frontend Setup (React + Vite)
+#### 3️⃣ Frontend Setup (React + Vite)
 
 ```bash
 # Open a new terminal and navigate to frontend directory
@@ -256,7 +266,7 @@ npm run dev
 # Frontend will run on http://localhost:5173
 ```
 
-#### 4? Access the Application
+#### 4️⃣ Access the Application
 
 Open your browser and navigate to:
 - **Frontend**: http://localhost:5173
@@ -282,7 +292,7 @@ docker-compose exec backend php artisan migrate --seed
 
 ---
 
-## ? Configuration
+## ⚙️ Configuration
 
 ### Backend Configuration (Laravel)
 
@@ -362,7 +372,7 @@ Ensure `backend/config/cors.php` includes your frontend URL:
 
 ---
 
-## <? Running the Application
+## 🏃 Running the Application
 
 ### Development Mode
 
@@ -402,57 +412,57 @@ npm run build
 
 ---
 
-## =? Project Structure
+## 📁 Project Structure
 
 ```
 nazim-web/
-   backend/                    # Laravel Backend
-      app/
-         Http/
-            Controllers/   # API Controllers
-            Middleware/    # Custom Middleware
-            Requests/      # Form Requests
-         Models/            # Eloquent Models
-         Services/          # Business Logic
-      config/                # Configuration Files
-      database/
-         migrations/        # Database Migrations
-         seeders/           # Database Seeders
-      routes/
-         api.php           # API Routes
-         web.php           # Web Routes
-      storage/              # File Storage
-
-   frontend/                  # React Frontend
-      public/               # Static Assets
-      src/
-         components/       # React Components
-            layout/      # Layout Components
-            students/    # Student Components
-            staff/       # Staff Components
-            settings/    # Settings Components
-            ui/          # UI Components (shadcn)
-         hooks/           # Custom React Hooks
-         lib/             # Utility Functions
-            api/        # API Client
-            utils.ts    # Helper Functions
-         mappers/         # API ? Domain Mappers
-         pages/           # Page Components
-         types/           # TypeScript Types
-            api/        # API Types (snake_case)
-            domain/     # Domain Types (camelCase)
-         App.tsx         # Main App Component
-         main.tsx        # Entry Point
-      vite.config.ts       # Vite Configuration
-      package.json         # Dependencies
-
-   .claude.md               # AI Development Guide
-   README.md               # This File
+├── backend/                    # Laravel Backend
+│   ├── app/
+│   │   ├── Http/
+│   │   │   ├── Controllers/   # API Controllers
+│   │   │   ├── Middleware/    # Custom Middleware
+│   │   │   └── Requests/      # Form Requests
+│   │   ├── Models/            # Eloquent Models
+│   │   └── Services/          # Business Logic
+│   ├── config/                # Configuration Files
+│   ├── database/
+│   │   ├── migrations/        # Database Migrations
+│   │   └── seeders/           # Database Seeders
+│   ├── routes/
+│   │   ├── api.php           # API Routes
+│   │   └── web.php           # Web Routes
+│   └── storage/              # File Storage
+│
+├── frontend/                  # React Frontend
+│   ├── public/               # Static Assets
+│   ├── src/
+│   │   ├── components/       # React Components
+│   │   │   ├── layout/      # Layout Components
+│   │   │   ├── students/    # Student Components
+│   │   │   ├── staff/       # Staff Components
+│   │   │   ├── settings/    # Settings Components
+│   │   │   └── ui/          # UI Components (shadcn)
+│   │   ├── hooks/           # Custom React Hooks
+│   │   ├── lib/             # Utility Functions
+│   │   │   ├── api/        # API Client
+│   │   │   └── utils.ts    # Helper Functions
+│   │   ├── mappers/         # API ↔ Domain Mappers
+│   │   ├── pages/           # Page Components
+│   │   ├── types/           # TypeScript Types
+│   │   │   ├── api/        # API Types (snake_case)
+│   │   │   └── domain/     # Domain Types (camelCase)
+│   │   ├── App.tsx         # Main App Component
+│   │   └── main.tsx        # Entry Point
+│   ├── vite.config.ts       # Vite Configuration
+│   └── package.json         # Dependencies
+│
+├── .claude.md               # AI Development Guide
+└── README.md               # This File
 ```
 
 ---
 
-## = Key Concepts
+## 🔑 Key Concepts
 
 ### Multi-Tenancy & Organization Scoping
 
@@ -466,13 +476,13 @@ Nazim uses **organization-based multi-tenancy** where:
 
 **Example:**
 ```typescript
-//  User can do this:
+// ✅ User can do this:
 updateStudent({
   id: 'student-123',
   schoolId: 'new-school-456',  // Allowed
 });
 
-// L User cannot do this:
+// ❌ User cannot do this:
 updateStudent({
   id: 'student-123',
   organizationId: 'different-org', // Forbidden!
@@ -501,7 +511,7 @@ Each permission is scoped to an organization for data isolation.
 
 ---
 
-## =? Usage Guide
+## 📖 Usage Guide
 
 ### First Time Setup
 
@@ -516,7 +526,7 @@ php artisan tinker
 
 # Create organization
 $org = \App\Models\Organization::create([
-    'name' => '???? ?????', // Your school name
+    'name' => 'مدرسة الناظم', // Your school name
     'slug' => 'nazim-school',
     'settings' => [],
 ]);
@@ -552,7 +562,7 @@ exit
 
 #### 3. Configure Your School
 
-1. Go to **Settings** ? **Schools Management**
+1. Go to **Settings** → **Schools Management**
 2. Click **Add School**
 3. Fill in school details:
    - School name (Arabic, English, Pashto)
@@ -562,7 +572,7 @@ exit
 
 #### 4. Set Up Academic Year
 
-1. Go to **Settings** ? **Academic Years**
+1. Go to **Settings** → **Academic Years**
 2. Click **Add Academic Year**
 3. Enter year details:
    - Name (e.g., "2024-2025")
@@ -572,14 +582,14 @@ exit
 
 #### 5. Create Classes
 
-1. Go to **Settings** ? **Classes Management**
+1. Go to **Settings** → **Classes Management**
 2. Click **Add Class**
 3. Create classes (e.g., Grade 1, Grade 2, etc.)
 4. Assign classes to the current academic year
 
 #### 6. Add Staff
 
-1. Go to **Staff** ? **Staff List**
+1. Go to **Staff** → **Staff List**
 2. Click **Add Staff Member**
 3. Fill in staff details:
    - Personal information
@@ -602,7 +612,6 @@ exit
 
 #### Adding a New Student
 
-```
 1. Navigate to Students page
 2. Click "Add Student" button
 3. Fill in required fields:
@@ -618,11 +627,9 @@ exit
 5. Upload student photo
 6. Click "Save"
 7. Navigate to Admissions to enroll in class
-```
 
 #### Creating a Timetable
 
-```
 1. Ensure you have:
    - Academic year set up
    - Classes created and assigned to year
@@ -635,11 +642,9 @@ exit
 5. Assign schedule slots
 6. Click "Generate Timetable"
 7. Review and save
-```
 
 #### Generating Reports
 
-```
 1. Go to Reports section
 2. Select report type:
    - Student list
@@ -653,12 +658,10 @@ exit
 4. Select format (PDF, Excel)
 5. Click "Generate Report"
 6. Download or print
-```
 
 ---
 
-## =h
-=? Development
+## 💻 Development
 
 ### Code Style
 
@@ -691,8 +694,8 @@ GET    /api/students/stats        # Get statistics
 Request (snake_case):
 ```json
 {
-  "full_name": "E-E/ #-E/",
-  "father_name": "#-E/ 9DJ",
+  "full_name": "محمد أحمد",
+  "father_name": "أحمد علي",
   "admission_no": "2024001",
   "organization_id": "uuid-here"
 }
@@ -702,8 +705,8 @@ Response (snake_case):
 ```json
 {
   "id": "uuid",
-  "full_name": "E-E/ #-E/",
-  "father_name": "#-E/ 9DJ",
+  "full_name": "محمد أحمد",
+  "father_name": "أحمد علي",
   "admission_no": "2024001",
   "organization_id": "uuid-here",
   "created_at": "2024-01-01T00:00:00.000000Z",
@@ -761,7 +764,7 @@ php artisan make:migration create_students_table
 **Migration template:**
 ```php
 Schema::create('students', function (Blueprint $table) {
-    $table->uuid('id')->primary();
+    $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
     $table->uuid('organization_id')->index();
     $table->string('full_name');
     $table->timestamps();
@@ -776,7 +779,7 @@ Schema::create('students', function (Blueprint $table) {
 
 ---
 
-## =? API Documentation
+## 📡 API Documentation
 
 ### Authentication
 
@@ -819,7 +822,7 @@ Authorization: Bearer {token}
 
 **List Students:**
 ```http
-GET /api/students?organization_id={uuid}&search=????
+GET /api/students?organization_id={uuid}&search=محمد
 Authorization: Bearer {token}
 ```
 
@@ -830,8 +833,8 @@ Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "full_name": "???? ????",
-  "father_name": "???? ???",
+  "full_name": "محمد أحمد",
+  "father_name": "أحمد علي",
   "admission_no": "2024001",
   "gender": "male",
   "school_id": "uuid"
@@ -853,7 +856,7 @@ For complete API documentation, visit `/api/documentation` (coming soon with Swa
 
 ---
 
-## = Troubleshooting
+## 🔧 Troubleshooting
 
 ### Backend Issues
 
@@ -1019,7 +1022,7 @@ npm run build  # Production build with optimizations
 
 ---
 
-## > Contributing
+## 🤝 Contributing
 
 We welcome contributions! Please follow these steps:
 
@@ -1047,13 +1050,13 @@ chore: update dependencies
 
 ---
 
-## =? License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## ?? Acknowledgments
+## 🙏 Acknowledgments
 
 - [Laravel](https://laravel.com) - PHP Framework
 - [React](https://reactjs.org) - UI Library
@@ -1063,7 +1066,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## =? Support
+## 💬 Support
 
 ### Documentation
 - [Installation Guide](#installation)
@@ -1083,7 +1086,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Made with d for Islamic Educational Institutions**
+**Made with ❤️ for Islamic Educational Institutions**
 
 [![GitHub stars](https://img.shields.io/github/stars/yourusername/nazim-web?style=social)](https://github.com/yourusername/nazim-web)
 [![GitHub forks](https://img.shields.io/github/forks/yourusername/nazim-web?style=social)](https://github.com/yourusername/nazim-web)

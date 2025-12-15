@@ -3004,6 +3004,7 @@ export const dmsApi = {
     get: async (id: string) => apiClient.get(`/dms/incoming/${id}`),
     create: async (data: any) => apiClient.post('/dms/incoming', data),
     update: async (id: string, data: any) => apiClient.put(`/dms/incoming/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/dms/incoming/${id}`),
   },
 
   outgoing: {
@@ -3011,20 +3012,35 @@ export const dmsApi = {
     get: async (id: string) => apiClient.get(`/dms/outgoing/${id}`),
     create: async (data: any) => apiClient.post('/dms/outgoing', data),
     update: async (id: string, data: any) => apiClient.put(`/dms/outgoing/${id}`, data),
-    generatePdf: async (id: string) => apiClient.post(`/dms/outgoing/${id}/generate-pdf`),
+    delete: async (id: string) => apiClient.delete(`/dms/outgoing/${id}`),
   },
 
   templates: {
     list: async (params?: Record<string, any>) => apiClient.get('/dms/templates', params),
+    get: async (id: string) => apiClient.get(`/dms/templates/${id}`),
     create: async (data: any) => apiClient.post('/dms/templates', data),
     update: async (id: string, data: any) => apiClient.put(`/dms/templates/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/dms/templates/${id}`),
+    duplicate: async (id: string, data?: { name?: string }) => apiClient.post(`/dms/templates/${id}/duplicate`, data || {}),
+    preview: async (id: string, variables?: Record<string, string>) => apiClient.post(`/dms/templates/${id}/preview`, { variables: variables || {} }),
   },
 
   letterheads: {
-    list: async () => apiClient.get('/dms/letterheads'),
+    list: async (params?: Record<string, any>) => apiClient.get('/dms/letterheads', params),
+    get: async (id: string) => apiClient.get(`/dms/letterheads/${id}`),
     create: async (data: FormData) => apiClient.post('/dms/letterheads', data),
     update: async (id: string, data: FormData) => apiClient.put(`/dms/letterheads/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/dms/letterheads/${id}`),
     download: async (id: string) => apiClient.requestFile(`/dms/letterheads/${id}/download`, { method: 'GET' }),
+    preview: async (id: string) => apiClient.get(`/dms/letterheads/${id}/preview`),
+  },
+
+  letterTypes: {
+    list: async (params?: Record<string, any>) => apiClient.get('/dms/letter-types', params),
+    get: async (id: string) => apiClient.get(`/dms/letter-types/${id}`),
+    create: async (data: any) => apiClient.post('/dms/letter-types', data),
+    update: async (id: string, data: any) => apiClient.put(`/dms/letter-types/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/dms/letter-types/${id}`),
   },
 
   settings: {

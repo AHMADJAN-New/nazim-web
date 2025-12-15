@@ -68,4 +68,15 @@ abstract class BaseDmsController extends Controller
 
         return null;
     }
+
+    /**
+     * Get accessible school IDs for the user.
+     * Returns empty array if user has access to all schools in the organization.
+     */
+    protected function getAccessibleSchoolIds($profile): array
+    {
+        // For now, return empty array to allow access to all schools
+        // This can be enhanced later with school-specific permissions
+        return [];
+    }
 }

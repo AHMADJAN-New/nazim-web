@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class LetterTemplate extends Model
+class LetterType extends Model
 {
     use HasFactory;
 
-    protected $table = 'letter_templates';
+    protected $table = 'letter_types';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -20,37 +20,15 @@ class LetterTemplate extends Model
         'id',
         'organization_id',
         'school_id',
+        'key',
         'name',
-        'category',
-        'letterhead_id',
-        'letter_type',
-        'body_html',
-        'template_file_path',
-        'template_file_type',
-        'variables',
-        'header_structure',
-        'allow_edit_body',
-        'default_security_level_key',
-        'page_layout',
-        'is_mass_template',
+        'description',
         'active',
     ];
 
     protected $casts = [
-        'variables' => 'array',
-        'header_structure' => 'array',
-        'allow_edit_body' => 'boolean',
-        'is_mass_template' => 'boolean',
         'active' => 'boolean',
     ];
-
-    /**
-     * Get the letterhead associated with this template.
-     */
-    public function letterhead()
-    {
-        return $this->belongsTo(Letterhead::class, 'letterhead_id');
-    }
 
     protected static function boot()
     {

@@ -10,6 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 import { showToast } from "@/lib/toast";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -22,7 +31,7 @@ import { RichTextEditor } from "@/components/dms/RichTextEditor";
 import { formatDate, getShortDescription } from "@/lib/dateUtils";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileText, Upload, Search, Plus, FileDown, X, Eye, File, Download, Image as ImageIcon, X as XIcon } from "lucide-react";
+import { FileText, Upload, Search, Plus, X, Eye, File, Download, Image as ImageIcon, X as XIcon, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 
 const statusOptions = [
@@ -39,15 +48,15 @@ const recipientTypeOptions = [
 ];
 
 // Attachment Card Component
-function AttachmentCard({ 
-  file, 
-  onPreview, 
-  onDownload, 
-  canPreview, 
-  isImageFile, 
+function AttachmentCard({
+  file,
+  onPreview,
+  onDownload,
+  canPreview,
+  isImageFile,
   isPdfFile,
-  previewLoading 
-}: { 
+  previewLoading
+}: {
   file: any;
   onPreview: (file: any) => void;
   onDownload: (id: string, name: string) => void;
@@ -113,11 +122,10 @@ function AttachmentCard({
         )}
       </div>
       <CardContent className="p-3">
-        <p className="font-medium text-sm truncate mb-1" title={file.original_name}>
-          {file.original_name}
+ me h          {file.original_name}
         </p>
         <p className="text-xs text-muted-foreground mb-3">
-          {(file.size_bytes / 1024).toFixed(2)} KB • v{file.version}
+          {file.size_bytes ? `${(file.size_bytes / 1024).toFixed(2)} KB • ` : ''}v{file.version}
         </p>
         <div className="flex items-center gap-2">
           {canPreview(file.mime_type) && (
@@ -170,7 +178,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
   const { data: files = [] } = useQuery<Array<{
     id: string;
     original_name: string;
-    size_bytes: number;
+    size_bytes?: number | null;
     version: number;
     mime_type?: string;
   }>>({
@@ -295,7 +303,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
           <Separator />
           <div>
             <Label className="text-muted-foreground mb-2 block">Description / Content</Label>
-            <div 
+            <div
               className="prose prose-sm max-w-none p-4 border rounded-lg bg-muted/50"
               dangerouslySetInnerHTML={{ __html: doc.description }}
             />
@@ -309,7 +317,7 @@ function DocumentViewContent({ doc }: { doc: OutgoingDocument }) {
           <Separator />
           <div>
             <Label className="text-muted-foreground mb-2 block">Body Content</Label>
-            <div 
+            <div
               className="prose prose-sm max-w-none p-4 border rounded-lg bg-muted/50"
               dangerouslySetInnerHTML={{ __html: doc.body_html }}
             />
@@ -417,19 +425,23 @@ export default function OutgoingDocuments() {
   const { t } = useLanguage();
   const { profile } = useAuth();
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState({ 
-    subject: "", 
-    recipient_type: "", 
+  const [filters, setFilters] = useState({
+    subject: "",
+    recipient_type: "",
     status: "",
     academic_year_id: "",
   });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [uploadDocId, setUploadDocId] = useState<string | null>(null);
   const [viewDoc, setViewDoc] = useState<OutgoingDocument | null>(null);
+  const [editDoc, setEditDoc] = useState<OutgoingDocument | null>(null);
+  const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
 
   // Get academic years
   const { data: academicYears } = useAcademicYears(profile?.organization_id);
@@ -454,9 +466,9 @@ export default function OutgoingDocuments() {
   const { data, isLoading } = useQuery<PaginatedResponse<OutgoingDocument> | OutgoingDocument[]>({
     queryKey: ["dms", "outgoing", apiFilters, page, pageSize],
     queryFn: async (): Promise<PaginatedResponse<OutgoingDocument> | OutgoingDocument[]> => {
-      const response = await dmsApi.outgoing.list({ 
-        ...apiFilters, 
-        page, 
+      const response = await dmsApi.outgoing.list({
+        ...apiFilters,
+        page,
         per_page: pageSize,
         paginate: true,
       });
@@ -489,10 +501,10 @@ export default function OutgoingDocuments() {
         setIsUploadDialogOpen(true);
       }
       // Reset form and close dialog
-      setNewDoc({ 
-        subject: "", 
-        recipient_type: "external", 
-        issue_date: "", 
+      setNewDoc({
+        subject: "",
+        recipient_type: "external",
+        issue_date: "",
         description: "",
         body_html: "",
         pages_count: "",
@@ -511,19 +523,51 @@ export default function OutgoingDocuments() {
     onError: (err: any) => showToast.error(err.message || t('toast.documentCreateFailed') || 'Failed to save document'),
   });
 
-  const pdfMutation = useMutation({
-    mutationFn: (id: string) => dmsApi.outgoing.generatePdf(id),
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) => dmsApi.outgoing.update(id, payload),
     onSuccess: () => {
-      showToast.success(t('toast.pdfGenerated') || 'PDF generated successfully');
+      showToast.success(t('toast.documentUpdated') || 'Outgoing document updated successfully');
       queryClient.invalidateQueries({ queryKey: ["dms", "outgoing"] });
+      setIsEditDialogOpen(false);
+      setEditDoc(null);
+      setNewDoc({
+        subject: "",
+        recipient_type: "external",
+        issue_date: "",
+        description: "",
+        body_html: "",
+        pages_count: "",
+        attachments_count: "0",
+        is_manual_number: false,
+        manual_outdoc_number: "",
+        external_doc_number: "",
+        external_doc_date: "",
+        security_level_key: "",
+        status: "draft",
+        notes: "",
+        academic_year_id: currentAcademicYear?.id || "",
+      });
     },
-    onError: (err: any) => showToast.error(err.message || t('toast.pdfGenerateFailed') || 'Failed to generate PDF'),
+    onError: (err: any) => showToast.error(err.message || t('toast.documentUpdateFailed') || 'Failed to update document'),
   });
 
-  const [newDoc, setNewDoc] = useState({ 
-    subject: "", 
-    recipient_type: "external", 
-    issue_date: "", 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => dmsApi.outgoing.delete(id),
+    onSuccess: async () => {
+      showToast.success(t('toast.documentDeleted') || 'Outgoing document deleted successfully');
+      await queryClient.invalidateQueries({ queryKey: ["dms", "outgoing"] });
+      await queryClient.refetchQueries({ queryKey: ["dms", "outgoing"] });
+      setIsDeleteDialogOpen(false);
+      setDeleteDocId(null);
+    },
+    onError: (err: any) => showToast.error(err.message || t('toast.documentDeleteFailed') || 'Failed to delete document'),
+  });
+
+
+  const [newDoc, setNewDoc] = useState({
+    subject: "",
+    recipient_type: "external",
+    issue_date: "",
     description: "",
     body_html: "",
     pages_count: "",
@@ -543,10 +587,10 @@ export default function OutgoingDocuments() {
     setIsDialogOpen(open);
     if (!open) {
       // Reset form when dialog closes
-      setNewDoc({ 
-        subject: "", 
-        recipient_type: "external", 
-        issue_date: "", 
+      setNewDoc({
+        subject: "",
+        recipient_type: "external",
+        issue_date: "",
         description: "",
         body_html: "",
         pages_count: "",
@@ -578,6 +622,63 @@ export default function OutgoingDocuments() {
   const openUploadDialog = (docId: string) => {
     setUploadDocId(docId);
     setIsUploadDialogOpen(true);
+  };
+
+  const openEditDialog = (doc: OutgoingDocument) => {
+    setEditDoc(doc);
+    setNewDoc({
+      subject: doc.subject || "",
+      recipient_type: doc.recipient_type || "external",
+      issue_date: doc.issue_date || "",
+      description: doc.description || "",
+      body_html: doc.body_html || "",
+      pages_count: doc.pages_count?.toString() || "",
+      attachments_count: doc.attachments_count?.toString() || "0",
+      is_manual_number: !!doc.manual_outdoc_number,
+      manual_outdoc_number: doc.manual_outdoc_number || "",
+      external_doc_number: doc.external_doc_number || "",
+      external_doc_date: doc.external_doc_date || "",
+      security_level_key: doc.security_level_key || "",
+      status: doc.status || "draft",
+      notes: doc.notes || "",
+      academic_year_id: doc.academic_year_id || currentAcademicYear?.id || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (docId: string) => {
+    setDeleteDocId(docId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleEditDialogClose = (open: boolean) => {
+    setIsEditDialogOpen(open);
+    if (!open) {
+      setEditDoc(null);
+      setNewDoc({
+        subject: "",
+        recipient_type: "external",
+        issue_date: "",
+        description: "",
+        body_html: "",
+        pages_count: "",
+        attachments_count: "0",
+        is_manual_number: false,
+        manual_outdoc_number: "",
+        external_doc_number: "",
+        external_doc_date: "",
+        security_level_key: "",
+        status: "draft",
+        notes: "",
+        academic_year_id: currentAcademicYear?.id || "",
+      });
+    }
+  };
+
+  const handleDelete = () => {
+    if (deleteDocId) {
+      deleteMutation.mutate(deleteDocId);
+    }
   };
 
   // Generate page numbers for pagination
@@ -897,8 +998,8 @@ export default function OutgoingDocuments() {
             </div>
             <div className="space-y-2">
               <Label>Recipient Type</Label>
-              <Select 
-                value={filters.recipient_type || "all"} 
+              <Select
+                value={filters.recipient_type || "all"}
                 onValueChange={(value) => setFilters((s) => ({ ...s, recipient_type: value === "all" ? "" : value }))}
               >
                 <SelectTrigger>
@@ -916,8 +1017,8 @@ export default function OutgoingDocuments() {
             </div>
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select 
-                value={filters.status || "all"} 
+              <Select
+                value={filters.status || "all"}
                 onValueChange={(value) => setFilters((s) => ({ ...s, status: value === "all" ? "" : value }))}
               >
                 <SelectTrigger>
@@ -1015,33 +1116,37 @@ export default function OutgoingDocuments() {
                       </TableCell>
                       <TableCell className="text-right">{formatDate(doc.issue_date)}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => openViewDialog(doc)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={pdfMutation.isPending}
-                            onClick={() => pdfMutation.mutate(doc.id)}
-                          >
-                            <FileDown className="h-4 w-4 mr-1" />
-                            PDF
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => openUploadDialog(doc.id)}
-                          >
-                            <Upload className="h-4 w-4 mr-1" />
-                            Files
-                          </Button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openViewDialog(doc)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              {t('common.view') || 'View'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditDialog(doc)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              {t('common.edit') || 'Edit'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openUploadDialog(doc.id)}>
+                              <Upload className="h-4 w-4 mr-2" />
+                              {t('dms.uploadFiles') || 'Upload Files'}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => openDeleteDialog(doc.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              {t('common.delete') || 'Delete'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1165,6 +1270,283 @@ export default function OutgoingDocuments() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Document Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Outgoing Document</DialogTitle>
+            <DialogDescription>
+              Update the outgoing document information. Fill in the required fields and save.
+            </DialogDescription>
+          </DialogHeader>
+          {editDoc && (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Basic Information</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Academic Year</Label>
+                    <Select
+                      value={newDoc.academic_year_id || currentAcademicYear?.id || ""}
+                      onValueChange={(value) => setNewDoc((s) => ({ ...s, academic_year_id: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select academic year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {academicYears?.map((year) => (
+                          <SelectItem key={year.id} value={year.id}>
+                            {year.name} {year.isCurrent ? "(Current)" : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Issue Date <span className="text-destructive">*</span></Label>
+                    <Input
+                      type="date"
+                      value={newDoc.issue_date}
+                      onChange={(e) => setNewDoc((s) => ({ ...s, issue_date: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Subject <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={newDoc.subject}
+                      onChange={(e) => setNewDoc((s) => ({ ...s, subject: e.target.value }))}
+                      placeholder="Document subject"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Recipient Type</Label>
+                    <Select
+                      value={newDoc.recipient_type}
+                      onValueChange={(value) => setNewDoc((s) => ({ ...s, recipient_type: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {recipientTypeOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select
+                      value={newDoc.status}
+                      onValueChange={(value) => setNewDoc((s) => ({ ...s, status: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Document Content */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Document Content</h3>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Description / Content</Label>
+                    <RichTextEditor
+                      value={newDoc.description}
+                      onChange={(html) => setNewDoc((s) => ({ ...s, description: html }))}
+                      placeholder="Enter document description or content..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Body HTML</Label>
+                    <RichTextEditor
+                      value={newDoc.body_html}
+                      onChange={(html) => setNewDoc((s) => ({ ...s, body_html: html }))}
+                      placeholder="Enter document body content..."
+                    />
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Pages Count (ضمائم)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={newDoc.pages_count}
+                        onChange={(e) => setNewDoc((s) => ({ ...s, pages_count: e.target.value }))}
+                        placeholder="Number of pages"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Attachments Count</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={newDoc.attachments_count}
+                        onChange={(e) => setNewDoc((s) => ({ ...s, attachments_count: e.target.value }))}
+                        placeholder="Number of attachments"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Document Numbering */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Document Numbering</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="edit_is_manual_number"
+                      checked={newDoc.is_manual_number}
+                      onCheckedChange={(checked) => setNewDoc((s) => ({ ...s, is_manual_number: !!checked }))}
+                    />
+                    <Label htmlFor="edit_is_manual_number" className="cursor-pointer">
+                      Use manual document number
+                    </Label>
+                  </div>
+                  {newDoc.is_manual_number && (
+                    <div className="space-y-2">
+                      <Label>Manual Document Number</Label>
+                      <Input
+                        value={newDoc.manual_outdoc_number}
+                        onChange={(e) => setNewDoc((s) => ({ ...s, manual_outdoc_number: e.target.value }))}
+                        placeholder="Enter manual document number"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Additional Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Additional Information</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>External Document Number</Label>
+                    <Input
+                      value={newDoc.external_doc_number}
+                      onChange={(e) => setNewDoc((s) => ({ ...s, external_doc_number: e.target.value }))}
+                      placeholder="External reference number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>External Document Date</Label>
+                    <Input
+                      type="date"
+                      value={newDoc.external_doc_date}
+                      onChange={(e) => setNewDoc((s) => ({ ...s, external_doc_date: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Security Level</Label>
+                    <Select
+                      value={newDoc.security_level_key || "none"}
+                      onValueChange={(value) => setNewDoc((s) => ({ ...s, security_level_key: value === "none" ? "" : value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select security level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="public">Public</SelectItem>
+                        <SelectItem value="internal">Internal</SelectItem>
+                        <SelectItem value="confidential">Confidential</SelectItem>
+                        <SelectItem value="secret">Secret</SelectItem>
+                        <SelectItem value="top_secret">Top Secret</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Notes</Label>
+                    <Input
+                      value={newDoc.notes}
+                      onChange={(e) => setNewDoc((s) => ({ ...s, notes: e.target.value }))}
+                      placeholder="Additional notes"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  className="flex-1"
+                  disabled={!readyToSave || updateMutation.isPending}
+                  onClick={() => {
+                    if (editDoc) {
+                      updateMutation.mutate({
+                        id: editDoc.id,
+                        payload: {
+                          ...newDoc,
+                          pages_count: newDoc.pages_count ? parseInt(newDoc.pages_count) : null,
+                          attachments_count: newDoc.attachments_count ? parseInt(newDoc.attachments_count) : 0,
+                          is_manual_number: newDoc.is_manual_number || false,
+                        },
+                      });
+                    }
+                  }}
+                >
+                  {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleEditDialogClose(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsDeleteDialogOpen(false);
+          setDeleteDocId(null);
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('dms.deleteDocumentWarning') || 'Are you sure you want to delete this outgoing document? This action cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (t('common.deleting') || 'Deleting...') : (t('common.delete') || 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

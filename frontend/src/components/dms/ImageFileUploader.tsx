@@ -22,24 +22,24 @@ interface UploadedFile {
   id: string;
   original_name: string;
   mime_type: string;
-  size_bytes: number;
+  size_bytes?: number | null;
   file_type: string;
   version: number;
   created_at: string;
 }
 
-export function ImageFileUploader({ 
-  ownerType, 
-  ownerId, 
+export function ImageFileUploader({
+  ownerType,
+  ownerId,
   fileType = "scan",
   maxFiles = 10,
-  compressionOptions 
+  compressionOptions
 }: ImageFileUploaderProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [isCompressing, setIsCompressing] = useState(false);
@@ -56,17 +56,17 @@ export function ImageFileUploader({
     mutationFn: async (file: File) => {
       // Compress image if it's an image file
       let fileToUpload = file;
-      
+
       if (isImageFile(file)) {
         setIsCompressing(true);
         setCompressionProgress(prev => ({ ...prev, [file.name]: 0 }));
-        
+
         try {
           fileToUpload = await compressImage(file, compressionOptions);
           const originalSize = file.size;
           const compressedSize = fileToUpload.size;
           const reduction = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
-          
+
           if (import.meta.env.DEV) {
             console.log(`[ImageFileUploader] Compressed ${file.name}: ${formatFileSize(originalSize)} → ${formatFileSize(compressedSize)} (${reduction}% reduction)`);
           }
@@ -88,7 +88,7 @@ export function ImageFileUploader({
       formData.append("owner_id", ownerId);
       formData.append("file_type", fileType);
       formData.append("file", fileToUpload);
-      
+
       return dmsApi.files.upload(formData);
     },
     onSuccess: () => {
@@ -113,7 +113,7 @@ export function ImageFileUploader({
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    
+
     if (files.length === 0) return;
 
     // Validate file count
@@ -147,7 +147,7 @@ export function ImageFileUploader({
     }
 
     setSelectedFiles(prev => [...prev, ...validFiles]);
-    
+
     // Clear input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -318,7 +318,7 @@ export function ImageFileUploader({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm truncate">{file.original_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.size_bytes)} • v{file.version}
+                      {file.size_bytes ? `${formatFileSize(file.size_bytes)} • ` : ''}v{file.version}
                     </p>
                   </div>
                 </div>
