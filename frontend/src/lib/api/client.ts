@@ -3059,3 +3059,197 @@ export const dmsApi = {
     download: async (id: string) => apiClient.requestFile(`/dms/files/${id}/download`, { method: 'GET' }),
   },
 };
+
+// Question Bank API
+export const questionsApi = {
+  list: async (params?: {
+    school_id?: string;
+    subject_id?: string;
+    class_academic_year_id?: string;
+    type?: string;
+    difficulty?: string;
+    is_active?: boolean;
+    search?: string;
+    page?: number;
+    per_page?: number;
+  }) => {
+    return apiClient.get('/exam/questions', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/exam/questions/${id}`);
+  },
+
+  create: async (data: {
+    school_id: string;
+    subject_id: string;
+    class_academic_year_id?: string | null;
+    type: string;
+    difficulty?: string;
+    marks?: number;
+    text: string;
+    text_rtl?: boolean;
+    options?: Array<{ id: string; label?: string; text: string; is_correct?: boolean }> | null;
+    correct_answer?: string | null;
+    reference?: string | null;
+    tags?: string[] | null;
+    is_active?: boolean;
+  }) => {
+    return apiClient.post('/exam/questions', data);
+  },
+
+  update: async (id: string, data: {
+    subject_id?: string;
+    class_academic_year_id?: string | null;
+    type?: string;
+    difficulty?: string;
+    marks?: number;
+    text?: string;
+    text_rtl?: boolean;
+    options?: Array<{ id: string; label?: string; text: string; is_correct?: boolean }> | null;
+    correct_answer?: string | null;
+    reference?: string | null;
+    tags?: string[] | null;
+    is_active?: boolean;
+  }) => {
+    return apiClient.put(`/exam/questions/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam/questions/${id}`);
+  },
+
+  duplicate: async (id: string) => {
+    return apiClient.post(`/exam/questions/${id}/duplicate`, {});
+  },
+
+  bulkUpdate: async (data: { question_ids: string[]; is_active: boolean }) => {
+    return apiClient.post('/exam/questions/bulk-update', data);
+  },
+};
+
+// Exam Paper Templates API
+export const examPaperTemplatesApi = {
+  list: async (params?: {
+    school_id?: string;
+    exam_id?: string;
+    exam_subject_id?: string;
+    subject_id?: string;
+    class_academic_year_id?: string;
+    is_default?: boolean;
+    is_active?: boolean;
+  }) => {
+    return apiClient.get('/exam/paper-templates', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/exam/paper-templates/${id}`);
+  },
+
+  create: async (data: {
+    school_id: string;
+    exam_id?: string | null;
+    exam_subject_id?: string | null;
+    subject_id: string;
+    class_academic_year_id?: string | null;
+    title: string;
+    language?: string;
+    total_marks?: number | null;
+    duration_minutes?: number | null;
+    header_html?: string | null;
+    footer_html?: string | null;
+    instructions?: string | null;
+    is_default_for_exam_subject?: boolean;
+    is_active?: boolean;
+  }) => {
+    return apiClient.post('/exam/paper-templates', data);
+  },
+
+  update: async (id: string, data: {
+    exam_id?: string | null;
+    exam_subject_id?: string | null;
+    subject_id?: string;
+    class_academic_year_id?: string | null;
+    title?: string;
+    language?: string;
+    total_marks?: number | null;
+    duration_minutes?: number | null;
+    header_html?: string | null;
+    footer_html?: string | null;
+    instructions?: string | null;
+    is_default_for_exam_subject?: boolean;
+    is_active?: boolean;
+  }) => {
+    return apiClient.put(`/exam/paper-templates/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam/paper-templates/${id}`);
+  },
+
+  duplicate: async (id: string) => {
+    return apiClient.post(`/exam/paper-templates/${id}/duplicate`, {});
+  },
+
+  // Item management
+  addItem: async (templateId: string, data: {
+    question_id: string;
+    section_label?: string | null;
+    position?: number;
+    marks_override?: number | null;
+    is_mandatory?: boolean;
+    notes?: string | null;
+  }) => {
+    return apiClient.post(`/exam/paper-templates/${templateId}/items`, data);
+  },
+
+  updateItem: async (templateId: string, itemId: string, data: {
+    section_label?: string | null;
+    position?: number;
+    marks_override?: number | null;
+    is_mandatory?: boolean;
+    notes?: string | null;
+  }) => {
+    return apiClient.put(`/exam/paper-templates/${templateId}/items/${itemId}`, data);
+  },
+
+  removeItem: async (templateId: string, itemId: string) => {
+    return apiClient.delete(`/exam/paper-templates/${templateId}/items/${itemId}`);
+  },
+
+  reorderItems: async (templateId: string, items: Array<{
+    id: string;
+    position: number;
+    section_label?: string | null;
+  }>) => {
+    return apiClient.post(`/exam/paper-templates/${templateId}/reorder`, { items });
+  },
+
+  // Exam paper stats
+  examPaperStats: async (examId: string) => {
+    return apiClient.get(`/exams/${examId}/paper-stats`);
+  },
+};
+
+// Exam Paper Preview API
+export const examPaperPreviewApi = {
+  studentView: async (templateId: string) => {
+    return apiClient.get(`/exam/paper-preview/${templateId}/student`);
+  },
+
+  teacherView: async (templateId: string) => {
+    return apiClient.get(`/exam/paper-preview/${templateId}/teacher`);
+  },
+
+  examSubjectPreview: async (examSubjectId: string, showAnswers?: boolean) => {
+    return apiClient.get(`/exam-subjects/${examSubjectId}/paper-preview`, { show_answers: showAnswers });
+  },
+
+  availableTemplates: async (examSubjectId: string) => {
+    return apiClient.get(`/exam-subjects/${examSubjectId}/available-templates`);
+  },
+
+  setDefaultTemplate: async (examSubjectId: string, templateId: string) => {
+    return apiClient.post(`/exam-subjects/${examSubjectId}/set-default-template`, { template_id: templateId });
+  },
+};

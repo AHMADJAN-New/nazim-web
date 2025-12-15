@@ -217,6 +217,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasExamsSecretNumbersReadPermission = useHasPermission('exams.secret_numbers.read');
   const hasExamsSecretNumbersAssignPermission = useHasPermission('exams.secret_numbers.assign');
   const hasExamsNumbersPrintPermission = useHasPermission('exams.numbers.print');
+  const hasExamsQuestionsPermission = useHasPermission('exams.questions.read');
+  const hasExamsPapersPermission = useHasPermission('exams.papers.read');
   // Legacy compatibility
   const hasExamsAssignPermission = hasExamsManagePermission || hasExamsEnrollPermission;
   const hasExamsUpdatePermission = hasExamsMarksPermission;
@@ -479,6 +481,18 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "examSecretNumbers",
             url: "/exams/secret-numbers",
             icon: KeyRound,
+          }] : []),
+          ...(hasExamsQuestionsPermission ? [{
+            title: "Question Bank",
+            titleKey: "questionBank",
+            url: "/exams/question-bank",
+            icon: LucideIcons.HelpCircle,
+          }] : []),
+          ...(hasExamsPapersPermission ? [{
+            title: "Paper Templates",
+            titleKey: "examPaperTemplates",
+            url: "/exams/paper-templates",
+            icon: LucideIcons.FileText,
           }] : []),
           // Reports Submenu - at the end
           ...((hasExamsReportsPermission || hasExamsViewGradeCardsPermission || hasExamsViewConsolidatedReportsPermission || hasExamsViewClassReportsPermission || hasExamsViewStudentReportsPermission || hasExamsNumbersPrintPermission) ? [{
@@ -936,7 +950,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
           hasExamsAttendancePermission || hasExamsViewAttendancePermission ||
           hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission ||
           hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission ||
-          hasExamsNumbersPrintPermission;
+          hasExamsNumbersPrintPermission ||
+          hasExamsQuestionsPermission || hasExamsPapersPermission;
       }
 
       if (item.titleKey === 'hostel') {

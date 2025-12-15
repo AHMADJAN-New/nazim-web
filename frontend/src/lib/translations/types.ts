@@ -109,6 +109,11 @@ export interface TranslationKeys {
     examStudentEnrollment: string;
     examMarks: string;
     examReports: string;
+    examInsights: string;
+    examAnalytics: string;
+    examAttendance: string;
+    questionBank: string;
+    examPaperTemplates: string;
     finance: string;
     "finance.dashboard": string;
     "finance.accounts": string;
@@ -2926,6 +2931,34 @@ export interface TranslationKeys {
       expenseUpdated: string;
       expenseDeleted: string;
     };
+    // Questions
+    questionCreated: string;
+    questionUpdated: string;
+    questionDeleted: string;
+    questionDuplicated: string;
+    questionsUpdated: string;
+    questionCreateFailed: string;
+    questionUpdateFailed: string;
+    questionDeleteFailed: string;
+    questionDuplicateFailed: string;
+    questionsUpdateFailed: string;
+    // Exam Paper Templates
+    examPaperTemplateCreated: string;
+    examPaperTemplateUpdated: string;
+    examPaperTemplateDeleted: string;
+    examPaperTemplateDuplicated: string;
+    examPaperTemplateCreateFailed: string;
+    examPaperTemplateUpdateFailed: string;
+    examPaperTemplateDeleteFailed: string;
+    examPaperTemplateDuplicateFailed: string;
+    questionAdded: string;
+    questionRemoved: string;
+    questionsReordered: string;
+    questionAddFailed: string;
+    questionRemoveFailed: string;
+    questionsReorderFailed: string;
+    defaultTemplateSet: string;
+    defaultTemplateSetFailed: string;
   };
 
   // Finance Module
@@ -3214,6 +3247,7 @@ export interface TranslationKeys {
     quickEnrollDescription: string;
   };
 
+<<<<<<< HEAD
   // Grades
   grades: {
     management: string;
@@ -3399,6 +3433,155 @@ export interface TranslationKeys {
     officialSeal: string;
     verified: string;
     confidential: string;
+  };
+
+  // Question Bank
+  questionBank: {
+    title: string;
+    description: string;
+    create: string;
+    createDescription: string;
+    edit: string;
+    editDescription: string;
+    viewQuestion: string;
+    deleteConfirm: string;
+    deleteConfirmMessage: string;
+    school: string;
+    selectSchool: string;
+    subject: string;
+    selectSubject: string;
+    classAcademicYear: string;
+    selectClass: string;
+    type: {
+      mcq: string;
+      short: string;
+      descriptive: string;
+      true_false: string;
+      essay: string;
+    };
+    difficulty: {
+      easy: string;
+      medium: string;
+      hard: string;
+    };
+    marks: string;
+    questionText: string;
+    questionTextPlaceholder: string;
+    rtl: string;
+    options: string;
+    optionPlaceholder: string;
+    correct: string;
+    addOption: string;
+    correctAnswer: string;
+    correctAnswerPlaceholder: string;
+    reference: string;
+    referencePlaceholder: string;
+    active: string;
+    searchPlaceholder: string;
+    filterSchool: string;
+    filterSubject: string;
+    filterType: string;
+    filterDifficulty: string;
+    questionsList: string;
+    totalQuestions: string;
+    noQuestions: string;
+    noQuestionsFound: string;
+    question: string;
+    status: string;
+    activate: string;
+    deactivate: string;
+    class: string;
+  };
+
+  // Exam Papers
+  examPapers: {
+    title: string;
+    description: string;
+    create: string;
+    createTemplate: string;
+    createDescription: string;
+    editTemplate: string;
+    editDescription: string;
+    deleteConfirm: string;
+    deleteConfirmMessage: string;
+    school: string;
+    selectSchool: string;
+    subject: string;
+    selectSubject: string;
+    exam: string;
+    selectExam: string;
+    genericTemplate: string;
+    templateTitle: string;
+    titlePlaceholder: string;
+    language: string;
+    duration: string;
+    totalMarks: string;
+    totalMarksPlaceholder: string;
+    instructions: string;
+    instructionsPlaceholder: string;
+    headerHtml: string;
+    headerHtmlPlaceholder: string;
+    footerHtml: string;
+    footerHtmlPlaceholder: string;
+    active: string;
+    defaultForExamSubject: string;
+    searchPlaceholder: string;
+    filterSchool: string;
+    filterSubject: string;
+    filterExam: string;
+    templatesList: string;
+    totalTemplates: string;
+    noTemplates: string;
+    noTemplatesFound: string;
+    questions: string;
+    marks: string;
+    status: string;
+    default: string;
+    generic: string;
+    preview: string;
+    editQuestions: string;
+    dragToReorder: string;
+    addQuestion: string;
+    noQuestionsInTemplate: string;
+    question: string;
+    section: string;
+    required: string;
+    selectQuestion: string;
+    selectQuestionDescription: string;
+    searchQuestions: string;
+    noQuestionsAvailable: string;
+    type: string;
+    difficulty: string;
+    marksDiscrepancy: string;
+  };
+
+  // Exam Paper Preview
+  examPaperPreview: {
+    title: string;
+    loading: string;
+    studentView: string;
+    teacherView: string;
+    instructions: string;
+    summary: string;
+    totalQuestions: string;
+    totalMarks: string;
+    duration: string;
+    minutes: string;
+    sections: string;
+    section: string;
+    questions: string;
+    marks: string;
+    optional: string;
+    modelAnswer: string;
+    reference: string;
+    notes: string;
+    answerHere: string;
+    subject: string;
+    class: string;
+    academicYear: string;
+    studentName: string;
+    rollNumber: string;
+    notFound: string;
   };
 
 }

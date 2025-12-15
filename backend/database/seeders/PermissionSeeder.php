@@ -118,6 +118,9 @@ class PermissionSeeder extends Seeder
             'dms.reports' => ['read'],
             'dms.settings' => ['read', 'manage'],
             'dms.archive' => ['read', 'search'],
+            // Question Bank & Exam Papers
+            'exams.questions' => ['read', 'create', 'update', 'delete'],
+            'exams.papers' => ['read', 'create', 'update', 'delete'],
         ];
     }
 
@@ -163,6 +166,8 @@ class PermissionSeeder extends Seeder
                 'dms.reports.read',
                 'dms.archive.read', 'dms.archive.search',
                 'dms.settings.read',
+                // Question Bank & Papers - read only for staff
+                'exams.questions.read', 'exams.papers.read',
             ],
             'teacher' => [
                 // Teachers can read and manage academic content
@@ -209,6 +214,9 @@ class PermissionSeeder extends Seeder
                 'dms.reports.read',
                 'dms.archive.read', 'dms.archive.search',
                 'dms.settings.read',
+                // Question Bank & Papers - full access for teachers
+                'exams.questions.read', 'exams.questions.create', 'exams.questions.update', 'exams.questions.delete',
+                'exams.papers.read', 'exams.papers.create', 'exams.papers.update', 'exams.papers.delete',
             ],
             'exam_controller' => [
                 // Dedicated exam controller role - full exam management except deletion
@@ -231,6 +239,9 @@ class PermissionSeeder extends Seeder
                 'grades.read', 'grades.create', 'grades.update', 'grades.delete',
                 'profiles.read', 'profiles.update',
                 'rooms.read', // For exam room assignment
+                // Question Bank & Papers - full access for exam controller
+                'exams.questions.read', 'exams.questions.create', 'exams.questions.update', 'exams.questions.delete',
+                'exams.papers.read', 'exams.papers.create', 'exams.papers.update', 'exams.papers.delete',
             ],
             'hostel_manager' => [
                 'hostel.read',
