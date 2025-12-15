@@ -23,9 +23,8 @@ class Letterhead extends Model
         'name',
         'file_path',
         'file_type',
+        'letterhead_type',
         'letter_type',
-        'default_for_layout',
-        'position',
         'preview_url',
         'active',
     ];

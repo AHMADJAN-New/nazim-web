@@ -465,6 +465,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     Route::get('/dms/templates', [LetterTemplatesController::class, 'index']);
     Route::post('/dms/templates', [LetterTemplatesController::class, 'store']);
+    Route::get('/dms/templates/fields/available', [LetterTemplatesController::class, 'getAvailableFields']);
     Route::get('/dms/templates/{id}', [LetterTemplatesController::class, 'show']);
     Route::put('/dms/templates/{id}', [LetterTemplatesController::class, 'update']);
     Route::delete('/dms/templates/{id}', [LetterTemplatesController::class, 'destroy']);

@@ -3,10 +3,23 @@
 namespace App\Http\Controllers\Dms;
 
 use App\Models\LetterTemplate;
+use App\Services\FieldMappingService;
+use App\Services\DocumentRenderingService;
 use Illuminate\Http\Request;
 
 class LetterTemplatesController extends BaseDmsController
 {
+    protected FieldMappingService $fieldMappingService;
+    protected DocumentRenderingService $renderingService;
+
+    public function __construct(
+        FieldMappingService $fieldMappingService,
+        DocumentRenderingService $renderingService
+    ) {
+        $this->fieldMappingService = $fieldMappingService;
+        $this->renderingService = $renderingService;
+    }
+
     public function index(Request $request)
     {
         $context = $this->requireOrganizationContext($request, 'dms.templates.read');
@@ -17,7 +30,7 @@ class LetterTemplatesController extends BaseDmsController
         [, $profile] = $context;
 
         $query = LetterTemplate::where('organization_id', $profile->organization_id)
-            ->with('letterhead');
+            ->with(['letterhead', 'watermark']);
 
         if ($request->filled('category')) {
             $query->where('category', $request->category);
@@ -53,15 +66,15 @@ class LetterTemplatesController extends BaseDmsController
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string'],
             'letterhead_id' => ['nullable', 'uuid', 'exists:letterheads,id'],
+            'watermark_id' => ['nullable', 'uuid', 'exists:letterheads,id'],
             'letter_type' => ['nullable', 'string', 'max:50'],
-            'body_html' => ['nullable', 'string'],
-            'template_file_path' => ['nullable', 'string', 'max:255'],
-            'template_file_type' => ['nullable', 'string', 'in:html,word,pdf,image'],
+            'body_text' => ['nullable', 'string'],
             'variables' => ['nullable', 'array'],
-            'header_structure' => ['nullable', 'array'],
-            'allow_edit_body' => ['boolean'],
+            'supports_tables' => ['boolean'],
+            'table_structure' => ['nullable', 'array'],
             'default_security_level_key' => ['nullable', 'string'],
             'page_layout' => ['nullable', 'string'],
+            'repeat_letterhead_on_pages' => ['boolean'],
             'is_mass_template' => ['boolean'],
             'active' => ['boolean'],
             'school_id' => ['nullable', 'uuid'],
@@ -71,7 +84,7 @@ class LetterTemplatesController extends BaseDmsController
 
         $template = LetterTemplate::create($data);
 
-        return response()->json($template, 201);
+        return response()->json($template->load(['letterhead', 'watermark']), 201);
     }
 
     public function update(string $id, Request $request)
@@ -92,15 +105,15 @@ class LetterTemplatesController extends BaseDmsController
             'name' => ['sometimes', 'string', 'max:255'],
             'category' => ['sometimes', 'string'],
             'letterhead_id' => ['nullable', 'uuid', 'exists:letterheads,id'],
+            'watermark_id' => ['nullable', 'uuid', 'exists:letterheads,id'],
             'letter_type' => ['nullable', 'string', 'max:50'],
-            'body_html' => ['nullable', 'string'],
-            'template_file_path' => ['nullable', 'string', 'max:255'],
-            'template_file_type' => ['nullable', 'string', 'in:html,word,pdf,image'],
+            'body_text' => ['nullable', 'string'],
             'variables' => ['nullable', 'array'],
-            'header_structure' => ['nullable', 'array'],
-            'allow_edit_body' => ['boolean'],
+            'supports_tables' => ['boolean'],
+            'table_structure' => ['nullable', 'array'],
             'default_security_level_key' => ['nullable', 'string'],
             'page_layout' => ['nullable', 'string'],
+            'repeat_letterhead_on_pages' => ['boolean'],
             'is_mass_template' => ['boolean'],
             'active' => ['boolean'],
         ]);
@@ -108,7 +121,7 @@ class LetterTemplatesController extends BaseDmsController
         $template->fill($data);
         $template->save();
 
-        return $template->load('letterhead');
+        return $template->load(['letterhead', 'watermark']);
     }
 
     public function show(string $id, Request $request)
@@ -121,7 +134,7 @@ class LetterTemplatesController extends BaseDmsController
 
         $template = LetterTemplate::where('id', $id)
             ->where('organization_id', $profile->organization_id)
-            ->with('letterhead')
+            ->with(['letterhead', 'watermark'])
             ->firstOrFail();
 
         $this->authorize('view', $template);
@@ -180,7 +193,7 @@ class LetterTemplatesController extends BaseDmsController
         $newTemplate->active = false; // Duplicates are inactive by default
         $newTemplate->save();
 
-        return response()->json($newTemplate->load('letterhead'), 201);
+        return response()->json($newTemplate->load(['letterhead', 'watermark']), 201);
     }
 
     public function preview(string $id, Request $request)
@@ -193,40 +206,64 @@ class LetterTemplatesController extends BaseDmsController
 
         $template = LetterTemplate::where('id', $id)
             ->where('organization_id', $profile->organization_id)
-            ->with('letterhead')
+            ->with(['letterhead', 'watermark'])
             ->firstOrFail();
 
         $this->authorize('view', $template);
 
-        $mockVariables = $request->input('variables', []);
-        $bodyHtml = $template->body_html ?? '';
+        // Get recipient type from request or use category
+        $recipientType = $request->input('recipient_type', $template->category);
 
-        // Replace variables with mock values
-        if (!empty($template->variables) && is_array($template->variables)) {
-            foreach ($template->variables as $var) {
-                $varName = is_array($var) ? ($var['name'] ?? $var) : $var;
-                $varValue = $mockVariables[$varName] ?? ($var['default'] ?? "{{$varName}}");
-                $bodyHtml = str_replace("{{$varName}}", $varValue, $bodyHtml);
-                $bodyHtml = str_replace("{{ {$varName} }}", $varValue, $bodyHtml);
-            }
+        // Get mock data for the recipient type
+        $mockData = $this->fieldMappingService->getMockData($recipientType);
+
+        // Merge with any custom variables from request
+        $customVariables = $request->input('variables', []);
+        $allData = array_merge($mockData, $customVariables);
+
+        // Replace placeholders in body_text
+        $bodyText = $template->body_text ?? '';
+        $processedText = $this->renderingService->replaceTemplateVariables($bodyText, $allData);
+
+        // Build table payload if template supports tables
+        $tablePayload = null;
+        if ($template->supports_tables && !empty($template->table_structure)) {
+            $tablePayload = $request->input('table_payload', $template->table_structure);
         }
 
-        // Use DocumentRenderingService to render with letterhead
-        $renderingService = app(\App\Services\DocumentRenderingService::class);
-        $letterheadHtml = '';
-        
-        if ($template->letterhead && method_exists($renderingService, 'processLetterheadFile')) {
-            $letterheadHtml = $renderingService->processLetterheadFile($template->letterhead);
-        }
-
-        $renderedHtml = $renderingService->render($bodyHtml, [
-            'letterhead_html' => $letterheadHtml,
-            'page_layout' => $template->page_layout ?? 'A4_portrait',
+        // Render the document
+        $renderedHtml = $this->renderingService->render($template, $processedText, [
+            'table_payload' => $tablePayload,
         ]);
 
         return response()->json([
             'html' => $renderedHtml,
             'template' => $template,
+            'mock_data' => $mockData,
+        ]);
+    }
+
+    /**
+     * Get available fields for a given recipient type
+     */
+    public function getAvailableFields(Request $request)
+    {
+        $context = $this->requireOrganizationContext($request, 'dms.templates.read');
+        if ($context instanceof \Illuminate\Http\JsonResponse) {
+            return $context;
+        }
+
+        $recipientType = $request->input('recipient_type', 'general');
+
+        $fields = $this->fieldMappingService->getAvailableFields($recipientType);
+
+        // Group fields by their group property
+        $groupedFields = collect($fields)->groupBy('group')->toArray();
+
+        return response()->json([
+            'fields' => $fields,
+            'grouped_fields' => $groupedFields,
+            'recipient_type' => $recipientType,
         ]);
     }
 }
