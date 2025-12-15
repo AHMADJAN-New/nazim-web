@@ -25,15 +25,19 @@ class DocumentRenderingService
         $pageLayout = $template->page_layout ?? 'A4_portrait';
         $repeatLetterhead = $template->repeat_letterhead_on_pages ?? true;
         $tablePayload = $options['table_payload'] ?? null;
+        $forBrowser = $options['for_browser'] ?? false; // For browser preview vs PDF generation
 
         // Build CSS styles
         $styles = $this->buildStyles($pageLayout);
 
         // Build letterhead background CSS
-        $letterheadStyles = $this->buildLetterheadStyles($letterhead, $repeatLetterhead);
+        $letterheadStyles = $this->buildLetterheadStyles($letterhead, $repeatLetterhead, $forBrowser);
+
+        // Build letterhead HTML element (for browser preview)
+        $letterheadHtml = $forBrowser ? $this->buildLetterheadHtml($letterhead) : '';
 
         // Build watermark HTML
-        $watermarkHtml = $this->buildWatermarkHtml($watermark);
+        $watermarkHtml = $this->buildWatermarkHtml($watermark, $forBrowser);
 
         // Build table HTML if provided
         $tableHtml = $tablePayload ? $this->renderTablePayload($tablePayload) : '';
@@ -41,7 +45,7 @@ class DocumentRenderingService
         // Combine content
         $contentHtml = $this->formatBodyText($bodyText) . $tableHtml;
 
-        return $this->buildHtmlDocument($styles, $letterheadStyles, $watermarkHtml, $contentHtml);
+        return $this->buildHtmlDocument($styles, $letterheadStyles, $letterheadHtml, $watermarkHtml, $contentHtml);
     }
 
     /**
@@ -71,6 +75,7 @@ class DocumentRenderingService
      *
      * @param string $styles
      * @param string $letterheadStyles
+     * @param string $letterheadHtml
      * @param string $watermarkHtml
      * @param string $contentHtml
      * @return string
@@ -78,6 +83,7 @@ class DocumentRenderingService
     private function buildHtmlDocument(
         string $styles,
         string $letterheadStyles,
+        string $letterheadHtml,
         string $watermarkHtml,
         string $contentHtml
     ): string {
@@ -94,6 +100,7 @@ class DocumentRenderingService
     </style>
 </head>
 <body>
+    {$letterheadHtml}
     {$watermarkHtml}
     <div class="content-wrapper">
         {$contentHtml}
@@ -234,52 +241,167 @@ CSS;
      *
      * @param Letterhead|null $letterhead
      * @param bool $repeatOnPages
+     * @param bool $forBrowser Whether this is for browser preview (true) or PDF generation (false)
      * @return string
      */
-    private function buildLetterheadStyles(?Letterhead $letterhead, bool $repeatOnPages): string
+    private function buildLetterheadStyles(?Letterhead $letterhead, bool $repeatOnPages, bool $forBrowser = false): string
     {
         if (!$letterhead || !$letterhead->file_path || !Storage::exists($letterhead->file_path)) {
             return '';
         }
 
-        // Get absolute path to the letterhead file
-        $filePath = Storage::path($letterhead->file_path);
-
-        // For PDF generation, we need to convert images to base64 or use absolute paths
-        // DomPDF works best with absolute paths
+        // For browser preview, use HTTP URL to serve endpoint; for PDF generation, use file:// path
+        if ($forBrowser) {
+            // Use the serve endpoint to get the file with proper authorization
+            $fileUrl = url("/api/dms/letterheads/{$letterhead->id}/serve");
+        } else {
+            // For PDF generation, use absolute file path
+            $fileUrl = 'file://' . Storage::path($letterhead->file_path);
+        }
 
         $backgroundRepeat = $repeatOnPages ? 'repeat' : 'no-repeat';
 
-        return <<<CSS
+        $css = '';
+        
+        // @page rule only works for PDF, not for browser
+        if (!$forBrowser) {
+            $css .= <<<CSS
         @page {
-            background: url('file://{$filePath}') no-repeat center top;
+            background: url('{$fileUrl}') no-repeat center top;
             background-size: 100% auto;
         }
 
         body {
-            background: url('file://{$filePath}') {$backgroundRepeat} center top;
+            background: url('{$fileUrl}') {$backgroundRepeat} center top;
             background-size: 100% auto;
         }
 CSS;
+        } else {
+            // For browser preview, use a different approach with letterhead container
+            $css .= <<<CSS
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .letterhead-background,
+        .letterhead-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .letterhead-background {
+            min-height: 100vh;
+        }
+
+        .letterhead-background img,
+        .letterhead-header img {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-width: 100%;
+        }
+
+        .letterhead-background img {
+            min-height: 100vh;
+            object-fit: cover;
+        }
+
+        body {
+            position: relative;
+            z-index: 1;
+            background: transparent;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+            background: transparent;
+            padding-top: 0;
+        }
+CSS;
+        }
+
+        return $css;
+    }
+
+    /**
+     * Build letterhead HTML element (for browser preview)
+     *
+     * @param Letterhead|null $letterhead
+     * @return string
+     */
+    private function buildLetterheadHtml(?Letterhead $letterhead): string
+    {
+        if (!$letterhead || !$letterhead->file_path || !Storage::exists($letterhead->file_path)) {
+            return '';
+        }
+
+        // For browser preview, embed image as base64 to avoid authentication issues in iframe
+        try {
+            $fileContents = Storage::get($letterhead->file_path);
+            $mimeType = Storage::mimeType($letterhead->file_path);
+            $base64 = base64_encode($fileContents);
+            $dataUrl = "data:{$mimeType};base64,{$base64}";
+        } catch (\Exception $e) {
+            // Fallback to URL if base64 encoding fails
+            $dataUrl = url("/api/dms/letterheads/{$letterhead->id}/serve");
+        }
+        
+        // Check if it's a background type (full page) or header type (top only)
+        $letterheadType = $letterhead->letterhead_type ?? 'background';
+        $isBackground = $letterheadType === 'background';
+        
+        $class = $isBackground ? 'letterhead-background' : 'letterhead-header';
+        $style = $isBackground ? 'style="min-height: 100vh;"' : '';
+
+        return <<<HTML
+        <div class="{$class}" {$style}>
+            <img src="{$dataUrl}" alt="Letterhead" />
+        </div>
+HTML;
     }
 
     /**
      * Build watermark HTML
      *
      * @param Letterhead|null $watermark
+     * @param bool $forBrowser Whether this is for browser preview (true) or PDF generation (false)
      * @return string
      */
-    private function buildWatermarkHtml(?Letterhead $watermark): string
+    private function buildWatermarkHtml(?Letterhead $watermark, bool $forBrowser = false): string
     {
         if (!$watermark || !$watermark->file_path || !Storage::exists($watermark->file_path)) {
             return '';
         }
 
-        $filePath = Storage::path($watermark->file_path);
+        // For browser preview, embed image as base64 to avoid authentication issues in iframe
+        if ($forBrowser) {
+            try {
+                $fileContents = Storage::get($watermark->file_path);
+                $mimeType = Storage::mimeType($watermark->file_path);
+                $base64 = base64_encode($fileContents);
+                $fileUrl = "data:{$mimeType};base64,{$base64}";
+            } catch (\Exception $e) {
+                // Fallback to URL if base64 encoding fails
+                $fileUrl = url("/api/dms/letterheads/{$watermark->id}/serve");
+            }
+        } else {
+            // For PDF generation, use absolute file path
+            $fileUrl = 'file://' . Storage::path($watermark->file_path);
+        }
 
         return <<<HTML
         <div class="watermark">
-            <img src="file://{$filePath}" alt="Watermark" />
+            <img src="{$fileUrl}" alt="Watermark" />
         </div>
 HTML;
     }

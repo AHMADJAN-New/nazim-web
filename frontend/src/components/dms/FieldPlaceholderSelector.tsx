@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useTranslations } from '@/hooks/useTranslations';
+import { useLanguage } from '@/hooks/useLanguage';
 import { Search, Copy, CheckCircle2 } from 'lucide-react';
 
 interface FieldPlaceholderSelectorProps {
@@ -28,7 +28,7 @@ export function FieldPlaceholderSelector({
   onInsert,
   className = '',
 }: FieldPlaceholderSelectorProps) {
-  const { t } = useTranslations();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedField, setSelectedField] = useState<TemplateField | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -121,7 +121,7 @@ export function FieldPlaceholderSelector({
       {/* Field selector with grouped options */}
       <div className="space-y-2">
         <Select
-          value={selectedField?.key}
+          value={selectedField?.key || ''}
           onValueChange={(key) => {
             const field = fields.find((f: TemplateField) => f.key === key);
             if (field) {

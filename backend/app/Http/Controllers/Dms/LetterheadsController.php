@@ -220,6 +220,40 @@ class LetterheadsController extends BaseDmsController
         return response()->noContent();
     }
 
+    public function serve(string $id, Request $request)
+    {
+        $context = $this->requireOrganizationContext($request, 'dms.letterheads.read');
+        if ($context instanceof \Illuminate\Http\JsonResponse) {
+            return $context;
+        }
+        [, $profile] = $context;
+
+        $record = Letterhead::where('id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->firstOrFail();
+
+        $this->authorize('view', $record);
+
+        if (!$record->file_path || !Storage::exists($record->file_path)) {
+            abort(404, 'File not found');
+        }
+
+        // Determine content type based on file extension
+        $extension = pathinfo($record->file_path, PATHINFO_EXTENSION);
+        $contentType = match(strtolower($extension)) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'pdf' => 'application/pdf',
+            default => 'application/octet-stream',
+        };
+
+        return Storage::response($record->file_path, $record->name, [
+            'Content-Type' => $contentType,
+        ]);
+    }
+
     public function preview(string $id, Request $request)
     {
         $context = $this->requireOrganizationContext($request, 'dms.letterheads.manage');

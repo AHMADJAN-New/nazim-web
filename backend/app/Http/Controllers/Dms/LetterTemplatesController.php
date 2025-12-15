@@ -231,9 +231,10 @@ class LetterTemplatesController extends BaseDmsController
             $tablePayload = $request->input('table_payload', $template->table_structure);
         }
 
-        // Render the document
+        // Render the document for browser preview (use HTTP URLs instead of file://)
         $renderedHtml = $this->renderingService->render($template, $processedText, [
             'table_payload' => $tablePayload,
+            'for_browser' => true, // Use HTTP URLs for browser preview
         ]);
 
         return response()->json([

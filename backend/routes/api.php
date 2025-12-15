@@ -478,6 +478,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::put('/dms/letterheads/{id}', [LetterheadsController::class, 'update']);
     Route::delete('/dms/letterheads/{id}', [LetterheadsController::class, 'destroy']);
     Route::get('/dms/letterheads/{id}/download', [LetterheadsController::class, 'download']);
+    Route::get('/dms/letterheads/{id}/serve', [LetterheadsController::class, 'serve']);
     Route::get('/dms/letterheads/{id}/preview', [LetterheadsController::class, 'preview']);
 
     Route::get('/dms/letter-types', [LetterTypesController::class, 'index']);

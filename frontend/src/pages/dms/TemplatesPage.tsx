@@ -494,11 +494,11 @@ export default function TemplatesPage() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Status</Label>
-                  <p className="font-medium">
+                  <div className="font-medium">
                     <Badge variant={selectedTemplate.active ? "default" : "secondary"}>
                       {selectedTemplate.active ? "Active" : "Inactive"}
                     </Badge>
-                  </p>
+                  </div>
                 </div>
               </div>
               {selectedTemplate.variables && Array.isArray(selectedTemplate.variables) && selectedTemplate.variables.length > 0 && (
