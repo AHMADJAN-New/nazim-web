@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuestions, useCreateQuestion, useUpdateQuestion, useDeleteQuestion, useDuplicateQuestion, useBulkUpdateQuestions, QUESTION_TYPES, QUESTION_DIFFICULTIES } from '@/hooks/useQuestions';
 import type { Question, QuestionType, QuestionDifficulty, QuestionOption, QuestionFilters } from '@/hooks/useQuestions';
-import { useSubjects } from '@/hooks/useSubjects';
+import { useClassSubjects } from '@/hooks/useSubjects';
 import { useSchools } from '@/hooks/useSchools';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
+import { classSubjectsApi } from '@/lib/api/client';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,40 +21,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Pencil, Trash2, Search, MoreHorizontal, Copy, CheckCircle, XCircle, Eye, X, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, MoreHorizontal, Copy, CheckCircle, XCircle, Eye, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { cn } from '@/lib/utils';
-
-// Option schema for MCQ questions
-const optionSchema = z.object({
-  key: z.string().min(1, 'Option key is required'),
-  text: z.string().min(1, 'Option text is required'),
-  isCorrect: z.boolean().default(false),
-});
-
-// Question form schema
-const questionSchema = z.object({
-  schoolId: z.string().uuid('School is required'),
-  subjectId: z.string().uuid('Subject is required'),
-  classAcademicYearId: z.string().uuid().optional().nullable(),
-  type: z.enum(['mcq', 'short', 'descriptive', 'true_false', 'essay'] as const),
-  difficulty: z.enum(['easy', 'medium', 'hard'] as const),
-  marks: z.coerce.number().min(0.5, 'Marks must be at least 0.5').max(100, 'Marks must be 100 or less'),
-  text: z.string().min(1, 'Question text is required'),
-  textRtl: z.boolean().default(false),
-  options: z.array(optionSchema).optional().nullable(),
-  correctAnswer: z.string().optional().nullable(),
-  reference: z.string().max(255).optional().nullable(),
-  tags: z.array(z.string()).optional().nullable(),
-  isActive: z.boolean().default(true),
-});
-
-type QuestionFormData = z.infer<typeof questionSchema>;
+import { questionSchema, type QuestionFormData } from '@/lib/validations/questionBank';
 
 const difficultyConfig: Record<QuestionDifficulty, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
   easy: { label: 'Easy', variant: 'default' },
@@ -79,9 +54,12 @@ export function QuestionBank() {
   const hasUpdate = useHasPermission('exams.questions.update');
   const hasDelete = useHasPermission('exams.questions.delete');
 
+  // Get user's default school from profile
+  const userDefaultSchoolId = profile?.default_school_id;
+  
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSchoolId, setSelectedSchoolId] = useState<string | undefined>();
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string | undefined>(userDefaultSchoolId || undefined);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | undefined>();
   const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>();
   const [selectedClassAcademicYearId, setSelectedClassAcademicYearId] = useState<string | undefined>();
@@ -102,12 +80,30 @@ export function QuestionBank() {
   const { data: schools } = useSchools(organizationId);
   const { data: academicYears } = useAcademicYears(organizationId);
   const { data: currentAcademicYear } = useCurrentAcademicYear(organizationId);
-  const { subjects } = useSubjects(organizationId);
+  
+  // Form academic year state (for class subjects selection)
+  const [formAcademicYearId, setFormAcademicYearId] = useState<string>('');
+  const [formClassAcademicYearId, setFormClassAcademicYearId] = useState<string>('');
+  
+  // Get class academic years for the selected academic year in form
+  const { data: formClassAcademicYears } = useClassAcademicYears(formAcademicYearId, organizationId);
+  
+  // Get class subjects for the selected class academic year in form
+  const { data: classSubjects } = useClassSubjects(formClassAcademicYearId, organizationId);
+  
+  // Filter class academic years for filters
   const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYearId, organizationId);
+  
+  // Set default academic year for filters
+  useEffect(() => {
+    if (currentAcademicYear && !selectedAcademicYearId) {
+      setSelectedAcademicYearId(currentAcademicYear.id);
+    }
+  }, [currentAcademicYear?.id, selectedAcademicYearId]);
 
-  // Build filters object
+  // Build filters object - use user's default school if available
   const filters: QuestionFilters = useMemo(() => ({
-    schoolId: selectedSchoolId,
+    schoolId: selectedSchoolId || userDefaultSchoolId || undefined,
     subjectId: selectedSubjectId,
     classAcademicYearId: selectedClassAcademicYearId,
     type: selectedType !== 'all' ? selectedType : undefined,
@@ -116,7 +112,7 @@ export function QuestionBank() {
     search: searchQuery || undefined,
     page: currentPage,
     perPage: 25,
-  }), [selectedSchoolId, selectedSubjectId, selectedClassAcademicYearId, selectedType, selectedDifficulty, selectedStatus, searchQuery, currentPage]);
+  }), [selectedSchoolId, userDefaultSchoolId, selectedSubjectId, selectedClassAcademicYearId, selectedType, selectedDifficulty, selectedStatus, searchQuery, currentPage]);
 
   const { data: questionsData, isLoading } = useQuestions(filters);
   const createQuestion = useCreateQuestion();
@@ -125,25 +121,21 @@ export function QuestionBank() {
   const duplicateQuestion = useDuplicateQuestion();
   const bulkUpdateQuestions = useBulkUpdateQuestions();
 
-  // Set default academic year
-  useEffect(() => {
-    if (currentAcademicYear && !selectedAcademicYearId) {
-      setSelectedAcademicYearId(currentAcademicYear.id);
-    }
-  }, [currentAcademicYear?.id]);
-
   // Form setup
   const form = useForm<QuestionFormData>({
     resolver: zodResolver(questionSchema),
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: {
-      schoolId: '',
-      subjectId: '',
-      classAcademicYearId: null,
+      schoolId: userDefaultSchoolId || '',
+      academicYearId: currentAcademicYear?.id || '',
+      classAcademicYearId: '',
+      classSubjectId: '',
       type: 'mcq',
       difficulty: 'medium',
       marks: 1,
       text: '',
-      textRtl: false,
+      textRtl: true,
       options: [
         { key: 'A', text: '', isCorrect: false },
         { key: 'B', text: '', isCorrect: false },
@@ -156,6 +148,43 @@ export function QuestionBank() {
       isActive: true,
     },
   });
+
+  // Auto-fill school from profile and set default academic year
+  useEffect(() => {
+    if (userDefaultSchoolId && !form.getValues('schoolId')) {
+      form.setValue('schoolId', userDefaultSchoolId);
+    }
+    if (currentAcademicYear && !form.getValues('academicYearId')) {
+      form.setValue('academicYearId', currentAcademicYear.id);
+      setFormAcademicYearId(currentAcademicYear.id);
+    }
+  }, [userDefaultSchoolId, currentAcademicYear?.id, form]);
+
+  // Watch form values for cascading selects
+  const watchedAcademicYearId = form.watch('academicYearId');
+  const watchedClassAcademicYearId = form.watch('classAcademicYearId');
+
+  // Update form state when academic year changes
+  useEffect(() => {
+    if (watchedAcademicYearId) {
+      setFormAcademicYearId(watchedAcademicYearId);
+      // Reset class academic year and class subject when academic year changes
+      form.setValue('classAcademicYearId', '');
+      form.setValue('classSubjectId', '');
+      setFormClassAcademicYearId('');
+    }
+  }, [watchedAcademicYearId, form]);
+
+  // Update form state when class academic year changes
+  useEffect(() => {
+    if (watchedClassAcademicYearId) {
+      setFormClassAcademicYearId(watchedClassAcademicYearId);
+      // Reset class subject when class academic year changes
+      form.setValue('classSubjectId', '');
+    } else {
+      setFormClassAcademicYearId('');
+    }
+  }, [watchedClassAcademicYearId, form]);
 
   const { fields: optionFields, append: appendOption, remove: removeOption, replace: replaceOptions } = useFieldArray({
     control: form.control,
@@ -183,18 +212,20 @@ export function QuestionBank() {
     } else {
       replaceOptions([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedType]);
 
   const resetForm = () => {
     form.reset({
-      schoolId: selectedSchoolId || '',
-      subjectId: '',
-      classAcademicYearId: selectedClassAcademicYearId || null,
+      schoolId: userDefaultSchoolId || '',
+      academicYearId: currentAcademicYear?.id || '',
+      classAcademicYearId: '',
+      classSubjectId: '',
       type: 'mcq',
       difficulty: 'medium',
       marks: 1,
       text: '',
-      textRtl: false,
+      textRtl: true,
       options: [
         { key: 'A', text: '', isCorrect: false },
         { key: 'B', text: '', isCorrect: false },
@@ -206,6 +237,8 @@ export function QuestionBank() {
       tags: [],
       isActive: true,
     });
+    setFormAcademicYearId(currentAcademicYear?.id || '');
+    setFormClassAcademicYearId('');
     setSelectedQuestion(null);
   };
 
@@ -216,25 +249,63 @@ export function QuestionBank() {
 
   const openEditDialog = (question: Question) => {
     setSelectedQuestion(question);
+    
+    // Get academic year from class academic year if available
+    const academicYearId = question.classAcademicYear?.academicYearId || currentAcademicYear?.id || '';
+    
+    // For editing, we need to find the class subject ID
+    // Since questions are tied to class_subjects, we need to find it
+    // We'll fetch it asynchronously and update the form
+    const loadClassSubject = async () => {
+      if (question.classAcademicYearId && question.subjectId) {
+        try {
+          const classSubjectsData = await classSubjectsApi.list({
+            class_academic_year_id: question.classAcademicYearId,
+            subject_id: question.subjectId,
+          });
+          if (Array.isArray(classSubjectsData) && classSubjectsData.length > 0) {
+            const classSubjectId = classSubjectsData[0].id;
+            form.setValue('classSubjectId', classSubjectId);
+          }
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.error('[QuestionBank] Error fetching class subject:', error);
+          }
+        }
+      }
+    };
+    
     form.reset({
       schoolId: question.schoolId,
-      subjectId: question.subjectId,
-      classAcademicYearId: question.classAcademicYearId || null,
+      academicYearId: academicYearId,
+      classAcademicYearId: question.classAcademicYearId || '',
+      classSubjectId: '', // Will be set after fetching
       type: question.type,
       difficulty: question.difficulty,
       marks: question.marks,
       text: question.text,
       textRtl: question.textRtl,
       options: question.options?.map(opt => ({
-        key: opt.key,
+        key: opt.label || opt.id || 'A',
         text: opt.text,
-        isCorrect: opt.isCorrect,
+        isCorrect: opt.isCorrect || false,
       })) || [],
       correctAnswer: question.correctAnswer || '',
       reference: question.reference || '',
       tags: question.tags || [],
       isActive: question.isActive,
     });
+    
+    if (academicYearId) {
+      setFormAcademicYearId(academicYearId);
+    }
+    if (question.classAcademicYearId) {
+      setFormClassAcademicYearId(question.classAcademicYearId);
+    }
+    
+    // Load class subject asynchronously
+    void loadClassSubject();
+    
     setIsEditDialogOpen(true);
   };
 
@@ -248,9 +319,36 @@ export function QuestionBank() {
     setIsViewDialogOpen(true);
   };
 
-  const handleCreate = (data: QuestionFormData) => {
+  const handleCreate = async (data: QuestionFormData) => {
+    if (import.meta.env.DEV) {
+      console.log('[QuestionBank] handleCreate called with data:', data);
+    }
+    
     if (!organizationId) {
       showToast.error(t('common.error') || 'Organization required');
+      return;
+    }
+
+    // Get class subject to extract subjectId and classAcademicYearId
+    let subjectId = '';
+    let classAcademicYearId = data.classAcademicYearId;
+    
+    if (data.classSubjectId) {
+      try {
+        const classSubject = await classSubjectsApi.get(data.classSubjectId);
+        if (classSubject) {
+          subjectId = (classSubject as any).subject_id;
+          classAcademicYearId = (classSubject as any).class_academic_year_id;
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[QuestionBank] Error fetching class subject:', error);
+        }
+        showToast.error(t('common.error') || 'Failed to get class subject details');
+        return;
+      }
+    } else {
+      showToast.error(t('common.error') || 'Class subject is required');
       return;
     }
 
@@ -264,18 +362,19 @@ export function QuestionBank() {
     createQuestion.mutate({
       organizationId,
       schoolId: data.schoolId,
-      subjectId: data.subjectId,
-      classAcademicYearId: data.classAcademicYearId || undefined,
+      subjectId,
+      classAcademicYearId: classAcademicYearId || undefined,
       type: data.type,
       difficulty: data.difficulty,
       marks: data.marks,
       text: data.text,
       textRtl: data.textRtl,
       options: data.options?.map(opt => ({
-        key: opt.key,
+        id: opt.key || `opt-${Date.now()}-${Math.random()}`,
+        label: opt.key,
         text: opt.text,
         isCorrect: opt.isCorrect,
-      })),
+      })) || undefined,
       correctAnswer,
       reference: data.reference || undefined,
       tags: data.tags || undefined,
@@ -285,11 +384,40 @@ export function QuestionBank() {
         setIsCreateDialogOpen(false);
         resetForm();
       },
+      onError: (error: Error) => {
+        if (import.meta.env.DEV) {
+          console.error('[QuestionBank] Error creating question:', error);
+        }
+        // Error handling is already done in the hook, but we can add additional handling here if needed
+      },
     });
   };
 
-  const handleUpdate = (data: QuestionFormData) => {
+  const handleUpdate = async (data: QuestionFormData) => {
     if (!selectedQuestion) return;
+
+    // Get class subject to extract subjectId and classAcademicYearId
+    let subjectId = '';
+    let classAcademicYearId = data.classAcademicYearId;
+    
+    if (data.classSubjectId) {
+      try {
+        const classSubject = await classSubjectsApi.get(data.classSubjectId);
+        if (classSubject) {
+          subjectId = (classSubject as any).subject_id;
+          classAcademicYearId = (classSubject as any).class_academic_year_id;
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[QuestionBank] Error fetching class subject:', error);
+        }
+        showToast.error(t('common.error') || 'Failed to get class subject details');
+        return;
+      }
+    } else {
+      showToast.error(t('common.error') || 'Class subject is required');
+      return;
+    }
 
     // Build correct answer from options for MCQ/true_false
     let correctAnswer = data.correctAnswer;
@@ -301,18 +429,19 @@ export function QuestionBank() {
     updateQuestion.mutate({
       id: selectedQuestion.id,
       data: {
-        subjectId: data.subjectId,
-        classAcademicYearId: data.classAcademicYearId || undefined,
+        subjectId,
+        classAcademicYearId: classAcademicYearId || undefined,
         type: data.type,
         difficulty: data.difficulty,
         marks: data.marks,
         text: data.text,
         textRtl: data.textRtl,
         options: data.options?.map(opt => ({
-          key: opt.key,
+          id: opt.key || `opt-${Date.now()}-${Math.random()}`,
+          label: opt.key,
           text: opt.text,
           isCorrect: opt.isCorrect,
-        })),
+        })) || undefined,
         correctAnswer,
         reference: data.reference || undefined,
         tags: data.tags || undefined,
@@ -322,6 +451,12 @@ export function QuestionBank() {
       onSuccess: () => {
         setIsEditDialogOpen(false);
         resetForm();
+      },
+      onError: (error: Error) => {
+        if (import.meta.env.DEV) {
+          console.error('[QuestionBank] Error updating question:', error);
+        }
+        // Error handling is already done in the hook, but we can add additional handling here if needed
       },
     });
   };
@@ -333,11 +468,24 @@ export function QuestionBank() {
         setIsDeleteDialogOpen(false);
         setSelectedQuestion(null);
       },
+      onError: (error: Error) => {
+        if (import.meta.env.DEV) {
+          console.error('[QuestionBank] Error deleting question:', error);
+        }
+        // Error handling is already done in the hook
+      },
     });
   };
 
   const handleDuplicate = (question: Question) => {
-    duplicateQuestion.mutate(question.id);
+    duplicateQuestion.mutate(question.id, {
+      onError: (error: Error) => {
+        if (import.meta.env.DEV) {
+          console.error('[QuestionBank] Error duplicating question:', error);
+        }
+        // Error handling is already done in the hook
+      },
+    });
   };
 
   const handleBulkActivate = (activate: boolean) => {
@@ -348,6 +496,12 @@ export function QuestionBank() {
     }, {
       onSuccess: () => {
         setSelectedQuestionIds([]);
+      },
+      onError: (error: Error) => {
+        if (import.meta.env.DEV) {
+          console.error('[QuestionBank] Error bulk updating questions:', error);
+        }
+        // Error handling is already done in the hook
       },
     });
   };
@@ -369,8 +523,8 @@ export function QuestionBank() {
     }
   };
 
-  const questions = questionsData?.data || [];
-  const totalPages = questionsData?.lastPage || 1;
+  const questions = useMemo(() => questionsData?.data || [], [questionsData?.data]);
+  const totalPages = useMemo(() => questionsData?.lastPage || 1, [questionsData?.lastPage]);
 
   const getDifficultyBadge = (difficulty: QuestionDifficulty) => {
     const config = difficultyConfig[difficulty];
@@ -399,123 +553,226 @@ export function QuestionBank() {
     form.setValue('options', updatedOptions);
   };
 
-  const QuestionFormFields = ({ isEdit = false }: { isEdit?: boolean }) => (
-    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-      {/* School & Subject */}
-      <div className="grid grid-cols-2 gap-4">
+  const QuestionFormFields = ({ isEdit = false }: { isEdit?: boolean }) => {
+    const selectedSchool = useMemo(() => {
+      const schoolId = form.watch('schoolId');
+      if (!schoolId || !schools) return null;
+      return schools.find(s => s.id === schoolId);
+    }, [form.watch('schoolId'), schools]);
+
+    // Show Select if user doesn't have a default school, otherwise show read-only input
+    const showSchoolSelect = !userDefaultSchoolId;
+
+    return (
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+        {/* School (Required) - Show Select if no default school, otherwise read-only */}
         <div>
-          <Label htmlFor="schoolId">{t('questionBank.school') || 'School'} *</Label>
-          <Controller
-            control={form.control}
-            name="schoolId"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('questionBank.selectSchool') || 'Select school'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(schools || []).map(school => (
-                    <SelectItem key={school.id} value={school.id}>
-                      {school.schoolName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
+          <Label>{t('questionBank.school') || 'School'} *</Label>
+          {showSchoolSelect ? (
+            <Controller
+              control={form.control}
+              name="schoolId"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
+                  <SelectTrigger id="schoolId">
+                    <SelectValue placeholder={t('questionBank.selectSchool') || 'Select school'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(schools || [])
+                      .filter((school): school is NonNullable<typeof school> => 
+                        Boolean(school?.id && school?.schoolName)
+                      )
+                      .map((school, idx) => (
+                        <SelectItem 
+                          key={`school-form-${school.id}-${idx}`} 
+                          value={String(school.id)}
+                        >
+                          {school.schoolName}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          ) : (
+            <>
+              {selectedSchool ? (
+                <Input value={selectedSchool.schoolName} disabled readOnly className="bg-muted" />
+              ) : (
+                <Input value={t('questionBank.loading') || 'Loading...'} disabled className="bg-muted" />
+              )}
+              <input type="hidden" {...form.register('schoolId')} />
+            </>
+          )}
           {form.formState.errors.schoolId && (
             <p className="text-sm text-destructive mt-1">{form.formState.errors.schoolId.message}</p>
           )}
         </div>
+
+        {/* Academic Year (Required) */}
         <div>
-          <Label htmlFor="subjectId">{t('questionBank.subject') || 'Subject'} *</Label>
+          <Label>{t('questionBank.academicYear') || 'Academic Year'} *</Label>
           <Controller
             control={form.control}
-            name="subjectId"
+            name="academicYearId"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('questionBank.selectSubject') || 'Select subject'} />
+              <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
+                <SelectTrigger id="academicYearId">
+                  <SelectValue placeholder={t('questionBank.selectAcademicYear') || 'Select academic year'} />
                 </SelectTrigger>
                 <SelectContent>
-                  {(subjects || []).map(subject => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
+                  {(academicYears || [])
+                    .filter((ay): ay is NonNullable<typeof ay> => 
+                      Boolean(ay?.id && ay?.name)
+                    )
+                    .map((ay, idx) => (
+                      <SelectItem 
+                        key={`academic-year-form-${ay.id}-${idx}`} 
+                        value={String(ay.id)}
+                      >
+                        {ay.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             )}
           />
-          {form.formState.errors.subjectId && (
-            <p className="text-sm text-destructive mt-1">{form.formState.errors.subjectId.message}</p>
+          {form.formState.errors.academicYearId && (
+            <p className="text-sm text-destructive mt-1">{form.formState.errors.academicYearId.message}</p>
           )}
         </div>
-      </div>
 
-      {/* Class Academic Year (optional) */}
-      <div>
-        <Label htmlFor="classAcademicYearId">{t('questionBank.classAcademicYear') || 'Class (Optional)'}</Label>
-        <Controller
-          control={form.control}
-          name="classAcademicYearId"
-          render={({ field }) => (
-            <Select value={field.value || '__none__'} onValueChange={(val) => field.onChange(val === '__none__' ? null : val)}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('questionBank.selectClass') || 'Select class (optional)'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">{t('common.all') || 'All Classes'}</SelectItem>
-                {(classAcademicYears || []).map(cay => (
-                  <SelectItem key={cay.id} value={cay.id}>
-                    {cay.className}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Class Academic Year (Required) */}
+        <div>
+          <Label>{t('questionBank.classAcademicYear') || 'Class'} *</Label>
+          <Controller
+            control={form.control}
+            name="classAcademicYearId"
+            render={({ field }) => (
+              <Select 
+                value={field.value} 
+                onValueChange={field.onChange}
+                disabled={!watchedAcademicYearId || isEdit}
+              >
+                <SelectTrigger id="classAcademicYearId">
+                  <SelectValue placeholder={
+                    !watchedAcademicYearId 
+                      ? (t('questionBank.selectAcademicYearFirst') || 'Select academic year first')
+                      : (t('questionBank.selectClass') || 'Select class')
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  {(formClassAcademicYears || [])
+                    .filter((cay): cay is NonNullable<typeof cay> => 
+                      Boolean(cay?.id && cay?.class?.name)
+                    )
+                    .map((cay, idx) => (
+                      <SelectItem 
+                        key={`cay-form-${cay.id}-${idx}`} 
+                        value={String(cay.id)}
+                      >
+                        {cay.class?.name || `Class ${idx + 1}`}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {form.formState.errors.classAcademicYearId && (
+            <p className="text-sm text-destructive mt-1">{form.formState.errors.classAcademicYearId.message}</p>
           )}
-        />
-      </div>
+        </div>
+
+        {/* Class Subject (Required) - Subject assigned to class in academic year */}
+        <div>
+          <Label>{t('questionBank.classSubject') || 'Subject'} *</Label>
+          <Controller
+            control={form.control}
+            name="classSubjectId"
+            render={({ field }) => (
+              <Select 
+                value={field.value} 
+                onValueChange={field.onChange}
+                disabled={!watchedClassAcademicYearId || isEdit}
+              >
+                <SelectTrigger id="classSubjectId">
+                  <SelectValue placeholder={
+                    !watchedClassAcademicYearId 
+                      ? (t('questionBank.selectClassFirst') || 'Select class first')
+                      : (t('questionBank.selectSubject') || 'Select subject')
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  {(classSubjects || [])
+                    .filter((cs): cs is NonNullable<typeof cs> => 
+                      Boolean(cs?.id && cs?.subject?.name)
+                    )
+                    .map((cs, idx) => (
+                      <SelectItem 
+                        key={`class-subject-form-${cs.id}-${idx}`} 
+                        value={String(cs.id)}
+                      >
+                        {cs.subject?.name || 'Unknown Subject'}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {form.formState.errors.classSubjectId && (
+            <p className="text-sm text-destructive mt-1">{form.formState.errors.classSubjectId.message}</p>
+          )}
+        </div>
 
       {/* Type, Difficulty, Marks */}
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <Label htmlFor="type">{t('questionBank.type') || 'Type'} *</Label>
+          <Label>{t('questionBank.type') || 'Type'} *</Label>
           <Controller
             control={form.control}
             name="type"
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
+                <SelectTrigger id="type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {QUESTION_TYPES.map(type => (
-                    <SelectItem key={type} value={type}>
-                      {t(`questionBank.type.${type}`) || typeConfig[type as QuestionType].label}
-                    </SelectItem>
-                  ))}
+                  {QUESTION_TYPES
+                    .filter((type): type is { value: QuestionType; label: string } => Boolean(type?.value))
+                    .map((type, idx) => (
+                      <SelectItem 
+                        key={`type-form-${type.value}-${idx}`} 
+                        value={type.value}
+                      >
+                        {t(`questionBank.type.${type.value}`) || type.label}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             )}
           />
         </div>
         <div>
-          <Label htmlFor="difficulty">{t('questionBank.difficulty') || 'Difficulty'} *</Label>
+          <Label>{t('questionBank.difficulty') || 'Difficulty'} *</Label>
           <Controller
             control={form.control}
             name="difficulty"
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
+                <SelectTrigger id="difficulty">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {QUESTION_DIFFICULTIES.map(diff => (
-                    <SelectItem key={diff} value={diff}>
-                      {t(`questionBank.difficulty.${diff}`) || difficultyConfig[diff as QuestionDifficulty].label}
-                    </SelectItem>
-                  ))}
+                  {QUESTION_DIFFICULTIES
+                    .filter((diff): diff is { value: QuestionDifficulty; label: string } => Boolean(diff?.value))
+                    .map((diff, idx) => (
+                      <SelectItem 
+                        key={`difficulty-form-${diff.value}-${idx}`} 
+                        value={diff.value}
+                      >
+                        {t(`questionBank.difficulty.${diff.value}`) || diff.label}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             )}
@@ -524,6 +781,7 @@ export function QuestionBank() {
         <div>
           <Label htmlFor="marks">{t('questionBank.marks') || 'Marks'} *</Label>
           <Input
+            id="marks"
             type="number"
             step="0.5"
             min="0.5"
@@ -547,6 +805,7 @@ export function QuestionBank() {
               name="textRtl"
               render={({ field }) => (
                 <Switch
+                  id="textRtl"
                   checked={field.value}
                   onCheckedChange={field.onChange}
                 />
@@ -555,6 +814,7 @@ export function QuestionBank() {
           </div>
         </div>
         <Textarea
+          id="text"
           {...form.register('text')}
           rows={4}
           dir={form.watch('textRtl') ? 'rtl' : 'ltr'}
@@ -571,17 +831,26 @@ export function QuestionBank() {
         <div>
           <Label className="mb-2 block">{t('questionBank.options') || 'Options'}</Label>
           <div className="space-y-2">
-            {optionFields.map((field, index) => (
-              <div key={field.id} className="flex items-center gap-2">
+            {optionFields.map((field, index) => {
+              const fieldId = field.id || `option-field-${index}`;
+              const uniqueKey = `option-${fieldId}-${index}`;
+              const optionError = form.formState.errors.options?.[index];
+              return (
+              <div key={uniqueKey} className="flex items-center gap-2">
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-sm font-medium">
                   {field.key}
                 </div>
-                <Input
-                  {...form.register(`options.${index}.text`)}
-                  placeholder={t('questionBank.optionPlaceholder') || 'Option text...'}
-                  className="flex-1"
-                  disabled={watchedType === 'true_false'}
-                />
+                <div className="flex-1">
+                  <Input
+                    {...form.register(`options.${index}.text`)}
+                    placeholder={t('questionBank.optionPlaceholder') || 'Option text...'}
+                    className={cn(optionError?.text && 'border-destructive')}
+                    disabled={watchedType === 'true_false'}
+                  />
+                  {optionError?.text && (
+                    <p className="text-sm text-destructive mt-1">{optionError.text.message}</p>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <Checkbox
                     checked={form.watch(`options.${index}.isCorrect`)}
@@ -603,7 +872,8 @@ export function QuestionBank() {
                   </Button>
                 )}
               </div>
-            ))}
+              );
+            })}
             {watchedType === 'mcq' && optionFields.length < 6 && (
               <Button
                 type="button"
@@ -615,6 +885,9 @@ export function QuestionBank() {
                 {t('questionBank.addOption') || 'Add Option'}
               </Button>
             )}
+            {form.formState.errors.options && typeof form.formState.errors.options === 'object' && 'message' in form.formState.errors.options && (
+              <p className="text-sm text-destructive mt-1">{form.formState.errors.options.message}</p>
+            )}
           </div>
         </div>
       )}
@@ -624,6 +897,7 @@ export function QuestionBank() {
         <div>
           <Label htmlFor="correctAnswer">{t('questionBank.correctAnswer') || 'Model Answer'}</Label>
           <Textarea
+            id="correctAnswer"
             {...form.register('correctAnswer')}
             rows={3}
             placeholder={t('questionBank.correctAnswerPlaceholder') || 'Enter model answer (optional)...'}
@@ -635,6 +909,7 @@ export function QuestionBank() {
       <div>
         <Label htmlFor="reference">{t('questionBank.reference') || 'Reference'}</Label>
         <Input
+          id="reference"
           {...form.register('reference')}
           placeholder={t('questionBank.referencePlaceholder') || 'e.g., Chapter 5, Page 120'}
         />
@@ -656,6 +931,7 @@ export function QuestionBank() {
       </div>
     </div>
   );
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -681,7 +957,7 @@ export function QuestionBank() {
             </>
           )}
           {hasCreate && (
-            <Button onClick={openCreateDialog}>
+            <Button type="button" onClick={openCreateDialog}>
               <Plus className="h-4 w-4 mr-2" />
               {t('questionBank.create') || 'Create Question'}
             </Button>
@@ -704,33 +980,55 @@ export function QuestionBank() {
               />
             </div>
 
-            {/* School Filter */}
-            <Select value={selectedSchoolId || 'all'} onValueChange={(val) => setSelectedSchoolId(val === 'all' ? undefined : val)}>
+            {/* Academic Year Filter */}
+            <Select value={selectedAcademicYearId || 'all'} onValueChange={(val) => setSelectedAcademicYearId(val === 'all' ? undefined : val)}>
               <SelectTrigger>
-                <SelectValue placeholder={t('questionBank.filterSchool') || 'School'} />
+                <SelectValue placeholder={t('questionBank.filterAcademicYear') || 'Academic Year'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All Schools'}</SelectItem>
-                {(schools || []).map(school => (
-                  <SelectItem key={school.id} value={school.id}>
-                    {school.schoolName}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">{t('common.all') || 'All Academic Years'}</SelectItem>
+                {(academicYears || [])
+                  .filter((ay): ay is NonNullable<typeof ay> => 
+                    Boolean(ay?.id && ay?.name)
+                  )
+                  .map((ay, idx) => (
+                    <SelectItem 
+                      key={`academic-year-filter-${ay.id}-${idx}`} 
+                      value={String(ay.id)}
+                    >
+                      {ay.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
-            {/* Subject Filter */}
-            <Select value={selectedSubjectId || 'all'} onValueChange={(val) => setSelectedSubjectId(val === 'all' ? undefined : val)}>
+            {/* Class Academic Year Filter */}
+            <Select 
+              value={selectedClassAcademicYearId || 'all'} 
+              onValueChange={(val) => setSelectedClassAcademicYearId(val === 'all' ? undefined : val)}
+              disabled={!selectedAcademicYearId}
+            >
               <SelectTrigger>
-                <SelectValue placeholder={t('questionBank.filterSubject') || 'Subject'} />
+                <SelectValue placeholder={
+                  !selectedAcademicYearId 
+                    ? (t('questionBank.selectAcademicYearFirst') || 'Select academic year first')
+                    : (t('questionBank.filterClass') || 'Class')
+                } />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('common.all') || 'All Subjects'}</SelectItem>
-                {(subjects || []).map(subject => (
-                  <SelectItem key={subject.id} value={subject.id}>
-                    {subject.name}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">{t('common.all') || 'All Classes'}</SelectItem>
+                {(classAcademicYears || [])
+                  .filter((cay): cay is NonNullable<typeof cay> => 
+                    Boolean(cay?.id && cay?.class?.name)
+                  )
+                  .map((cay, idx) => (
+                    <SelectItem 
+                      key={`cay-filter-${cay.id}-${idx}`} 
+                      value={String(cay.id)}
+                    >
+                      {cay.class?.name || `Class ${idx + 1}`}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
@@ -739,13 +1037,18 @@ export function QuestionBank() {
               <SelectTrigger>
                 <SelectValue placeholder={t('questionBank.filterType') || 'Type'} />
               </SelectTrigger>
-              <SelectContent>
+                <SelectContent>
                 <SelectItem value="all">{t('common.all') || 'All Types'}</SelectItem>
-                {QUESTION_TYPES.map(type => (
-                  <SelectItem key={type} value={type}>
-                    {t(`questionBank.type.${type}`) || typeConfig[type as QuestionType].label}
-                  </SelectItem>
-                ))}
+                {QUESTION_TYPES
+                  .filter((type): type is { value: QuestionType; label: string } => Boolean(type?.value))
+                  .map((type, idx) => (
+                    <SelectItem 
+                      key={`filter-type-${type.value}-${idx}`} 
+                      value={type.value}
+                    >
+                      {t(`questionBank.type.${type.value}`) || type.label}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
@@ -756,11 +1059,16 @@ export function QuestionBank() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('common.all') || 'All Difficulties'}</SelectItem>
-                {QUESTION_DIFFICULTIES.map(diff => (
-                  <SelectItem key={diff} value={diff}>
-                    {t(`questionBank.difficulty.${diff}`) || difficultyConfig[diff as QuestionDifficulty].label}
-                  </SelectItem>
-                ))}
+                {QUESTION_DIFFICULTIES
+                  .filter((diff): diff is { value: QuestionDifficulty; label: string } => Boolean(diff?.value))
+                  .map((diff, idx) => (
+                    <SelectItem 
+                      key={`filter-difficulty-${diff.value}-${idx}`} 
+                      value={diff.value}
+                    >
+                      {t(`questionBank.difficulty.${diff.value}`) || diff.label}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -811,8 +1119,10 @@ export function QuestionBank() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {questions.map(question => (
-                    <TableRow key={question.id}>
+                  {questions.map((question, idx) => {
+                    const questionId = question?.id || `question-${idx}`;
+                    return (
+                    <TableRow key={`question-row-${questionId}-${idx}`}>
                       <TableCell>
                         <Checkbox
                           checked={selectedQuestionIds.includes(question.id)}
@@ -885,7 +1195,8 @@ export function QuestionBank() {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
 
@@ -929,13 +1240,24 @@ export function QuestionBank() {
               {t('questionBank.createDescription') || 'Add a new question to the question bank'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleCreate)}>
+          <form onSubmit={form.handleSubmit(handleCreate, (errors) => {
+            if (import.meta.env.DEV) {
+              console.error('[QuestionBank] Form validation errors:', errors);
+            }
+            // Show first validation error
+            const firstError = Object.values(errors)[0];
+            if (firstError?.message) {
+              showToast.error(firstError.message);
+            } else {
+              showToast.error(t('common.validationError') || 'Please fix form errors');
+            }
+          })}>
             <QuestionFormFields />
             <DialogFooter className="mt-4">
               <Button type="button" variant="outline" onClick={() => { setIsCreateDialogOpen(false); resetForm(); }}>
                 {t('common.cancel') || 'Cancel'}
               </Button>
-              <Button type="submit" disabled={createQuestion.isPending}>
+              <Button type="submit" disabled={createQuestion.isPending || createQuestion.isError}>
                 {createQuestion.isPending ? (t('common.creating') || 'Creating...') : (t('common.create') || 'Create')}
               </Button>
             </DialogFooter>
@@ -958,7 +1280,7 @@ export function QuestionBank() {
               <Button type="button" variant="outline" onClick={() => { setIsEditDialogOpen(false); resetForm(); }}>
                 {t('common.cancel') || 'Cancel'}
               </Button>
-              <Button type="submit" disabled={updateQuestion.isPending}>
+              <Button type="submit" disabled={updateQuestion.isPending || updateQuestion.isError}>
                 {updateQuestion.isPending ? (t('common.updating') || 'Updating...') : (t('common.update') || 'Update')}
               </Button>
             </DialogFooter>
@@ -1002,21 +1324,26 @@ export function QuestionBank() {
                 <div className="space-y-2">
                   <Label>{t('questionBank.options') || 'Options'}</Label>
                   <div className="space-y-2">
-                    {selectedQuestion.options.map((opt, idx) => (
+                    {selectedQuestion.options.map((opt, idx) => {
+                      const optKey = opt?.label || opt?.id || `opt-${idx}`;
+                      const uniqueKey = `option-view-${optKey}-${idx}`;
+                      const optionLabel = opt?.label || String.fromCharCode(65 + idx); // A, B, C, D, etc.
+                      return (
                       <div 
-                        key={`${opt.key}-${idx}`}
+                        key={uniqueKey}
                         className={cn(
                           "flex items-center gap-2 p-2 rounded",
                           opt.isCorrect && "bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800"
                         )}
                       >
-                        <span className="font-medium">{opt.key}.</span>
+                        <span className="font-medium">{optionLabel}.</span>
                         <span>{opt.text}</span>
                         {opt.isCorrect && (
                           <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
                         )}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

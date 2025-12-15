@@ -17,7 +17,7 @@ import {
 import type { ExamPaperTemplate, ExamPaperItem, ExamPaperLanguage } from '@/hooks/useExamPapers';
 import { useQuestions } from '@/hooks/useQuestions';
 import type { Question, QuestionFilters } from '@/hooks/useQuestions';
-import { useSubjects } from '@/hooks/useSubjects';
+import { useSubjects, useClassSubjects } from '@/hooks/useSubjects';
 import { useSchools } from '@/hooks/useSchools';
 import { useExams } from '@/hooks/useExams';
 import { useClassAcademicYears } from '@/hooks/useClasses';
@@ -30,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -104,7 +105,7 @@ export function ExamPaperTemplates() {
   const { data: schools } = useSchools(organizationId);
   const { data: academicYears } = useAcademicYears(organizationId);
   const { data: currentAcademicYear } = useCurrentAcademicYear(organizationId);
-  const { subjects } = useSubjects(organizationId);
+  const { data: subjects } = useSubjects(organizationId);
   const { data: exams } = useExams(organizationId);
   const { data: classAcademicYears } = useClassAcademicYears(selectedAcademicYearId, organizationId);
 
@@ -306,59 +307,87 @@ export function ExamPaperTemplates() {
     return exam?.name;
   };
 
-  const TemplateFormFields = ({ isEdit = false }: { isEdit?: boolean }) => (
-    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-      {/* School & Subject */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="schoolId">{t('examPapers.school') || 'School'} *</Label>
-          <Controller
-            control={form.control}
-            name="schoolId"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('examPapers.selectSchool') || 'Select school'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(schools || []).map(school => (
-                    <SelectItem key={school.id} value={school.id}>
-                      {school.schoolName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+  const TemplateFormFields = ({ isEdit = false }: { isEdit?: boolean }) => {
+    const watchedClassAcademicYearId = form.watch('classAcademicYearId');
+    const { data: classSubjects } = useClassSubjects(watchedClassAcademicYearId || undefined, organizationId);
+
+    // Create subject options with class and academic year info
+    const subjectOptions = useMemo<ComboboxOption[]>(() => {
+      if (watchedClassAcademicYearId && classSubjects && classSubjects.length > 0) {
+        // Use class subjects with class/academic year info
+        return classSubjects.map(cs => {
+          const className = cs.classAcademicYear?.class?.name || '—';
+          const academicYearName = cs.classAcademicYear?.academicYear?.name || '—';
+          const subjectName = cs.subject?.name || '—';
+          return {
+            value: cs.subjectId,
+            label: `${subjectName} (${className} - ${academicYearName})`,
+          };
+        });
+      } else {
+        // Use all subjects (no class/academic year info available)
+        return (subjects || []).map(subject => ({
+          value: subject.id,
+          label: subject.name,
+        }));
+      }
+    }, [watchedClassAcademicYearId, classSubjects, subjects]);
+
+    return (
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+        {/* School & Subject */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="schoolId">{t('examPapers.school') || 'School'} *</Label>
+            <Controller
+              control={form.control}
+              name="schoolId"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('examPapers.selectSchool') || 'Select school'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(schools || []).map(school => (
+                      <SelectItem key={school.id} value={school.id}>
+                        {school.schoolName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {form.formState.errors.schoolId && (
+              <p className="text-sm text-destructive mt-1">{form.formState.errors.schoolId.message}</p>
             )}
-          />
-          {form.formState.errors.schoolId && (
-            <p className="text-sm text-destructive mt-1">{form.formState.errors.schoolId.message}</p>
-          )}
-        </div>
-        <div>
-          <Label htmlFor="subjectId">{t('examPapers.subject') || 'Subject'} *</Label>
-          <Controller
-            control={form.control}
-            name="subjectId"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('examPapers.selectSubject') || 'Select subject'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(subjects || []).map(subject => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          </div>
+          <div>
+            <Label htmlFor="subjectId">{t('examPapers.subject') || 'Subject'} *</Label>
+            <Controller
+              control={form.control}
+              name="subjectId"
+              render={({ field }) => (
+                <Combobox
+                  options={subjectOptions}
+                  value={field.value || ''}
+                  onValueChange={field.onChange}
+                  placeholder={t('examPapers.selectSubject') || 'Select subject'}
+                  searchPlaceholder={t('common.search') || 'Search subjects...'}
+                  emptyText={t('common.noResults') || 'No subjects found'}
+                  className="w-full"
+                />
+              )}
+            />
+            {form.formState.errors.subjectId && (
+              <p className="text-sm text-destructive mt-1">{form.formState.errors.subjectId.message}</p>
             )}
-          />
-          {form.formState.errors.subjectId && (
-            <p className="text-sm text-destructive mt-1">{form.formState.errors.subjectId.message}</p>
-          )}
+            {watchedClassAcademicYearId && classSubjects && classSubjects.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('examPapers.subjectsForClass') || 'Showing subjects for selected class'}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* Exam (optional) */}
       <div>
@@ -367,12 +396,12 @@ export function ExamPaperTemplates() {
           control={form.control}
           name="examId"
           render={({ field }) => (
-            <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || null)}>
+            <Select value={field.value || '__none__'} onValueChange={(val) => field.onChange(val === '__none__' ? null : val)}>
               <SelectTrigger>
                 <SelectValue placeholder={t('examPapers.selectExam') || 'Select exam (optional)'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t('examPapers.genericTemplate') || 'Generic Template (no exam)'}</SelectItem>
+                <SelectItem value="__none__">{t('examPapers.genericTemplate') || 'Generic Template (no exam)'}</SelectItem>
                 {(exams || []).map(exam => (
                   <SelectItem key={exam.id} value={exam.id}>
                     {exam.name}
@@ -382,6 +411,33 @@ export function ExamPaperTemplates() {
             </Select>
           )}
         />
+      </div>
+
+      {/* Class Academic Year (optional - to filter subjects) */}
+      <div>
+        <Label htmlFor="classAcademicYearId">{t('examPapers.classAcademicYear') || 'Class & Academic Year (Optional)'}</Label>
+        <Controller
+          control={form.control}
+          name="classAcademicYearId"
+          render={({ field }) => (
+            <Select value={field.value || '__none__'} onValueChange={(val) => field.onChange(val === '__none__' ? null : val)}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('examPapers.selectClassAcademicYear') || 'Select class & academic year (optional)'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">{t('common.all') || 'All Classes'}</SelectItem>
+                {(classAcademicYears || []).map(cay => (
+                  <SelectItem key={cay.id} value={cay.id}>
+                    {cay.class?.name || '—'} - {cay.academicYear?.name || '—'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          {t('examPapers.classAcademicYearHint') || 'Select to filter subjects by class and academic year'}
+        </p>
       </div>
 
       {/* Title & Language */}
@@ -408,9 +464,9 @@ export function ExamPaperTemplates() {
                 </SelectTrigger>
                 <SelectContent>
                   {EXAM_PAPER_LANGUAGES.map(lang => (
-                    <SelectItem key={lang} value={lang}>
-                      {languageConfig[lang as ExamPaperLanguage].label}
-                      {languageConfig[lang as ExamPaperLanguage].isRtl && ' (RTL)'}
+                    <SelectItem key={lang.value} value={lang.value}>
+                      {lang.label}
+                      {languageConfig[lang.value]?.isRtl && ' (RTL)'}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -301,7 +301,7 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
                   const isPass = subject.is_pass;
 
                   return (
-                    <TableRow key={subject.exam_subject_id || subject.id || index}>
+                    <TableRow key={`${subject.exam_subject_id || subject.id || `subject-${index}`}`}>
                       <TableCell className="font-medium">{index + 1}</TableCell>
                       <TableCell className="font-medium">{subjectName}</TableCell>
                       <TableCell className="text-center">{totalMarks}</TableCell>
@@ -690,10 +690,10 @@ export default function StudentExamReport() {
                   examStudentsLoading ? (
                     <div className="text-sm text-muted-foreground text-center py-4">{t('common.loading') || 'Loading...'}</div>
                   ) : studentOptions.length > 0 ? (
-                    studentOptions.map((option) => {
+                    studentOptions.map((option, optIdx) => {
                       const isSelected = selectedStudentIds.includes(option.value);
                       return (
-                        <div key={option.value} className="flex items-center space-x-2">
+                        <div key={option.value || `student-option-${optIdx}`} className="flex items-center space-x-2">
                           <Checkbox
                             id={`student-${option.value}`}
                             checked={isSelected}
@@ -768,10 +768,11 @@ export default function StudentExamReport() {
               reportsData.map((reportData, index) => {
                 const studentId = selectedStudentIds[index];
                 const selectedStudent = students?.find((s) => s.id === studentId);
+                const uniqueKey = studentId || `report-${index}`;
 
                 if (!reportData) {
                   return (
-                    <Card key={`report-${index}`}>
+                    <Card key={`no-data-${uniqueKey}`}>
                       <CardContent className="flex items-center justify-center py-12">
                         <div className="text-center space-y-2">
                           <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
@@ -783,7 +784,7 @@ export default function StudentExamReport() {
                 }
 
                 return (
-                  <div key={`report-${index}`} className={selectedStudentIds.length > 1 ? 'break-inside-avoid page-break-after' : ''}>
+                  <div key={`report-${uniqueKey}`} className={selectedStudentIds.length > 1 ? 'break-inside-avoid page-break-after' : ''}>
                     <GradeCard
                       reportData={reportData}
                       selectedStudent={selectedStudent}
