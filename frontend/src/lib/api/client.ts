@@ -3023,6 +3023,7 @@ export const dmsApi = {
     delete: async (id: string) => apiClient.delete(`/dms/templates/${id}`),
     duplicate: async (id: string, data?: { name?: string }) => apiClient.post(`/dms/templates/${id}/duplicate`, data || {}),
     preview: async (id: string, variables?: Record<string, string>) => apiClient.post(`/dms/templates/${id}/preview`, { variables: variables || {} }),
+    getAvailableFields: async (recipientType: string) => apiClient.get('/dms/templates/fields/available', { recipient_type: recipientType }),
   },
 
   letterheads: {
