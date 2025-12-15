@@ -80,6 +80,98 @@ class AttendanceSessionController extends Controller
         return response()->json($sessions);
     }
 
+    /**
+     * Get today's attendance summary (for dashboard)
+     * Returns today's attendance stats only, not full list
+     */
+    public function todaySummary(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('attendance_sessions.read')) {
+                return response()->json(['error' => 'Access Denied'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for attendance_sessions.read: ' . $e->getMessage());
+            return response()->json(['error' => 'Access Denied'], 403);
+        }
+
+        $orgId = $profile->organization_id;
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        
+        if (empty($schoolIds)) {
+            return response()->json([
+                'today' => [
+                    'percentage' => 0,
+                    'present' => 0,
+                    'absent' => 0,
+                    'total' => 0,
+                ],
+            ]);
+        }
+
+        try {
+            $today = Carbon::today()->toDateString();
+
+            // Get today's attendance sessions
+            $todaySessions = AttendanceSession::where('organization_id', $orgId)
+                ->whereDate('session_date', $today)
+                ->where(function ($q) use ($schoolIds) {
+                    $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
+                })
+                ->whereNull('deleted_at')
+                ->get();
+
+            $totalPresent = 0;
+            $totalAbsent = 0;
+            $totalStudents = 0;
+
+            foreach ($todaySessions as $session) {
+                $records = AttendanceRecord::where('attendance_session_id', $session->id)
+                    ->whereNull('deleted_at')
+                    ->get();
+
+                foreach ($records as $record) {
+                    $totalStudents++;
+                    if ($record->status === 'present') {
+                        $totalPresent++;
+                    } elseif ($record->status === 'absent') {
+                        $totalAbsent++;
+                    }
+                }
+            }
+
+            $attendancePercentage = $totalStudents > 0
+                ? round(($totalPresent / $totalStudents) * 100)
+                : 0;
+
+            return response()->json([
+                'today' => [
+                    'percentage' => $attendancePercentage,
+                    'present' => $totalPresent,
+                    'absent' => $totalAbsent,
+                    'total' => $totalStudents,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Error fetching attendance today summary: ' . $e->getMessage());
+            return response()->json([
+                'today' => [
+                    'percentage' => 0,
+                    'present' => 0,
+                    'absent' => 0,
+                    'total' => 0,
+                ],
+            ]);
+        }
+    }
+
     public function store(StoreAttendanceSessionRequest $request)
     {
         $user = $request->user();

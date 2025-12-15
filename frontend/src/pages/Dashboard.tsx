@@ -65,11 +65,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLanguage } from "@/hooks/useLanguage";
 import { LoadingSpinner } from "@/components/ui/loading";
-import { useAssetStats, useAssets } from "@/hooks/useAssets";
-import { useLibraryBooks, useLibraryLoans } from "@/hooks/useLibrary";
-import { useLeaveRequests } from "@/hooks/useLeaveRequests";
-import { useAttendanceSessions } from "@/hooks/useAttendance";
-import { useMemo } from "react";
+import { useAssetSummary } from "@/hooks/useAssetSummary";
+import { useLibrarySummary } from "@/hooks/useLibrarySummary";
+import { useLeaveRequestsSummary } from "@/hooks/useLeaveRequestsSummary";
+import { useAttendanceTodaySummary } from "@/hooks/useAttendanceTodaySummary";
+import { useMemo, useState, useEffect } from "react";
+import { useBootstrap } from "@/hooks/useBootstrap";
 
 export default function Dashboard() {
   const { t } = useLanguage();
@@ -86,28 +87,44 @@ export default function Dashboard() {
   const { data: recentActivities, isLoading: activitiesLoading } = useRecentActivities();
   const { data: upcomingEvents, isLoading: eventsLoading } = useUpcomingEvents();
   
-  // Fetch assets data
-  const { data: assetStats, isLoading: assetStatsLoading } = useAssetStats();
-  const { assets: allAssets = [] } = useAssets(undefined, false);
+  // Use bootstrap data for initial load - this is the primary data source
+  const { data: bootstrapData } = useBootstrap();
   
-  // Fetch library books data
-  const { data: libraryBooks = [] } = useLibraryBooks(false);
-  const { data: libraryLoans = [] } = useLibraryLoans(false);
+  // Only fetch detailed summaries after initial render (lazy load)
+  // This prevents them from blocking initial page load
+  // They will load after bootstrap completes
+  const [loadSummaries, setLoadSummaries] = useState(false);
   
-  // Fetch leave requests data
-  const { requests: leaveRequests = [] } = useLeaveRequests({});
+  useEffect(() => {
+    // Load summaries after bootstrap data is available (or 1 second delay)
+    if (bootstrapData) {
+      const timer = setTimeout(() => {
+        setLoadSummaries(true);
+      }, 1000); // 1 second delay - allows bootstrap to complete first
+      return () => clearTimeout(timer);
+    }
+  }, [bootstrapData]);
   
-  // Fetch attendance data
-  const { sessions: attendanceSessions = [] } = useAttendanceSessions({}, false);
+  // Fetch assets data (only after initial load)
+  const { data: assetSummary, isLoading: assetStatsLoading } = useAssetSummary(loadSummaries);
+  
+  // Fetch library summary (only after initial load)
+  const { data: librarySummary } = useLibrarySummary(loadSummaries);
+  
+  // Fetch leave requests summary (only after initial load)
+  const { data: leaveRequestsSummary } = useLeaveRequestsSummary(loadSummaries);
+  
+  // Fetch attendance today summary (only after initial load)
+  const { data: attendanceTodaySummary } = useAttendanceTodaySummary(loadSummaries);
 
   const handleStatClick = (path: string) => {
     navigate(path);
   };
 
-  // Compute assets statistics
+  // Compute assets statistics from summary
   const assetsData = useMemo(() => {
-    if (!assetStats) return null;
-    const stats = assetStats as any; // Type assertion for API response
+    if (!assetSummary) return null;
+    const stats = assetSummary as any; // Type assertion for API response
     const totalValue = stats.total_purchase_value || 0;
     const statusCounts = stats.status_counts || {};
     const statusData = Object.entries(statusCounts).map(([name, value]) => ({
@@ -120,49 +137,60 @@ export default function Dashboard() {
       statusData,
       statusCounts,
     };
-  }, [assetStats]);
+  }, [assetSummary]);
 
-  // Compute books statistics
+  // Compute books statistics from summary
   const booksData = useMemo(() => {
-    const totalBooks = libraryBooks.length;
-    const totalCopies = libraryBooks.reduce((sum, book) => sum + (book.total_copies || 0), 0);
-    const availableCopies = libraryBooks.reduce((sum, book) => sum + (book.available_copies || 0), 0);
-    const onLoan = totalCopies - availableCopies;
+    if (!librarySummary) {
+      return {
+        totalBooks: 0,
+        totalCopies: 0,
+        availableCopies: 0,
+        onLoan: 0,
+        booksStatusData: [],
+      };
+    }
     const booksStatusData = [
-      { name: "Available", value: availableCopies, color: "#10b981" },
-      { name: "On Loan", value: onLoan, color: "#f59e0b" },
+      { name: "Available", value: librarySummary.available_copies, color: "#10b981" },
+      { name: "On Loan", value: librarySummary.on_loan, color: "#f59e0b" },
     ];
     return {
-      totalBooks,
-      totalCopies,
-      availableCopies,
-      onLoan,
+      totalBooks: librarySummary.total_books,
+      totalCopies: librarySummary.total_copies,
+      availableCopies: librarySummary.available_copies,
+      onLoan: librarySummary.on_loan,
       booksStatusData,
     };
-  }, [libraryBooks]);
+  }, [librarySummary]);
 
-  // Compute leave requests statistics
+  // Compute leave requests statistics from summary
   const leaveRequestsData = useMemo(() => {
-    const pending = leaveRequests.filter(r => r.status === 'pending').length;
-    const approved = leaveRequests.filter(r => r.status === 'approved').length;
-    const rejected = leaveRequests.filter(r => r.status === 'rejected').length;
+    if (!leaveRequestsSummary) {
+      return {
+        total: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        leaveStatusData: [],
+      };
+    }
     const leaveStatusData = [
-      { name: "Pending", value: pending, color: "#f59e0b" },
-      { name: "Approved", value: approved, color: "#10b981" },
-      { name: "Rejected", value: rejected, color: "#ef4444" },
+      { name: "Pending", value: leaveRequestsSummary.pending, color: "#f59e0b" },
+      { name: "Approved", value: leaveRequestsSummary.approved, color: "#10b981" },
+      { name: "Rejected", value: leaveRequestsSummary.rejected, color: "#ef4444" },
     ];
     return {
-      total: leaveRequests.length,
-      pending,
-      approved,
-      rejected,
+      total: leaveRequestsSummary.total,
+      pending: leaveRequestsSummary.pending,
+      approved: leaveRequestsSummary.approved,
+      rejected: leaveRequestsSummary.rejected,
       leaveStatusData,
     };
-  }, [leaveRequests]);
+  }, [leaveRequestsSummary]);
 
-  // Compute attendance statistics
+  // Compute attendance statistics from summary
   const attendanceDataComputed = useMemo(() => {
-    if (!attendanceSessions || attendanceSessions.length === 0) {
+    if (!attendanceTodaySummary) {
       return {
         today: {
           percentage: 0,
@@ -170,85 +198,15 @@ export default function Dashboard() {
           absent: 0,
           total: 0,
         },
-        weeklyTrend: [],
+        weeklyTrend: [], // Weekly trend not available in summary
       };
     }
-
-    const sessions = attendanceSessions as any[]; // Type assertion for domain types
-    const today = new Date().toISOString().split('T')[0];
-    const todaySessions = sessions.filter(s => {
-      const sessionDate = s.sessionDate ? new Date(s.sessionDate).toISOString().split('T')[0] : null;
-      return sessionDate === today;
-    });
-    
-    let totalPresent = 0;
-    let totalAbsent = 0;
-    let totalStudents = 0;
-    
-    todaySessions.forEach(session => {
-      if (session.records) {
-        session.records.forEach((record: any) => {
-          totalStudents++;
-          if (record.status === 'present') {
-            totalPresent++;
-          } else if (record.status === 'absent') {
-            totalAbsent++;
-          }
-        });
-      }
-    });
-    
-    const attendancePercentage = totalStudents > 0 
-      ? Math.round((totalPresent / totalStudents) * 100) 
-      : 0;
-    
-    // Weekly attendance trend (last 7 days)
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (6 - i));
-      return date.toISOString().split('T')[0];
-    });
-    
-    const weeklyTrend = last7Days.map(date => {
-      const daySessions = sessions.filter(s => {
-        const sessionDate = s.sessionDate ? new Date(s.sessionDate).toISOString().split('T')[0] : null;
-        return sessionDate === date;
-      });
-      
-      let present = 0;
-      let total = 0;
-      
-      daySessions.forEach(session => {
-        if (session.records) {
-          session.records.forEach((record: any) => {
-            total++;
-            if (record.status === 'present') {
-              present++;
-            }
-          });
-        }
-      });
-      
-      const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
-      
-      return {
-        date: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
-        percentage,
-        present,
-        total,
-      };
-    });
     
     return {
-      today: {
-        percentage: attendancePercentage,
-        present: totalPresent,
-        absent: totalAbsent,
-        total: totalStudents,
-      },
-      weeklyTrend,
+      today: attendanceTodaySummary.today,
+      weeklyTrend: [], // Weekly trend not available in summary - would need separate endpoint if needed
     };
-  }, [attendanceSessions]);
+  }, [attendanceTodaySummary]);
 
   // Create stats cards from real data
   const statsCards = dashboardStats ? [

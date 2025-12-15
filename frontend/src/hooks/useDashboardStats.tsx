@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { staffApi, studentsApi, classesApi, roomsApi, buildingsApi, hostelApi } from '@/lib/api/client';
 import { useProfile } from './useProfiles';
 import { useAuth } from './useAuth';
@@ -36,6 +36,7 @@ export interface DashboardStats {
 export const useDashboardStats = () => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: ['dashboard-stats', profile?.organization_id],
@@ -72,30 +73,58 @@ export const useDashboardStats = () => {
         };
       }
 
+      // Check if we have bootstrap data cached (from useAuth)
+      const bootstrapData = queryClient.getQueryData(['app', 'bootstrap']) as any;
+      if (bootstrapData?.dashboardCounters) {
+        const counters = bootstrapData.dashboardCounters;
+        
+        // Use bootstrap counters - skip API calls for basic counts
+        // Gender breakdown can be fetched later if needed (lazy load)
+        return {
+          totalStudents: counters.students_count || 0,
+          totalStaff: counters.staff_count || 0,
+          totalClasses: counters.classes_count || 0,
+          totalRooms: counters.rooms_count || 0,
+          totalBuildings: counters.buildings_count || 0,
+          studentGender: {
+            male: 0, // Will be fetched later if needed
+            female: 0
+          },
+          todayAttendance: {
+            percentage: 0,
+            present: 0,
+            total: 0
+          },
+          feeCollection: {
+            amount: 0,
+            currency: '₹'
+          },
+          donations: {
+            amount: 0,
+            currency: '₹'
+          },
+          hostelOccupancy: {
+            percentage: 0,
+            occupied: 0,
+            total: 0
+          }
+        };
+      }
+
+      // Fallback: If no bootstrap data, fetch minimal data needed
       const organizationId = profile.organization_id || undefined;
-
-      // Fetch all stats in parallel
-      const [staffStats, studentStats, classes, rooms, buildings, hostelOverview] = await Promise.all([
-        staffApi.stats({ organization_id: organizationId }).catch(() => ({ total: 0 })),
-        studentsApi.stats({ organization_id: organizationId }).catch(() => ({ total: 0, male: 0, female: 0 })),
-        classesApi.list({ organization_id: organizationId }).catch(() => []),
-        roomsApi.list({ organization_id: organizationId }).catch(() => []),
-        buildingsApi.list({ organization_id: organizationId }).catch(() => []),
-        hostelApi
-          .overview({ organization_id: organizationId })
-          .catch(() => ({
-            summary: { total_rooms: 0, occupied_rooms: 0, total_students_in_rooms: 0 },
-          })),
-      ]);
-
+      
+      // Only fetch student stats for gender breakdown (bootstrap doesn't include this)
+      const studentStats = await studentsApi.stats({ organization_id: organizationId }).catch(() => ({ total: 0, male: 0, female: 0 }));
       const studentStatsData = studentStats as any;
-
+      
+      // Use default counters if bootstrap not available
       return {
-        totalStudents: studentStatsData?.total || 0,
-        totalStaff: (staffStats as any)?.total || 0,
-        totalClasses: Array.isArray(classes) ? classes.length : 0,
-        totalRooms: Array.isArray(rooms) ? rooms.length : 0,
-        totalBuildings: Array.isArray(buildings) ? buildings.length : 0,
+        totalStudents: 0,
+        totalStaff: 0,
+        totalClasses: 0,
+        totalRooms: 0,
+        totalBuildings: 0,
         studentGender: {
           male: studentStatsData?.male || 0,
           female: studentStatsData?.female || 0
@@ -114,16 +143,9 @@ export const useDashboardStats = () => {
           currency: '₹'
         },
         hostelOccupancy: {
-          percentage:
-            (hostelOverview as any)?.summary?.total_rooms
-              ? Math.round(
-                  (((hostelOverview as any).summary.occupied_rooms || 0) /
-                    (hostelOverview as any).summary.total_rooms) *
-                    100
-                )
-              : 0,
-          occupied: (hostelOverview as any)?.summary?.occupied_rooms || 0,
-          total: (hostelOverview as any)?.summary?.total_rooms || 0,
+          percentage: 0,
+          occupied: 0,
+          total: 0
         }
       };
     },

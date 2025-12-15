@@ -450,4 +450,61 @@ class LeaveRequestController extends Controller
             );
         }
     }
+
+    /**
+     * Get leave requests summary (for dashboard)
+     * Returns counts by status only, not full list
+     */
+    public function summary(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('leave_requests.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Permission check failed for leave_requests.read: ' . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $orgId = $profile->organization_id;
+        $schoolIds = $this->getAccessibleSchoolIds($profile);
+
+        try {
+            $query = LeaveRequest::where('organization_id', $orgId)
+                ->whereNull('deleted_at');
+
+            if (!empty($schoolIds)) {
+                $query->where(function ($q) use ($schoolIds) {
+                    $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
+                });
+            }
+
+            $total = $query->count();
+            $pending = (clone $query)->where('status', 'pending')->count();
+            $approved = (clone $query)->where('status', 'approved')->count();
+            $rejected = (clone $query)->where('status', 'rejected')->count();
+
+            return response()->json([
+                'total' => $total,
+                'pending' => $pending,
+                'approved' => $approved,
+                'rejected' => $rejected,
+            ]);
+        } catch (\Exception $e) {
+            \Log::warning('Error fetching leave requests summary: ' . $e->getMessage());
+            return response()->json([
+                'total' => 0,
+                'pending' => 0,
+                'approved' => 0,
+                'rejected' => 0,
+            ]);
+        }
+    }
 }

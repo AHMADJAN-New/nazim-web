@@ -126,21 +126,22 @@ import { HostelPermissionGuard } from "@/components/HostelPermissionGuard";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30 * 60 * 1000, // 30 minutes - data doesn't change often
-      gcTime: 60 * 60 * 1000, // 1 hour (formerly cacheTime)
+      staleTime: 5 * 60 * 1000, // 5 minutes - reduced from 30 for better balance
+      gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
       retry: (failureCount, error: any) => {
         // Don't retry on 4xx errors
         if (error?.status >= 400 && error?.status < 500) {
           return false;
         }
-        return failureCount < 3;
+        // Reduce retries from 3 to 1 for faster failure handling
+        return failureCount < 1;
       },
       refetchOnWindowFocus: false, // Don't refetch on window focus
       refetchOnMount: false, // Don't refetch on mount if data is fresh
       refetchOnReconnect: false, // Don't refetch on reconnect (prevents sidebar disappearing)
     },
     mutations: {
-      retry: 2,
+      retry: 1, // Reduced from 2 to 1
     },
   },
 });

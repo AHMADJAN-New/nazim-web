@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { organizationsApi } from '@/lib/api/client';
 import { useAuth } from './useAuth';
 
 export const useAccessibleOrganizations = () => {
   const { user, profile, loading } = useAuth();
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: ['accessible-organizations', user?.id, profile?.organization_id, profile?.role],
@@ -15,8 +16,30 @@ export const useAccessibleOrganizations = () => {
         };
       }
 
+      // Check if we have bootstrap data cached (from useAuth)
+      const bootstrapData = queryClient.getQueryData(['app', 'bootstrap']) as any;
+      if (bootstrapData?.accessibleOrganizations && Array.isArray(bootstrapData.accessibleOrganizations)) {
+        const orgIds = bootstrapData.accessibleOrganizations.map((org: any) => org.id);
+        return {
+          orgIds,
+          primaryOrgId: bootstrapData.selectedOrganization?.id || bootstrapData.profile.organization_id,
+        };
+      }
+
+      // Check if already cached (with full query key)
+      const cached = queryClient.getQueryData(['accessible-organizations', user.id, profile.organization_id, profile.role]);
+      if (cached) {
+        return cached as { orgIds: string[]; primaryOrgId: string | null };
+      }
+      
+      // Also check without role (bootstrap might have cached it this way)
+      const cachedWithoutRole = queryClient.getQueryData(['accessible-organizations', user.id, profile.organization_id]);
+      if (cachedWithoutRole) {
+        return cachedWithoutRole as { orgIds: string[]; primaryOrgId: string | null };
+      }
+
       try {
-        // Use Laravel API to get accessible organizations
+        // Fallback to API call if bootstrap data not available
         const organizations = await organizationsApi.accessible();
 
         const orgIds = new Set<string>();

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { authApi, apiClient } from '@/lib/api/client';
+import { authApi, apiClient, appApi } from '@/lib/api/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Profile type matching database structure
 export type Profile = {
@@ -36,11 +37,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<{ token: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(false); // Prevent duplicate bootstrap calls
 
   // Load user profile from Laravel API
   const loadUserProfile = async () => {
@@ -70,8 +73,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Check authentication function
+  // Check authentication function - uses bootstrap endpoint for efficiency
   const checkAuth = async () => {
+    // Prevent duplicate calls (React StrictMode causes double renders in dev)
+    if (checkingAuth) {
+      return;
+    }
+
     try {
       const token = apiClient.getToken();
       if (!token) {
@@ -83,28 +91,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      // Verify token is valid by fetching user
-      const response = await authApi.getUser();
-      if (response.user && response.profile) {
-        setUser(response.user);
-        setSession({ token });
-
-        // If profile doesn't have organization_id, backend should have assigned it during login, so refresh profile
-        if (!response.profile.organization_id) {
-          if (import.meta.env.DEV) {
-            console.warn('Profile missing organization_id, refreshing...');
-          }
-          // Refresh profile to get updated organization_id
-          await loadUserProfile();
-        } else {
-          setProfile(response.profile as Profile);
+      // Check if bootstrap data is already cached
+      const cachedBootstrap = queryClient.getQueryData(['app', 'bootstrap']);
+      if (cachedBootstrap) {
+        const bootstrapData = cachedBootstrap as any;
+        if (bootstrapData.user && bootstrapData.profile) {
+          setUser(bootstrapData.user);
+          setSession({ token });
+          setProfile(bootstrapData.profile as Profile);
+          setLoading(false);
+          return;
         }
-      } else {
-        // Invalid token, clear it
-        apiClient.setToken(null);
-        setUser(null);
-        setSession(null);
-        setProfile(null);
+      }
+
+      setCheckingAuth(true);
+
+      // Use bootstrap endpoint to get all initial data in one request
+      // This replaces multiple calls: getUser, getProfile, permissions, organizations, etc.
+      try {
+        const bootstrapData = await appApi.bootstrap();
+        
+        if (bootstrapData.user && bootstrapData.profile) {
+          setUser(bootstrapData.user);
+          setSession({ token });
+          setProfile(bootstrapData.profile as Profile);
+          
+          // Store bootstrap data in React Query cache for other hooks to use
+          queryClient.setQueryData(['app', 'bootstrap'], bootstrapData);
+          
+          // Cache permissions - use a key that matches useUserPermissions pattern
+          // Note: useUserPermissions will check bootstrap data first, so exact key match not critical
+          if (bootstrapData.permissions) {
+            queryClient.setQueryData(['user-permissions', bootstrapData.profile.organization_id, bootstrapData.user.id, ''], bootstrapData.permissions);
+          }
+          
+          // Cache accessible organizations
+          const orgIds = bootstrapData.accessibleOrganizations.map((org: any) => org.id);
+          queryClient.setQueryData(['accessible-organizations', bootstrapData.user.id, bootstrapData.profile.organization_id, bootstrapData.profile.role], {
+            orgIds,
+            primaryOrgId: bootstrapData.selectedOrganization?.id || bootstrapData.profile.organization_id,
+          });
+          
+          // Cache selected organization
+          if (bootstrapData.selectedOrganization) {
+            queryClient.setQueryData(['organizations', bootstrapData.selectedOrganization.id], bootstrapData.selectedOrganization);
+            queryClient.setQueryData(['current-organization', bootstrapData.profile.organization_id], bootstrapData.selectedOrganization);
+          }
+        } else {
+          // Fallback to getUser if bootstrap fails
+          const response = await authApi.getUser();
+          if (response.user && response.profile) {
+            setUser(response.user);
+            setSession({ token });
+            setProfile(response.profile as Profile);
+          } else {
+            throw new Error('Invalid response');
+          }
+        }
+      } catch (bootstrapError: any) {
+        // If bootstrap fails, fallback to getUser (for backward compatibility)
+        if (import.meta.env.DEV) {
+          console.warn('Bootstrap failed, falling back to getUser:', bootstrapError);
+        }
+        const response = await authApi.getUser();
+        if (response.user && response.profile) {
+          setUser(response.user);
+          setSession({ token });
+          setProfile(response.profile as Profile);
+        } else {
+          throw new Error('Invalid response');
+        }
       }
     } catch (error: any) {
       // Only log errors if we had a token (unexpected failure)
@@ -126,6 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setProfile(null);
     } finally {
       setLoading(false);
+      setCheckingAuth(false);
     }
   };
 

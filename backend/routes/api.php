@@ -75,6 +75,7 @@ use App\Http\Controllers\Dms\LetterheadsController;
 use App\Http\Controllers\Dms\LetterTemplatesController;
 use App\Http\Controllers\Dms\LetterTypesController;
 use App\Http\Controllers\Dms\OutgoingDocumentsController;
+use App\Http\Controllers\AppController;
 
 /*
 |--------------------------------------------------------------------------
@@ -94,6 +95,9 @@ Route::get('/stats/staff-count', [StatsController::class, 'staffCount']);
 
 // Protected routes
 Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
+    // App bootstrap - returns all initial data in one request
+    Route::get('/app/bootstrap', [AppController::class, 'bootstrap']);
+    
     // Auth routes
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/user', [AuthController::class, 'user']);
@@ -360,6 +364,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::apiResource('asset-categories', AssetCategoryController::class);
 
     // Attendance Sessions
+    Route::get('/attendance-sessions/today-summary', [AttendanceSessionController::class, 'todaySummary']);
     Route::get('/attendance-sessions/roster', [AttendanceSessionController::class, 'roster']);
     Route::get('/attendance-sessions/totals-report', [AttendanceSessionController::class, 'totalsReport']);
     Route::get('/attendance-sessions/report', [AttendanceSessionController::class, 'report']);
@@ -371,6 +376,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Library Management
     Route::apiResource('library-categories', LibraryCategoryController::class);
+    Route::get('/library-books/summary', [LibraryBookController::class, 'summary']);
     Route::apiResource('library-books', LibraryBookController::class);
     Route::post('/library-copies', [LibraryCopyController::class, 'store']);
     Route::put('/library-copies/{id}', [LibraryCopyController::class, 'update']);
@@ -424,6 +430,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::apiResource('certificate-templates', CertificateTemplateController::class);
 
     // Leave Requests
+    Route::get('/leave-requests/summary', [LeaveRequestController::class, 'summary']);
     Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
     Route::post('/leave-requests/{id}/approve', [LeaveRequestController::class, 'approve']);
     Route::post('/leave-requests/{id}/reject', [LeaveRequestController::class, 'reject']);

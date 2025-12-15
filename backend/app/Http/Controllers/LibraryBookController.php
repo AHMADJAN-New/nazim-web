@@ -170,4 +170,68 @@ class LibraryBookController extends Controller
 
         return response()->json(['message' => 'Book removed']);
     }
+
+    /**
+     * Get library summary (for dashboard)
+     * Returns counts only, not full list
+     */
+    public function summary(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('library_books.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            // Allow if permission not present during migration
+        }
+
+        $orgId = $profile->organization_id;
+
+        try {
+            // Get total books count
+            $totalBooks = LibraryBook::where('organization_id', $orgId)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Get total copies and available copies
+            $totalCopies = DB::table('library_copies')
+                ->join('library_books', 'library_copies.book_id', '=', 'library_books.id')
+                ->where('library_books.organization_id', $orgId)
+                ->whereNull('library_copies.deleted_at')
+                ->whereNull('library_books.deleted_at')
+                ->count();
+
+            $availableCopies = DB::table('library_copies')
+                ->join('library_books', 'library_copies.book_id', '=', 'library_books.id')
+                ->where('library_books.organization_id', $orgId)
+                ->where('library_copies.status', 'available')
+                ->whereNull('library_copies.deleted_at')
+                ->whereNull('library_books.deleted_at')
+                ->count();
+
+            $onLoan = $totalCopies - $availableCopies;
+
+            return response()->json([
+                'total_books' => $totalBooks,
+                'total_copies' => $totalCopies,
+                'available_copies' => $availableCopies,
+                'on_loan' => $onLoan,
+            ]);
+        } catch (\Exception $e) {
+            \Log::warning('Error fetching library summary: ' . $e->getMessage());
+            return response()->json([
+                'total_books' => 0,
+                'total_copies' => 0,
+                'available_copies' => 0,
+                'on_loan' => 0,
+            ]);
+        }
+    }
 }

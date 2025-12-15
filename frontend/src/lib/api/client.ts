@@ -351,6 +351,26 @@ export const authApi = {
   },
 };
 
+// App API
+export const appApi = {
+  bootstrap: async () => {
+    return apiClient.get<{
+      user: { id: string; email: string };
+      profile: Profile;
+      permissions: string[];
+      accessibleOrganizations: any[];
+      selectedOrganization: any;
+      dashboardCounters: {
+        students_count: number;
+        staff_count: number;
+        classes_count: number;
+        rooms_count: number;
+        buildings_count: number;
+      };
+    }>('/app/bootstrap');
+  },
+};
+
 // Organizations API
 export const organizationsApi = {
   list: async (params?: { organization_id?: string }) => {
@@ -2031,6 +2051,9 @@ export const attendanceSessionsApi = {
   }) => {
     return apiClient.get('/attendance-sessions/totals-report', params);
   },
+  todaySummary: async () => {
+    return apiClient.get('/attendance-sessions/today-summary');
+  },
 };
 
 // Library Categories API
@@ -2149,6 +2172,9 @@ export const libraryBooksApi = {
   remove: async (id: string) => {
     return apiClient.delete(`/library-books/${id}`);
   },
+  summary: async () => {
+    return apiClient.get('/library-books/summary');
+  },
 };
 
 // Library Copies API
@@ -2239,6 +2265,8 @@ export const leaveRequestsApi = {
   printData: async (id: string) => apiClient.get(`/leave-requests/${id}/print`),
 
   scan: async (token: string) => apiClient.get(`/leave-requests/scan/${token}`),
+
+  summary: async () => apiClient.get('/leave-requests/summary'),
 };
 // Short-term courses API
 export const shortTermCoursesApi = {

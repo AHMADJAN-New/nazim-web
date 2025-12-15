@@ -193,38 +193,50 @@ export const useDeleteRole = () => {
 };
 
 export const useUserPermissions = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
+  const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: ['user-permissions', profile?.organization_id, profile?.id, orgIds.join(',')],
+    queryKey: ['user-permissions', profile?.organization_id, user?.id, orgIds.join(',')],
     queryFn: async () => {
       // Require organization_id - backend enforces this
-      if (!profile?.organization_id) return [];
+      if (!profile?.organization_id || !user?.id) return [];
 
-      if (orgsLoading) return [];
-      if (orgIds.length === 0 && profile.organization_id === null) {
-        // Super admin with no orgs might still have permissions
-        // Allow the API call to proceed
+      // Check if we have bootstrap data cached (from useAuth) - this is the primary source
+      const bootstrapData = queryClient.getQueryData(['app', 'bootstrap']) as any;
+      if (bootstrapData?.permissions && Array.isArray(bootstrapData.permissions)) {
+        // Cache it with the full query key for future use
+        queryClient.setQueryData(['user-permissions', profile.organization_id, user.id, orgIds.join(',')], bootstrapData.permissions);
+        return bootstrapData.permissions.sort();
       }
 
-      // Use Laravel API - it handles all permission logic on backend
+      // Check if permissions are already cached (from bootstrap or previous API call)
+      const cachedPermissions = queryClient.getQueryData(['user-permissions', profile.organization_id, user.id, orgIds.join(',')]);
+      if (cachedPermissions && Array.isArray(cachedPermissions)) {
+        return cachedPermissions;
+      }
+      
+      // Also check without orgIds (bootstrap might have cached it this way)
+      const cachedWithoutOrgIds = queryClient.getQueryData(['user-permissions', profile.organization_id, user.id, '']);
+      if (cachedWithoutOrgIds && Array.isArray(cachedWithoutOrgIds)) {
+        return cachedWithoutOrgIds;
+      }
+
+      if (orgsLoading) return [];
+
+      // Fallback to API call if bootstrap data not available
       const response = await permissionsApi.userPermissions();
-
-      // Laravel returns { permissions: string[] }
       const permissions = (response as { permissions?: string[] })?.permissions || [];
-
       return permissions.sort();
     },
-    // FIXED: Check organization_id instead of role (role column is deprecated)
-    enabled: !!profile?.organization_id && !orgsLoading,
+    enabled: !!profile?.organization_id && !!user && !orgsLoading,
     staleTime: 60 * 60 * 1000, // 1 hour - permissions don't change often
     gcTime: 24 * 60 * 60 * 1000, // 24 hours - keep in cache longer
     refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: true, // FIXED: Must refetch on mount to get permissions!
+    refetchOnMount: false, // Don't refetch if we have bootstrap data
     refetchOnReconnect: false, // Don't refetch on reconnect
     refetchInterval: false, // Never auto-refetch
-    // Use placeholderData instead of initialData to allow fetching
     placeholderData: [],
   });
 };

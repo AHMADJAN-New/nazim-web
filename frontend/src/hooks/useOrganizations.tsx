@@ -41,9 +41,25 @@ export const useOrganizations = () => {
 };
 
 export const useOrganization = (id: string) => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+
   return useQuery<Organization>({
     queryKey: ['organizations', id],
     queryFn: async () => {
+      // Check if we have bootstrap data cached (from useAuth)
+      const bootstrapData = queryClient.getQueryData(['app', 'bootstrap']) as any;
+      if (bootstrapData?.selectedOrganization && bootstrapData.selectedOrganization.id === id) {
+        return mapOrganizationApiToDomain(bootstrapData.selectedOrganization as OrganizationApi.Organization);
+      }
+
+      // Check if already cached
+      const cached = queryClient.getQueryData(['organizations', id]);
+      if (cached) {
+        return cached as Organization;
+      }
+
+      // Fallback to API call
       const apiOrganization = await organizationsApi.get(id);
       return mapOrganizationApiToDomain(apiOrganization as OrganizationApi.Organization);
     },
@@ -143,6 +159,7 @@ export const useDeleteOrganization = () => {
 
 export const useCurrentOrganization = () => {
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
 
   return useQuery<Organization | null>({
     queryKey: ['current-organization', profile?.organization_id],
@@ -151,6 +168,19 @@ export const useCurrentOrganization = () => {
         return null; // Super admin or no organization
       }
 
+      // Check if we have bootstrap data cached (from useAuth)
+      const bootstrapData = queryClient.getQueryData(['app', 'bootstrap']) as any;
+      if (bootstrapData?.selectedOrganization && bootstrapData.selectedOrganization.id === profile.organization_id) {
+        return mapOrganizationApiToDomain(bootstrapData.selectedOrganization as OrganizationApi.Organization);
+      }
+
+      // Check if already cached
+      const cached = queryClient.getQueryData(['organizations', profile.organization_id]);
+      if (cached) {
+        return cached as Organization;
+      }
+
+      // Fallback to API call
       const apiOrganization = await organizationsApi.get(profile.organization_id);
       return mapOrganizationApiToDomain(apiOrganization as OrganizationApi.Organization);
     },
