@@ -3229,6 +3229,77 @@ export const examPaperTemplatesApi = {
   examPaperStats: async (examId: string) => {
     return apiClient.get(`/exams/${examId}/paper-stats`);
   },
+
+  // Print status management
+  updatePrintStatus: async (id: string, data: {
+    print_status?: 'not_printed' | 'printing' | 'printed' | 'cancelled';
+    copies_printed?: number;
+    increment?: boolean;
+    print_notes?: string | null;
+  }) => {
+    return apiClient.post(`/exam/paper-templates/${id}/print-status`, data);
+  },
+
+  // Template file management
+  templateFiles: {
+    list: async (params?: {
+      language?: 'en' | 'ps' | 'fa' | 'ar';
+      is_active?: boolean;
+      is_default?: boolean;
+    }) => {
+      return apiClient.get('/exam/paper-template-files', params);
+    },
+    get: async (id: string) => {
+      return apiClient.get(`/exam/paper-template-files/${id}`);
+    },
+    create: async (data: {
+      name: string;
+      description?: string | null;
+      language: 'en' | 'ps' | 'fa' | 'ar';
+      template_html: string;
+      css_styles?: string | null;
+      is_default?: boolean;
+      is_active?: boolean;
+    }) => {
+      return apiClient.post('/exam/paper-template-files', data);
+    },
+    update: async (id: string, data: {
+      name?: string;
+      description?: string | null;
+      language?: 'en' | 'ps' | 'fa' | 'ar';
+      template_html?: string;
+      css_styles?: string | null;
+      is_default?: boolean;
+      is_active?: boolean;
+    }) => {
+      return apiClient.put(`/exam/paper-template-files/${id}`, data);
+    },
+    delete: async (id: string) => {
+      return apiClient.delete(`/exam/paper-template-files/${id}`);
+    },
+    setDefault: async (id: string) => {
+      return apiClient.post(`/exam/paper-template-files/${id}/set-default`);
+    },
+    preview: async (id: string) => {
+      return apiClient.get(`/exam/paper-template-files/${id}/preview`);
+    },
+  },
+
+  // Paper generation
+  preview: async (id: string, variant?: number) => {
+    return apiClient.get(`/exam/paper-templates/${id}/preview`, { variant });
+  },
+  generate: async (id: string, data: {
+    variants: number[];
+    page_layout?: 'A4_portrait' | 'A4_landscape';
+  }) => {
+    return apiClient.post(`/exam/paper-templates/${id}/generate`, data);
+  },
+  generateHtml: async (id: string, data: {
+    variant: number;
+  }) => {
+    return apiClient.post(`/exam/paper-templates/${id}/generate-html`, data);
+  },
 };
 
 // Exam Paper Preview API

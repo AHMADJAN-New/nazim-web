@@ -55,7 +55,9 @@ import {
   StudentExamReport,
   QuestionBank,
   ExamPaperTemplates,
+  ExamPaperTemplateEdit,
   ExamPaperPreview,
+  ExamPaperPrintTracking,
   ScheduleSlotsManagement,
   TeacherSubjectAssignments,
   StaffTypesManagement,
@@ -448,11 +450,43 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
-                    {/* Exam Paper Templates */}
+                    {/* Exam Papers */}
+                    <Route path="/exams/papers" element={
+                      <PermissionRoute permission="exams.papers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamPaperTemplates />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Legacy route for backward compatibility */}
                     <Route path="/exams/paper-templates" element={
                       <PermissionRoute permission="exams.papers.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamPaperTemplates />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Exam Paper Edit */}
+                    <Route path="/exams/papers/:id/edit" element={
+                      <PermissionRoute permission="exams.papers.update">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamPaperTemplateEdit />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Legacy route for backward compatibility */}
+                    <Route path="/exams/paper-templates/:id/edit" element={
+                      <PermissionRoute permission="exams.papers.update">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamPaperTemplateEdit />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    {/* Exam Paper Print Tracking */}
+                    <Route path="/exams/papers/print-tracking" element={
+                      <PermissionRoute permission="exams.papers.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamPaperPrintTracking />
                         </Suspense>
                       </PermissionRoute>
                     } />

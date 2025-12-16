@@ -39,8 +39,10 @@ export const ConsolidatedMarkSheet = lazy(() => import('@/pages/ConsolidatedMark
 export const ClassSubjectMarkSheet = lazy(() => import('@/pages/ClassSubjectMarkSheet'));
 export const StudentExamReport = lazy(() => import('@/pages/StudentExamReport'));
 export const QuestionBank = lazy(() => import('@/pages/QuestionBank').then(module => ({ default: module.QuestionBank })));
-export const ExamPaperTemplates = lazy(() => import('@/pages/ExamPaperTemplates').then(module => ({ default: module.ExamPaperTemplates })));
+export const ExamPaperTemplates = lazy(() => import('@/pages/ExamPaperTemplates'));
+export const ExamPaperTemplateEdit = lazy(() => import('@/pages/ExamPaperTemplateEdit'));
 export const ExamPaperPreview = lazy(() => import('@/pages/ExamPaperPreview').then(module => ({ default: module.ExamPaperPreview })));
+export const ExamPaperPrintTracking = lazy(() => import('@/pages/ExamPaperPrintTracking'));
 export const ScheduleSlotsManagement = lazy(() => import('@/components/settings/ScheduleSlotsManagement').then(module => ({ default: module.ScheduleSlotsManagement })));
 export const TeacherSubjectAssignments = lazy(() => import('@/components/settings/TeacherSubjectAssignments').then(module => ({ default: module.TeacherSubjectAssignments })));
 export const StaffTypesManagement = lazy(() => import('@/components/settings/StaffTypesManagement').then(module => ({ default: module.StaffTypesManagement })));

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuestions, useCreateQuestion, useUpdateQuestion, useDeleteQuestion, useDuplicateQuestion, useBulkUpdateQuestions, QUESTION_TYPES, QUESTION_DIFFICULTIES } from '@/hooks/useQuestions';
 import type { Question, QuestionType, QuestionDifficulty, QuestionOption, QuestionFilters } from '@/hooks/useQuestions';
 import { useClassSubjects } from '@/hooks/useSubjects';
@@ -29,6 +29,9 @@ import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cn } from '@/lib/utils';
 import { questionSchema, type QuestionFormData } from '@/lib/validations/questionBank';
+import { useDataTable } from '@/hooks/use-data-table';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import type { ColumnDef } from '@tanstack/react-table';
 
 const difficultyConfig: Record<QuestionDifficulty, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
   easy: { label: 'Easy', variant: 'default' },
@@ -66,7 +69,6 @@ export function QuestionBank() {
   const [selectedType, setSelectedType] = useState<QuestionType | 'all'>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<QuestionDifficulty | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'inactive'>('all');
-  const [currentPage, setCurrentPage] = useState(1);
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -110,11 +112,18 @@ export function QuestionBank() {
     difficulty: selectedDifficulty !== 'all' ? selectedDifficulty : undefined,
     isActive: selectedStatus === 'active' ? true : selectedStatus === 'inactive' ? false : undefined,
     search: searchQuery || undefined,
-    page: currentPage,
-    perPage: 25,
-  }), [selectedSchoolId, userDefaultSchoolId, selectedSubjectId, selectedClassAcademicYearId, selectedType, selectedDifficulty, selectedStatus, searchQuery, currentPage]);
+  }), [selectedSchoolId, userDefaultSchoolId, selectedSubjectId, selectedClassAcademicYearId, selectedType, selectedDifficulty, selectedStatus, searchQuery]);
 
-  const { data: questionsData, isLoading } = useQuestions(filters);
+  // Use paginated version of the hook
+  const { 
+    data: questions, 
+    isLoading, 
+    pagination,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+  } = useQuestions(filters, true);
   const createQuestion = useCreateQuestion();
   const updateQuestion = useUpdateQuestion();
   const deleteQuestion = useDeleteQuestion();
@@ -515,16 +524,13 @@ export function QuestionBank() {
   };
 
   const toggleAllQuestions = () => {
-    if (!questionsData?.data) return;
-    if (selectedQuestionIds.length === questionsData.data.length) {
+    if (!questions || questions.length === 0) return;
+    if (selectedQuestionIds.length === questions.length) {
       setSelectedQuestionIds([]);
     } else {
-      setSelectedQuestionIds(questionsData.data.map(q => q.id));
+      setSelectedQuestionIds(questions.map(q => q.id));
     }
   };
-
-  const questions = useMemo(() => questionsData?.data || [], [questionsData?.data]);
-  const totalPages = useMemo(() => questionsData?.lastPage || 1, [questionsData?.lastPage]);
 
   const getDifficultyBadge = (difficulty: QuestionDifficulty) => {
     const config = difficultyConfig[difficulty];
@@ -543,6 +549,148 @@ export function QuestionBank() {
       </Badge>
     );
   };
+
+  // Define columns for DataTable
+  const columns: ColumnDef<Question>[] = useMemo(() => [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => {
+            table.toggleAllPageRowsSelected(!!value);
+            if (value) {
+              setSelectedQuestionIds(questions.map(q => q.id));
+            } else {
+              setSelectedQuestionIds([]);
+            }
+          }}
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={selectedQuestionIds.includes(row.original.id)}
+          onCheckedChange={() => toggleQuestionSelection(row.original.id)}
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: 'text',
+      header: t('questionBank.question') || 'Question',
+      cell: ({ row }) => (
+        <div 
+          className={cn(
+            "max-w-[400px] truncate",
+            row.original.textRtl && "text-right"
+          )}
+          dir={row.original.textRtl ? 'rtl' : 'ltr'}
+        >
+          {row.original.text}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'type',
+      header: t('questionBank.type') || 'Type',
+      cell: ({ row }) => getTypeBadge(row.original.type),
+    },
+    {
+      accessorKey: 'difficulty',
+      header: t('questionBank.difficulty') || 'Difficulty',
+      cell: ({ row }) => getDifficultyBadge(row.original.difficulty),
+    },
+    {
+      accessorKey: 'marks',
+      header: t('questionBank.marks') || 'Marks',
+      cell: ({ row }) => row.original.marks,
+    },
+    {
+      accessorKey: 'subject',
+      header: t('questionBank.subject') || 'Subject',
+      cell: ({ row }) => (
+        <Badge variant="secondary">{row.original.subject?.name || '—'}</Badge>
+      ),
+    },
+    {
+      accessorKey: 'isActive',
+      header: t('questionBank.status') || 'Status',
+      cell: ({ row }) => (
+        row.original.isActive ? (
+          <Badge variant="default">{t('common.active') || 'Active'}</Badge>
+        ) : (
+          <Badge variant="outline">{t('common.inactive') || 'Inactive'}</Badge>
+        )
+      ),
+    },
+    {
+      id: 'actions',
+      header: t('common.actions') || 'Actions',
+      cell: ({ row }) => (
+        <div className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => openViewDialog(row.original)}>
+                <Eye className="h-4 w-4 mr-2" />
+                {t('common.view') || 'View'}
+              </DropdownMenuItem>
+              {hasUpdate && (
+                <DropdownMenuItem onClick={() => openEditDialog(row.original)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  {t('common.edit') || 'Edit'}
+                </DropdownMenuItem>
+              )}
+              {hasCreate && (
+                <DropdownMenuItem onClick={() => handleDuplicate(row.original)}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  {t('common.duplicate') || 'Duplicate'}
+                </DropdownMenuItem>
+              )}
+              {hasDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => openDeleteDialog(row.original)}
+                    className="text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('common.delete') || 'Delete'}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
+  ], [t, questions, selectedQuestionIds, hasUpdate, hasCreate, hasDelete]);
+
+  // Use DataTable hook for pagination integration
+  const { table } = useDataTable({
+    data: questions,
+    columns,
+    pageCount: pagination?.last_page,
+    paginationMeta: pagination ?? null,
+    initialState: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
+    },
+    onPaginationChange: (newPagination) => {
+      setPage(newPagination.pageIndex + 1);
+      setPageSize(newPagination.pageSize);
+    },
+    getRowId: (row) => row.id,
+  });
 
   const handleCorrectOptionChange = (index: number) => {
     const options = form.getValues('options') || [];
@@ -1080,8 +1228,8 @@ export function QuestionBank() {
         <CardHeader>
           <CardTitle>{t('questionBank.questionsList') || 'Questions'}</CardTitle>
           <CardDescription>
-            {questionsData?.total 
-              ? t('questionBank.totalQuestions', { count: questionsData.total }) || `${questionsData.total} question(s) found`
+            {pagination?.total 
+              ? t('questionBank.totalQuestions', { count: pagination.total }) || `${pagination.total} question(s) found`
               : t('questionBank.noQuestions') || 'No questions found'}
           </CardDescription>
         </CardHeader>
@@ -1100,132 +1248,56 @@ export function QuestionBank() {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40px]">
-                      <Checkbox
-                        checked={selectedQuestionIds.length === questions.length && questions.length > 0}
-                        onCheckedChange={toggleAllQuestions}
-                      />
-                    </TableHead>
-                    <TableHead className="min-w-[300px]">{t('questionBank.question') || 'Question'}</TableHead>
-                    <TableHead>{t('questionBank.type') || 'Type'}</TableHead>
-                    <TableHead>{t('questionBank.difficulty') || 'Difficulty'}</TableHead>
-                    <TableHead>{t('questionBank.marks') || 'Marks'}</TableHead>
-                    <TableHead>{t('questionBank.subject') || 'Subject'}</TableHead>
-                    <TableHead>{t('questionBank.status') || 'Status'}</TableHead>
-                    <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {questions.map((question, idx) => {
-                    const questionId = question?.id || `question-${idx}`;
-                    return (
-                    <TableRow key={`question-row-${questionId}-${idx}`}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedQuestionIds.includes(question.id)}
-                          onCheckedChange={() => toggleQuestionSelection(question.id)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div 
-                          className={cn(
-                            "max-w-[400px] truncate",
-                            question.textRtl && "text-right"
-                          )}
-                          dir={question.textRtl ? 'rtl' : 'ltr'}
-                        >
-                          {question.text}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getTypeBadge(question.type)}</TableCell>
-                      <TableCell>{getDifficultyBadge(question.difficulty)}</TableCell>
-                      <TableCell>{question.marks}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{question.subject?.name || '—'}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {question.isActive ? (
-                          <Badge variant="default">{t('common.active') || 'Active'}</Badge>
-                        ) : (
-                          <Badge variant="outline">{t('common.inactive') || 'Inactive'}</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>{t('common.actions') || 'Actions'}</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => openViewDialog(question)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              {t('common.view') || 'View'}
-                            </DropdownMenuItem>
-                            {hasUpdate && (
-                              <DropdownMenuItem onClick={() => openEditDialog(question)}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                {t('common.edit') || 'Edit'}
-                              </DropdownMenuItem>
-                            )}
-                            {hasCreate && (
-                              <DropdownMenuItem onClick={() => handleDuplicate(question)}>
-                                <Copy className="h-4 w-4 mr-2" />
-                                {t('common.duplicate') || 'Duplicate'}
-                              </DropdownMenuItem>
-                            )}
-                            {hasDelete && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  onClick={() => openDeleteDialog(question)}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  {t('common.delete') || 'Delete'}
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <TableHead key={header.id}>
+                            {header.isPlaceholder
+                              ? null
+                              : typeof header.column.columnDef.header === 'function'
+                              ? header.column.columnDef.header(header.getContext())
+                              : header.column.columnDef.header}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {table.getRowModel().rows?.length ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id}>
+                              {typeof cell.column.columnDef.cell === 'function'
+                                ? cell.column.columnDef.cell(cell.getContext())
+                                : cell.getValue() as React.ReactNode}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={columns.length} className="h-24 text-center">
+                          {t('questionBank.noQuestionsFound') || 'No questions found.'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    {t('common.page', { current: currentPage, total: totalPages }) || `Page ${currentPage} of ${totalPages}`}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      {t('common.previous') || 'Previous'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      {t('common.next') || 'Next'}
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <DataTablePagination
+                table={table}
+                paginationMeta={pagination ?? null}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                showPageSizeSelector={true}
+                showTotalCount={true}
+              />
             </>
           )}
         </CardContent>

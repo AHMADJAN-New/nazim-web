@@ -20,6 +20,7 @@ export interface ExamPaperTemplate {
   examSubjectId: string | null;
   subjectId: string;
   classAcademicYearId: string | null;
+  templateFileId: string | null;
   title: string;
   language: ExamPaperLanguage;
   totalMarks: number | null;
@@ -47,6 +48,11 @@ export interface ExamPaperTemplate {
   itemsCount?: number;
   computedTotalMarks?: number;
   hasMarksDiscrepancy?: boolean;
+  printStatus?: 'not_printed' | 'printing' | 'printed' | 'cancelled';
+  copiesPrinted?: number;
+  lastPrintedAt?: Date | null;
+  printedBy?: string | null;
+  printNotes?: string | null;
 }
 
 export interface ExamPaperItem {
@@ -58,6 +64,8 @@ export interface ExamPaperItem {
   sectionLabel: string | null;
   position: number;
   marksOverride: number | null;
+  answerLinesCount: number | null;
+  showAnswerLines: boolean | null;
   isMandatory: boolean;
   notes: string | null;
   createdBy: string | null;

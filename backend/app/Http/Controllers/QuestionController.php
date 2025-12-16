@@ -44,14 +44,20 @@ class QuestionController extends Controller
             
             // Don't eager load 'creator' to avoid errors with invalid created_by values
             // We'll load creators manually after fetching
-            $query = Question::with(['subject', 'classAcademicYear.class', 'classAcademicYear.academicYear'])
+            $query = Question::with(['subject', 'classAcademicYear.class', 'classAcademicYear.academicYear', 'exam'])
                 ->whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
                 // Filter out questions with invalid created_by values (0, empty, or non-UUID)
+                // Allow NULL created_by (for seeded questions) OR valid UUID
                 // Use whereRaw to cast UUID to text for safe comparison
-                ->whereNotNull('created_by')
-                ->whereRaw("created_by::text NOT IN ('0', '')")
-                ->whereRaw("created_by::text ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'");
+                ->where(function($q) {
+                    $q->whereNull('created_by')
+                      ->orWhere(function($subQ) {
+                          $subQ->whereNotNull('created_by')
+                               ->whereRaw("created_by::text NOT IN ('0', '')")
+                               ->whereRaw("created_by::text ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'");
+                      });
+                });
 
             // Filter by school_id (required)
             if ($request->filled('school_id')) {
@@ -84,7 +90,14 @@ class QuestionController extends Controller
 
             // Filter by active status
             if ($request->filled('is_active')) {
-                $query->where('is_active', filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN));
+                // Handle both string ('1', '0', 'true', 'false') and boolean values
+                $isActive = $request->is_active;
+                if (is_string($isActive)) {
+                    $isActive = filter_var($isActive, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                }
+                if ($isActive !== null) {
+                    $query->where('is_active', (bool) $isActive);
+                }
             }
 
             // Search
@@ -164,7 +177,7 @@ class QuestionController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $question = Question::with(['subject', 'classAcademicYear.class', 'classAcademicYear.academicYear', 'creator', 'updater'])
+        $question = Question::with(['subject', 'classAcademicYear.class', 'classAcademicYear.academicYear'])
             ->where('organization_id', $profile->organization_id)
             ->where('id', $id)
             ->whereNull('deleted_at')
@@ -172,6 +185,31 @@ class QuestionController extends Controller
 
         if (!$question) {
             return response()->json(['error' => 'Question not found'], 404);
+        }
+
+        // Manually load creator and updater if valid
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+        
+        if (!empty($question->created_by) && $question->created_by !== '0' && preg_match($uuidPattern, (string) $question->created_by)) {
+            try {
+                $creator = Profile::find($question->created_by);
+                if ($creator) {
+                    $question->setRelation('creator', $creator);
+                }
+            } catch (\Exception $e) {
+                // Ignore creator loading errors
+            }
+        }
+        
+        if (!empty($question->updated_by) && $question->updated_by !== '0' && preg_match($uuidPattern, (string) $question->updated_by)) {
+            try {
+                $updater = Profile::find($question->updated_by);
+                if ($updater) {
+                    $question->setRelation('updater', $updater);
+                }
+            } catch (\Exception $e) {
+                // Ignore updater loading errors
+            }
         }
 
         return response()->json($question);
@@ -408,7 +446,32 @@ class QuestionController extends Controller
         $question->fill($validated);
         $question->save();
 
-        $question->load(['subject', 'classAcademicYear.class', 'classAcademicYear.academicYear', 'creator', 'updater']);
+        $question->load(['subject', 'classAcademicYear.class', 'classAcademicYear.academicYear']);
+
+        // Manually load creator and updater if valid
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+        
+        if (!empty($question->created_by) && $question->created_by !== '0' && preg_match($uuidPattern, (string) $question->created_by)) {
+            try {
+                $creator = Profile::find($question->created_by);
+                if ($creator) {
+                    $question->setRelation('creator', $creator);
+                }
+            } catch (\Exception $e) {
+                // Ignore creator loading errors
+            }
+        }
+        
+        if (!empty($question->updated_by) && $question->updated_by !== '0' && preg_match($uuidPattern, (string) $question->updated_by)) {
+            try {
+                $updater = Profile::find($question->updated_by);
+                if ($updater) {
+                    $question->setRelation('updater', $updater);
+                }
+            } catch (\Exception $e) {
+                // Ignore updater loading errors
+            }
+        }
 
         return response()->json($question);
     }
@@ -503,14 +566,38 @@ class QuestionController extends Controller
 
         $duplicate = $original->replicate();
         $duplicate->id = null;
-        $duplicate->created_by = $profile->id; // Use profile ID (UUID), not user ID
+        
+        // Ensure created_by is a valid UUID
+        $createdBy = (string) ($profile->id ?? '');
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+        if (empty($createdBy) || $createdBy === '0' || !preg_match($uuidPattern, $createdBy)) {
+            Log::error('Invalid created_by value when duplicating question', [
+                'profile_id' => $profile->id ?? 'null',
+                'created_by' => $createdBy,
+            ]);
+            return response()->json(['error' => 'Invalid profile ID for created_by. Profile ID must be a valid UUID.'], 500);
+        }
+        
+        $duplicate->created_by = $createdBy; // Use profile ID (UUID), not user ID
         $duplicate->updated_by = null;
         $duplicate->deleted_by = null;
         $duplicate->created_at = now();
         $duplicate->updated_at = now();
         $duplicate->save();
 
-        $duplicate->load(['subject', 'classAcademicYear.class', 'classAcademicYear.academicYear', 'creator']);
+        $duplicate->load(['subject', 'classAcademicYear.class', 'classAcademicYear.academicYear']);
+
+        // Manually load creator if valid
+        if (!empty($duplicate->created_by) && $duplicate->created_by !== '0' && preg_match($uuidPattern, (string) $duplicate->created_by)) {
+            try {
+                $creator = Profile::find($duplicate->created_by);
+                if ($creator) {
+                    $duplicate->setRelation('creator', $creator);
+                }
+            } catch (\Exception $e) {
+                // Ignore creator loading errors
+            }
+        }
 
         return response()->json($duplicate, 201);
     }

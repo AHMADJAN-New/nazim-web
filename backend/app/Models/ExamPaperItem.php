@@ -26,6 +26,8 @@ class ExamPaperItem extends Model
         'section_label',
         'position',
         'marks_override',
+        'answer_lines_count',
+        'show_answer_lines',
         'is_mandatory',
         'notes',
         'created_by',
@@ -36,6 +38,8 @@ class ExamPaperItem extends Model
     protected $casts = [
         'position' => 'integer',
         'marks_override' => 'decimal:2',
+        'answer_lines_count' => 'integer',
+        'show_answer_lines' => 'boolean',
         'is_mandatory' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

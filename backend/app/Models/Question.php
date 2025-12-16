@@ -53,6 +53,7 @@ class Question extends Model
         'school_id',
         'subject_id',
         'class_academic_year_id',
+        'exam_id',
         'type',
         'difficulty',
         'marks',
@@ -119,6 +120,11 @@ class Question extends Model
         return $this->belongsTo(ClassAcademicYear::class, 'class_academic_year_id');
     }
 
+    public function exam()
+    {
+        return $this->belongsTo(Exam::class, 'exam_id');
+    }
+
     public function creator()
     {
         return $this->belongsTo(Profile::class, 'created_by');
@@ -159,6 +165,11 @@ class Question extends Model
     public function scopeForClassAcademicYear($query, $classAcademicYearId)
     {
         return $query->where('class_academic_year_id', $classAcademicYearId);
+    }
+
+    public function scopeForExam($query, $examId)
+    {
+        return $query->where('exam_id', $examId);
     }
 
     public function scopeCompatibleWithClassAcademicYear($query, $classAcademicYearId)

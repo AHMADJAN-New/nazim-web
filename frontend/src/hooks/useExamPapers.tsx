@@ -411,6 +411,43 @@ export const useAvailableTemplates = (examSubjectId?: string) => {
 /**
  * Hook to set a template as default for an exam subject
  */
+export const useUpdatePrintStatus = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ 
+      templateId, 
+      printStatus, 
+      copiesPrinted, 
+      increment = false,
+      printNotes 
+    }: { 
+      templateId: string;
+      printStatus?: 'not_printed' | 'printing' | 'printed' | 'cancelled';
+      copiesPrinted?: number;
+      increment?: boolean;
+      printNotes?: string | null;
+    }) => {
+      return await examPaperTemplatesApi.updatePrintStatus(templateId, {
+        print_status: printStatus,
+        copies_printed: copiesPrinted,
+        increment: increment,
+        print_notes: printNotes,
+      });
+    },
+    onSuccess: () => {
+      showToast.success(t('examPapers.printStatusUpdated') || 'Print status updated successfully');
+      // Invalidate and refetch to get updated data
+      void queryClient.invalidateQueries({ queryKey: ['exam-paper-templates'] });
+      void queryClient.refetchQueries({ queryKey: ['exam-paper-templates'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('examPapers.printStatusUpdateFailed') || 'Failed to update print status');
+    },
+  });
+};
+
 export const useSetDefaultTemplate = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();

@@ -139,17 +139,19 @@ export function mapQuestionDomainToUpdate(domain: Partial<Question>): QuestionAp
  * Map Domain QuestionFilters to API QuestionFilters
  */
 export function mapQuestionFiltersDomainToApi(domain: QuestionFilters): QuestionApi.QuestionFilters {
-  return {
-    school_id: domain.schoolId,
-    subject_id: domain.subjectId,
-    class_academic_year_id: domain.classAcademicYearId,
-    type: domain.type,
-    difficulty: domain.difficulty,
-    is_active: domain.isActive,
-    search: domain.search,
-    page: domain.page,
-    per_page: domain.perPage,
-  };
+  const api: QuestionApi.QuestionFilters = {};
+  
+  if (domain.schoolId !== undefined) api.school_id = domain.schoolId;
+  if (domain.subjectId !== undefined) api.subject_id = domain.subjectId;
+  if (domain.classAcademicYearId !== undefined) api.class_academic_year_id = domain.classAcademicYearId;
+  if (domain.type !== undefined) api.type = domain.type;
+  if (domain.difficulty !== undefined) api.difficulty = domain.difficulty;
+  if (domain.isActive !== undefined) api.is_active = domain.isActive;
+  if (domain.search !== undefined) api.search = domain.search;
+  if (domain.page !== undefined) api.page = domain.page;
+  if (domain.perPage !== undefined) api.per_page = domain.perPage;
+  
+  return api;
 }
 
 /**

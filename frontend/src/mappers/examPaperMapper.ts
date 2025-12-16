@@ -68,6 +68,8 @@ export function mapExamPaperItemApiToDomain(api: ExamPaperApi.ExamPaperItem): Ex
     sectionLabel: api.section_label,
     position: api.position,
     marksOverride: api.marks_override,
+    answerLinesCount: api.answer_lines_count,
+    showAnswerLines: api.show_answer_lines,
     isMandatory: api.is_mandatory,
     notes: api.notes,
     createdBy: api.created_by,
@@ -92,6 +94,7 @@ export function mapExamPaperTemplateApiToDomain(api: ExamPaperApi.ExamPaperTempl
     examSubjectId: api.exam_subject_id,
     subjectId: api.subject_id,
     classAcademicYearId: api.class_academic_year_id,
+    templateFileId: api.template_file_id,
     title: api.title,
     language: api.language,
     totalMarks: api.total_marks,
@@ -118,6 +121,11 @@ export function mapExamPaperTemplateApiToDomain(api: ExamPaperApi.ExamPaperTempl
     itemsCount: api.items_count,
     computedTotalMarks: api.computed_total_marks,
     hasMarksDiscrepancy: api.has_marks_discrepancy,
+    printStatus: api.print_status,
+    copiesPrinted: api.copies_printed,
+    lastPrintedAt: api.last_printed_at ? new Date(api.last_printed_at) : null,
+    printedBy: api.printed_by,
+    printNotes: api.print_notes,
   };
 }
 
@@ -133,6 +141,7 @@ export function mapExamPaperTemplateDomainToInsert(
     exam_subject_id: domain.examSubjectId ?? undefined,
     subject_id: domain.subjectId || '',
     class_academic_year_id: domain.classAcademicYearId ?? undefined,
+    template_file_id: domain.templateFileId ?? undefined,
     title: domain.title || '',
     language: domain.language,
     total_marks: domain.totalMarks ?? undefined,
@@ -157,6 +166,7 @@ export function mapExamPaperTemplateDomainToUpdate(
   if (domain.examSubjectId !== undefined) update.exam_subject_id = domain.examSubjectId;
   if (domain.subjectId !== undefined) update.subject_id = domain.subjectId;
   if (domain.classAcademicYearId !== undefined) update.class_academic_year_id = domain.classAcademicYearId;
+  if (domain.templateFileId !== undefined) update.template_file_id = domain.templateFileId;
   if (domain.title !== undefined) update.title = domain.title;
   if (domain.language !== undefined) update.language = domain.language;
   if (domain.totalMarks !== undefined) update.total_marks = domain.totalMarks;
@@ -181,6 +191,8 @@ export function mapExamPaperItemDomainToInsert(
     section_label: domain.sectionLabel ?? undefined,
     position: domain.position,
     marks_override: domain.marksOverride ?? undefined,
+    answer_lines_count: domain.answerLinesCount ?? undefined,
+    show_answer_lines: domain.showAnswerLines ?? undefined,
     is_mandatory: domain.isMandatory,
     notes: domain.notes ?? undefined,
   };
@@ -197,6 +209,8 @@ export function mapExamPaperItemDomainToUpdate(
   if (domain.sectionLabel !== undefined) update.section_label = domain.sectionLabel;
   if (domain.position !== undefined) update.position = domain.position;
   if (domain.marksOverride !== undefined) update.marks_override = domain.marksOverride;
+  if (domain.answerLinesCount !== undefined) update.answer_lines_count = domain.answerLinesCount;
+  if (domain.showAnswerLines !== undefined) update.show_answer_lines = domain.showAnswerLines;
   if (domain.isMandatory !== undefined) update.is_mandatory = domain.isMandatory;
   if (domain.notes !== undefined) update.notes = domain.notes;
 

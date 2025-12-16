@@ -12,6 +12,7 @@ use App\Models\ClassAcademicYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ExamPaperTemplateController extends Controller
@@ -48,7 +49,7 @@ class ExamPaperTemplateController extends Controller
                 'examSubject.subject',
                 'classAcademicYear.class',
                 'classAcademicYear.academicYear',
-                'creator',
+                'templateFile',
             ])
                 ->withCount('items')
                 ->whereNull('deleted_at')
@@ -99,6 +100,24 @@ class ExamPaperTemplateController extends Controller
 
             $templates = $query->orderBy('created_at', 'desc')->get();
 
+            // Add computed properties to each template (safely)
+            $templates->each(function ($template) {
+                try {
+                    // Only calculate if items exist
+                    if ($template->items_count && $template->items_count > 0) {
+                        $template->computed_total_marks = $template->getComputedTotalMarks();
+                        $template->has_marks_discrepancy = $template->hasMarksDiscrepancy();
+                    } else {
+                        $template->computed_total_marks = $template->total_marks ?? 0;
+                        $template->has_marks_discrepancy = false;
+                    }
+                } catch (\Exception $e) {
+                    // If computation fails, set defaults
+                    $template->computed_total_marks = $template->total_marks ?? 0;
+                    $template->has_marks_discrepancy = false;
+                }
+            });
+
             return response()->json($templates);
         } catch (\Exception $e) {
             Log::error('Error fetching exam paper templates: ' . $e->getMessage(), [
@@ -142,8 +161,7 @@ class ExamPaperTemplateController extends Controller
             'classAcademicYear.class',
             'classAcademicYear.academicYear',
             'school',
-            'creator',
-            'updater',
+            'templateFile',
             'items' => function ($query) {
                 $query->with(['question.subject'])
                     ->orderBy('section_label')
@@ -197,6 +215,7 @@ class ExamPaperTemplateController extends Controller
             'exam_subject_id' => 'nullable|uuid|exists:exam_subjects,id',
             'subject_id' => 'required|uuid|exists:subjects,id',
             'class_academic_year_id' => 'nullable|uuid|exists:class_academic_years,id',
+            'template_file_id' => 'nullable|uuid|exists:exam_paper_template_files,id',
             'title' => 'required|string|max:255',
             'language' => ['sometimes', 'string', Rule::in(ExamPaperTemplate::LANGUAGES)],
             'total_marks' => 'nullable|numeric|min:0|max:10000',
@@ -260,6 +279,7 @@ class ExamPaperTemplateController extends Controller
             'exam_subject_id' => $validated['exam_subject_id'] ?? null,
             'subject_id' => $validated['subject_id'],
             'class_academic_year_id' => $validated['class_academic_year_id'] ?? null,
+            'template_file_id' => $validated['template_file_id'] ?? null,
             'title' => $validated['title'],
             'language' => $validated['language'] ?? ExamPaperTemplate::LANGUAGE_ENGLISH,
             'total_marks' => $validated['total_marks'] ?? null,
@@ -278,7 +298,7 @@ class ExamPaperTemplateController extends Controller
             'examSubject.subject',
             'classAcademicYear.class',
             'classAcademicYear.academicYear',
-            'creator',
+            'templateFile',
         ]);
 
         return response()->json($template, 201);
@@ -323,6 +343,7 @@ class ExamPaperTemplateController extends Controller
             'exam_subject_id' => 'nullable|uuid|exists:exam_subjects,id',
             'subject_id' => 'sometimes|required|uuid|exists:subjects,id',
             'class_academic_year_id' => 'nullable|uuid|exists:class_academic_years,id',
+            'template_file_id' => 'nullable|uuid|exists:exam_paper_template_files,id',
             'title' => 'sometimes|required|string|max:255',
             'language' => ['sometimes', 'string', Rule::in(ExamPaperTemplate::LANGUAGES)],
             'total_marks' => 'nullable|numeric|min:0|max:10000',
@@ -378,8 +399,7 @@ class ExamPaperTemplateController extends Controller
             'examSubject.subject',
             'classAcademicYear.class',
             'classAcademicYear.academicYear',
-            'creator',
-            'updater',
+            'templateFile',
         ]);
 
         return response()->json($template);
@@ -473,6 +493,8 @@ class ExamPaperTemplateController extends Controller
             'section_label' => 'nullable|string|max:50',
             'position' => 'nullable|integer|min:0',
             'marks_override' => 'nullable|numeric|min:0|max:1000',
+            'answer_lines_count' => 'nullable|integer|min:0|max:50',
+            'show_answer_lines' => 'nullable|boolean',
             'is_mandatory' => 'sometimes|boolean',
             'notes' => 'nullable|string|max:1000',
         ]);
@@ -520,6 +542,8 @@ class ExamPaperTemplateController extends Controller
             'section_label' => $validated['section_label'] ?? null,
             'position' => $validated['position'],
             'marks_override' => $validated['marks_override'] ?? null,
+            'answer_lines_count' => $validated['answer_lines_count'] ?? null,
+            'show_answer_lines' => $validated['show_answer_lines'] ?? null,
             'is_mandatory' => $validated['is_mandatory'] ?? true,
             'notes' => $validated['notes'] ?? null,
             'created_by' => $user->id,
@@ -569,6 +593,8 @@ class ExamPaperTemplateController extends Controller
             'section_label' => 'nullable|string|max:50',
             'position' => 'nullable|integer|min:0',
             'marks_override' => 'nullable|numeric|min:0|max:1000',
+            'answer_lines_count' => 'nullable|integer|min:0|max:50',
+            'show_answer_lines' => 'nullable|boolean',
             'is_mandatory' => 'sometimes|boolean',
             'notes' => 'nullable|string|max:1000',
         ]);
@@ -746,7 +772,7 @@ class ExamPaperTemplateController extends Controller
             'examSubject.subject',
             'classAcademicYear.class',
             'classAcademicYear.academicYear',
-            'creator',
+            'templateFile',
             'items.question.subject',
         ]);
 
@@ -827,5 +853,418 @@ class ExamPaperTemplateController extends Controller
                 : 0,
             'subjects' => $subjectDetails,
         ]);
+    }
+
+    /**
+     * Generate preview HTML for a template
+     */
+    public function preview(string $id, Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('exams.papers.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for exams.papers.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $template = ExamPaperTemplate::with([
+            'subject',
+            'exam',
+            'classAcademicYear.class',
+            'classAcademicYear.academicYear',
+            'school',
+            'templateFile',
+            'items' => function ($query) {
+                $query->with(['question'])
+                    ->orderBy('section_label')
+                    ->orderBy('position');
+            },
+        ])
+            ->where('organization_id', $profile->organization_id)
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$template) {
+            return response()->json(['error' => 'Template not found'], 404);
+        }
+
+        $variant = (int) ($request->input('variant', 1));
+
+        try {
+            $generatorService = app(\App\Services\ExamPaperGeneratorService::class);
+            $organization = \App\Models\Organization::find($profile->organization_id);
+
+            // Prepare items array
+            $items = [];
+            foreach ($template->items as $item) {
+                $items[] = [
+                    'question' => [
+                        'text' => $item->question->text ?? '',
+                        'type' => $item->question->type ?? 'short',
+                        'marks' => $item->question->marks ?? 0,
+                        'options' => $item->question->options ?? [],
+                    ],
+                    'marks_override' => $item->marks_override,
+                    'answer_lines_count' => $item->answer_lines_count,
+                    'show_answer_lines' => $item->show_answer_lines,
+                ];
+            }
+
+            $html = $generatorService->generatePaperHtml($template, $items, $variant, $organization);
+
+            return response()->json([
+                'html' => $html,
+                'variant' => $variant,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error generating preview: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'template_id' => $id,
+                'user_id' => $user->id,
+            ]);
+            return response()->json(['error' => 'Failed to generate preview: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Generate PDF(s) for template
+     */
+    public function generate(string $id, Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('exams.papers.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for exams.papers.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $template = ExamPaperTemplate::with([
+            'subject',
+            'exam',
+            'classAcademicYear.class',
+            'classAcademicYear.academicYear',
+            'school',
+            'templateFile',
+            'items' => function ($query) {
+                $query->with(['question'])
+                    ->orderBy('section_label')
+                    ->orderBy('position');
+            },
+        ])
+            ->where('organization_id', $profile->organization_id)
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$template) {
+            return response()->json(['error' => 'Template not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'variants' => 'required|array|min:1',
+            'variants.*' => 'integer|min:1|max:10',
+            'page_layout' => 'nullable|string|in:A4_portrait,A4_landscape',
+        ]);
+
+        $variants = $validated['variants'];
+        $pageLayout = $validated['page_layout'] ?? 'A4_portrait';
+
+        try {
+            $pdfService = app(\App\Services\ExamPaperPdfService::class);
+            $organization = \App\Models\Organization::find($profile->organization_id);
+
+            // Prepare items array
+            $items = [];
+            foreach ($template->items as $item) {
+                $items[] = [
+                    'question' => [
+                        'text' => $item->question->text ?? '',
+                        'type' => $item->question->type ?? 'short',
+                        'marks' => $item->question->marks ?? 0,
+                        'options' => $item->question->options ?? [],
+                    ],
+                    'marks_override' => $item->marks_override,
+                    'answer_lines_count' => $item->answer_lines_count,
+                    'show_answer_lines' => $item->show_answer_lines,
+                ];
+            }
+
+            $results = $pdfService->generateVariants($template, $items, $variants, $organization, $pageLayout);
+
+            return response()->json([
+                'pdfs' => $results,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error generating PDFs: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'template_id' => $id,
+                'user_id' => $user->id,
+            ]);
+            return response()->json(['error' => 'Failed to generate PDFs: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Download generated PDF
+     */
+    public function downloadPdf(string $id, Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('exams.papers.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for exams.papers.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Verify template belongs to user's organization
+        $template = ExamPaperTemplate::where('organization_id', $profile->organization_id)
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$template) {
+            return response()->json(['error' => 'Template not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'path' => 'required|string',
+        ]);
+
+        $path = $validated['path'];
+
+        // Verify the path is within exam-papers directory
+        if (!str_starts_with($path, 'exam-papers/')) {
+            return response()->json(['error' => 'Invalid file path'], 403);
+        }
+
+        // Verify path contains organization ID for security
+        // Path format: exam-papers/{organization_id}/{filename}
+        $expectedOrgPath = 'exam-papers/' . $profile->organization_id . '/';
+        
+        if (!str_starts_with($path, $expectedOrgPath)) {
+            // Legacy support: if path is 'exam-papers/default/', only allow if user's org is the first/default org
+            // Otherwise, reject for security
+            if (str_starts_with($path, 'exam-papers/default/')) {
+                Log::warning('Attempted download of default path', [
+                    'user_id' => $user->id,
+                    'organization_id' => $profile->organization_id,
+                    'path' => $path,
+                ]);
+                return response()->json(['error' => 'File does not belong to your organization'], 403);
+            }
+            return response()->json(['error' => 'File does not belong to your organization'], 403);
+        }
+
+        // Check if file exists
+        if (!Storage::exists($path)) {
+            return response()->json(['error' => 'PDF file not found'], 404);
+        }
+
+        // Extract filename from path
+        $variantLabel = $request->input('variant', 'A');
+        $downloadName = "exam-paper-variant-{$variantLabel}.pdf";
+
+        return Storage::download($path, $downloadName);
+    }
+
+    /**
+     * Generate HTML for specific variant
+     */
+    public function generateHtml(string $id, Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('exams.papers.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for exams.papers.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $template = ExamPaperTemplate::with([
+            'subject',
+            'exam',
+            'classAcademicYear.class',
+            'classAcademicYear.academicYear',
+            'school',
+            'templateFile',
+            'items' => function ($query) {
+                $query->with(['question'])
+                    ->orderBy('section_label')
+                    ->orderBy('position');
+            },
+        ])
+            ->where('organization_id', $profile->organization_id)
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$template) {
+            return response()->json(['error' => 'Template not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'variant' => 'required|integer|min:1|max:10',
+        ]);
+
+        $variant = $validated['variant'];
+
+        try {
+            $generatorService = app(\App\Services\ExamPaperGeneratorService::class);
+            $organization = \App\Models\Organization::find($profile->organization_id);
+
+            // Prepare items array
+            $items = [];
+            foreach ($template->items as $item) {
+                $items[] = [
+                    'question' => [
+                        'text' => $item->question->text ?? '',
+                        'type' => $item->question->type ?? 'short',
+                        'marks' => $item->question->marks ?? 0,
+                        'options' => $item->question->options ?? [],
+                    ],
+                    'marks_override' => $item->marks_override,
+                    'answer_lines_count' => $item->answer_lines_count,
+                    'show_answer_lines' => $item->show_answer_lines,
+                ];
+            }
+
+            $html = $generatorService->generatePaperHtml($template, $items, $variant, $organization);
+
+            return response()->json([
+                'html' => $html,
+                'variant' => $variant,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error generating HTML: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'template_id' => $id,
+                'user_id' => $user->id,
+            ]);
+            return response()->json(['error' => 'Failed to generate HTML: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update print status and copies printed
+     */
+    public function updatePrintStatus(string $id, Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('exams.papers.update')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for exams.papers.update: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $template = ExamPaperTemplate::where('organization_id', $profile->organization_id)
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$template) {
+            return response()->json(['error' => 'Template not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'print_status' => 'nullable|string|in:not_printed,printing,printed,cancelled',
+            'copies_printed' => 'nullable|integer|min:0',
+            'increment' => 'nullable|boolean',
+            'print_notes' => 'nullable|string|max:1000',
+        ]);
+
+        // Update print status
+        if (isset($validated['print_status'])) {
+            $template->print_status = $validated['print_status'];
+        }
+
+        // Update copies printed (increment if increment=true, otherwise set absolute value)
+        if (isset($validated['copies_printed'])) {
+            $increment = $validated['increment'] ?? false;
+            if ($increment) {
+                $template->copies_printed = ($template->copies_printed ?? 0) + $validated['copies_printed'];
+            } else {
+                $template->copies_printed = $validated['copies_printed'];
+            }
+        }
+
+        // Update last printed date if status is being set to printed
+        if (isset($validated['print_status']) && $validated['print_status'] === 'printed') {
+            $template->last_printed_at = now();
+            $template->printed_by = $user->id;
+        }
+
+        // Update print notes
+        if (isset($validated['print_notes'])) {
+            $template->print_notes = $validated['print_notes'];
+        }
+
+        $template->save();
+
+        return response()->json($template);
     }
 }

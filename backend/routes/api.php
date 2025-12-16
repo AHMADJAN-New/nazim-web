@@ -64,6 +64,7 @@ use App\Http\Controllers\ExamNumberController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\ExamPaperTemplateController;
+use App\Http\Controllers\ExamPaperTemplateFileController;
 use App\Http\Controllers\ExamPaperPreviewController;
 use App\Http\Controllers\Dms\ArchiveSearchController;
 use App\Http\Controllers\Dms\DepartmentsController as DmsDepartmentsController;
@@ -319,6 +320,20 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::delete('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'removeItem']);
     Route::post('/exam/paper-templates/{id}/reorder', [ExamPaperTemplateController::class, 'reorderItems']);
     Route::get('/exams/{examId}/paper-stats', [ExamPaperTemplateController::class, 'examPaperStats']);
+    Route::get('/exam/paper-templates/{id}/preview', [ExamPaperTemplateController::class, 'preview']);
+    Route::post('/exam/paper-templates/{id}/generate', [ExamPaperTemplateController::class, 'generate']);
+    Route::post('/exam/paper-templates/{id}/generate-html', [ExamPaperTemplateController::class, 'generateHtml']);
+    Route::get('/exam/paper-templates/{id}/download-pdf', [ExamPaperTemplateController::class, 'downloadPdf'])->name('api.exam.paper-templates.download-pdf');
+    Route::post('/exam/paper-templates/{id}/print-status', [ExamPaperTemplateController::class, 'updatePrintStatus']);
+
+    // Exam Paper Template Files
+    Route::get('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'index']);
+    Route::post('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'store']);
+    Route::get('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'show']);
+    Route::put('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'update']);
+    Route::delete('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'destroy']);
+    Route::post('/exam/paper-template-files/{id}/set-default', [ExamPaperTemplateFileController::class, 'setDefault']);
+    Route::get('/exam/paper-template-files/{id}/preview', [ExamPaperTemplateFileController::class, 'preview']);
 
     // Exam Paper Preview
     Route::get('/exam/paper-preview/{templateId}/student', [ExamPaperPreviewController::class, 'studentView']);

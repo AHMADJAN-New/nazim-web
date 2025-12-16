@@ -40,6 +40,7 @@ class ExamPaperTemplate extends Model
         'exam_subject_id',
         'subject_id',
         'class_academic_year_id',
+        'template_file_id',
         'title',
         'language',
         'total_marks',
@@ -47,6 +48,11 @@ class ExamPaperTemplate extends Model
         'header_html',
         'footer_html',
         'instructions',
+        'print_status',
+        'copies_printed',
+        'last_printed_at',
+        'printed_by',
+        'print_notes',
         'is_default_for_exam_subject',
         'is_active',
         'created_by',
@@ -59,6 +65,8 @@ class ExamPaperTemplate extends Model
         'duration_minutes' => 'integer',
         'is_default_for_exam_subject' => 'boolean',
         'is_active' => 'boolean',
+        'copies_printed' => 'integer',
+        'last_printed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -135,6 +143,11 @@ class ExamPaperTemplate extends Model
             ->orderBy('position');
     }
 
+    public function templateFile()
+    {
+        return $this->belongsTo(ExamPaperTemplateFile::class, 'template_file_id');
+    }
+
     // ========== Scopes ==========
 
     public function scopeForOrganization($query, $organizationId)
@@ -196,16 +209,21 @@ class ExamPaperTemplate extends Model
      */
     public function calculateTotalMarks(): float
     {
-        $items = $this->items()->with('question')->get();
-        $total = 0;
+        try {
+            $items = $this->items()->with('question')->get();
+            $total = 0;
 
-        foreach ($items as $item) {
-            // Use marks_override if set, otherwise use question marks
-            $marks = $item->marks_override ?? ($item->question->marks ?? 0);
-            $total += floatval($marks);
+            foreach ($items as $item) {
+                // Use marks_override if set, otherwise use question marks
+                $marks = $item->marks_override ?? ($item->question->marks ?? 0);
+                $total += floatval($marks);
+            }
+
+            return $total;
+        } catch (\Exception $e) {
+            // If calculation fails, return the stored total_marks or 0
+            return floatval($this->total_marks ?? 0);
         }
-
-        return $total;
     }
 
     /**
@@ -275,5 +293,19 @@ class ExamPaperTemplate extends Model
             self::LANGUAGE_PASHTO,
             self::LANGUAGE_FARSI,
         ]);
+    }
+
+    /**
+     * Get effective template HTML (from template file or fallback to default)
+     */
+    public function getEffectiveTemplateHtml(): string
+    {
+        // If template file is assigned, use it
+        if ($this->templateFile && $this->templateFile->is_active) {
+            return $this->templateFile->getTemplateHtml();
+        }
+
+        // Otherwise, fallback to default template (will be handled by service)
+        return '';
     }
 }

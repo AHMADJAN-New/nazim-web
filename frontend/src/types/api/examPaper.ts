@@ -13,6 +13,7 @@ export interface ExamPaperTemplate {
   exam_subject_id: string | null;
   subject_id: string;
   class_academic_year_id: string | null;
+  template_file_id: string | null;
   title: string;
   language: ExamPaperLanguage;
   total_marks: number | null;
@@ -64,6 +65,11 @@ export interface ExamPaperTemplate {
   items_count?: number;
   computed_total_marks?: number;
   has_marks_discrepancy?: boolean;
+  print_status?: 'not_printed' | 'printing' | 'printed' | 'cancelled';
+  copies_printed?: number;
+  last_printed_at?: string | null;
+  printed_by?: string | null;
+  print_notes?: string | null;
 }
 
 export interface ExamPaperTemplateInsert {
@@ -72,6 +78,7 @@ export interface ExamPaperTemplateInsert {
   exam_subject_id?: string | null;
   subject_id: string;
   class_academic_year_id?: string | null;
+  template_file_id?: string | null;
   title: string;
   language?: ExamPaperLanguage;
   total_marks?: number | null;
@@ -104,6 +111,8 @@ export interface ExamPaperItem {
   section_label: string | null;
   position: number;
   marks_override: number | null;
+  answer_lines_count: number | null;
+  show_answer_lines: boolean | null;
   is_mandatory: boolean;
   notes: string | null;
   created_by: string | null;
@@ -121,6 +130,8 @@ export interface ExamPaperItemInsert {
   section_label?: string | null;
   position?: number;
   marks_override?: number | null;
+  answer_lines_count?: number | null;
+  show_answer_lines?: boolean | null;
   is_mandatory?: boolean;
   notes?: string | null;
 }

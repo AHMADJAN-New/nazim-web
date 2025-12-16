@@ -129,6 +129,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 10a: Assigning classes to academic years and subjects...');
         $this->call(ClassAcademicYearSubjectSeeder::class);
 
+        // Step 10b: Create questions for subjects
+        $this->command->info('Step 10b: Creating questions for subjects...');
+        $this->call(QuestionSeeder::class);
+
         // Step 11: Create staff members for organizations
         $this->command->info('Step 11: Creating staff members...');
         $this->call(StaffSeeder::class);
