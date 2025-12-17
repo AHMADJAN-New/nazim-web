@@ -23,8 +23,9 @@ abstract class BaseDmsController extends Controller
         }
 
         // Scope Spatie permissions to the organization
-        if (function_exists('setPermissionsTeamId')) {
-            setPermissionsTeamId($profile->organization_id);
+        // Set the team context for Spatie permissions
+        if (method_exists($user, 'setPermissionsTeamId')) {
+            $user->setPermissionsTeamId($profile->organization_id);
         }
 
         try {

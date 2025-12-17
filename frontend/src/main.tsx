@@ -8,13 +8,32 @@ import { LanguageProvider } from '@/hooks/useLanguage';
 import { RootBootstrap } from './RootBootstrap';
 
 // Unregister any existing service workers (PWA removed for performance)
+// Add error handling to prevent errors when document is in invalid state (e.g., PDF iframes)
 if (import.meta.env.DEV && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((registration) => {
-      registration.unregister();
-      console.log('Service worker unregistered');
-    });
-  });
+  try {
+    navigator.serviceWorker.getRegistrations()
+      .then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister().catch(() => {
+            // Silently ignore unregistration errors
+          });
+          if (import.meta.env.DEV) {
+            console.log('Service worker unregistered');
+          }
+        });
+      })
+      .catch((error) => {
+        // Silently ignore errors when document is in invalid state (e.g., PDF iframes)
+        if (import.meta.env.DEV) {
+          console.debug('Service worker registration check failed (likely in iframe):', error);
+        }
+      });
+  } catch (error) {
+    // Silently ignore errors when service worker API is not available or document is invalid
+    if (import.meta.env.DEV) {
+      console.debug('Service worker unregistration skipped:', error);
+    }
+  }
 }
 
 // Ensure right-click (context menu) works properly

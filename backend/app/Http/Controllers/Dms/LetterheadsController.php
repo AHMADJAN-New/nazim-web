@@ -61,7 +61,8 @@ class LetterheadsController extends BaseDmsController
         ]);
 
         $file = $request->file('file');
-        $path = $file->store('letterheads');
+        // Store with organization_id in path for multi-tenancy
+        $path = $file->store("letterheads/{$profile->organization_id}");
         
         // Detect file type if not provided
         $fileType = $data['file_type'] ?? ($file->getMimeType() === 'application/pdf' ? 'pdf' : 'image');
@@ -123,7 +124,8 @@ class LetterheadsController extends BaseDmsController
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-            $data['file_path'] = $file->store('letterheads');
+            // Store with organization_id in path for multi-tenancy
+            $data['file_path'] = $file->store("letterheads/{$profile->organization_id}");
             
             // Detect file type if not provided
             if (!isset($data['file_type'])) {
@@ -168,7 +170,42 @@ class LetterheadsController extends BaseDmsController
 
         $this->authorize('view', $record);
 
-        return Storage::download($record->file_path, $record->name . '.pdf');
+        if (!Storage::exists($record->file_path)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        $extension = pathinfo($record->file_path, PATHINFO_EXTENSION) ?: ($record->file_type === 'pdf' ? 'pdf' : 'png');
+        return Storage::download($record->file_path, $record->name . '.' . $extension);
+    }
+
+    /**
+     * Serve letterhead file (for viewing/preview)
+     */
+    public function serve(string $id, Request $request)
+    {
+        $context = $this->requireOrganizationContext($request, 'dms.letterheads.manage');
+        if ($context instanceof \Illuminate\Http\JsonResponse) {
+            return $context;
+        }
+        [, $profile] = $context;
+
+        $record = Letterhead::where('id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->firstOrFail();
+
+        $this->authorize('view', $record);
+
+        if (!Storage::exists($record->file_path)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        $file = Storage::get($record->file_path);
+        $mimeType = Storage::mimeType($record->file_path) ?: 
+            ($record->file_type === 'pdf' ? 'application/pdf' : 'image/png');
+
+        return response($file, 200)
+            ->header('Content-Type', $mimeType)
+            ->header('Content-Disposition', 'inline; filename="' . basename($record->file_path) . '"');
     }
 
     public function show(string $id, Request $request)
@@ -239,14 +276,20 @@ class LetterheadsController extends BaseDmsController
         if (method_exists($renderingService, 'processLetterheadFile')) {
             $html = $renderingService->processLetterheadFile($record);
         } else {
-            // Fallback: return file URL
-            $html = '<img src="' . Storage::url($record->file_path) . '" alt="' . e($record->name) . '" />';
+            // Fallback: return file serve URL
+            $fileUrl = route('dms.letterheads.serve', ['id' => $record->id]);
+            if ($record->file_type === 'pdf') {
+                $html = '<iframe src="' . e($fileUrl) . '" style="width: 100%; height: 600px; border: none;"></iframe>';
+            } else {
+                $html = '<img src="' . e($fileUrl) . '" alt="' . e($record->name) . '" style="max-width: 100%; height: auto;" />';
+            }
         }
 
         return response()->json([
             'html' => $html,
             'letterhead' => $record,
             'preview_url' => $record->preview_url,
+            'file_url' => $record->file_url ?? route('dms.letterheads.serve', ['id' => $record->id]),
         ]);
     }
 }

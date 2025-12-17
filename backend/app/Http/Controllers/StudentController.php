@@ -570,24 +570,54 @@ class StudentController extends Controller
             // Store new picture - use move_uploaded_file() directly to avoid any MIME type detection
             // This completely bypasses Laravel's file handling that might use finfo
             try {
+                // Normalize path separators for Windows compatibility
+                $normalizedPath = str_replace('/', DIRECTORY_SEPARATOR, $path);
+                
                 // Get the full storage path
-                $storagePath = storage_path('app/' . $path);
+                $storagePath = storage_path('app' . DIRECTORY_SEPARATOR . $normalizedPath);
                 $storageDir = dirname($storagePath);
                 
                 // Create directory if it doesn't exist
                 if (!is_dir($storageDir)) {
-                    mkdir($storageDir, 0755, true);
+                    if (!mkdir($storageDir, 0755, true)) {
+                        throw new \Exception("Failed to create directory: {$storageDir}");
+                    }
                 }
                 
                 // Move the uploaded file directly using PHP's move_uploaded_file()
                 // This avoids any Laravel methods that might trigger finfo
                 $tempPath = $file->getPathname(); // Use getPathname() instead of getRealPath()
-                if (!move_uploaded_file($tempPath, $storagePath)) {
+                $moved = false;
+                
+                if (is_uploaded_file($tempPath)) {
+                    $moved = move_uploaded_file($tempPath, $storagePath);
+                } else {
                     // Fallback: try copy if move fails (for non-uploaded files in testing)
-                    if (!copy($tempPath, $storagePath)) {
-                        return response()->json(['error' => 'Failed to store file'], 500);
-                    }
+                    $moved = copy($tempPath, $storagePath);
                 }
+                
+                if (!$moved) {
+                    throw new \Exception("Failed to move/copy file from {$tempPath} to {$storagePath}");
+                }
+                
+                // Verify file was actually saved
+                if (!file_exists($storagePath)) {
+                    throw new \Exception("File was moved but not found at destination: {$storagePath}");
+                }
+                
+                // Verify file is not empty
+                if (filesize($storagePath) === 0) {
+                    unlink($storagePath); // Clean up empty file
+                    throw new \Exception("Uploaded file is empty");
+                }
+                
+                Log::info('Student picture file saved successfully', [
+                    'student_id' => $id,
+                    'path' => $path,
+                    'normalized_path' => $normalizedPath,
+                    'storage_path' => $storagePath,
+                    'file_size' => filesize($storagePath),
+                ]);
             } catch (\Exception $e) {
                 Log::error('Error storing student picture: ' . $e->getMessage(), [
                     'student_id' => $id,

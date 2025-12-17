@@ -36,7 +36,7 @@ class Letterhead extends Model
 
     /**
      * Get the preview URL for the letterhead.
-     * If preview_url is set, return it; otherwise return file URL for images.
+     * If preview_url is set, return it; otherwise return file serve URL.
      */
     public function getPreviewUrlAttribute($value)
     {
@@ -45,13 +45,24 @@ class Letterhead extends Model
             return $value;
         }
 
-        // For images, return file URL as fallback
+        // Return file serve URL as fallback
         $filePath = $this->attributes['file_path'] ?? null;
-        $fileType = $this->attributes['file_type'] ?? null;
-        if ($filePath && $fileType === 'image') {
-            return \Storage::url($filePath);
+        if ($filePath) {
+            return route('dms.letterheads.serve', ['id' => $this->id]);
         }
 
+        return null;
+    }
+
+    /**
+     * Get the file URL for the letterhead.
+     */
+    public function getFileUrlAttribute()
+    {
+        $filePath = $this->attributes['file_path'] ?? null;
+        if ($filePath) {
+            return route('dms.letterheads.serve', ['id' => $this->id]);
+        }
         return null;
     }
 

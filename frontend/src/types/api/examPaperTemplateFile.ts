@@ -25,3 +25,4 @@ export interface ExamPaperTemplateFileInsert {
 
 export type ExamPaperTemplateFileUpdate = Partial<ExamPaperTemplateFileInsert>;
 
+

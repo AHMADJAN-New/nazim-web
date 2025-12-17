@@ -26,4 +26,9 @@ class LetterheadPolicy
     {
         return $user->hasPermissionTo('dms.letterheads.manage');
     }
+
+    public function delete(User $user, Letterhead $letterhead): bool
+    {
+        return $user->hasPermissionTo('dms.letterheads.manage');
+    }
 }

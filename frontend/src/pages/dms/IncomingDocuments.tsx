@@ -410,12 +410,28 @@ function DocumentViewContent({ doc }: { doc: IncomingDocument }) {
                         style={{ maxHeight: 'calc(95vh - 120px)' }}
                       />
                     ) : isPdfFile(previewFile.mime_type) ? (
-                      <iframe
-                        src={previewFile.url}
+                      <object
+                        data={previewFile.url}
+                        type="application/pdf"
                         className="w-full border-0 rounded-lg shadow-2xl"
                         style={{ height: 'calc(95vh - 120px)' }}
                         title={previewFile.name}
-                      />
+                      >
+                        <div className="flex items-center justify-center h-full text-center p-8">
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              PDF preview is not available. Please download the file to view it.
+                            </p>
+                            <Button
+                              variant="outline"
+                              onClick={() => handleDownload(previewFile.id, previewFile.name)}
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download PDF
+                            </Button>
+                          </div>
+                        </div>
+                      </object>
                     ) : (
                       <div className="text-center">
                         <File className="h-16 w-16 text-muted-foreground mx-auto mb-4" />

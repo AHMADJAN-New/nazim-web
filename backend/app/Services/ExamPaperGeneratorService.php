@@ -351,6 +351,9 @@ class ExamPaperGeneratorService
         // Generate footer with contact information
         $footerHtml = $this->generateFooterHtml($branding, $effectiveRtl);
         
+        // Get custom header HTML from template (if provided)
+        $headerHtml = $template->header_html ?? '';
+        
         return [
             'PAPER_TITLE' => $template->title,
             'DATE' => now()->format('Y-m-d'),
@@ -366,6 +369,7 @@ class ExamPaperGeneratorService
             'LOGO_HTML' => $logoHtml,
             'NOTES_SECTION' => $notesSection,
             'FOOTER_HTML' => $footerHtml,
+            'HEADER_HTML' => $headerHtml, // Custom header HTML from template
             'SCHOOL_NAME' => $branding['SCHOOL_NAME'],
             'SCHOOL_NAME_AR' => $branding['SCHOOL_NAME_AR'],
             'SCHOOL_ADDRESS' => $branding['SCHOOL_ADDRESS'],
@@ -1171,6 +1175,9 @@ class ExamPaperGeneratorService
 <body>
     <div class="a4-page">
         <header>
+            <!-- Custom Header HTML (if provided) -->
+            {HEADER_HTML}
+            
             <!-- QR box on LEFT -->
             <div class="qr-box">
                 {QR_HTML}

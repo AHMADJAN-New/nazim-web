@@ -114,6 +114,7 @@ export interface Letterhead {
   default_for_layout?: string | null;
   position?: 'header' | 'background' | 'watermark';
   preview_url?: string | null;
+  file_url?: string | null;
   active?: boolean;
   created_at?: string;
   updated_at?: string;

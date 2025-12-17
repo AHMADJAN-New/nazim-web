@@ -282,6 +282,14 @@ export const initializeSecurity = () => {
       "http:", // Allow HTTP for local development
     ];
     
+    // Allow object-src for PDF/object embeds in dev (includes http/https)
+    const objectSrcParts = [
+      "'self'",
+      "blob:",
+      "https:",
+      "http:", // Allow HTTP for local development (PDF/object)
+    ];
+
     const policy = [
       "default-src 'self' blob:",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
@@ -290,6 +298,7 @@ export const initializeSecurity = () => {
       `img-src ${imgSrcParts.join(' ')}`,
       `connect-src ${connectSrcParts.join(' ')}`,
       `frame-src ${frameSrcParts.join(' ')}`,
+      `object-src ${objectSrcParts.join(' ')}`,
       // Note: frame-ancestors cannot be set via meta tag, only via HTTP header
       "base-uri 'self'",
       "form-action 'self'",

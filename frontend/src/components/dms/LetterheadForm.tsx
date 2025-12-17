@@ -79,9 +79,13 @@ export function LetterheadForm({
       }
     } else if (letterhead?.preview_url) {
       setPreviewUrl(letterhead.preview_url);
+    } else if (letterhead?.file_url && letterhead.file_type === "image") {
+      // Use file_url for preview
+      setPreviewUrl(letterhead.file_url);
     } else if (letterhead?.file_path && letterhead.file_type === "image") {
-      // Use file_path as preview if available
-      setPreviewUrl(letterhead.file_path);
+      // Fallback: construct URL from file_path if file_url not available
+      const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
+      setPreviewUrl(`${apiUrl}/dms/letterheads/${letterhead.id}/serve`);
     }
   }, [watchedFile, letterhead, setValue]);
 
