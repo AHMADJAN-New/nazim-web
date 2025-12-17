@@ -78,6 +78,21 @@ export interface TranslationKeys {
     unauthorized: string;
     to: string;
     remove: string;
+    graduationDate: string;
+    approve: string;
+    total: string;
+    pass: string;
+    notes: string;
+    auditLog: string;
+    noData: string;
+    notFound: string;
+    title: string;
+    type: string;
+    active: string;
+    inactive: string;
+    body: string;
+    rtl: string;
+    pageSize: string;
   };
 
   // Pagination
@@ -118,6 +133,10 @@ export interface TranslationKeys {
     questionsAndPapers: string;
     questionBank: string;
     examPaperTemplates: string;
+    graduationCertificates: string;
+    "graduation.batches": string;
+    "certificates.templates": string;
+    "certificates.issued": string;
     finance: string;
     "finance.dashboard": string;
     "finance.accounts": string;
@@ -164,6 +183,98 @@ export interface TranslationKeys {
     "dms.archive": string;
     "dms.reports": string;
     "dms.settings": string;
+    "finance.fees": string;
+    "finance.fees.structures": string;
+    "finance.fees.assignments": string;
+    "finance.fees.payments": string;
+    "finance.fees.exceptions": string;
+  };
+
+  certificates: {
+    templates: string;
+    issued: string;
+    revoked: string;
+    revoke: string;
+  };
+
+  fees: {
+    structures: string;
+    assignments: string;
+    payments: string;
+    exceptions: string;
+    studentFeeStatement: string;
+    addStructure: string;
+    addAssignment: string;
+    addException: string;
+    recordPayment: string;
+    name: string;
+    namePlaceholder: string;
+    code: string;
+    codePlaceholder: string;
+    feeType: string;
+    feeTypes: {
+      one_time: string;
+      monthly: string;
+      quarterly: string;
+      semester: string;
+      annual: string;
+      custom: string;
+    };
+    amount: string;
+    dueDate: string;
+    startDate: string;
+    endDate: string;
+    displayOrder: string;
+    description: string;
+    descriptionPlaceholder: string;
+    required: string;
+    active: string;
+    student: string;
+    structure: string;
+    assignment: string;
+    structureId: string;
+    studentId: string;
+    studentAdmissionId: string;
+    academicYear: string;
+    class: string;
+    selectClass: string;
+    selectAcademicYear: string;
+    selectStructure: string;
+    selectAssignment: string;
+    filters: string;
+    paymentPeriodStart: string;
+    paymentPeriodEnd: string;
+    amountAssigned: string;
+    paid: string;
+    remaining: string;
+    status: string;
+    paymentDate: string;
+    paymentMethod: string;
+    paymentMethods: {
+      cash: string;
+      bank_transfer: string;
+      cheque: string;
+      other: string;
+    };
+    reference: string;
+    referencePlaceholder: string;
+    notes: string;
+    notesPlaceholder: string;
+    account: string;
+    accountPlaceholder: string;
+    method: string;
+    exceptionType: string;
+    exceptionTypes: {
+      discount_percentage: string;
+      discount_fixed: string;
+      waiver: string;
+      custom: string;
+    };
+    exceptionAmount: string;
+    exceptionReason: string;
+    exceptionReasonPlaceholder: string;
+    validFrom: string;
+    validTo: string;
   };
 
   attendancePage: {
@@ -2737,6 +2848,19 @@ export interface TranslationKeys {
     roleRemovedFromUser: string;
     roleAssignFailed: string;
     roleRemoveFailed: string;
+    feeStructureCreated: string;
+    feeStructureCreateFailed: string;
+    feeStructureUpdated: string;
+    feeStructureDeleted: string;
+    feeStructureDeleteFailed: string;
+    feeAssignmentCreated: string;
+    feeAssignmentCreateFailed: string;
+    feeAssignmentsNoStudentsForClass: string;
+    feePaymentRecorded: string;
+    feePaymentFailed: string;
+    feeExceptionCreated: string;
+    feeExceptionFailed: string;
+    organizationRequired: string;
     // Organizations
     organizationCreated: string;
     organizationUpdated: string;
@@ -3589,4 +3713,3 @@ export interface TranslationKeys {
   };
 
 }
-

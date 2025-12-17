@@ -89,7 +89,10 @@ class PermissionSeeder extends Seeder
             'course_students' => ['read', 'create', 'update', 'delete', 'enroll_from_main', 'copy_to_main', 'report'],
             'course_student_discipline_records' => ['read', 'create', 'update', 'delete'],
             'course_attendance' => ['read', 'create', 'update', 'delete'],
-            'certificate_templates' => ['read', 'create', 'update', 'delete'],
+            'certificate_templates' => ['read', 'create', 'update', 'delete', 'activate', 'deactivate'],
+            'graduation_batches' => ['read', 'create', 'generate_students', 'approve', 'issue'],
+            'issued_certificates' => ['read'],
+            'certificates' => ['issue', 'print', 'revoke'],
             'course_documents' => ['read', 'create', 'update', 'delete'],
             // Finance Module permissions
             'finance_accounts' => ['read', 'create', 'update', 'delete'],
@@ -100,6 +103,9 @@ class PermissionSeeder extends Seeder
             'finance_projects' => ['read', 'create', 'update', 'delete'],
             'donors' => ['read', 'create', 'update', 'delete'],
             'finance_reports' => ['read'],
+            'fees' => ['read', 'create', 'update', 'delete'],
+            'fees.payments' => ['create'],
+            'fees.exceptions' => ['create', 'approve'],
             // Legacy finance permissions (kept for backward compatibility)
             'finance_income' => ['read', 'create', 'update', 'delete'],
             'finance_expense' => ['read', 'create', 'update', 'delete'],
@@ -380,4 +386,3 @@ class PermissionSeeder extends Seeder
         }
     }
 }
-

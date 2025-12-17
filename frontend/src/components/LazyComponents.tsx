@@ -58,6 +58,10 @@ export const CourseDashboard = lazy(() => import('@/pages/CourseDashboard'));
 export const CourseAttendance = lazy(() => import('@/pages/CourseAttendance'));
 export const CourseCertificates = lazy(() => import('@/pages/CourseCertificates'));
 export const CertificateTemplates = lazy(() => import('@/pages/CertificateTemplates'));
+export const GraduationBatchesPage = lazy(() => import('@/pages/graduation/GraduationBatchesPage'));
+export const GraduationBatchDetailPage = lazy(() => import('@/pages/graduation/GraduationBatchDetailPage'));
+export const CertificateTemplatesV2Page = lazy(() => import('@/pages/graduation/CertificateTemplatesPage'));
+export const IssuedCertificatesPage = lazy(() => import('@/pages/graduation/IssuedCertificatesPage'));
 export const CourseDocuments = lazy(() => import('@/pages/CourseDocuments'));
 export const StaffReport = lazy(() => import('@/pages/StaffReport'));
 export const HostelManagement = lazy(() => import('@/pages/HostelManagement').then(module => ({ default: module.HostelManagement })));
@@ -92,6 +96,11 @@ export const Currencies = lazy(() => import('@/pages/finance/Currencies'));
 export const ExchangeRates = lazy(() => import('@/pages/finance/ExchangeRates'));
 export const FinanceReports = lazy(() => import('@/pages/finance/FinanceReports'));
 export const FinanceSettings = lazy(() => import('@/pages/finance/FinanceSettings'));
+export const FeeStructuresPage = lazy(() => import('@/pages/fees/FeeStructuresPage'));
+export const FeeAssignmentsPage = lazy(() => import('@/pages/fees/FeeAssignmentsPage'));
+export const FeePaymentsPage = lazy(() => import('@/pages/fees/FeePaymentsPage'));
+export const FeeExceptionsPage = lazy(() => import('@/pages/fees/FeeExceptionsPage'));
+export const StudentFeeStatementPage = lazy(() => import('@/pages/fees/StudentFeeStatementPage'));
 
 // Document Management System
 export const DmsDashboard = lazy(() => import('@/pages/dms/DmsDashboard'));

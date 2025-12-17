@@ -20,20 +20,33 @@ class CertificateTemplate extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'course_id',
+        'type',
         'name',
+        'title',
         'description',
+        'body_html',
         'background_image_path',
+        'page_size',
+        'custom_width_mm',
+        'custom_height_mm',
+        'rtl',
+        'font_family',
         'layout_config',
         'is_default',
         'is_active',
         'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
         'layout_config' => 'array',
         'is_default' => 'boolean',
         'is_active' => 'boolean',
+        'rtl' => 'boolean',
+        'custom_width_mm' => 'decimal:2',
+        'custom_height_mm' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -56,12 +69,21 @@ class CertificateTemplate extends Model
                     ->where('id', '!=', $model->id)
                     ->update(['is_default' => false]);
             }
+
+            if (empty($model->type)) {
+                $model->type = 'graduation';
+            }
         });
     }
 
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organization_id');
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 
     public function createdBy()

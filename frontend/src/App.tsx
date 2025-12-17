@@ -73,6 +73,10 @@ import {
   CourseAttendance,
   CourseCertificates,
   CertificateTemplates,
+  GraduationBatchesPage,
+  GraduationBatchDetailPage,
+  CertificateTemplatesV2Page,
+  IssuedCertificatesPage,
   CourseDocuments,
   StaffReport,
   HostelManagement,
@@ -118,7 +122,12 @@ import {
   ExchangeRates,
   Donors,
   FinanceReports,
-  FinanceSettings
+  FinanceSettings,
+  FeeStructuresPage,
+  FeeAssignmentsPage,
+  FeePaymentsPage,
+  FeeExceptionsPage,
+  StudentFeeStatementPage
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -724,10 +733,38 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/graduation/batches" element={
+                      <PermissionRoute permission="graduation_batches.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <GraduationBatchesPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/graduation/batches/:id" element={
+                      <PermissionRoute permission="graduation_batches.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <GraduationBatchDetailPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     <Route path="/certificate-templates" element={
                       <PermissionRoute permission="certificate_templates.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <CertificateTemplates />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/certificates/templates" element={
+                      <PermissionRoute permission="certificate_templates.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <CertificateTemplatesV2Page />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/certificates/issued" element={
+                      <PermissionRoute permission="issued_certificates.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <IssuedCertificatesPage />
                         </Suspense>
                       </PermissionRoute>
                     } />
@@ -892,6 +929,41 @@ const App = () => (
                       <PermissionRoute permission="exchange_rates.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExchangeRates />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/fees/structures" element={
+                      <PermissionRoute permission="fees.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FeeStructuresPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/fees/assignments" element={
+                      <PermissionRoute permission="fees.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FeeAssignmentsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/fees/payments" element={
+                      <PermissionRoute permission="fees.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FeePaymentsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/fees/exceptions" element={
+                      <PermissionRoute permission="fees.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FeeExceptionsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/students/:id/fees" element={
+                      <PermissionRoute permission="fees.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <StudentFeeStatementPage />
                         </Suspense>
                       </PermissionRoute>
                     } />

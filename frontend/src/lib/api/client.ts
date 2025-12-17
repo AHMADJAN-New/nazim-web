@@ -2993,6 +2993,47 @@ export const financeReportsApi = {
   accountBalances: async () => apiClient.get('/finance/reports/account-balances'),
 };
 
+// Fees API
+export const feeStructuresApi = {
+  list: async (params?: {
+    organization_id?: string;
+    academic_year_id?: string;
+    class_id?: string;
+    class_academic_year_id?: string;
+    is_active?: boolean;
+  }) => apiClient.get('/fees/structures', params),
+  get: async (id: string) => apiClient.get(`/fees/structures/${id}`),
+  create: async (data: any) => apiClient.post('/fees/structures', data),
+  update: async (id: string, data: any) => apiClient.put(`/fees/structures/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/fees/structures/${id}`),
+};
+
+export const feeAssignmentsApi = {
+  list: async (params?: {
+    organization_id?: string;
+    student_id?: string;
+    student_admission_id?: string;
+    academic_year_id?: string;
+    class_academic_year_id?: string;
+    status?: string;
+  }) => apiClient.get('/fees/assignments', params),
+  create: async (data: any) => apiClient.post('/fees/assignments', data),
+};
+
+export const feePaymentsApi = {
+  list: async (params?: {
+    fee_assignment_id?: string;
+    student_id?: string;
+    payment_date_from?: string;
+    payment_date_to?: string;
+  }) => apiClient.get('/fees/payments', params),
+  create: async (data: any) => apiClient.post('/fees/payments', data),
+};
+
+export const feeExceptionsApi = {
+  create: async (data: any) => apiClient.post('/fees/exceptions', data),
+};
+
 // Document Management System API
 export const dmsApi = {
   dashboard: async () => apiClient.get('/dms/dashboard'),
@@ -3323,4 +3364,75 @@ export const examPaperPreviewApi = {
   setDefaultTemplate: async (examSubjectId: string, templateId: string) => {
     return apiClient.post(`/exam-subjects/${examSubjectId}/set-default-template`, { template_id: templateId });
   },
+};
+
+// Graduation & Certificates MVP
+export const graduationBatchesApi = {
+  list: async (params?: {
+    school_id?: string;
+    academic_year_id?: string;
+    class_id?: string;
+    exam_id?: string;
+  }) => apiClient.get('/graduation/batches', params),
+  get: async (id: string) => apiClient.get(`/graduation/batches/${id}`),
+  create: async (data: {
+    school_id: string;
+    academic_year_id: string;
+    class_id: string;
+    exam_id: string;
+    graduation_date: string;
+  }) => apiClient.post('/graduation/batches', data),
+  generateStudents: async (id: string, params?: { school_id?: string }) =>
+    apiClient.post(`/graduation/batches/${id}/generate-students`, params),
+  approve: async (id: string, params?: { school_id?: string }) =>
+    apiClient.post(`/graduation/batches/${id}/approve`, params),
+  issueCertificates: async (id: string, data: { template_id: string; school_id?: string }) =>
+    apiClient.post(`/graduation/batches/${id}/issue-certificates`, data),
+};
+
+export const certificateTemplatesV2Api = {
+  list: async (params?: { school_id?: string; type?: string }) =>
+    apiClient.get('/certificates/templates', params),
+  create: async (data: {
+    school_id?: string;
+    type: string;
+    title: string;
+    body_html: string;
+    page_size?: 'A4' | 'A5' | 'custom';
+    custom_width_mm?: number | null;
+    custom_height_mm?: number | null;
+    rtl?: boolean;
+    font_family?: string | null;
+    is_active?: boolean;
+  }) => apiClient.post('/certificates/templates', data),
+  update: async (id: string, data: {
+    school_id?: string;
+    type?: string;
+    title?: string;
+    body_html?: string;
+    page_size?: 'A4' | 'A5' | 'custom';
+    custom_width_mm?: number | null;
+    custom_height_mm?: number | null;
+    rtl?: boolean;
+    font_family?: string | null;
+    is_active?: boolean;
+  }) => apiClient.put(`/certificates/templates/${id}`, data),
+  activate: async (id: string) => apiClient.post(`/certificates/templates/${id}/activate`),
+  deactivate: async (id: string) => apiClient.post(`/certificates/templates/${id}/deactivate`),
+};
+
+export const issuedCertificatesApi = {
+  list: async (params?: {
+    school_id?: string;
+    student_id?: string;
+    batch_id?: string;
+    type?: string;
+  }) => apiClient.get('/certificates/issued', params),
+  get: async (id: string) => apiClient.get(`/certificates/issued/${id}`),
+  revoke: async (id: string, reason: string) =>
+    apiClient.post(`/certificates/issued/${id}/revoke`, { reason }),
+  downloadPdf: async (id: string) =>
+    apiClient.requestFile(`/certificates/issued/${id}/pdf`, { method: 'GET' }),
+  downloadBatch: async (batchId: string) =>
+    apiClient.requestFile(`/certificates/batches/${batchId}/pdf`, { method: 'GET' }),
 };

@@ -21,6 +21,10 @@ use App\Http\Controllers\ScheduleSlotController;
 use App\Http\Controllers\TeacherSubjectAssignmentController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Fees\FeeAssignmentController;
+use App\Http\Controllers\Fees\FeeExceptionController;
+use App\Http\Controllers\Fees\FeePaymentController;
+use App\Http\Controllers\Fees\FeeStructureController;
 use App\Http\Controllers\SchoolBrandingController;
 use App\Http\Controllers\StaffTypeController;
 use App\Http\Controllers\ResidencyTypeController;
@@ -51,6 +55,10 @@ use App\Http\Controllers\CourseAttendanceSessionController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\CourseDocumentController;
 use App\Http\Controllers\CertificateTemplateController;
+use App\Http\Controllers\Certificates\CertificateTemplateController as GraduationCertificateTemplateController;
+use App\Http\Controllers\Certificates\IssuedCertificateController;
+use App\Http\Controllers\CertificateVerifyController;
+use App\Http\Controllers\GraduationBatchController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamClassController;
@@ -86,6 +94,8 @@ use App\Http\Controllers\Dms\OutgoingDocumentsController;
 // Public routes
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::get('/leave-requests/scan/{token}', [LeaveRequestController::class, 'scanPublic']);
+Route::get('/verify/certificate/{hash}', [CertificateVerifyController::class, 'show'])
+    ->middleware('throttle:60,1');
 
 // Public stats endpoints (for landing page)
 // Note: These return aggregate counts across all organizations
@@ -438,6 +448,26 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/certificate-templates/certificate-data/{courseStudentId}', [CertificateTemplateController::class, 'getCertificateData']);
     Route::apiResource('certificate-templates', CertificateTemplateController::class);
 
+    // Graduation & Certificates (school scoped)
+    Route::get('/graduation/batches', [GraduationBatchController::class, 'index']);
+    Route::post('/graduation/batches', [GraduationBatchController::class, 'store']);
+    Route::get('/graduation/batches/{id}', [GraduationBatchController::class, 'show']);
+    Route::post('/graduation/batches/{id}/generate-students', [GraduationBatchController::class, 'generateStudents']);
+    Route::post('/graduation/batches/{id}/approve', [GraduationBatchController::class, 'approve']);
+    Route::post('/graduation/batches/{id}/issue-certificates', [GraduationBatchController::class, 'issueCertificates']);
+
+    Route::get('/certificates/templates', [GraduationCertificateTemplateController::class, 'index']);
+    Route::post('/certificates/templates', [GraduationCertificateTemplateController::class, 'store']);
+    Route::put('/certificates/templates/{id}', [GraduationCertificateTemplateController::class, 'update']);
+    Route::post('/certificates/templates/{id}/activate', [GraduationCertificateTemplateController::class, 'activate']);
+    Route::post('/certificates/templates/{id}/deactivate', [GraduationCertificateTemplateController::class, 'deactivate']);
+
+    Route::get('/certificates/issued', [IssuedCertificateController::class, 'index']);
+    Route::get('/certificates/issued/{id}', [IssuedCertificateController::class, 'show']);
+    Route::post('/certificates/issued/{id}/revoke', [IssuedCertificateController::class, 'revoke']);
+    Route::get('/certificates/issued/{id}/pdf', [IssuedCertificateController::class, 'downloadPdf']);
+    Route::get('/certificates/batches/{batchId}/pdf', [IssuedCertificateController::class, 'downloadBatchZip']);
+
     // Leave Requests
     Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
     Route::post('/leave-requests/{id}/approve', [LeaveRequestController::class, 'approve']);
@@ -481,6 +511,22 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/finance/reports/project-summary', [\App\Http\Controllers\FinanceReportController::class, 'projectSummary']);
     Route::get('/finance/reports/donor-summary', [\App\Http\Controllers\FinanceReportController::class, 'donorSummary']);
     Route::get('/finance/reports/account-balances', [\App\Http\Controllers\FinanceReportController::class, 'accountBalances']);
+
+    // Fees
+    Route::get('/fees/structures', [FeeStructureController::class, 'index']);
+    Route::post('/fees/structures', [FeeStructureController::class, 'store']);
+    Route::get('/fees/structures/{id}', [FeeStructureController::class, 'show']);
+    Route::put('/fees/structures/{id}', [FeeStructureController::class, 'update']);
+    Route::patch('/fees/structures/{id}', [FeeStructureController::class, 'update']);
+    Route::delete('/fees/structures/{id}', [FeeStructureController::class, 'destroy']);
+
+    Route::get('/fees/assignments', [FeeAssignmentController::class, 'index']);
+    Route::post('/fees/assignments', [FeeAssignmentController::class, 'store']);
+
+    Route::get('/fees/payments', [FeePaymentController::class, 'index']);
+    Route::post('/fees/payments', [FeePaymentController::class, 'store']);
+
+    Route::post('/fees/exceptions', [FeeExceptionController::class, 'store']);
 
     // Currency Management
     Route::apiResource('currencies', \App\Http\Controllers\CurrencyController::class);

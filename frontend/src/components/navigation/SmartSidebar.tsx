@@ -195,6 +195,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasCourseReportsPermission = useHasPermission('course_students.report');
   const hasCourseAttendancePermission = useHasPermission('course_attendance.read');
   const hasCertificateTemplatesPermission = useHasPermission('certificate_templates.read');
+  const hasGraduationBatchesPermission = useHasPermission('graduation_batches.read');
+  const hasIssuedCertificatesPermission = useHasPermission('issued_certificates.read');
   const hasCourseDocumentsPermission = useHasPermission('course_documents.read');
   const hasStaffTypesPermission = useHasPermission('staff_types.read');
   const hasScheduleSlotsPermission = useHasPermission('schedule_slots.read');
@@ -239,7 +241,10 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasFinanceReportsPermission = useHasPermission('finance_reports.read');
   const hasCurrenciesPermission = useHasPermission('currencies.read');
   const hasExchangeRatesPermission = useHasPermission('exchange_rates.read');
-  const hasFinancePermission = hasFinanceAccountsPermission || hasIncomeEntriesPermission || hasExpenseEntriesPermission || hasFinanceProjectsPermission || hasDonorsPermission || hasFinanceReportsPermission || hasCurrenciesPermission || hasExchangeRatesPermission;
+  const hasFeesPermission = useHasPermission('fees.read');
+  const hasFeePaymentsPermission = useHasPermission('fees.payments.create');
+  const hasFeeExceptionsPermission = useHasPermission('fees.exceptions.create');
+  const hasFinancePermission = hasFinanceAccountsPermission || hasIncomeEntriesPermission || hasExpenseEntriesPermission || hasFinanceProjectsPermission || hasDonorsPermission || hasFinanceReportsPermission || hasCurrenciesPermission || hasExchangeRatesPermission || hasFeesPermission || hasFeePaymentsPermission || hasFeeExceptionsPermission;
 
   // DMS (Document Management System) permissions
   const hasDmsIncomingPermission = useHasPermission('dms.incoming.read');
@@ -399,6 +404,32 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "courseReports",
             url: "/course-students/reports",
             icon: LucideIcons.BarChart3,
+          }] : []),
+        ],
+      }] : []),
+      ...((hasGraduationBatchesPermission || hasCertificateTemplatesPermission || hasIssuedCertificatesPermission) ? [{
+        titleKey: "graduationCertificates",
+        icon: LucideIcons.GraduationCap,
+        badge: null,
+        priority: 3.053,
+        children: [
+          ...(hasGraduationBatchesPermission ? [{
+            title: "Graduation Batches",
+            titleKey: "graduation.batches",
+            url: "/graduation/batches",
+            icon: LucideIcons.GraduationCap,
+          }] : []),
+          ...(hasCertificateTemplatesPermission ? [{
+            title: "Certificate Templates",
+            titleKey: "certificates.templates",
+            url: "/certificates/templates",
+            icon: LucideIcons.Award,
+          }] : []),
+          ...(hasIssuedCertificatesPermission ? [{
+            title: "Issued Certificates",
+            titleKey: "certificates.issued",
+            url: "/certificates/issued",
+            icon: LucideIcons.Printer,
           }] : []),
         ],
       }] : []),
@@ -653,6 +684,38 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "finance.expenses",
             url: "/finance/expenses",
             icon: LucideIcons.TrendingDown,
+          }] : []),
+          ...(hasFeesPermission ? [{
+            title: "Fees",
+            titleKey: "finance.fees",
+            url: "/finance/fees/structures",
+            icon: LucideIcons.Banknote,
+            children: [
+              {
+                title: "Structures",
+                titleKey: "finance.fees.structures",
+                url: "/finance/fees/structures",
+                icon: LucideIcons.ListChecks,
+              },
+              {
+                title: "Assignments",
+                titleKey: "finance.fees.assignments",
+                url: "/finance/fees/assignments",
+                icon: LucideIcons.NotebookPen,
+              },
+              ...(hasFeePaymentsPermission ? [{
+                title: "Payments",
+                titleKey: "finance.fees.payments",
+                url: "/finance/fees/payments",
+                icon: LucideIcons.CreditCard,
+              }] : []),
+              ...(hasFeeExceptionsPermission ? [{
+                title: "Exceptions",
+                titleKey: "finance.fees.exceptions",
+                url: "/finance/fees/exceptions",
+                icon: LucideIcons.Shield,
+              }] : []),
+            ].filter(Boolean) as NavigationChild[],
           }] : []),
           ...(hasFinanceProjectsPermission ? [{
             title: "Projects",
