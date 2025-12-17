@@ -24,6 +24,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\Fees\FeeAssignmentController;
 use App\Http\Controllers\Fees\FeeExceptionController;
 use App\Http\Controllers\Fees\FeePaymentController;
+use App\Http\Controllers\Fees\FeeReportController;
 use App\Http\Controllers\Fees\FeeStructureController;
 use App\Http\Controllers\SchoolBrandingController;
 use App\Http\Controllers\StaffTypeController;
@@ -527,6 +528,12 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/fees/payments', [FeePaymentController::class, 'store']);
 
     Route::post('/fees/exceptions', [FeeExceptionController::class, 'store']);
+
+    // Fee Reports
+    Route::get('/fees/reports/dashboard', [FeeReportController::class, 'dashboard']);
+    Route::get('/fees/reports/students', [FeeReportController::class, 'studentFees']);
+    Route::get('/fees/reports/collection', [FeeReportController::class, 'collectionReport']);
+    Route::get('/fees/reports/defaulters', [FeeReportController::class, 'defaulters']);
 
     // Currency Management
     Route::apiResource('currencies', \App\Http\Controllers\CurrencyController::class);
