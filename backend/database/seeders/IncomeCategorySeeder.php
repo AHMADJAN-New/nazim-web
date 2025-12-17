@@ -57,6 +57,14 @@ class IncomeCategorySeeder extends Seeder
         // Define the income categories to create (Islamic Pashto categories for schools)
         $categories = [
             [
+                'name' => 'د زده کړیالانو فیس',
+                'name_en' => 'Student Fees',
+                'code' => 'STUDENT_FEES',
+                'description' => 'د زده کړیالانو ټولو فیسونو لپاره تادیات',
+                'description_en' => 'Student fees and tuition',
+                'is_restricted' => false,
+            ],
+            [
                 'name' => 'د فیسو پیسې',
                 'name_en' => 'Tuition Fees',
                 'code' => 'TUITION',

@@ -29,6 +29,10 @@ return new class extends Migration
                 
                 // Override marks for this specific usage (null = use question.marks)
                 $table->decimal('marks_override', 8, 2)->nullable();
+
+                // Answer lines customization
+                $table->integer('answer_lines_count')->nullable();
+                $table->boolean('show_answer_lines')->nullable();
                 
                 // Whether this question is mandatory in the paper
                 $table->boolean('is_mandatory')->default(true);

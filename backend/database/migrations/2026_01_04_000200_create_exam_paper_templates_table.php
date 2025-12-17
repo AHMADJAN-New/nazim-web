@@ -48,6 +48,12 @@ return new class extends Migration
                 // Instructions for students
                 $table->text('instructions')->nullable();
                 
+                // Print tracking fields
+                $table->string('print_status', 255)->default('not_printed');
+                $table->timestamp('printed_at')->nullable();
+                $table->uuid('printed_by')->nullable();
+                $table->text('print_notes')->nullable();
+
                 // Whether this is the default template for the exam_subject
                 $table->boolean('is_default_for_exam_subject')->default(false);
                 
@@ -98,6 +104,10 @@ return new class extends Migration
                 $table->foreign('deleted_by')
                     ->references('id')->on('profiles')
                     ->onDelete('set null');
+
+                $table->foreign('printed_by')
+                    ->references('id')->on('profiles')
+                    ->onDelete('set null');
                 
                 // Indexes for common queries
                 $table->index('organization_id');
@@ -106,6 +116,7 @@ return new class extends Migration
                 $table->index('exam_subject_id');
                 $table->index('subject_id');
                 $table->index('class_academic_year_id');
+                $table->index('print_status');
                 $table->index('is_default_for_exam_subject');
                 $table->index('is_active');
                 $table->index('deleted_at');

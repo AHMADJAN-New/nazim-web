@@ -15,6 +15,7 @@ return new class extends Migration
                 $table->uuid('organization_id');
                 $table->uuid('school_id');
                 $table->uuid('subject_id');
+                $table->uuid('exam_id')->nullable();
                 $table->uuid('class_academic_year_id')->nullable();
                 
                 // Question type: mcq, short, descriptive, true_false, essay
@@ -67,6 +68,10 @@ return new class extends Migration
                 $table->foreign('subject_id')
                     ->references('id')->on('subjects')
                     ->onDelete('cascade');
+
+                $table->foreign('exam_id')
+                    ->references('id')->on('exams')
+                    ->onDelete('set null');
                 
                 $table->foreign('class_academic_year_id')
                     ->references('id')->on('class_academic_years')
@@ -88,6 +93,7 @@ return new class extends Migration
                 $table->index('organization_id');
                 $table->index('school_id');
                 $table->index('subject_id');
+                $table->index('exam_id');
                 $table->index('class_academic_year_id');
                 $table->index('type');
                 $table->index('difficulty');

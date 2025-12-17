@@ -77,6 +77,15 @@ class FinanceAccountSeeder extends Seeder
                 'opening_balance' => 0,
             ],
             [
+                'name' => 'د فیس صندوق',
+                'name_en' => 'Fee Account',
+                'code' => 'FEE_ACCOUNT',
+                'type' => 'cash',
+                'description' => 'د فیس پیسو لپاره ځانګړی صندوق',
+                'description_en' => 'Dedicated account for student fee collections',
+                'opening_balance' => 0,
+            ],
+            [
                 'name' => 'د بانک حساب',
                 'name_en' => 'Bank Account',
                 'code' => 'BANK_ACC',

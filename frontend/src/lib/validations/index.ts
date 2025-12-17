@@ -22,3 +22,6 @@ export * from './disciplineRecord';
 // Timetable validation
 export * from './timetable';
 
+// Fees
+export * from './fees';
+
