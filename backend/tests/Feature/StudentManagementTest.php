@@ -1,0 +1,309 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Organization;
+use App\Models\Student;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class StudentManagementTest extends TestCase
+{
+    use RefreshDatabase;
+
+    /** @test */
+    public function authenticated_user_can_list_students()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+
+        Student::factory()->count(5)->create(['organization_id' => $organization->id]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/students');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'full_name',
+                        'student_code',
+                        'gender',
+                        'student_status',
+                    ],
+                ],
+            ]);
+
+        $this->assertCount(5, $response->json('data'));
+    }
+
+    /** @test */
+    public function user_can_create_student()
+    {
+        $user = $this->authenticate();
+
+        $studentData = [
+            'full_name' => 'Ahmad Khan',
+            'father_name' => 'Mohammad Khan',
+            'grandfather_name' => 'Abdul Khan',
+            'mother_name' => 'Fatima',
+            'gender' => 'male',
+            'birth_year' => 2010,
+            'birth_date' => '2010-01-15',
+            'age' => 14,
+            'admission_year' => 2024,
+            'nationality' => 'Afghan',
+            'preferred_language' => 'ps',
+            'guardian_name' => 'Mohammad Khan',
+            'guardian_relation' => 'father',
+            'guardian_phone' => '+93700123456',
+            'home_address' => 'Kabul, Afghanistan',
+            'applying_grade' => 8,
+            'student_status' => 'active',
+            'admission_fee_status' => 'paid',
+        ];
+
+        $response = $this->jsonAs($user, 'POST', '/api/students', $studentData);
+
+        $response->assertStatus(201)
+            ->assertJsonFragment([
+                'full_name' => 'Ahmad Khan',
+                'gender' => 'male',
+            ]);
+
+        $this->assertDatabaseHas('students', [
+            'full_name' => 'Ahmad Khan',
+            'father_name' => 'Mohammad Khan',
+        ]);
+    }
+
+    /** @test */
+    public function creating_student_requires_mandatory_fields()
+    {
+        $user = $this->authenticate();
+
+        $response = $this->jsonAs($user, 'POST', '/api/students', []);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors([
+            'full_name',
+            'father_name',
+            'gender',
+        ]);
+    }
+
+    /** @test */
+    public function user_can_view_student_details()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'full_name' => 'Test Student',
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', "/api/students/{$student->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonFragment([
+                'id' => $student->id,
+                'full_name' => 'Test Student',
+            ]);
+    }
+
+    /** @test */
+    public function user_can_update_student()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'full_name' => 'Original Name',
+        ]);
+
+        $response = $this->jsonAs($user, 'PUT', "/api/students/{$student->id}", [
+            'full_name' => 'Updated Name',
+            'father_name' => $student->father_name,
+            'gender' => $student->gender,
+            'birth_year' => $student->birth_year,
+            'admission_year' => $student->admission_year,
+            'nationality' => $student->nationality,
+            'guardian_name' => $student->guardian_name,
+            'guardian_phone' => $student->guardian_phone,
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('students', [
+            'id' => $student->id,
+            'full_name' => 'Updated Name',
+        ]);
+    }
+
+    /** @test */
+    public function user_can_delete_student()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+
+        $student = Student::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $response = $this->jsonAs($user, 'DELETE', "/api/students/{$student->id}");
+
+        $response->assertStatus(200);
+
+        // Soft delete - should still exist but with deleted_at
+        $this->assertSoftDeleted('students', [
+            'id' => $student->id,
+        ]);
+    }
+
+    /** @test */
+    public function student_code_is_auto_generated()
+    {
+        $user = $this->authenticate();
+
+        $studentData = [
+            'full_name' => 'Test Student',
+            'father_name' => 'Test Father',
+            'gender' => 'male',
+            'birth_year' => 2010,
+            'admission_year' => 2024,
+            'nationality' => 'Afghan',
+            'guardian_name' => 'Test Guardian',
+            'guardian_phone' => '+93700000000',
+        ];
+
+        $response = $this->jsonAs($user, 'POST', '/api/students', $studentData);
+
+        $response->assertStatus(201);
+
+        $student = Student::latest()->first();
+        $this->assertNotNull($student->student_code);
+    }
+
+    /** @test */
+    public function user_can_filter_students_by_status()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+
+        Student::factory()->count(3)->create([
+            'organization_id' => $organization->id,
+            'student_status' => 'active',
+        ]);
+
+        Student::factory()->count(2)->create([
+            'organization_id' => $organization->id,
+            'student_status' => 'inactive',
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/students', [
+            'status' => 'active',
+        ]);
+
+        $response->assertStatus(200);
+        $students = $response->json('data');
+
+        $this->assertCount(3, $students);
+        foreach ($students as $student) {
+            $this->assertEquals('active', $student['student_status']);
+        }
+    }
+
+    /** @test */
+    public function user_can_filter_students_by_gender()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+
+        Student::factory()->count(3)->create([
+            'organization_id' => $organization->id,
+            'gender' => 'male',
+        ]);
+
+        Student::factory()->count(2)->create([
+            'organization_id' => $organization->id,
+            'gender' => 'female',
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/students', [
+            'gender' => 'male',
+        ]);
+
+        $response->assertStatus(200);
+        $students = $response->json('data');
+
+        $this->assertCount(3, $students);
+        foreach ($students as $student) {
+            $this->assertEquals('male', $student['gender']);
+        }
+    }
+
+    /** @test */
+    public function user_can_search_students_by_name()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+
+        Student::factory()->create([
+            'organization_id' => $organization->id,
+            'full_name' => 'Ahmad Mohammad',
+        ]);
+
+        Student::factory()->create([
+            'organization_id' => $organization->id,
+            'full_name' => 'Ali Hassan',
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', '/api/students', [
+            'search' => 'Ahmad',
+        ]);
+
+        $response->assertStatus(200);
+        $students = $response->json('data');
+
+        $this->assertGreaterThanOrEqual(1, count($students));
+        $this->assertStringContainsStringIgnoringCase('Ahmad', $students[0]['full_name']);
+    }
+
+    /** @test */
+    public function orphan_students_can_be_identified()
+    {
+        $user = $this->authenticate();
+        $organization = $this->getUserOrganization($user);
+
+        $orphan = Student::factory()->orphan()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $nonOrphan = Student::factory()->create([
+            'organization_id' => $organization->id,
+            'is_orphan' => false,
+        ]);
+
+        $response = $this->jsonAs($user, 'GET', "/api/students/{$orphan->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonFragment(['is_orphan' => true]);
+    }
+
+    /** @test */
+    public function user_cannot_access_student_from_different_organization()
+    {
+        $org1 = Organization::factory()->create();
+        $org2 = Organization::factory()->create();
+
+        $user1 = $this->authenticate([], ['organization_id' => $org1->id], $org1);
+
+        $studentOrg2 = Student::factory()->create(['organization_id' => $org2->id]);
+
+        $response = $this->jsonAs($user1, 'GET', "/api/students/{$studentOrg2->id}");
+
+        $this->assertContains($response->status(), [403, 404]);
+    }
+}
