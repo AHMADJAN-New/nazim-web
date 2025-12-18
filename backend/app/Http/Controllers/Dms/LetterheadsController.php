@@ -178,36 +178,6 @@ class LetterheadsController extends BaseDmsController
         return Storage::download($record->file_path, $record->name . '.' . $extension);
     }
 
-    /**
-     * Serve letterhead file (for viewing/preview)
-     */
-    public function serve(string $id, Request $request)
-    {
-        $context = $this->requireOrganizationContext($request, 'dms.letterheads.manage');
-        if ($context instanceof \Illuminate\Http\JsonResponse) {
-            return $context;
-        }
-        [, $profile] = $context;
-
-        $record = Letterhead::where('id', $id)
-            ->where('organization_id', $profile->organization_id)
-            ->firstOrFail();
-
-        $this->authorize('view', $record);
-
-        if (!Storage::exists($record->file_path)) {
-            return response()->json(['error' => 'File not found'], 404);
-        }
-
-        $file = Storage::get($record->file_path);
-        $mimeType = Storage::mimeType($record->file_path) ?: 
-            ($record->file_type === 'pdf' ? 'application/pdf' : 'image/png');
-
-        return response($file, 200)
-            ->header('Content-Type', $mimeType)
-            ->header('Content-Disposition', 'inline; filename="' . basename($record->file_path) . '"');
-    }
-
     public function show(string $id, Request $request)
     {
         $context = $this->requireOrganizationContext($request, 'dms.letterheads.manage');
@@ -286,9 +256,17 @@ class LetterheadsController extends BaseDmsController
             default => 'application/octet-stream',
         };
 
-        return Storage::response($record->file_path, $record->name, [
-            'Content-Type' => $contentType,
-        ]);
+        $downloadName = $record->name;
+        if ($extension) {
+            $downloadName .= '.' . $extension;
+        }
+
+        return Storage::response(
+            $record->file_path,
+            $downloadName,
+            ['Content-Type' => $contentType],
+            'inline'
+        );
     }
 
     public function preview(string $id, Request $request)

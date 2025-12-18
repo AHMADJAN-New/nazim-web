@@ -462,10 +462,12 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/dms/outgoing', [OutgoingDocumentsController::class, 'store']);
     Route::get('/dms/outgoing/{id}', [OutgoingDocumentsController::class, 'show']);
     Route::put('/dms/outgoing/{id}', [OutgoingDocumentsController::class, 'update']);
+    Route::get('/dms/outgoing/{id}/pdf', [OutgoingDocumentsController::class, 'downloadPdf']);
 
     Route::get('/dms/templates', [LetterTemplatesController::class, 'index']);
     Route::post('/dms/templates', [LetterTemplatesController::class, 'store']);
     Route::get('/dms/templates/fields/available', [LetterTemplatesController::class, 'getAvailableFields']);
+    Route::post('/dms/templates/preview-draft', [LetterTemplatesController::class, 'previewDraft']);
     Route::get('/dms/templates/{id}', [LetterTemplatesController::class, 'show']);
     Route::put('/dms/templates/{id}', [LetterTemplatesController::class, 'update']);
     Route::delete('/dms/templates/{id}', [LetterTemplatesController::class, 'destroy']);
@@ -478,8 +480,8 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::put('/dms/letterheads/{id}', [LetterheadsController::class, 'update']);
     Route::delete('/dms/letterheads/{id}', [LetterheadsController::class, 'destroy']);
     Route::get('/dms/letterheads/{id}/download', [LetterheadsController::class, 'download']);
-    Route::get('/dms/letterheads/{id}/serve', [LetterheadsController::class, 'serve']);
-    Route::get('/dms/letterheads/{id}/preview', [LetterheadsController::class, 'preview']);
+    Route::get('/dms/letterheads/{id}/serve', [LetterheadsController::class, 'serve'])->name('dms.letterheads.serve');
+    Route::get('/dms/letterheads/{id}/preview', [LetterheadsController::class, 'preview'])->name('dms.letterheads.preview');
 
     Route::get('/dms/letter-types', [LetterTypesController::class, 'index']);
     Route::post('/dms/letter-types', [LetterTypesController::class, 'store']);

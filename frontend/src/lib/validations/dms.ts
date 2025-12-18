@@ -38,6 +38,9 @@ export const fieldPositionSchema = z.object({
   fontFamily: z.string().optional(),
   textAlign: z.enum(['left', 'center', 'right']).optional(),
   color: z.string().optional(),
+  width: z.number().min(0).max(100).optional(),
+  height: z.number().min(0).max(100).optional(),
+  maxWidth: z.number().min(0).max(100).optional(),
 });
 
 /**
@@ -85,4 +88,3 @@ export type LetterheadFormData = z.infer<typeof letterheadSchema>;
 export const templatePreviewVariablesSchema = z.record(z.string());
 
 export type TemplatePreviewVariables = z.infer<typeof templatePreviewVariablesSchema>;
-

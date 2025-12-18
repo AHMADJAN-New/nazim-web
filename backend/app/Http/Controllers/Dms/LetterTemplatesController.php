@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dms;
 
 use App\Models\LetterTemplate;
+use App\Models\Letterhead;
 use App\Services\FieldMappingService;
 use App\Services\DocumentRenderingService;
 use Illuminate\Http\Request;
@@ -254,6 +255,87 @@ class LetterTemplatesController extends BaseDmsController
         return response()->json([
             'html' => $renderedHtml,
             'template' => $template,
+            'mock_data' => $mockData,
+        ]);
+    }
+
+    /**
+     * Preview a draft (unsaved) template payload.
+     *
+     * This enables "actual preview" inside the create/edit dialog without requiring a template ID yet.
+     */
+    public function previewDraft(Request $request)
+    {
+        $context = $this->requireOrganizationContext($request, 'dms.templates.read');
+        if ($context instanceof \Illuminate\Http\JsonResponse) {
+            return $context;
+        }
+        $this->authorize('viewAny', LetterTemplate::class);
+        [, $profile] = $context;
+
+        $data = $request->validate([
+            'template' => ['required', 'array'],
+            'template.category' => ['required', 'string', 'max:255'],
+            'template.body_text' => ['nullable', 'string'],
+            'template.letterhead_id' => ['nullable', 'uuid', 'exists:letterheads,id'],
+            'template.watermark_id' => ['nullable', 'uuid', 'exists:letterheads,id'],
+            'template.page_layout' => ['nullable', 'string', 'max:50'],
+            'template.repeat_letterhead_on_pages' => ['nullable', 'boolean'],
+            'template.field_positions' => ['nullable', 'array'],
+            'template.supports_tables' => ['nullable', 'boolean'],
+            'template.table_structure' => ['nullable', 'array'],
+            'recipient_type' => ['nullable', 'string', 'max:255'],
+            'variables' => ['nullable', 'array'],
+            'table_payload' => ['nullable', 'array'],
+        ]);
+
+        $templatePayload = $data['template'];
+
+        $template = new LetterTemplate();
+        $template->organization_id = $profile->organization_id;
+        $template->category = $templatePayload['category'];
+        $template->body_text = $templatePayload['body_text'] ?? '';
+        $template->letterhead_id = $templatePayload['letterhead_id'] ?? null;
+        $template->watermark_id = $templatePayload['watermark_id'] ?? null;
+        $template->page_layout = $templatePayload['page_layout'] ?? 'A4_portrait';
+        $template->repeat_letterhead_on_pages = $templatePayload['repeat_letterhead_on_pages'] ?? true;
+        $template->field_positions = $templatePayload['field_positions'] ?? [];
+        $template->supports_tables = $templatePayload['supports_tables'] ?? false;
+        $template->table_structure = $templatePayload['table_structure'] ?? null;
+
+        if (!empty($template->letterhead_id)) {
+            $letterhead = Letterhead::where('organization_id', $profile->organization_id)->find($template->letterhead_id);
+            if ($letterhead) {
+                $template->setRelation('letterhead', $letterhead);
+            }
+        }
+
+        if (!empty($template->watermark_id)) {
+            $watermark = Letterhead::where('organization_id', $profile->organization_id)->find($template->watermark_id);
+            if ($watermark) {
+                $template->setRelation('watermark', $watermark);
+            }
+        }
+
+        $recipientType = $data['recipient_type'] ?? $template->category;
+        $mockData = $this->fieldMappingService->getMockData($recipientType);
+        $customVariables = $data['variables'] ?? [];
+        $allData = array_merge($mockData, $customVariables);
+
+        $processedText = $this->renderingService->replaceTemplateVariables($template->body_text ?? '', $allData);
+
+        $tablePayload = $data['table_payload'] ?? null;
+        if (!$tablePayload && $template->supports_tables && !empty($template->table_structure)) {
+            $tablePayload = $template->table_structure;
+        }
+
+        $renderedHtml = $this->renderingService->render($template, $processedText, [
+            'table_payload' => $tablePayload,
+            'for_browser' => true,
+        ]);
+
+        return response()->json([
+            'html' => $renderedHtml,
             'mock_data' => $mockData,
         ]);
     }

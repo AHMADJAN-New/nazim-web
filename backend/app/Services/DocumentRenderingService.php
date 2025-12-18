@@ -11,6 +11,30 @@ use Spatie\Browsershot\Browsershot;
 
 class DocumentRenderingService
 {
+    private function isLikelyHtml(string $text): bool
+    {
+        return (bool) preg_match('/<\s*\/?\s*[a-zA-Z][^>]*>/', $text);
+    }
+
+    private function sanitizeRichHtml(string $html): string
+    {
+        $clean = $html;
+
+        // Remove script/style blocks entirely
+        $clean = preg_replace('/<\s*(script|style)[^>]*>.*?<\s*\/\s*\\1\s*>/is', '', $clean) ?? '';
+
+        // Strip event handler attributes (on*)
+        $clean = preg_replace('/\son\w+\s*=\s*(\"[^\"]*\"|\'[^\']*\'|[^\s>]+)/i', '', $clean) ?? '';
+
+        // Remove javascript: URLs
+        $clean = preg_replace('/javascript\s*:/i', '', $clean) ?? '';
+
+        // Allow only safe formatting tags
+        $allowed = '<p><br><div><span><strong><b><em><i><u><ol><ul><li><h1><h2><h3><h4><h5><h6>';
+        $clean = strip_tags($clean, $allowed);
+
+        return $clean;
+    }
     /**
      * Render document with layered PDF generation
      *
@@ -29,7 +53,7 @@ class DocumentRenderingService
         $forBrowser = $options['for_browser'] ?? false; // For browser preview vs PDF generation
 
         // Build CSS styles
-        $styles = $this->buildStyles($pageLayout);
+        $styles = $this->buildStyles($pageLayout, $forBrowser);
 
         // Build letterhead background CSS
         $letterheadStyles = $this->buildLetterheadStyles($letterhead, $repeatLetterhead, $forBrowser);
@@ -56,7 +80,8 @@ class DocumentRenderingService
         // The parent page's CSP is sufficient for security, and iframe content is already sandboxed
         $cspMeta = '';
 
-        return $this->buildHtmlDocument($styles, $letterheadStyles, $letterheadHtml, $watermarkHtml, $contentHtml, $cspMeta, $wrapperClass);
+        $safeLayoutClass = preg_replace('/[^a-zA-Z0-9_-]/', '', $pageLayout) ?: 'A4_portrait';
+        return $this->buildHtmlDocument($styles, $letterheadStyles, $letterheadHtml, $watermarkHtml, $contentHtml, $cspMeta, $wrapperClass, $forBrowser, $safeLayoutClass);
     }
 
     /**
@@ -169,8 +194,30 @@ class DocumentRenderingService
         string $watermarkHtml,
         string $contentHtml,
         string $cspMeta = '',
-        string $wrapperClass = 'content-wrapper'
+        string $wrapperClass = 'content-wrapper',
+        bool $forBrowser = false,
+        string $pageLayout = 'A4_portrait'
     ): string {
+        $bodyInner = $forBrowser
+            ? <<<HTML
+    <div class="browser-preview">
+        <div class="page page-layout-{$pageLayout}">
+            {$letterheadHtml}
+            {$watermarkHtml}
+            <div class="{$wrapperClass}">
+                {$contentHtml}
+            </div>
+        </div>
+    </div>
+HTML
+            : <<<HTML
+    {$letterheadHtml}
+    {$watermarkHtml}
+    <div class="{$wrapperClass}">
+        {$contentHtml}
+    </div>
+HTML;
+
         return <<<HTML
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -185,11 +232,7 @@ class DocumentRenderingService
     </style>
 </head>
 <body>
-    {$letterheadHtml}
-    {$watermarkHtml}
-    <div class="{$wrapperClass}">
-        {$contentHtml}
-    </div>
+{$bodyInner}
 </body>
 </html>
 HTML;
@@ -225,9 +268,59 @@ HTML;
      * @param string $pageLayout
      * @return string
      */
-    private function buildStyles(string $pageLayout): string
+    private function buildStyles(string $pageLayout, bool $forBrowser = false): string
     {
         $pageSize = $this->getPageSize($pageLayout);
+
+        $browserPreviewCss = '';
+        if ($forBrowser) {
+            $browserPreviewCss = <<<CSS
+        .browser-preview {
+            background: #f3f4f6;
+            padding: 16px;
+        }
+
+        .page {
+            width: 100%;
+            max-width: 920px;
+            margin: 0 auto;
+            background: #ffffff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .page-layout-A4_portrait { aspect-ratio: 210 / 297; }
+        .page-layout-A4_landscape { aspect-ratio: 297 / 210; }
+        .page-layout-Letter_portrait { aspect-ratio: 8.5 / 11; }
+        .page-layout-Letter_landscape { aspect-ratio: 11 / 8.5; }
+
+        .page .content-wrapper {
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            background: transparent !important;
+        }
+
+        .page .content-wrapper.positioned-content {
+            padding: 0;
+        }
+
+        .page .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.08;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* For browser preview, don't force viewport-based heights */
+        body { min-height: auto; }
+        .content-wrapper { min-height: 100%; }
+CSS;
+        }
 
         return <<<CSS
         @page {
@@ -261,7 +354,8 @@ HTML;
         
         /* Ensure positioned text blocks don't have solid backgrounds that cover letterhead */
         .positioned-text-block {
-            background-color: rgba(255, 255, 255, 0.9) !important; /* Semi-transparent so letterhead shows through */
+            background-color: transparent !important;
+            border: none !important;
         }
 
         /* Positioned text blocks - positioned relative to body */
@@ -272,7 +366,7 @@ HTML;
             z-index: 10;
             box-sizing: border-box;
             overflow: hidden;
-            background-color: rgba(255, 255, 255, 0.9); /* Slight background for readability */
+            background-color: transparent;
         }
 
         /* When content wrapper has positioned blocks, remove padding */
@@ -371,6 +465,8 @@ HTML;
             height: auto;
             max-width: 500px;
         }
+
+        {$browserPreviewCss}
 CSS;
     }
 
@@ -417,18 +513,15 @@ CSS;
         html, body {
             margin: 0;
             padding: 0;
-            min-height: 100vh;
+            min-height: 100%;
             position: relative;
             background: transparent; /* Ensure body doesn't cover letterhead */
         }
 
         .letterhead-background,
         .letterhead-header {
-            position: fixed; /* Use fixed instead of absolute for better positioning */
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
             z-index: 1; /* Behind content but visible */
@@ -437,7 +530,7 @@ CSS;
         }
 
         .letterhead-background {
-            min-height: 100vh;
+            min-height: 100%;
         }
 
         .letterhead-background img,
@@ -449,26 +542,27 @@ CSS;
         }
 
         .letterhead-background img {
-            min-height: 100vh;
+            min-height: 100%;
         }
 
         .letterhead-background embed.letterhead-pdf,
         .letterhead-background iframe.letterhead-pdf,
         .letterhead-background object.letterhead-pdf {
             width: 100%;
-            height: 100vh;
+            height: 100%;
             border: 0;
             pointer-events: none;
-            opacity: 0.25;
+            opacity: 1;
             position: absolute;
             top: 0;
             left: 0;
             z-index: 1;
+            background: transparent;
         }
         
         /* Ensure letterhead container is visible even if PDF doesn't load */
         .letterhead-background {
-            background-color: #f9f9f9; /* Light gray fallback if PDF doesn't load */
+            background-color: #ffffff; /* White fallback if PDF doesn't load */
         }
 
         body {
@@ -519,7 +613,7 @@ CSS;
             }
             // Return visible placeholder so user knows letterhead should be there
             return <<<HTML
-        <div class="letterhead-background" style="min-height: 100vh; background-color: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;">
+        <div class="letterhead-background" style="min-height: 100%; background-color: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; position: absolute; inset: 0; z-index: 1;">
             <p style="color: #999; font-size: 12px;">Letterhead file path not set</p>
         </div>
 HTML;
@@ -532,7 +626,7 @@ HTML;
             ]);
             // Return visible placeholder instead of empty string so user knows letterhead should be there
             return <<<HTML
-        <div class="letterhead-background" style="min-height: 100vh; background-color: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;">
+        <div class="letterhead-background" style="min-height: 100%; background-color: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; position: absolute; inset: 0; z-index: 1;">
             <p style="color: #999; font-size: 12px;">Letterhead file not found: {$letterhead->file_path}</p>
         </div>
 HTML;
@@ -565,22 +659,68 @@ HTML;
         $isBackground = $letterheadType === 'background';
         
         $class = $isBackground ? 'letterhead-background' : 'letterhead-header';
-        $style = $isBackground ? 'style="min-height: 100vh;"' : '';
+        $extraStyle = $isBackground ? 'min-height: 100%;' : '';
 
-        // For PDF letterheads in browser preview, show placeholder
-        // PDFs cannot be displayed in sandboxed iframes (browser security restriction)
-        // The PDF letterhead will work correctly in the generated PDF document
+        // For PDF letterheads in browser preview:
+        // Prefer rendering the PDF directly (same approach as the designer view).
+        // If Imagick is available, we can optionally convert the first page to an image.
         if ($isPdf && $isBackground) {
-            // Show a subtle placeholder that indicates letterhead area
-            // The actual PDF will be used when generating the final PDF
-            // Add inline styles to ensure visibility - make it more visible
+            try {
+                $pdfPath = Storage::path($letterhead->file_path);
+                $imageData = null;
+                
+                // Use Imagick to convert PDF first page to PNG image
+                if (extension_loaded('imagick')) {
+                    try {
+                        $imagick = new \Imagick();
+                        $imagick->setResolution(150, 150); // 150 DPI for good quality
+                        $imagick->readImage($pdfPath . '[0]'); // Read first page only [0]
+                        $imagick->setImageFormat('png');
+                        $imagick->setImageCompressionQuality(90);
+                        $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE); // Remove alpha for better compatibility
+                        $imageData = $imagick->getImageBlob();
+                        $imagick->clear();
+                        $imagick->destroy();
+                        
+                        if ($imageData) {
+                            $base64Image = base64_encode($imageData);
+                            $imageDataUrl = "data:image/png;base64,{$base64Image}";
+                            
+                            // Return image instead of placeholder
+                            return <<<HTML
+        <div class="{$class}" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: hidden; background-color: #ffffff; {$extraStyle}">
+            <img src="{$imageDataUrl}" alt="Letterhead" style="width: 100%; height: 100%; object-fit: cover; display: block; min-height: 100%;" onerror="console.error('Letterhead image failed to load'); this.style.display='none';" />
+        </div>
+HTML;
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning("Imagick PDF conversion failed for letterhead {$letterhead->id}: {$e->getMessage()}", [
+                            'letterhead_id' => $letterhead->id,
+                            'file_path' => $letterhead->file_path,
+                            'exception' => $e,
+                        ]);
+                    }
+                } else {
+                    \Log::warning("Imagick extension not available for PDF letterhead preview", [
+                        'letterhead_id' => $letterhead->id,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Failed to convert PDF letterhead to image for browser preview: {$e->getMessage()}", [
+                    'letterhead_id' => $letterhead->id,
+                    'file_path' => $letterhead->file_path,
+                    'exception' => $e,
+                ]);
+            }
+            
+            // Fallback: render the PDF itself (designer-like behavior)
             return <<<HTML
-        <div class="{$class}" style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100% !important; height: 100% !important; z-index: 1 !important; pointer-events: none !important; overflow: hidden !important; background: linear-gradient(135deg, #e8e8e8 0%, #d0d0d0 100%) !important; border: 3px dashed #999 !important; display: flex !important; align-items: center !important; justify-content: center !important; color: #666 !important; font-size: 14px !important; text-align: center !important; padding: 20px !important; box-sizing: border-box !important; opacity: 1 !important; visibility: visible !important;">
-            <div style="opacity: 1 !important; background: rgba(255, 255, 255, 0.9) !important; padding: 20px !important; border-radius: 8px !important; box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;">
-                <p style="margin: 0 0 8px 0; font-weight: 600; font-size: 16px;">📄 PDF Letterhead</p>
-                <p style="margin: 0; font-size: 12px; color: #555;">Preview not available in browser</p>
-                <p style="margin: 4px 0 0 0; font-size: 11px; color: #777;">Will appear correctly in generated PDF</p>
-            </div>
+        <div class="{$class}" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: hidden; background-color: #ffffff; {$extraStyle}">
+            <object class="letterhead-pdf" data="{$dataUrl}" type="application/pdf" style="width: 100%; height: 100%; display: block;">
+                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; background: #f8f8f8; color: #555; font-size: 12px; text-align: center;">
+                    PDF preview not supported in this browser. It will appear correctly in the generated PDF.
+                </div>
+            </object>
         </div>
 HTML;
         }
@@ -588,8 +728,8 @@ HTML;
         // For image letterheads, use img tag with base64 data URL
         // Add inline styles to ensure visibility
         return <<<HTML
-        <div class="{$class}" {$style} style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: hidden; background-color: #f9f9f9;">
-            <img src="{$dataUrl}" alt="Letterhead" style="width: 100%; height: 100%; object-fit: cover; display: block; min-height: 100vh;" onerror="console.error('Letterhead image failed to load'); this.style.display='none';" />
+        <div class="{$class}" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: hidden; background-color: #ffffff; {$extraStyle}">
+            <img src="{$dataUrl}" alt="Letterhead" style="width: 100%; height: 100%; object-fit: cover; display: block; min-height: 100%;" onerror="console.error('Letterhead image failed to load'); this.style.display='none';" />
         </div>
 HTML;
     }
@@ -645,6 +785,16 @@ HTML;
      */
     private function formatBodyText(string $bodyText): string
     {
+        $bodyText = trim($bodyText);
+        if ($bodyText === '') {
+            return '';
+        }
+
+        // Rich text (HTML) support
+        if ($this->isLikelyHtml($bodyText)) {
+            return '<div class="rich-text">' . $this->sanitizeRichHtml($bodyText) . '</div>';
+        }
+
         // Convert line breaks to paragraphs
         $lines = explode("\n", $bodyText);
         $paragraphs = [];
@@ -716,7 +866,7 @@ HTML;
                 // Position is relative to body (which has position: relative)
                 // Use left/top for absolute positioning with transform for centering
                 $style = sprintf(
-                    'position: absolute; left: %.2f%%; top: %.2f%%; transform: translate(-50%%, -50%%); font-size: %dpx; font-family: %s; text-align: %s; color: %s; z-index: 10; %s %s %s min-height: 30px; padding: 8px 12px; box-sizing: border-box; overflow: hidden; background-color: rgba(255, 255, 255, 0.9);',
+                    'position: absolute; left: %.2f%%; top: %.2f%%; transform: translate(-50%%, -50%%); font-size: %dpx; font-family: %s; text-align: %s; color: %s; z-index: 10; %s %s %s box-sizing: border-box; overflow: hidden; background-color: transparent; padding: 0;',
                     $x,
                     $y,
                     $fontSize,
@@ -728,8 +878,9 @@ HTML;
                     $maxWidthStyle
                 );
 
-                // Format text with line breaks
-                $formattedText = nl2br(e($blockText));
+                $formattedText = $this->isLikelyHtml($blockText)
+                    ? $this->sanitizeRichHtml($blockText)
+                    : nl2br(e($blockText));
                 $positionedBlocks[] = sprintf(
                     '<div class="positioned-text-block" style="%s">%s</div>',
                     $style,
@@ -737,7 +888,11 @@ HTML;
                 );
             } else {
                 // No position defined - use default formatting
-                $positionedBlocks[] = '<p>' . nl2br(e($blockText)) . '</p>';
+                if ($this->isLikelyHtml($blockText)) {
+                    $positionedBlocks[] = '<div class="rich-text">' . $this->sanitizeRichHtml($blockText) . '</div>';
+                } else {
+                    $positionedBlocks[] = '<p>' . nl2br(e($blockText)) . '</p>';
+                }
             }
 
             $blockIndex++;

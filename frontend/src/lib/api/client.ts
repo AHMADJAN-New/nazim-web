@@ -3084,6 +3084,7 @@ export const dmsApi = {
     create: async (data: any) => apiClient.post('/dms/outgoing', data),
     update: async (id: string, data: any) => apiClient.put(`/dms/outgoing/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/dms/outgoing/${id}`),
+    downloadPdf: async (id: string) => apiClient.requestFile(`/dms/outgoing/${id}/pdf`, { method: 'GET' }),
   },
 
   templates: {
@@ -3093,7 +3094,17 @@ export const dmsApi = {
     update: async (id: string, data: any) => apiClient.put(`/dms/templates/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/dms/templates/${id}`),
     duplicate: async (id: string, data?: { name?: string }) => apiClient.post(`/dms/templates/${id}/duplicate`, data || {}),
-    preview: async (id: string, variables?: Record<string, string>) => apiClient.post(`/dms/templates/${id}/preview`, { variables: variables || {} }),
+    preview: async (
+      id: string,
+      variables?: Record<string, string>,
+      options?: { recipient_type?: string; table_payload?: any }
+    ) => apiClient.post(`/dms/templates/${id}/preview`, { variables: variables || {}, ...(options || {}) }),
+    previewDraft: async (payload: {
+      template: Record<string, any>;
+      variables?: Record<string, string>;
+      recipient_type?: string;
+      table_payload?: any;
+    }) => apiClient.post(`/dms/templates/preview-draft`, payload),
     getAvailableFields: async (recipientType: string) => apiClient.get('/dms/templates/fields/available', { recipient_type: recipientType }),
   },
 

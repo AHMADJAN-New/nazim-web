@@ -229,7 +229,7 @@ export default function TemplatesPage() {
               Create Template
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create Template</DialogTitle>
               <DialogDescription>
@@ -462,7 +462,7 @@ export default function TemplatesPage() {
 
       {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Template Details</DialogTitle>
             <DialogDescription>
@@ -521,7 +521,7 @@ export default function TemplatesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Template</DialogTitle>
             <DialogDescription>
@@ -544,7 +544,7 @@ export default function TemplatesPage() {
 
       {/* Preview Dialog */}
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Template Preview</DialogTitle>
             <DialogDescription>

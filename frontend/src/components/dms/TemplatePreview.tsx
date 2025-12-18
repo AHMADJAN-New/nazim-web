@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { dmsApi } from "@/lib/api/client";
 import type { LetterTemplate, TemplateVariable, PositionedBlock } from "@/types/dms";
-import { Loader2, Eye, FileText, Move } from "lucide-react";
+import { Loader2, Eye, FileText, Move, AlertCircle } from "lucide-react";
+import { showToast } from "@/lib/toast";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface TemplatePreviewProps {
   template: LetterTemplate;
@@ -14,25 +17,60 @@ interface TemplatePreviewProps {
 }
 
 export function TemplatePreview({ template, onClose }: TemplatePreviewProps) {
+  const { t } = useLanguage();
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [fieldPositions, setFieldPositions] = useState<PositionedBlock[]>([]);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const previewMutation = useMutation({
     mutationFn: async (vars: Record<string, string>) => {
+      if (import.meta.env.DEV) {
+        console.log('[TemplatePreview] Requesting preview for template:', template.id, 'with variables:', vars);
+      }
       return await dmsApi.templates.preview(template.id, vars);
     },
     onSuccess: (data: any) => {
+      if (import.meta.env.DEV) {
+        console.log('[TemplatePreview] Preview response received:', {
+          hasHtml: !!data.html,
+          htmlLength: data.html?.length || 0,
+          hasFieldPositions: !!data.field_positions,
+        });
+      }
+      
+      setError(null);
       setPreviewHtml(data.html || "");
+      
       if (data.field_positions) {
         setFieldPositions(data.field_positions);
       }
+      
       setIsLoading(false);
+      
+      if (!data.html) {
+        const errorMsg = "Preview HTML is empty. Please check the template configuration.";
+        setError(errorMsg);
+        showToast.error(errorMsg);
+      }
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.message || error?.response?.data?.error || "Failed to generate preview";
+      
+      if (import.meta.env.DEV) {
+        console.error('[TemplatePreview] Preview error:', error);
+        console.error('[TemplatePreview] Error details:', {
+          message: error?.message,
+          status: error?.response?.status,
+          data: error?.response?.data,
+        });
+      }
+      
+      setError(errorMessage);
       setIsLoading(false);
+      showToast.error(errorMessage);
     },
   });
 
@@ -55,6 +93,7 @@ export function TemplatePreview({ template, onClose }: TemplatePreviewProps) {
 
     // Auto-generate preview on mount
     setIsLoading(true);
+    setError(null);
     setHasInitialized(true);
     previewMutation.mutate(initialVars);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,6 +101,7 @@ export function TemplatePreview({ template, onClose }: TemplatePreviewProps) {
 
   const handlePreview = useCallback(() => {
     setIsLoading(true);
+    setError(null);
     previewMutation.mutate(variables);
   }, [variables, previewMutation]);
 
@@ -74,6 +114,14 @@ export function TemplatePreview({ template, onClose }: TemplatePreviewProps) {
 
   return (
     <div className="space-y-4">
+      {/* Error Display */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Variable Inputs */}
       {templateVariables.length > 0 && (
         <Card>
@@ -165,6 +213,15 @@ export function TemplatePreview({ template, onClose }: TemplatePreviewProps) {
               <Loader2 className="h-12 w-12 mx-auto text-primary animate-spin" />
               <p className="mt-4">Generating preview...</p>
             </div>
+          ) : error ? (
+            <div className="border rounded-lg p-8 text-center text-muted-foreground bg-red-50">
+              <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
+              <p className="mt-4 text-destructive font-medium">{error}</p>
+              <Button onClick={handlePreview} variant="outline" size="sm" className="mt-4">
+                <Eye className="h-4 w-4 mr-2" />
+                Retry Preview
+              </Button>
+            </div>
           ) : previewHtml ? (
             <div className="border rounded-lg bg-white overflow-hidden">
               <iframe
@@ -175,132 +232,15 @@ export function TemplatePreview({ template, onClose }: TemplatePreviewProps) {
                   height: template.page_layout === "A4_landscape" ? "600px" : "800px"
                 }}
                 title="Template Preview"
-                sandbox="allow-scripts allow-same-origin"
                 allow=""
                 onError={(e) => {
-                  // Silently handle iframe errors - they shouldn't affect parent window
                   if (import.meta.env.DEV) {
                     console.warn('[TemplatePreview] Iframe error (non-critical):', e);
                   }
                 }}
                 onLoad={() => {
-                  // Iframe loaded successfully
                   if (import.meta.env.DEV) {
                     console.log('[TemplatePreview] Iframe loaded successfully');
-                    // Debug: Check if letterhead is in the HTML and fix visibility
-                    const iframe = document.querySelector('iframe[title="Template Preview"]') as HTMLIFrameElement;
-                    if (iframe?.contentDocument) {
-                      const letterhead = iframe.contentDocument.querySelector('.letterhead-background, .letterhead-header') as HTMLElement;
-                      if (letterhead) {
-                        const styles = window.getComputedStyle(letterhead);
-                        console.log('[TemplatePreview] Letterhead found');
-                        console.log('[TemplatePreview] Letterhead position:', styles.position);
-                        console.log('[TemplatePreview] Letterhead z-index:', styles.zIndex);
-                        console.log('[TemplatePreview] Letterhead opacity:', styles.opacity);
-                        console.log('[TemplatePreview] Letterhead visibility:', styles.visibility);
-                        console.log('[TemplatePreview] Letterhead display:', styles.display);
-                        console.log('[TemplatePreview] Letterhead width:', styles.width);
-                        console.log('[TemplatePreview] Letterhead height:', styles.height);
-                        
-                        // Force visibility if hidden
-                        if (styles.display === 'none' || styles.visibility === 'hidden' || parseFloat(styles.opacity) === 0) {
-                          letterhead.style.display = 'block';
-                          letterhead.style.visibility = 'visible';
-                          letterhead.style.opacity = '1';
-                          console.log('[TemplatePreview] Fixed letterhead visibility');
-                        }
-                        
-                        // Check for image inside
-                        const img = letterhead.querySelector('img');
-                        if (img) {
-                          const imgStyles = window.getComputedStyle(img);
-                          console.log('[TemplatePreview] Letterhead image found:', img.src.substring(0, 50) + '...');
-                          console.log('[TemplatePreview] Image width:', imgStyles.width);
-                          console.log('[TemplatePreview] Image height:', imgStyles.height);
-                          console.log('[TemplatePreview] Image display:', imgStyles.display);
-                          console.log('[TemplatePreview] Image opacity:', imgStyles.opacity);
-                          console.log('[TemplatePreview] Image visibility:', imgStyles.visibility);
-                          
-                          // Check if image loaded
-                          img.onload = () => console.log('[TemplatePreview] Image loaded successfully');
-                          img.onerror = () => console.error('[TemplatePreview] Image failed to load');
-                          if (img.complete) {
-                            console.log('[TemplatePreview] Image already loaded');
-                          }
-                        } else {
-                          console.log('[TemplatePreview] No image found in letterhead - might be PDF placeholder');
-                          // Check if it's the PDF placeholder div
-                          const placeholderDiv = letterhead.querySelector('div');
-                          if (placeholderDiv) {
-                            const placeholderStyles = window.getComputedStyle(placeholderDiv);
-                            console.log('[TemplatePreview] PDF placeholder div found');
-                            console.log('[TemplatePreview] Placeholder display:', placeholderStyles.display);
-                            console.log('[TemplatePreview] Placeholder background:', placeholderStyles.background);
-                            console.log('[TemplatePreview] Placeholder opacity:', placeholderStyles.opacity);
-                            console.log('[TemplatePreview] Placeholder text:', placeholderDiv.textContent?.substring(0, 50));
-                            
-                            // Check outer container (letterhead) background
-                            console.log('[TemplatePreview] Letterhead background:', styles.background);
-                            console.log('[TemplatePreview] Letterhead backgroundImage:', styles.backgroundImage);
-                            console.log('[TemplatePreview] Letterhead computed background:', styles.backgroundColor);
-                            
-                            // Always force letterhead container to be visible with gradient (override any CSS)
-                            letterhead.style.setProperty('background', 'linear-gradient(135deg, #e8e8e8 0%, #d0d0d0 100%)', 'important');
-                            letterhead.style.setProperty('border', '3px dashed #999', 'important');
-                            letterhead.style.setProperty('display', 'flex', 'important');
-                            letterhead.style.setProperty('opacity', '1', 'important');
-                            letterhead.style.setProperty('visibility', 'visible', 'important');
-                            console.log('[TemplatePreview] Applied gradient background to letterhead container');
-                            
-                            // Also check iframe body/html background
-                            const iframeBody = iframe.contentDocument?.body;
-                            const iframeHtml = iframe.contentDocument?.documentElement;
-                            if (iframeBody) {
-                              const bodyStyles = window.getComputedStyle(iframeBody);
-                              console.log('[TemplatePreview] Iframe body background:', bodyStyles.backgroundColor);
-                              if (bodyStyles.backgroundColor !== 'rgba(0, 0, 0, 0)' && bodyStyles.backgroundColor !== 'transparent') {
-                                iframeBody.style.backgroundColor = 'transparent';
-                                console.log('[TemplatePreview] Made iframe body transparent');
-                              }
-                            }
-                            if (iframeHtml) {
-                              const htmlStyles = window.getComputedStyle(iframeHtml);
-                              console.log('[TemplatePreview] Iframe html background:', htmlStyles.backgroundColor);
-                              if (htmlStyles.backgroundColor !== 'rgba(0, 0, 0, 0)' && htmlStyles.backgroundColor !== 'transparent') {
-                                iframeHtml.style.backgroundColor = 'transparent';
-                                console.log('[TemplatePreview] Made iframe html transparent');
-                              }
-                            }
-                            
-                            // Force visibility
-                            if (placeholderStyles.display === 'none' || parseFloat(placeholderStyles.opacity) === 0) {
-                              (placeholderDiv as HTMLElement).style.display = 'flex';
-                              (placeholderDiv as HTMLElement).style.opacity = '1';
-                              console.log('[TemplatePreview] Fixed placeholder visibility');
-                            }
-                          }
-                        }
-                        
-                        // Check content wrapper - it might be covering the letterhead
-                        const contentWrapper = iframe.contentDocument?.querySelector('.content-wrapper');
-                        if (contentWrapper) {
-                          const wrapperStyles = window.getComputedStyle(contentWrapper);
-                          console.log('[TemplatePreview] Content wrapper z-index:', wrapperStyles.zIndex);
-                          console.log('[TemplatePreview] Content wrapper background:', wrapperStyles.backgroundColor);
-                          console.log('[TemplatePreview] Content wrapper position:', wrapperStyles.position);
-                          
-                          // If content has solid background, make it semi-transparent so letterhead shows through
-                          if (wrapperStyles.backgroundColor !== 'rgba(0, 0, 0, 0)' && 
-                              wrapperStyles.backgroundColor !== 'transparent' &&
-                              !wrapperStyles.backgroundColor.includes('rgba')) {
-                            console.log('[TemplatePreview] Content wrapper has solid background - making transparent');
-                            (contentWrapper as HTMLElement).style.backgroundColor = 'transparent';
-                          }
-                        }
-                      } else {
-                        console.warn('[TemplatePreview] Letterhead element not found in iframe');
-                      }
-                    }
                   }
                 }}
               />

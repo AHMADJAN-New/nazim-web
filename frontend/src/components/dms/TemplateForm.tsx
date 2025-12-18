@@ -15,8 +15,10 @@ import { dmsApi } from "@/lib/api/client";
 import { FieldPlaceholderSelector } from "./FieldPlaceholderSelector";
 import { TemplatePositionEditor } from "./TemplatePositionEditor";
 import type { LetterTemplate, Letterhead, LetterTypeEntity, FieldPosition } from "@/types/dms";
-import { Loader2, Eye, EyeOff, MapPin } from "lucide-react";
+import { Loader2, Eye, EyeOff, MapPin, RefreshCw } from "lucide-react";
 import { useLetterTypes } from "@/hooks/useLetterTypes";
+import { RichTextEditor, type RichTextEditorHandle } from "./RichTextEditor";
+import { sanitize } from "@/lib/security-utils";
 
 interface TemplateFormProps {
   template?: LetterTemplate | null;
@@ -45,9 +47,14 @@ export function TemplateForm({
   isLoading = false,
 }: TemplateFormProps) {
   const [showPreview, setShowPreview] = useState(true);
+  const [previewMode, setPreviewMode] = useState<"designer" | "actual">("actual");
+  const [actualPreviewHtml, setActualPreviewHtml] = useState<string>("");
+  const [actualPreviewError, setActualPreviewError] = useState<string | null>(null);
+  const [actualPreviewLoading, setActualPreviewLoading] = useState(false);
   const [bgUrl, setBgUrl] = useState<string | null>(null);
   const [wmUrl, setWmUrl] = useState<string | null>(null);
   const [useBlocks, setUseBlocks] = useState(false);
+  const [useRichText, setUseRichText] = useState(false);
   const [blocks, setBlocks] = useState<Array<{ id: string; text: string }>>([
     { id: "block-1", text: "" },
   ]);
@@ -61,6 +68,8 @@ export function TemplateForm({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const bodyRichRef = useRef<RichTextEditorHandle | null>(null);
+  const blockEditorRefs = useRef<Record<string, RichTextEditorHandle | null>>({});
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -121,6 +130,9 @@ export function TemplateForm({
   const selectedWatermarkId = watch("watermark_id");
   const bodyText = watch("body_text");
   const repeatLetterhead = watch("repeat_letterhead_on_pages");
+  const pageLayout = watch("page_layout");
+  const supportsTables = watch("supports_tables");
+  const tableStructure = watch("table_structure");
 
   const selectedLetterhead = (allLetterheads || []).find((lh) => lh.id === selectedLetterheadId);
   const selectedWatermark = (allLetterheads || []).find((lh) => lh.id === selectedWatermarkId);
@@ -173,20 +185,94 @@ export function TemplateForm({
 
   const handleFormSubmit = (data: LetterTemplateFormData) => {
     // Include field_positions in submission
+    const safeBodyText =
+      useBlocks || useRichText ? sanitize.richText(data.body_text || "") : (data.body_text || "");
     onSubmit({
       ...data,
+      body_text: safeBodyText,
       field_positions: Object.keys(fieldPositions).length > 0 ? fieldPositions : null,
     });
   };
 
+  const refreshActualPreview = useCallback(async () => {
+    try {
+      setActualPreviewLoading(true);
+      setActualPreviewError(null);
+
+      const response = await dmsApi.templates.previewDraft({
+        template: {
+          category,
+          body_text: bodyText || "",
+          letterhead_id: selectedLetterheadId || null,
+          watermark_id: selectedWatermarkId || null,
+          page_layout: pageLayout || "A4_portrait",
+          repeat_letterhead_on_pages: repeatLetterhead ?? true,
+          field_positions: Object.keys(fieldPositions).length > 0 ? fieldPositions : null,
+          supports_tables: supportsTables ?? false,
+          table_structure: tableStructure ?? null,
+        },
+        recipient_type: category,
+        variables: {},
+      });
+
+      setActualPreviewHtml((response as any)?.html || "");
+      setActualPreviewError(null);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to generate preview";
+      setActualPreviewHtml("");
+      setActualPreviewError(message);
+    } finally {
+      setActualPreviewLoading(false);
+    }
+  }, [
+    bodyText,
+    category,
+    fieldPositions,
+    pageLayout,
+    repeatLetterhead,
+    selectedLetterheadId,
+    selectedWatermarkId,
+    supportsTables,
+    tableStructure,
+  ]);
+
+  // Keep actual preview in sync (debounced)
+  useEffect(() => {
+    if (!showPreview || previewMode !== "actual") return;
+
+    const tmr = window.setTimeout(() => {
+      void refreshActualPreview();
+    }, 300);
+
+    return () => window.clearTimeout(tmr);
+  }, [showPreview, previewMode, refreshActualPreview]);
+
   // Insert field placeholder at cursor position
   const handleInsertField = (placeholder: string) => {
     if (useBlocks) {
+      const targetId = selectedBlockId || blocks[0]?.id || "block-1";
+      const editor = blockEditorRefs.current[targetId];
+      if (editor) {
+        editor.insertText(placeholder);
+        return;
+      }
+
       setBlocks((prev) => {
         if (prev.length === 0) return [{ id: "block-1", text: placeholder }];
-        const [first, ...rest] = prev;
-        return [{ ...first, text: `${first.text || ""}${placeholder}` }, ...rest];
+        const idx = prev.findIndex((b) => b.id === targetId);
+        if (idx < 0) {
+          const [first, ...rest] = prev;
+          return [{ ...first, text: `${first.text || ""}${placeholder}` }, ...rest];
+        }
+        const next = [...prev];
+        next[idx] = { ...next[idx], text: `${next[idx].text || ""}${placeholder}` };
+        return next;
       });
+      return;
+    }
+
+    if (useRichText && bodyRichRef.current) {
+      bodyRichRef.current.insertText(placeholder);
       return;
     }
 
@@ -220,11 +306,25 @@ export function TemplateForm({
     setBlocks((prev) => (prev.length <= 1 ? prev : prev.filter((b) => b.id !== id)));
   };
 
-  // Parse body_text into blocks for positioning
-  const textBlocks = bodyText ? (() => {
-    const blocks = bodyText.split(/\n\s*\n/).filter(block => block.trim());
-    return blocks.length === 0 && bodyText.trim() ? [bodyText] : blocks;
-  })() : [];
+  // Blocks used for positioning/preview (source of truth: blocks[] when enabled, else body_text)
+  const textBlocks = useBlocks
+    ? blocks.map((b) => b.text || "").filter((t) => t.trim())
+    : (bodyText
+        ? (() => {
+            const parts = bodyText.split(/\n\s*\n/).filter((block) => block.trim());
+            return parts.length === 0 && bodyText.trim() ? [bodyText] : parts;
+          })()
+        : []);
+
+  const renderDesignerBlock = (content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return null;
+    const isHtml = /<\s*\/?\s*[a-zA-Z][^>]*>/.test(trimmed);
+    if (!isHtml) return <>{trimmed}</>;
+
+    const safe = sanitize.richText(trimmed);
+    return <div dangerouslySetInnerHTML={{ __html: safe }} />;
+  };
 
   // Positioning handlers
   const handleBlockMouseDown = (e: React.MouseEvent, blockId: string, isResizeHandle = false, handle?: typeof resizeHandle) => {
@@ -577,6 +677,12 @@ export function TemplateForm({
                 <Switch checked={useBlocks} onCheckedChange={setUseBlocks} id="use_blocks" />
                 <Label htmlFor="use_blocks">Use multiple text blocks</Label>
               </div>
+              {!useBlocks && (
+                <div className="flex items-center gap-2">
+                  <Switch checked={useRichText} onCheckedChange={setUseRichText} id="use_rich_text" />
+                  <Label htmlFor="use_rich_text">Rich text</Label>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Label className="text-sm text-muted-foreground">Font size</Label>
                 <input
@@ -595,7 +701,23 @@ export function TemplateForm({
                 <Label htmlFor="body_text">
                   Body Text <span className="text-destructive">*</span>
                 </Label>
-                <Textarea
+                {useRichText ? (
+                  <Controller
+                    name="body_text"
+                    control={control}
+                    render={({ field }) => (
+                      <RichTextEditor
+                        ref={bodyRichRef}
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        placeholder="Type your letter content here (rich text supported). Use the field selector below to insert placeholders like {{student_name}}."
+                        dir="rtl"
+                      />
+                    )}
+                  />
+                ) : null}
+                {!useRichText && (
+                  <Textarea
                   id="body_text"
                   {...register("body_text")}
                   ref={(e) => {
@@ -607,6 +729,7 @@ export function TemplateForm({
                   className="font-mono text-right"
                   placeholder="اداره تصدیق کوي چې {{student_name}} د {{father_name}} زوی..."
                 />
+                )}
                 <p className="text-xs text-muted-foreground">
                   Type your letter text. Use the field selector below to insert database fields.
                 </p>
@@ -636,13 +759,14 @@ export function TemplateForm({
                         </Button>
                       )}
                     </div>
-                    <Textarea
+                    <RichTextEditor
+                      ref={(h) => {
+                        blockEditorRefs.current[block.id] = h;
+                      }}
                       value={block.text}
-                      onChange={(e) => handleBlockChange(block.id, e.target.value)}
-                      rows={5}
-                      dir="rtl"
-                      className="font-mono text-right"
+                      onChange={(value) => handleBlockChange(block.id, value)}
                       placeholder="Enter text for this block..."
+                      dir="rtl"
                     />
                   </div>
                 ))}
@@ -742,7 +866,25 @@ export function TemplateForm({
         <div className="space-y-4 lg:sticky lg:top-4 lg:h-fit">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Live Preview & Positioning</h3>
-            {bodyText && selectedLetterhead && (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant={previewMode === "actual" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPreviewMode("actual")}
+              >
+                Actual Preview
+              </Button>
+              <Button
+                type="button"
+                variant={previewMode === "designer" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPreviewMode("designer")}
+              >
+                Designer
+              </Button>
+            </div>
+            {previewMode === "designer" && bodyText && selectedLetterhead && (
               <Button
                 type="button"
                 variant={showPositionEditor ? "default" : "outline"}
@@ -755,22 +897,59 @@ export function TemplateForm({
             )}
           </div>
 
-          {/* Always show preview, with positioning editor overlay when enabled */}
-          <Card className="border-2">
-            <CardContent className="p-0">
-              <div
-                ref={previewContainerRef}
-                className={`relative w-full bg-white ${showPositionEditor ? 'cursor-crosshair' : ''}`}
-                style={{
-                  aspectRatio: pageLayoutOptions.find(p => p.value === watch("page_layout"))?.value.includes("landscape") ? "297/210" : "210/297",
-                  minHeight: "500px",
-                }}
-                onClick={(e) => {
-                  if (showPositionEditor && e.target === e.currentTarget) {
-                    setSelectedBlockId(null);
-                  }
-                }}
-              >
+          {previewMode === "actual" ? (
+            <Card className="border-2">
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span>Server Render (actual)</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void refreshActualPreview()}
+                    disabled={actualPreviewLoading}
+                  >
+                    {actualPreviewLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {actualPreviewError ? (
+                  <div className="p-4 text-sm text-destructive">{actualPreviewError}</div>
+                ) : actualPreviewHtml ? (
+                  <div className="border rounded-lg overflow-hidden bg-white">
+                    <iframe
+                      srcDoc={actualPreviewHtml}
+                      className="w-full border-0"
+                      style={{ minHeight: pageLayout === "A4_landscape" ? "600px" : "800px" }}
+                      title="Template Actual Preview"
+                    />
+                  </div>
+                ) : (
+                  <div className="p-6 text-sm text-muted-foreground">Preview will appear here</div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-2">
+              <CardContent className="p-0">
+                <div
+                  ref={previewContainerRef}
+                  className={`relative w-full bg-white ${showPositionEditor ? 'cursor-crosshair' : ''}`}
+                  style={{
+                    aspectRatio: pageLayoutOptions.find(p => p.value === pageLayout)?.value.includes("landscape") ? "297/210" : "210/297",
+                    minHeight: "500px",
+                  }}
+                  onClick={(e) => {
+                    if (showPositionEditor && e.target === e.currentTarget) {
+                      setSelectedBlockId(null);
+                    }
+                  }}
+                >
                   {/* Letterhead Background (image/PDF) */}
                   {selectedLetterhead && (bgUrl || selectedLetterhead.file_url || selectedLetterhead.file_path) && (
                     selectedLetterhead.file_type === "pdf" ? (
@@ -875,10 +1054,14 @@ export function TemplateForm({
                             wordWrap: 'break-word',
                             whiteSpace: 'pre-wrap',
                             zIndex: isDragging || isResizing ? 1000 : isSelected ? 100 : 10,
-                            padding: '8px 12px',
-                            backgroundColor: isSelected && showPositionEditor ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.9)',
-                            border: isSelected && showPositionEditor ? '2px solid #3b82f6' : '1px solid rgba(0, 0, 0, 0.1)',
-                            borderRadius: '4px',
+                            padding: showPositionEditor ? '8px 12px' : '0px',
+                            backgroundColor: showPositionEditor
+                              ? (isSelected ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.75)')
+                              : 'transparent',
+                            border: showPositionEditor
+                              ? (isSelected ? '2px solid #3b82f6' : '1px solid rgba(0, 0, 0, 0.1)')
+                              : 'none',
+                            borderRadius: showPositionEditor ? '4px' : '0px',
                             boxSizing: 'border-box',
                             overflow: 'hidden',
                           }}
@@ -900,7 +1083,7 @@ export function TemplateForm({
                             </div>
                           )}
                           <div style={{ fontFamily: position.fontFamily || 'Arial' }}>
-                            {blockText.trim()}
+                            {renderDesignerBlock(blockText)}
                           </div>
                           {isSelected && showPositionEditor && (
                             <div className="mt-1 text-xs text-blue-600">
@@ -927,7 +1110,7 @@ export function TemplateForm({
                         (blocks && blocks.length > 0 && blocks.some((b) => b.text?.trim())) ? (
                           <div className="space-y-6">
                             {blocks.map((block) => (
-                              <div key={block.id}>{block.text || ""}</div>
+                              <div key={block.id}>{renderDesignerBlock(block.text || "")}</div>
                             ))}
                           </div>
                         ) : (
@@ -936,7 +1119,7 @@ export function TemplateForm({
                           </p>
                         )
                       ) : bodyText ? (
-                        bodyText
+                        renderDesignerBlock(bodyText)
                       ) : (
                         <p className="text-muted-foreground italic text-center mt-20">
                           Your letter text will appear here as you type...
@@ -954,11 +1137,15 @@ export function TemplateForm({
                 </div>
               </CardContent>
             </Card>
+          )}
 
-            <p className="text-xs text-muted-foreground text-center">
-            {showPositionEditor && bodyText && selectedLetterhead
+          <p className="text-xs text-muted-foreground text-center">
+            {previewMode === "designer" && showPositionEditor && bodyText && selectedLetterhead
               ? "Drag text blocks to position them on the letterhead. Click a block to edit its properties. Drag the blue resize handles to adjust size."
-              : "This preview shows how your letter will look with the selected letterhead and watermark"}
+              : previewMode === "designer"
+                ? "This preview shows an editor view with letterhead/watermark layers."
+                : "This preview is rendered by the backend (same renderer used for printing)."
+            }
           </p>
 
           {/* Properties Panel - Show when positioning is enabled and a block is selected */}
@@ -1054,3 +1241,33 @@ export function TemplateForm({
     </div>
   );
 }
+  // Initialize rich text mode based on existing content (HTML-like)
+  useEffect(() => {
+    const initial = template?.body_text || "";
+    if (initial && /<\s*\/?\s*[a-zA-Z][^>]*>/.test(initial)) {
+      setUseRichText(true);
+    }
+  }, [template?.id]);
+
+  // When using blocks, keep body_text synced so preview/save uses the same data
+  useEffect(() => {
+    if (!useBlocks) return;
+    const joined = blocks.map((b) => b.text || "").join("\n\n");
+    setValue("body_text", joined, { shouldValidate: true, shouldDirty: true });
+  }, [blocks, setValue, useBlocks]);
+
+  // When toggling blocks on, initialize blocks from existing body text (split on blank lines)
+  useEffect(() => {
+    if (!useBlocks) return;
+    const current = (bodyText || "").trim();
+    if (!current) return;
+    if (blocks.length > 1) return;
+    if (blocks[0]?.text?.trim()) return;
+
+    const parts = current.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    if (parts.length <= 1) {
+      setBlocks([{ id: "block-1", text: current }]);
+      return;
+    }
+    setBlocks(parts.map((text, idx) => ({ id: `block-${idx + 1}`, text })));
+  }, [useBlocks, bodyText, blocks]);

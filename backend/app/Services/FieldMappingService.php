@@ -215,11 +215,58 @@ class FieldMappingService
 
         // Replace all placeholders
         foreach ($data as $key => $value) {
-            $placeholder = '{{' . $key . '}}';
-            $text = str_replace($placeholder, $value ?? '', $text);
+            $patterns = [
+                '{{' . $key . '}}',
+                '{{ ' . $key . ' }}',
+                '{{ ' . $key . '}}',
+                '{{' . $key . ' }}',
+            ];
+            $text = str_replace($patterns, $value ?? '', $text);
         }
 
         return $text;
+    }
+
+    /**
+     * Build a normalized variable map for an outgoing document/template render.
+     *
+     * This mirrors the certificate templating behavior by supporting common {{var}} spacing patterns,
+     * while keeping values as simple strings for downstream escaping/rendering.
+     */
+    public function buildVariablesForOutgoingDocument(
+        string $recipientType,
+        ?string $recipientId = null,
+        array $customData = [],
+        array $documentData = []
+    ): array {
+        $data = array_merge(
+            $this->getGeneralData(),
+            $this->getRecipientData($recipientType, $recipientId),
+            $documentData,
+            $customData
+        );
+
+        $normalized = [];
+        foreach ($data as $key => $value) {
+            if ($value === null) {
+                $normalized[$key] = '';
+                continue;
+            }
+
+            if ($value instanceof \DateTimeInterface) {
+                $normalized[$key] = $value->format('Y-m-d');
+                continue;
+            }
+
+            if (is_bool($value)) {
+                $normalized[$key] = $value ? '1' : '0';
+                continue;
+            }
+
+            $normalized[$key] = (string) $value;
+        }
+
+        return $normalized;
     }
 
     /**

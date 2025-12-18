@@ -88,7 +88,7 @@ export const csp = {
       ...additionalDomains
     ].filter(Boolean).join(' ');
 
-    // Build img-src, frame-src, and object-src
+  // Build img-src, frame-src, and object-src
     const imgSrcParts = ["'self'", "data:", "https:", "http:"];
     const frameSrcParts = ["'self'", "blob:", "data:", "srcdoc:", "about:", "https:", "http:"];
     const objectSrcParts = ["'self'", "blob:", "data:", "https:", "http:"];
