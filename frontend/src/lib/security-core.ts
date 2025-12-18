@@ -90,7 +90,7 @@ export const csp = {
 
     // Build img-src, frame-src, and object-src
     const imgSrcParts = ["'self'", "data:", "https:", "http:"];
-    const frameSrcParts = ["'self'", "blob:", "https:", "http:"];
+    const frameSrcParts = ["'self'", "blob:", "data:", "srcdoc:", "about:", "https:", "http:"];
     const objectSrcParts = ["'self'", "blob:", "data:", "https:", "http:"];
 
     const policies = [
@@ -276,10 +276,13 @@ export const initializeSecurity = () => {
       "http:", // Allow HTTP for local development
     ];
     
-    // Build frame-src for PDFs (same as img-src)
+    // Build frame-src for PDFs and iframes (include data: and srcdoc: for preview iframes)
     const frameSrcParts = [
       "'self'",
       "blob:",
+      "data:",
+      "srcdoc:",
+      "about:",
       "https:",
       "http:", // Allow HTTP for local development
     ];

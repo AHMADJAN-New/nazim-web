@@ -29,34 +29,15 @@ export const templateVariableSchema = z.object({
 });
 
 /**
- * Positioned block styles schema
+ * Field position schema
  */
-export const positionedBlockStylesSchema = z.object({
-  fontFamily: z.string().default('Bahij Nassim'),
-  fontSize: z.number().min(8).max(72).default(14),
-  fontWeight: z.string().default('normal'),
-  color: z.string().default('#000000'),
-  textAlign: z.enum(['left', 'center', 'right']).default('right'),
-  direction: z.enum(['ltr', 'rtl']).default('rtl'),
-  lineHeight: z.number().min(1).max(3).default(1.5),
-  backgroundColor: z.string().optional(),
-  border: z.string().optional(),
-  padding: z.string().optional(),
-});
-
-/**
- * Positioned block schema
- */
-export const positionedBlockSchema = z.object({
-  id: z.string().min(1),
-  type: z.enum(['text', 'variable', 'static']),
-  x: z.number().min(0),
-  y: z.number().min(0),
-  width: z.number().min(1),
-  height: z.number().min(1),
-  content: z.string().optional().default(''),
-  variableName: z.string().optional(),
-  styles: positionedBlockStylesSchema,
+export const fieldPositionSchema = z.object({
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  fontSize: z.number().min(8).max(72).optional(),
+  fontFamily: z.string().optional(),
+  textAlign: z.enum(['left', 'center', 'right']).optional(),
+  color: z.string().optional(),
 });
 
 /**
@@ -66,16 +47,16 @@ export const letterTemplateSchema = z.object({
   name: requiredStringLength(255, 'Name'),
   category: requiredStringLength(50, 'Category'),
   letterhead_id: optionalUuidSchema,
+  watermark_id: optionalUuidSchema,
   letter_type: letterTypeSchema.optional().nullable(),
-  body_html: z.string().optional().nullable(),
-  template_file_path: optionalStringLength(255, 'Template file path'),
-  template_file_type: z.enum(['html', 'word', 'pdf', 'image']).optional().default('html'),
+  body_text: z.string().optional().nullable(),
   variables: z.array(templateVariableSchema).optional().nullable(),
-  header_structure: z.record(z.any()).optional().nullable(),
-  field_positions: z.array(positionedBlockSchema).optional().nullable(),
-  allow_edit_body: z.boolean().optional().default(false),
+  supports_tables: z.boolean().optional().default(false),
+  table_structure: z.record(z.any()).optional().nullable(),
+  field_positions: z.record(fieldPositionSchema).optional().nullable(),
   default_security_level_key: optionalStringLength(50, 'Security level'),
   page_layout: z.string().optional().default('A4_portrait'),
+  repeat_letterhead_on_pages: z.boolean().optional().default(true),
   is_mass_template: z.boolean().optional().default(false),
   active: z.boolean().optional().default(true),
   school_id: optionalUuidSchema,
@@ -90,9 +71,8 @@ export const letterheadSchema = z.object({
   name: requiredStringLength(255, 'Name'),
   file: z.instanceof(File).optional(), // Only required on create
   file_type: z.enum(['pdf', 'image', 'html']).optional().default('image'),
+  letterhead_type: z.enum(['background', 'watermark']).optional().default('background'),
   letter_type: letterTypeSchema.optional().nullable(),
-  default_for_layout: z.string().optional().nullable(),
-  position: z.enum(['header', 'background', 'watermark']).optional().default('header'),
   active: z.boolean().optional().default(true),
   school_id: optionalUuidSchema,
 });

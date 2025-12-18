@@ -187,25 +187,32 @@ export default function LetterheadsPage() {
     setIsPreviewDialogOpen(true);
     setPreviewPdfUrl(null);
     try {
-      const preview = await dmsApi.letterheads.preview(letterhead.id);
-      setPreviewHtml((preview as { html?: string })?.html || "");
-      // Merge returned URLs so PDF/image previews have a usable source
+      const preview = await dmsApi.letterheads.preview(letterhead.id) as {
+        html?: string;
+        preview_url?: string;
+        file_url?: string;
+        letterhead?: Partial<Letterhead> & { file_type?: string };
+      };
+      setPreviewHtml(preview.html || "");
+
+      // Merge URLs from backend so preview has usable sources
       setSelectedLetterhead((prev) => ({
         ...(prev || letterhead),
-        preview_url: (preview as { preview_url?: string })?.preview_url ?? letterhead.preview_url ?? null,
-        file_url: (preview as { file_url?: string })?.file_url ?? (letterhead as any).file_url ?? null,
+        preview_url: preview.preview_url ?? letterhead.preview_url ?? null,
+        file_url: preview.file_url ?? (letterhead as any).file_url ?? null,
+        file_type: preview.letterhead?.file_type ?? letterhead.file_type,
       }) as Letterhead);
 
-      // For PDFs, fetch the file as blob so we can preview even when object-src is blocked by auth headers
+      // For PDFs, fetch as blob to bypass object-src/auth header issues
       const fileType = (preview as any)?.letterhead?.file_type ?? letterhead.file_type;
-      if (fileType === 'pdf') {
+      if (fileType === "pdf") {
         try {
           const { blob } = await dmsApi.letterheads.download(letterhead.id);
           if (blob instanceof Blob && blob.size > 0) {
             const url = URL.createObjectURL(blob);
             setPreviewPdfUrl(url);
           }
-        } catch (e) {
+        } catch {
           // Ignore preview fetch errors; download button remains available
         }
       }
@@ -626,84 +633,84 @@ export default function LetterheadsPage() {
               Preview the letterhead as it will appear in documents.
             </DialogDescription>
           </DialogHeader>
-          {selectedLetterhead && (
-            <div className="space-y-4">
-              {/* PDF preview */}
-              {selectedLetterhead.file_type === "pdf" ? (
-                <div className="border rounded-lg bg-white">
-                  {previewPdfUrl ? (
-                    <object
-                      data={previewPdfUrl}
-                      type="application/pdf"
-                      className="w-full min-h-[500px] border-0 rounded-lg"
-                    >
-                      <div className="p-6 text-center text-muted-foreground">
-                        <p className="mb-4">PDF preview is not available. Please download to view.</p>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleDownload(selectedLetterhead)}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
-                        </Button>
-                      </div>
-                    </object>
-                  ) : selectedLetterhead.file_url ? (
-                    <object
-                      data={selectedLetterhead.file_url}
-                      type="application/pdf"
-                      className="w-full min-h-[500px] border-0 rounded-lg"
-                    >
-                      <div className="p-6 text-center text-muted-foreground">
-                        <p className="mb-4">PDF preview is not available. Please download to view.</p>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleDownload(selectedLetterhead)}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
-                        </Button>
-                      </div>
-                    </object>
-                  ) : (
-                    <div className="border rounded-lg p-8 text-center text-muted-foreground">
-                      <p>Loading PDF preview...</p>
-                    </div>
-                  )}
-                </div>
-              ) : previewHtml ? (
-                <div className="border rounded-lg p-4 bg-white">
-                  <iframe
-                    srcDoc={previewHtml}
-                    className="w-full min-h-[400px] border-0"
-                    title="Letterhead Preview"
-                  />
-                </div>
-              ) : (
-                <div className="border rounded-lg p-8 text-center text-muted-foreground">
-                  <p>Loading preview...</p>
-                </div>
-              )}
-              {(selectedLetterhead.preview_url || selectedLetterhead.file_url) && selectedLetterhead.file_type === "image" && (
-                <div>
-                  <Label>Image Preview</Label>
-                  <div className="mt-2 border rounded-lg overflow-hidden">
-                    <img
-                      src={selectedLetterhead.preview_url || selectedLetterhead.file_url || ''}
-                      alt={selectedLetterhead.name}
-                      className="w-full h-auto max-h-96 object-contain"
-                      onError={(e) => {
-                        // Fallback to serve URL if preview_url fails
-                        if (selectedLetterhead.file_url && e.currentTarget.src !== selectedLetterhead.file_url) {
-                          e.currentTarget.src = selectedLetterhead.file_url;
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+           {selectedLetterhead && (
+             <div className="space-y-4">
+               {/* PDF preview */}
+               {selectedLetterhead.file_type === "pdf" ? (
+                 <div className="border rounded-lg bg-white">
+                   {previewPdfUrl ? (
+                     <object
+                       data={previewPdfUrl}
+                       type="application/pdf"
+                       className="w-full min-h-[500px] border-0 rounded-lg"
+                     >
+                       <div className="p-6 text-center text-muted-foreground">
+                         <p className="mb-4">PDF preview is not available. Please download to view.</p>
+                         <Button
+                           variant="outline"
+                           onClick={() => handleDownload(selectedLetterhead)}
+                         >
+                           <Download className="h-4 w-4 mr-2" />
+                           Download PDF
+                         </Button>
+                       </div>
+                     </object>
+                   ) : selectedLetterhead.file_url ? (
+                     <object
+                       data={selectedLetterhead.file_url}
+                       type="application/pdf"
+                       className="w-full min-h-[500px] border-0 rounded-lg"
+                     >
+                       <div className="p-6 text-center text-muted-foreground">
+                         <p className="mb-4">PDF preview is not available. Please download to view.</p>
+                         <Button
+                           variant="outline"
+                           onClick={() => handleDownload(selectedLetterhead)}
+                         >
+                           <Download className="h-4 w-4 mr-2" />
+                           Download PDF
+                         </Button>
+                       </div>
+                     </object>
+                   ) : (
+                     <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                       <p>Loading PDF preview...</p>
+                     </div>
+                   )}
+                 </div>
+               ) : previewHtml ? (
+                 <div className="border rounded-lg p-4 bg-white">
+                   <iframe
+                     srcDoc={previewHtml}
+                     className="w-full min-h-[400px] border-0"
+                     title="Letterhead Preview"
+                   />
+                 </div>
+               ) : (
+                 <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                   <p>Loading preview...</p>
+                 </div>
+               )}
+               {(selectedLetterhead.preview_url || (selectedLetterhead as any).file_url) && selectedLetterhead.file_type === "image" && (
+                 <div>
+                   <Label>Image Preview</Label>
+                   <div className="mt-2 border rounded-lg overflow-hidden">
+                     <img
+                       src={selectedLetterhead.preview_url || (selectedLetterhead as any).file_url || ''}
+                       alt={selectedLetterhead.name}
+                       className="w-full h-auto max-h-96 object-contain"
+                       onError={(e) => {
+                         const fileUrl = (selectedLetterhead as any).file_url;
+                         if (fileUrl && e.currentTarget.src !== fileUrl) {
+                           e.currentTarget.src = fileUrl;
+                         }
+                       }}
+                     />
+                   </div>
+                 </div>
+               )}
+             </div>
+           )}
         </DialogContent>
       </Dialog>
 

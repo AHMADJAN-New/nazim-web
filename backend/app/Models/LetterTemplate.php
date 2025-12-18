@@ -23,35 +23,44 @@ class LetterTemplate extends Model
         'name',
         'category',
         'letterhead_id',
+        'watermark_id',
         'letter_type',
-        'body_html',
-        'template_file_path',
-        'template_file_type',
+        'body_text',
         'variables',
-        'header_structure',
+        'supports_tables',
+        'table_structure',
         'field_positions',
-        'allow_edit_body',
         'default_security_level_key',
         'page_layout',
+        'repeat_letterhead_on_pages',
         'is_mass_template',
         'active',
     ];
 
     protected $casts = [
         'variables' => 'array',
-        'header_structure' => 'array',
+        'table_structure' => 'array',
         'field_positions' => 'array',
-        'allow_edit_body' => 'boolean',
+        'supports_tables' => 'boolean',
+        'repeat_letterhead_on_pages' => 'boolean',
         'is_mass_template' => 'boolean',
         'active' => 'boolean',
     ];
 
     /**
-     * Get the letterhead associated with this template.
+     * Get the letterhead (background) associated with this template.
      */
     public function letterhead()
     {
         return $this->belongsTo(Letterhead::class, 'letterhead_id');
+    }
+
+    /**
+     * Get the watermark associated with this template.
+     */
+    public function watermark()
+    {
+        return $this->belongsTo(Letterhead::class, 'watermark_id');
     }
 
     protected static function boot()
