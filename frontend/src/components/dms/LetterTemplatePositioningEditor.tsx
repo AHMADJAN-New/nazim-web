@@ -358,24 +358,35 @@ export function LetterTemplatePositioningEditor({
       );
     }
 
-    if (letterheadFileType === "pdf") {
-      // PDF placeholder
+    // Check if the data is actually a PDF (not converted to image)
+    const isPdfData = letterheadBase64.startsWith("data:application/pdf");
+
+    if (isPdfData) {
+      // PDF couldn't be converted to image - show embedded PDF or placeholder
       return (
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{
-            background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%)",
-            border: "3px dashed #6c757d",
-            zIndex: 0,
-          }}
-        >
-          <div className="text-center text-gray-600">
-            <div className="text-5xl mb-3">📄</div>
-            <div className="font-semibold">PDF Letterhead</div>
-            <div className="text-sm text-gray-500 mt-1">
-              Position: {letterheadPosition}
+        <div className="absolute inset-0" style={{ zIndex: 0 }}>
+          <object
+            data={letterheadBase64}
+            type="application/pdf"
+            style={{ width: "100%", height: "100%", border: "none" }}
+          >
+            {/* Fallback if object doesn't work */}
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              style={{
+                background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%)",
+                border: "3px dashed #6c757d",
+              }}
+            >
+              <div className="text-center text-gray-600">
+                <div className="text-5xl mb-3">📄</div>
+                <div className="font-semibold">PDF Letterhead</div>
+                <div className="text-sm text-gray-500 mt-1">
+                  Position: {letterheadPosition}
+                </div>
+              </div>
             </div>
-          </div>
+          </object>
         </div>
       );
     }

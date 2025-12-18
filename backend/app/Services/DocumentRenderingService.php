@@ -385,7 +385,24 @@ CSS;
         $fileType = $letterhead->file_type ?? 'image';
         $position = $letterhead->position ?? 'header';
 
-        // Get file content and convert to base64
+        if ($fileType === 'pdf') {
+            // Try to convert PDF to image for better preview
+            $imageData = $this->convertPdfToImage($letterhead->file_path);
+            if ($imageData) {
+                return $this->renderImageLetterhead($imageData, $letterhead->name, $position);
+            }
+            // Fallback to PDF embed if conversion fails
+            if ($useBase64) {
+                $fileContent = Storage::get($letterhead->file_path);
+                $base64 = base64_encode($fileContent);
+                $dataUri = "data:application/pdf;base64,{$base64}";
+            } else {
+                $dataUri = Storage::url($letterhead->file_path);
+            }
+            return $this->renderPdfLetterhead($dataUri, $letterhead->name, $position, $useBase64);
+        }
+
+        // For images
         if ($useBase64) {
             $fileContent = Storage::get($letterhead->file_path);
             $mimeType = Storage::mimeType($letterhead->file_path) ?: 'image/png';
@@ -395,13 +412,44 @@ CSS;
             $dataUri = Storage::url($letterhead->file_path);
         }
 
-        if ($fileType === 'image') {
-            return $this->renderImageLetterhead($dataUri, $letterhead->name, $position);
-        } elseif ($fileType === 'pdf') {
-            return $this->renderPdfLetterhead($dataUri, $letterhead->name, $position, $useBase64);
+        return $this->renderImageLetterhead($dataUri, $letterhead->name, $position);
+    }
+
+    /**
+     * Convert PDF first page to image using Imagick.
+     */
+    private function convertPdfToImage(string $filePath): ?string
+    {
+        // Check if Imagick is available
+        if (!extension_loaded('imagick')) {
+            return null;
         }
 
-        return '';
+        try {
+            $fullPath = Storage::path($filePath);
+            if (!file_exists($fullPath)) {
+                return null;
+            }
+
+            $imagick = new \Imagick();
+            $imagick->setResolution(150, 150); // 150 DPI for good quality
+            $imagick->readImage($fullPath . '[0]'); // First page only
+            $imagick->setImageFormat('png');
+            $imagick->setImageCompressionQuality(90);
+
+            // Get image as base64
+            $imageData = $imagick->getImageBlob();
+            $base64 = base64_encode($imageData);
+
+            $imagick->clear();
+            $imagick->destroy();
+
+            return "data:image/png;base64,{$base64}";
+        } catch (\Exception $e) {
+            // Log error and return null to use fallback
+            \Log::warning('PDF to image conversion failed: ' . $e->getMessage());
+            return null;
+        }
     }
 
     /**
@@ -435,18 +483,28 @@ CSS;
      */
     private function renderPdfLetterhead(string $src, string $name, string $position, bool $useBase64 = true): string
     {
-        // For PDF letterheads, show a visible placeholder in preview mode
-        // The actual PDF will be composited during final PDF generation
+        // For PDF letterheads, embed the PDF directly using object tag
         if ($position === 'background') {
+            // Background PDF - display at lower opacity behind content
             return sprintf(
-                '<div class="pdf-letterhead-placeholder" style="position: absolute; top: 0; left: 0; width: 100%%; height: 100%%; background: linear-gradient(135deg, #f8f9fa 0%%, #e9ecef 50%%, #dee2e6 100%%); border: 3px dashed #6c757d; z-index: -1; display: flex; align-items: center; justify-content: center;"><div style="text-align: center; color: #495057; padding: 20px;"><div style="font-size: 48px; margin-bottom: 10px;">📄</div><div style="font-size: 16px; font-weight: bold;">PDF Letterhead: %s</div><div style="font-size: 12px; margin-top: 5px; color: #6c757d;">Position: Background</div></div></div>',
-                e($name)
+                '<div style="position: absolute; top: 0; left: 0; width: 100%%; height: 100%%; z-index: -1; opacity: 0.15;">
+                    <object data="%s" type="application/pdf" style="width: 100%%; height: 100%%; border: none;">
+                        <embed src="%s" type="application/pdf" style="width: 100%%; height: 100%%;">
+                    </object>
+                </div>',
+                e($src),
+                e($src)
             );
         } else {
-            // Header position - show placeholder at top
+            // Header position - display PDF at full size as background
             return sprintf(
-                '<div class="pdf-letterhead-placeholder" style="position: absolute; top: 0; left: 0; width: 100%%; height: 100%%; background: linear-gradient(180deg, #f8f9fa 0%%, #ffffff 30%%); border: 3px dashed #6c757d; z-index: -1; display: flex; flex-direction: column; align-items: center; padding-top: 30px;"><div style="text-align: center; color: #495057;"><div style="font-size: 48px; margin-bottom: 10px;">📄</div><div style="font-size: 16px; font-weight: bold;">PDF Letterhead: %s</div><div style="font-size: 12px; margin-top: 5px; color: #6c757d;">Position: Header</div></div></div>',
-                e($name)
+                '<div style="position: absolute; top: 0; left: 0; width: 100%%; height: 100%%; z-index: -1;">
+                    <object data="%s" type="application/pdf" style="width: 100%%; height: 100%%; border: none;">
+                        <embed src="%s" type="application/pdf" style="width: 100%%; height: 100%%;">
+                    </object>
+                </div>',
+                e($src),
+                e($src)
             );
         }
     }
@@ -499,6 +557,20 @@ CSS;
             return null;
         }
 
+        $fileType = $letterhead->file_type ?? 'image';
+
+        // For PDF, convert to image first
+        if ($fileType === 'pdf') {
+            $imageData = $this->convertPdfToImage($letterhead->file_path);
+            if ($imageData) {
+                return $imageData;
+            }
+            // Fallback to PDF data URI
+            $fileContent = Storage::get($letterhead->file_path);
+            return "data:application/pdf;base64," . base64_encode($fileContent);
+        }
+
+        // For images, return as-is
         $fileContent = Storage::get($letterhead->file_path);
         $mimeType = Storage::mimeType($letterhead->file_path) ?: 'image/png';
 
