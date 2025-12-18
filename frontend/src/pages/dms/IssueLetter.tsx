@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { dmsApi } from "@/lib/api/client";
-import type { LetterTemplate, TemplateVariable } from "@/types/dms";
+import type { LetterTemplate, TemplateVariable, OutgoingDocument } from "@/types/dms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,12 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { showToast } from "@/lib/toast";
 import { SecurityBadge } from "@/components/dms/SecurityBadge";
 import { DocumentNumberBadge } from "@/components/dms/DocumentNumberBadge";
-import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw, Download, CheckCircle2 } from "lucide-react";
+import { RecipientSelector } from "@/components/dms/RecipientSelector";
+import { useProfile } from "@/hooks/useProfiles";
+import type { Student } from "@/types/domain/student";
+import type { Staff } from "@/types/domain/staff";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type TemplatePreviewResponse = {
   html?: string | null;
@@ -22,11 +27,13 @@ type IssuePayload = {
   subject: string;
   issue_date: string;
   recipient_type: string;
-  recipient_id: string;
+  recipient_id: string | null;
   external_recipient_name: string;
   external_recipient_org: string;
   recipient_address: string;
   security_level_key: string;
+  academic_year_id?: string | null;
+  school_id?: string | null;
 };
 
 type IssueRequestPayload = {
@@ -40,26 +47,36 @@ type IssueRequestPayload = {
   external_recipient_org: string | null;
   recipient_address: string | null;
   security_level_key: string;
+  academic_year_id?: string | null;
+  school_id?: string | null;
 };
 
 export default function IssueLetter() {
   const { t } = useLanguage();
+  const { data: profile } = useProfile();
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [template, setTemplate] = useState<LetterTemplate | null>(null);
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [selectedRecipient, setSelectedRecipient] = useState<Student | Staff | null>(null);
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [issuedDocument, setIssuedDocument] = useState<OutgoingDocument | null>(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const [payload, setPayload] = useState<IssuePayload>({
     subject: "",
     issue_date: new Date().toISOString().slice(0, 10),
     recipient_type: "external",
-    recipient_id: "",
+    recipient_id: null,
     external_recipient_name: "",
     external_recipient_org: "",
     recipient_address: "",
     security_level_key: "public",
+    academic_year_id: null,
+    school_id: null,
   });
 
   const { data: templates } = useQuery<LetterTemplate[]>({
@@ -85,6 +102,11 @@ export default function IssueLetter() {
       ...prev,
       subject: templateDetails.name || prev.subject,
       security_level_key: templateDetails.default_security_level_key || prev.security_level_key,
+      // Set recipient_type based on template category if it matches
+      recipient_type: templateDetails.category === 'student' ? 'student' 
+        : templateDetails.category === 'staff' ? 'staff'
+        : templateDetails.category === 'applicant' ? 'applicant'
+        : prev.recipient_type,
     }));
 
     const initialVars: Record<string, string> = {};
@@ -99,29 +121,43 @@ export default function IssueLetter() {
     setPreviewError(null);
   }, [templateDetails]);
 
-  const previewVariables = useMemo(() => {
-    return {
-      ...variables,
-      subject: payload.subject,
-      issue_date: payload.issue_date,
-      document_number: "AUTO",
-      recipient_name: payload.external_recipient_name,
-      recipient_organization: payload.external_recipient_org,
-      recipient_address: payload.recipient_address,
-    };
-  }, [
-    variables,
-    payload.subject,
-    payload.issue_date,
-    payload.external_recipient_name,
-    payload.external_recipient_org,
-    payload.recipient_address,
-  ]);
+  // Update school_id from selected recipient
+  useEffect(() => {
+    if (selectedRecipient) {
+      const schoolId = 'schoolId' in selectedRecipient ? selectedRecipient.schoolId : null;
+      setPayload((prev) => ({
+        ...prev,
+        school_id: schoolId || prev.school_id,
+      }));
+    }
+  }, [selectedRecipient]);
 
   const previewMutation = useMutation({
     mutationFn: async (): Promise<TemplatePreviewResponse> => {
       if (!templateDetails?.id) return { html: "" };
-      return (await dmsApi.templates.preview(templateDetails.id, previewVariables)) as TemplatePreviewResponse;
+      
+      // Build preview variables with actual recipient data if available
+      const previewVars = {
+        ...variables,
+        subject: payload.subject,
+        issue_date: payload.issue_date,
+        document_number: "AUTO",
+        recipient_name: payload.external_recipient_name || (selectedRecipient && 'fullName' in selectedRecipient ? selectedRecipient.fullName : ''),
+        recipient_organization: payload.external_recipient_org || '',
+        recipient_address: payload.recipient_address || '',
+      };
+
+      // Pass recipient_id and school_id to preview endpoint for actual data
+      return (await dmsApi.templates.preview(
+        templateDetails.id,
+        previewVars,
+        {
+          recipient_type: payload.recipient_type,
+          recipient_id: payload.recipient_id || undefined,
+          school_id: payload.school_id || undefined,
+          table_payload: undefined,
+        }
+      )) as TemplatePreviewResponse;
     },
     onSuccess: (data) => {
       setPreviewError(null);
@@ -142,29 +178,41 @@ export default function IssueLetter() {
       return;
     }
 
-    const tmr = window.setTimeout(() => previewMutation.mutate(), 250);
+    const tmr = window.setTimeout(() => previewMutation.mutate(), 500);
     return () => window.clearTimeout(tmr);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateDetails?.id, previewVariables]);
+  }, [templateDetails?.id, payload, variables, selectedRecipient]);
 
-  const issueMutation = useMutation<unknown, unknown, IssueRequestPayload>({
-    mutationFn: (data) => dmsApi.outgoing.create({ ...data, status: "issued" }),
-    onSuccess: () => {
+  const issueMutation = useMutation<OutgoingDocument, unknown, IssueRequestPayload>({
+    mutationFn: async (data) => {
+      const result = await dmsApi.outgoing.create({ ...data, status: "issued" });
+      return result as OutgoingDocument;
+    },
+    onSuccess: async (doc) => {
+      setIssuedDocument(doc);
+      setShowSuccessDialog(true);
       showToast.success(t("toast.letterIssued") || "Letter issued successfully");
+      
+      // Reset form
       setSelectedTemplateId("");
       setTemplate(null);
       setVariables({});
       setPreviewHtml("");
       setPreviewError(null);
+      setSelectedRecipient(null);
+      setSelectedAcademicYearId(null);
+      setSelectedClassId(null);
       setPayload({
         subject: "",
         issue_date: new Date().toISOString().slice(0, 10),
         recipient_type: "external",
-        recipient_id: "",
+        recipient_id: null,
         external_recipient_name: "",
         external_recipient_org: "",
         recipient_address: "",
         security_level_key: "public",
+        academic_year_id: null,
+        school_id: null,
       });
     },
     onError: (err: unknown) => {
@@ -173,8 +221,43 @@ export default function IssueLetter() {
     },
   });
 
+  const downloadPdfMutation = useMutation({
+    mutationFn: async (docId: string) => {
+      const { blob, filename } = await dmsApi.outgoing.downloadPdf(docId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || `outgoing-document-${docId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    },
+    onSuccess: () => {
+      showToast.success(t("toast.pdfDownloaded") || "PDF downloaded successfully");
+    },
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : "Failed to download PDF";
+      showToast.error(message);
+    },
+  });
+
   const handleIssue = () => {
     if (!template?.id) return;
+
+    // Validate required fields based on recipient type
+    if (payload.recipient_type === 'student' && !payload.recipient_id) {
+      showToast.error("Please select a student");
+      return;
+    }
+    if (payload.recipient_type === 'staff' && !payload.recipient_id) {
+      showToast.error("Please select a staff member");
+      return;
+    }
+    if (payload.recipient_type === 'external' && !payload.external_recipient_name) {
+      showToast.error("Please enter recipient name");
+      return;
+    }
 
     issueMutation.mutate({
       template_id: template.id,
@@ -182,12 +265,41 @@ export default function IssueLetter() {
       subject: payload.subject,
       issue_date: payload.issue_date,
       recipient_type: payload.recipient_type,
-      recipient_id: payload.recipient_id || null,
-      external_recipient_name: payload.external_recipient_name || null,
-      external_recipient_org: payload.external_recipient_org || null,
-      recipient_address: payload.recipient_address || null,
+      recipient_id: payload.recipient_id,
+      external_recipient_name: payload.recipient_type === 'external' ? payload.external_recipient_name : null,
+      external_recipient_org: payload.recipient_type === 'external' ? payload.external_recipient_org : null,
+      recipient_address: payload.recipient_type === 'external' ? payload.recipient_address : null,
       security_level_key: payload.security_level_key,
+      academic_year_id: payload.academic_year_id || null,
+      school_id: payload.school_id || null,
     });
+  };
+
+  const handleDownloadPdf = () => {
+    if (issuedDocument?.id) {
+      downloadPdfMutation.mutate(issuedDocument.id);
+    }
+  };
+
+  const handleRecipientChange = (recipientId: string | null, recipientData?: any) => {
+    setPayload((prev) => ({
+      ...prev,
+      recipient_id: recipientId,
+    }));
+    if (recipientData) {
+      setSelectedRecipient(recipientData);
+    } else {
+      setSelectedRecipient(null);
+    }
+  };
+
+  const handleExternalRecipientChange = (field: 'name' | 'org' | 'address', value: string) => {
+    setPayload((prev) => ({
+      ...prev,
+      external_recipient_name: field === 'name' ? value : prev.external_recipient_name,
+      external_recipient_org: field === 'org' ? value : prev.external_recipient_org,
+      recipient_address: field === 'address' ? value : prev.recipient_address,
+    }));
   };
 
   const templateVariables = (template?.variables as TemplateVariable[]) || [];
@@ -236,7 +348,19 @@ export default function IssueLetter() {
                   <Label>Recipient Type</Label>
                   <Select
                     value={payload.recipient_type}
-                    onValueChange={(value) => setPayload((s) => ({ ...s, recipient_type: value }))}
+                    onValueChange={(value) => {
+                      setPayload((s) => ({ 
+                        ...s, 
+                        recipient_type: value,
+                        recipient_id: null,
+                        external_recipient_name: '',
+                        external_recipient_org: '',
+                        recipient_address: '',
+                      }));
+                      setSelectedRecipient(null);
+                      setSelectedAcademicYearId(null);
+                      setSelectedClassId(null);
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -250,46 +374,24 @@ export default function IssueLetter() {
                   </Select>
                 </div>
 
-                {payload.recipient_type !== "external" ? (
-                  <div className="space-y-2">
-                    <Label>Recipient ID (optional)</Label>
-                    <Input
-                      value={payload.recipient_id}
-                      onChange={(e) => setPayload((s) => ({ ...s, recipient_id: e.target.value }))}
-                      placeholder="UUID of recipient (student/staff/applicant)"
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                    <Label>External Recipient</Label>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <Label className="text-sm">Name</Label>
-                        <Input
-                          value={payload.external_recipient_name}
-                          onChange={(e) => setPayload((s) => ({ ...s, external_recipient_name: e.target.value }))}
-                          placeholder="Recipient name"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-sm">Organization</Label>
-                        <Input
-                          value={payload.external_recipient_org}
-                          onChange={(e) => setPayload((s) => ({ ...s, external_recipient_org: e.target.value }))}
-                          placeholder="Organization"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-sm">Address</Label>
-                      <Input
-                        value={payload.recipient_address}
-                        onChange={(e) => setPayload((s) => ({ ...s, recipient_address: e.target.value }))}
-                        placeholder="Recipient address"
-                      />
-                    </div>
-                  </div>
-                )}
+                {/* Recipient Selector */}
+                <RecipientSelector
+                  recipientType={payload.recipient_type as 'student' | 'staff' | 'external' | 'applicant'}
+                  selectedRecipientId={payload.recipient_id}
+                  onRecipientChange={handleRecipientChange}
+                  selectedAcademicYearId={selectedAcademicYearId}
+                  onAcademicYearChange={(id) => {
+                    setSelectedAcademicYearId(id);
+                    setPayload((prev) => ({ ...prev, academic_year_id: id }));
+                  }}
+                  selectedClassId={selectedClassId}
+                  onClassChange={setSelectedClassId}
+                  externalRecipientName={payload.external_recipient_name}
+                  externalRecipientOrg={payload.external_recipient_org}
+                  externalRecipientAddress={payload.recipient_address}
+                  onExternalRecipientChange={handleExternalRecipientChange}
+                  required={payload.recipient_type !== 'external'}
+                />
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -328,7 +430,14 @@ export default function IssueLetter() {
                 )}
 
                 <Button
-                  disabled={!payload.subject || !payload.issue_date || issueMutation.isPending}
+                  disabled={
+                    !payload.subject || 
+                    !payload.issue_date || 
+                    issueMutation.isPending ||
+                    (payload.recipient_type === 'student' && !payload.recipient_id) ||
+                    (payload.recipient_type === 'staff' && !payload.recipient_id) ||
+                    (payload.recipient_type === 'external' && !payload.external_recipient_name)
+                  }
                   onClick={handleIssue}
                   className="w-full"
                 >
@@ -398,6 +507,71 @@ export default function IssueLetter() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Success Dialog with PDF Download */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Letter Issued Successfully
+            </DialogTitle>
+            <DialogDescription>
+              The letter has been issued and saved to the outgoing documents.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {issuedDocument && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Document Number:</span>
+                  <DocumentNumberBadge value={issuedDocument.full_outdoc_number || 'N/A'} type="outgoing" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Subject:</span>
+                  <span className="text-sm text-muted-foreground">{issuedDocument.subject}</span>
+                </div>
+                {issuedDocument.issue_date && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Issue Date:</span>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(issuedDocument.issue_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="flex gap-2 pt-2">
+              <Button
+                onClick={handleDownloadPdf}
+                disabled={!issuedDocument?.id || downloadPdfMutation.isPending}
+                className="flex-1"
+              >
+                {downloadPdfMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowSuccessDialog(false);
+                  setIssuedDocument(null);
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

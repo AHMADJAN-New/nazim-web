@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Student;
 use App\Models\Staff;
 use App\Models\StudentAdmission;
+use App\Models\SchoolBranding;
 use Illuminate\Support\Facades\DB;
 
 class FieldMappingService
@@ -237,11 +238,20 @@ class FieldMappingService
         string $recipientType,
         ?string $recipientId = null,
         array $customData = [],
-        array $documentData = []
+        array $documentData = [],
+        ?string $schoolId = null,
+        string $organizationId = null
     ): array {
+        // Get school data if school_id is provided
+        $schoolData = [];
+        if ($schoolId && $organizationId) {
+            $schoolData = $this->getSchoolData($schoolId, $organizationId);
+        }
+
         $data = array_merge(
             $this->getGeneralData(),
             $this->getRecipientData($recipientType, $recipientId),
+            $schoolData, // Add school data
             $documentData,
             $customData
         );
@@ -298,43 +308,50 @@ class FieldMappingService
      */
     private function getStudentData(string $studentId): array
     {
-        $student = Student::with(['class', 'academicYear', 'school', 'organization'])
+        $student = Student::with(['school', 'organization', 'admissions.academicYear', 'admissions.class', 'admissions.classAcademicYear'])
             ->find($studentId);
 
         if (!$student) {
             return [];
         }
 
+        // Get current active admission for class and academic year info
+        $currentAdmission = $student->admissions()
+            ->where('enrollment_status', 'active')
+            ->orderByDesc('admission_year')
+            ->with(['academicYear', 'class', 'classAcademicYear'])
+            ->first();
+
         return [
-            'student_name' => $student->name,
+            'student_name' => $student->full_name ?? '',
             'student_id' => $student->id,
-            'student_code' => $student->code,
-            'father_name' => $student->father_name,
-            'grandfather_name' => $student->grandfather_name,
-            'mother_name' => $student->mother_name,
-            'gender' => $student->gender,
-            'date_of_birth' => $student->date_of_birth?->format('Y-m-d'),
-            'place_of_birth' => $student->place_of_birth,
-            'nationality' => $student->nationality,
-            'tazkira_number' => $student->tazkira_number,
-            'class_name' => $student->class->name ?? '',
-            'grade' => $student->grade,
-            'section' => $student->section,
-            'roll_number' => $student->roll_number,
-            'enrollment_date' => $student->enrollment_date?->format('Y-m-d'),
-            'academic_year' => $student->academicYear->name ?? '',
-            'shift' => $student->shift,
-            'status' => $student->status,
-            'phone' => $student->phone,
-            'email' => $student->email,
-            'address' => $student->address,
-            'province' => $student->province,
-            'district' => $student->district,
-            'village' => $student->village,
-            'guardian_name' => $student->guardian_name,
-            'guardian_phone' => $student->guardian_phone,
-            'guardian_relation' => $student->guardian_relation,
-            'guardian_occupation' => $student->guardian_occupation,
+            'student_code' => $student->student_code ?? '',
+            'father_name' => $student->father_name ?? '',
+            'grandfather_name' => $student->grandfather_name ?? '',
+            'mother_name' => $student->mother_name ?? '',
+            'gender' => $student->gender ?? '',
+            'date_of_birth' => $student->birth_date?->format('Y-m-d') ?? '',
+            'place_of_birth' => $student->orig_village ?? $student->curr_village ?? '',
+            'nationality' => $student->nationality ?? '',
+            'tazkira_number' => '', // Not in Student model, would need to check if it exists elsewhere
+            'class_name' => $currentAdmission?->class?->name ?? '',
+            'grade' => $currentAdmission?->class?->grade_level ?? '',
+            'section' => $currentAdmission?->classAcademicYear?->section_name ?? '',
+            'roll_number' => '', // Not directly in Student model, might be in admission
+            'enrollment_date' => $currentAdmission?->admission_date?->format('Y-m-d') ?? '',
+            'academic_year' => $currentAdmission?->academicYear?->name ?? '',
+            'shift' => $currentAdmission?->shift ?? '',
+            'status' => $student->student_status ?? '',
+            'phone' => $student->guardian_phone ?? '',
+            'email' => '',
+            'address' => $student->home_address ?? '',
+            'province' => $student->curr_province ?? $student->orig_province ?? '',
+            'district' => $student->curr_district ?? $student->orig_district ?? '',
+            'village' => $student->curr_village ?? $student->orig_village ?? '',
+            'guardian_name' => $student->guardian_name ?? '',
+            'guardian_phone' => $student->guardian_phone ?? '',
+            'guardian_relation' => $student->guardian_relation ?? '',
+            'guardian_occupation' => '',
         ];
     }
 
@@ -346,37 +363,44 @@ class FieldMappingService
      */
     private function getStaffData(string $staffId): array
     {
-        $staff = Staff::with(['staffType', 'school', 'organization'])
+        $staff = Staff::with(['staffType', 'school', 'organization', 'profile'])
             ->find($staffId);
 
         if (!$staff) {
             return [];
         }
 
+        // Build full name from first_name, father_name, grandfather_name
+        $fullName = trim(implode(' ', array_filter([
+            $staff->first_name ?? '',
+            $staff->father_name ?? '',
+            $staff->grandfather_name ?? '',
+        ])));
+
         return [
-            'staff_name' => $staff->name,
+            'staff_name' => $fullName,
             'staff_id' => $staff->id,
-            'staff_code' => $staff->code,
-            'father_name' => $staff->father_name,
-            'gender' => $staff->gender,
-            'date_of_birth' => $staff->date_of_birth?->format('Y-m-d'),
-            'nationality' => $staff->nationality,
-            'tazkira_number' => $staff->tazkira_number,
-            'position' => $staff->position,
-            'department' => $staff->department,
+            'staff_code' => $staff->staff_code ?? '',
+            'father_name' => $staff->father_name ?? '',
+            'gender' => '', // Not in Staff model directly
+            'date_of_birth' => $staff->birth_date?->format('Y-m-d') ?? '',
+            'nationality' => '', // Not in Staff model directly
+            'tazkira_number' => $staff->tazkira_number ?? '',
+            'position' => $staff->position ?? '',
+            'department' => $staff->duty ?? $staff->teaching_section ?? '',
             'staff_type' => $staff->staffType->name ?? '',
-            'employment_status' => $staff->employment_status,
-            'join_date' => $staff->join_date?->format('Y-m-d'),
-            'salary' => $staff->salary,
-            'contract_type' => $staff->contract_type,
-            'education_level' => $staff->education_level,
-            'degree' => $staff->degree,
-            'specialization' => $staff->specialization,
-            'phone' => $staff->phone,
-            'email' => $staff->email,
-            'address' => $staff->address,
-            'province' => $staff->province,
-            'district' => $staff->district,
+            'employment_status' => $staff->status ?? '',
+            'join_date' => '', // Not in Staff model
+            'salary' => $staff->salary ?? '',
+            'contract_type' => '', // Not in Staff model
+            'education_level' => $staff->modern_education ?? $staff->religious_education ?? '',
+            'degree' => '', // Not directly in Staff model
+            'specialization' => $staff->modern_department ?? $staff->religious_department ?? '',
+            'phone' => $staff->phone_number ?? '',
+            'email' => $staff->email ?? '',
+            'address' => $staff->home_address ?? '',
+            'province' => $staff->current_province ?? $staff->origin_province ?? '',
+            'district' => $staff->current_district ?? $staff->origin_district ?? '',
         ];
     }
 
@@ -419,11 +443,44 @@ class FieldMappingService
     }
 
     /**
+     * Get school data from database
+     *
+     * @param string $schoolId
+     * @param string $organizationId
+     * @return array
+     */
+    public function getSchoolData(?string $schoolId, string $organizationId): array
+    {
+        if (!$schoolId) {
+            return [];
+        }
+
+        $school = SchoolBranding::with('organization')
+            ->where('id', $schoolId)
+            ->where('organization_id', $organizationId)
+            ->first();
+
+        if (!$school) {
+            return [];
+        }
+
+        return [
+            'school_name' => $school->school_name ?? '',
+            'school_code' => $school->id ?? '', // Use ID as code if no code field exists
+            'school_address' => $school->school_address ?? '',
+            'school_phone' => $school->school_phone ?? '',
+            'school_email' => $school->school_email ?? '',
+            'school_website' => $school->school_website ?? '',
+            'organization_name' => $school->organization->name ?? '',
+        ];
+    }
+
+    /**
      * Get general/organization data
      *
      * @return array
      */
-    private function getGeneralData(): array
+    public function getGeneralData(): array
     {
         // Get current organization and school from context
         // This would be injected from the controller

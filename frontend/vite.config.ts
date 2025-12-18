@@ -30,6 +30,7 @@ export default defineConfig({
       'react',
       'react-dom',
       '@tanstack/react-table',
+      'recharts',
     ],
     exclude: [
       'pdfmake-arabic',

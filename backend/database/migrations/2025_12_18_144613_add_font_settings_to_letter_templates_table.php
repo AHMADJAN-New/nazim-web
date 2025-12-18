@@ -8,14 +8,12 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * Adds field_positions JSONB column to store text block positions for letter templates.
-     * Each positioned block includes: id, type, x, y, width, height, content, styles
      */
     public function up(): void
     {
         Schema::table('letter_templates', function (Blueprint $table) {
-            $table->jsonb('field_positions')->nullable()->after('header_structure');
+            $table->string('font_family', 100)->nullable()->default('Arial')->after('body_text');
+            $table->integer('font_size')->nullable()->default(14)->after('font_family');
         });
     }
 
@@ -25,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('letter_templates', function (Blueprint $table) {
-            $table->dropColumn('field_positions');
+            $table->dropColumn(['font_family', 'font_size']);
         });
     }
 };

@@ -58,7 +58,46 @@ export function TemplateForm({
   const [blocks, setBlocks] = useState<Array<{ id: string; text: string }>>([
     { id: "block-1", text: "" },
   ]);
-  const [fontSize, setFontSize] = useState<number>(14);
+  // Initialize font settings from template or defaults
+  const [fontSize, setFontSize] = useState<number>(() => {
+    return template?.font_size || 14;
+  });
+  const [fontFamily, setFontFamily] = useState<string>(() => {
+    return template?.font_family || 'Arial';
+  });
+  
+  // Update font settings when template changes
+  useEffect(() => {
+    if (template?.font_size) {
+      setFontSize(template.font_size);
+    } else if (template?.id) {
+      // Reset to default if template has no font_size
+      setFontSize(14);
+    }
+    if (template?.font_family) {
+      setFontFamily(template.font_family);
+    } else if (template?.id) {
+      // Reset to default if template has no font_family
+      setFontFamily('Arial');
+    }
+  }, [template?.id, template?.font_size, template?.font_family]);
+  
+  // Ensure fonts are loaded
+  useEffect(() => {
+    if (fontFamily === 'Bahij Nassim' || fontFamily === 'Bahij Titr') {
+      // Check if font is loaded
+      if (document.fonts && document.fonts.check) {
+        const fontName = fontFamily === 'Bahij Nassim' ? 'Bahij Nassim' : 'Bahij Titr';
+        document.fonts.ready.then(() => {
+          if (!document.fonts.check(`16px "${fontName}"`)) {
+            if (import.meta.env.DEV) {
+              console.warn(`[TemplateForm] Font "${fontName}" may not be loaded. Check font files in /public/fonts/`);
+            }
+          }
+        });
+      }
+    }
+  }, [fontFamily]);
   const [showPositionEditor, setShowPositionEditor] = useState(false);
   const [fieldPositions, setFieldPositions] = useState<Record<string, FieldPosition>>({});
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
@@ -106,6 +145,40 @@ export function TemplateForm({
     }
   }, [template?.field_positions]);
 
+  // Watch form values for live preview (declare early so hooks can use them)
+  const bodyText = watch("body_text");
+
+  // Initialize rich text mode based on existing content (HTML-like)
+  useEffect(() => {
+    const initial = template?.body_text || "";
+    if (initial && /<\s*\/?\s*[a-zA-Z][^>]*>/.test(initial)) {
+      setUseRichText(true);
+    }
+  }, [template?.id]);
+
+  // When using blocks, keep body_text synced so preview/save uses the same data
+  useEffect(() => {
+    if (!useBlocks) return;
+    const joined = blocks.map((b) => b.text || "").join("\n\n");
+    setValue("body_text", joined, { shouldValidate: true, shouldDirty: true });
+  }, [blocks, setValue, useBlocks]);
+
+  // When toggling blocks on, initialize blocks from existing body text (split on blank lines)
+  useEffect(() => {
+    if (!useBlocks) return;
+    const current = (bodyText || "").trim();
+    if (!current) return;
+    if (blocks.length > 1) return;
+    if (blocks[0]?.text?.trim()) return;
+
+    const parts = current.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    if (parts.length <= 1) {
+      setBlocks([{ id: "block-1", text: current }]);
+      return;
+    }
+    setBlocks(parts.map((text, idx) => ({ id: `block-${idx + 1}`, text })));
+  }, [useBlocks, bodyText, blocks]);
+
   // Fetch all letterheads
   const { data: allLetterheads = [], isLoading: letterheadsLoading } = useQuery<Letterhead[]>({
     queryKey: ["dms", "letterheads"],
@@ -128,7 +201,6 @@ export function TemplateForm({
   const category = watch("category");
   const selectedLetterheadId = watch("letterhead_id");
   const selectedWatermarkId = watch("watermark_id");
-  const bodyText = watch("body_text");
   const repeatLetterhead = watch("repeat_letterhead_on_pages");
   const pageLayout = watch("page_layout");
   const supportsTables = watch("supports_tables");
@@ -184,13 +256,15 @@ export function TemplateForm({
   }, [selectedWatermark?.id]);
 
   const handleFormSubmit = (data: LetterTemplateFormData) => {
-    // Include field_positions in submission
+    // Include field_positions and font settings in submission
     const safeBodyText =
       useBlocks || useRichText ? sanitize.richText(data.body_text || "") : (data.body_text || "");
     onSubmit({
       ...data,
       body_text: safeBodyText,
       field_positions: Object.keys(fieldPositions).length > 0 ? fieldPositions : null,
+      font_family: fontFamily,
+      font_size: fontSize,
     });
   };
 
@@ -198,6 +272,25 @@ export function TemplateForm({
     try {
       setActualPreviewLoading(true);
       setActualPreviewError(null);
+
+      // Use template's font settings if available, otherwise use current state
+      // Priority: template font > current state > defaults
+      const previewFontFamily = template?.font_family || fontFamily || 'Arial';
+      const previewFontSize = template?.font_size || fontSize || 14;
+      
+      if (import.meta.env.DEV) {
+        console.log('[TemplateForm] Preview font settings:', {
+          templateFontFamily: template?.font_family,
+          templateFontSize: template?.font_size,
+          stateFontFamily: fontFamily,
+          stateFontSize: fontSize,
+          previewFontFamily,
+          previewFontSize,
+        });
+      }
+
+      // Pass frontend URL so backend can generate correct font URLs for iframe
+      const frontendUrl = window.location.origin;
 
       const response = await dmsApi.templates.previewDraft({
         template: {
@@ -210,10 +303,13 @@ export function TemplateForm({
           field_positions: Object.keys(fieldPositions).length > 0 ? fieldPositions : null,
           supports_tables: supportsTables ?? false,
           table_structure: tableStructure ?? null,
+          font_family: previewFontFamily,
+          font_size: previewFontSize,
         },
         recipient_type: category,
         variables: {},
-      });
+        frontend_url: frontendUrl, // Pass frontend URL for font loading
+      } as any); // Type assertion - frontend_url is a new parameter
 
       setActualPreviewHtml((response as any)?.html || "");
       setActualPreviewError(null);
@@ -234,6 +330,11 @@ export function TemplateForm({
     selectedWatermarkId,
     supportsTables,
     tableStructure,
+    fontFamily,
+    fontSize,
+    template?.font_family,
+    template?.font_size,
+    template,
   ]);
 
   // Keep actual preview in sync (debounced)
@@ -242,10 +343,21 @@ export function TemplateForm({
 
     const tmr = window.setTimeout(() => {
       void refreshActualPreview();
-    }, 300);
+    }, 1000); // Increased debounce delay to 1 second to reduce API calls
 
     return () => window.clearTimeout(tmr);
   }, [showPreview, previewMode, refreshActualPreview]);
+  
+  // Refresh preview immediately when template loads with font settings
+  useEffect(() => {
+    if (template?.id && showPreview && previewMode === "actual" && (template?.font_family || template?.font_size)) {
+      // Refresh immediately when template loads with font settings (before debounced refresh)
+      const timer = setTimeout(() => {
+        void refreshActualPreview();
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [template?.id, template?.font_family, template?.font_size, showPreview, previewMode, refreshActualPreview]);
 
   // Insert field placeholder at cursor position
   const handleInsertField = (placeholder: string) => {
@@ -253,10 +365,17 @@ export function TemplateForm({
       const targetId = selectedBlockId || blocks[0]?.id || "block-1";
       const editor = blockEditorRefs.current[targetId];
       if (editor) {
-        editor.insertText(placeholder);
-        return;
+        // Focus the editor first to ensure cursor position is maintained
+        try {
+          editor.insertText(placeholder);
+          return;
+        } catch (error) {
+          // Fallback if editor method fails
+          console.warn('Editor insertText failed, using fallback');
+        }
       }
 
+      // Fallback: append to selected block
       setBlocks((prev) => {
         if (prev.length === 0) return [{ id: "block-1", text: placeholder }];
         const idx = prev.findIndex((b) => b.id === targetId);
@@ -272,26 +391,76 @@ export function TemplateForm({
     }
 
     if (useRichText && bodyRichRef.current) {
-      bodyRichRef.current.insertText(placeholder);
+      // Focus the rich text editor and insert at cursor
+      try {
+        bodyRichRef.current.insertText(placeholder);
+        return;
+      } catch (error) {
+        console.warn('Rich text insertText failed');
+      }
+    }
+
+    // Plain textarea - insert at cursor position
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      // If textarea ref is not available, try to get it after a short delay
+      setTimeout(() => {
+        const textareaEl = textareaRef.current;
+        if (textareaEl) {
+          insertAtCursor(textareaEl, placeholder);
+        }
+      }, 0);
       return;
     }
 
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+    insertAtCursor(textarea, placeholder);
+  };
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const currentValue = bodyText || "";
+  // Helper function to insert text at cursor position
+  const insertAtCursor = (textarea: HTMLTextAreaElement, placeholder: string) => {
+    // Focus the textarea first
+    textarea.focus();
+    
+    // Try to get current selection, or use stored position
+    let start = textarea.selectionStart;
+    let end = textarea.selectionEnd;
+    
+    // If selection is lost (0,0), try to use stored position
+    if (start === 0 && end === 0 && textarea.value.length > 0) {
+      const storedStart = (textarea as any).__lastSelectionStart;
+      const storedEnd = (textarea as any).__lastSelectionEnd;
+      
+      if (typeof storedStart === 'number' && typeof storedEnd === 'number') {
+        start = storedStart;
+        end = storedEnd;
+        // Restore selection
+        textarea.setSelectionRange(start, end);
+      } else {
+        // No stored position, place at end
+        start = textarea.value.length;
+        end = textarea.value.length;
+        textarea.setSelectionRange(start, end);
+      }
+    }
+    
+    // Get current value (use textarea.value to ensure we have the latest)
+    const currentValue = textarea.value || "";
 
+    // Insert placeholder at cursor position
     const newValue = currentValue.substring(0, start) + placeholder + currentValue.substring(end);
 
+    // Update form value
     setValue("body_text", newValue, { shouldValidate: true });
 
     // Set cursor position after inserted text
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(start + placeholder.length, start + placeholder.length);
-    }, 0);
+      const newCursorPos = start + placeholder.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+      // Store the new position
+      (textarea as any).__lastSelectionStart = newCursorPos;
+      (textarea as any).__lastSelectionEnd = newCursorPos;
+    }, 10);
   };
 
   const handleBlockChange = (id: string, value: string) => {
@@ -320,10 +489,11 @@ export function TemplateForm({
     const trimmed = content.trim();
     if (!trimmed) return null;
     const isHtml = /<\s*\/?\s*[a-zA-Z][^>]*>/.test(trimmed);
-    if (!isHtml) return <>{trimmed}</>;
+    if (!isHtml) return <span>{trimmed}</span>;
 
     const safe = sanitize.richText(trimmed);
-    return <div dangerouslySetInnerHTML={{ __html: safe }} />;
+    // Use span to inherit parent font styles, div might create a new block context
+    return <span dangerouslySetInnerHTML={{ __html: safe }} style={{ fontFamily: 'inherit', fontSize: 'inherit' }} />;
   };
 
   // Positioning handlers
@@ -361,9 +531,11 @@ export function TemplateForm({
 
       const rect = previewContainerRef.current.getBoundingClientRect();
       const position = fieldPositions[blockId] || { x: 50, y: 50 };
+      // Calculate the center point of the block in pixels
       const fieldX = (position.x / 100) * rect.width;
       const fieldY = (position.y / 100) * rect.height;
 
+      // Calculate offset from mouse position to block center
       setDragOffset({
         x: e.clientX - rect.left - fieldX,
         y: e.clientY - rect.top - fieldY,
@@ -409,13 +581,24 @@ export function TemplateForm({
           },
         }));
       } else if (draggingBlockId) {
-        const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
-        const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+        // Calculate new position: mouse position minus the offset, converted to percentage
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        // The dragOffset represents the distance from mouse to block center when drag started
+        // So new block center = mouse position - offset
+        const newCenterX = mouseX - dragOffset.x;
+        const newCenterY = mouseY - dragOffset.y;
+        
+        // Convert to percentage
+        const x = (newCenterX / rect.width) * 100;
+        const y = (newCenterY / rect.height) * 100;
 
+        // Clamp to stay within bounds (0-100%)
         const clampedX = Math.max(0, Math.min(100, x));
         const clampedY = Math.max(0, Math.min(100, y));
 
-        const currentPosition = fieldPositions[draggingBlockId] || { x: 50, y: 50, fontSize: 14, fontFamily: 'Arial', textAlign: 'right' as const };
+        const currentPosition = fieldPositions[draggingBlockId] || { x: 50, y: 50, fontSize: fontSize, fontFamily: fontFamily, textAlign: 'right' as const };
         setFieldPositions(prev => ({
           ...prev,
           [draggingBlockId]: {
@@ -447,7 +630,7 @@ export function TemplateForm({
   }, [draggingBlockId, resizingBlockId, handleMouseMove, handleMouseUp]);
 
   const updateBlockProperty = (blockId: string, property: keyof FieldPosition, value: any) => {
-    const currentPosition = fieldPositions[blockId] || { x: 50, y: 50, fontSize: 14, fontFamily: 'Arial', textAlign: 'right', width: 40, height: 10 };
+    const currentPosition = fieldPositions[blockId] || { x: 50, y: 50, fontSize: fontSize, fontFamily: fontFamily, textAlign: 'right', width: 40, height: 10 };
     setFieldPositions(prev => ({
       ...prev,
       [blockId]: {
@@ -671,7 +854,7 @@ export function TemplateForm({
               </Button>
             </div>
 
-            {/* Mode toggle + font size */}
+            {/* Mode toggle + font size + font family */}
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
                 <Switch checked={useBlocks} onCheckedChange={setUseBlocks} id="use_blocks" />
@@ -684,11 +867,31 @@ export function TemplateForm({
                 </div>
               )}
               <div className="flex items-center gap-2">
+                <Label className="text-sm text-muted-foreground">Font</Label>
+                <Select value={fontFamily} onValueChange={setFontFamily}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bahij Nassim">Bahij Nassim (Arabic/Pashto)</SelectItem>
+                    <SelectItem value="Bahij Titr">Bahij Titr (Arabic/Pashto)</SelectItem>
+                    <SelectItem value="Arial">Arial</SelectItem>
+                    <SelectItem value="Helvetica">Helvetica</SelectItem>
+                    <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                    <SelectItem value="Courier New">Courier New</SelectItem>
+                    <SelectItem value="Georgia">Georgia</SelectItem>
+                    <SelectItem value="Verdana">Verdana</SelectItem>
+                    <SelectItem value="Noto Sans Arabic">Noto Sans Arabic</SelectItem>
+                    <SelectItem value="Tahoma">Tahoma</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
                 <Label className="text-sm text-muted-foreground">Font size</Label>
                 <input
                   type="range"
-                  min={10}
-                  max={22}
+                  min={8}
+                  max={24}
                   value={fontSize}
                   onChange={(e) => setFontSize(parseInt(e.target.value) || 14)}
                 />
@@ -712,6 +915,8 @@ export function TemplateForm({
                         onChange={field.onChange}
                         placeholder="Type your letter content here (rich text supported). Use the field selector below to insert placeholders like {{student_name}}."
                         dir="rtl"
+                        fontFamily={fontFamily}
+                        fontSize={fontSize}
                       />
                     )}
                   />
@@ -726,8 +931,40 @@ export function TemplateForm({
                   }}
                   rows={12}
                   dir="rtl"
-                  className="font-mono text-right"
+                  className="text-right"
+                  style={{
+                    fontFamily: fontFamily === 'Bahij Nassim' 
+                      ? '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                      : fontFamily === 'Bahij Titr'
+                      ? '"Bahij Titr", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                      : `${fontFamily}, sans-serif`,
+                    fontSize: `${fontSize}px`,
+                  }}
                   placeholder="اداره تصدیق کوي چې {{student_name}} د {{father_name}} زوی..."
+                  onFocus={(e) => {
+                    // Store cursor position when textarea is focused
+                    const textarea = e.target as HTMLTextAreaElement;
+                    if (textarea) {
+                      (textarea as any).__lastSelectionStart = textarea.selectionStart;
+                      (textarea as any).__lastSelectionEnd = textarea.selectionEnd;
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Store cursor position when textarea loses focus
+                    const textarea = e.target as HTMLTextAreaElement;
+                    if (textarea) {
+                      (textarea as any).__lastSelectionStart = textarea.selectionStart;
+                      (textarea as any).__lastSelectionEnd = textarea.selectionEnd;
+                    }
+                  }}
+                  onSelect={(e) => {
+                    // Update cursor position on selection change
+                    const textarea = e.target as HTMLTextAreaElement;
+                    if (textarea) {
+                      (textarea as any).__lastSelectionStart = textarea.selectionStart;
+                      (textarea as any).__lastSelectionEnd = textarea.selectionEnd;
+                    }
+                  }}
                 />
                 )}
                 <p className="text-xs text-muted-foreground">
@@ -767,6 +1004,8 @@ export function TemplateForm({
                       onChange={(value) => handleBlockChange(block.id, value)}
                       placeholder="Enter text for this block..."
                       dir="rtl"
+                      fontFamily={fontFamily}
+                      fontSize={fontSize}
                     />
                   </div>
                 ))}
@@ -871,7 +1110,12 @@ export function TemplateForm({
                 type="button"
                 variant={previewMode === "actual" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setPreviewMode("actual")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPreviewMode("actual");
+                }}
+                style={{ zIndex: 1000, pointerEvents: 'auto' }}
               >
                 Actual Preview
               </Button>
@@ -879,7 +1123,12 @@ export function TemplateForm({
                 type="button"
                 variant={previewMode === "designer" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setPreviewMode("designer")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPreviewMode("designer");
+                }}
+                style={{ zIndex: 1000, pointerEvents: 'auto' }}
               >
                 Designer
               </Button>
@@ -889,7 +1138,12 @@ export function TemplateForm({
                 type="button"
                 variant={showPositionEditor ? "default" : "outline"}
                 size="sm"
-                onClick={() => setShowPositionEditor(!showPositionEditor)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowPositionEditor(!showPositionEditor);
+                }}
+                style={{ zIndex: 1000, pointerEvents: 'auto' }}
               >
                 <MapPin className="h-4 w-4 mr-2" />
                 {showPositionEditor ? "Disable Positioning" : "Enable Positioning"}
@@ -992,7 +1246,15 @@ export function TemplateForm({
                     // Render positioned blocks with interactive controls when positioning is enabled
                     textBlocks.map((blockText, index) => {
                       const blockId = `block-${index + 1}`;
-                      const position = fieldPositions[blockId] || (showPositionEditor ? { x: 50, y: 30 + (index * 15), fontSize: 14, fontFamily: 'Arial', textAlign: 'right' as const, width: 40, height: 10 } : null);
+                      const position = fieldPositions[blockId] || (showPositionEditor ? { 
+                        x: 50, 
+                        y: 30 + (index * 15), 
+                        fontSize: fontSize, 
+                        fontFamily: fontFamily, 
+                        textAlign: 'right' as const, 
+                        width: 40, 
+                        height: 10 
+                      } : null);
                       
                       if (!position) return null;
                       
@@ -1043,8 +1305,18 @@ export function TemplateForm({
                             left: `${position.x}%`,
                             top: `${position.y}%`,
                             transform: 'translate(-50%, -50%)',
-                            fontSize: `${position.fontSize || 14}px`,
-                            fontFamily: position.fontFamily || 'Arial',
+                            fontSize: `${position.fontSize || fontSize}px`,
+                            fontFamily: position.fontFamily 
+                              ? (position.fontFamily === 'Bahij Nassim' 
+                                  ? '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                                  : position.fontFamily === 'Bahij Titr'
+                                  ? '"Bahij Titr", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                                  : position.fontFamily)
+                              : (fontFamily === 'Bahij Nassim' 
+                                  ? '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                                  : fontFamily === 'Bahij Titr'
+                                  ? '"Bahij Titr", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                                  : fontFamily),
                             textAlign: position.textAlign || 'right',
                             color: position.color || '#000000',
                             width,
@@ -1082,7 +1354,20 @@ export function TemplateForm({
                               </span>
                             </div>
                           )}
-                          <div style={{ fontFamily: position.fontFamily || 'Arial' }}>
+                          <div style={{ 
+                            fontFamily: position.fontFamily 
+                              ? (position.fontFamily === 'Bahij Nassim' 
+                                  ? '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                                  : position.fontFamily === 'Bahij Titr'
+                                  ? '"Bahij Titr", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                                  : position.fontFamily)
+                              : (fontFamily === 'Bahij Nassim' 
+                                  ? '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                                  : fontFamily === 'Bahij Titr'
+                                  ? '"Bahij Titr", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                                  : fontFamily),
+                            fontSize: `${position.fontSize || fontSize}px`
+                          }}>
                             {renderDesignerBlock(blockText)}
                           </div>
                           {isSelected && showPositionEditor && (
@@ -1099,7 +1384,11 @@ export function TemplateForm({
                       className="relative z-10 p-12 text-right"
                       dir="rtl"
                       style={{
-                        fontFamily: "Arial, sans-serif",
+                        fontFamily: fontFamily === 'Bahij Nassim' 
+                          ? '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                          : fontFamily === 'Bahij Titr'
+                          ? '"Bahij Titr", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                          : `${fontFamily}, sans-serif`,
                         fontSize: `${fontSize}px`,
                         lineHeight: "1.8",
                         whiteSpace: "pre-wrap",
@@ -1110,7 +1399,19 @@ export function TemplateForm({
                         (blocks && blocks.length > 0 && blocks.some((b) => b.text?.trim())) ? (
                           <div className="space-y-6">
                             {blocks.map((block) => (
-                              <div key={block.id}>{renderDesignerBlock(block.text || "")}</div>
+                              <div 
+                                key={block.id}
+                                style={{
+                                  fontFamily: fontFamily === 'Bahij Nassim' 
+                                    ? '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                                    : fontFamily === 'Bahij Titr'
+                                    ? '"Bahij Titr", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                                    : `${fontFamily}, sans-serif`,
+                                  fontSize: `${fontSize}px`,
+                                }}
+                              >
+                                {renderDesignerBlock(block.text || "")}
+                              </div>
                             ))}
                           </div>
                         ) : (
@@ -1119,7 +1420,18 @@ export function TemplateForm({
                           </p>
                         )
                       ) : bodyText ? (
-                        renderDesignerBlock(bodyText)
+                        <div
+                          style={{
+                            fontFamily: fontFamily === 'Bahij Nassim' 
+                              ? '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                              : fontFamily === 'Bahij Titr'
+                              ? '"Bahij Titr", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+                              : `${fontFamily}, sans-serif`,
+                            fontSize: `${fontSize}px`,
+                          }}
+                        >
+                          {renderDesignerBlock(bodyText)}
+                        </div>
                       ) : (
                         <p className="text-muted-foreground italic text-center mt-20">
                           Your letter text will appear here as you type...
@@ -1241,33 +1553,3 @@ export function TemplateForm({
     </div>
   );
 }
-  // Initialize rich text mode based on existing content (HTML-like)
-  useEffect(() => {
-    const initial = template?.body_text || "";
-    if (initial && /<\s*\/?\s*[a-zA-Z][^>]*>/.test(initial)) {
-      setUseRichText(true);
-    }
-  }, [template?.id]);
-
-  // When using blocks, keep body_text synced so preview/save uses the same data
-  useEffect(() => {
-    if (!useBlocks) return;
-    const joined = blocks.map((b) => b.text || "").join("\n\n");
-    setValue("body_text", joined, { shouldValidate: true, shouldDirty: true });
-  }, [blocks, setValue, useBlocks]);
-
-  // When toggling blocks on, initialize blocks from existing body text (split on blank lines)
-  useEffect(() => {
-    if (!useBlocks) return;
-    const current = (bodyText || "").trim();
-    if (!current) return;
-    if (blocks.length > 1) return;
-    if (blocks[0]?.text?.trim()) return;
-
-    const parts = current.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
-    if (parts.length <= 1) {
-      setBlocks([{ id: "block-1", text: current }]);
-      return;
-    }
-    setBlocks(parts.map((text, idx) => ({ id: `block-${idx + 1}`, text })));
-  }, [useBlocks, bodyText, blocks]);

@@ -26,6 +26,8 @@ class LetterTemplate extends Model
         'watermark_id',
         'letter_type',
         'body_text',
+        'font_family',
+        'font_size',
         'variables',
         'supports_tables',
         'table_structure',

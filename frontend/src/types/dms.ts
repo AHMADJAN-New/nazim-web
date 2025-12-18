@@ -137,6 +137,8 @@ export interface LetterTemplate {
   watermark_id?: string | null;
   letter_type?: LetterType | null;
   body_text?: string | null;
+  font_family?: string | null;
+  font_size?: number | null;
   variables?: TemplateVariable[] | null;
   supports_tables?: boolean;
   table_structure?: TableStructure | null;

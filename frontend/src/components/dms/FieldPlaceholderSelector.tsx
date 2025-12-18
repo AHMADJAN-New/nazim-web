@@ -23,6 +23,9 @@ interface FieldPlaceholderSelectorProps {
   className?: string;
 }
 
+// All available recipient types to fetch fields from
+const ALL_RECIPIENT_TYPES = ['general', 'students', 'staff', 'parents', 'applicants'];
+
 export function FieldPlaceholderSelector({
   recipientType,
   onInsert,
@@ -33,15 +36,46 @@ export function FieldPlaceholderSelector({
   const [selectedField, setSelectedField] = useState<TemplateField | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Fetch available fields for the recipient type
-  const { data: fieldsData, isLoading } = useQuery({
-    queryKey: ['template-fields', recipientType],
-    queryFn: () => dmsApi.templates.getAvailableFields(recipientType),
-    enabled: !!recipientType,
+  // Fetch available fields for ALL recipient types to allow inserting any field
+  const { data: allFieldsData, isLoading } = useQuery({
+    queryKey: ['template-fields', 'all'],
+    queryFn: async () => {
+      // Fetch fields for all recipient types
+      const allFieldsPromises = ALL_RECIPIENT_TYPES.map(type => 
+        dmsApi.templates.getAvailableFields(type).catch(() => ({ fields: [], grouped_fields: {} }))
+      );
+      const allResults = await Promise.all(allFieldsPromises);
+      
+      // Combine all fields, removing duplicates by key
+      const fieldsMap = new Map<string, TemplateField>();
+      allResults.forEach(result => {
+        (result.fields || []).forEach((field: TemplateField) => {
+          if (!fieldsMap.has(field.key)) {
+            fieldsMap.set(field.key, field);
+          }
+        });
+      });
+      
+      // Group combined fields
+      const grouped: Record<string, TemplateField[]> = {};
+      fieldsMap.forEach(field => {
+        if (!grouped[field.group]) {
+          grouped[field.group] = [];
+        }
+        grouped[field.group].push(field);
+      });
+      
+      return {
+        fields: Array.from(fieldsMap.values()),
+        grouped_fields: grouped,
+      };
+    },
+    enabled: true, // Always enabled to fetch all fields
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  const fields = fieldsData?.fields || [];
-  const groupedFields = fieldsData?.grouped_fields || {};
+  const fields = allFieldsData?.fields || [];
+  const groupedFields = allFieldsData?.grouped_fields || {};
 
   // Filter fields based on search query
   const filteredFields = fields.filter((field: TemplateField) => {

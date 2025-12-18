@@ -53,6 +53,8 @@ export const letterTemplateSchema = z.object({
   watermark_id: optionalUuidSchema,
   letter_type: letterTypeSchema.optional().nullable(),
   body_text: z.string().optional().nullable(),
+  font_family: z.string().optional().nullable(),
+  font_size: z.number().int().min(8).max(72).optional().nullable(),
   variables: z.array(templateVariableSchema).optional().nullable(),
   supports_tables: z.boolean().optional().default(false),
   table_structure: z.record(z.any()).optional().nullable(),

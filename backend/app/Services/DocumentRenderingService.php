@@ -51,9 +51,12 @@ class DocumentRenderingService
         $repeatLetterhead = $template->repeat_letterhead_on_pages ?? true;
         $tablePayload = $options['table_payload'] ?? null;
         $forBrowser = $options['for_browser'] ?? false; // For browser preview vs PDF generation
+        $fontFamily = $template->font_family ?? 'Arial';
+        $fontSize = $template->font_size ?? 14;
+        $frontendUrl = $options['frontend_url'] ?? null; // Frontend URL passed from request
 
-        // Build CSS styles
-        $styles = $this->buildStyles($pageLayout, $forBrowser);
+        // Build CSS styles with font settings
+        $styles = $this->buildStyles($pageLayout, $forBrowser, $fontFamily, $fontSize, $frontendUrl);
 
         // Build letterhead background CSS
         $letterheadStyles = $this->buildLetterheadStyles($letterhead, $repeatLetterhead, $forBrowser);
@@ -69,7 +72,7 @@ class DocumentRenderingService
 
         // Build content HTML with positioning support
         $fieldPositions = $template->field_positions ?? [];
-        $contentHtml = $this->formatBodyTextWithPositions($bodyText, $fieldPositions) . $tableHtml;
+        $contentHtml = $this->formatBodyTextWithPositions($bodyText, $fieldPositions, $fontFamily, $fontSize) . $tableHtml;
         
         // Add wrapper class based on whether we have positioned blocks
         $hasPositionedBlocks = !empty($fieldPositions);
@@ -81,7 +84,7 @@ class DocumentRenderingService
         $cspMeta = '';
 
         $safeLayoutClass = preg_replace('/[^a-zA-Z0-9_-]/', '', $pageLayout) ?: 'A4_portrait';
-        return $this->buildHtmlDocument($styles, $letterheadStyles, $letterheadHtml, $watermarkHtml, $contentHtml, $cspMeta, $wrapperClass, $forBrowser, $safeLayoutClass);
+        return $this->buildHtmlDocument($styles, $letterheadStyles, $letterheadHtml, $watermarkHtml, $contentHtml, $cspMeta, $wrapperClass, $forBrowser, $safeLayoutClass, $frontendUrl);
     }
 
     /**
@@ -196,7 +199,8 @@ class DocumentRenderingService
         string $cspMeta = '',
         string $wrapperClass = 'content-wrapper',
         bool $forBrowser = false,
-        string $pageLayout = 'A4_portrait'
+        string $pageLayout = 'A4_portrait',
+        ?string $frontendUrl = null
     ): string {
         $bodyInner = $forBrowser
             ? <<<HTML
@@ -217,6 +221,10 @@ HTML
         {$contentHtml}
     </div>
 HTML;
+
+        // Note: We don't use <base> tag because:
+        // 1. CSP blocks base-uri for iframes with srcDoc
+        // 2. We're using absolute URLs for fonts anyway, so base tag isn't needed
 
         return <<<HTML
 <!DOCTYPE html>
@@ -266,11 +274,55 @@ HTML;
      * Build CSS styles for the document
      *
      * @param string $pageLayout
+     * @param bool $forBrowser
+     * @param string $fontFamily
+     * @param int $fontSize
      * @return string
      */
-    private function buildStyles(string $pageLayout, bool $forBrowser = false): string
+    private function buildStyles(string $pageLayout, bool $forBrowser = false, string $fontFamily = 'Arial', int $fontSize = 14, ?string $frontendUrl = null): string
     {
         $pageSize = $this->getPageSize($pageLayout);
+
+        // Font face declarations for custom fonts (needed in iframe preview)
+        // Use absolute URLs with proper encoding for spaces in filenames
+        $fontFaces = '';
+        if ($forBrowser) {
+            // Use provided frontend URL, or fall back to config/env
+            $fontFrontendUrl = $frontendUrl ?? config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173'));
+            $fontFrontendUrl = rtrim($fontFrontendUrl, '/');
+            
+            // URL encode font filenames (they contain spaces)
+            $titrBold = urlencode('Bahij Titr-Bold.woff');
+            $nassimRegular = urlencode('Bahij Nassim-Regular.woff');
+            $nassimBold = urlencode('Bahij Nassim-Bold.woff');
+            
+            $fontFaces = <<<CSS
+        /* Bahij Fonts - Local fonts for Arabic text */
+        @font-face {
+            font-family: 'Bahij Titr';
+            src: url('{$fontFrontendUrl}/fonts/{$titrBold}') format('woff');
+            font-weight: bold;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Bahij Nassim';
+            src: url('{$fontFrontendUrl}/fonts/{$nassimRegular}') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Bahij Nassim';
+            src: url('{$fontFrontendUrl}/fonts/{$nassimBold}') format('woff');
+            font-weight: bold;
+            font-style: normal;
+            font-display: swap;
+        }
+CSS;
+        }
 
         $browserPreviewCss = '';
         if ($forBrowser) {
@@ -322,7 +374,40 @@ HTML;
 CSS;
         }
 
+        // Font face declarations for custom fonts (needed in iframe preview)
+        $fontFaces = '';
+        if ($forBrowser) {
+            $fontFaces = <<<CSS
+        /* Bahij Fonts - Local fonts for Arabic text */
+        @font-face {
+            font-family: 'Bahij Titr';
+            src: url('/fonts/Bahij Titr-Bold.woff') format('woff');
+            font-weight: bold;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Bahij Nassim';
+            src: url('/fonts/Bahij Nassim-Regular.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Bahij Nassim';
+            src: url('/fonts/Bahij Nassim-Bold.woff') format('woff');
+            font-weight: bold;
+            font-style: normal;
+            font-display: swap;
+        }
+
+CSS;
+        }
+
         return <<<CSS
+        {$fontFaces}
         @page {
             size: {$pageSize};
             margin: 25mm 20mm 20mm 20mm;
@@ -335,8 +420,8 @@ CSS;
         }
 
         body {
-            font-family: 'Arial', 'Helvetica', 'DejaVu Sans', 'Liberation Sans', sans-serif;
-            font-size: 14px;
+            font-family: {$this->getFontFamilyCss($fontFamily)};
+            font-size: {$fontSize}px;
             line-height: 1.8;
             color: #000;
             direction: rtl;
@@ -494,8 +579,20 @@ CSS;
         // @page rule only works for PDF generation, not for browser preview
         // For browser preview, letterhead is rendered via HTML element (buildLetterheadHtml)
         if (!$forBrowser) {
-            // For PDF generation, use file:// path (Browsershot can access local files)
-            $fileUrl = 'file://' . Storage::path($letterhead->file_path);
+            // For PDF generation, use base64 data URL (Browsershot doesn't allow file:// URLs)
+            try {
+                $fileContents = Storage::get($letterhead->file_path);
+                $base64 = base64_encode($fileContents);
+                $fileUrl = "data:{$mimeType};base64,{$base64}";
+            } catch (\Exception $e) {
+                \Log::error("Failed to base64 encode letterhead {$letterhead->id} for PDF generation: {$e->getMessage()}", [
+                    'letterhead_id' => $letterhead->id,
+                    'file_path' => $letterhead->file_path,
+                    'exception' => $e,
+                ]);
+                // Return empty CSS if encoding fails
+                return '';
+            }
             $css .= <<<CSS
         @page {
             background: url('{$fileUrl}') no-repeat center top;
@@ -747,27 +844,22 @@ HTML;
             return '';
         }
 
-        // For browser preview, embed image as base64 to avoid authentication issues in iframe
-        if ($forBrowser) {
-            try {
-                $fileContents = Storage::get($watermark->file_path);
-                $mimeType = Storage::mimeType($watermark->file_path);
-                $base64 = base64_encode($fileContents);
-                $fileUrl = "data:{$mimeType};base64,{$base64}";
-            } catch (\Exception $e) {
-                // CRITICAL: Never use URL fallback for browser preview - it will fail in iframe
-                // Log error and return empty string instead
-                \Log::error("Failed to base64 encode watermark {$watermark->id} for browser preview: {$e->getMessage()}", [
-                    'watermark_id' => $watermark->id,
-                    'file_path' => $watermark->file_path,
-                    'exception' => $e,
-                ]);
-                // Return empty string - better to show no watermark than break authentication
-                return '';
-            }
-        } else {
-            // For PDF generation, use absolute file path
-            $fileUrl = 'file://' . Storage::path($watermark->file_path);
+        // For both browser preview and PDF generation, embed image as base64
+        // Browsershot doesn't allow file:// URLs, so we must use data URLs for PDF generation too
+        try {
+            $fileContents = Storage::get($watermark->file_path);
+            $mimeType = Storage::mimeType($watermark->file_path);
+            $base64 = base64_encode($fileContents);
+            $fileUrl = "data:{$mimeType};base64,{$base64}";
+        } catch (\Exception $e) {
+            // Log error and return empty string instead
+            \Log::error("Failed to base64 encode watermark {$watermark->id}: {$e->getMessage()}", [
+                'watermark_id' => $watermark->id,
+                'file_path' => $watermark->file_path,
+                'exception' => $e,
+            ]);
+            // Return empty string - better to show no watermark than break generation
+            return '';
         }
 
         return <<<HTML
@@ -783,16 +875,19 @@ HTML;
      * @param string $bodyText
      * @return string
      */
-    private function formatBodyText(string $bodyText): string
+    private function formatBodyText(string $bodyText, string $fontFamily = 'Arial', int $fontSize = 14): string
     {
         $bodyText = trim($bodyText);
         if ($bodyText === '') {
             return '';
         }
 
+        $fontFamilyCss = $this->getFontFamilyCss($fontFamily);
+        $style = sprintf('font-family: %s; font-size: %dpx;', $fontFamilyCss, $fontSize);
+
         // Rich text (HTML) support
         if ($this->isLikelyHtml($bodyText)) {
-            return '<div class="rich-text">' . $this->sanitizeRichHtml($bodyText) . '</div>';
+            return sprintf('<div class="rich-text" style="%s">%s</div>', $style, $this->sanitizeRichHtml($bodyText));
         }
 
         // Convert line breaks to paragraphs
@@ -802,7 +897,7 @@ HTML;
         foreach ($lines as $line) {
             $line = trim($line);
             if (!empty($line)) {
-                $paragraphs[] = '<p>' . nl2br(e($line)) . '</p>';
+                $paragraphs[] = sprintf('<p style="%s">%s</p>', $style, nl2br(e($line)));
             }
         }
 
@@ -818,11 +913,11 @@ HTML;
      * @param array $fieldPositions Format: { "block-1": { "x": 50, "y": 30, "fontSize": 14, "fontFamily": "Arial" }, ... }
      * @return string
      */
-    private function formatBodyTextWithPositions(string $bodyText, array $fieldPositions): string
+    private function formatBodyTextWithPositions(string $bodyText, array $fieldPositions, string $defaultFontFamily = 'Arial', int $defaultFontSize = 14): string
     {
-        // If no positions defined, use default formatting
+        // If no positions defined, use default formatting with font settings
         if (empty($fieldPositions)) {
-            return $this->formatBodyText($bodyText);
+            return $this->formatBodyText($bodyText, $defaultFontFamily, $defaultFontSize);
         }
 
         // Parse body_text into blocks (separated by double newlines or block markers)
@@ -849,8 +944,8 @@ HTML;
                 // Render with absolute positioning
                 $x = (float) $position['x']; // Percentage (0-100)
                 $y = (float) $position['y']; // Percentage (0-100)
-                $fontSize = isset($position['fontSize']) ? (int) $position['fontSize'] : 14;
-                $fontFamily = isset($position['fontFamily']) ? e($position['fontFamily']) : 'Arial';
+                $fontSize = isset($position['fontSize']) ? (int) $position['fontSize'] : $defaultFontSize;
+                $fontFamily = isset($position['fontFamily']) ? e($position['fontFamily']) : $defaultFontFamily;
                 $textAlign = isset($position['textAlign']) ? e($position['textAlign']) : 'right';
                 $color = isset($position['color']) ? e($position['color']) : '#000000';
                 $width = isset($position['width']) ? (float) $position['width'] : 40;
@@ -865,12 +960,13 @@ HTML;
                 // Convert percentage to absolute positioning
                 // Position is relative to body (which has position: relative)
                 // Use left/top for absolute positioning with transform for centering
+                $fontFamilyCss = $this->getFontFamilyCss($fontFamily);
                 $style = sprintf(
                     'position: absolute; left: %.2f%%; top: %.2f%%; transform: translate(-50%%, -50%%); font-size: %dpx; font-family: %s; text-align: %s; color: %s; z-index: 10; %s %s %s box-sizing: border-box; overflow: hidden; background-color: transparent; padding: 0;',
                     $x,
                     $y,
                     $fontSize,
-                    $fontFamily,
+                    $fontFamilyCss,
                     $textAlign,
                     $color,
                     $widthStyle,
@@ -887,11 +983,13 @@ HTML;
                     $formattedText
                 );
             } else {
-                // No position defined - use default formatting
+                // No position defined - use default formatting with template font settings
+                $fontFamilyCss = $this->getFontFamilyCss($defaultFontFamily);
+                $style = sprintf('font-family: %s; font-size: %dpx;', $fontFamilyCss, $defaultFontSize);
                 if ($this->isLikelyHtml($blockText)) {
-                    $positionedBlocks[] = '<div class="rich-text">' . $this->sanitizeRichHtml($blockText) . '</div>';
+                    $positionedBlocks[] = sprintf('<div class="rich-text" style="%s">%s</div>', $style, $this->sanitizeRichHtml($blockText));
                 } else {
-                    $positionedBlocks[] = '<p>' . nl2br(e($blockText)) . '</p>';
+                    $positionedBlocks[] = sprintf('<p style="%s">%s</p>', $style, nl2br(e($blockText)));
                 }
             }
 
@@ -967,14 +1065,28 @@ HTML;
 
         $fileType = $letterhead->file_type ?? 'image';
         $letterheadType = $letterhead->letterhead_type ?? 'background';
-        $filePath = Storage::path($letterhead->file_path);
 
         if ($letterheadType === 'watermark') {
-            return sprintf(
-                '<div class="letterhead-watermark" style="position: fixed; top: 50%%; left: 50%%; transform: translate(-50%%, -50%%); opacity: 0.08; z-index: 1;"><img src="file://%s" alt="%s" style="max-width: 500px; height: auto;" /></div>',
-                e($filePath),
-                e($letterhead->name)
-            );
+            // Use base64 data URL instead of file:// (Browsershot doesn't allow file:// URLs)
+            try {
+                $fileContents = Storage::get($letterhead->file_path);
+                $mimeType = Storage::mimeType($letterhead->file_path);
+                $base64 = base64_encode($fileContents);
+                $dataUrl = "data:{$mimeType};base64,{$base64}";
+                
+                return sprintf(
+                    '<div class="letterhead-watermark" style="position: fixed; top: 50%%; left: 50%%; transform: translate(-50%%, -50%%); opacity: 0.08; z-index: 1;"><img src="%s" alt="%s" style="max-width: 500px; height: auto;" /></div>',
+                    e($dataUrl),
+                    e($letterhead->name)
+                );
+            } catch (\Exception $e) {
+                \Log::error("Failed to base64 encode letterhead {$letterhead->id} in processLetterheadFile: {$e->getMessage()}", [
+                    'letterhead_id' => $letterhead->id,
+                    'file_path' => $letterhead->file_path,
+                    'exception' => $e,
+                ]);
+                return '';
+            }
         }
 
         // Background type - return empty as it's handled via CSS
@@ -1076,5 +1188,22 @@ HTML;
 </body>
 </html>
 HTML;
+    }
+
+    /**
+     * Get CSS font-family string with fallbacks for the given font name
+     *
+     * @param string $fontFamily
+     * @return string
+     */
+    private function getFontFamilyCss(string $fontFamily): string
+    {
+        // Map font names to CSS with proper fallbacks
+        $fontMap = [
+            'Bahij Nassim' => '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif',
+            'Bahij Titr' => '"Bahij Titr", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif',
+        ];
+
+        return $fontMap[$fontFamily] ?? "'{$fontFamily}', 'Arial', 'Helvetica', 'DejaVu Sans', 'Liberation Sans', sans-serif";
     }
 }

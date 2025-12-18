@@ -16,6 +16,8 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   dir?: "rtl" | "ltr" | "auto";
+  fontFamily?: string;
+  fontSize?: number;
 }
 
 export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(function RichTextEditor(
@@ -26,6 +28,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     placeholder = "Enter document content...",
     className = "",
     dir = "rtl",
+    fontFamily = "Arial",
+    fontSize = 14,
   },
   ref
 ) {
@@ -161,6 +165,12 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           style={{
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
+            fontFamily: fontFamily === 'Bahij Nassim' 
+              ? '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+              : fontFamily === 'Bahij Titr'
+              ? '"Bahij Titr", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif'
+              : `${fontFamily}, sans-serif`,
+            fontSize: `${fontSize}px`,
           }}
           dir={dir}
           data-placeholder={placeholder}
