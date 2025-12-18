@@ -104,6 +104,29 @@ export interface FieldPosition {
   maxWidth?: number; // Percentage (0-100) or pixels
 }
 
+export interface PositionedBlock {
+  id: string;
+  type: "text" | "variable" | "static";
+  x: number; // mm from left
+  y: number; // mm from top
+  width: number; // mm
+  height: number; // mm
+  content: string;
+  variableName?: string;
+  styles: {
+    fontFamily: string;
+    fontSize: number;
+    fontWeight: string;
+    color: string;
+    textAlign: "left" | "center" | "right";
+    direction: "ltr" | "rtl";
+    lineHeight: number;
+    backgroundColor?: string;
+    border?: string;
+    padding?: string;
+  };
+}
+
 export interface LetterTemplate {
   id: string;
   organization_id: string;
