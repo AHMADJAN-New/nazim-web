@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,24 +16,9 @@ interface TemplatePreviewProps {
 export function TemplatePreview({ template, onClose }: TemplatePreviewProps) {
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [previewHtml, setPreviewHtml] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [fieldPositions, setFieldPositions] = useState<PositionedBlock[]>([]);
-
-  // Initialize variables with defaults
-  useEffect(() => {
-    if (template.variables && Array.isArray(template.variables)) {
-      const initialVars: Record<string, string> = {};
-      template.variables.forEach((varDef: TemplateVariable) => {
-        initialVars[varDef.name] = varDef.default || "";
-      });
-      setVariables(initialVars);
-    }
-
-    // Set initial field positions
-    if (template.field_positions && Array.isArray(template.field_positions)) {
-      setFieldPositions(template.field_positions);
-    }
-  }, [template]);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const previewMutation = useMutation({
     mutationFn: async (vars: Record<string, string>) => {
@@ -51,10 +36,34 @@ export function TemplatePreview({ template, onClose }: TemplatePreviewProps) {
     },
   });
 
-  const handlePreview = () => {
+  // Initialize variables with defaults and auto-generate preview
+  useEffect(() => {
+    if (hasInitialized) return;
+
+    const initialVars: Record<string, string> = {};
+    if (template.variables && Array.isArray(template.variables)) {
+      template.variables.forEach((varDef: TemplateVariable) => {
+        initialVars[varDef.name] = varDef.default || `[${varDef.label || varDef.name}]`;
+      });
+    }
+    setVariables(initialVars);
+
+    // Set initial field positions
+    if (template.field_positions && Array.isArray(template.field_positions)) {
+      setFieldPositions(template.field_positions);
+    }
+
+    // Auto-generate preview on mount
+    setIsLoading(true);
+    setHasInitialized(true);
+    previewMutation.mutate(initialVars);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [template.id, hasInitialized]);
+
+  const handlePreview = useCallback(() => {
     setIsLoading(true);
     previewMutation.mutate(variables);
-  };
+  }, [variables, previewMutation]);
 
   const handleVariableChange = (varName: string, value: string) => {
     setVariables((prev) => ({ ...prev, [varName]: value }));
@@ -99,7 +108,7 @@ export function TemplatePreview({ template, onClose }: TemplatePreviewProps) {
               ) : (
                 <>
                   <Eye className="h-4 w-4 mr-2" />
-                  Generate Preview
+                  Refresh Preview
                 </>
               )}
             </Button>
@@ -151,7 +160,12 @@ export function TemplatePreview({ template, onClose }: TemplatePreviewProps) {
           <CardTitle className="text-base">Preview</CardTitle>
         </CardHeader>
         <CardContent>
-          {previewHtml ? (
+          {isLoading ? (
+            <div className="border rounded-lg p-8 text-center text-muted-foreground bg-gray-50">
+              <Loader2 className="h-12 w-12 mx-auto text-primary animate-spin" />
+              <p className="mt-4">Generating preview...</p>
+            </div>
+          ) : previewHtml ? (
             <div className="border rounded-lg bg-white overflow-hidden">
               <iframe
                 srcDoc={previewHtml}
@@ -161,35 +175,16 @@ export function TemplatePreview({ template, onClose }: TemplatePreviewProps) {
                   height: template.page_layout === "A4_landscape" ? "600px" : "800px"
                 }}
                 title="Template Preview"
-                sandbox="allow-same-origin"
               />
             </div>
           ) : (
             <div className="border rounded-lg p-8 text-center text-muted-foreground bg-gray-50">
-              {templateVariables.length > 0 ? (
-                <div className="space-y-2">
-                  <Eye className="h-12 w-12 mx-auto text-gray-300" />
-                  <p>Fill in the variables above and click "Generate Preview" to see the template.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Eye className="h-12 w-12 mx-auto text-gray-300" />
-                  <p>Click "Generate Preview" to see the template.</p>
-                  <Button onClick={handlePreview} disabled={isLoading} variant="outline" size="sm">
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Generate Preview
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
+              <Eye className="h-12 w-12 mx-auto text-gray-300" />
+              <p className="mt-4">No preview available. Click "Refresh Preview" to generate.</p>
+              <Button onClick={handlePreview} disabled={isLoading} variant="outline" size="sm" className="mt-2">
+                <Eye className="h-4 w-4 mr-2" />
+                Generate Preview
+              </Button>
             </div>
           )}
         </CardContent>

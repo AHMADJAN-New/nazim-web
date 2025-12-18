@@ -94,7 +94,7 @@ export function TemplateForm({
   const selectedLetterhead = letterheads.find((lh: Letterhead) => lh.id === selectedLetterheadId);
 
   // Fetch letterhead base64 for positioning editor
-  const { mutate: fetchLetterheadBase64 } = useMutation({
+  const fetchLetterheadBase64Mutation = useMutation({
     mutationFn: async (letterheadId: string) => {
       const response = await dmsApi.letterheads.preview(letterheadId);
       return response;
@@ -113,11 +113,12 @@ export function TemplateForm({
   // Fetch letterhead when selected
   useEffect(() => {
     if (selectedLetterheadId) {
-      fetchLetterheadBase64(selectedLetterheadId);
+      fetchLetterheadBase64Mutation.mutate(selectedLetterheadId);
     } else {
       setLetterheadBase64(null);
     }
-  }, [selectedLetterheadId, fetchLetterheadBase64]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLetterheadId]);
 
   const handleFormSubmit = (data: LetterTemplateFormData) => {
     onSubmit(data);
