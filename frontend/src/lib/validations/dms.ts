@@ -29,21 +29,37 @@ export const templateVariableSchema = z.object({
 });
 
 /**
+ * Field position schema
+ */
+export const fieldPositionSchema = z.object({
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  fontSize: z.number().min(8).max(72).optional(),
+  fontFamily: z.string().optional(),
+  textAlign: z.enum(['left', 'center', 'right']).optional(),
+  color: z.string().optional(),
+  width: z.number().min(0).max(100).optional(),
+  height: z.number().min(0).max(100).optional(),
+  maxWidth: z.number().min(0).max(100).optional(),
+});
+
+/**
  * Letter template validation schema
  */
 export const letterTemplateSchema = z.object({
   name: requiredStringLength(255, 'Name'),
   category: requiredStringLength(50, 'Category'),
   letterhead_id: optionalUuidSchema,
+  watermark_id: optionalUuidSchema,
   letter_type: letterTypeSchema.optional().nullable(),
-  body_html: z.string().optional().nullable(),
-  template_file_path: optionalStringLength(255, 'Template file path'),
-  template_file_type: z.enum(['html', 'word', 'pdf', 'image']).optional().default('html'),
+  body_text: z.string().optional().nullable(),
   variables: z.array(templateVariableSchema).optional().nullable(),
-  header_structure: z.record(z.any()).optional().nullable(),
-  allow_edit_body: z.boolean().optional().default(false),
+  supports_tables: z.boolean().optional().default(false),
+  table_structure: z.record(z.any()).optional().nullable(),
+  field_positions: z.record(fieldPositionSchema).optional().nullable(),
   default_security_level_key: optionalStringLength(50, 'Security level'),
   page_layout: z.string().optional().default('A4_portrait'),
+  repeat_letterhead_on_pages: z.boolean().optional().default(true),
   is_mass_template: z.boolean().optional().default(false),
   active: z.boolean().optional().default(true),
   school_id: optionalUuidSchema,
@@ -58,9 +74,8 @@ export const letterheadSchema = z.object({
   name: requiredStringLength(255, 'Name'),
   file: z.instanceof(File).optional(), // Only required on create
   file_type: z.enum(['pdf', 'image', 'html']).optional().default('image'),
+  letterhead_type: z.enum(['background', 'watermark']).optional().default('background'),
   letter_type: letterTypeSchema.optional().nullable(),
-  default_for_layout: z.string().optional().nullable(),
-  position: z.enum(['header', 'background', 'watermark']).optional().default('header'),
   active: z.boolean().optional().default(true),
   school_id: optionalUuidSchema,
 });
@@ -73,4 +88,3 @@ export type LetterheadFormData = z.infer<typeof letterheadSchema>;
 export const templatePreviewVariablesSchema = z.record(z.string());
 
 export type TemplatePreviewVariables = z.infer<typeof templatePreviewVariablesSchema>;
-

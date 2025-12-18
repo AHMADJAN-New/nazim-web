@@ -11,6 +11,33 @@ export const sanitize = {
     });
   },
 
+  // Sanitize rich text editor HTML (DMS templates, etc.)
+  richText: (input: string): string => {
+    return DOMPurify.sanitize(input, {
+      ALLOWED_TAGS: [
+        'p',
+        'br',
+        'div',
+        'span',
+        'strong',
+        'b',
+        'em',
+        'i',
+        'u',
+        'ol',
+        'ul',
+        'li',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+      ],
+      ALLOWED_ATTR: ['style', 'dir', 'align'],
+    });
+  },
+
   // Sanitize text (remove all HTML)
   text: (input: string): string => {
     return DOMPurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });

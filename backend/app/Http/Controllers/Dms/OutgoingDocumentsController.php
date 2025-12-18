@@ -5,17 +5,26 @@ namespace App\Http\Controllers\Dms;
 use App\Models\OutgoingDocument;
 use App\Models\DocumentFile;
 use App\Models\DocumentSetting;
+use App\Models\LetterTemplate;
+use App\Services\DocumentPdfService;
 use App\Services\DocumentNumberingService;
+use App\Services\DocumentRenderingService;
+use App\Services\FieldMappingService;
 use App\Services\SecurityGateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class OutgoingDocumentsController extends BaseDmsController
 {
     public function __construct(
         private DocumentNumberingService $numberingService,
-        private SecurityGateService $securityGateService
+        private SecurityGateService $securityGateService,
+        private FieldMappingService $fieldMappingService,
+        private DocumentRenderingService $renderingService,
+        private DocumentPdfService $pdfService,
     ) {
     }
 
@@ -104,6 +113,9 @@ class OutgoingDocumentsController extends BaseDmsController
             'pages_count' => ['nullable', 'integer', 'min:0'],
             'attachments_count' => ['nullable', 'integer', 'min:0'],
             'body_html' => ['nullable', 'string'],
+            'template_id' => ['nullable', 'uuid', 'exists:letter_templates,id'],
+            'letterhead_id' => ['nullable', 'uuid', 'exists:letterheads,id'],
+            'template_variables' => ['nullable', 'array'],
             'issue_date' => ['required', 'date'],
             'signed_by_user_id' => ['nullable', 'uuid'],
             'status' => ['nullable', 'string'],
@@ -155,6 +167,34 @@ class OutgoingDocumentsController extends BaseDmsController
             $data['manual_outdoc_number'] = null;
         } else {
             $data['full_outdoc_number'] = $data['manual_outdoc_number'];
+        }
+
+        // If this document is issued from a template, persist template linkage and generate a basic body_html for display
+        // (PDF generation is done on-demand via /dms/outgoing/{id}/pdf, similar to certificates).
+        if (!empty($data['template_id']) && empty($data['body_html'])) {
+            $template = LetterTemplate::where('organization_id', $profile->organization_id)
+                ->with(['letterhead', 'watermark'])
+                ->find($data['template_id']);
+
+            if ($template) {
+                $documentVars = $this->buildOutgoingDocumentVariablesFromPayload($data);
+                $templateVars = is_array($data['template_variables'] ?? null) ? $data['template_variables'] : [];
+
+                $allVars = $this->fieldMappingService->buildVariablesForOutgoingDocument(
+                    $data['recipient_type'] ?? 'general',
+                    $data['recipient_id'] ?? null,
+                    $templateVars,
+                    $documentVars
+                );
+
+                $processedText = $this->renderingService->replaceTemplateVariables($template->body_text ?? '', $allVars);
+                $data['body_html'] = $this->bodyTextToSafeHtml($processedText);
+
+                // Default the outgoing document's letterhead_id to the template's letterhead if not set
+                if (empty($data['letterhead_id']) && !empty($template->letterhead_id)) {
+                    $data['letterhead_id'] = $template->letterhead_id;
+                }
+            }
         }
 
         // Set academic_year_id if not provided, use current academic year
@@ -237,6 +277,9 @@ class OutgoingDocumentsController extends BaseDmsController
             'recipient_address' => ['nullable', 'string', 'max:255'],
             'subject' => ['nullable', 'string', 'max:500'],
             'body_html' => ['nullable', 'string'],
+            'template_id' => ['nullable', 'uuid', 'exists:letter_templates,id'],
+            'letterhead_id' => ['nullable', 'uuid', 'exists:letterheads,id'],
+            'template_variables' => ['nullable', 'array'],
             'issue_date' => ['nullable', 'date'],
             'signed_by_user_id' => ['nullable', 'uuid'],
             'status' => ['nullable', 'string'],
@@ -249,11 +292,153 @@ class OutgoingDocumentsController extends BaseDmsController
         }
 
         $doc->fill($data);
+
+        // If any fields that affect rendering changed, invalidate the cached PDF.
+        if ($doc->isDirty([
+            'template_id',
+            'template_variables',
+            'body_html',
+            'table_payload',
+            'recipient_type',
+            'recipient_id',
+            'external_recipient_name',
+            'external_recipient_org',
+            'recipient_address',
+            'subject',
+            'issue_date',
+        ])) {
+            $doc->pdf_path = null;
+        }
         $doc->updated_by = $user->id;
         $doc->save();
 
         return $doc;
     }
 
+    public function downloadPdf(string $id, Request $request)
+    {
+        $context = $this->requireOrganizationContext($request, 'dms.outgoing.read');
+        if ($context instanceof \Illuminate\Http\JsonResponse) {
+            return $context;
+        }
+        [$user, $profile, $schoolIds] = $context;
+
+        $doc = OutgoingDocument::with(['template.letterhead', 'template.watermark'])
+            ->where('id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->firstOrFail();
+
+        $this->authorize('view', $doc);
+
+        if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
+            return $response;
+        }
+
+        if ($doc->security_level_key && !$this->securityGateService->canView($user, $doc->security_level_key, $profile->organization_id)) {
+            return response()->json(['error' => 'Insufficient clearance'], 403);
+        }
+
+        $pdfPath = $doc->pdf_path;
+        if (!$pdfPath || !Storage::exists($pdfPath)) {
+            if (!$doc->template) {
+                return response()->json([
+                    'error' => 'This outgoing document has no template assigned, so a PDF cannot be generated.',
+                ], 422);
+            }
+
+            $template = $doc->template;
+            $templateVars = is_array($doc->template_variables) ? $doc->template_variables : [];
+            $documentVars = $this->buildOutgoingDocumentVariablesFromModel($doc);
+
+            $allVars = $this->fieldMappingService->buildVariablesForOutgoingDocument(
+                $doc->recipient_type ?? 'general',
+                $doc->recipient_id,
+                $templateVars,
+                $documentVars
+            );
+
+            $processedText = $this->renderingService->replaceTemplateVariables($template->body_text ?? '', $allVars);
+            $html = $this->renderingService->render($template, $processedText, [
+                'table_payload' => $doc->table_payload ?? null,
+                'for_browser' => false,
+            ]);
+
+            $directory = 'dms/outgoing/' . ($doc->school_id ?: $profile->default_school_id ?: $profile->organization_id);
+            $pdfPath = $this->pdfService->generate($html, $template->page_layout ?? 'A4_portrait', $directory);
+
+            $doc->pdf_path = $pdfPath;
+            if ($doc->status === 'issued') {
+                $doc->status = 'printed';
+            }
+            $doc->save();
+        }
+
+        if (!$pdfPath || !Storage::exists($pdfPath)) {
+            return response()->json(['error' => 'Failed to generate outgoing document PDF'], 500);
+        }
+
+        $filename = $this->buildPdfFilename($doc);
+        return Storage::download($pdfPath, $filename);
+    }
+
+    private function buildOutgoingDocumentVariablesFromPayload(array $data): array
+    {
+        $issueDate = !empty($data['issue_date']) ? \Illuminate\Support\Carbon::parse($data['issue_date'])->format('Y-m-d') : '';
+
+        return [
+            'document_number' => (string) ($data['full_outdoc_number'] ?? ''),
+            'document_date' => $issueDate,
+            'issue_date' => $issueDate,
+            'subject' => (string) ($data['subject'] ?? ''),
+            'recipient_name' => (string) ($data['external_recipient_name'] ?? ''),
+            'recipient_organization' => (string) ($data['external_recipient_org'] ?? ''),
+            'recipient_address' => (string) ($data['recipient_address'] ?? ''),
+        ];
+    }
+
+    private function buildOutgoingDocumentVariablesFromModel(OutgoingDocument $doc): array
+    {
+        $issueDate = $doc->issue_date ? $doc->issue_date->format('Y-m-d') : '';
+
+        return [
+            'document_number' => (string) ($doc->full_outdoc_number ?? ''),
+            'document_date' => $issueDate,
+            'issue_date' => $issueDate,
+            'subject' => (string) ($doc->subject ?? ''),
+            'recipient_name' => (string) ($doc->external_recipient_name ?? ''),
+            'recipient_organization' => (string) ($doc->external_recipient_org ?? ''),
+            'recipient_address' => (string) ($doc->recipient_address ?? ''),
+        ];
+    }
+
+    private function bodyTextToSafeHtml(string $text): string
+    {
+        $blocks = preg_split('/\n\s*\n/', trim($text)) ?: [];
+        if (empty($blocks) && trim($text) !== '') {
+            $blocks = [$text];
+        }
+
+        $paragraphs = [];
+        foreach ($blocks as $block) {
+            $block = trim((string) $block);
+            if ($block === '') {
+                continue;
+            }
+            $paragraphs[] = '<p style="margin:0 0 12px 0; white-space:pre-wrap;">' . nl2br(e($block)) . '</p>';
+        }
+
+        $content = implode("\n", $paragraphs);
+        return '<div dir="rtl" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.8;">' . $content . '</div>';
+    }
+
+    private function buildPdfFilename(OutgoingDocument $doc): string
+    {
+        $base = $doc->full_outdoc_number ?: 'outgoing-document';
+        $base = preg_replace('/[^A-Za-z0-9._-]+/', '_', (string) $base) ?: 'outgoing-document';
+        $base = Str::limit($base, 80, '');
+        $base = trim($base, '_');
+
+        return $base . '.pdf';
+    }
 
 }

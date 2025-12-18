@@ -21,10 +21,6 @@ use App\Http\Controllers\ScheduleSlotController;
 use App\Http\Controllers\TeacherSubjectAssignmentController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\Fees\FeeAssignmentController;
-use App\Http\Controllers\Fees\FeeExceptionController;
-use App\Http\Controllers\Fees\FeePaymentController;
-use App\Http\Controllers\Fees\FeeStructureController;
 use App\Http\Controllers\SchoolBrandingController;
 use App\Http\Controllers\StaffTypeController;
 use App\Http\Controllers\ResidencyTypeController;
@@ -55,10 +51,6 @@ use App\Http\Controllers\CourseAttendanceSessionController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\CourseDocumentController;
 use App\Http\Controllers\CertificateTemplateController;
-use App\Http\Controllers\Certificates\CertificateTemplateController as GraduationCertificateTemplateController;
-use App\Http\Controllers\Certificates\IssuedCertificateController;
-use App\Http\Controllers\CertificateVerifyController;
-use App\Http\Controllers\GraduationBatchController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamClassController;
@@ -70,10 +62,6 @@ use App\Http\Controllers\ExamTimeController;
 use App\Http\Controllers\ExamAttendanceController;
 use App\Http\Controllers\ExamNumberController;
 use App\Http\Controllers\GradeController;
-use App\Http\Controllers\QuestionController;
-use App\Http\Controllers\ExamPaperTemplateController;
-use App\Http\Controllers\ExamPaperTemplateFileController;
-use App\Http\Controllers\ExamPaperPreviewController;
 use App\Http\Controllers\Dms\ArchiveSearchController;
 use App\Http\Controllers\Dms\DepartmentsController as DmsDepartmentsController;
 use App\Http\Controllers\Dms\DocumentFilesController;
@@ -94,8 +82,6 @@ use App\Http\Controllers\Dms\OutgoingDocumentsController;
 // Public routes
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::get('/leave-requests/scan/{token}', [LeaveRequestController::class, 'scanPublic']);
-Route::get('/verify/certificate/{hash}', [CertificateVerifyController::class, 'show'])
-    ->middleware('throttle:60,1');
 
 // Public stats endpoints (for landing page)
 // Note: These return aggregate counts across all organizations
@@ -309,49 +295,6 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::put('/exam-attendance/{id}', [ExamAttendanceController::class, 'update']);
     Route::delete('/exam-attendance/{id}', [ExamAttendanceController::class, 'destroy']);
 
-    // Question Bank
-    Route::get('/exam/questions', [QuestionController::class, 'index']);
-    Route::post('/exam/questions', [QuestionController::class, 'store']);
-    Route::get('/exam/questions/{id}', [QuestionController::class, 'show']);
-    Route::put('/exam/questions/{id}', [QuestionController::class, 'update']);
-    Route::delete('/exam/questions/{id}', [QuestionController::class, 'destroy']);
-    Route::post('/exam/questions/{id}/duplicate', [QuestionController::class, 'duplicate']);
-    Route::post('/exam/questions/bulk-update', [QuestionController::class, 'bulkUpdate']);
-
-    // Exam Paper Templates
-    Route::get('/exam/paper-templates', [ExamPaperTemplateController::class, 'index']);
-    Route::post('/exam/paper-templates', [ExamPaperTemplateController::class, 'store']);
-    Route::get('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'show']);
-    Route::put('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'update']);
-    Route::delete('/exam/paper-templates/{id}', [ExamPaperTemplateController::class, 'destroy']);
-    Route::post('/exam/paper-templates/{id}/duplicate', [ExamPaperTemplateController::class, 'duplicate']);
-    Route::post('/exam/paper-templates/{id}/items', [ExamPaperTemplateController::class, 'addItem']);
-    Route::put('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'updateItem']);
-    Route::delete('/exam/paper-templates/{id}/items/{itemId}', [ExamPaperTemplateController::class, 'removeItem']);
-    Route::post('/exam/paper-templates/{id}/reorder', [ExamPaperTemplateController::class, 'reorderItems']);
-    Route::get('/exams/{examId}/paper-stats', [ExamPaperTemplateController::class, 'examPaperStats']);
-    Route::get('/exam/paper-templates/{id}/preview', [ExamPaperTemplateController::class, 'preview']);
-    Route::post('/exam/paper-templates/{id}/generate', [ExamPaperTemplateController::class, 'generate']);
-    Route::post('/exam/paper-templates/{id}/generate-html', [ExamPaperTemplateController::class, 'generateHtml']);
-    Route::get('/exam/paper-templates/{id}/download-pdf', [ExamPaperTemplateController::class, 'downloadPdf'])->name('api.exam.paper-templates.download-pdf');
-    Route::post('/exam/paper-templates/{id}/print-status', [ExamPaperTemplateController::class, 'updatePrintStatus']);
-
-    // Exam Paper Template Files
-    Route::get('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'index']);
-    Route::post('/exam/paper-template-files', [ExamPaperTemplateFileController::class, 'store']);
-    Route::get('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'show']);
-    Route::put('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'update']);
-    Route::delete('/exam/paper-template-files/{id}', [ExamPaperTemplateFileController::class, 'destroy']);
-    Route::post('/exam/paper-template-files/{id}/set-default', [ExamPaperTemplateFileController::class, 'setDefault']);
-    Route::get('/exam/paper-template-files/{id}/preview', [ExamPaperTemplateFileController::class, 'preview']);
-
-    // Exam Paper Preview
-    Route::get('/exam/paper-preview/{templateId}/student', [ExamPaperPreviewController::class, 'studentView']);
-    Route::get('/exam/paper-preview/{templateId}/teacher', [ExamPaperPreviewController::class, 'teacherView']);
-    Route::get('/exam-subjects/{examSubjectId}/paper-preview', [ExamPaperPreviewController::class, 'examSubjectPreview']);
-    Route::get('/exam-subjects/{examSubjectId}/available-templates', [ExamPaperPreviewController::class, 'availableTemplates']);
-    Route::post('/exam-subjects/{examSubjectId}/set-default-template', [ExamPaperPreviewController::class, 'setDefaultTemplate']);
-
     // Academic Years
     Route::apiResource('academic-years', AcademicYearController::class);
 
@@ -448,26 +391,6 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/certificate-templates/certificate-data/{courseStudentId}', [CertificateTemplateController::class, 'getCertificateData']);
     Route::apiResource('certificate-templates', CertificateTemplateController::class);
 
-    // Graduation & Certificates (school scoped)
-    Route::get('/graduation/batches', [GraduationBatchController::class, 'index']);
-    Route::post('/graduation/batches', [GraduationBatchController::class, 'store']);
-    Route::get('/graduation/batches/{id}', [GraduationBatchController::class, 'show']);
-    Route::post('/graduation/batches/{id}/generate-students', [GraduationBatchController::class, 'generateStudents']);
-    Route::post('/graduation/batches/{id}/approve', [GraduationBatchController::class, 'approve']);
-    Route::post('/graduation/batches/{id}/issue-certificates', [GraduationBatchController::class, 'issueCertificates']);
-
-    Route::get('/certificates/templates', [GraduationCertificateTemplateController::class, 'index']);
-    Route::post('/certificates/templates', [GraduationCertificateTemplateController::class, 'store']);
-    Route::put('/certificates/templates/{id}', [GraduationCertificateTemplateController::class, 'update']);
-    Route::post('/certificates/templates/{id}/activate', [GraduationCertificateTemplateController::class, 'activate']);
-    Route::post('/certificates/templates/{id}/deactivate', [GraduationCertificateTemplateController::class, 'deactivate']);
-
-    Route::get('/certificates/issued', [IssuedCertificateController::class, 'index']);
-    Route::get('/certificates/issued/{id}', [IssuedCertificateController::class, 'show']);
-    Route::post('/certificates/issued/{id}/revoke', [IssuedCertificateController::class, 'revoke']);
-    Route::get('/certificates/issued/{id}/pdf', [IssuedCertificateController::class, 'downloadPdf']);
-    Route::get('/certificates/batches/{batchId}/pdf', [IssuedCertificateController::class, 'downloadBatchZip']);
-
     // Leave Requests
     Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
     Route::post('/leave-requests/{id}/approve', [LeaveRequestController::class, 'approve']);
@@ -512,22 +435,6 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/finance/reports/donor-summary', [\App\Http\Controllers\FinanceReportController::class, 'donorSummary']);
     Route::get('/finance/reports/account-balances', [\App\Http\Controllers\FinanceReportController::class, 'accountBalances']);
 
-    // Fees
-    Route::get('/fees/structures', [FeeStructureController::class, 'index']);
-    Route::post('/fees/structures', [FeeStructureController::class, 'store']);
-    Route::get('/fees/structures/{id}', [FeeStructureController::class, 'show']);
-    Route::put('/fees/structures/{id}', [FeeStructureController::class, 'update']);
-    Route::patch('/fees/structures/{id}', [FeeStructureController::class, 'update']);
-    Route::delete('/fees/structures/{id}', [FeeStructureController::class, 'destroy']);
-
-    Route::get('/fees/assignments', [FeeAssignmentController::class, 'index']);
-    Route::post('/fees/assignments', [FeeAssignmentController::class, 'store']);
-
-    Route::get('/fees/payments', [FeePaymentController::class, 'index']);
-    Route::post('/fees/payments', [FeePaymentController::class, 'store']);
-
-    Route::post('/fees/exceptions', [FeeExceptionController::class, 'store']);
-
     // Currency Management
     Route::apiResource('currencies', \App\Http\Controllers\CurrencyController::class);
 
@@ -555,9 +462,12 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/dms/outgoing', [OutgoingDocumentsController::class, 'store']);
     Route::get('/dms/outgoing/{id}', [OutgoingDocumentsController::class, 'show']);
     Route::put('/dms/outgoing/{id}', [OutgoingDocumentsController::class, 'update']);
+    Route::get('/dms/outgoing/{id}/pdf', [OutgoingDocumentsController::class, 'downloadPdf']);
 
     Route::get('/dms/templates', [LetterTemplatesController::class, 'index']);
     Route::post('/dms/templates', [LetterTemplatesController::class, 'store']);
+    Route::get('/dms/templates/fields/available', [LetterTemplatesController::class, 'getAvailableFields']);
+    Route::post('/dms/templates/preview-draft', [LetterTemplatesController::class, 'previewDraft']);
     Route::get('/dms/templates/{id}', [LetterTemplatesController::class, 'show']);
     Route::put('/dms/templates/{id}', [LetterTemplatesController::class, 'update']);
     Route::delete('/dms/templates/{id}', [LetterTemplatesController::class, 'destroy']);
@@ -571,7 +481,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::delete('/dms/letterheads/{id}', [LetterheadsController::class, 'destroy']);
     Route::get('/dms/letterheads/{id}/download', [LetterheadsController::class, 'download']);
     Route::get('/dms/letterheads/{id}/serve', [LetterheadsController::class, 'serve'])->name('dms.letterheads.serve');
-    Route::get('/dms/letterheads/{id}/preview', [LetterheadsController::class, 'preview']);
+    Route::get('/dms/letterheads/{id}/preview', [LetterheadsController::class, 'preview'])->name('dms.letterheads.preview');
 
     Route::get('/dms/letter-types', [LetterTypesController::class, 'index']);
     Route::post('/dms/letter-types', [LetterTypesController::class, 'store']);

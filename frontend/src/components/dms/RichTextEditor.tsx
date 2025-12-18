@@ -1,7 +1,13 @@
-import { useRef, useEffect } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Bold, Italic, Underline, List, ListOrdered, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+
+export interface RichTextEditorHandle {
+  focus: () => void;
+  insertText: (text: string) => void;
+  getHtml: () => string;
+}
 
 interface RichTextEditorProps {
   value: string;
@@ -9,15 +15,20 @@ interface RichTextEditorProps {
   label?: string;
   placeholder?: string;
   className?: string;
+  dir?: "rtl" | "ltr" | "auto";
 }
 
-export function RichTextEditor({ 
-  value, 
-  onChange, 
-  label, 
-  placeholder = "Enter document content...",
-  className = ""
-}: RichTextEditorProps) {
+export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(function RichTextEditor(
+  {
+    value,
+    onChange,
+    label,
+    placeholder = "Enter document content...",
+    className = "",
+    dir = "rtl",
+  },
+  ref
+) {
   const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +48,20 @@ export function RichTextEditor({
     editorRef.current?.focus();
     handleInput();
   };
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      focus: () => editorRef.current?.focus(),
+      insertText: (text: string) => {
+        editorRef.current?.focus();
+        document.execCommand("insertText", false, text);
+        handleInput();
+      },
+      getHtml: () => editorRef.current?.innerHTML ?? "",
+    }),
+    []
+  );
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -137,6 +162,7 @@ export function RichTextEditor({
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
           }}
+          dir={dir}
           data-placeholder={placeholder}
           suppressContentEditableWarning
         />
@@ -150,5 +176,5 @@ export function RichTextEditor({
       `}</style>
     </div>
   );
-}
+});
 
