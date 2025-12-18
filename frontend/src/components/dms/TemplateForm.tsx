@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { letterTemplateSchema, type LetterTemplateFormData } from "@/lib/validations/dms";
 import { dmsApi } from "@/lib/api/client";
 import { VariableEditor } from "./VariableEditor";
 import { RichTextEditor } from "./RichTextEditor";
-import type { LetterTemplate, TemplateVariable } from "@/types/dms";
-import { Loader2 } from "lucide-react";
+import { LetterTemplatePositioningEditor, type PositionedBlock } from "./LetterTemplatePositioningEditor";
+import type { LetterTemplate, TemplateVariable, Letterhead } from "@/types/dms";
+import { Loader2, Eye, Move, FileText } from "lucide-react";
 import { useLetterTypes } from "@/hooks/useLetterTypes";
 
 interface TemplateFormProps {
@@ -42,6 +44,9 @@ export function TemplateForm({
   onCancel,
   isLoading = false,
 }: TemplateFormProps) {
+  const [activeTab, setActiveTab] = useState<"content" | "positioning">("content");
+  const [letterheadBase64, setLetterheadBase64] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -62,6 +67,7 @@ export function TemplateForm({
       template_file_type: template?.template_file_type || "html",
       variables: (template?.variables as TemplateVariable[]) || [],
       header_structure: template?.header_structure || null,
+      field_positions: (template?.field_positions as PositionedBlock[]) || [],
       allow_edit_body: template?.allow_edit_body ?? false,
       default_security_level_key: template?.default_security_level_key || null,
       page_layout: template?.page_layout || "A4_portrait",
@@ -82,8 +88,36 @@ export function TemplateForm({
   const { data: letterTypes = [], isLoading: letterTypesLoading } = useLetterTypes(true);
 
   const variables = watch("variables") || [];
+  const fieldPositions = watch("field_positions") || [];
   const selectedLetterheadId = watch("letterhead_id");
-  const selectedLetterhead = letterheads.find((lh) => lh.id === selectedLetterheadId);
+  const pageLayout = watch("page_layout") || "A4_portrait";
+  const selectedLetterhead = letterheads.find((lh: Letterhead) => lh.id === selectedLetterheadId);
+
+  // Fetch letterhead base64 for positioning editor
+  const { mutate: fetchLetterheadBase64 } = useMutation({
+    mutationFn: async (letterheadId: string) => {
+      const response = await dmsApi.letterheads.preview(letterheadId);
+      return response;
+    },
+    onSuccess: (data: any) => {
+      // The preview endpoint now returns base64 data
+      if (data.letterhead_base64) {
+        setLetterheadBase64(data.letterhead_base64);
+      } else if (data.file_url) {
+        // Fallback to file URL if base64 not available
+        setLetterheadBase64(data.file_url);
+      }
+    },
+  });
+
+  // Fetch letterhead when selected
+  useEffect(() => {
+    if (selectedLetterheadId) {
+      fetchLetterheadBase64(selectedLetterheadId);
+    } else {
+      setLetterheadBase64(null);
+    }
+  }, [selectedLetterheadId, fetchLetterheadBase64]);
 
   const handleFormSubmit = (data: LetterTemplateFormData) => {
     onSubmit(data);
@@ -91,6 +125,10 @@ export function TemplateForm({
 
   const handleVariablesChange = (newVariables: TemplateVariable[]) => {
     setValue("variables", newVariables, { shouldValidate: true });
+  };
+
+  const handleFieldPositionsChange = (newPositions: PositionedBlock[]) => {
+    setValue("field_positions", newPositions, { shouldValidate: true });
   };
 
   return (
@@ -158,7 +196,7 @@ export function TemplateForm({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">None</SelectItem>
-                    {letterTypes.map((lt) => (
+                    {letterTypes.map((lt: any) => (
                       <SelectItem key={lt.id} value={lt.key}>
                         {lt.name}
                       </SelectItem>
@@ -210,7 +248,7 @@ export function TemplateForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">None</SelectItem>
-                {letterheads.map((letterhead) => (
+                {letterheads.map((letterhead: Letterhead) => (
                   <SelectItem key={letterhead.id} value={letterhead.id}>
                     {letterhead.name}
                     {letterhead.letter_type && ` (${letterhead.letter_type})`}
@@ -229,6 +267,11 @@ export function TemplateForm({
                 {selectedLetterhead.file_type && (
                   <span className="text-muted-foreground">
                     ({selectedLetterhead.file_type.toUpperCase()})
+                  </span>
+                )}
+                {selectedLetterhead.position && (
+                  <span className="text-muted-foreground">
+                    - Position: {selectedLetterhead.position}
                   </span>
                 )}
               </div>
@@ -250,28 +293,63 @@ export function TemplateForm({
       {/* Template Variables */}
       <div className="space-y-4">
         <VariableEditor
-          variables={variables}
+          variables={variables as TemplateVariable[]}
           onChange={handleVariablesChange}
         />
       </div>
 
-      {/* Body HTML Editor */}
-      <div className="space-y-2">
-        <Label>Body HTML</Label>
-        <Controller
-          name="body_html"
-          control={control}
-          render={({ field }) => (
-            <RichTextEditor
-              value={field.value || ""}
-              onChange={field.onChange}
-              placeholder="Enter template body. Use {{variable_name}} for variables."
-            />
-          )}
-        />
-        <p className="text-xs text-muted-foreground">
-          Use {"{{variable_name}}"} to insert variables defined above.
-        </p>
+      {/* Content and Positioning Tabs */}
+      <div className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "content" | "positioning")}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="content" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Body Content
+            </TabsTrigger>
+            <TabsTrigger value="positioning" className="flex items-center gap-2">
+              <Move className="h-4 w-4" />
+              Positioning Editor
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="content" className="space-y-4 mt-4">
+            {/* Body HTML Editor */}
+            <div className="space-y-2">
+              <Label>Body HTML</Label>
+              <Controller
+                name="body_html"
+                control={control}
+                render={({ field }) => (
+                  <RichTextEditor
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    placeholder="Enter template body. Use {{variable_name}} for variables."
+                  />
+                )}
+              />
+              <p className="text-xs text-muted-foreground">
+                Use {"{{variable_name}}"} to insert variables defined above.
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="positioning" className="mt-4">
+            <div className="border rounded-lg p-4 bg-muted/30">
+              <LetterTemplatePositioningEditor
+                letterheadBase64={letterheadBase64}
+                letterheadFileType={selectedLetterhead?.file_type}
+                letterheadPosition={selectedLetterhead?.position}
+                pageLayout={pageLayout as "A4_portrait" | "A4_landscape"}
+                fieldPositions={fieldPositions as PositionedBlock[]}
+                variables={variables as TemplateVariable[]}
+                onChange={handleFieldPositionsChange}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Drag and resize text blocks on the letterhead. Positioned blocks appear exactly where placed in the final PDF.
+            </p>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Options */}
@@ -348,4 +426,3 @@ export function TemplateForm({
     </form>
   );
 }
-

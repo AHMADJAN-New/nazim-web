@@ -29,6 +29,7 @@ class LetterTemplate extends Model
         'template_file_type',
         'variables',
         'header_structure',
+        'field_positions',
         'allow_edit_body',
         'default_security_level_key',
         'page_layout',
@@ -39,6 +40,7 @@ class LetterTemplate extends Model
     protected $casts = [
         'variables' => 'array',
         'header_structure' => 'array',
+        'field_positions' => 'array',
         'allow_edit_body' => 'boolean',
         'is_mass_template' => 'boolean',
         'active' => 'boolean',

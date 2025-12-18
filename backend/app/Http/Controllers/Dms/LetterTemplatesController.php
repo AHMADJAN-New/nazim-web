@@ -59,6 +59,16 @@ class LetterTemplatesController extends BaseDmsController
             'template_file_type' => ['nullable', 'string', 'in:html,word,pdf,image'],
             'variables' => ['nullable', 'array'],
             'header_structure' => ['nullable', 'array'],
+            'field_positions' => ['nullable', 'array'],
+            'field_positions.*.id' => ['required_with:field_positions', 'string'],
+            'field_positions.*.type' => ['required_with:field_positions', 'string', 'in:text,variable,static'],
+            'field_positions.*.x' => ['required_with:field_positions', 'numeric'],
+            'field_positions.*.y' => ['required_with:field_positions', 'numeric'],
+            'field_positions.*.width' => ['required_with:field_positions', 'numeric'],
+            'field_positions.*.height' => ['required_with:field_positions', 'numeric'],
+            'field_positions.*.content' => ['nullable', 'string'],
+            'field_positions.*.variableName' => ['nullable', 'string'],
+            'field_positions.*.styles' => ['nullable', 'array'],
             'allow_edit_body' => ['boolean'],
             'default_security_level_key' => ['nullable', 'string'],
             'page_layout' => ['nullable', 'string'],
@@ -98,6 +108,16 @@ class LetterTemplatesController extends BaseDmsController
             'template_file_type' => ['nullable', 'string', 'in:html,word,pdf,image'],
             'variables' => ['nullable', 'array'],
             'header_structure' => ['nullable', 'array'],
+            'field_positions' => ['nullable', 'array'],
+            'field_positions.*.id' => ['required_with:field_positions', 'string'],
+            'field_positions.*.type' => ['required_with:field_positions', 'string', 'in:text,variable,static'],
+            'field_positions.*.x' => ['required_with:field_positions', 'numeric'],
+            'field_positions.*.y' => ['required_with:field_positions', 'numeric'],
+            'field_positions.*.width' => ['required_with:field_positions', 'numeric'],
+            'field_positions.*.height' => ['required_with:field_positions', 'numeric'],
+            'field_positions.*.content' => ['nullable', 'string'],
+            'field_positions.*.variableName' => ['nullable', 'string'],
+            'field_positions.*.styles' => ['nullable', 'array'],
             'allow_edit_body' => ['boolean'],
             'default_security_level_key' => ['nullable', 'string'],
             'page_layout' => ['nullable', 'string'],
@@ -201,32 +221,38 @@ class LetterTemplatesController extends BaseDmsController
         $mockVariables = $request->input('variables', []);
         $bodyHtml = $template->body_html ?? '';
 
-        // Replace variables with mock values
+        // Build variables map with default values
+        $variablesMap = [];
         if (!empty($template->variables) && is_array($template->variables)) {
             foreach ($template->variables as $var) {
                 $varName = is_array($var) ? ($var['name'] ?? $var) : $var;
-                $varValue = $mockVariables[$varName] ?? ($var['default'] ?? "{{$varName}}");
-                $bodyHtml = str_replace("{{$varName}}", $varValue, $bodyHtml);
-                $bodyHtml = str_replace("{{ {$varName} }}", $varValue, $bodyHtml);
+                $varValue = $mockVariables[$varName] ?? (is_array($var) ? ($var['default'] ?? "{{$varName}}") : "{{$varName}}");
+                $variablesMap[$varName] = $varValue;
             }
         }
 
-        // Use DocumentRenderingService to render with letterhead
+        // Use DocumentRenderingService to render with letterhead, positioned fields, and base64 resources
         $renderingService = app(\App\Services\DocumentRenderingService::class);
-        $letterheadHtml = '';
-        
-        if ($template->letterhead && method_exists($renderingService, 'processLetterheadFile')) {
-            $letterheadHtml = $renderingService->processLetterheadFile($template->letterhead);
-        }
 
-        $renderedHtml = $renderingService->render($bodyHtml, [
-            'letterhead_html' => $letterheadHtml,
-            'page_layout' => $template->page_layout ?? 'A4_portrait',
-        ]);
+        $renderedHtml = $renderingService->renderPreviewHtml(
+            $bodyHtml,
+            $template->letterhead,
+            $template->field_positions ?? [],
+            $variablesMap,
+            $template->page_layout ?? 'A4_portrait'
+        );
+
+        // Get letterhead base64 for frontend positioning editor
+        $letterheadBase64 = null;
+        if ($template->letterhead) {
+            $letterheadBase64 = $renderingService->getLetterheadBase64($template->letterhead);
+        }
 
         return response()->json([
             'html' => $renderedHtml,
             'template' => $template,
+            'letterhead_base64' => $letterheadBase64,
+            'field_positions' => $template->field_positions ?? [],
         ]);
     }
 }

@@ -80,6 +80,31 @@ export interface TemplateVariable {
   description?: string;
 }
 
+export interface PositionedBlockStyles {
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  color: string;
+  textAlign: 'left' | 'center' | 'right';
+  direction: 'ltr' | 'rtl';
+  lineHeight: number;
+  backgroundColor?: string;
+  border?: string;
+  padding?: string;
+}
+
+export interface PositionedBlock {
+  id: string;
+  type: 'text' | 'variable' | 'static';
+  x: number; // mm from left
+  y: number; // mm from top
+  width: number; // mm
+  height: number; // mm
+  content: string;
+  variableName?: string;
+  styles: PositionedBlockStyles;
+}
+
 export interface LetterTemplate {
   id: string;
   organization_id: string;
@@ -93,6 +118,7 @@ export interface LetterTemplate {
   template_file_type?: 'html' | 'word' | 'pdf' | 'image';
   variables?: TemplateVariable[] | null;
   header_structure?: Record<string, any> | null;
+  field_positions?: PositionedBlock[] | null;
   allow_edit_body?: boolean;
   default_security_level_key?: string | null;
   page_layout?: string;

@@ -272,9 +272,16 @@ class LetterheadsController extends BaseDmsController
         $this->authorize('view', $record);
 
         $html = '';
+        $letterheadBase64 = null;
         $renderingService = app(\App\Services\DocumentRenderingService::class);
+
+        // Get base64 encoded letterhead for frontend positioning editor
+        if (method_exists($renderingService, 'getLetterheadBase64')) {
+            $letterheadBase64 = $renderingService->getLetterheadBase64($record);
+        }
+
         if (method_exists($renderingService, 'processLetterheadFile')) {
-            $html = $renderingService->processLetterheadFile($record);
+            $html = $renderingService->processLetterheadFile($record, true);
         } else {
             // Fallback: return file serve URL
             $fileUrl = route('dms.letterheads.serve', ['id' => $record->id]);
@@ -288,6 +295,7 @@ class LetterheadsController extends BaseDmsController
         return response()->json([
             'html' => $html,
             'letterhead' => $record,
+            'letterhead_base64' => $letterheadBase64,
             'preview_url' => $record->preview_url,
             'file_url' => $record->file_url ?? route('dms.letterheads.serve', ['id' => $record->id]),
         ]);

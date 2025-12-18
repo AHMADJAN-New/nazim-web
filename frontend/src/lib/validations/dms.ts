@@ -29,6 +29,37 @@ export const templateVariableSchema = z.object({
 });
 
 /**
+ * Positioned block styles schema
+ */
+export const positionedBlockStylesSchema = z.object({
+  fontFamily: z.string().default('Bahij Nassim'),
+  fontSize: z.number().min(8).max(72).default(14),
+  fontWeight: z.string().default('normal'),
+  color: z.string().default('#000000'),
+  textAlign: z.enum(['left', 'center', 'right']).default('right'),
+  direction: z.enum(['ltr', 'rtl']).default('rtl'),
+  lineHeight: z.number().min(1).max(3).default(1.5),
+  backgroundColor: z.string().optional(),
+  border: z.string().optional(),
+  padding: z.string().optional(),
+});
+
+/**
+ * Positioned block schema
+ */
+export const positionedBlockSchema = z.object({
+  id: z.string().min(1),
+  type: z.enum(['text', 'variable', 'static']),
+  x: z.number().min(0),
+  y: z.number().min(0),
+  width: z.number().min(1),
+  height: z.number().min(1),
+  content: z.string().optional().default(''),
+  variableName: z.string().optional(),
+  styles: positionedBlockStylesSchema,
+});
+
+/**
  * Letter template validation schema
  */
 export const letterTemplateSchema = z.object({
@@ -41,6 +72,7 @@ export const letterTemplateSchema = z.object({
   template_file_type: z.enum(['html', 'word', 'pdf', 'image']).optional().default('html'),
   variables: z.array(templateVariableSchema).optional().nullable(),
   header_structure: z.record(z.any()).optional().nullable(),
+  field_positions: z.array(positionedBlockSchema).optional().nullable(),
   allow_edit_body: z.boolean().optional().default(false),
   default_security_level_key: optionalStringLength(50, 'Security level'),
   page_layout: z.string().optional().default('A4_portrait'),
