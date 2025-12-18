@@ -112,6 +112,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const token = apiClient.getToken();
       const isExpectedError = error?.expected || (!token && error?.message?.includes('401'));
 
+      // Check if it's a network error (backend not running)
+      const isNetworkError = error.message?.includes('Network error') || 
+                            error.message?.includes('Unable to connect') ||
+                            error.message?.includes('Failed to fetch');
+
+      if (isNetworkError) {
+        // Check if we're in an iframe context (template preview, etc.)
+        // If so, silently ignore - iframe errors shouldn't affect parent auth
+        const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
+        
+        if (isInIframe) {
+          // We're in an iframe - silently ignore network errors
+          // The parent window handles auth, not the iframe
+          setLoading(false);
+          return;
+        }
+
+        // Backend is likely not running - show helpful message but don't clear token
+        // Throttle warnings to avoid console spam (only show once per 30 seconds)
+        if (import.meta.env.DEV) {
+          const lastWarning = (window as any).__LAST_NETWORK_ERROR_WARNING__ || 0;
+          const now = Date.now();
+          if (now - lastWarning > 30000) { // Only show once per 30 seconds
+            (window as any).__LAST_NETWORK_ERROR_WARNING__ = now;
+            console.warn('%c⚠️ Network Error (Non-Critical)', 'color: #f59e0b; font-weight: bold;');
+            console.warn('Auth check failed due to network error. Token preserved.');
+            console.log('%c💡 If backend is down:', 'color: #10b981; font-weight: bold;');
+            console.log('  Run: cd backend && php artisan serve');
+            console.log('  Then refresh this page');
+          }
+        }
+        // Don't clear token or auth state - backend might just be temporarily down
+        setLoading(false);
+        return;
+      }
+
       if (token && !isExpectedError) {
         // Had token but auth failed - this is unexpected, log it
         if (import.meta.env.DEV) {

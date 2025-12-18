@@ -29,6 +29,18 @@ export const templateVariableSchema = z.object({
 });
 
 /**
+ * Field position schema
+ */
+export const fieldPositionSchema = z.object({
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  fontSize: z.number().min(8).max(72).optional(),
+  fontFamily: z.string().optional(),
+  textAlign: z.enum(['left', 'center', 'right']).optional(),
+  color: z.string().optional(),
+});
+
+/**
  * Letter template validation schema
  */
 export const letterTemplateSchema = z.object({
@@ -41,6 +53,7 @@ export const letterTemplateSchema = z.object({
   variables: z.array(templateVariableSchema).optional().nullable(),
   supports_tables: z.boolean().optional().default(false),
   table_structure: z.record(z.any()).optional().nullable(),
+  field_positions: z.record(fieldPositionSchema).optional().nullable(),
   default_security_level_key: optionalStringLength(50, 'Security level'),
   page_layout: z.string().optional().default('A4_portrait'),
   repeat_letterhead_on_pages: z.boolean().optional().default(true),

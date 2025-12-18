@@ -90,7 +90,7 @@ export const csp = {
 
     // Build img-src and frame-src
     const imgSrcParts = ["'self'", "data:", "https:", "http:"];
-    const frameSrcParts = ["'self'", "blob:", "https:", "http:"];
+    const frameSrcParts = ["'self'", "blob:", "data:", "srcdoc:", "about:", "https:", "http:"];
 
     const policies = [
       "default-src 'self' blob:",
@@ -274,14 +274,25 @@ export const initializeSecurity = () => {
       "http:", // Allow HTTP for local development
     ];
     
-    // Build frame-src for PDFs (same as img-src)
+    // Build frame-src for PDFs and iframes (include data: and srcdoc: for preview iframes)
     const frameSrcParts = [
       "'self'",
       "blob:",
+      "data:",
+      "srcdoc:",
+      "about:",
       "https:",
       "http:", // Allow HTTP for local development
     ];
     
+    const objectSrcParts = [
+      "'self'",
+      "blob:",
+      "http:",
+      "https:",
+      "data:",
+    ];
+
     const policy = [
       "default-src 'self' blob:",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
@@ -290,6 +301,7 @@ export const initializeSecurity = () => {
       `img-src ${imgSrcParts.join(' ')}`,
       `connect-src ${connectSrcParts.join(' ')}`,
       `frame-src ${frameSrcParts.join(' ')}`,
+      `object-src ${objectSrcParts.join(' ')}`,
       // Note: frame-ancestors cannot be set via meta tag, only via HTTP header
       "base-uri 'self'",
       "form-action 'self'",

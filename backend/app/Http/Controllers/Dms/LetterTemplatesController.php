@@ -72,6 +72,7 @@ class LetterTemplatesController extends BaseDmsController
             'variables' => ['nullable', 'array'],
             'supports_tables' => ['boolean'],
             'table_structure' => ['nullable', 'array'],
+            'field_positions' => ['nullable', 'array'],
             'default_security_level_key' => ['nullable', 'string'],
             'page_layout' => ['nullable', 'string'],
             'repeat_letterhead_on_pages' => ['boolean'],
@@ -111,6 +112,7 @@ class LetterTemplatesController extends BaseDmsController
             'variables' => ['nullable', 'array'],
             'supports_tables' => ['boolean'],
             'table_structure' => ['nullable', 'array'],
+            'field_positions' => ['nullable', 'array'],
             'default_security_level_key' => ['nullable', 'string'],
             'page_layout' => ['nullable', 'string'],
             'repeat_letterhead_on_pages' => ['boolean'],
@@ -236,6 +238,18 @@ class LetterTemplatesController extends BaseDmsController
             'table_payload' => $tablePayload,
             'for_browser' => true, // Use HTTP URLs for browser preview
         ]);
+
+        // Debug: Log letterhead info (only in development)
+        if (config('app.debug')) {
+            \Log::debug('Template preview generated', [
+                'template_id' => $template->id,
+                'has_letterhead' => $template->letterhead !== null,
+                'letterhead_id' => $template->letterhead?->id,
+                'letterhead_file_path' => $template->letterhead?->file_path,
+                'html_length' => strlen($renderedHtml),
+                'html_contains_letterhead' => str_contains($renderedHtml, 'letterhead-background') || str_contains($renderedHtml, 'letterhead-header'),
+            ]);
+        }
 
         return response()->json([
             'html' => $renderedHtml,

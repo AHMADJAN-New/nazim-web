@@ -92,6 +92,18 @@ export interface TableStructure {
   rows: string[][];
 }
 
+export interface FieldPosition {
+  x: number; // Percentage (0-100)
+  y: number; // Percentage (0-100)
+  fontSize?: number;
+  fontFamily?: string;
+  textAlign?: 'left' | 'center' | 'right';
+  color?: string;
+  width?: number; // Percentage (0-100) or pixels
+  height?: number; // Percentage (0-100) or pixels
+  maxWidth?: number; // Percentage (0-100) or pixels
+}
+
 export interface LetterTemplate {
   id: string;
   organization_id: string;
@@ -105,6 +117,7 @@ export interface LetterTemplate {
   variables?: TemplateVariable[] | null;
   supports_tables?: boolean;
   table_structure?: TableStructure | null;
+  field_positions?: Record<string, FieldPosition> | null;
   default_security_level_key?: string | null;
   page_layout?: string;
   repeat_letterhead_on_pages?: boolean;
@@ -123,8 +136,11 @@ export interface Letterhead {
   name: string;
   file_path: string;
   file_type?: 'pdf' | 'image' | 'html';
+  file_url?: string | null;
   letterhead_type?: 'background' | 'watermark';
   letter_type?: LetterType | null;
+  default_for_layout?: string | null;
+  position?: 'header' | 'background' | 'watermark';
   preview_url?: string | null;
   active?: boolean;
   created_at?: string;

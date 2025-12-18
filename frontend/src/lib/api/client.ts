@@ -34,7 +34,7 @@ class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
   private lastDevToolsWarning: number = 0;
-  private readonly DEVTOOLS_WARNING_THROTTLE = 5000; // 5 seconds
+  private readonly DEVTOOLS_WARNING_THROTTLE = 30000; // 30 seconds (reduced console noise)
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -172,16 +172,20 @@ class ApiClient {
 
       // Check if request was actually blocked by DevTools (visible in Network tab as "blocked:devtools")
       // This happens when "Disable cache" or request blocking is enabled in DevTools
-      // Throttle warnings to avoid console spam (max once per 5 seconds)
+      // Throttle warnings to avoid console spam (max once per 30 seconds)
       if (isDevToolsBlocked && import.meta.env.DEV) {
         const now = Date.now();
         if (now - this.lastDevToolsWarning > this.DEVTOOLS_WARNING_THROTTLE) {
           this.lastDevToolsWarning = now;
-          const devToolsMessage =
-            '⚠️ Request appears to be blocked by DevTools. ' +
-            'To fix: Open DevTools → Network tab → Disable "Disable cache" and any request blocking. ' +
-            'Then refresh the page.';
-          console.warn(devToolsMessage);
+          // Only show if not in iframe (iframe errors are expected and non-critical)
+          const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
+          if (!isInIframe) {
+            const devToolsMessage =
+              '⚠️ Request appears to be blocked by DevTools. ' +
+              'To fix: Open DevTools → Network tab → Disable "Disable cache" and any request blocking. ' +
+              'Then refresh the page.';
+            console.warn(devToolsMessage);
+          }
         }
       }
 
@@ -198,16 +202,42 @@ class ApiClient {
             ? 'http://localhost:8000'
             : this.baseUrl;
 
-          let errorMessage = `Network error: Unable to connect to API server at ${backendUrl}.`;
-
+          // Try to diagnose the issue
+          let diagnosis = '';
           if (import.meta.env.DEV) {
-            errorMessage += '\n\nTroubleshooting steps:';
-            errorMessage += '\n1. Ensure Laravel backend is running: `php artisan serve` (should run on port 8000)';
-            errorMessage += '\n2. Check if DevTools is blocking requests (Network tab → disable "Disable cache")';
-            errorMessage += '\n3. Verify Vite proxy is working (check Vite dev server console)';
-            errorMessage += '\n4. Check browser console for CORS errors';
+            // Check if it's a proxy issue
+            const isProxyIssue = this.baseUrl.startsWith('/api') && !this.baseUrl.includes('localhost');
+            
+            diagnosis = `\n\n🔍 Diagnosis:`;
+            if (isProxyIssue) {
+              diagnosis += `\n• Using Vite proxy (/api → http://localhost:8000/api)`;
+              diagnosis += `\n• If this fails, check Vite dev server is running and proxy is configured`;
+            } else {
+              diagnosis += `\n• Direct connection to: ${backendUrl}`;
+            }
+            
+            diagnosis += `\n\n📋 Troubleshooting steps:`;
+            diagnosis += `\n1. ✅ Check Laravel backend is running:`;
+            diagnosis += `\n   → Open terminal and run: cd backend && php artisan serve`;
+            diagnosis += `\n   → Should see: "Laravel development server started: http://127.0.0.1:8000"`;
+            diagnosis += `\n   → Test in browser: http://localhost:8000/up (should return JSON)`;
+            diagnosis += `\n\n2. ✅ Check Vite dev server is running:`;
+            diagnosis += `\n   → Should be running on http://localhost:5173`;
+            diagnosis += `\n   → Check Vite console for proxy errors`;
+            diagnosis += `\n\n3. ✅ Check DevTools Network tab:`;
+            diagnosis += `\n   → Disable "Disable cache" checkbox`;
+            diagnosis += `\n   → Check if request shows as "blocked" or "failed"`;
+            diagnosis += `\n   → Look for CORS errors in console`;
+            diagnosis += `\n\n4. ✅ Verify ports are not in use:`;
+            diagnosis += `\n   → Port 8000 (Laravel) should be free`;
+            diagnosis += `\n   → Port 5173 (Vite) should be free`;
+            diagnosis += `\n   → Check: netstat -ano | findstr :8000 (Windows) or lsof -i :8000 (Mac/Linux)`;
+            diagnosis += `\n\n5. ✅ Check firewall/antivirus:`;
+            diagnosis += `\n   → May be blocking localhost connections`;
+            diagnosis += `\n   → Try temporarily disabling to test`;
           }
 
+          const errorMessage = `Network error: Unable to connect to API server at ${this.baseUrl}.${diagnosis}`;
           throw new Error(errorMessage);
         }
       }

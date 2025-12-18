@@ -8,13 +8,24 @@ import { LanguageProvider } from '@/hooks/useLanguage';
 import { RootBootstrap } from './RootBootstrap';
 
 // Unregister any existing service workers (PWA removed for performance)
+// Guard against sandboxed/invalid documents (e.g., PDF/object viewers) that throw InvalidStateError
 if (import.meta.env.DEV && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((registration) => {
-      registration.unregister();
-      console.log('Service worker unregistered');
-    });
-  });
+  try {
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister().catch(() => {
+            // ignore unregister issues in sandboxed contexts
+          });
+        });
+      })
+      .catch(() => {
+        // ignore InvalidStateError or other errors when document is not eligible
+      });
+  } catch {
+    // ignore InvalidStateError when the document is in an invalid state (e.g., embedded PDF)
+  }
 }
 
 // Ensure right-click (context menu) works properly

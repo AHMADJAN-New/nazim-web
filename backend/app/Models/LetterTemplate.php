@@ -29,6 +29,7 @@ class LetterTemplate extends Model
         'variables',
         'supports_tables',
         'table_structure',
+        'field_positions',
         'default_security_level_key',
         'page_layout',
         'repeat_letterhead_on_pages',
@@ -39,6 +40,7 @@ class LetterTemplate extends Model
     protected $casts = [
         'variables' => 'array',
         'table_structure' => 'array',
+        'field_positions' => 'array',
         'supports_tables' => 'boolean',
         'repeat_letterhead_on_pages' => 'boolean',
         'is_mass_template' => 'boolean',

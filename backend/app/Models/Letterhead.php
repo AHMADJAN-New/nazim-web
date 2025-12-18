@@ -33,25 +33,40 @@ class Letterhead extends Model
         'active' => 'boolean',
     ];
 
+    // Ensure computed URLs are returned in API responses
+    protected $appends = [
+        'file_url',
+        'preview_url',
+    ];
+
+    /**
+     * Get a signed/served URL for this letterhead file.
+     */
+    public function getFileUrlAttribute(): ?string
+    {
+        if (empty($this->attributes['file_path'])) {
+            return null;
+        }
+
+        // Use the serve route so auth/org scoping is preserved
+        try {
+            return route('dms.letterheads.serve', ['id' => $this->id]);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     /**
      * Get the preview URL for the letterhead.
-     * If preview_url is set, return it; otherwise return file URL for images.
+     * If preview_url is set, return it; otherwise return the served file URL.
      */
-    public function getPreviewUrlAttribute($value)
+    public function getPreviewUrlAttribute($value): ?string
     {
-        // Return stored preview_url if available
         if ($value) {
             return $value;
         }
 
-        // For images, return file URL as fallback
-        $filePath = $this->attributes['file_path'] ?? null;
-        $fileType = $this->attributes['file_type'] ?? null;
-        if ($filePath && $fileType === 'image') {
-            return \Storage::url($filePath);
-        }
-
-        return null;
+        return $this->file_url;
     }
 
     protected static function boot()
