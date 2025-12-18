@@ -37,9 +37,14 @@ class IssuedCertificateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $schoolId = $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user'], 403);
+        }
+
         $query = IssuedCertificate::with(['template', 'student'])
             ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $request->get('school_id', $profile->default_school_id));
+            ->where('school_id', $schoolId);
 
         if ($request->filled('student_id')) {
             $query->where('student_id', $request->input('student_id'));
@@ -71,9 +76,14 @@ class IssuedCertificateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $schoolId = $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user'], 403);
+        }
+
         $certificate = IssuedCertificate::with(['template', 'student'])
             ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $request->get('school_id', $profile->default_school_id))
+            ->where('school_id', $schoolId)
             ->find($id);
 
         if (!$certificate) {
@@ -100,8 +110,13 @@ class IssuedCertificateController extends Controller
             'reason' => 'required|string|max:1000',
         ]);
 
+        $schoolId = $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user'], 403);
+        }
+
         $certificate = IssuedCertificate::where('organization_id', $profile->organization_id)
-            ->where('school_id', $request->get('school_id', $profile->default_school_id))
+            ->where('school_id', $schoolId)
             ->find($id);
 
         if (!$certificate) {
@@ -143,9 +158,14 @@ class IssuedCertificateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $schoolId = $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user'], 403);
+        }
+
         $certificate = IssuedCertificate::with('template')
             ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $request->get('school_id', $profile->default_school_id))
+            ->where('school_id', $schoolId)
             ->find($id);
 
         if (!$certificate) {
@@ -193,9 +213,14 @@ class IssuedCertificateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $schoolId = $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user'], 403);
+        }
+
         $certificates = IssuedCertificate::with('template')
             ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $request->get('school_id', $profile->default_school_id))
+            ->where('school_id', $schoolId)
             ->where('batch_id', $batchId)
             ->get();
 
@@ -203,36 +228,50 @@ class IssuedCertificateController extends Controller
             return response()->json(['error' => 'No certificates found for batch'], 404);
         }
 
-        foreach ($certificates as $certificate) {
-            if (!$certificate->pdf_path || !Storage::exists($certificate->pdf_path)) {
-                $pdfPath = $this->renderService->renderSingle($certificate->template, $certificate, [
-                    'verification_url' => url('/verify/certificate/' . $certificate->verification_hash),
-                ]);
-                if ($pdfPath) {
-                    $certificate->pdf_path = $pdfPath;
-                    $certificate->save();
+        $zipPath = storage_path('app/tmp/certificates_' . $batchId . '_' . time() . '.zip');
+
+        try {
+            // Generate missing PDFs
+            foreach ($certificates as $certificate) {
+                if (!$certificate->pdf_path || !Storage::exists($certificate->pdf_path)) {
+                    $pdfPath = $this->renderService->renderSingle($certificate->template, $certificate, [
+                        'verification_url' => url('/verify/certificate/' . $certificate->verification_hash),
+                    ]);
+                    if ($pdfPath) {
+                        $certificate->pdf_path = $pdfPath;
+                        $certificate->save();
+                    }
                 }
             }
-        }
 
-        $zip = new \ZipArchive();
-        $zipPath = storage_path('app/tmp/certificates_' . $batchId . '.zip');
-        if (!is_dir(dirname($zipPath))) {
-            mkdir(dirname($zipPath), 0755, true);
-        }
-
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            return response()->json(['error' => 'Unable to create ZIP archive'], 500);
-        }
-
-        foreach ($certificates as $certificate) {
-            if ($certificate->pdf_path && Storage::exists($certificate->pdf_path)) {
-                $zip->addFile(Storage::path($certificate->pdf_path), $certificate->certificate_no . '.pdf');
+            // Create temp directory if it doesn't exist
+            if (!is_dir(dirname($zipPath))) {
+                mkdir(dirname($zipPath), 0755, true);
             }
+
+            // Create ZIP archive
+            $zip = new \ZipArchive();
+            if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+                throw new \RuntimeException('Unable to create ZIP archive');
+            }
+
+            // Add PDFs to ZIP
+            foreach ($certificates as $certificate) {
+                if ($certificate->pdf_path && Storage::exists($certificate->pdf_path)) {
+                    $zip->addFile(Storage::path($certificate->pdf_path), $certificate->certificate_no . '.pdf');
+                }
+            }
+
+            $zip->close();
+
+            return response()->download($zipPath)->deleteFileAfterSend(true);
+        } catch (\Throwable $e) {
+            // Clean up zip file on error
+            if (isset($zipPath) && file_exists($zipPath)) {
+                @unlink($zipPath);
+            }
+            report($e);
+            return response()->json(['error' => 'Failed to generate batch ZIP: ' . $e->getMessage()], 500);
         }
-
-        $zip->close();
-
-        return response()->download($zipPath)->deleteFileAfterSend(true);
     }
 }

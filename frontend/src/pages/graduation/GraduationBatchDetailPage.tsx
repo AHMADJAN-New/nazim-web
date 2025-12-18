@@ -62,15 +62,15 @@ export default function GraduationBatchDetailPage() {
         <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">{t('fees.academicYear')}</p>
-            <p className="font-semibold">{batch.academic_year_id}</p>
+            <p className="font-semibold">{batch.academic_year?.name || batch.academic_year_id}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">{t('fees.class')}</p>
-            <p className="font-semibold">{batch.class_id}</p>
+            <p className="font-semibold">{batch.class?.name || batch.class_id}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">{t('nav.exams')}</p>
-            <p className="font-semibold">{batch.exam_id}</p>
+            <p className="font-semibold">{batch.exam?.name || batch.exam_id}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">{t('common.statusLabel')}</p>

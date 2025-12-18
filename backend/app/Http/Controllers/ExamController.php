@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Exam;
 use App\Models\AcademicYear;
+use App\Models\GraduationBatch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -374,6 +375,21 @@ class ExamController extends Controller
                 'current_status' => $exam->status,
                 'allowed_transitions' => Exam::getStatusTransitionRules()[$exam->status] ?? []
             ], 422);
+        }
+
+        // Prevent rolling back from completed status if graduation batches exist
+        if ($exam->status === Exam::STATUS_COMPLETED && $newStatus !== Exam::STATUS_COMPLETED) {
+            $graduationBatchCount = GraduationBatch::where('exam_id', $exam->id)
+                ->whereNull('deleted_at')
+                ->count();
+
+            if ($graduationBatchCount > 0) {
+                return response()->json([
+                    'error' => 'Cannot change exam status because graduation batches have been created for this exam',
+                    'graduation_batch_count' => $graduationBatchCount,
+                    'message' => 'Delete all graduation batches first before changing exam status'
+                ], 422);
+            }
         }
 
         // Additional validation for specific transitions

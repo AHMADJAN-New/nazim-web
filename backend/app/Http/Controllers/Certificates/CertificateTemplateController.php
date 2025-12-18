@@ -72,6 +72,18 @@ class CertificateTemplateController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
+        // If school_id is provided, verify it belongs to the user's organization
+        $schoolId = $validated['school_id'] ?? $profile->default_school_id;
+        if ($schoolId) {
+            $schoolBelongsToOrg = DB::table('school_branding')
+                ->where('id', $schoolId)
+                ->where('organization_id', $profile->organization_id)
+                ->exists();
+            if (!$schoolBelongsToOrg) {
+                return response()->json(['error' => 'School does not belong to your organization'], 403);
+            }
+        }
+
         $backgroundPath = null;
         if ($request->hasFile('background_image')) {
             $backgroundPath = $request->file('background_image')->store('certificate-templates/' . $profile->organization_id, 'local');
@@ -79,7 +91,7 @@ class CertificateTemplateController extends Controller
 
         $template = CertificateTemplate::create([
             'organization_id' => $profile->organization_id,
-            'school_id' => $validated['school_id'] ?? $profile->default_school_id,
+            'school_id' => $schoolId,
             'type' => $validated['type'],
             'name' => $validated['title'],
             'title' => $validated['title'],

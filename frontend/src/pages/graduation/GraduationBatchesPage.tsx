@@ -271,9 +271,9 @@ export default function GraduationBatchesPage() {
               <TableBody>
                 {batches.map((batch: any) => (
                   <TableRow key={batch.id}>
-                    <TableCell>{academicYearNameById[batch.academic_year_id] || batch.academic_year_id}</TableCell>
-                    <TableCell>{classNameById[batch.class_id] || batch.class_id}</TableCell>
-                    <TableCell>{examNameById[batch.exam_id] || batch.exam_id}</TableCell>
+                    <TableCell>{batch.academic_year?.name || batch.academic_year_id}</TableCell>
+                    <TableCell>{batch.class?.name || batch.class_id}</TableCell>
+                    <TableCell>{batch.exam?.name || batch.exam_id}</TableCell>
                     <TableCell>{batch.graduation_date}</TableCell>
                     <TableCell className="capitalize">{batch.status}</TableCell>
                     <TableCell>

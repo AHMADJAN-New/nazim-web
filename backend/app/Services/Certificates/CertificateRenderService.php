@@ -84,8 +84,18 @@ class CertificateRenderService
 
         $backgroundStyle = '';
         if ($template->background_image_path && Storage::exists($template->background_image_path)) {
-            $backgroundUrl = Storage::url($template->background_image_path);
-            $backgroundStyle = "background: url('{$backgroundUrl}') center center / cover no-repeat;";
+            // Convert background image to base64 data URI for Browsershot compatibility
+            $imageContent = Storage::get($template->background_image_path);
+            $imageExtension = pathinfo($template->background_image_path, PATHINFO_EXTENSION);
+            $mimeType = match (strtolower($imageExtension)) {
+                'jpg', 'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                default => 'image/png',
+            };
+            $base64Image = 'data:' . $mimeType . ';base64,' . base64_encode($imageContent);
+            $backgroundStyle = "background: url('{$base64Image}') center center / cover no-repeat;";
         }
 
         return <<<HTML

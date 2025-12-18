@@ -34,9 +34,15 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $schoolId = $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user'], 403);
+        }
+
         $query = GraduationBatch::query()
             ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $request->get('school_id', $profile->default_school_id))
+            ->where('school_id', $schoolId)
+            ->with(['academicYear:id,name', 'class:id,name', 'exam:id,name', 'school:id,school_name'])
             ->withCount(['students']);
 
         if ($request->filled('academic_year_id')) {
@@ -101,9 +107,20 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $schoolId = $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user'], 403);
+        }
+
         $batch = GraduationBatch::where('organization_id', $profile->organization_id)
-            ->where('school_id', $request->get('school_id', $profile->default_school_id))
-            ->with(['students.student'])
+            ->where('school_id', $schoolId)
+            ->with([
+                'students.student',
+                'academicYear:id,name',
+                'class:id,name',
+                'exam:id,name',
+                'school:id,school_name'
+            ])
             ->find($id);
 
         if (!$batch) {
@@ -135,11 +152,16 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $schoolId = $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user'], 403);
+        }
+
         try {
             $students = $this->batchService->generateStudents(
                 $id,
                 $profile->organization_id,
-                $request->get('school_id', $profile->default_school_id),
+                $schoolId,
                 (string) $user->id
             );
 
@@ -164,11 +186,16 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $schoolId = $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user'], 403);
+        }
+
         try {
             $batch = $this->batchService->approveBatch(
                 $id,
                 $profile->organization_id,
-                $request->get('school_id', $profile->default_school_id),
+                $schoolId,
                 (string) $user->id
             );
 
@@ -193,6 +220,11 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $schoolId = $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user'], 403);
+        }
+
         $validated = $request->validate([
             'template_id' => 'required|uuid|exists:certificate_templates,id',
         ]);
@@ -202,7 +234,7 @@ class GraduationBatchController extends Controller
                 $id,
                 $validated['template_id'],
                 $profile->organization_id,
-                $request->get('school_id', $profile->default_school_id),
+                $schoolId,
                 (string) $user->id
             );
 
