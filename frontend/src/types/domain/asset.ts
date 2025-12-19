@@ -3,6 +3,8 @@ import type { AssetAssignment, AssetHistory, AssetMaintenanceRecord, AssetStatus
 export interface Asset {
   id: string;
   organizationId: string;
+  currencyId: string | null;
+  financeAccountId: string | null;
   schoolId: string | null;
   buildingId: string | null;
   roomId: string | null;
@@ -28,6 +30,14 @@ export interface Asset {
   notes: string | null;
   maintenanceEventsCount?: number;
   maintenanceCostTotal?: number | null;
+  currency?: { id: string; code: string; name: string; symbol: string | null } | null;
+  financeAccount?: { 
+    id: string; 
+    name: string; 
+    code: string | null;
+    currencyId: string | null;
+    currency?: { id: string; code: string; name: string; symbol: string | null } | null;
+  } | null;
   activeAssignment?: AssetAssignmentDomain | null;
   assignments?: AssetAssignmentDomain[];
   maintenanceRecords?: AssetMaintenanceDomain[];

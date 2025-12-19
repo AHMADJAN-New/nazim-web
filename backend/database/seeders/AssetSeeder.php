@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Asset;
 use App\Models\AssetCategory;
+use App\Models\FinanceAccount;
+use App\Models\Currency;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -33,6 +35,10 @@ class AssetSeeder extends Seeder
 
         // Check if category_id column exists
         $hasCategoryId = Schema::hasColumn('assets', 'category_id');
+        
+        // Check if finance fields exist
+        $hasCurrencyId = Schema::hasColumn('assets', 'currency_id');
+        $hasFinanceAccountId = Schema::hasColumn('assets', 'finance_account_id');
 
         // Define assets for each category (by category code)
         $assetsByCategory = [
@@ -94,6 +100,28 @@ class AssetSeeder extends Seeder
             $orgCreated = 0;
             $orgSkipped = 0;
 
+            // Get finance accounts and currencies for this organization (if columns exist)
+            $financeAccounts = [];
+            $currencies = [];
+            $baseCurrency = null;
+            
+            if ($hasFinanceAccountId || $hasCurrencyId) {
+                // Get finance accounts for this organization
+                $financeAccounts = FinanceAccount::where('organization_id', $organization->id)
+                    ->whereNull('deleted_at')
+                    ->where('is_active', true)
+                    ->get();
+                
+                // Get currencies for this organization
+                $currencies = Currency::where('organization_id', $organization->id)
+                    ->whereNull('deleted_at')
+                    ->where('is_active', true)
+                    ->get();
+                
+                // Get base currency
+                $baseCurrency = $currencies->where('is_base', true)->first();
+            }
+
             foreach ($categories as $category) {
                 $categoryCode = $category->code;
                 
@@ -147,6 +175,29 @@ class AssetSeeder extends Seeder
                         // Add category_id only if column exists
                         if ($hasCategoryId) {
                             $assetDataToCreate['category_id'] = $category->id;
+                        }
+                        
+                        // Add finance_account_id and currency_id if columns exist and data is available
+                        if ($hasFinanceAccountId && $financeAccounts->isNotEmpty()) {
+                            // Assign a random finance account (or use first one)
+                            // For variety, we can cycle through accounts
+                            $accountIndex = ($orgCreated + $assetCounter) % $financeAccounts->count();
+                            $selectedAccount = $financeAccounts->get($accountIndex);
+                            if ($selectedAccount) {
+                                $assetDataToCreate['finance_account_id'] = $selectedAccount->id;
+                                
+                                // If account has currency, use it; otherwise use base currency
+                                if ($hasCurrencyId) {
+                                    if ($selectedAccount->currency_id) {
+                                        $assetDataToCreate['currency_id'] = $selectedAccount->currency_id;
+                                    } elseif ($baseCurrency) {
+                                        $assetDataToCreate['currency_id'] = $baseCurrency->id;
+                                    }
+                                }
+                            }
+                        } elseif ($hasCurrencyId && $baseCurrency) {
+                            // If only currency_id column exists, use base currency
+                            $assetDataToCreate['currency_id'] = $baseCurrency->id;
                         }
                         
                         Asset::create($assetDataToCreate);

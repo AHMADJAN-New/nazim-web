@@ -29,6 +29,7 @@ import {
     Car,
     BookOpen,
     MoreVertical,
+    Package,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -146,126 +147,163 @@ export default function FinanceDashboard() {
             </div>
 
             {/* Summary Cards Row */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                 {/* Total Balance */}
-                <Card className="relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                <Card className="relative overflow-visible">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+                        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('finance.totalBalance') || 'My Balance'}
                         </CardTitle>
-                        <div className="p-2 rounded-lg bg-blue-500/10">
-                            <Wallet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        <div className="p-2 rounded-lg bg-blue-500/10 flex-shrink-0">
+                            <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold mb-2">
+                    <CardContent className="pb-3">
+                        <div className="text-2xl sm:text-3xl font-bold mb-2 break-words">
                             {formatCurrency(dashboard.summary.totalBalance)}
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                            <TrendingUp className="h-4 w-4 text-green-500" />
-                            <span className="text-green-600 dark:text-green-400 font-medium">
+                        <div className="text-xs text-muted-foreground mb-2 break-words line-clamp-2">
+                            {t('finance.assetsIncludedInBalance') || 'Includes cash and assets value'}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
+                            <span className="text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
                                 {balanceChange.toFixed(1)}%
                             </span>
-                            <span className="text-muted-foreground">
-                                compared to last month
+                            <span className="text-muted-foreground break-words">
+                                vs last month
                             </span>
                         </div>
                     </CardContent>
-                    <CardFooter className="flex gap-2 pt-0">
+                    <CardFooter className="flex flex-col gap-2 pt-3 pb-3">
                         <Button 
                             variant="outline" 
                             size="sm" 
-                            className="flex-1"
+                            className="w-full justify-start whitespace-normal sm:whitespace-nowrap"
                             onClick={() => navigate('/finance/income')}
                         >
-                            <ArrowUpRight className="h-4 w-4 mr-1" />
-                            {t('finance.addIncome') || 'Add Income'}
+                            <ArrowUpRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                            <span className="text-left">{t('finance.addIncome') || 'Add Income'}</span>
                         </Button>
                         <Button 
                             variant="outline" 
                             size="sm" 
-                            className="flex-1"
+                            className="w-full justify-start whitespace-normal sm:whitespace-nowrap"
                             onClick={() => navigate('/finance/expenses')}
                         >
-                            <ArrowDownRight className="h-4 w-4 mr-1" />
-                            {t('finance.addExpense') || 'Add Expense'}
+                            <ArrowDownRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                            <span className="text-left">{t('finance.addExpense') || 'Add Expense'}</span>
                         </Button>
                     </CardFooter>
                 </Card>
 
                 {/* Net Profit */}
-                <Card className="relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-16 -mt-16" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                <Card className="relative overflow-visible">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+                        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('finance.netThisMonth') || 'Net Profit'}
                         </CardTitle>
-                        <div className="p-2 rounded-lg bg-green-500/10">
-                            <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                        <div className="p-2 rounded-lg bg-green-500/10 flex-shrink-0">
+                            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className={`text-3xl font-bold mb-2 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                    <CardContent className="pb-3">
+                        <div className={`text-2xl sm:text-3xl font-bold mb-2 break-words ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                             {isPositive ? '+' : ''}{formatCurrency(netThisMonth)}
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                            <TrendingUp className="h-4 w-4 text-green-500" />
-                            <span className="text-green-600 dark:text-green-400 font-medium">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
+                            <span className="text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
                                 {incomeChange.toFixed(1)}%
                             </span>
-                            <span className="text-muted-foreground">
-                                compared to last month
+                            <span className="text-muted-foreground break-words">
+                                vs last month
                             </span>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Expenses */}
-                <Card className="relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full -mr-16 -mt-16" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            {t('finance.monthlyExpenses') || 'Expenses'}
+                {/* Assets Value */}
+                <Card className="relative overflow-visible">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+                        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
+                            {t('finance.totalAssetsValue') || 'Total Assets Value'}
                         </CardTitle>
-                        <div className="p-2 rounded-lg bg-red-500/10">
-                            <DollarSign className="h-5 w-5 text-red-600 dark:text-red-400" />
+                        <div className="p-2 rounded-lg bg-amber-500/10 flex-shrink-0">
+                            <Package className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 dark:text-amber-400" />
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold mb-2 text-red-600">
+                    <CardContent className="pb-3">
+                        <div className="text-2xl sm:text-3xl font-bold mb-2 text-amber-600 break-words">
+                            {formatCurrency(dashboard.summary.totalAssetsValue)}
+                        </div>
+                        <div className="text-xs text-muted-foreground mb-2 break-words">
+                            {dashboard.assetsByAccount.length > 0 && (
+                                <span>{dashboard.assetsByAccount.length} {t('finance.account') || 'account(s)'}</span>
+                            )}
+                        </div>
+                    </CardContent>
+                    <CardFooter className="pt-3 pb-3">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full justify-start whitespace-normal sm:whitespace-nowrap"
+                            onClick={() => navigate('/assets')}
+                        >
+                            <ChevronRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                            <span className="text-left">{t('finance.viewAssets') || 'View Assets'}</span>
+                        </Button>
+                    </CardFooter>
+                </Card>
+
+                {/* Expenses */}
+                <Card className="relative overflow-visible">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+                        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
+                            {t('finance.monthlyExpenses') || 'Expenses'}
+                        </CardTitle>
+                        <div className="p-2 rounded-lg bg-red-500/10 flex-shrink-0">
+                            <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 dark:text-red-400" />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pb-3">
+                        <div className="text-2xl sm:text-3xl font-bold mb-2 text-red-600 break-words">
                             {formatCurrency(dashboard.summary.currentMonthExpense)}
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                            <TrendingDown className="h-4 w-4 text-red-500" />
-                            <span className="text-red-600 dark:text-red-400 font-medium">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                            <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 flex-shrink-0" />
+                            <span className="text-red-600 dark:text-red-400 font-medium whitespace-nowrap">
                                 {Math.abs(expenseChange).toFixed(1)}%
                             </span>
-                            <span className="text-muted-foreground">
-                                compared to last month
+                            <span className="text-muted-foreground break-words">
+                                vs last month
                             </span>
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Active Projects */}
-                <Card className="relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full -mr-16 -mt-16" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                <Card className="relative overflow-visible">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+                        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
                             {t('finance.activeProjects') || 'Active Projects'}
                         </CardTitle>
-                        <div className="p-2 rounded-lg bg-purple-500/10">
-                            <FolderKanban className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                        <div className="p-2 rounded-lg bg-purple-500/10 flex-shrink-0">
+                            <FolderKanban className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold mb-2">
+                    <CardContent className="pb-3">
+                        <div className="text-2xl sm:text-3xl font-bold mb-2 break-words">
                             {dashboard.summary.activeProjects}
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="text-muted-foreground break-words">
                                 {dashboard.summary.activeDonors} active donors
                             </span>
                         </div>
@@ -323,15 +361,15 @@ export default function FinanceDashboard() {
                             ))}
                         </div>
                     </CardContent>
-                    <CardFooter className="pt-0">
+                    <CardFooter className="pt-3 pb-3">
                         <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="w-full"
+                            className="w-full justify-start whitespace-normal sm:whitespace-nowrap"
                             onClick={() => navigate('/finance/income')}
                         >
-                            {t('finance.viewAllIncome') || 'View All Income'}
-                            <ChevronRight className="h-4 w-4 ml-1" />
+                            <span className="text-left">{t('finance.viewAllIncome') || 'View All Income'}</span>
+                            <ChevronRight className="h-4 w-4 ml-1.5 flex-shrink-0" />
                         </Button>
                     </CardFooter>
                 </Card>
@@ -646,6 +684,68 @@ export default function FinanceDashboard() {
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Assets Breakdown */}
+                {(dashboard.assetsByAccount.length > 0 || dashboard.assetsByCurrency.length > 0) && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">{t('finance.assetsBreakdown') || 'Assets Breakdown'}</CardTitle>
+                            <CardDescription>
+                                {t('finance.assetsBreakdownDescription') || 'Assets value by account and currency'}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* Assets by Account */}
+                            {dashboard.assetsByAccount.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-semibold mb-3">
+                                        {t('finance.assetsByAccount') || 'Assets by Account'}
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {dashboard.assetsByAccount.map((item) => (
+                                            <div key={item.accountId} className="flex items-center justify-between p-3 rounded-lg border">
+                                                <div>
+                                                    <div className="font-medium">{item.accountName}</div>
+                                                    <div className="text-xs text-muted-foreground">{item.currencyCode}</div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="font-semibold">{formatCurrency(item.totalValue)}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Assets by Currency */}
+                            {dashboard.assetsByCurrency.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-semibold mb-3">
+                                        {t('finance.assetsByCurrency') || 'Assets by Currency'}
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {dashboard.assetsByCurrency.map((item) => (
+                                            <div key={item.currencyId} className="flex items-center justify-between p-3 rounded-lg border">
+                                                <div>
+                                                    <div className="font-medium">{item.currencyCode}</div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {t('finance.originalValue') || 'Original'}: {formatCurrency(item.totalValue)}
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="font-semibold">{formatCurrency(item.convertedValue)}</div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {t('finance.convertedValue') || 'Converted'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     );

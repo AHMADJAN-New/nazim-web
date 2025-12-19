@@ -52,6 +52,8 @@ class AssetController extends Controller
             'room',
             'school',
             'category',
+            'currency',
+            'financeAccount',
             'activeAssignment',
             'assignments' => function ($q) {
                 $q->orderByDesc('assigned_on');
@@ -170,6 +172,40 @@ class AssetController extends Controller
         $data = $request->validated();
         $data['organization_id'] = $profile->organization_id;
 
+        // Validate and set currency_id and finance_account_id
+        if (isset($data['finance_account_id']) && $data['finance_account_id']) {
+            // Validate finance account belongs to organization
+            $account = DB::table('finance_accounts')
+                ->where('id', $data['finance_account_id'])
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$account) {
+                return response()->json(['error' => 'Finance account not found or does not belong to your organization'], 422);
+            }
+
+            // If currency_id not provided but account has currency, use account's currency
+            if (!isset($data['currency_id']) || !$data['currency_id']) {
+                if ($account->currency_id) {
+                    $data['currency_id'] = $account->currency_id;
+                }
+            }
+        }
+
+        // Validate currency_id belongs to organization
+        if (isset($data['currency_id']) && $data['currency_id']) {
+            $currency = DB::table('currencies')
+                ->where('id', $data['currency_id'])
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$currency) {
+                return response()->json(['error' => 'Currency not found or does not belong to your organization'], 422);
+            }
+        }
+
         $schoolIds = $this->getAccessibleSchoolIds($profile);
         if (!empty($schoolIds) && isset($data['school_id']) && $data['school_id'] && !in_array($data['school_id'], $schoolIds, true)) {
             return response()->json(['error' => 'School not accessible for this user'], 403);
@@ -224,7 +260,7 @@ class AssetController extends Controller
             'total_copies' => $totalCopies,
         ]);
 
-        $loadRelations = ['building', 'room', 'school', 'category', 'activeAssignment'];
+        $loadRelations = ['building', 'room', 'school', 'category', 'currency', 'financeAccount', 'activeAssignment'];
         if (Schema::hasTable('asset_copies')) {
             $loadRelations[] = 'copies';
         }
@@ -267,6 +303,8 @@ class AssetController extends Controller
             'room',
             'school',
             'category',
+            'currency',
+            'financeAccount',
             'activeAssignment',
             'assignments' => function ($query) {
                 $query->orderByDesc('assigned_on');
@@ -355,6 +393,40 @@ class AssetController extends Controller
 
         $data = $request->validated();
 
+        // Validate and set currency_id and finance_account_id
+        if (isset($data['finance_account_id']) && $data['finance_account_id']) {
+            // Validate finance account belongs to organization
+            $account = DB::table('finance_accounts')
+                ->where('id', $data['finance_account_id'])
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$account) {
+                return response()->json(['error' => 'Finance account not found or does not belong to your organization'], 422);
+            }
+
+            // If currency_id not provided but account has currency, use account's currency
+            if (!isset($data['currency_id']) || !$data['currency_id']) {
+                if ($account->currency_id) {
+                    $data['currency_id'] = $account->currency_id;
+                }
+            }
+        }
+
+        // Validate currency_id belongs to organization
+        if (isset($data['currency_id']) && $data['currency_id']) {
+            $currency = DB::table('currencies')
+                ->where('id', $data['currency_id'])
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$currency) {
+                return response()->json(['error' => 'Currency not found or does not belong to your organization'], 422);
+            }
+        }
+
         if (isset($data['asset_tag']) && $data['asset_tag']) {
             $assetTagExists = DB::table('assets')
                 ->where('asset_tag', $data['asset_tag'])
@@ -390,7 +462,7 @@ class AssetController extends Controller
             ]);
         }
 
-        return response()->json($asset->load(['building', 'room', 'school', 'category', 'activeAssignment']));
+        return response()->json($asset->load(['building', 'room', 'school', 'category', 'currency', 'financeAccount', 'activeAssignment']));
     }
 
     public function destroy(Request $request, string $id)
@@ -805,9 +877,10 @@ class AssetController extends Controller
                 return ['valid' => false, 'message' => 'Selected room does not exist or has been deleted'];
             }
 
-            // If room has a building_id, validate it matches provided building_id
-            if ($room->building_id) {
-                if ($buildingId && $room->building_id !== $buildingId) {
+            // If room has a building_id and building_id is also provided, validate they match
+            // If only room is provided without building, that's valid (room can exist independently)
+            if ($room->building_id && $buildingId) {
+                if ($room->building_id !== $buildingId) {
                     return ['valid' => false, 'message' => 'Selected room does not belong to the selected building'];
                 }
             }

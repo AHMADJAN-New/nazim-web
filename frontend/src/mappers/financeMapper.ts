@@ -336,6 +336,7 @@ export function mapFinanceDashboardApiToDomain(api: FinanceApi.FinanceDashboard)
             netThisMonth: parseDecimal(api.summary.net_this_month),
             activeProjects: api.summary.active_projects,
             activeDonors: api.summary.active_donors,
+            totalAssetsValue: parseDecimal(api.summary.total_assets_value || '0'),
         },
         accountBalances: Array.isArray(api.account_balances) 
             ? api.account_balances.map(ab => ({
@@ -364,6 +365,23 @@ export function mapFinanceDashboardApiToDomain(api: FinanceApi.FinanceDashboard)
             : [],
         recentExpenses: Array.isArray(api.recent_expenses)
             ? api.recent_expenses.map(mapExpenseEntryApiToDomain)
+            : [],
+        assetsByAccount: Array.isArray(api.assets_by_account)
+            ? api.assets_by_account.map(aa => ({
+                accountId: aa.account_id,
+                accountName: aa.account_name,
+                totalValue: parseDecimal(aa.total_value),
+                currencyCode: aa.currency_code,
+                currencySymbol: aa.currency_symbol,
+            }))
+            : [],
+        assetsByCurrency: Array.isArray(api.assets_by_currency)
+            ? api.assets_by_currency.map(ac => ({
+                currencyId: ac.currency_id,
+                currencyCode: ac.currency_code,
+                totalValue: parseDecimal(ac.total_value),
+                convertedValue: parseDecimal(ac.converted_value),
+            }))
             : [],
     };
 }

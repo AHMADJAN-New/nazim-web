@@ -64,24 +64,75 @@ export default function AssetReportsTab() {
     return filtered;
   }, [assets, statusFilter, categoryFilter]);
 
+  // Helper function to get currency symbol for an asset
+  const getAssetCurrencySymbol = (asset: Asset): string => {
+    // Try asset's currency first
+    if (asset.currency?.symbol) {
+      return asset.currency.symbol;
+    }
+    // Try finance account's currency
+    if (asset.financeAccount?.currency?.symbol) {
+      return asset.financeAccount.currency.symbol;
+    }
+    // Fallback to currency code if no symbol
+    if (asset.currency?.code) {
+      return asset.currency.code;
+    }
+    if (asset.financeAccount?.currency?.code) {
+      return asset.financeAccount.currency.code;
+    }
+    return '$'; // Default fallback
+  };
+
+  // Helper function to format price with currency symbol
+  const formatAssetPrice = (asset: Asset, price: number): string => {
+    const symbol = getAssetCurrencySymbol(asset);
+    return `${symbol} ${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   // Calculate statistics
   const calculatedStats = useMemo(() => {
     const totalAssets = filteredAssets.length;
     
-    // Total price for 1 copy of each asset
-    const totalPrice = filteredAssets.reduce((sum, a) => sum + (a.purchasePrice || 0), 0);
+    // Total price for 1 copy of each asset (grouped by currency)
+    const totalPriceByCurrency: Record<string, { symbol: string; amount: number }> = {};
+    filteredAssets.forEach((asset) => {
+      const price = asset.purchasePrice || 0;
+      if (price > 0) {
+        const currencyKey = asset.currency?.code || asset.financeAccount?.currency?.code || 'USD';
+        const symbol = getAssetCurrencySymbol(asset);
+        if (!totalPriceByCurrency[currencyKey]) {
+          totalPriceByCurrency[currencyKey] = { symbol, amount: 0 };
+        }
+        totalPriceByCurrency[currencyKey].amount += price;
+      }
+    });
     
-    // Total value for all copies (price × copies)
+    // Total value for all copies (price × copies) - grouped by currency
     const getEffectiveCopies = (asset: Asset): number => {
       const copies = asset.totalCopies ?? asset.totalCopiesCount ?? 1;
       return copies > 0 ? copies : 1;
     };
     
-    const totalValue = filteredAssets.reduce((sum, a) => {
-      const price = a.purchasePrice || 0;
-      const copies = getEffectiveCopies(a);
-      return sum + (price * copies);
-    }, 0);
+    const totalValueByCurrency: Record<string, { symbol: string; amount: number }> = {};
+    filteredAssets.forEach((asset) => {
+      const price = asset.purchasePrice || 0;
+      const copies = getEffectiveCopies(asset);
+      const value = price * copies;
+      if (value > 0) {
+        const currencyKey = asset.currency?.code || asset.financeAccount?.currency?.code || 'USD';
+        const symbol = getAssetCurrencySymbol(asset);
+        if (!totalValueByCurrency[currencyKey]) {
+          totalValueByCurrency[currencyKey] = { symbol, amount: 0 };
+        }
+        totalValueByCurrency[currencyKey].amount += value;
+      }
+    });
+    
+    // For backward compatibility, calculate single totals (using first currency or default)
+    const firstCurrency = Object.keys(totalPriceByCurrency)[0] || 'USD';
+    const totalPrice = totalPriceByCurrency[firstCurrency]?.amount || 0;
+    const totalValue = totalValueByCurrency[firstCurrency]?.amount || 0;
     
     const totalCopies = filteredAssets.reduce((sum, a) => sum + getEffectiveCopies(a), 0);
     
@@ -127,6 +178,8 @@ export default function AssetReportsTab() {
       totalAssets,
       totalPrice,
       totalValue,
+      totalPriceByCurrency,
+      totalValueByCurrency,
       totalCopies,
       totalMaintenanceCost,
       statusCounts,
@@ -227,7 +280,15 @@ export default function AssetReportsTab() {
           <CardHeader className="pb-2">
             <CardDescription>Total Price</CardDescription>
             <CardTitle className="text-2xl">
-              ${calculatedStats.totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {Object.entries(calculatedStats.totalPriceByCurrency).map(([code, { symbol, amount }], index) => (
+                <span key={code}>
+                  {index > 0 && <span className="text-muted-foreground"> + </span>}
+                  <span>{symbol} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </span>
+              ))}
+              {Object.keys(calculatedStats.totalPriceByCurrency).length === 0 && (
+                <span className="text-muted-foreground">$0.00</span>
+              )}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
               Sum of all asset prices (1 copy each)
@@ -238,7 +299,15 @@ export default function AssetReportsTab() {
           <CardHeader className="pb-2">
             <CardDescription>Total Value</CardDescription>
             <CardTitle className="text-2xl">
-              ${calculatedStats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {Object.entries(calculatedStats.totalValueByCurrency).map(([code, { symbol, amount }], index) => (
+                <span key={code}>
+                  {index > 0 && <span className="text-muted-foreground"> + </span>}
+                  <span>{symbol} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </span>
+              ))}
+              {Object.keys(calculatedStats.totalValueByCurrency).length === 0 && (
+                <span className="text-muted-foreground">$0.00</span>
+              )}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
               Price × Total Copies
@@ -337,11 +406,22 @@ export default function AssetReportsTab() {
                 <TableBody>
                   {Object.entries(calculatedStats.statusCounts).map(([status, count]) => {
                     const statusAssets = assetsByStatus[status] || [];
-                    const statusValue = statusAssets.reduce((sum, a) => {
+                    // Calculate value grouped by currency
+                    const statusValueByCurrency: Record<string, { symbol: string; amount: number }> = {};
+                    statusAssets.forEach((a) => {
                       const price = a.purchasePrice || 0;
                       const copies = a.totalCopiesCount ?? a.totalCopies ?? 1;
-                      return sum + (price * copies);
-                    }, 0);
+                      const value = price * copies;
+                      if (value > 0) {
+                        const currencyKey = a.currency?.code || a.financeAccount?.currency?.code || 'USD';
+                        const symbol = getAssetCurrencySymbol(a);
+                        if (!statusValueByCurrency[currencyKey]) {
+                          statusValueByCurrency[currencyKey] = { symbol, amount: 0 };
+                        }
+                        statusValueByCurrency[currencyKey].amount += value;
+                      }
+                    });
+                    const statusValue = Object.values(statusValueByCurrency).reduce((sum, curr) => sum + curr.amount, 0);
                     const totalCopies = statusAssets.reduce((sum, a) => sum + (a.totalCopiesCount ?? a.totalCopies ?? 1), 0);
                     const assignedCopies = statusAssets.reduce((sum, a) => {
                       const total = a.totalCopiesCount ?? a.totalCopies ?? 1;
@@ -373,7 +453,17 @@ export default function AssetReportsTab() {
                             <span className="text-xs text-muted-foreground">/ {totalCopies}</span>
                           </div>
                         </TableCell>
-                        <TableCell>${statusValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                        <TableCell>
+                          {Object.entries(statusValueByCurrency).map(([code, { symbol, amount }], index) => (
+                            <span key={code}>
+                              {index > 0 && <span className="text-muted-foreground"> + </span>}
+                              <span>{symbol} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </span>
+                          ))}
+                          {Object.keys(statusValueByCurrency).length === 0 && (
+                            <span className="text-muted-foreground">$0.00</span>
+                          )}
+                        </TableCell>
                         <TableCell>{percentage}%</TableCell>
                       </TableRow>
                     );
@@ -406,11 +496,22 @@ export default function AssetReportsTab() {
                 <TableBody>
                   {Object.entries(calculatedStats.categoryCounts).map(([category, count]) => {
                     const categoryAssets = assetsByCategory[category] || [];
-                    const categoryValue = categoryAssets.reduce((sum, a) => {
+                    // Calculate value grouped by currency
+                    const categoryValueByCurrency: Record<string, { symbol: string; amount: number }> = {};
+                    categoryAssets.forEach((a) => {
                       const price = a.purchasePrice || 0;
                       const copies = a.totalCopiesCount ?? a.totalCopies ?? 1;
-                      return sum + (price * copies);
-                    }, 0);
+                      const value = price * copies;
+                      if (value > 0) {
+                        const currencyKey = a.currency?.code || a.financeAccount?.currency?.code || 'USD';
+                        const symbol = getAssetCurrencySymbol(a);
+                        if (!categoryValueByCurrency[currencyKey]) {
+                          categoryValueByCurrency[currencyKey] = { symbol, amount: 0 };
+                        }
+                        categoryValueByCurrency[currencyKey].amount += value;
+                      }
+                    });
+                    const categoryValue = Object.values(categoryValueByCurrency).reduce((sum, curr) => sum + curr.amount, 0);
                     const totalCopies = categoryAssets.reduce((sum, a) => sum + (a.totalCopiesCount ?? a.totalCopies ?? 1), 0);
                     const assignedCopies = categoryAssets.reduce((sum, a) => {
                       const total = a.totalCopiesCount ?? a.totalCopies ?? 1;
@@ -429,7 +530,17 @@ export default function AssetReportsTab() {
                             <span className="text-xs text-muted-foreground">/ {totalCopies}</span>
                           </div>
                         </TableCell>
-                        <TableCell>${categoryValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                        <TableCell>
+                          {Object.entries(categoryValueByCurrency).map(([code, { symbol, amount }], index) => (
+                            <span key={code}>
+                              {index > 0 && <span className="text-muted-foreground"> + </span>}
+                              <span>{symbol} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </span>
+                          ))}
+                          {Object.keys(categoryValueByCurrency).length === 0 && (
+                            <span className="text-muted-foreground">$0.00</span>
+                          )}
+                        </TableCell>
                         <TableCell>{percentage}%</TableCell>
                       </TableRow>
                     );
@@ -536,7 +647,9 @@ export default function AssetReportsTab() {
                       .map((asset) => (
                         <TableRow key={asset.id}>
                           <TableCell>{asset.name}</TableCell>
-                          <TableCell className="font-medium">${(asset.purchasePrice || 0).toLocaleString()}</TableCell>
+                          <TableCell className="font-medium">
+                            {formatAssetPrice(asset, asset.purchasePrice || 0)}
+                          </TableCell>
                         </TableRow>
                       ))}
                   </TableBody>

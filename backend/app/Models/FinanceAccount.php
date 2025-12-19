@@ -101,6 +101,14 @@ class FinanceAccount extends Model
     }
 
     /**
+     * Get all assets linked to this account
+     */
+    public function assets()
+    {
+        return $this->hasMany(Asset::class, 'finance_account_id');
+    }
+
+    /**
      * Scope to filter by organization
      */
     public function scopeForOrganization($query, $organizationId)
@@ -117,7 +125,7 @@ class FinanceAccount extends Model
     }
 
     /**
-     * Update the current balance based on income and expenses
+     * Update the current balance based on income, expenses, and assets
      * Converts all entries to account's currency if account has a currency
      */
     public function recalculateBalance()
@@ -126,11 +134,20 @@ class FinanceAccount extends Model
             // If account has no currency, use simple sum (backward compatibility)
             $totalIncome = $this->incomeEntries()->whereNull('deleted_at')->sum('amount');
             $totalExpense = $this->expenseEntries()->whereNull('deleted_at')->where('status', 'approved')->sum('amount');
-            $this->current_balance = $this->opening_balance + $totalIncome - $totalExpense;
+            
+            // Add assets value (simple sum without currency conversion)
+            $totalAssets = $this->assets()
+                ->whereNull('deleted_at')
+                ->whereIn('status', ['available', 'assigned', 'maintenance'])
+                ->whereNotNull('purchase_price')
+                ->sum('purchase_price');
+            
+            $this->current_balance = $this->opening_balance + $totalIncome - $totalExpense + (float) $totalAssets;
         } else {
             // Convert all entries to account's currency
             $totalIncome = 0;
             $totalExpense = 0;
+            $totalAssets = 0;
             
             // Process income entries
             foreach ($this->incomeEntries()->whereNull('deleted_at')->get() as $entry) {
@@ -168,7 +185,49 @@ class FinanceAccount extends Model
                 $totalExpense += $amount;
             }
             
-            $this->current_balance = $this->opening_balance + $totalIncome - $totalExpense;
+            // Process assets (convert to account's currency)
+            $assets = $this->assets()
+                ->whereNull('deleted_at')
+                ->whereIn('status', ['available', 'assigned', 'maintenance'])
+                ->whereNotNull('purchase_price')
+                ->with(['currency', 'financeAccount.currency'])
+                ->get();
+            
+            foreach ($assets as $asset) {
+                $price = (float) $asset->purchase_price;
+                if ($price <= 0) {
+                    continue;
+                }
+                
+                // Determine asset's currency
+                $assetCurrencyId = $asset->currency_id;
+                if (!$assetCurrencyId && $asset->financeAccount && $asset->financeAccount->currency_id) {
+                    // Use account's currency if asset doesn't have one
+                    $assetCurrencyId = $asset->financeAccount->currency_id;
+                }
+                if (!$assetCurrencyId) {
+                    // If no currency found, skip (or use account currency as fallback)
+                    $assetCurrencyId = $this->currency_id;
+                }
+                
+                // Convert to account's currency
+                if ($assetCurrencyId && $assetCurrencyId !== $this->currency_id) {
+                    $rate = ExchangeRate::getRate(
+                        $this->organization_id,
+                        $assetCurrencyId,
+                        $this->currency_id,
+                        $asset->purchase_date ? $asset->purchase_date->toDateString() : null
+                    );
+                    if ($rate !== null) {
+                        $price = $price * $rate;
+                    }
+                    // If rate not found, use original price (graceful degradation)
+                }
+                
+                $totalAssets += $price;
+            }
+            
+            $this->current_balance = $this->opening_balance + $totalIncome - $totalExpense + $totalAssets;
         }
         
         $this->save();

@@ -11,6 +11,7 @@ use App\Models\FinanceProject;
 use App\Models\Donor;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
+use App\Models\Asset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -65,6 +66,7 @@ class FinanceReportController extends Controller
             $currentMonthEnd = date('Y-m-t');
 
             // Total balances across all accounts (with currency conversion)
+            // Recalculate balances to include assets before calculating totals
             $accounts = FinanceAccount::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
                 ->where('is_active', true)
@@ -72,6 +74,9 @@ class FinanceReportController extends Controller
             
             $totalBalance = 0;
             foreach ($accounts as $account) {
+                // Recalculate balance to include assets
+                $account->recalculateBalance();
+                
                 $balance = (float) $account->current_balance;
                 if ($targetCurrencyId && $account->currency_id && $account->currency_id !== $targetCurrencyId) {
                     $balance = $this->convertAmount($balance, $account->currency_id, $targetCurrencyId, $orgId);
@@ -111,12 +116,16 @@ class FinanceReportController extends Controller
             }
 
             // Account balances (with currency conversion)
+            // Recalculate balances to include assets before displaying
             $accountBalances = FinanceAccount::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get()
                 ->map(function ($account) use ($targetCurrencyId, $orgId) {
+                    // Recalculate balance to include assets
+                    $account->recalculateBalance();
+                    
                     $balance = (float) $account->current_balance;
                     if ($targetCurrencyId && $account->currency_id && $account->currency_id !== $targetCurrencyId) {
                         $balance = $this->convertAmount($balance, $account->currency_id, $targetCurrencyId, $orgId);
@@ -195,6 +204,91 @@ class FinanceReportController extends Controller
                 ->where('is_active', true)
                 ->count();
 
+            // Calculate assets value (with currency conversion)
+            $assets = Asset::whereNull('deleted_at')
+                ->where('organization_id', $orgId)
+                ->whereIn('status', ['available', 'assigned', 'maintenance'])
+                ->whereNotNull('purchase_price')
+                ->with(['currency', 'financeAccount.currency'])
+                ->get();
+
+            $totalAssetsValue = 0;
+            $assetsByAccount = [];
+            $assetsByCurrency = [];
+
+            foreach ($assets as $asset) {
+                $price = (float) $asset->purchase_price;
+                if ($price <= 0) {
+                    continue;
+                }
+
+                // Determine asset's currency
+                $assetCurrencyId = $asset->currency_id;
+                if (!$assetCurrencyId && $asset->financeAccount && $asset->financeAccount->currency_id) {
+                    // Use account's currency if asset doesn't have one
+                    $assetCurrencyId = $asset->financeAccount->currency_id;
+                }
+                if (!$assetCurrencyId) {
+                    // Use base currency if no currency found
+                    $assetCurrencyId = $targetCurrencyId;
+                }
+
+                // Convert to target currency
+                $convertedPrice = $price;
+                if ($targetCurrencyId && $assetCurrencyId && $assetCurrencyId !== $targetCurrencyId) {
+                    $convertedPrice = $this->convertAmount(
+                        $price,
+                        $assetCurrencyId,
+                        $targetCurrencyId,
+                        $orgId,
+                        $asset->purchase_date ? $asset->purchase_date->toDateString() : null
+                    );
+                }
+
+                $totalAssetsValue += $convertedPrice;
+
+                // Group by account
+                if ($asset->finance_account_id) {
+                    $accountId = $asset->finance_account_id;
+                    $accountName = $asset->financeAccount ? $asset->financeAccount->name : 'Unknown';
+                    $currencyCode = $asset->currency ? $asset->currency->code : ($asset->financeAccount && $asset->financeAccount->currency ? $asset->financeAccount->currency->code : 'N/A');
+                    $currencySymbol = $asset->currency ? $asset->currency->symbol : ($asset->financeAccount && $asset->financeAccount->currency ? $asset->financeAccount->currency->symbol : 'N/A');
+
+                    if (!isset($assetsByAccount[$accountId])) {
+                        $assetsByAccount[$accountId] = [
+                            'account_id' => $accountId,
+                            'account_name' => $accountName,
+                            'total_value' => 0,
+                            'currency_code' => $currencyCode,
+                            'currency_symbol' => $currencySymbol,
+                        ];
+                    }
+                    $assetsByAccount[$accountId]['total_value'] += $convertedPrice;
+                }
+
+                // Group by currency
+                if ($assetCurrencyId) {
+                    $currencyCode = $asset->currency ? $asset->currency->code : 'N/A';
+                    if (!isset($assetsByCurrency[$assetCurrencyId])) {
+                        $assetsByCurrency[$assetCurrencyId] = [
+                            'currency_id' => $assetCurrencyId,
+                            'currency_code' => $currencyCode,
+                            'total_value' => 0,
+                            'converted_value' => 0,
+                        ];
+                    }
+                    $assetsByCurrency[$assetCurrencyId]['total_value'] += $price;
+                    $assetsByCurrency[$assetCurrencyId]['converted_value'] += $convertedPrice;
+                }
+            }
+
+            // Convert arrays to indexed arrays
+            $assetsByAccountArray = array_values($assetsByAccount);
+            $assetsByCurrencyArray = array_values($assetsByCurrency);
+
+            // Update total balance to include assets value
+            $totalBalanceWithAssets = $totalBalance + $totalAssetsValue;
+
             // Recent income entries
             $recentIncome = IncomeEntry::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
@@ -214,18 +308,21 @@ class FinanceReportController extends Controller
 
             return response()->json([
                 'summary' => [
-                    'total_balance' => $totalBalance,
+                    'total_balance' => $totalBalanceWithAssets,
                     'current_month_income' => $currentMonthIncome,
                     'current_month_expense' => $currentMonthExpense,
                     'net_this_month' => $currentMonthIncome - $currentMonthExpense,
                     'active_projects' => $activeProjects,
                     'active_donors' => $activeDonors,
+                    'total_assets_value' => $totalAssetsValue,
                 ],
                 'account_balances' => $accountBalances->toArray(),
                 'income_by_category' => $incomeByCategory->toArray(),
                 'expense_by_category' => $expenseByCategory->toArray(),
                 'recent_income' => $recentIncome->toArray(),
                 'recent_expenses' => $recentExpenses->toArray(),
+                'assets_by_account' => $assetsByAccountArray,
+                'assets_by_currency' => $assetsByCurrencyArray,
             ]);
         } catch (\Exception $e) {
             \Log::error('FinanceReportController@dashboard error: ' . $e->getMessage());

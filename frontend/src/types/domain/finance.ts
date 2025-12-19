@@ -244,6 +244,7 @@ export interface FinanceDashboard {
         netThisMonth: number;
         activeProjects: number;
         activeDonors: number;
+        totalAssetsValue: number;
     };
     accountBalances: Array<{
         id: string;
@@ -263,6 +264,19 @@ export interface FinanceDashboard {
     }>;
     recentIncome: IncomeEntry[];
     recentExpenses: ExpenseEntry[];
+    assetsByAccount: Array<{
+        accountId: string;
+        accountName: string;
+        totalValue: number;
+        currencyCode: string;
+        currencySymbol: string;
+    }>;
+    assetsByCurrency: Array<{
+        currencyId: string;
+        currencyCode: string;
+        totalValue: number;
+        convertedValue: number;
+    }>;
 }
 
 // Daily Cashbook

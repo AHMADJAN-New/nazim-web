@@ -4,6 +4,8 @@ import type { Asset, AssetAssignmentDomain, AssetMaintenanceDomain, AssetHistory
 export const mapAssetApiToDomain = (api: AssetApi.Asset): Asset => ({
   id: api.id,
   organizationId: api.organization_id,
+  currencyId: api.currency_id ?? null,
+  financeAccountId: api.finance_account_id ?? null,
   schoolId: api.school_id,
   buildingId: api.building_id,
   roomId: api.room_id,
@@ -32,6 +34,14 @@ export const mapAssetApiToDomain = (api: AssetApi.Asset): Asset => ({
     api.maintenance_cost_total !== undefined && api.maintenance_cost_total !== null
       ? Number(api.maintenance_cost_total)
       : null,
+  currency: api.currency ?? null,
+  financeAccount: api.finance_account ? {
+    id: api.finance_account.id,
+    name: api.finance_account.name,
+    code: api.finance_account.code ?? null,
+    currencyId: api.finance_account.currency_id ?? null,
+    currency: api.finance_account.currency ?? null,
+  } : null,
   activeAssignment: api.active_assignment ? mapAssetAssignmentApiToDomain(api.active_assignment) : null,
   assignments: api.assignments?.map(mapAssetAssignmentApiToDomain),
   maintenanceRecords: api.maintenance_records?.map(mapAssetMaintenanceApiToDomain),
@@ -116,6 +126,8 @@ export const mapAssetDomainToInsert = (domain: Partial<Asset>): AssetApi.AssetIn
   school_id: domain.schoolId && domain.schoolId !== 'none' ? domain.schoolId : null,
   building_id: domain.buildingId && domain.buildingId !== 'none' ? domain.buildingId : null,
   room_id: domain.roomId && domain.roomId !== 'none' ? domain.roomId : null,
+  currency_id: domain.currencyId ?? null,
+  finance_account_id: domain.financeAccountId ?? null,
 });
 
 export const mapAssetDomainToUpdate = (domain: Partial<Asset>): AssetApi.AssetUpdate => ({
@@ -134,6 +146,8 @@ export const mapAssetDomainToUpdate = (domain: Partial<Asset>): AssetApi.AssetUp
   school_id: domain.schoolId && domain.schoolId !== 'none' ? domain.schoolId : null,
   building_id: domain.buildingId && domain.buildingId !== 'none' ? domain.buildingId : null,
   room_id: domain.roomId && domain.roomId !== 'none' ? domain.roomId : null,
+  currency_id: domain.currencyId,
+  finance_account_id: domain.financeAccountId,
 });
 
 export const mapAssetAssignmentDomainToInsert = (

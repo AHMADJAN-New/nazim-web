@@ -58,6 +58,11 @@ class FinanceAccountController extends Controller
             }
 
             $accounts = $query->with('currency')->orderBy('name')->get();
+            
+            // Recalculate balances to include assets before returning
+            foreach ($accounts as $account) {
+                $account->recalculateBalance();
+            }
 
             return response()->json($accounts);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -182,6 +187,9 @@ class FinanceAccountController extends Controller
                 return response()->json(['error' => 'Finance account not found'], 404);
             }
 
+            // Recalculate balance to include assets before returning
+            $account->recalculateBalance();
+
             return response()->json($account);
         } catch (\Exception $e) {
             \Log::error('FinanceAccountController@show error: ' . $e->getMessage());
@@ -259,6 +267,9 @@ class FinanceAccountController extends Controller
             }
 
             $account->load('currency');
+            
+            // Recalculate balance to include assets before returning
+            $account->recalculateBalance();
 
             return response()->json($account);
         } catch (\Illuminate\Validation\ValidationException $e) {
