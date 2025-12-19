@@ -80,6 +80,53 @@ export interface TemplateVariable {
   description?: string;
 }
 
+export interface TemplateField {
+  key: string;
+  label: string;
+  label_en: string;
+  group: string;
+}
+
+export interface TableStructure {
+  headers: string[];
+  rows: string[][];
+}
+
+export interface FieldPosition {
+  x: number; // Percentage (0-100)
+  y: number; // Percentage (0-100)
+  fontSize?: number;
+  fontFamily?: string;
+  textAlign?: 'left' | 'center' | 'right';
+  color?: string;
+  width?: number; // Percentage (0-100) or pixels
+  height?: number; // Percentage (0-100) or pixels
+  maxWidth?: number; // Percentage (0-100) or pixels
+}
+
+export interface PositionedBlock {
+  id: string;
+  type: "text" | "variable" | "static";
+  x: number; // mm from left
+  y: number; // mm from top
+  width: number; // mm
+  height: number; // mm
+  content: string;
+  variableName?: string;
+  styles: {
+    fontFamily: string;
+    fontSize: number;
+    fontWeight: string;
+    color: string;
+    textAlign: "left" | "center" | "right";
+    direction: "ltr" | "rtl";
+    lineHeight: number;
+    backgroundColor?: string;
+    border?: string;
+    padding?: string;
+  };
+}
+
 export interface LetterTemplate {
   id: string;
   organization_id: string;
@@ -87,20 +134,24 @@ export interface LetterTemplate {
   name: string;
   category: string;
   letterhead_id?: string | null;
+  watermark_id?: string | null;
   letter_type?: LetterType | null;
-  body_html?: string | null;
-  template_file_path?: string | null;
-  template_file_type?: 'html' | 'word' | 'pdf' | 'image';
+  body_text?: string | null;
+  font_family?: string | null;
+  font_size?: number | null;
   variables?: TemplateVariable[] | null;
-  header_structure?: Record<string, any> | null;
-  allow_edit_body?: boolean;
+  supports_tables?: boolean;
+  table_structure?: TableStructure | null;
+  field_positions?: Record<string, FieldPosition> | null;
   default_security_level_key?: string | null;
   page_layout?: string;
+  repeat_letterhead_on_pages?: boolean;
   is_mass_template?: boolean;
   active?: boolean;
   created_at?: string;
   updated_at?: string;
   letterhead?: Letterhead | null;
+  watermark?: Letterhead | null;
 }
 
 export interface Letterhead {
@@ -110,11 +161,12 @@ export interface Letterhead {
   name: string;
   file_path: string;
   file_type?: 'pdf' | 'image' | 'html';
+  file_url?: string | null;
+  letterhead_type?: 'background' | 'watermark';
   letter_type?: LetterType | null;
   default_for_layout?: string | null;
   position?: 'header' | 'background' | 'watermark';
   preview_url?: string | null;
-  file_url?: string | null;
   active?: boolean;
   created_at?: string;
   updated_at?: string;

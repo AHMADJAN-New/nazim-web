@@ -14,12 +14,32 @@ export default defineConfig({
   },
   build: {
     commonjsOptions: {
-      include: [/pdfmake-arabic/, /node_modules/],
+      include: [/pdfmake-arabic/, /pdfmake/, /node_modules/],
       transformMixedEsModules: true,
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'pdfmake': ['pdfmake-arabic/build/pdfmake', 'pdfmake/build/vfs_fonts'],
+        },
+      },
     },
   },
   optimizeDeps: {
-    include: ['pdfmake-arabic/build/vfs_fonts'],
+    include: [
+      'react',
+      'react-dom',
+      '@tanstack/react-table',
+      'recharts',
+    ],
+    exclude: [
+      'pdfmake-arabic',
+      'pdfmake',
+    ],
+    esbuildOptions: {
+      // Handle CommonJS modules
+      target: 'es2020',
+    },
   },
   server: {
     port: 5173,

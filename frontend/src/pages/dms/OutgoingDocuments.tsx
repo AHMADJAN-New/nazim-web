@@ -122,7 +122,8 @@ function AttachmentCard({
         )}
       </div>
       <CardContent className="p-3">
- me h          {file.original_name}
+        <p className="text-sm font-medium mb-1 truncate" title={file.original_name}>
+          {file.original_name}
         </p>
         <p className="text-xs text-muted-foreground mb-3">
           {file.size_bytes ? `${(file.size_bytes / 1024).toFixed(2)} KB • ` : ''}v{file.version}
@@ -697,6 +698,30 @@ export default function OutgoingDocuments() {
     }
   };
 
+  const handleDownloadPdf = async (doc: OutgoingDocument) => {
+    try {
+      if (!doc.template_id) {
+        showToast.error('This document has no template attached, so a PDF cannot be generated.');
+        return;
+      }
+
+      const { blob, filename } = await dmsApi.outgoing.downloadPdf(doc.id);
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || `${doc.full_outdoc_number || 'outgoing-document'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to download PDF';
+      showToast.error(message);
+    }
+  };
+
   // Generate page numbers for pagination
   const getPageNumbers = () => {
     if (!paginationMeta) return [];
@@ -1145,6 +1170,12 @@ export default function OutgoingDocuments() {
                               <Eye className="h-4 w-4 mr-2" />
                               {t('common.view') || 'View'}
                             </DropdownMenuItem>
+                            {doc.template_id && (
+                              <DropdownMenuItem onClick={() => void handleDownloadPdf(doc)}>
+                                <Download className="h-4 w-4 mr-2" />
+                                Download PDF
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => openEditDialog(doc)}>
                               <Edit className="h-4 w-4 mr-2" />
                               {t('common.edit') || 'Edit'}

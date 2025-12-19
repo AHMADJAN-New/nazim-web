@@ -23,9 +23,8 @@ class Letterhead extends Model
         'name',
         'file_path',
         'file_type',
+        'letterhead_type',
         'letter_type',
-        'default_for_layout',
-        'position',
         'preview_url',
         'active',
     ];
@@ -34,36 +33,40 @@ class Letterhead extends Model
         'active' => 'boolean',
     ];
 
+    // Ensure computed URLs are returned in API responses
+    protected $appends = [
+        'file_url',
+        'preview_url',
+    ];
+
+    /**
+     * Get a signed/served URL for this letterhead file.
+     */
+    public function getFileUrlAttribute(): ?string
+    {
+        if (empty($this->attributes['file_path'])) {
+            return null;
+        }
+
+        // Use the serve route so auth/org scoping is preserved
+        try {
+            return route('dms.letterheads.serve', ['id' => $this->id]);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     /**
      * Get the preview URL for the letterhead.
-     * If preview_url is set, return it; otherwise return file serve URL.
+     * If preview_url is set, return it; otherwise return the served file URL.
      */
-    public function getPreviewUrlAttribute($value)
+    public function getPreviewUrlAttribute($value): ?string
     {
-        // Return stored preview_url if available
         if ($value) {
             return $value;
         }
 
-        // Return file serve URL as fallback
-        $filePath = $this->attributes['file_path'] ?? null;
-        if ($filePath) {
-            return route('dms.letterheads.serve', ['id' => $this->id]);
-        }
-
-        return null;
-    }
-
-    /**
-     * Get the file URL for the letterhead.
-     */
-    public function getFileUrlAttribute()
-    {
-        $filePath = $this->attributes['file_path'] ?? null;
-        if ($filePath) {
-            return route('dms.letterheads.serve', ['id' => $this->id]);
-        }
-        return null;
+        return $this->file_url;
     }
 
     protected static function boot()

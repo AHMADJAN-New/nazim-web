@@ -178,36 +178,6 @@ class LetterheadsController extends BaseDmsController
         return Storage::download($record->file_path, $record->name . '.' . $extension);
     }
 
-    /**
-     * Serve letterhead file (for viewing/preview)
-     */
-    public function serve(string $id, Request $request)
-    {
-        $context = $this->requireOrganizationContext($request, 'dms.letterheads.manage');
-        if ($context instanceof \Illuminate\Http\JsonResponse) {
-            return $context;
-        }
-        [, $profile] = $context;
-
-        $record = Letterhead::where('id', $id)
-            ->where('organization_id', $profile->organization_id)
-            ->firstOrFail();
-
-        $this->authorize('view', $record);
-
-        if (!Storage::exists($record->file_path)) {
-            return response()->json(['error' => 'File not found'], 404);
-        }
-
-        $file = Storage::get($record->file_path);
-        $mimeType = Storage::mimeType($record->file_path) ?: 
-            ($record->file_type === 'pdf' ? 'application/pdf' : 'image/png');
-
-        return response($file, 200)
-            ->header('Content-Type', $mimeType)
-            ->header('Content-Disposition', 'inline; filename="' . basename($record->file_path) . '"');
-    }
-
     public function show(string $id, Request $request)
     {
         $context = $this->requireOrganizationContext($request, 'dms.letterheads.manage');
@@ -257,6 +227,48 @@ class LetterheadsController extends BaseDmsController
         return response()->noContent();
     }
 
+    public function serve(string $id, Request $request)
+    {
+        $context = $this->requireOrganizationContext($request, 'dms.letterheads.read');
+        if ($context instanceof \Illuminate\Http\JsonResponse) {
+            return $context;
+        }
+        [, $profile] = $context;
+
+        $record = Letterhead::where('id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->firstOrFail();
+
+        $this->authorize('view', $record);
+
+        if (!$record->file_path || !Storage::exists($record->file_path)) {
+            abort(404, 'File not found');
+        }
+
+        // Determine content type based on file extension
+        $extension = pathinfo($record->file_path, PATHINFO_EXTENSION);
+        $contentType = match(strtolower($extension)) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'pdf' => 'application/pdf',
+            default => 'application/octet-stream',
+        };
+
+        $downloadName = $record->name;
+        if ($extension) {
+            $downloadName .= '.' . $extension;
+        }
+
+        return Storage::response(
+            $record->file_path,
+            $downloadName,
+            ['Content-Type' => $contentType],
+            'inline'
+        );
+    }
+
     public function preview(string $id, Request $request)
     {
         $context = $this->requireOrganizationContext($request, 'dms.letterheads.manage');
@@ -272,9 +284,16 @@ class LetterheadsController extends BaseDmsController
         $this->authorize('view', $record);
 
         $html = '';
+        $letterheadBase64 = null;
         $renderingService = app(\App\Services\DocumentRenderingService::class);
+
+        // Get base64 encoded letterhead for frontend positioning editor
+        if (method_exists($renderingService, 'getLetterheadBase64')) {
+            $letterheadBase64 = $renderingService->getLetterheadBase64($record);
+        }
+
         if (method_exists($renderingService, 'processLetterheadFile')) {
-            $html = $renderingService->processLetterheadFile($record);
+            $html = $renderingService->processLetterheadFile($record, true);
         } else {
             // Fallback: return file serve URL
             $fileUrl = route('dms.letterheads.serve', ['id' => $record->id]);
@@ -288,6 +307,7 @@ class LetterheadsController extends BaseDmsController
         return response()->json([
             'html' => $html,
             'letterhead' => $record,
+            'letterhead_base64' => $letterheadBase64,
             'preview_url' => $record->preview_url,
             'file_url' => $record->file_url ?? route('dms.letterheads.serve', ['id' => $record->id]),
         ]);

@@ -1,7 +1,8 @@
 // src/lib/reporting/pdfExport.ts
 // pdfmake imports - types are handled via type assertions below
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
+import * as pdfMakeModule from 'pdfmake/build/pdfmake';
+const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 import type { ReportDefinition, ResolvedReportBranding, PageSize } from './types';
 import type { School } from '@/hooks/useSchools';

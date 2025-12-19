@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
 import { letterheadSchema, type LetterheadFormData } from "@/lib/validations/dms";
 import type { Letterhead } from "@/types/dms";
@@ -41,9 +42,8 @@ export function LetterheadForm({
     defaultValues: {
       name: letterhead?.name || "",
       file_type: letterhead?.file_type || "image",
+      letterhead_type: letterhead?.letterhead_type || "background",
       letter_type: letterhead?.letter_type || null,
-      default_for_layout: letterhead?.default_for_layout || null,
-      position: letterhead?.position || "header",
       active: letterhead?.active ?? true,
     },
   });
@@ -210,102 +210,100 @@ export function LetterheadForm({
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="file_type">File Type</Label>
+      <div className="space-y-4">
+        <div className="space-y-3">
+          <Label>Letterhead Type <span className="text-destructive">*</span></Label>
           <Controller
-            name="file_type"
+            name="letterhead_type"
             control={control}
             render={({ field }) => (
-              <Select
-                value={field.value || "image"}
+              <RadioGroup
+                value={field.value || "background"}
                 onValueChange={field.onChange}
+                className="flex flex-col space-y-2"
               >
-                <SelectTrigger id="file_type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="image">Image</SelectItem>
-                  <SelectItem value="pdf">PDF</SelectItem>
-                  <SelectItem value="html">HTML</SelectItem>
-                </SelectContent>
-              </Select>
+                <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-muted/50">
+                  <RadioGroupItem value="background" id="background" />
+                  <div className="flex-1">
+                    <Label htmlFor="background" className="font-medium cursor-pointer">
+                      Background
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Full-page background that appears on all pages
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-muted/50">
+                  <RadioGroupItem value="watermark" id="watermark" />
+                  <div className="flex-1">
+                    <Label htmlFor="watermark" className="font-medium cursor-pointer">
+                      Watermark
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Centered overlay with low opacity behind text
+                    </p>
+                  </div>
+                </div>
+              </RadioGroup>
             )}
           />
+          {errors.letterhead_type && (
+            <p className="text-sm text-destructive">{errors.letterhead_type.message}</p>
+          )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="letter_type">Letter Type</Label>
-          <Controller
-            name="letter_type"
-            control={control}
-            render={({ field }) => (
-              <Select
-                value={field.value || "__none__"}
-                onValueChange={(value) =>
-                  field.onChange(value === "__none__" ? null : value)
-                }
-                disabled={letterTypesLoading}
-              >
-                <SelectTrigger id="letter_type">
-                  <SelectValue placeholder={letterTypesLoading ? "Loading..." : "Select letter type"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">None</SelectItem>
-                  {letterTypes.map((lt) => (
-                    <SelectItem key={lt.id} value={lt.key}>
-                      {lt.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="file_type">File Type</Label>
+            <Controller
+              name="file_type"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || "image"}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger id="file_type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="image">Image</SelectItem>
+                    <SelectItem value="pdf">PDF</SelectItem>
+                    <SelectItem value="html">HTML</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="position">Position</Label>
-          <Controller
-            name="position"
-            control={control}
-            render={({ field }) => (
-              <Select value={field.value || "header"} onValueChange={field.onChange}>
-                <SelectTrigger id="position">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="header">Header</SelectItem>
-                  <SelectItem value="background">Background</SelectItem>
-                  <SelectItem value="watermark">Watermark</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="default_for_layout">Default for Layout</Label>
-          <Controller
-            name="default_for_layout"
-            control={control}
-            render={({ field }) => (
-              <Select
-                value={field.value || "__none__"}
-                onValueChange={(value) =>
-                  field.onChange(value === "__none__" ? null : value)
-                }
-              >
-                <SelectTrigger id="default_for_layout">
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">None</SelectItem>
-                  <SelectItem value="portrait">Portrait</SelectItem>
-                  <SelectItem value="landscape">Landscape</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
+          <div className="space-y-2">
+            <Label htmlFor="letter_type">Letter Type (Optional)</Label>
+            <Controller
+              name="letter_type"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || "__none__"}
+                  onValueChange={(value) =>
+                    field.onChange(value === "__none__" ? null : value)
+                  }
+                  disabled={letterTypesLoading}
+                >
+                  <SelectTrigger id="letter_type">
+                    <SelectValue placeholder={letterTypesLoading ? "Loading..." : "Select letter type"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">None</SelectItem>
+                    {letterTypes.map((lt) => (
+                      <SelectItem key={lt.id} value={lt.key}>
+                        {lt.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
         </div>
       </div>
 

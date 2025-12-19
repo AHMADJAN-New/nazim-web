@@ -88,9 +88,10 @@ export const csp = {
       ...additionalDomains
     ].filter(Boolean).join(' ');
 
-    // Build img-src and frame-src
+  // Build img-src, frame-src, and object-src
     const imgSrcParts = ["'self'", "data:", "https:", "http:"];
-    const frameSrcParts = ["'self'", "blob:", "https:", "http:"];
+    const frameSrcParts = ["'self'", "blob:", "data:", "srcdoc:", "about:", "https:", "http:"];
+    const objectSrcParts = ["'self'", "blob:", "data:", "https:", "http:"];
 
     const policies = [
       "default-src 'self' blob:",
@@ -99,6 +100,7 @@ export const csp = {
       "font-src 'self' data: https://fonts.gstatic.com",
       `img-src ${imgSrcParts.join(' ')}`,
       `frame-src ${frameSrcParts.join(' ')}`,
+      `object-src ${objectSrcParts.join(' ')}`,
       `connect-src ${connectSrc}`,
       // Note: frame-ancestors cannot be set via meta tag, only via HTTP header
       "base-uri 'self'",
@@ -274,18 +276,22 @@ export const initializeSecurity = () => {
       "http:", // Allow HTTP for local development
     ];
     
-    // Build frame-src for PDFs (same as img-src)
+    // Build frame-src for PDFs and iframes (include data: and srcdoc: for preview iframes)
     const frameSrcParts = [
       "'self'",
       "blob:",
+      "data:",
+      "srcdoc:",
+      "about:",
       "https:",
       "http:", // Allow HTTP for local development
     ];
     
-    // Allow object-src for PDF/object embeds in dev (includes http/https)
+    // Allow object-src for PDF/object embeds in dev (includes http/https and data URIs)
     const objectSrcParts = [
       "'self'",
       "blob:",
+      "data:", // Allow data URIs for base64-encoded PDFs
       "https:",
       "http:", // Allow HTTP for local development (PDF/object)
     ];
