@@ -450,11 +450,19 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     Route::get('/fees/assignments', [FeeAssignmentController::class, 'index']);
     Route::post('/fees/assignments', [FeeAssignmentController::class, 'store']);
+    Route::put('/fees/assignments/{id}', [FeeAssignmentController::class, 'update']);
+    Route::patch('/fees/assignments/{id}', [FeeAssignmentController::class, 'update']);
+    Route::delete('/fees/assignments/{id}', [FeeAssignmentController::class, 'destroy']);
 
     Route::get('/fees/payments', [FeePaymentController::class, 'index']);
     Route::post('/fees/payments', [FeePaymentController::class, 'store']);
 
+    Route::get('/fees/exceptions', [FeeExceptionController::class, 'index']);
     Route::post('/fees/exceptions', [FeeExceptionController::class, 'store']);
+    Route::get('/fees/exceptions/{id}', [FeeExceptionController::class, 'show']);
+    Route::put('/fees/exceptions/{id}', [FeeExceptionController::class, 'update']);
+    Route::patch('/fees/exceptions/{id}', [FeeExceptionController::class, 'update']);
+    Route::delete('/fees/exceptions/{id}', [FeeExceptionController::class, 'destroy']);
 
     // Fee Reports
     Route::get('/fees/reports/dashboard', [FeeReportController::class, 'dashboard']);

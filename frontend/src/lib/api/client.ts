@@ -3048,6 +3048,8 @@ export const feeAssignmentsApi = {
     status?: string;
   }) => apiClient.get('/fees/assignments', params),
   create: async (data: any) => apiClient.post('/fees/assignments', data),
+  update: async (id: string, data: any) => apiClient.put(`/fees/assignments/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/fees/assignments/${id}`),
 };
 
 export const feePaymentsApi = {
@@ -3061,7 +3063,19 @@ export const feePaymentsApi = {
 };
 
 export const feeExceptionsApi = {
+  list: async (params?: {
+    organization_id?: string;
+    academic_year_id?: string;
+    class_academic_year_id?: string;
+    student_id?: string;
+    fee_assignment_id?: string;
+    exception_type?: string;
+    is_active?: boolean;
+  }) => apiClient.get('/fees/exceptions', params),
+  get: async (id: string) => apiClient.get(`/fees/exceptions/${id}`),
   create: async (data: any) => apiClient.post('/fees/exceptions', data),
+  update: async (id: string, data: any) => apiClient.put(`/fees/exceptions/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/fees/exceptions/${id}`),
 };
 
 export const feeReportsApi = {
