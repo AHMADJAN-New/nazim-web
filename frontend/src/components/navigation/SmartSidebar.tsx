@@ -715,6 +715,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
                 url: "/finance/fees/exceptions",
                 icon: LucideIcons.Shield,
               }] : []),
+              {
+                title: "Reports",
+                titleKey: "finance.fees.reports",
+                url: "/finance/fees/reports",
+                icon: LucideIcons.BarChart3,
+              },
             ].filter(Boolean) as NavigationChild[],
           }] : []),
           ...(hasFinanceProjectsPermission ? [{

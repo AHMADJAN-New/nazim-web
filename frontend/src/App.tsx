@@ -127,6 +127,7 @@ import {
   FeeAssignmentsPage,
   FeePaymentsPage,
   FeeExceptionsPage,
+  FeeReportsPage,
   StudentFeeStatementPage
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -957,6 +958,13 @@ const App = () => (
                       <PermissionRoute permission="fees.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <FeeExceptionsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/fees/reports" element={
+                      <PermissionRoute permission="fees.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FeeReportsPage />
                         </Suspense>
                       </PermissionRoute>
                     } />

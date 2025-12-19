@@ -3064,6 +3064,36 @@ export const feeExceptionsApi = {
   create: async (data: any) => apiClient.post('/fees/exceptions', data),
 };
 
+export const feeReportsApi = {
+  dashboard: async (params?: {
+    academic_year_id?: string;
+    class_academic_year_id?: string;
+    school_id?: string;
+  }) => apiClient.get('/fees/reports/dashboard', params),
+  studentFees: async (params?: {
+    academic_year_id?: string;
+    class_academic_year_id?: string;
+    school_id?: string;
+    status?: string;
+    search?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/fees/reports/students', params),
+  collectionReport: async (params?: {
+    academic_year_id?: string;
+    class_academic_year_id?: string;
+    school_id?: string;
+    start_date?: string;
+    end_date?: string;
+  }) => apiClient.get('/fees/reports/collection', params),
+  defaulters: async (params?: {
+    academic_year_id?: string;
+    class_academic_year_id?: string;
+    school_id?: string;
+    min_amount?: number;
+  }) => apiClient.get('/fees/reports/defaulters', params),
+};
+
 // Document Management System API
 export const dmsApi = {
   dashboard: async () => apiClient.get('/dms/dashboard'),

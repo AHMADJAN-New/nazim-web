@@ -6,6 +6,7 @@ import {
   feeAssignmentsApi,
   feeExceptionsApi,
   feePaymentsApi,
+  feeReportsApi,
   feeStructuresApi,
   studentAdmissionsApi,
 } from '@/lib/api/client';
@@ -380,6 +381,346 @@ export const useCreateFeeException = () => {
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feeExceptionFailed'));
     },
+  });
+};
+
+// Fee Reports Hooks
+
+export interface FeeReportDashboard {
+  summary: {
+    totalAssignments: number;
+    totalStudents: number;
+    totalAssigned: number;
+    totalPaid: number;
+    totalRemaining: number;
+    collectionRate: number;
+    statusCounts: {
+      paid: number;
+      partial: number;
+      pending: number;
+      overdue: number;
+      waived: number;
+    };
+  };
+  byClass: Array<{
+    classAcademicYearId: string;
+    classId: string;
+    className: string;
+    assignmentCount: number;
+    studentCount: number;
+    totalAssigned: number;
+    totalPaid: number;
+    totalRemaining: number;
+    collectionPercentage: number;
+  }>;
+  byStructure: Array<{
+    feeStructureId: string;
+    structureName: string;
+    feeType: string;
+    assignmentCount: number;
+    totalAssigned: number;
+    totalPaid: number;
+    totalRemaining: number;
+  }>;
+  recentPayments: Array<{
+    id: string;
+    amount: number;
+    paymentDate: string;
+    paymentMethod: string;
+    referenceNo: string | null;
+    studentName: string | null;
+    studentRegistration: string | null;
+    feeStructureName: string | null;
+  }>;
+}
+
+export interface StudentFeeRecord {
+  id: string;
+  firstName: string;
+  lastName: string;
+  fatherName: string;
+  registrationNumber: string;
+  photoUrl: string | null;
+  className: string;
+  classAcademicYearId: string;
+  assignmentCount: number;
+  totalAssigned: number;
+  totalPaid: number;
+  totalRemaining: number;
+  overallStatus: 'paid' | 'partial' | 'pending' | 'overdue';
+}
+
+export interface FeeDefaulter {
+  assignmentId: string;
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  fatherName: string;
+  registrationNumber: string;
+  phone: string | null;
+  className: string;
+  feeStructureName: string;
+  assignedAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  dueDate: string | null;
+  status: string;
+}
+
+const mapDashboardResponse = (data: any): FeeReportDashboard => ({
+  summary: {
+    totalAssignments: data.summary.total_assignments,
+    totalStudents: data.summary.total_students,
+    totalAssigned: data.summary.total_assigned,
+    totalPaid: data.summary.total_paid,
+    totalRemaining: data.summary.total_remaining,
+    collectionRate: data.summary.collection_rate,
+    statusCounts: {
+      paid: data.summary.status_counts.paid,
+      partial: data.summary.status_counts.partial,
+      pending: data.summary.status_counts.pending,
+      overdue: data.summary.status_counts.overdue,
+      waived: data.summary.status_counts.waived,
+    },
+  },
+  byClass: (data.by_class || []).map((item: any) => ({
+    classAcademicYearId: item.class_academic_year_id,
+    classId: item.class_id,
+    className: item.class_name || 'Unknown',
+    assignmentCount: item.assignment_count,
+    studentCount: item.student_count,
+    totalAssigned: parseFloat(item.total_assigned),
+    totalPaid: parseFloat(item.total_paid),
+    totalRemaining: parseFloat(item.total_remaining),
+    collectionPercentage: parseFloat(item.collection_percentage),
+  })),
+  byStructure: (data.by_structure || []).map((item: any) => ({
+    feeStructureId: item.fee_structure_id,
+    structureName: item.structure_name || 'Unknown',
+    feeType: item.fee_type,
+    assignmentCount: item.assignment_count,
+    totalAssigned: parseFloat(item.total_assigned),
+    totalPaid: parseFloat(item.total_paid),
+    totalRemaining: parseFloat(item.total_remaining),
+  })),
+  recentPayments: (data.recent_payments || []).map((item: any) => ({
+    id: item.id,
+    amount: item.amount,
+    paymentDate: item.payment_date,
+    paymentMethod: item.payment_method,
+    referenceNo: item.reference_no,
+    studentName: item.student_name,
+    studentRegistration: item.student_registration,
+    feeStructureName: item.fee_structure_name,
+  })),
+});
+
+const mapStudentFeeRecord = (item: any): StudentFeeRecord => ({
+  id: item.id,
+  firstName: item.first_name,
+  lastName: item.last_name,
+  fatherName: item.father_name,
+  registrationNumber: item.registration_number,
+  photoUrl: item.photo_url,
+  className: item.class_name || 'Unknown',
+  classAcademicYearId: item.class_academic_year_id,
+  assignmentCount: item.assignment_count,
+  totalAssigned: parseFloat(item.total_assigned),
+  totalPaid: parseFloat(item.total_paid),
+  totalRemaining: parseFloat(item.total_remaining),
+  overallStatus: item.overall_status,
+});
+
+const mapFeeDefaulter = (item: any): FeeDefaulter => ({
+  assignmentId: item.assignment_id,
+  studentId: item.student_id,
+  firstName: item.first_name,
+  lastName: item.last_name,
+  fatherName: item.father_name,
+  registrationNumber: item.registration_number,
+  phone: item.phone,
+  className: item.class_name || 'Unknown',
+  feeStructureName: item.fee_structure_name || 'Unknown',
+  assignedAmount: parseFloat(item.assigned_amount),
+  paidAmount: parseFloat(item.paid_amount),
+  remainingAmount: parseFloat(item.remaining_amount),
+  dueDate: item.due_date,
+  status: item.status,
+});
+
+export const useFeeReportDashboard = (filters?: {
+  academicYearId?: string;
+  classAcademicYearId?: string;
+  schoolId?: string;
+}) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<FeeReportDashboard>({
+    queryKey: ['fee-report-dashboard', profile?.organization_id, filters],
+    queryFn: async () => {
+      if (!user || !profile) {
+        throw new Error('User not authenticated');
+      }
+
+      const params = {
+        academic_year_id: filters?.academicYearId,
+        class_academic_year_id: filters?.classAcademicYearId,
+        school_id: filters?.schoolId,
+      };
+
+      const data = await feeReportsApi.dashboard(params);
+      return mapDashboardResponse(data);
+    },
+    enabled: !!user && !!profile,
+    staleTime: FIVE_MINUTES,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useStudentFees = (filters?: {
+  academicYearId?: string;
+  classAcademicYearId?: string;
+  schoolId?: string;
+  status?: string;
+  search?: string;
+  page?: number;
+  perPage?: number;
+}) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<{
+    data: StudentFeeRecord[];
+    pagination: {
+      currentPage: number;
+      perPage: number;
+      total: number;
+      lastPage: number;
+    };
+  }>({
+    queryKey: ['student-fees', profile?.organization_id, filters],
+    queryFn: async () => {
+      if (!user || !profile) {
+        throw new Error('User not authenticated');
+      }
+
+      const params = {
+        academic_year_id: filters?.academicYearId,
+        class_academic_year_id: filters?.classAcademicYearId,
+        school_id: filters?.schoolId,
+        status: filters?.status,
+        search: filters?.search,
+        page: filters?.page,
+        per_page: filters?.perPage,
+      };
+
+      const response = await feeReportsApi.studentFees(params);
+      return {
+        data: (response.data || []).map(mapStudentFeeRecord),
+        pagination: {
+          currentPage: response.pagination.current_page,
+          perPage: response.pagination.per_page,
+          total: response.pagination.total,
+          lastPage: response.pagination.last_page,
+        },
+      };
+    },
+    enabled: !!user && !!profile,
+    staleTime: FIVE_MINUTES,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useFeeDefaulters = (filters?: {
+  academicYearId?: string;
+  classAcademicYearId?: string;
+  schoolId?: string;
+  minAmount?: number;
+}) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<{
+    summary: {
+      totalDefaulters: number;
+      totalAssignments: number;
+      totalOutstanding: number;
+    };
+    defaulters: FeeDefaulter[];
+  }>({
+    queryKey: ['fee-defaulters', profile?.organization_id, filters],
+    queryFn: async () => {
+      if (!user || !profile) {
+        throw new Error('User not authenticated');
+      }
+
+      const params = {
+        academic_year_id: filters?.academicYearId,
+        class_academic_year_id: filters?.classAcademicYearId,
+        school_id: filters?.schoolId,
+        min_amount: filters?.minAmount,
+      };
+
+      const response = await feeReportsApi.defaulters(params);
+      return {
+        summary: {
+          totalDefaulters: response.summary.total_defaulters,
+          totalAssignments: response.summary.total_assignments,
+          totalOutstanding: response.summary.total_outstanding,
+        },
+        defaulters: (response.defaulters || []).map(mapFeeDefaulter),
+      };
+    },
+    enabled: !!user && !!profile,
+    staleTime: FIVE_MINUTES,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useFeeCollectionReport = (filters?: {
+  academicYearId?: string;
+  classAcademicYearId?: string;
+  schoolId?: string;
+  startDate?: string;
+  endDate?: string;
+}) => {
+  const { user, profile } = useAuth();
+
+  return useQuery({
+    queryKey: ['fee-collection-report', profile?.organization_id, filters],
+    queryFn: async () => {
+      if (!user || !profile) {
+        throw new Error('User not authenticated');
+      }
+
+      const params = {
+        academic_year_id: filters?.academicYearId,
+        class_academic_year_id: filters?.classAcademicYearId,
+        school_id: filters?.schoolId,
+        start_date: filters?.startDate,
+        end_date: filters?.endDate,
+      };
+
+      const response = await feeReportsApi.collectionReport(params);
+      return {
+        monthlyCollection: (response.monthly_collection || []).map((item: any) => ({
+          month: item.month,
+          paymentCount: item.payment_count,
+          totalAmount: parseFloat(item.total_amount),
+        })),
+        byMethod: (response.by_method || []).map((item: any) => ({
+          paymentMethod: item.payment_method,
+          paymentCount: item.payment_count,
+          totalAmount: parseFloat(item.total_amount),
+        })),
+        dailyCollection: (response.daily_collection || []).map((item: any) => ({
+          date: item.date,
+          paymentCount: item.payment_count,
+          totalAmount: parseFloat(item.total_amount),
+        })),
+      };
+    },
+    enabled: !!user && !!profile,
+    staleTime: FIVE_MINUTES,
+    refetchOnWindowFocus: false,
   });
 };
 
