@@ -2437,6 +2437,30 @@ export const translationsApi = {
     ar: Record<string, unknown>;
   }) => apiClient.post<{ message: string; languages: string[] }>('/translations', { translations }),
 };
+// Exam Types API
+export const examTypesApi = {
+  list: async (params?: {
+    organization_id?: string;
+    is_active?: boolean;
+  }) => apiClient.get('/exam-types', params),
+  get: async (id: string) => apiClient.get(`/exam-types/${id}`),
+  create: async (data: {
+    name: string;
+    code?: string | null;
+    description?: string | null;
+    display_order?: number;
+    is_active?: boolean;
+  }) => apiClient.post('/exam-types', data),
+  update: async (id: string, data: {
+    name?: string;
+    code?: string | null;
+    description?: string | null;
+    display_order?: number;
+    is_active?: boolean;
+  }) => apiClient.put(`/exam-types/${id}`, data),
+  delete: async (id: string) => apiClient.delete(`/exam-types/${id}`),
+};
+
 // Exams API
 export const examsApi = {
   list: async (params?: {
@@ -2454,6 +2478,7 @@ export const examsApi = {
   create: async (data: {
     name: string;
     academic_year_id: string;
+    exam_type_id?: string | null;
     description?: string | null;
     start_date?: string | null;
     end_date?: string | null;
@@ -2465,6 +2490,7 @@ export const examsApi = {
   update: async (id: string, data: {
     name?: string;
     academic_year_id?: string;
+    exam_type_id?: string | null;
     description?: string | null;
     start_date?: string | null;
     end_date?: string | null;
@@ -2841,6 +2867,41 @@ export const examAttendanceApi = {
 
   delete: async (id: string) => {
     return apiClient.delete(`/exam-attendance/${id}`);
+  },
+};
+
+// Exam Types API
+export const examTypesApi = {
+  list: async (params?: { organization_id?: string }) => {
+    return apiClient.get('/exam-types', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/exam-types/${id}`);
+  },
+
+  create: async (data: {
+    name: string;
+    code?: string | null;
+    description?: string | null;
+    display_order?: number;
+    is_active?: boolean;
+  }) => {
+    return apiClient.post('/exam-types', data);
+  },
+
+  update: async (id: string, data: {
+    name?: string;
+    code?: string | null;
+    description?: string | null;
+    display_order?: number;
+    is_active?: boolean;
+  }) => {
+    return apiClient.put(`/exam-types/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/exam-types/${id}`);
   },
 };
 

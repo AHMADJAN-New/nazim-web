@@ -90,6 +90,7 @@ class PermissionSeeder extends Seeder
             'course_student_discipline_records' => ['read', 'create', 'update', 'delete'],
             'course_attendance' => ['read', 'create', 'update', 'delete'],
             'certificate_templates' => ['read', 'create', 'update', 'delete', 'activate', 'deactivate'],
+            'exam_types' => ['read', 'create', 'update', 'delete'],
             'graduation_batches' => ['read', 'create', 'generate_students', 'approve', 'issue'],
             'issued_certificates' => ['read'],
             'certificates' => ['issue', 'print', 'revoke'],

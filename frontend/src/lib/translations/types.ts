@@ -93,6 +93,7 @@ export interface TranslationKeys {
     body: string;
     rtl: string;
     pageSize: string;
+    date: string;
   };
 
   // Pagination
@@ -184,6 +185,7 @@ export interface TranslationKeys {
     "dms.reports": string;
     "dms.settings": string;
     "finance.fees": string;
+    "finance.fees.dashboard": string;
     "finance.fees.structures": string;
     "finance.fees.assignments": string;
     "finance.fees.payments": string;
@@ -275,16 +277,42 @@ export interface TranslationKeys {
     exceptionReasonPlaceholder: string;
     validFrom: string;
     validTo: string;
+    dashboard: string;
+    dashboardDescription: string;
     reports: string;
     reportsDescription: string;
     totalAssigned: string;
     totalPaid: string;
+    totalRemaining: string;
+    totalFee: string;
+    otherFees: string;
+    currentFeeOriginal: string;
+    afterException: string;
+    totalPayable: string;
+    totalValue: string;
+    reduction: string;
+    ofTotalAssigned: string;
+    assignmentStatus: string;
+    exceptionBreakdown: string;
+    activeExceptions: string;
+    originalTotal: string;
+    exceptionReduction: string;
+    adjustedTotal: string;
+    noExceptions: string;
+    viewAllExceptions: string;
+    viewAssignments: string;
+    viewReports: string;
+    viewExceptions: string;
+    viewAll: string;
+    quickActions: string;
+    manageFees: string;
     overdue: string;
     collectionProgress: string;
     statusDistribution: string;
     collectionByClass: string;
     studentFees: string;
     recentPayments: string;
+    noRecentPayments: string;
     defaulters: string;
     studentFeeStatus: string;
     feeStructure: string;
@@ -306,6 +334,9 @@ export interface TranslationKeys {
     fullyPaid: string;
     partiallyPaid: string;
     notPaid: string;
+    assignments: string;
+    allStudentFees: string;
+    financialSummary: string;
   };
 
   attendancePage: {
@@ -3286,6 +3317,14 @@ export interface TranslationKeys {
     noTransactions: string;
     netBalance: string;
     noData: string;
+    accountDetails: string;
+    viewAccountDetails: string;
+    accountInformation: string;
+    latestTransaction: string;
+    transactionSummary: string;
+    recentTransactions: string;
+    totalExpense: string;
+    transactionCount: string;
     totalProjects: string;
     totalProjectIncome: string;
     totalProjectExpense: string;
@@ -3313,6 +3352,23 @@ export interface TranslationKeys {
     totalAccounts: string;
     monthlyExpenses: string;
     reverse: string;
+    entryDetails: string;
+    viewEntryDetails: string;
+    entryInformation: string;
+    accountInformation: string;
+    accountName: string;
+    accountType: string;
+    accountCode: string;
+    categoryInformation: string;
+    categoryCode: string;
+    projectInformation: string;
+    projectBalance: string;
+    budgetAmount: string;
+    donorInformation: string;
+    donorType: string;
+    currencyInformation: string;
+    currencySymbol: string;
+    totalDonated: string;
   };
 
   // Exams
@@ -3415,6 +3471,43 @@ export interface TranslationKeys {
     noStudentsSelected: string;
     quickEnroll: string;
     quickEnrollDescription: string;
+    examType: string;
+    selectExamType: string;
+    filterByExamType: string;
+  };
+
+  examTypes: {
+    title: string;
+    description: string;
+    name: string;
+    code: string;
+    description: string;
+    displayOrder: string;
+    isActive: string;
+    create: string;
+    createDescription: string;
+    edit: string;
+    editDescription: string;
+    deleteConfirm: string;
+    namePlaceholder: string;
+    codePlaceholder: string;
+    descriptionPlaceholder: string;
+  };
+
+  graduation: {
+    batches: string;
+    types: {
+      finalYear: string;
+      promotion: string;
+      transfer: string;
+    };
+    multipleExams: string;
+    examWeights: string;
+    fromClass: string;
+    toClass: string;
+    minAttendancePercentage: string;
+    requireAttendance: string;
+    excludeApprovedLeaves: string;
   };
 
 <<<<<<< HEAD

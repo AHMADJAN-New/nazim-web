@@ -5,10 +5,13 @@ import type { StudentAdmission } from './studentAdmission';
 // Exam status values
 export type ExamStatus = 'draft' | 'scheduled' | 'in_progress' | 'completed' | 'archived';
 
+import type { ExamType } from './examType';
+
 export interface Exam {
   id: string;
   organizationId: string | null;
   academicYearId: string;
+  examTypeId: string | null;
   name: string;
   description: string | null;
   startDate?: Date | null;
@@ -18,6 +21,7 @@ export interface Exam {
   updatedAt: Date;
   deletedAt: Date | null;
   academicYear?: AcademicYear;
+  examType?: ExamType;
   examClasses?: ExamClass[];
   examSubjects?: ExamSubject[];
 }

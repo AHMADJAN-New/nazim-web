@@ -90,11 +90,13 @@ import {
   Library,
   LibraryCategories,
   LibraryBooks,
+  LibraryDashboard,
   LibraryDistribution,
   LibraryReports,
   LeaveManagement,
   LeaveReports,
   Assets,
+  AssetsDashboard,
   AssetAssignments,
   AssetReports,
   AssetCategories,
@@ -123,6 +125,7 @@ import {
   Donors,
   FinanceReports,
   FinanceSettings,
+  FeeDashboard,
   FeeStructuresPage,
   FeeAssignmentsPage,
   FeePaymentsPage,
@@ -222,6 +225,13 @@ const App = () => (
                       <PermissionRoute permission="rooms.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <RoomsManagement />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/assets/dashboard" element={
+                      <PermissionRoute permission="assets.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AssetsDashboard />
                         </Suspense>
                       </PermissionRoute>
                     } />
@@ -642,6 +652,13 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/library/dashboard" element={
+                      <PermissionRoute permission="library_books.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <LibraryDashboard />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     <Route path="/library/distribution" element={
                       <PermissionRoute permission="library_loans.read">
                         <Suspense fallback={<PageSkeleton />}>
@@ -930,6 +947,13 @@ const App = () => (
                       <PermissionRoute permission="exchange_rates.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExchangeRates />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/finance/fees/dashboard" element={
+                      <PermissionRoute permission="fees.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <FeeDashboard />
                         </Suspense>
                       </PermissionRoute>
                     } />

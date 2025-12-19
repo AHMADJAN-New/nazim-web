@@ -629,6 +629,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
         badge: null,
         priority: 3.07,
         children: [
+          ...(hasLibraryBooksPermission ? [{
+            title: "Dashboard",
+            titleKey: "library.dashboard",
+            url: "/library/dashboard",
+            icon: LucideIcons.BarChart3,
+          }] : []),
           ...(hasLibraryCategoriesPermission ? [{
             title: "Categories",
             titleKey: "library.categories",
@@ -685,44 +691,6 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/finance/expenses",
             icon: LucideIcons.TrendingDown,
           }] : []),
-          ...(hasFeesPermission ? [{
-            title: "Fees",
-            titleKey: "finance.fees",
-            url: "/finance/fees/structures",
-            icon: LucideIcons.Banknote,
-            children: [
-              {
-                title: "Structures",
-                titleKey: "finance.fees.structures",
-                url: "/finance/fees/structures",
-                icon: LucideIcons.ListChecks,
-              },
-              {
-                title: "Assignments",
-                titleKey: "finance.fees.assignments",
-                url: "/finance/fees/assignments",
-                icon: LucideIcons.NotebookPen,
-              },
-              ...(hasFeePaymentsPermission ? [{
-                title: "Payments",
-                titleKey: "finance.fees.payments",
-                url: "/finance/fees/payments",
-                icon: LucideIcons.CreditCard,
-              }] : []),
-              ...(hasFeeExceptionsPermission ? [{
-                title: "Exceptions",
-                titleKey: "finance.fees.exceptions",
-                url: "/finance/fees/exceptions",
-                icon: LucideIcons.Shield,
-              }] : []),
-              {
-                title: "Reports",
-                titleKey: "finance.fees.reports",
-                url: "/finance/fees/reports",
-                icon: LucideIcons.BarChart3,
-              },
-            ].filter(Boolean) as NavigationChild[],
-          }] : []),
           ...(hasFinanceProjectsPermission ? [{
             title: "Projects",
             titleKey: "finance.projects",
@@ -750,6 +718,50 @@ export const SmartSidebar = memo(function SmartSidebar() {
               icon: LucideIcons.Settings,
             }] : []),
         ],
+      }] : []),
+      ...(hasFeesPermission ? [{
+        titleKey: "finance.fees",
+        icon: LucideIcons.Banknote,
+        badge: null,
+        priority: 3.08,
+        children: [
+          {
+            title: "Dashboard",
+            titleKey: "finance.fees.dashboard",
+            url: "/finance/fees/dashboard",
+            icon: LucideIcons.BarChart3,
+          },
+          {
+            title: "Structures",
+            titleKey: "finance.fees.structures",
+            url: "/finance/fees/structures",
+            icon: LucideIcons.ListChecks,
+          },
+          {
+            title: "Assignments",
+            titleKey: "finance.fees.assignments",
+            url: "/finance/fees/assignments",
+            icon: LucideIcons.NotebookPen,
+          },
+          ...(hasFeePaymentsPermission ? [{
+            title: "Payments",
+            titleKey: "finance.fees.payments",
+            url: "/finance/fees/payments",
+            icon: LucideIcons.CreditCard,
+          }] : []),
+          ...(hasFeeExceptionsPermission ? [{
+            title: "Exceptions",
+            titleKey: "finance.fees.exceptions",
+            url: "/finance/fees/exceptions",
+            icon: LucideIcons.Shield,
+          }] : []),
+          {
+            title: "Reports",
+            titleKey: "finance.fees.reports",
+            url: "/finance/fees/reports",
+            icon: LucideIcons.FileText,
+          },
+        ].filter(Boolean) as NavigationChild[],
       }] : []),
       ...(hasDmsPermission ? [{
         titleKey: "document-system",
@@ -831,6 +843,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
         badge: null,
         priority: 3.08,
         children: [
+          {
+            title: "Assets Dashboard",
+            titleKey: "assets.dashboard",
+            url: "/assets/dashboard",
+            icon: LucideIcons.LayoutDashboard,
+          },
           {
             title: "Asset Categories",
             titleKey: "assets.categories",

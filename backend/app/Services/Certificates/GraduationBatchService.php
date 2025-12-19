@@ -4,6 +4,7 @@ namespace App\Services\Certificates;
 
 use App\Models\CertificateTemplate;
 use App\Models\GraduationBatch;
+use App\Models\GraduationBatchExam;
 use App\Models\GraduationStudent;
 use App\Models\IssuedCertificate;
 use Illuminate\Database\DatabaseManager;
@@ -27,23 +28,49 @@ class GraduationBatchService
 
     public function createBatch(array $payload, string $userId): GraduationBatch
     {
+        // Get exam IDs - support both old single exam_id and new exam_ids array
+        $examIds = $payload['exam_ids'] ?? ($payload['exam_id'] ? [$payload['exam_id']] : []);
+        $examWeights = $payload['exam_weights'] ?? [];
+
+        if (empty($examIds)) {
+            throw new UnprocessableEntityHttpException('At least one exam is required.');
+        }
+
         $batch = GraduationBatch::create([
             'organization_id' => $payload['organization_id'],
             'school_id' => $payload['school_id'],
             'academic_year_id' => $payload['academic_year_id'],
             'class_id' => $payload['class_id'],
-            'exam_id' => $payload['exam_id'],
+            'exam_id' => $payload['exam_id'] ?? $examIds[0], // Keep for backward compatibility
+            'graduation_type' => $payload['graduation_type'] ?? GraduationBatch::TYPE_FINAL_YEAR,
+            'from_class_id' => $payload['from_class_id'] ?? null,
+            'to_class_id' => $payload['to_class_id'] ?? null,
             'graduation_date' => $payload['graduation_date'],
+            'min_attendance_percentage' => $payload['min_attendance_percentage'] ?? 75.0,
+            'require_attendance' => $payload['require_attendance'] ?? true,
+            'exclude_approved_leaves' => $payload['exclude_approved_leaves'] ?? true,
             'created_by' => $userId,
             'status' => GraduationBatch::STATUS_DRAFT,
         ]);
 
+        // Attach multiple exams with weights
+        foreach ($examIds as $index => $examId) {
+            GraduationBatchExam::create([
+                'batch_id' => $batch->id,
+                'exam_id' => $examId,
+                'weight_percentage' => $examWeights[$examId] ?? null,
+                'is_required' => true,
+                'display_order' => $index,
+            ]);
+        }
+
         $this->auditService->log($batch->organization_id, $batch->school_id, 'graduation_batch', $batch->id, 'create', [
             'payload' => $payload,
             'user_id' => $userId,
+            'exam_ids' => $examIds,
         ]);
 
-        return $batch;
+        return $batch->load('exams.examType');
     }
 
     public function generateStudents(string $batchId, string $organizationId, string $schoolId, string $userId): Collection
@@ -60,13 +87,42 @@ class GraduationBatchService
             throw new BadRequestHttpException('Cannot regenerate students once batch is approved or issued.');
         }
 
-        $eligibility = $this->eligibilityService->evaluate(
-            $organizationId,
-            $schoolId,
-            $batch->academic_year_id,
-            $batch->class_id,
-            $batch->exam_id
-        );
+        // Get all exam IDs from batch
+        $examIds = $batch->exams->pluck('exam_id')->toArray();
+        $weights = $batch->exams->pluck('weight_percentage', 'exam_id')->toArray();
+
+        // If no exams in pivot table, fall back to single exam_id (backward compatibility)
+        if (empty($examIds) && $batch->exam_id) {
+            $examIds = [$batch->exam_id];
+            $weights = [];
+        }
+
+        if (empty($examIds)) {
+            throw new UnprocessableEntityHttpException('No exams found for this batch.');
+        }
+
+        // Use multi-exam evaluation if available, otherwise single exam
+        if (count($examIds) > 1 && method_exists($this->eligibilityService, 'evaluateMultiExam')) {
+            $eligibility = $this->eligibilityService->evaluateMultiExam(
+                $organizationId,
+                $schoolId,
+                $batch->academic_year_id,
+                $batch->class_id,
+                $examIds,
+                $weights,
+                $batch->min_attendance_percentage,
+                $batch->exclude_approved_leaves
+            );
+        } else {
+            // Fall back to single exam evaluation
+            $eligibility = $this->eligibilityService->evaluate(
+                $organizationId,
+                $schoolId,
+                $batch->academic_year_id,
+                $batch->class_id,
+                $examIds[0]
+            );
+        }
 
         return $this->db->transaction(function () use ($batch, $eligibility, $userId) {
             GraduationStudent::where('batch_id', $batch->id)->delete();

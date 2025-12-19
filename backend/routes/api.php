@@ -66,7 +66,10 @@ use App\Http\Controllers\ExamReportController;
 use App\Http\Controllers\ExamTimeController;
 use App\Http\Controllers\ExamAttendanceController;
 use App\Http\Controllers\ExamNumberController;
+use App\Http\Controllers\ExamTypeController;
 use App\Http\Controllers\GradeController;
+use App\Http\Controllers\GraduationBatchController;
+use App\Http\Controllers\Certificates\IssuedCertificateController;
 use App\Http\Controllers\Dms\ArchiveSearchController;
 use App\Http\Controllers\Dms\DepartmentsController as DmsDepartmentsController;
 use App\Http\Controllers\Dms\DocumentFilesController;
@@ -239,6 +242,9 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::apiResource('exams', ExamController::class);
     Route::post('/exams/{exam}/status', [ExamController::class, 'updateStatus']);
 
+    // Exam Types
+    Route::apiResource('exam-types', ExamTypeController::class);
+
     // Exam Classes
     Route::apiResource('exam-classes', ExamClassController::class)->only(['index', 'store', 'destroy']);
 
@@ -395,6 +401,21 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/certificate-templates/generate/{courseStudentId}', [CertificateTemplateController::class, 'generateCertificate']);
     Route::get('/certificate-templates/certificate-data/{courseStudentId}', [CertificateTemplateController::class, 'getCertificateData']);
     Route::apiResource('certificate-templates', CertificateTemplateController::class);
+
+    // Graduation Batches
+    Route::get('/graduation/batches', [GraduationBatchController::class, 'index']);
+    Route::post('/graduation/batches', [GraduationBatchController::class, 'store']);
+    Route::get('/graduation/batches/{id}', [GraduationBatchController::class, 'show']);
+    Route::post('/graduation/batches/{id}/generate-students', [GraduationBatchController::class, 'generateStudents']);
+    Route::post('/graduation/batches/{id}/approve', [GraduationBatchController::class, 'approve']);
+    Route::post('/graduation/batches/{id}/issue-certificates', [GraduationBatchController::class, 'issueCertificates']);
+
+    // Issued Certificates
+    Route::get('/issued-certificates', [IssuedCertificateController::class, 'index']);
+    Route::get('/issued-certificates/{id}', [IssuedCertificateController::class, 'show']);
+    Route::post('/issued-certificates/{id}/revoke', [IssuedCertificateController::class, 'revoke']);
+    Route::get('/issued-certificates/{id}/download', [IssuedCertificateController::class, 'downloadPdf']);
+    Route::get('/issued-certificates/batch/{batchId}/download-zip', [IssuedCertificateController::class, 'downloadBatchZip']);
 
     // Leave Requests
     Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
