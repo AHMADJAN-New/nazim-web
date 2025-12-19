@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useStudents } from '@/hooks/useStudents';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import type { Student } from '@/types/domain/student';
 import { useExams, useExamStudents, useLatestExamFromCurrentYear, useExamClasses } from '@/hooks/useExams';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useGrades } from '@/hooks/useGrades';
@@ -453,12 +454,22 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
 export default function StudentExamReport() {
   const { t } = useLanguage();
   const canViewReports = useHasPermission('students.read');
+  const { data: profile } = useProfile();
 
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [selectedExamId, setSelectedExamId] = useState<string>('');
   const [selectedClassId, setSelectedClassId] = useState<string>('');
 
-  const { data: students, isLoading: studentsLoading } = useStudents();
+  const { data: studentAdmissions, isLoading: studentsLoading } = useStudentAdmissions(profile?.organization_id, false, {
+    enrollment_status: 'active',
+  });
+  // Extract students from admissions
+  const students: Student[] = useMemo(() => {
+    if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
+    return studentAdmissions
+      .map(admission => admission.student)
+      .filter((student): student is Student => student !== null && student !== undefined);
+  }, [studentAdmissions]);
   const { data: exams, isLoading: examsLoading } = useExams();
   const { data: academicYears } = useAcademicYears();
   const { data: currentAcademicYear, isLoading: currentYearLoading } = useCurrentAcademicYear();

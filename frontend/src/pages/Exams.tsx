@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useExams, useCreateExam, useUpdateExam, useDeleteExam, useUpdateExamStatus, useExamClasses, useExamSummaryReport } from '@/hooks/useExams';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useExamTypes } from '@/hooks/useExamTypes';
@@ -186,6 +187,7 @@ export function Exams() {
   const { data: academicYears } = useAcademicYears(organizationId);
   const { data: currentAcademicYear } = useCurrentAcademicYear(organizationId);
   const { data: examTypes } = useExamTypes();
+  const queryClient = useQueryClient();
   const { data: exams, isLoading } = useExams(organizationId);
   const createExam = useCreateExam();
   const updateExam = useUpdateExam();
@@ -332,10 +334,11 @@ export function Exams() {
     updateExamStatus.mutate(
       { examId: statusToChange.exam.id, status: statusToChange.newStatus },
       {
-        onSuccess: () => {
-          showToast.success(t('toast.examStatusUpdated') || 'Exam status updated');
+        onSuccess: async () => {
           setIsStatusDialogOpen(false);
           setStatusToChange(null);
+          // Refetch exams to ensure UI updates immediately
+          await queryClient.refetchQueries({ queryKey: ['exams'] });
         },
         onError: (error: Error) => {
           showToast.error(error.message || t('toast.examStatusUpdateFailed') || 'Failed to update status');
@@ -710,14 +713,14 @@ export function Exams() {
             <div>
               <Label htmlFor="create-exam-type">{t('exams.examType') || 'Exam Type'}</Label>
               <Select
-                value={formData.examTypeId}
-                onValueChange={(value) => setFormData({ ...formData, examTypeId: value })}
+                value={formData.examTypeId || 'none'}
+                onValueChange={(value) => setFormData({ ...formData, examTypeId: value === 'none' ? '' : value })}
               >
                 <SelectTrigger id="create-exam-type">
                   <SelectValue placeholder={t('exams.selectExamType') || 'Select exam type (optional)'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                  <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
                   {(examTypes || []).filter(et => et.isActive).map((examType) => (
                     <SelectItem key={examType.id} value={examType.id}>
                       {examType.name}
@@ -810,14 +813,14 @@ export function Exams() {
             <div>
               <Label htmlFor="edit-exam-type">{t('exams.examType') || 'Exam Type'}</Label>
               <Select
-                value={formData.examTypeId}
-                onValueChange={(value) => setFormData({ ...formData, examTypeId: value })}
+                value={formData.examTypeId || 'none'}
+                onValueChange={(value) => setFormData({ ...formData, examTypeId: value === 'none' ? '' : value })}
               >
                 <SelectTrigger id="edit-exam-type">
                   <SelectValue placeholder={t('exams.selectExamType') || 'Select exam type (optional)'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                  <SelectItem value="none">{t('common.none') || 'None'}</SelectItem>
                   {(examTypes || []).filter(et => et.isActive).map((examType) => (
                     <SelectItem key={examType.id} value={examType.id}>
                       {examType.name}
@@ -875,18 +878,20 @@ export function Exams() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('exams.changeStatusConfirm') || 'Change Exam Status'}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('exams.changeStatusConfirmMessage') || 'Are you sure you want to change the status of this exam?'}
-              {statusToChange && (
-                <div className="mt-4 space-y-2">
-                  <div className="font-medium">{statusToChange.exam.name}</div>
-                  <div className="flex items-center gap-2">
-                    {getStatusBadge(statusToChange.exam.status)}
-                    <span>→</span>
-                    {getStatusBadge(statusToChange.newStatus)}
+            <AlertDialogDescription asChild>
+              <div>
+                <p>{t('exams.changeStatusConfirmMessage') || 'Are you sure you want to change the status of this exam?'}</p>
+                {statusToChange && (
+                  <div className="mt-4 space-y-2">
+                    <div className="font-medium">{statusToChange.exam.name}</div>
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(statusToChange.exam.status)}
+                      <span>→</span>
+                      {getStatusBadge(statusToChange.newStatus)}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

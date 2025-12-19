@@ -96,53 +96,49 @@ export function ExamStudentEnrollment() {
     selectedExamClass?.id
   );
 
-  // Fetch available students from admissions
+  // Fetch available students from admissions with filters (active status and class academic year)
+  // Only fetch when a class is selected to avoid loading all students
   const { data: studentAdmissions, isLoading: admissionsLoading } = useStudentAdmissions(
     organizationId,
-    false
+    false,
+    selectedExamClass?.classAcademicYearId
+      ? {
+          enrollment_status: 'active',
+          class_academic_year_id: selectedExamClass.classAcademicYearId,
+        }
+      : undefined
   );
 
-  // Filter students by class academic year and exclude already enrolled
+  // Filter out already enrolled students and ensure only students from selected class are shown
   const availableStudents = useMemo(() => {
-    if (!studentAdmissions || !Array.isArray(studentAdmissions)) {
-      if (import.meta.env.DEV) {
-        console.log('[ExamStudentEnrollment] No student admissions data');
-      }
-      return [];
-    }
+    // Don't show any students if no class is selected
     if (!selectedExamClass?.classAcademicYearId) {
       if (import.meta.env.DEV) {
         console.log('[ExamStudentEnrollment] No exam class selected or missing classAcademicYearId');
       }
       return [];
     }
+
+    // Don't show students if data is not loaded yet or is invalid
+    if (!studentAdmissions || !Array.isArray(studentAdmissions)) {
+      if (import.meta.env.DEV) {
+        console.log('[ExamStudentEnrollment] No student admissions data');
+      }
+      return [];
+    }
+    
+    // Additional safety check: filter by class academic year ID (API should already filter, but double-check)
+    const classFiltered = studentAdmissions.filter(sa => 
+      sa.classAcademicYearId === selectedExamClass.classAcademicYearId
+    );
     
     if (import.meta.env.DEV) {
-      console.log('[ExamStudentEnrollment] Filtering students:', {
+      console.log('[ExamStudentEnrollment] Filtering out enrolled students:', {
         totalAdmissions: studentAdmissions.length,
+        classFiltered: classFiltered.length,
         classAcademicYearId: selectedExamClass.classAcademicYearId,
         examClassId: selectedExamClass.id,
       });
-    }
-    
-    // Filter by class academic year and enrollment status = 'active'
-    const classStudents = studentAdmissions.filter(sa => {
-      const matchesClass = sa.classAcademicYearId === selectedExamClass.classAcademicYearId;
-      const isActive = sa.enrollmentStatus === 'active';
-      
-      if (import.meta.env.DEV && matchesClass && !isActive) {
-        console.log('[ExamStudentEnrollment] Student found but not active:', {
-          studentId: sa.studentId,
-          enrollmentStatus: sa.enrollmentStatus,
-          classAcademicYearId: sa.classAcademicYearId,
-        });
-      }
-      
-      return matchesClass && isActive;
-    });
-    
-    if (import.meta.env.DEV) {
-      console.log('[ExamStudentEnrollment] Students after class and status filter:', classStudents.length);
     }
     
     // Filter out already enrolled students
@@ -150,14 +146,14 @@ export function ExamStudentEnrollment() {
       if (import.meta.env.DEV) {
         console.log('[ExamStudentEnrollment] No enrolled students data, returning all class students');
       }
-      return classStudents;
+      return classFiltered;
     }
     
     const enrolledAdmissionIds = new Set(
       enrolledStudents.map(es => es.studentAdmissionId)
     );
     
-    const available = classStudents.filter(sa => 
+    const available = classFiltered.filter(sa => 
       sa.id && !enrolledAdmissionIds.has(sa.id)
     );
     
@@ -165,12 +161,12 @@ export function ExamStudentEnrollment() {
       console.log('[ExamStudentEnrollment] Final available students:', {
         total: available.length,
         enrolled: enrolledAdmissionIds.size,
-        filtered: classStudents.length - available.length,
+        filtered: classFiltered.length - available.length,
       });
     }
     
     return available;
-  }, [studentAdmissions, enrolledStudents, selectedExamClass?.classAcademicYearId]);
+  }, [studentAdmissions, enrolledStudents, selectedExamClass?.classAcademicYearId, selectedExamClass?.id]);
 
   // Filter students by search query
   const filteredAvailableStudents = useMemo(() => {
@@ -208,6 +204,12 @@ export function ExamStudentEnrollment() {
       setSelectedExamClass(examClasses[0]);
     }
   }, [examClasses, selectedExamClass]);
+
+  // Clear selected students when class changes
+  useEffect(() => {
+    setSelectedStudentIds([]);
+    setSelectedStudentId('');
+  }, [selectedExamClass?.id]);
 
   // Mutations
   const enrollStudent = useEnrollStudent();

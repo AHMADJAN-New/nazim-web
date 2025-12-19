@@ -325,6 +325,53 @@ export function ExamTimetablePage() {
     );
   }
 
+  // Show exam selector when accessed from sidebar (no examId in URL) and no exam selected yet
+  if (!examIdFromParams && !selectedExamId && allExams && allExams.length > 0) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/exams')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-2xl font-semibold">{t('exams.timetable') || 'Exam Timetable'}</h1>
+            <p className="text-sm text-muted-foreground">
+              {t('exams.selectExamToViewTimetable') || 'Select an exam to view and manage its timetable'}
+            </p>
+          </div>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t('exams.selectExam') || 'Select Exam'}</CardTitle>
+            <CardDescription>
+              {t('exams.selectExamDescription') || 'Choose an exam to view and manage its timetable'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="w-full max-w-md">
+              <Label>{t('exams.exam') || 'Exam'}</Label>
+              <Select
+                value={selectedExamId || ''}
+                onValueChange={(v) => setSelectedExamId(v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder={t('exams.selectExamPlaceholder') || 'Select an exam...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {allExams.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name} {e.academicYear?.name ? `(${e.academicYear.name})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!examId) {
     return (
       <div className="container mx-auto p-6">

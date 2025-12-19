@@ -35,11 +35,11 @@ export const mapExamApiToDomain = (exam: ExamApi.Exam): Exam => ({
     : undefined,
   examType: exam.exam_type
     ? mapExamTypeApiToDomain({
-        id: exam.exam_type.id,
+      id: exam.exam_type.id,
         organization_id: exam.organization_id || '',
-        name: exam.exam_type.name,
-        code: exam.exam_type.code,
-        description: null,
+      name: exam.exam_type.name,
+      code: exam.exam_type.code,
+      description: null,
         display_order: 0,
         is_active: true,
         created_at: exam.created_at,
