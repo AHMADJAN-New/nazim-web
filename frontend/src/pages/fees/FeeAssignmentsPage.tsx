@@ -285,6 +285,48 @@ export default function FeeAssignmentsPage() {
     );
   };
 
+  // Get combined structure name and fee type badge
+  const getStructureBadge = (structureName: string | undefined, feeType: string | undefined) => {
+    if (!structureName && !feeType) return null;
+    
+    const typeLower = feeType?.toLowerCase() || '';
+    let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'outline';
+    let className = '';
+
+    switch (typeLower) {
+      case 'monthly':
+        variant = 'default';
+        className = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+        break;
+      case 'one_time':
+      case 'one-time':
+        variant = 'secondary';
+        className = 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800';
+        break;
+      case 'semester':
+        variant = 'outline';
+        className = 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800';
+        break;
+      case 'annual':
+        variant = 'default';
+        className = 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400 border-teal-200 dark:border-teal-800';
+        break;
+      default:
+        variant = 'outline';
+    }
+
+    const formattedType = feeType ? feeType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : '';
+    const badgeText = structureName && formattedType 
+      ? `${structureName} (${formattedType})`
+      : structureName || formattedType || 'N/A';
+
+    return (
+      <Badge variant={variant} className={className}>
+        {badgeText}
+      </Badge>
+    );
+  };
+
   const handleView = (assignment: FeeAssignment, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setViewingAssignment(assignment);
@@ -692,10 +734,10 @@ export default function FeeAssignmentsPage() {
                             <div className="font-medium">{classGroup.className}</div>
                           </TableCell>
                           <TableCell>
-                            <div className="space-y-1">
-                              <div className="font-medium">{structuresById[assignment.feeStructureId]?.name ?? assignment.feeStructureId}</div>
-                              {getFeeTypeBadge(structuresById[assignment.feeStructureId]?.feeType)}
-                            </div>
+                            {getStructureBadge(
+                              structuresById[assignment.feeStructureId]?.name ?? assignment.feeStructureId,
+                              structuresById[assignment.feeStructureId]?.feeType
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <span className="font-semibold">{formatCurrency(assignment.assignedAmount)}</span>
@@ -817,10 +859,10 @@ export default function FeeAssignmentsPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="space-y-1">
-                              <div className="font-medium">{structuresById[assignment.feeStructureId]?.name ?? assignment.feeStructureId}</div>
-                              {getFeeTypeBadge(structuresById[assignment.feeStructureId]?.feeType)}
-                            </div>
+                            {getStructureBadge(
+                              structuresById[assignment.feeStructureId]?.name ?? assignment.feeStructureId,
+                              structuresById[assignment.feeStructureId]?.feeType
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <span className="font-semibold">{formatCurrency(assignment.assignedAmount)}</span>
@@ -961,19 +1003,14 @@ export default function FeeAssignmentsPage() {
               {/* Fee Structure Information */}
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">{t('fees.feeStructure') || 'Fee Structure'}</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{t('fees.structureName') || 'Name'}</p>
-                    <p className="font-medium">
-                      {structuresById[viewingAssignment.feeStructureId]?.name ?? viewingAssignment.feeStructureId}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">{t('fees.feeType') || 'Type'}</p>
-                    <p className="font-medium capitalize">
-                      {structuresById[viewingAssignment.feeStructureId]?.feeType ?? 'N/A'}
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">{t('fees.structure') || 'Structure'}</p>
+                  {getStructureBadge(
+                    structuresById[viewingAssignment.feeStructureId]?.name ?? viewingAssignment.feeStructureId,
+                    structuresById[viewingAssignment.feeStructureId]?.feeType
+                  ) || (
+                    <p className="font-medium">N/A</p>
+                  )}
                 </div>
               </div>
 

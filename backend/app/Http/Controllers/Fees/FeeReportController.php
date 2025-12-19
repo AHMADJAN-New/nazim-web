@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FeeAssignment;
 use App\Models\FeePayment;
 use App\Models\FeeStructure;
+use App\Models\FeeException;
 use App\Models\StudentAdmission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -150,6 +151,86 @@ class FeeReportController extends Controller
                     ];
                 });
 
+            // Exception statistics
+            $exceptionBaseQuery = DB::table('fee_exceptions')
+                ->whereNull('fee_exceptions.deleted_at')
+                ->where('fee_exceptions.organization_id', $orgId)
+                ->where('fee_exceptions.is_active', true)
+                ->join('fee_assignments', 'fee_exceptions.fee_assignment_id', '=', 'fee_assignments.id')
+                ->whereNull('fee_assignments.deleted_at')
+                ->when(!empty($validated['academic_year_id']), fn($q) => $q->where('fee_assignments.academic_year_id', $validated['academic_year_id']))
+                ->when(!empty($validated['class_academic_year_id']), fn($q) => $q->where('fee_assignments.class_academic_year_id', $validated['class_academic_year_id']))
+                ->when(!empty($validated['school_id']), fn($q) => $q->where('fee_assignments.school_id', $validated['school_id']));
+
+            $exceptionTotal = (float) (clone $exceptionBaseQuery)->sum('fee_exceptions.exception_amount');
+            $exceptionCount = (int) (clone $exceptionBaseQuery)->count();
+
+            // Get total original amount (before exceptions) from assignments
+            $originalTotalQuery = FeeAssignment::whereNull('deleted_at')
+                ->where('organization_id', $orgId)
+                ->when(!empty($validated['academic_year_id']), fn($q) => $q->where('academic_year_id', $validated['academic_year_id']))
+                ->when(!empty($validated['class_academic_year_id']), fn($q) => $q->where('class_academic_year_id', $validated['class_academic_year_id']))
+                ->when(!empty($validated['school_id']), fn($q) => $q->where('school_id', $validated['school_id']));
+
+            $originalTotal = (float) $originalTotalQuery->sum('original_amount') ?: (float) $summary->total_assigned;
+            $adjustedTotal = (float) $summary->total_assigned;
+            $exceptionReduction = $originalTotal - $adjustedTotal;
+
+            // Exception statistics by type
+            $exceptionsByType = DB::table('fee_exceptions')
+                ->whereNull('fee_exceptions.deleted_at')
+                ->where('fee_exceptions.organization_id', $orgId)
+                ->where('fee_exceptions.is_active', true)
+                ->join('fee_assignments', 'fee_exceptions.fee_assignment_id', '=', 'fee_assignments.id')
+                ->whereNull('fee_assignments.deleted_at')
+                ->when(!empty($validated['academic_year_id']), fn($q) => $q->where('fee_assignments.academic_year_id', $validated['academic_year_id']))
+                ->when(!empty($validated['class_academic_year_id']), fn($q) => $q->where('fee_assignments.class_academic_year_id', $validated['class_academic_year_id']))
+                ->when(!empty($validated['school_id']), fn($q) => $q->where('fee_assignments.school_id', $validated['school_id']))
+                ->groupBy('fee_exceptions.exception_type')
+                ->selectRaw('
+                    fee_exceptions.exception_type,
+                    COUNT(*) as count,
+                    COALESCE(SUM(fee_exceptions.exception_amount), 0) as total_amount
+                ')
+                ->get();
+
+            $exceptionStats = [
+                'total_count' => $exceptionCount,
+                'total_amount' => $exceptionTotal,
+                'by_type' => [
+                    'discount_percentage' => [
+                        'count' => 0,
+                        'amount' => 0.0,
+                    ],
+                    'discount_fixed' => [
+                        'count' => 0,
+                        'amount' => 0.0,
+                    ],
+                    'waiver' => [
+                        'count' => 0,
+                        'amount' => 0.0,
+                    ],
+                    'custom' => [
+                        'count' => 0,
+                        'amount' => 0.0,
+                    ],
+                ],
+                'impact_on_collection' => [
+                    'original_total' => $originalTotal,
+                    'adjusted_total' => $adjustedTotal,
+                    'exception_reduction' => $exceptionReduction,
+                ],
+            ];
+
+            // Populate exception stats by type
+            foreach ($exceptionsByType as $exception) {
+                $type = $exception->exception_type;
+                if (isset($exceptionStats['by_type'][$type])) {
+                    $exceptionStats['by_type'][$type]['count'] = (int) $exception->count;
+                    $exceptionStats['by_type'][$type]['amount'] = (float) $exception->total_amount;
+                }
+            }
+
             return response()->json([
                 'summary' => [
                     'total_assignments' => (int) $summary->total_assignments,
@@ -171,6 +252,7 @@ class FeeReportController extends Controller
                 'by_class' => $byClass,
                 'by_structure' => $byStructure,
                 'recent_payments' => $recentPayments,
+                'exceptions' => $exceptionStats,
             ]);
         } catch (\Exception $e) {
             \Log::error('FeeReportController@dashboard error: ' . $e->getMessage());

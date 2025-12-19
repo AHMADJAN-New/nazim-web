@@ -17,7 +17,7 @@ class FeeStructureSeeder extends Seeder
      * Seed the fee_structures table.
      *
      * Creates 4 fee structures (monthly, one-time, semester, annual) for each class
-     * in academic years 12 (2025) and 1 (2026) for school 1.
+     * in all existing academic years that have classes assigned.
      */
     public function run(): void
     {
@@ -51,43 +51,38 @@ class FeeStructureSeeder extends Seeder
             $this->command->info("Using currency: {$currency->code} - {$currency->name}");
         }
 
-        // Find academic years for 2025 and 2026
-        // Try to find academic years that contain "2025" or "2026" in their names
-        // Or academic years that start in 2025 or 2026
-        $academicYear2025 = $this->findOrCreateAcademicYear($organizationId, '2025-2026', 2025);
-        $academicYear2026 = $this->findOrCreateAcademicYear($organizationId, '2026-2027', 2026);
+        // Find all existing academic years that have classes assigned
+        // Get academic years that have at least one class_academic_year
+        $academicYears = AcademicYear::where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->whereHas('classAcademicYears', function ($query) use ($organizationId) {
+                $query->where('organization_id', $organizationId)
+                    ->whereNull('deleted_at')
+                    ->where('is_active', true);
+            })
+            ->orderBy('start_date', 'desc')
+            ->get();
 
-        if (!$academicYear2025 && !$academicYear2026) {
-            $this->command->warn('No academic years found for 2025 or 2026. Please create academic years first.');
+        if ($academicYears->isEmpty()) {
+            $this->command->warn('No academic years with classes found. Please create academic years and assign classes first.');
             return;
         }
 
+        $this->command->info("Found {$academicYears->count()} academic year(s) with classes:");
+
         $totalCreated = 0;
 
-        // Process academic year 2025
-        if ($academicYear2025) {
-            $this->command->info("Processing academic year: {$academicYear2025->name} (ID: {$academicYear2025->id})");
+        // Process each academic year that has classes
+        foreach ($academicYears as $academicYear) {
+            $this->command->info("Processing academic year: {$academicYear->name} (ID: {$academicYear->id})");
             $created = $this->createFeeStructuresForAcademicYear(
                 $organizationId,
                 $school->id,
-                $academicYear2025->id,
+                $academicYear->id,
                 $currency?->id
             );
             $totalCreated += $created;
-            $this->command->info("  → Created {$created} fee structure(s) for academic year {$academicYear2025->name}");
-        }
-
-        // Process academic year 2026
-        if ($academicYear2026) {
-            $this->command->info("Processing academic year: {$academicYear2026->name} (ID: {$academicYear2026->id})");
-            $created = $this->createFeeStructuresForAcademicYear(
-                $organizationId,
-                $school->id,
-                $academicYear2026->id,
-                $currency?->id
-            );
-            $totalCreated += $created;
-            $this->command->info("  → Created {$created} fee structure(s) for academic year {$academicYear2026->name}");
+            $this->command->info("  → Created {$created} fee structure(s) for academic year {$academicYear->name}");
         }
 
         if ($totalCreated > 0) {
@@ -95,51 +90,6 @@ class FeeStructureSeeder extends Seeder
         }
 
         $this->command->info('✅ Fee structures seeded successfully!');
-    }
-
-    /**
-     * Find or create an academic year for a specific year
-     */
-    protected function findOrCreateAcademicYear(string $organizationId, string $name, int $year): ?AcademicYear
-    {
-        // First, try to find by name containing the year
-        $academicYear = AcademicYear::where('organization_id', $organizationId)
-            ->where('name', 'like', "%{$year}%")
-            ->whereNull('deleted_at')
-            ->first();
-
-        if ($academicYear) {
-            $this->command->info("  ✓ Found academic year: {$academicYear->name}");
-            return $academicYear;
-        }
-
-        // If not found, try to find by start_date year
-        $academicYear = AcademicYear::where('organization_id', $organizationId)
-            ->whereYear('start_date', $year)
-            ->whereNull('deleted_at')
-            ->first();
-
-        if ($academicYear) {
-            $this->command->info("  ✓ Found academic year: {$academicYear->name} (starts in {$year})");
-            return $academicYear;
-        }
-
-        // If still not found, create a new one
-        $startDate = Carbon::create($year, 9, 1); // September 1
-        $endDate = Carbon::create($year + 1, 8, 31); // August 31 of next year
-
-        $academicYear = AcademicYear::create([
-            'organization_id' => $organizationId,
-            'name' => $name,
-            'start_date' => $startDate,
-            'end_date' => $endDate,
-            'is_current' => false,
-            'description' => "Academic year {$name}",
-            'status' => 'active',
-        ]);
-
-        $this->command->info("  ✓ Created academic year: {$name}");
-        return $academicYear;
     }
 
     /**

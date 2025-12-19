@@ -478,68 +478,220 @@ export default function FeeExceptionsPage() {
             <SheetTitle>{t('fees.exceptionDetails')}</SheetTitle>
             <SheetDescription>{t('fees.exceptionDetailsDescription')}</SheetDescription>
           </SheetHeader>
-          {viewingException && (
-            <div className="mt-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('fees.student')}</p>
-                  <p className="font-medium">
-                    {studentsById[viewingException.studentId]?.fullName || viewingException.studentId || 'Unknown'}
-                  </p>
+          {viewingException && (() => {
+            const currentAssignment = assignmentsById[viewingException.feeAssignmentId];
+            const studentId = viewingException.studentId;
+            const academicYearId = currentAssignment?.academicYearId || filterAcademicYear;
+            
+            // Get all assignments for this student in the same academic year
+            const studentAssignments = assignments.filter(
+              (a) => a.studentId === studentId && a.academicYearId === academicYearId
+            );
+
+            // Calculate totals
+            const totalOriginalAmount = studentAssignments.reduce((sum, a) => sum + (a.originalAmount || a.assignedAmount), 0);
+            const currentAssignmentOriginal = currentAssignment?.originalAmount || currentAssignment?.assignedAmount || 0;
+            const otherFeesTotal = totalOriginalAmount - currentAssignmentOriginal;
+            const afterExceptionAmount = currentAssignment?.assignedAmount || 0;
+            const totalPayable = studentAssignments.reduce((sum, a) => sum + a.assignedAmount, 0);
+            const totalPaid = studentAssignments.reduce((sum, a) => sum + a.paidAmount, 0);
+            const totalRemaining = studentAssignments.reduce((sum, a) => sum + a.remainingAmount, 0);
+
+            return (
+              <div className="mt-6 space-y-6">
+                {/* Student Information */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">{t('fees.student') || 'Student'}</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fees.student') || 'Student'}</p>
+                      <p className="font-medium">
+                        {studentsById[viewingException.studentId]?.fullName || viewingException.studentId || 'Unknown'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fees.class') || 'Class'}</p>
+                      <p className="font-medium">
+                        {currentAssignment?.classAcademicYearId
+                          ? (classAyById[currentAssignment.classAcademicYearId || '']?.class?.name ?? '-')
+                          : '-'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('fees.class')}</p>
-                  <p className="font-medium">
-                    {assignmentsById[viewingException.feeAssignmentId]?.classAcademicYearId
-                      ? (classAyById[assignmentsById[viewingException.feeAssignmentId].classAcademicYearId || '']?.class?.name ?? '-')
-                      : '-'}
-                  </p>
+
+                {/* Fee Structure Information */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">{t('fees.feeStructure') || 'Fee Structure'}</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fees.structure') || 'Structure'}</p>
+                      <p className="font-medium">
+                        {currentAssignment
+                          ? (structuresById[currentAssignment.feeStructureId]?.name ?? '-')
+                          : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fees.exceptionType') || 'Exception Type'}</p>
+                      <div className="mt-1">{getExceptionTypeBadge(viewingException.exceptionType)}</div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('fees.structure')}</p>
-                  <p className="font-medium">
-                    {assignmentsById[viewingException.feeAssignmentId]
-                      ? (structuresById[assignmentsById[viewingException.feeAssignmentId].feeStructureId]?.name ?? '-')
-                      : '-'}
-                  </p>
+
+                {/* Financial Summary */}
+                <div className="space-y-3 border-t pt-4">
+                  <h3 className="text-lg font-semibold">{t('fees.financialSummary') || 'Financial Summary'}</h3>
+                  
+                  <Card className="bg-muted/50">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-muted-foreground">{t('fees.totalFee') || 'Total Fee (All Assignments)'}</span>
+                        <span className="font-semibold">{formatCurrency(totalOriginalAmount)}</span>
+                      </div>
+                      
+                      {studentAssignments.length > 1 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-muted-foreground">{t('fees.otherFees') || 'Other Fees'}</span>
+                          <span className="font-medium">{formatCurrency(otherFeesTotal)}</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between items-center border-t pt-2">
+                        <span className="text-sm font-medium text-muted-foreground">{t('fees.currentFeeOriginal') || 'Current Fee (Original)'}</span>
+                        <span className="font-medium">{formatCurrency(currentAssignmentOriginal)}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-muted-foreground">{t('fees.exceptionAmount') || 'Exception Amount'}</span>
+                        <span className="font-medium text-orange-600 dark:text-orange-400">
+                          -{formatCurrency(viewingException.exceptionAmount)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center border-t pt-2">
+                        <span className="text-sm font-medium">{t('fees.afterException') || 'After Exception'}</span>
+                        <span className="font-semibold">{formatCurrency(afterExceptionAmount)}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-semibold">{t('fees.totalPayable') || 'Total Payable'}</span>
+                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                          {formatCurrency(totalPayable)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center border-t pt-2">
+                        <span className="text-sm font-medium text-muted-foreground">{t('fees.totalPaid') || 'Total Paid'}</span>
+                        <span className="font-semibold text-green-600 dark:text-green-400">
+                          {formatCurrency(totalPaid)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center border-t pt-2">
+                        <span className="text-sm font-medium text-muted-foreground">{t('fees.totalRemaining') || 'Total Remaining'}</span>
+                        <span className="font-semibold text-red-600 dark:text-red-400">
+                          {formatCurrency(totalRemaining)}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {studentAssignments.length > 1 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {t('fees.allStudentFees') || 'All Student Fees'} ({studentAssignments.length})
+                      </p>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {studentAssignments.map((assignment) => {
+                          const structure = structuresById[assignment.feeStructureId];
+                          const isCurrent = assignment.id === viewingException.feeAssignmentId;
+                          return (
+                            <div
+                              key={assignment.id}
+                              className={`p-3 rounded-lg border ${
+                                isCurrent
+                                  ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-300 dark:border-blue-700'
+                                  : 'bg-muted/30 border-border'
+                              }`}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex-1">
+                                  <p className="font-medium text-sm">
+                                    {structure?.name || assignment.feeStructureId}
+                                    {isCurrent && (
+                                      <Badge variant="outline" className="ml-2 text-xs">
+                                        {t('fees.current') || 'Current'}
+                                      </Badge>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-xs">
+                                <div>
+                                  <span className="text-muted-foreground">{t('fees.assigned') || 'Assigned'}: </span>
+                                  <span className="font-medium">{formatCurrency(assignment.assignedAmount)}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{t('fees.paid') || 'Paid'}: </span>
+                                  <span className="font-medium text-green-600">{formatCurrency(assignment.paidAmount)}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{t('fees.remaining') || 'Remaining'}: </span>
+                                  <span className="font-medium text-red-600">{formatCurrency(assignment.remainingAmount)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('fees.exceptionType')}</p>
-                  <div className="mt-1">{getExceptionTypeBadge(viewingException.exceptionType)}</div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('fees.exceptionAmount')}</p>
-                  <p className="font-medium">{formatCurrency(viewingException.exceptionAmount)}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('fees.status')}</p>
-                  <div className="mt-1">{getActiveBadge(viewingException.isActive)}</div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('fees.validFrom')}</p>
-                  <p className="font-medium">
-                    {viewingException.validFrom ? viewingException.validFrom.toLocaleDateString() : '-'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('fees.validTo')}</p>
-                  <p className="font-medium">
-                    {viewingException.validTo ? viewingException.validTo.toLocaleDateString() : '-'}
-                  </p>
+
+                {/* Exception Details */}
+                <div className="space-y-2 border-t pt-4">
+                  <h3 className="text-lg font-semibold">{t('fees.exceptionDetails') || 'Exception Details'}</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fees.exceptionAmount') || 'Exception Amount'}</p>
+                      <p className="font-medium">{formatCurrency(viewingException.exceptionAmount)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fees.status') || 'Status'}</p>
+                      <div className="mt-1">{getActiveBadge(viewingException.isActive)}</div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fees.validFrom') || 'Valid From'}</p>
+                      <p className="font-medium">
+                        {viewingException.validFrom ? viewingException.validFrom.toLocaleDateString() : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fees.validTo') || 'Valid To'}</p>
+                      <p className="font-medium">
+                        {viewingException.validTo ? viewingException.validTo.toLocaleDateString() : '-'}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">{t('fees.exceptionReason') || 'Reason'}</p>
+                    <p className="font-medium">{viewingException.exceptionReason}</p>
+                  </div>
+                  {viewingException.notes && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{t('fees.notes') || 'Notes'}</p>
+                      <p className="font-medium">{viewingException.notes}</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">{t('fees.exceptionReason')}</p>
-                <p className="font-medium">{viewingException.exceptionReason}</p>
-              </div>
-              {viewingException.notes && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('fees.notes')}</p>
-                  <p className="font-medium">{viewingException.notes}</p>
-                </div>
-              )}
-            </div>
-          )}
+            );
+          })()}
         </SheetContent>
       </Sheet>
 

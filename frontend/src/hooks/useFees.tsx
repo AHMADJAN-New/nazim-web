@@ -887,6 +887,21 @@ export interface FeeReportDashboard {
     studentRegistration: string | null;
     feeStructureName: string | null;
   }>;
+  exceptions?: {
+    totalCount: number;
+    totalAmount: number;
+    byType: {
+      discount_percentage: { count: number; amount: number };
+      discount_fixed: { count: number; amount: number };
+      waiver: { count: number; amount: number };
+      custom: { count: number; amount: number };
+    };
+    impactOnCollection: {
+      originalTotal: number;
+      adjustedTotal: number;
+      exceptionReduction: number;
+    };
+  };
 }
 
 export interface StudentFeeRecord {
@@ -968,6 +983,33 @@ const mapDashboardResponse = (data: any): FeeReportDashboard => ({
     studentRegistration: item.student_registration,
     feeStructureName: item.fee_structure_name,
   })),
+  exceptions: data.exceptions ? {
+    totalCount: data.exceptions.total_count || 0,
+    totalAmount: parseFloat(data.exceptions.total_amount || 0),
+    byType: {
+      discount_percentage: {
+        count: data.exceptions.by_type?.discount_percentage?.count || 0,
+        amount: parseFloat(data.exceptions.by_type?.discount_percentage?.amount || 0),
+      },
+      discount_fixed: {
+        count: data.exceptions.by_type?.discount_fixed?.count || 0,
+        amount: parseFloat(data.exceptions.by_type?.discount_fixed?.amount || 0),
+      },
+      waiver: {
+        count: data.exceptions.by_type?.waiver?.count || 0,
+        amount: parseFloat(data.exceptions.by_type?.waiver?.amount || 0),
+      },
+      custom: {
+        count: data.exceptions.by_type?.custom?.count || 0,
+        amount: parseFloat(data.exceptions.by_type?.custom?.amount || 0),
+      },
+    },
+    impactOnCollection: {
+      originalTotal: parseFloat(data.exceptions.impact_on_collection?.original_total || 0),
+      adjustedTotal: parseFloat(data.exceptions.impact_on_collection?.adjusted_total || 0),
+      exceptionReduction: parseFloat(data.exceptions.impact_on_collection?.exception_reduction || 0),
+    },
+  } : undefined,
 });
 
 const mapStudentFeeRecord = (item: any): StudentFeeRecord => {
