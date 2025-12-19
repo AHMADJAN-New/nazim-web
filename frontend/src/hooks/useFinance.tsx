@@ -3,6 +3,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import {
     financeAccountsApi,
     incomeCategoriesApi,
@@ -718,6 +719,106 @@ export const useDeleteExpenseEntry = () => {
             showToast.error(error.message || 'Failed to delete expense entry');
         },
     });
+};
+
+// ============================================
+// Account Transactions Hook
+// ============================================
+
+export interface AccountTransaction {
+    id: string;
+    type: 'income' | 'expense';
+    amount: number;
+    date: Date;
+    referenceNo: string | null;
+    description: string | null;
+    category: string;
+    paymentMethod: string;
+    entry: IncomeEntry | ExpenseEntry;
+}
+
+export interface AccountTransactionsData {
+    latestTransaction: AccountTransaction | null;
+    recentTransactions: AccountTransaction[];
+    totalIncome: number;
+    totalExpense: number;
+    netBalance: number;
+    transactionCount: number;
+    isLoading: boolean;
+}
+
+export const useAccountTransactions = (accountId?: string): AccountTransactionsData => {
+    const { data: incomeEntries = [], isLoading: incomeLoading } = useIncomeEntries(
+        accountId ? { accountId, perPage: 50 } : undefined
+    );
+    const { data: expenseEntries = [], isLoading: expenseLoading } = useExpenseEntries(
+        accountId ? { accountId, perPage: 50 } : undefined
+    );
+
+    return useMemo(() => {
+        const isLoading = incomeLoading || expenseLoading;
+
+        if (!accountId || isLoading) {
+            return {
+                latestTransaction: null,
+                recentTransactions: [],
+                totalIncome: 0,
+                totalExpense: 0,
+                netBalance: 0,
+                transactionCount: 0,
+                isLoading,
+            };
+        }
+
+        // Combine and map transactions
+        const transactions: AccountTransaction[] = [
+            ...incomeEntries.map((entry) => ({
+                id: entry.id,
+                type: 'income' as const,
+                amount: entry.amount,
+                date: entry.date,
+                referenceNo: entry.referenceNo,
+                description: entry.description,
+                category: entry.incomeCategory?.name || 'Unknown',
+                paymentMethod: entry.paymentMethod,
+                entry: entry as IncomeEntry,
+            })),
+            ...expenseEntries.map((entry) => ({
+                id: entry.id,
+                type: 'expense' as const,
+                amount: entry.amount,
+                date: entry.date,
+                referenceNo: entry.referenceNo,
+                description: entry.description,
+                category: entry.expenseCategory?.name || 'Unknown',
+                paymentMethod: entry.paymentMethod,
+                entry: entry as ExpenseEntry,
+            })),
+        ];
+
+        // Sort by date (most recent first)
+        transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+        // Calculate totals
+        const totalIncome = incomeEntries.reduce((sum, entry) => sum + entry.amount, 0);
+        const totalExpense = expenseEntries.reduce((sum, entry) => sum + entry.amount, 0);
+        const netBalance = totalIncome - totalExpense;
+        const transactionCount = transactions.length;
+
+        // Get latest transaction and recent transactions (last 10)
+        const latestTransaction = transactions[0] || null;
+        const recentTransactions = transactions.slice(0, 10);
+
+        return {
+            latestTransaction,
+            recentTransactions,
+            totalIncome,
+            totalExpense,
+            netBalance,
+            transactionCount,
+            isLoading: false,
+        };
+    }, [accountId, incomeEntries, expenseEntries, incomeLoading, expenseLoading]);
 };
 
 // ============================================

@@ -10,6 +10,7 @@ export interface Exam {
   id: string;
   organization_id: string | null;
   academic_year_id: string;
+  exam_type_id: string | null;
   name: string;
   description: string | null;
   start_date?: string | null;
@@ -19,6 +20,11 @@ export interface Exam {
   updated_at: string;
   deleted_at?: string | null;
   academic_year?: AcademicYear;
+  exam_type?: {
+    id: string;
+    name: string;
+    code: string | null;
+  };
   exam_classes?: ExamClass[];
   exam_subjects?: ExamSubject[];
 }

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { studentSchema, type StudentFormData } from '@/lib/validations';
-import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield, UserRound, Eye, Printer, FileText, BookOpen, AlertTriangle, Search, MoreHorizontal, DollarSign } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -287,6 +287,7 @@ function StudentPictureCell({ student }: { student: Student }) {
 
 export function Students() {
   const { t, isRTL } = useLanguage();
+  const navigate = useNavigate();
   const { data: profile } = useProfile();
   const orgIdForQuery = profile?.organization_id;
 
@@ -1078,6 +1079,10 @@ export function Students() {
                                   <DropdownMenuItem onClick={() => setDisciplineDialogStudent(student)}>
                                     <AlertTriangle className="mr-2 h-4 w-4 text-orange-600 dark:text-orange-400" />
                                     {t('students.disciplineRecords') || 'Discipline Records'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => navigate(`/students/${student.id}/fees`)}>
+                                    <DollarSign className="mr-2 h-4 w-4 text-green-600 dark:text-green-400" />
+                                    {t('fees.studentFeeAssignments') || 'Fee Assignments'}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => handleEdit(student)}>

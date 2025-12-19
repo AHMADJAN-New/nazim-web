@@ -39,6 +39,8 @@ class FeePaymentController extends Controller
             'student_id' => 'nullable|uuid|exists:students,id',
             'payment_date_from' => 'nullable|date',
             'payment_date_to' => 'nullable|date|after_or_equal:payment_date_from',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
         $query = FeePayment::whereNull('deleted_at')
@@ -61,7 +63,15 @@ class FeePaymentController extends Controller
             $query->where('payment_date', '<=', $validated['payment_date_to']);
         }
 
-        return response()->json($query->orderBy('payment_date', 'desc')->get());
+        $query->orderBy('payment_date', 'desc');
+
+        // Check if pagination is requested
+        if (!empty($validated['page']) || !empty($validated['per_page'])) {
+            $perPage = $validated['per_page'] ?? 25;
+            return response()->json($query->paginate($perPage));
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(FeePaymentStoreRequest $request)

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExams, useCreateExam, useUpdateExam, useDeleteExam, useUpdateExamStatus, useExamClasses, useExamSummaryReport } from '@/hooks/useExams';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useExamTypes } from '@/hooks/useExamTypes';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import type { Exam, ExamStatus } from '@/types/domain/exam';
@@ -184,6 +185,7 @@ export function Exams() {
 
   const { data: academicYears } = useAcademicYears(organizationId);
   const { data: currentAcademicYear } = useCurrentAcademicYear(organizationId);
+  const { data: examTypes } = useExamTypes();
   const { data: exams, isLoading } = useExams(organizationId);
   const createExam = useCreateExam();
   const updateExam = useUpdateExam();
@@ -199,10 +201,12 @@ export function Exams() {
   const [statusToChange, setStatusToChange] = useState<{ exam: Exam; newStatus: ExamStatus } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ExamStatus | 'all'>('all');
+  const [examTypeFilter, setExamTypeFilter] = useState<string | 'all'>('all');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     name: '',
     academicYearId: '',
+    examTypeId: '',
     description: '',
     startDate: '',
     endDate: '',
@@ -235,11 +239,13 @@ export function Exams() {
     if (!exams) return [];
     return exams.filter(exam => {
       const matchesSearch = exam.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        exam.academicYear?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+        exam.academicYear?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        exam.examType?.name?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'all' || exam.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesExamType = examTypeFilter === 'all' || exam.examTypeId === examTypeFilter;
+      return matchesSearch && matchesStatus && matchesExamType;
     });
-  }, [exams, searchQuery, statusFilter]);
+  }, [exams, searchQuery, statusFilter, examTypeFilter]);
 
   const handleCreate = () => {
     if (!formData.name || !formData.academicYearId) {
@@ -251,6 +257,7 @@ export function Exams() {
       {
         name: formData.name,
         academicYearId: formData.academicYearId,
+        examTypeId: formData.examTypeId || undefined,
         description: formData.description || undefined,
         startDate: formData.startDate ? new Date(formData.startDate) : undefined,
         endDate: formData.endDate ? new Date(formData.endDate) : undefined,
@@ -281,6 +288,7 @@ export function Exams() {
         data: {
           name: formData.name,
           academicYearId: formData.academicYearId,
+          examTypeId: formData.examTypeId || undefined,
           description: formData.description || undefined,
           startDate: formData.startDate ? new Date(formData.startDate) : undefined,
           endDate: formData.endDate ? new Date(formData.endDate) : undefined,
@@ -340,6 +348,7 @@ export function Exams() {
     setFormData({
       name: '',
       academicYearId: currentAcademicYear?.id || '',
+      examTypeId: '',
       description: '',
       startDate: '',
       endDate: '',
@@ -353,6 +362,7 @@ export function Exams() {
     setFormData({
       name: exam.name,
       academicYearId: exam.academicYearId,
+      examTypeId: exam.examTypeId || '',
       description: exam.description || '',
       startDate: exam.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : '',
       endDate: exam.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : '',
@@ -451,6 +461,19 @@ export function Exams() {
                 <SelectItem value="archived">{t('exams.status.archived') || 'Archived'}</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={examTypeFilter} onValueChange={(value) => setExamTypeFilter(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder={t('exams.filterByExamType') || 'Filter by exam type'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                {examTypes?.filter(et => et.isActive).map((examType) => (
+                  <SelectItem key={examType.id} value={examType.id}>
+                    {examType.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -479,6 +502,7 @@ export function Exams() {
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
                   <TableHead>{t('exams.name') || 'Name'}</TableHead>
+                  <TableHead>{t('exams.examType') || 'Exam Type'}</TableHead>
                   <TableHead>{t('exams.academicYear') || 'Academic Year'}</TableHead>
                   <TableHead>{t('exams.status') || 'Status'}</TableHead>
                   <TableHead>{t('exams.period') || 'Period'}</TableHead>
@@ -511,6 +535,15 @@ export function Exams() {
                         >
                           {exam.name}
                         </TableCell>
+                    <TableCell>
+                      {exam.examType ? (
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800">
+                          {exam.examType.name}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
                         {exam.academicYear?.name || 'N/A'}
@@ -623,7 +656,7 @@ export function Exams() {
                   </TableRow>
                   {isExpanded && (
                     <TableRow key={`${exam.id}-expanded`}>
-                      <TableCell colSpan={6} className="p-0">
+                      <TableCell colSpan={7} className="p-0">
                         <ExpandedRowContent exam={exam} />
                       </TableCell>
                     </TableRow>
@@ -669,6 +702,25 @@ export function Exams() {
                   {(academicYears || []).map((year) => (
                     <SelectItem key={year.id} value={year.id}>
                       {year.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="create-exam-type">{t('exams.examType') || 'Exam Type'}</Label>
+              <Select
+                value={formData.examTypeId}
+                onValueChange={(value) => setFormData({ ...formData, examTypeId: value })}
+              >
+                <SelectTrigger id="create-exam-type">
+                  <SelectValue placeholder={t('exams.selectExamType') || 'Select exam type (optional)'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                  {(examTypes || []).filter(et => et.isActive).map((examType) => (
+                    <SelectItem key={examType.id} value={examType.id}>
+                      {examType.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -750,6 +802,25 @@ export function Exams() {
                   {(academicYears || []).map((year) => (
                     <SelectItem key={year.id} value={year.id}>
                       {year.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-exam-type">{t('exams.examType') || 'Exam Type'}</Label>
+              <Select
+                value={formData.examTypeId}
+                onValueChange={(value) => setFormData({ ...formData, examTypeId: value })}
+              >
+                <SelectTrigger id="edit-exam-type">
+                  <SelectValue placeholder={t('exams.selectExamType') || 'Select exam type (optional)'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{t('common.none') || 'None'}</SelectItem>
+                  {(examTypes || []).filter(et => et.isActive).map((examType) => (
+                    <SelectItem key={examType.id} value={examType.id}>
+                      {examType.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

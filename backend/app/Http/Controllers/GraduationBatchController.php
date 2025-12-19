@@ -43,6 +43,8 @@ class GraduationBatchController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $schoolId)
             ->with(['academicYear:id,name', 'class:id,name', 'exam:id,name', 'school:id,school_name'])
+            ->where('school_id', $request->get('school_id', $profile->default_school_id))
+            ->with(['exams.examType'])
             ->withCount(['students']);
 
         if ($request->filled('academic_year_id')) {
@@ -53,8 +55,11 @@ class GraduationBatchController extends Controller
             $query->where('class_id', $request->input('class_id'));
         }
 
+        // Support both old exam_id and new exam_ids filter
         if ($request->filled('exam_id')) {
-            $query->where('exam_id', $request->input('exam_id'));
+            $query->whereHas('exams', function ($q) use ($request) {
+                $q->where('exams.id', $request->input('exam_id'));
+            })->orWhere('exam_id', $request->input('exam_id')); // Backward compatibility
         }
 
         return response()->json($query->orderByDesc('created_at')->get());
@@ -77,8 +82,18 @@ class GraduationBatchController extends Controller
             'school_id' => 'required|uuid|exists:school_branding,id',
             'academic_year_id' => 'required|uuid|exists:academic_years,id',
             'class_id' => 'required|uuid|exists:classes,id',
-            'exam_id' => 'required|uuid|exists:exams,id',
+            'exam_id' => 'nullable|uuid|exists:exams,id', // Keep for backward compatibility
+            'exam_ids' => 'required_without:exam_id|array|min:1',
+            'exam_ids.*' => 'uuid|exists:exams,id',
+            'exam_weights' => 'nullable|array',
+            'exam_weights.*' => 'nullable|numeric|min:0|max:100',
+            'graduation_type' => 'nullable|in:final_year,promotion,transfer',
+            'from_class_id' => 'nullable|uuid|exists:classes,id',
+            'to_class_id' => 'nullable|uuid|exists:classes,id',
             'graduation_date' => 'required|date',
+            'min_attendance_percentage' => 'nullable|numeric|min:0|max:100',
+            'require_attendance' => 'nullable|boolean',
+            'exclude_approved_leaves' => 'nullable|boolean',
         ]);
 
         try {
@@ -121,6 +136,8 @@ class GraduationBatchController extends Controller
                 'exam:id,name',
                 'school:id,school_name'
             ])
+            ->where('school_id', $request->get('school_id', $profile->default_school_id))
+            ->with(['students.student', 'exams.examType', 'fromClass', 'toClass'])
             ->find($id);
 
         if (!$batch) {

@@ -9,10 +9,13 @@ import type {
   TimeslotAttendanceSummary
 } from '@/types/domain/exam';
 
+import { mapExamTypeApiToDomain } from './examTypeMapper';
+
 export const mapExamApiToDomain = (exam: ExamApi.Exam): Exam => ({
   id: exam.id,
   organizationId: exam.organization_id,
   academicYearId: exam.academic_year_id,
+  examTypeId: exam.exam_type_id ?? null,
   name: exam.name,
   description: exam.description,
   startDate: exam.start_date ? new Date(exam.start_date) : null,
@@ -30,11 +33,25 @@ export const mapExamApiToDomain = (exam: ExamApi.Exam): Exam => ({
       isCurrent: exam.academic_year.is_current,
     }
     : undefined,
+  examType: exam.exam_type
+    ? mapExamTypeApiToDomain({
+        id: exam.exam_type.id,
+        organization_id: exam.organization_id || '',
+        name: exam.exam_type.name,
+        code: exam.exam_type.code,
+        description: null,
+        display_order: 0,
+        is_active: true,
+        created_at: exam.created_at,
+        updated_at: exam.updated_at,
+      })
+    : undefined,
 });
 
 export const mapExamDomainToInsert = (exam: Partial<Exam>): Partial<ExamApi.Exam> => ({
   name: exam.name!,
   academic_year_id: exam.academicYearId!,
+  exam_type_id: exam.examTypeId ?? null,
   description: exam.description ?? null,
   start_date: exam.startDate ? exam.startDate.toISOString().slice(0, 10) : null,
   end_date: exam.endDate ? exam.endDate.toISOString().slice(0, 10) : null,
@@ -44,6 +61,7 @@ export const mapExamDomainToInsert = (exam: Partial<Exam>): Partial<ExamApi.Exam
 export const mapExamDomainToUpdate = (exam: Partial<Exam>): Partial<ExamApi.Exam> => ({
   name: exam.name,
   academic_year_id: exam.academicYearId,
+  exam_type_id: exam.examTypeId,
   description: exam.description ?? null,
   start_date: exam.startDate ? exam.startDate.toISOString().slice(0, 10) : null,
   end_date: exam.endDate ? exam.endDate.toISOString().slice(0, 10) : null,

@@ -15,6 +15,10 @@ class GraduationBatch extends Model
     public const STATUS_APPROVED = 'approved';
     public const STATUS_ISSUED = 'issued';
 
+    public const TYPE_FINAL_YEAR = 'final_year';
+    public const TYPE_PROMOTION = 'promotion';
+    public const TYPE_TRANSFER = 'transfer';
+
     protected $connection = 'pgsql';
     protected $table = 'graduation_batches';
     protected $keyType = 'string';
@@ -26,9 +30,15 @@ class GraduationBatch extends Model
         'school_id',
         'academic_year_id',
         'class_id',
-        'exam_id',
+        'exam_id', // Keep for backward compatibility
+        'graduation_type',
+        'from_class_id',
+        'to_class_id',
         'graduation_date',
         'status',
+        'min_attendance_percentage',
+        'require_attendance',
+        'exclude_approved_leaves',
         'approved_by',
         'approved_at',
         'created_by',
@@ -37,6 +47,9 @@ class GraduationBatch extends Model
     protected $casts = [
         'graduation_date' => 'date',
         'approved_at' => 'datetime',
+        'min_attendance_percentage' => 'decimal:2',
+        'require_attendance' => 'boolean',
+        'exclude_approved_leaves' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -77,5 +90,22 @@ class GraduationBatch extends Model
     public function class()
     {
         return $this->belongsTo(ClassModel::class, 'class_id');
+    }
+
+    public function fromClass()
+    {
+        return $this->belongsTo(ClassModel::class, 'from_class_id');
+    }
+
+    public function toClass()
+    {
+        return $this->belongsTo(ClassModel::class, 'to_class_id');
+    }
+
+    public function exams()
+    {
+        return $this->belongsToMany(Exam::class, 'graduation_batch_exams', 'batch_id', 'exam_id')
+            ->withPivot('weight_percentage', 'is_required', 'display_order')
+            ->orderByPivot('display_order');
     }
 }

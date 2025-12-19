@@ -30,6 +30,8 @@ class StoreAssetRequest extends FormRequest
             'school_id' => 'nullable|uuid',
             'building_id' => 'nullable|uuid',
             'room_id' => 'nullable|uuid',
+            'currency_id' => 'nullable|uuid|exists:currencies,id',
+            'finance_account_id' => 'nullable|uuid|exists:finance_accounts,id',
         ];
     }
 

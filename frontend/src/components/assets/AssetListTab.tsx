@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, Pencil, Trash2, Printer, Eye } from 'lucide-react';
@@ -28,6 +28,8 @@ import { useAssetCategories } from '@/hooks/useAssetCategories';
 import { useStaff } from '@/hooks/useStaff';
 import { useStudents } from '@/hooks/useStudents';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { useFinanceAccounts } from '@/hooks/useFinance';
+import { useCurrencies } from '@/hooks/useCurrencies';
 import type { Asset } from '@/types/domain/asset';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
@@ -55,19 +57,25 @@ const assetSchema = z.object({
   serialNumber: z.string().optional().nullable(),
   purchasePrice: z
     .union([z.number(), z.string()])
-    .optional()
-    .transform((val) => (val === '' || val === undefined ? null : Number(val))),
+    .refine((val) => {
+      if (val === '' || val === undefined || val === null) return false;
+      const num = typeof val === 'string' ? parseFloat(val) : val;
+      return !isNaN(num) && num > 0;
+    }, 'Purchase price is required and must be greater than 0')
+    .transform((val) => (val === '' || val === undefined || val === null ? null : Number(val))),
   totalCopies: z
     .union([z.number(), z.string()])
     .optional()
     .default(1)
     .transform((val) => (val === '' || val === undefined ? 1 : Number(val))),
-  purchaseDate: z.string().optional().nullable(),
+  purchaseDate: z.string().min(1, 'Purchase date is required'),
   warrantyExpiry: z.string().optional().nullable(),
   vendor: z.string().optional().nullable(),
   schoolId: z.string().optional().nullable(),
   buildingId: z.string().optional().nullable(),
   roomId: z.string().optional().nullable(),
+  currencyId: z.string().optional().nullable(),
+  financeAccountId: z.string().min(1, 'Finance account is required'),
   notes: z.string().optional().nullable(),
 });
 
@@ -106,8 +114,10 @@ export default function AssetListTab() {
   const { data: stats } = useAssetStats();
   const { data: schools } = useSchools();
   const { data: buildings } = useBuildings();
-  const { rooms } = useRooms(undefined, undefined, true);
+  const { rooms: allRooms } = useRooms(undefined, undefined, true);
   const { data: categories } = useAssetCategories();
+  const { data: financeAccounts } = useFinanceAccounts({ isActive: true });
+  const { data: currencies } = useCurrencies({ isActive: true });
   
   // Get all assets with assignments for history (like LibraryBooks uses loans)
   const { assets: allAssets = [] } = useAssets(undefined, false);
@@ -122,6 +132,7 @@ export default function AssetListTab() {
     reset,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -130,6 +141,19 @@ export default function AssetListTab() {
       purchasePrice: null,
     },
   });
+
+  // Filter rooms by selected building (if building is selected, show only rooms from that building)
+  // Must be after useForm hook to access watch
+  const selectedBuildingId = watch('buildingId');
+  const rooms = useMemo(() => {
+    if (!allRooms) return [];
+    // If building is selected, filter rooms to that building only
+    if (selectedBuildingId) {
+      return allRooms.filter((room) => room.buildingId === selectedBuildingId);
+    }
+    // If no building selected, show all rooms (user can select room without building)
+    return allRooms;
+  }, [allRooms, selectedBuildingId]);
 
   const openCreate = () => {
     setEditingAsset(null);
@@ -141,10 +165,12 @@ export default function AssetListTab() {
       categoryId: null,
       purchasePrice: null,
       totalCopies: 1,
-      purchaseDate: null,
+      purchaseDate: '',
       warrantyExpiry: null,
       vendor: '',
       notes: '',
+      currencyId: null,
+      financeAccountId: '',
     });
     setIsDialogOpen(true);
   };
@@ -167,6 +193,8 @@ export default function AssetListTab() {
       schoolId: asset.schoolId || undefined,
       buildingId: asset.buildingId || undefined,
       roomId: asset.roomId || undefined,
+      currencyId: asset.currencyId || undefined,
+      financeAccountId: asset.financeAccountId || undefined,
     });
     setIsDialogOpen(true);
   };
@@ -193,6 +221,8 @@ export default function AssetListTab() {
       schoolId: values.schoolId || null,
       buildingId: values.buildingId || null,
       roomId: values.roomId || null,
+      currencyId: values.currencyId || null,
+      financeAccountId: values.financeAccountId || null,
     };
 
     if (editingAsset) {
@@ -700,8 +730,13 @@ export default function AssetListTab() {
                 <Input {...register('serialNumber')} />
               </div>
               <div>
-                <Label>Purchase Price</Label>
+                <Label>
+                  Purchase Price <span className="text-destructive">*</span>
+                </Label>
                 <Input type="number" step="0.01" {...register('purchasePrice')} />
+                {errors.purchasePrice && (
+                  <p className="text-sm text-destructive mt-1">{errors.purchasePrice.message}</p>
+                )}
               </div>
               <div>
                 <Label>Number of Copies</Label>
@@ -709,8 +744,13 @@ export default function AssetListTab() {
                 <p className="text-xs text-muted-foreground mt-1">Number of identical copies of this asset</p>
               </div>
               <div>
-                <Label>Purchase Date</Label>
+                <Label>
+                  Purchase Date <span className="text-destructive">*</span>
+                </Label>
                 <Input type="date" {...register('purchaseDate')} />
+                {errors.purchaseDate && (
+                  <p className="text-sm text-destructive mt-1">{errors.purchaseDate.message}</p>
+                )}
               </div>
               <div>
                 <Label>Warranty Expiry</Label>
@@ -743,10 +783,27 @@ export default function AssetListTab() {
                 <Label>Building</Label>
                 <Select
                   value={watch('buildingId') || 'none'}
-                  onValueChange={(value) => setValue('buildingId', value === 'none' ? undefined : value)}
+                  onValueChange={(value) => {
+                    const newBuildingId = value === 'none' ? undefined : value;
+                    const currentRoomId = watch('roomId');
+                    
+                    setValue('buildingId', newBuildingId);
+                    
+                    // If building changed and room is selected, check if room belongs to new building
+                    if (currentRoomId && newBuildingId) {
+                      const currentRoom = allRooms?.find((r) => r.id === currentRoomId);
+                      if (currentRoom && currentRoom.buildingId !== newBuildingId) {
+                        // Room doesn't belong to new building, clear it
+                        setValue('roomId', undefined);
+                      }
+                    } else if (newBuildingId === undefined) {
+                      // Building cleared, keep room (room can exist without building)
+                      // Don't clear room
+                    }
+                  }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select building" />
+                    <SelectValue placeholder="Select building (optional)" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
@@ -765,17 +822,86 @@ export default function AssetListTab() {
                   onValueChange={(value) => setValue('roomId', value === 'none' ? undefined : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select room" />
+                    <SelectValue placeholder="Select room (optional)" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
                     {rooms?.map((room) => (
                       <SelectItem key={room.id} value={room.id}>
-                        {room.roomNumber}
+                        {room.roomNumber} {room.buildingName ? `(${room.buildingName})` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {selectedBuildingId && rooms && rooms.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">No rooms available for this building</p>
+                )}
+                {selectedBuildingId && rooms && rooms.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">Showing rooms from selected building</p>
+                )}
+                {!selectedBuildingId && (
+                  <p className="text-xs text-muted-foreground mt-1">Select a building to filter rooms, or select any room</p>
+                )}
+              </div>
+              <div>
+                <Label>
+                  Finance Account <span className="text-destructive">*</span>
+                </Label>
+                <Controller
+                  control={control}
+                  name="financeAccountId"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Auto-select currency from account if account has currency
+                        if (value && financeAccounts) {
+                          const account = financeAccounts.find((acc) => acc.id === value);
+                          if (account?.currencyId) {
+                            setValue('currencyId', account.currencyId);
+                          }
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={errors.financeAccountId ? 'border-destructive' : ''}>
+                        <SelectValue placeholder="Select finance account" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {financeAccounts?.map((account) => (
+                          <SelectItem key={account.id} value={account.id}>
+                            {account.name} {account.code ? `(${account.code})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.financeAccountId && (
+                  <p className="text-sm text-destructive mt-1">{errors.financeAccountId.message}</p>
+                )}
+              </div>
+              <div>
+                <Label>Currency</Label>
+                <Select
+                  value={watch('currencyId') || 'none'}
+                  onValueChange={(value) => setValue('currencyId', value === 'none' ? undefined : value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {currencies?.map((currency) => (
+                      <SelectItem key={currency.id} value={currency.id}>
+                        {currency.code} - {currency.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Currency for purchase price. Auto-selected from finance account if available.
+                </p>
               </div>
             </div>
             <div>

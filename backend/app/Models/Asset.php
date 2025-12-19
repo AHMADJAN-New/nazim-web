@@ -20,6 +20,8 @@ class Asset extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'currency_id',
+        'finance_account_id',
         'school_id',
         'building_id',
         'room_id',
@@ -102,5 +104,15 @@ class Asset extends Model
     public function copies()
     {
         return $this->hasMany(AssetCopy::class, 'asset_id');
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency_id');
+    }
+
+    public function financeAccount()
+    {
+        return $this->belongsTo(FinanceAccount::class, 'finance_account_id');
     }
 }

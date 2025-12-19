@@ -1,6 +1,7 @@
 // Uses pdfmake; ensure vfs is initialized by importing our reporting pdfExport once
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
+import * as pdfMakeModule from 'pdfmake/build/pdfmake';
+const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 // Initialize vfs (similar logic as reporting/pdfExport.ts)
 try {

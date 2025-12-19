@@ -214,33 +214,52 @@ export const mapFeeExceptionApiToDomain = (api: FeeApi.FeeException): FeeExcepti
   feeAssignmentId: api.fee_assignment_id,
   studentId: api.student_id,
   exceptionType: api.exception_type,
-  exceptionAmount: Number(api.exception_amount),
-  exceptionReason: api.exception_reason,
+  exceptionAmount: Number(api.exception_amount || 0),
+  exceptionReason: api.exception_reason || '',
   approvedByUserId: api.approved_by_user_id,
-  approvedAt: new Date(api.approved_at),
-  validFrom: new Date(api.valid_from),
+  approvedAt: api.approved_at ? new Date(api.approved_at) : null,
+  validFrom: api.valid_from ? new Date(api.valid_from) : new Date(),
   validTo: parseDate(api.valid_to),
-  isActive: api.is_active,
-  notes: api.notes,
-  createdAt: new Date(api.created_at),
-  updatedAt: new Date(api.updated_at),
+  isActive: api.is_active ?? true,
+  notes: api.notes ?? null,
+  createdAt: api.created_at ? new Date(api.created_at) : new Date(),
+  updatedAt: api.updated_at ? new Date(api.updated_at) : new Date(),
   deletedAt: parseDate(api.deleted_at),
 });
 
-export const mapFeeExceptionDomainToInsert = (domain: Partial<FeeException>): FeeApi.FeeExceptionInsert => ({
-  organization_id: domain.organizationId,
-  fee_assignment_id: domain.feeAssignmentId ?? '',
-  student_id: domain.studentId ?? '',
-  exception_type: domain.exceptionType ?? 'discount_fixed',
-  exception_amount: domain.exceptionAmount ?? 0,
-  exception_reason: domain.exceptionReason ?? '',
-  approved_by_user_id: domain.approvedByUserId ?? '',
-  approved_at: domain.approvedAt ? domain.approvedAt.toISOString() : null,
-  valid_from: domain.validFrom ? domain.validFrom.toISOString().slice(0, 10) : '',
-  valid_to: domain.validTo ? domain.validTo.toISOString().slice(0, 10) : null,
-  is_active: domain.isActive,
-  notes: domain.notes ?? null,
-});
+export const mapFeeExceptionDomainToInsert = (domain: Partial<FeeException>): FeeApi.FeeExceptionInsert => {
+  // Validate required fields
+  if (!domain.organizationId) {
+    throw new Error('Organization ID is required');
+  }
+  if (!domain.feeAssignmentId) {
+    throw new Error('Fee assignment ID is required');
+  }
+  if (!domain.studentId) {
+    throw new Error('Student ID is required');
+  }
+  if (!domain.approvedByUserId) {
+    throw new Error('Approved by user ID is required');
+  }
+  if (!domain.validFrom) {
+    throw new Error('Valid from date is required');
+  }
+
+  return {
+    organization_id: domain.organizationId,
+    fee_assignment_id: domain.feeAssignmentId,
+    student_id: domain.studentId,
+    exception_type: domain.exceptionType ?? 'discount_fixed',
+    exception_amount: domain.exceptionAmount ?? 0,
+    exception_reason: domain.exceptionReason ?? '',
+    approved_by_user_id: domain.approvedByUserId,
+    approved_at: domain.approvedAt ? domain.approvedAt.toISOString() : null,
+    valid_from: domain.validFrom.toISOString().slice(0, 10),
+    valid_to: domain.validTo ? domain.validTo.toISOString().slice(0, 10) : null,
+    is_active: domain.isActive,
+    notes: domain.notes ?? null,
+  };
+};
 
 export const mapFeeExceptionDomainToUpdate = (domain: Partial<FeeException>): FeeApi.FeeExceptionUpdate => ({
   fee_assignment_id: domain.feeAssignmentId,

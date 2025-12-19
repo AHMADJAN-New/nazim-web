@@ -25,6 +25,7 @@ class DocumentPdfService
                 }
             }
 
+            // Try Browsershot first (better quality, supports CSS better)
             if (class_exists(Browsershot::class)) {
                 try {
                     $browsershot = Browsershot::html($html)
@@ -42,36 +43,50 @@ class DocumentPdfService
                     if (!file_exists($fullPath)) {
                         throw new \RuntimeException("Browsershot generated PDF but file not found at: {$fullPath}");
                     }
-                } catch (\Exception $e) {
-                    Log::error('Browsershot PDF generation failed', [
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                        'path' => $fullPath,
-                    ]);
-                    throw new \RuntimeException("Browsershot PDF generation failed: " . $e->getMessage(), 0, $e);
-                }
-            } else {
-                try {
-                    $pdf = Pdf::loadHTML($html);
-                    if ($pageLayout === 'A4_landscape') {
-                        $pdf->setPaper('A4', 'landscape');
-                    } else {
-                        $pdf->setPaper('A4', 'portrait');
-                    }
-                    $pdf->save($fullPath);
                     
-                    // Verify file was created
-                    if (!file_exists($fullPath)) {
-                        throw new \RuntimeException("DomPDF generated PDF but file not found at: {$fullPath}");
-                    }
+                    // Success - return the path
+                    return $path;
                 } catch (\Exception $e) {
-                    Log::error('DomPDF generation failed', [
+                    // Check if error is due to missing Puppeteer
+                    $isPuppeteerError = str_contains($e->getMessage(), 'puppeteer') || 
+                                       str_contains($e->getMessage(), 'MODULE_NOT_FOUND');
+                    
+                    Log::warning('Browsershot PDF generation failed, falling back to DomPDF', [
                         'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
+                        'is_puppeteer_error' => $isPuppeteerError,
                         'path' => $fullPath,
                     ]);
-                    throw new \RuntimeException("DomPDF generation failed: " . $e->getMessage(), 0, $e);
+                    
+                    // If it's a Puppeteer error, fall back to DomPDF
+                    // Otherwise, re-throw the error
+                    if (!$isPuppeteerError) {
+                        throw new \RuntimeException("Browsershot PDF generation failed: " . $e->getMessage(), 0, $e);
+                    }
+                    // Continue to DomPDF fallback below
                 }
+            }
+            
+            // Fallback to DomPDF (works without Puppeteer, but has CSS limitations)
+            try {
+                $pdf = Pdf::loadHTML($html);
+                if ($pageLayout === 'A4_landscape') {
+                    $pdf->setPaper('A4', 'landscape');
+                } else {
+                    $pdf->setPaper('A4', 'portrait');
+                }
+                $pdf->save($fullPath);
+                
+                // Verify file was created
+                if (!file_exists($fullPath)) {
+                    throw new \RuntimeException("DomPDF generated PDF but file not found at: {$fullPath}");
+                }
+            } catch (\Exception $e) {
+                Log::error('DomPDF generation failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'path' => $fullPath,
+                ]);
+                throw new \RuntimeException("PDF generation failed (both Browsershot and DomPDF): " . $e->getMessage(), 0, $e);
             }
 
             return $path;

@@ -1,8 +1,9 @@
 import { useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, UserRound } from 'lucide-react';
+import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, UserRound, DollarSign } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -87,6 +88,7 @@ const statusVariant = (status: AdmissionStatus) => {
 
 export function StudentAdmissions() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { data: profile } = useProfile();
   const orgIdForQuery = profile?.organization_id;
 
@@ -412,6 +414,16 @@ export function StudentAdmissions() {
       header: () => <div className="text-right">{t('admissions.actions') || 'Actions'}</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-1 flex-wrap">
+          {row.original.student_id && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(`/students/${row.original.student_id}/fees`)}
+              title={t('fees.studentFeeAssignments') || 'Fee Assignments'}
+            >
+              <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

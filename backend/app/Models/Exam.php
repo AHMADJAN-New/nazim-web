@@ -38,6 +38,7 @@ class Exam extends Model
         'id',
         'organization_id',
         'academic_year_id',
+        'exam_type_id',
         'name',
         'description',
         'start_date',
@@ -80,6 +81,11 @@ class Exam extends Model
     public function academicYear()
     {
         return $this->belongsTo(AcademicYear::class, 'academic_year_id');
+    }
+
+    public function examType()
+    {
+        return $this->belongsTo(ExamType::class, 'exam_type_id');
     }
 
     public function examClasses()

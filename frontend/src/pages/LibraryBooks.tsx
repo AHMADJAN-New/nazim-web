@@ -317,7 +317,8 @@ export default function LibraryBooks() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
+                            onClick={(e) => {
+                                e.stopPropagation();
                                 setViewBook(book);
                                 setIsViewPanelOpen(true);
                             }}
@@ -328,7 +329,10 @@ export default function LibraryBooks() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleAddCopy(book.id)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddCopy(book.id);
+                            }}
                             title={t('library.addCopy')}
                         >
                             <Copy className="h-4 w-4" />
@@ -337,7 +341,10 @@ export default function LibraryBooks() {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleOpenDialog(book)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDialog(book);
+                                }}
                             >
                                 <Pencil className="h-4 w-4" />
                             </Button>
@@ -346,7 +353,10 @@ export default function LibraryBooks() {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleOpenDeleteDialog(book)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDeleteDialog(book);
+                                }}
                             >
                                 <Trash2 className="h-4 w-4" />
                             </Button>
@@ -458,7 +468,13 @@ export default function LibraryBooks() {
                             )}
                         </div>
 
-                        <DataTable table={table} />
+                        <DataTable 
+                            table={table} 
+                            onRowClick={(book) => {
+                                setViewBook(book);
+                                setIsViewPanelOpen(true);
+                            }}
+                        />
 
                         <DataTablePagination
                             table={table}

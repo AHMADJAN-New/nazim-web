@@ -3,6 +3,8 @@ export type AssetStatus = 'available' | 'assigned' | 'maintenance' | 'retired' |
 export interface Asset {
   id: string;
   organization_id: string;
+  currency_id: string | null;
+  finance_account_id: string | null;
   school_id: string | null;
   building_id: string | null;
   room_id: string | null;
@@ -28,6 +30,14 @@ export interface Asset {
   room?: { id: string; room_number: string; building_id?: string | null } | null;
   school?: { id: string; school_name: string } | null;
   category?: { id: string; name: string; code: string | null } | null;
+  currency?: { id: string; code: string; name: string; symbol: string | null } | null;
+  finance_account?: { 
+    id: string; 
+    name: string; 
+    code: string | null;
+    currency_id: string | null;
+    currency?: { id: string; code: string; name: string; symbol: string | null } | null;
+  } | null;
   active_assignment?: AssetAssignment | null;
   created_at: string;
   updated_at: string;
@@ -67,6 +77,8 @@ export interface AssetInsert {
   school_id?: string | null;
   building_id?: string | null;
   room_id?: string | null;
+  currency_id?: string | null;
+  finance_account_id?: string | null;
 }
 
 export type AssetUpdate = Partial<AssetInsert>;

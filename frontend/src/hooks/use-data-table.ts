@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -36,17 +36,17 @@ export function useDataTable<TData>({
   getRowId,
   onPaginationChange,
 }: UseDataTableProps<TData>) {
-  const [sorting, setSorting] = React.useState<SortingState>(initialState?.sorting ?? []);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(initialState?.columnFilters ?? []);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(initialState?.columnVisibility ?? {});
-  const [globalFilter, setGlobalFilter] = React.useState<string>('');
+  const [sorting, setSorting] = useState<SortingState>(initialState?.sorting ?? []);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialState?.columnFilters ?? []);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialState?.columnVisibility ?? {});
+  const [globalFilter, setGlobalFilter] = useState<string>('');
 
   // Determine pagination state
   const isServerSidePagination = Boolean(pageCount || paginationMeta);
   const calculatedPageCount = paginationMeta ? paginationMeta.last_page : pageCount;
 
   // Sync pagination state from meta if provided
-  const [pagination, setPagination] = React.useState<{ pageIndex: number; pageSize: number }>(() => {
+  const [pagination, setPagination] = useState<{ pageIndex: number; pageSize: number }>(() => {
     if (paginationMeta) {
       return {
         pageIndex: paginationMeta.current_page - 1, // TanStack Table uses 0-based index
@@ -57,7 +57,7 @@ export function useDataTable<TData>({
   });
 
   // Update pagination when meta changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (paginationMeta) {
       setPagination({
         pageIndex: paginationMeta.current_page - 1,
@@ -67,7 +67,7 @@ export function useDataTable<TData>({
   }, [paginationMeta]);
 
   // Memoize data to ensure stable reference
-  const memoizedData = React.useMemo(() => data, [data]);
+  const memoizedData = useMemo(() => data, [data]);
 
   const table = useReactTable({
     data: memoizedData,

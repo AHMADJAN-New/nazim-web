@@ -155,7 +155,7 @@ export interface FeeException {
   exception_amount: number;
   exception_reason: string;
   approved_by_user_id: string;
-  approved_at: string;
+  approved_at: string | null;
   valid_from: string;
   valid_to: string | null;
   is_active: boolean;
@@ -163,6 +163,10 @@ export interface FeeException {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  // Nested relationships (from Laravel with() clause)
+  fee_assignment?: FeeAssignment;
+  student?: any;
+  approved_by?: any;
 }
 
 export interface FeeExceptionInsert {

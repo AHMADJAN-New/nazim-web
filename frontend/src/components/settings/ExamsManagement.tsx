@@ -14,6 +14,7 @@ import {
   useMarksProgress,
 } from '@/hooks/useExams';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useExamTypes } from '@/hooks/useExamTypes';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useClassAcademicYears } from '@/hooks/useClasses';
@@ -228,6 +229,7 @@ export function ExamsManagement() {
   const organizationId = profile?.organization_id;
 
   const { data: academicYears } = useAcademicYears(organizationId);
+  const { data: examTypes } = useExamTypes();
   const { data: exams, isLoading } = useExams(organizationId);
   const createExam = useCreateExam();
   const updateExam = useUpdateExam();
@@ -235,7 +237,7 @@ export function ExamsManagement() {
   const updateExamSubject = useUpdateExamSubject();
 
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
-  const [formState, setFormState] = useState({ name: '', academicYearId: '', description: '' });
+  const [formState, setFormState] = useState({ name: '', academicYearId: '', examTypeId: '', description: '' });
   const [draftSubjects, setDraftSubjects] = useState<Record<string, { totalMarks: string; passingMarks: string; scheduledAt: string }>>({});
   const [selectedClassId, setSelectedClassId] = useState<string>('');
 
@@ -250,10 +252,11 @@ export function ExamsManagement() {
       setFormState({
         name: selectedExam.name,
         academicYearId: selectedExam.academicYearId,
+        examTypeId: selectedExam.examTypeId || '',
         description: selectedExam.description || '',
       });
     } else {
-      setFormState({ name: '', academicYearId: '', description: '' });
+      setFormState({ name: '', academicYearId: '', examTypeId: '', description: '' });
     }
   }, [selectedExam]);
 
@@ -319,10 +322,20 @@ export function ExamsManagement() {
     if (selectedExam) {
       updateExam.mutate({
         id: selectedExam.id,
-        data: { name: formState.name, academicYearId: formState.academicYearId, description: formState.description },
+        data: {
+          name: formState.name,
+          academicYearId: formState.academicYearId,
+          examTypeId: formState.examTypeId || undefined,
+          description: formState.description,
+        },
       });
     } else {
-      createExam.mutate({ name: formState.name, academicYearId: formState.academicYearId, description: formState.description });
+      createExam.mutate({
+        name: formState.name,
+        academicYearId: formState.academicYearId,
+        examTypeId: formState.examTypeId || undefined,
+        description: formState.description,
+      });
     }
   };
 
@@ -346,6 +359,7 @@ export function ExamsManagement() {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            <TableHead>Exam Type</TableHead>
             <TableHead>Academic Year</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -354,6 +368,13 @@ export function ExamsManagement() {
           {exams.map((exam) => (
             <TableRow key={exam.id} className={selectedExamId === exam.id ? 'bg-muted/40' : ''}>
               <TableCell className="font-medium">{exam.name}</TableCell>
+              <TableCell>
+                {exam.examType ? (
+                  <Badge variant="outline">{exam.examType.name}</Badge>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
               <TableCell>{exam.academicYear?.name || 'N/A'}</TableCell>
               <TableCell className="text-right space-x-2">
                 <Button variant="outline" size="sm" onClick={() => setSelectedExam(exam)}>
@@ -449,6 +470,26 @@ export function ExamsManagement() {
                         {(academicYears || []).map((year) => (
                           <SelectItem key={year.id} value={year.id}>
                             {year.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Exam Type</Label>
+                    <Select
+                      value={formState.examTypeId}
+                      onValueChange={(value) => setFormState((prev) => ({ ...prev, examTypeId: value }))}
+                      disabled={!hasCreate && !hasUpdate}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select exam type (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {(examTypes || []).filter(et => et.isActive).map((examType) => (
+                          <SelectItem key={examType.id} value={examType.id}>
+                            {examType.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -370,3 +370,118 @@ export const useAssetHistory = (assetId?: string) => {
     enabled: !!user && !!assetId,
   });
 };
+
+// Assets Dashboard Interface
+export interface AssetsDashboard {
+  totalAssets: number;
+  totalValue: number;
+  maintenanceCost: number;
+  statusCounts: Record<string, number>;
+  recentAssignments: Array<{
+    id: string;
+    assetId: string;
+    assetName: string;
+    assetTag: string;
+    assignedToType: string;
+    assignedToId: string | null;
+    assignedToName: string | null;
+    assignedOn: Date | null;
+    expectedReturnDate: Date | null;
+    status: string;
+  }>;
+  assetsByCategory: Array<{
+    categoryId: string | null;
+    categoryName: string | null;
+    total: number;
+    count: number;
+  }>;
+}
+
+export const useAssetsDashboard = () => {
+  const { user, profile } = useAuth();
+  const { data: stats } = useAssetStats();
+  const { assets = [] } = useAssets(undefined, false);
+
+  return useQuery<AssetsDashboard | null>({
+    queryKey: ['assets-dashboard', profile?.organization_id],
+    queryFn: async () => {
+      if (!user || !profile?.organization_id || !stats) return null;
+
+      // Collect all assignments from all assets
+      const allAssignments: Array<{
+        id: string;
+        assetId: string;
+        assetName: string;
+        assetTag: string;
+        assignedToType: string;
+        assignedToId: string | null;
+        assignedToName: string | null;
+        assignedOn: Date | null;
+        expectedReturnDate: Date | null;
+        status: string;
+      }> = [];
+
+      assets.forEach((asset) => {
+        if (asset.assignments && asset.assignments.length > 0) {
+          asset.assignments.forEach((assignment) => {
+            allAssignments.push({
+              id: assignment.id,
+              assetId: asset.id,
+              assetName: asset.name,
+              assetTag: asset.assetTag,
+              assignedToType: assignment.assignedToType,
+              assignedToId: assignment.assignedToId,
+              assignedToName: null, // Will be resolved in component if needed
+              assignedOn: assignment.assignedOn,
+              expectedReturnDate: assignment.expectedReturnDate,
+              status: assignment.status,
+            });
+          });
+        }
+      });
+
+      // Sort assignments by date (most recent first)
+      allAssignments.sort((a, b) => {
+        const dateA = a.assignedOn ? a.assignedOn.getTime() : 0;
+        const dateB = b.assignedOn ? b.assignedOn.getTime() : 0;
+        return dateB - dateA;
+      });
+
+      // Group assets by category
+      const categoryMap = new Map<string | null, { categoryId: string | null; categoryName: string | null; total: number; count: number }>();
+      
+      assets.forEach((asset) => {
+        const categoryId = asset.categoryId;
+        const categoryName = asset.categoryName || asset.category || 'Uncategorized';
+        const value = asset.purchasePrice || 0;
+
+        if (!categoryMap.has(categoryId)) {
+          categoryMap.set(categoryId, {
+            categoryId,
+            categoryName,
+            total: 0,
+            count: 0,
+          });
+        }
+
+        const category = categoryMap.get(categoryId)!;
+        category.total += value;
+        category.count += 1;
+      });
+
+      const assetsByCategory = Array.from(categoryMap.values());
+
+      return {
+        totalAssets: stats.asset_count || 0,
+        totalValue: stats.total_purchase_value || 0,
+        maintenanceCost: stats.maintenance_cost_total || 0,
+        statusCounts: stats.status_counts || {},
+        recentAssignments: allAssignments.slice(0, 10), // Get top 10 most recent
+        assetsByCategory,
+      };
+    },
+    enabled: !!user && !!profile?.organization_id && !!stats,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: false,
+  });
+};

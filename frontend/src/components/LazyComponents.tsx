@@ -73,11 +73,13 @@ export const UserManagement = lazy(() => import('@/components/admin/UserManageme
 export const Library = lazy(() => import('@/pages/Library'));
 export const LibraryCategories = lazy(() => import('@/pages/LibraryCategories'));
 export const LibraryBooks = lazy(() => import('@/pages/LibraryBooks'));
+export const LibraryDashboard = lazy(() => import('@/pages/LibraryDashboard'));
 export const LibraryDistribution = lazy(() => import('@/pages/LibraryDistribution'));
 export const LibraryReports = lazy(() => import('@/pages/LibraryReports'));
 export const LeaveManagement = lazy(() => import('@/pages/LeaveManagement').then(module => ({ default: module.default })));
 export const LeaveReports = lazy(() => import('@/pages/LeaveReports').then(module => ({ default: module.default })));
 export const Assets = lazy(() => import('@/pages/Assets').then(module => ({ default: module.default })));
+export const AssetsDashboard = lazy(() => import('@/pages/assets/AssetsDashboard'));
 export const AssetAssignments = lazy(() => import('@/pages/AssetAssignments').then(module => ({ default: module.default })));
 export const AssetReports = lazy(() => import('@/pages/AssetReports').then(module => ({ default: module.default })));
 export const AssetCategories = lazy(() => import('@/pages/AssetCategories').then(module => ({ default: module.default })));
@@ -96,10 +98,12 @@ export const Currencies = lazy(() => import('@/pages/finance/Currencies'));
 export const ExchangeRates = lazy(() => import('@/pages/finance/ExchangeRates'));
 export const FinanceReports = lazy(() => import('@/pages/finance/FinanceReports'));
 export const FinanceSettings = lazy(() => import('@/pages/finance/FinanceSettings'));
+export const FeeDashboard = lazy(() => import('@/pages/fees/FeeDashboard'));
 export const FeeStructuresPage = lazy(() => import('@/pages/fees/FeeStructuresPage'));
 export const FeeAssignmentsPage = lazy(() => import('@/pages/fees/FeeAssignmentsPage'));
 export const FeePaymentsPage = lazy(() => import('@/pages/fees/FeePaymentsPage'));
 export const FeeExceptionsPage = lazy(() => import('@/pages/fees/FeeExceptionsPage'));
+export const FeeReportsPage = lazy(() => import('@/pages/fees/FeeReportsPage'));
 export const StudentFeeStatementPage = lazy(() => import('@/pages/fees/StudentFeeStatementPage'));
 
 // Document Management System

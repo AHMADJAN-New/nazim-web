@@ -189,6 +189,14 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 24: Seeding outgoing documents...');
         $this->call(OutgoingDocumentSeeder::class);
 
+        // Step 25: Seed fee structures for all organizations
+        $this->command->info('Step 25: Seeding fee structures...');
+        $this->call(FeeStructureSeeder::class);
+
+        // Step 26: Seed fee assignments for all organizations
+        $this->command->info('Step 26: Seeding fee assignments...');
+        $this->call(FeeAssignmentSeeder::class);
+
         $this->command->info('');
         $this->command->info('✅ Database seeding completed successfully!');
         $this->command->info('');

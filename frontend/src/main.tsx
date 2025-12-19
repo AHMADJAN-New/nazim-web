@@ -8,31 +8,23 @@ import { LanguageProvider } from '@/hooks/useLanguage';
 import { RootBootstrap } from './RootBootstrap';
 
 // Unregister any existing service workers (PWA removed for performance)
-// Add error handling to prevent errors when document is in invalid state (e.g., PDF iframes)
+// Guard against sandboxed/invalid documents (e.g., PDF/object viewers) that throw InvalidStateError
 if (import.meta.env.DEV && 'serviceWorker' in navigator) {
   try {
-    navigator.serviceWorker.getRegistrations()
+    navigator.serviceWorker
+      .getRegistrations()
       .then((registrations) => {
         registrations.forEach((registration) => {
           registration.unregister().catch(() => {
-            // Silently ignore unregistration errors
+            // ignore unregister issues in sandboxed contexts
           });
-          if (import.meta.env.DEV) {
-            console.log('Service worker unregistered');
-          }
         });
       })
-      .catch((error) => {
-        // Silently ignore errors when document is in invalid state (e.g., PDF iframes)
-        if (import.meta.env.DEV) {
-          console.debug('Service worker registration check failed (likely in iframe):', error);
-        }
+      .catch(() => {
+        // ignore InvalidStateError or other errors when document is not eligible
       });
-  } catch (error) {
-    // Silently ignore errors when service worker API is not available or document is invalid
-    if (import.meta.env.DEV) {
-      console.debug('Service worker unregistration skipped:', error);
-    }
+  } catch {
+    // ignore InvalidStateError when the document is in an invalid state (e.g., embedded PDF)
   }
 }
 
