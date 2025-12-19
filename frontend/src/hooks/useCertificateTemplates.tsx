@@ -10,18 +10,25 @@ export interface CertificateLayoutConfig {
   fatherNamePosition?: { x: number; y: number };
   grandfatherNamePosition?: { x: number; y: number };
   motherNamePosition?: { x: number; y: number };
-  courseNamePosition?: { x: number; y: number };
+  courseNamePosition?: { x: number; y: number }; // For course certificates
+  classNamePosition?: { x: number; y: number }; // For graduation certificates
+  schoolNamePosition?: { x: number; y: number }; // For graduation certificates
+  academicYearPosition?: { x: number; y: number }; // For graduation certificates
+  graduationDatePosition?: { x: number; y: number }; // For graduation certificates
+  positionPosition?: { x: number; y: number }; // For graduation certificates (rank/position)
   certificateNumberPosition?: { x: number; y: number };
-  datePosition?: { x: number; y: number };
+  datePosition?: { x: number; y: number }; // For course certificates
   provincePosition?: { x: number; y: number };
   districtPosition?: { x: number; y: number };
   villagePosition?: { x: number; y: number };
   nationalityPosition?: { x: number; y: number };
   guardianNamePosition?: { x: number; y: number };
   studentPhotoPosition?: { x: number; y: number; width?: number; height?: number };
+  qrCodePosition?: { x: number; y: number; width?: number; height?: number }; // For graduation certificates
   // Editable text content for fields
-  headerText?: string; // Custom header text (default: "Certificate of Completion")
+  headerText?: string; // Custom header text (default: "Certificate of Completion" or "Graduation Certificate")
   courseNameText?: string; // Custom course name label/prefix (default: empty, uses actual course name)
+  classNameText?: string; // Custom class name label/prefix (default: empty, uses actual class name)
   dateText?: string; // Custom date label/prefix (default: "Date:")
   // Field visibility (optional fields - user can enable/disable)
   enabledFields?: string[]; // Array of field IDs that should be displayed
@@ -43,6 +50,8 @@ export interface CertificateTemplate {
   id: string;
   organization_id: string;
   course_id: string | null;
+  school_id: string | null;
+  type: string | null;
   name: string;
   description: string | null;
   background_image_path: string | null;
@@ -85,15 +94,17 @@ export interface CertificateData {
   background_url: string | null;
 }
 
-export const useCertificateTemplates = (activeOnly?: boolean) => {
+export const useCertificateTemplates = (activeOnly?: boolean, filters?: { type?: string; school_id?: string }) => {
   const { user, profile } = useAuth();
 
   return useQuery<CertificateTemplate[]>({
-    queryKey: ['certificate-templates', activeOnly],
+    queryKey: ['certificate-templates', activeOnly, filters],
     queryFn: async () => {
       if (!user || !profile) return [];
       const params: any = {};
       if (activeOnly) params.active_only = 'true';
+      if (filters?.type) params.type = filters.type;
+      if (filters?.school_id) params.school_id = filters.school_id;
       const templates = await certificateTemplatesApi.list(params);
       return templates as CertificateTemplate[];
     },
@@ -126,6 +137,8 @@ export const useCreateCertificateTemplate = () => {
       background_image?: File | null;
       layout_config?: CertificateLayoutConfig;
       course_id?: string | null;
+      school_id?: string | null;
+      type?: string;
       is_default?: boolean;
       is_active?: boolean;
     }) => {
@@ -135,6 +148,8 @@ export const useCreateCertificateTemplate = () => {
       if (data.background_image) formData.append('background_image', data.background_image);
       if (data.layout_config) formData.append('layout_config', JSON.stringify(data.layout_config));
       if (data.course_id) formData.append('course_id', data.course_id);
+      if (data.school_id) formData.append('school_id', data.school_id);
+      if (data.type) formData.append('type', data.type);
       if (data.is_default !== undefined) formData.append('is_default', data.is_default ? '1' : '0');
       if (data.is_active !== undefined) formData.append('is_active', data.is_active ? '1' : '0');
 
@@ -167,6 +182,8 @@ export const useUpdateCertificateTemplate = () => {
         background_image?: File | null;
         layout_config?: CertificateLayoutConfig;
         course_id?: string | null;
+        school_id?: string | null;
+        type?: string;
         is_default?: boolean;
         is_active?: boolean;
       };
@@ -177,6 +194,8 @@ export const useUpdateCertificateTemplate = () => {
       if (data.background_image) formData.append('background_image', data.background_image);
       if (data.layout_config) formData.append('layout_config', JSON.stringify(data.layout_config));
       if (data.course_id !== undefined) formData.append('course_id', data.course_id || '');
+      if (data.school_id !== undefined) formData.append('school_id', data.school_id || '');
+      if (data.type) formData.append('type', data.type);
       if (data.is_default !== undefined) formData.append('is_default', data.is_default ? '1' : '0');
       if (data.is_active !== undefined) formData.append('is_active', data.is_active ? '1' : '0');
 

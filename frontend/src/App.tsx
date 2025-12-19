@@ -34,6 +34,7 @@ import {
   ReportTemplatesManagement,
   ResidencyTypesManagement,
   AcademicYearsManagement,
+  ExamTypesPage,
   ClassesManagement,
   SubjectsManagement,
   Exams,
@@ -73,9 +74,11 @@ import {
   CourseAttendance,
   CourseCertificates,
   CertificateTemplates,
+  GraduationDashboard,
   GraduationBatchesPage,
   GraduationBatchDetailPage,
   CertificateTemplatesV2Page,
+  GraduationCertificateTemplates,
   IssuedCertificatesPage,
   CourseDocuments,
   StaffReport,
@@ -317,6 +320,13 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/settings/exam-types" element={
+                      <PermissionRoute permission="exam_types.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamTypesPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     <Route path="/settings/classes" element={
                       <PermissionRoute permission="classes.read">
                         <Suspense fallback={<PageSkeleton />}>
@@ -342,6 +352,13 @@ const App = () => (
                       <PermissionRoute permission="exams.manage">
                         <Suspense fallback={<PageSkeleton />}>
                           <ExamClassesSubjectsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/exams/timetables" element={
+                      <PermissionRoute permission="exams.manage_timetable">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExamTimetablePage />
                         </Suspense>
                       </PermissionRoute>
                     } />
@@ -751,6 +768,13 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/graduation" element={
+                      <PermissionRoute permission="graduation_batches.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <GraduationDashboard />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     <Route path="/graduation/batches" element={
                       <PermissionRoute permission="graduation_batches.read">
                         <Suspense fallback={<PageSkeleton />}>
@@ -776,6 +800,13 @@ const App = () => (
                       <PermissionRoute permission="certificate_templates.read">
                         <Suspense fallback={<PageSkeleton />}>
                           <CertificateTemplatesV2Page />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/graduation/certificate-templates" element={
+                      <PermissionRoute permission="certificate_templates.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <GraduationCertificateTemplates />
                         </Suspense>
                       </PermissionRoute>
                     } />

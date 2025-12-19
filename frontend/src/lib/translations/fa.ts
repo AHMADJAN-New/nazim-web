@@ -3269,5 +3269,64 @@ export const fa: TranslationKeys = {
     officialSeal: 'مهر رسمی',
     verified: 'تایید شده',
     confidential: 'محرمانه'
+  },
+
+  graduation: {
+    batches: 'دسته‌های فارغ‌التحصیلی',
+    types: {
+      finalYear: 'سال آخر',
+      promotion: 'ارتقا',
+      transfer: 'انتقال'
+    },
+    multipleExams: 'چندین امتحان',
+    examWeights: 'وزن امتحانات',
+    fromClass: 'از کلاس',
+    toClass: 'به کلاس',
+    minAttendancePercentage: 'حداقل درصد حضور',
+    requireAttendance: 'نیاز به حضور',
+    excludeApprovedLeaves: 'مرخصی‌های تأیید شده را حذف کنید',
+    summary: {
+      totalBatches: 'کل دسته‌ها',
+      draftBatches: 'پیش‌نویس',
+      approvedBatches: 'تأیید شده',
+      issuedBatches: 'صادر شده'
+    },
+    status: {
+      draft: 'پیش‌نویس',
+      approved: 'تأیید شده',
+      issued: 'صادر شده'
+    },
+    filters: {
+      status: 'وضعیت',
+      dateFrom: 'از تاریخ',
+      dateTo: 'تا تاریخ',
+      searchPlaceholder: 'جستجو بر اساس سال، کلاس، امتحان...'
+    },
+    table: {
+      needsReview: 'نیاز به بررسی',
+      students: 'دانش‌آموزان'
+    },
+    pagination: {
+      showing: 'نمایش',
+      of: 'از'
+    },
+    dashboard: {
+      title: 'داشبورد فارغ‌التحصیلی',
+      currentYearBatches: 'دسته‌های سال جاری',
+      certificatesThisYear: 'گواهینامه‌های صادر شده امسال',
+      quickActions: 'اقدامات سریع',
+      createBatch: 'ایجاد دسته جدید',
+      createBatchDesc: 'شروع یک دسته فارغ‌التحصیلی جدید',
+      viewTemplates: 'مشاهده قالب‌ها',
+      viewTemplatesDesc: 'مدیریت قالب‌های گواهینامه',
+      issuedCertificates: 'گواهینامه‌های صادر شده',
+      issuedCertificatesDesc: 'مشاهده تمام گواهینامه‌های صادر شده',
+      recentBatches: 'دسته‌های اخیر',
+      pendingApprovals: 'تأییدهای در انتظار',
+      noPendingApprovals: 'هیچ تأیید در انتظاری وجود ندارد',
+      upcomingGraduations: 'فارغ‌التحصیلی‌های آینده',
+      noSchools: 'هیچ مدرسه‌ای در دسترس نیست. لطفاً با مدیر خود تماس بگیرید.',
+      selectSchool: 'لطفاً برای مشاهده اطلاعات فارغ‌التحصیلی، مدرسه را از بالا انتخاب کنید.'
+    }
   }
 };

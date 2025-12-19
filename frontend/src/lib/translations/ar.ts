@@ -3263,5 +3263,64 @@ export const ar: TranslationKeys = {
     officialSeal: 'الختم الرسمي',
     verified: 'تم التحقق',
     confidential: 'سري'
+  },
+
+  graduation: {
+    batches: 'دفعات التخرج',
+    types: {
+      finalYear: 'السنة الأخيرة',
+      promotion: 'الترقية',
+      transfer: 'النقل'
+    },
+    multipleExams: 'امتحانات متعددة',
+    examWeights: 'أوزان الامتحانات',
+    fromClass: 'من الصف',
+    toClass: 'إلى الصف',
+    minAttendancePercentage: 'نسبة الحضور الدنيا',
+    requireAttendance: 'يتطلب الحضور',
+    excludeApprovedLeaves: 'استبعاد الإجازات المعتمدة',
+    summary: {
+      totalBatches: 'إجمالي الدفعات',
+      draftBatches: 'مسودة',
+      approvedBatches: 'معتمدة',
+      issuedBatches: 'صادرة'
+    },
+    status: {
+      draft: 'مسودة',
+      approved: 'معتمدة',
+      issued: 'صادرة'
+    },
+    filters: {
+      status: 'الحالة',
+      dateFrom: 'من التاريخ',
+      dateTo: 'إلى التاريخ',
+      searchPlaceholder: 'البحث حسب السنة، الصف، الامتحان...'
+    },
+    table: {
+      needsReview: 'يحتاج إلى مراجعة',
+      students: 'الطلاب'
+    },
+    pagination: {
+      showing: 'عرض',
+      of: 'من'
+    },
+    dashboard: {
+      title: 'لوحة تحكم التخرج',
+      currentYearBatches: 'دفعات السنة الحالية',
+      certificatesThisYear: 'الشهادات الصادرة هذا العام',
+      quickActions: 'إجراءات سريعة',
+      createBatch: 'إنشاء دفعة جديدة',
+      createBatchDesc: 'بدء دفعة تخرج جديدة',
+      viewTemplates: 'عرض القوالب',
+      viewTemplatesDesc: 'إدارة قوالب الشهادات',
+      issuedCertificates: 'الشهادات الصادرة',
+      issuedCertificatesDesc: 'عرض جميع الشهادات الصادرة',
+      recentBatches: 'الدفعات الأخيرة',
+      pendingApprovals: 'الموافقات المعلقة',
+      noPendingApprovals: 'لا توجد موافقات معلقة',
+      upcomingGraduations: 'التخرج القادمة',
+      noSchools: 'لا توجد مدارس متاحة. يرجى الاتصال بمديرك.',
+      selectSchool: 'يرجى اختيار مدرسة من أعلاه لعرض بيانات التخرج.'
+    }
   }
 };

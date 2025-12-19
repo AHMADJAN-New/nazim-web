@@ -106,6 +106,11 @@ class CertificateTemplate extends Model
         return $query->where('is_default', true);
     }
 
+    public function scopeGraduation($query)
+    {
+        return $query->where('type', 'graduation');
+    }
+
     public static function getDefaultLayout(): array
     {
         return [

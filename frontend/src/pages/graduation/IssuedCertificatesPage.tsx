@@ -9,6 +9,8 @@ import { issuedCertificatesApi } from '@/lib/api/client';
 import { useIssuedCertificates, useRevokeCertificate } from '@/hooks/useGraduation';
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
+import { GraduationCertificatePdfGenerator } from '@/components/graduation/GraduationCertificatePdfGenerator';
+import { Eye } from 'lucide-react';
 
 export default function IssuedCertificatesPage() {
   const { t } = useLanguage();
@@ -16,6 +18,8 @@ export default function IssuedCertificatesPage() {
   const [schoolId, setSchoolId] = useState<string | undefined>(undefined);
   const [batchId, setBatchId] = useState<string | undefined>(undefined);
   const [studentId, setStudentId] = useState<string | undefined>(undefined);
+  const [previewCertificateId, setPreviewCertificateId] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const { data: certificates = [], isLoading } = useIssuedCertificates({
     school_id: schoolId,
@@ -43,6 +47,16 @@ export default function IssuedCertificatesPage() {
     await revoke.mutateAsync({ id, reason });
   };
 
+  const handlePreview = (certId: string) => {
+    setPreviewCertificateId(certId);
+    setIsPreviewOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewOpen(false);
+    setPreviewCertificateId(null);
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <Card>
@@ -59,7 +73,7 @@ export default function IssuedCertificatesPage() {
               <SelectContent>
                 {schools.map((school) => (
                   <SelectItem key={school.id} value={school.id}>
-                    {school.school_name}
+                    {school.schoolName}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -102,6 +116,14 @@ export default function IssuedCertificatesPage() {
                     <TableCell>{cert.revoked_at ? 'Revoked' : 'Valid'}</TableCell>
                     <TableCell>{cert.issued_at}</TableCell>
                     <TableCell className="space-x-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handlePreview(cert.id)}
+                        title="Preview Certificate"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button size="sm" variant="outline" onClick={() => handleDownload(cert.id)}>
                         {t('common.download')}
                       </Button>
@@ -123,6 +145,16 @@ export default function IssuedCertificatesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Certificate Preview Dialog */}
+      {previewCertificateId && (
+        <GraduationCertificatePdfGenerator
+          certificateId={previewCertificateId}
+          schoolId={schoolId}
+          isOpen={isPreviewOpen}
+          onClose={handleClosePreview}
+        />
+      )}
     </div>
   );
 }

@@ -38,6 +38,21 @@ class CertificateTemplateController extends Controller
         $query = CertificateTemplate::where('organization_id', $profile->organization_id)
             ->whereNull('deleted_at');
 
+        // Filter by type (e.g., 'graduation', 'course')
+        if ($request->filled('type')) {
+            $query->where('type', $request->input('type'));
+        }
+
+        // Filter by school_id (for graduation certificates)
+        if ($request->filled('school_id')) {
+            $query->where('school_id', $request->input('school_id'));
+        }
+
+        // Filter by course_id (for short-term course certificates)
+        if ($request->filled('course_id')) {
+            $query->where('course_id', $request->input('course_id'));
+        }
+
         if ($request->filled('active_only') && $request->active_only === 'true') {
             $query->where('is_active', true);
         }
@@ -67,10 +82,33 @@ class CertificateTemplateController extends Controller
             'description' => 'nullable|string',
             'background_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max
             'layout_config' => 'nullable|json',
+            'type' => 'nullable|string|in:graduation,course',
+            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'course_id' => 'nullable|uuid|exists:short_term_courses,id',
             'is_default' => 'nullable|in:0,1,true,false',
             'is_active' => 'nullable|in:0,1,true,false',
         ]);
+
+        // Type defaults to 'graduation' for backward compatibility
+        $type = $validated['type'] ?? 'graduation';
+        
+        // Note: school_id is optional - templates can be general (no school assignment) or assigned to specific schools
+
+        // Validate course_id is not set when type is 'graduation'
+        if ($type === 'graduation' && !empty($validated['course_id'])) {
+            return response()->json([
+                'error' => 'The course_id field cannot be set when type is graduation.',
+                'errors' => ['course_id' => ['Graduation certificates cannot be assigned to courses.']]
+            ], 422);
+        }
+
+        // Validate school_id is not set when type is 'course'
+        if ($type === 'course' && !empty($validated['school_id'])) {
+            return response()->json([
+                'error' => 'The school_id field cannot be set when type is course.',
+                'errors' => ['school_id' => ['Course certificates cannot be assigned to schools.']]
+            ], 422);
+        }
 
         // Convert string booleans to actual booleans
         if (isset($validated['is_default'])) {
@@ -152,6 +190,8 @@ class CertificateTemplateController extends Controller
 
         $template = CertificateTemplate::create([
             'organization_id' => $profile->organization_id,
+            'type' => $type,
+            'school_id' => $validated['school_id'] ?? null,
             'course_id' => $validated['course_id'] ?? null,
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
@@ -215,10 +255,33 @@ class CertificateTemplateController extends Controller
             'description' => 'nullable|string',
             'background_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
             'layout_config' => 'nullable|json',
+            'type' => 'nullable|string|in:graduation,course',
+            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'course_id' => 'nullable|uuid|exists:short_term_courses,id',
             'is_default' => 'nullable|in:0,1,true,false',
             'is_active' => 'nullable|in:0,1,true,false',
         ]);
+
+        // Get current type or use provided type
+        $type = $validated['type'] ?? $template->type ?? 'graduation';
+        
+        // Note: school_id is optional - templates can be general (no school assignment) or assigned to specific schools
+
+        // Validate course_id is not set when type is 'graduation'
+        if ($type === 'graduation' && !empty($validated['course_id'])) {
+            return response()->json([
+                'error' => 'The course_id field cannot be set when type is graduation.',
+                'errors' => ['course_id' => ['Graduation certificates cannot be assigned to courses.']]
+            ], 422);
+        }
+
+        // Validate school_id is not set when type is 'course'
+        if ($type === 'course' && !empty($validated['school_id'])) {
+            return response()->json([
+                'error' => 'The school_id field cannot be set when type is course.',
+                'errors' => ['school_id' => ['Course certificates cannot be assigned to schools.']]
+            ], 422);
+        }
 
         // Convert string booleans to actual booleans
         if (isset($validated['is_default'])) {
@@ -302,6 +365,11 @@ class CertificateTemplateController extends Controller
                 ->where('id', '!=', $id)
                 ->where('is_default', true)
                 ->update(['is_default' => false]);
+        }
+
+        // Update type if provided
+        if (isset($validated['type'])) {
+            $validated['type'] = $type;
         }
 
         $template->update($validated);
@@ -554,5 +622,65 @@ class CertificateTemplateController extends Controller
                 ? route('certificate-templates.background', $template->id)
                 : null,
         ]);
+    }
+
+    public function activate(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($user);
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('certificate_templates.update')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->find($id);
+
+        if (!$template) {
+            return response()->json(['error' => 'Template not found'], 404);
+        }
+
+        $template->update(['is_active' => true]);
+
+        return response()->json($template->fresh());
+    }
+
+    public function deactivate(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($user);
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('certificate_templates.update')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->find($id);
+
+        if (!$template) {
+            return response()->json(['error' => 'Template not found'], 404);
+        }
+
+        $template->update(['is_active' => false]);
+
+        return response()->json($template->fresh());
     }
 }

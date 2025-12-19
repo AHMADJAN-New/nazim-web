@@ -3508,9 +3508,50 @@ export interface TranslationKeys {
     minAttendancePercentage: string;
     requireAttendance: string;
     excludeApprovedLeaves: string;
+    summary: {
+      totalBatches: string;
+      draftBatches: string;
+      approvedBatches: string;
+      issuedBatches: string;
+    };
+    status: {
+      draft: string;
+      approved: string;
+      issued: string;
+    };
+    filters: {
+      status: string;
+      dateFrom: string;
+      dateTo: string;
+      searchPlaceholder: string;
+    };
+    table: {
+      needsReview: string;
+      students: string;
+    };
+    pagination: {
+      showing: string;
+      of: string;
+    };
+    dashboard: {
+      title: string;
+      currentYearBatches: string;
+      certificatesThisYear: string;
+      quickActions: string;
+      createBatch: string;
+      createBatchDesc: string;
+      viewTemplates: string;
+      viewTemplatesDesc: string;
+      issuedCertificates: string;
+      issuedCertificatesDesc: string;
+      recentBatches: string;
+      pendingApprovals: string;
+      noPendingApprovals: string;
+      upcomingGraduations: string;
+      noSchools: string;
+      selectSchool: string;
+    };
   };
-
-<<<<<<< HEAD
   // Grades
   grades: {
     management: string;

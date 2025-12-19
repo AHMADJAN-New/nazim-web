@@ -62,7 +62,9 @@ class CertificateTemplateController extends Controller
             'school_id' => 'nullable|uuid|exists:school_branding,id',
             'type' => 'required|string|in:graduation,promotion,completion,merit,appreciation',
             'title' => 'required|string|max:255',
-            'body_html' => 'required|string',
+            'body_html' => 'nullable|string',
+            'layout_config' => 'nullable|json',
+            'description' => 'nullable|string|max:1000',
             'page_size' => 'nullable|string|in:A4,A5,custom',
             'custom_width_mm' => 'nullable|numeric|min:10',
             'custom_height_mm' => 'nullable|numeric|min:10',
@@ -89,13 +91,26 @@ class CertificateTemplateController extends Controller
             $backgroundPath = $request->file('background_image')->store('certificate-templates/' . $profile->organization_id, 'local');
         }
 
+        // Parse layout_config if provided
+        $layoutConfig = null;
+        if ($request->has('layout_config')) {
+            $layoutConfigJson = $request->input('layout_config');
+            if (is_string($layoutConfigJson)) {
+                $layoutConfig = json_decode($layoutConfigJson, true);
+            } else {
+                $layoutConfig = $layoutConfigJson;
+            }
+        }
+
         $template = CertificateTemplate::create([
             'organization_id' => $profile->organization_id,
             'school_id' => $schoolId,
             'type' => $validated['type'],
             'name' => $validated['title'],
             'title' => $validated['title'],
-            'body_html' => $validated['body_html'],
+            'description' => $validated['description'] ?? null,
+            'body_html' => $validated['body_html'] ?? null,
+            'layout_config' => $layoutConfig,
             'page_size' => $validated['page_size'] ?? 'A4',
             'custom_width_mm' => $validated['custom_width_mm'] ?? null,
             'custom_height_mm' => $validated['custom_height_mm'] ?? null,
@@ -135,6 +150,8 @@ class CertificateTemplateController extends Controller
             'type' => 'nullable|string|in:graduation,promotion,completion,merit,appreciation',
             'title' => 'nullable|string|max:255',
             'body_html' => 'nullable|string',
+            'layout_config' => 'nullable|json',
+            'description' => 'nullable|string|max:1000',
             'page_size' => 'nullable|string|in:A4,A5,custom',
             'custom_width_mm' => 'nullable|numeric|min:10',
             'custom_height_mm' => 'nullable|numeric|min:10',
@@ -155,6 +172,16 @@ class CertificateTemplateController extends Controller
             }
         }
 
+        // Parse layout_config if provided
+        if ($request->has('layout_config')) {
+            $layoutConfigJson = $request->input('layout_config');
+            if (is_string($layoutConfigJson)) {
+                $validated['layout_config'] = json_decode($layoutConfigJson, true);
+            } else {
+                $validated['layout_config'] = $layoutConfigJson;
+            }
+        }
+
         unset($validated['background_image']);
 
         $template->update($validated);
@@ -162,6 +189,85 @@ class CertificateTemplateController extends Controller
         $template->save();
 
         return response()->json($template->fresh());
+    }
+
+    public function show(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($user);
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        if (!$user->hasPermissionTo('certificate_templates.read')) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->find($id);
+
+        if (!$template) {
+            return response()->json(['error' => 'Template not found'], 404);
+        }
+
+        return response()->json($template);
+    }
+
+    public function destroy(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($user);
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        if (!$user->hasPermissionTo('certificate_templates.delete')) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->find($id);
+
+        if (!$template) {
+            return response()->json(['error' => 'Template not found'], 404);
+        }
+
+        // Soft delete
+        $template->delete();
+
+        return response()->noContent();
+    }
+
+    public function getBackgroundImage(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($user);
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        if (!$user->hasPermissionTo('certificate_templates.read')) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->whereNull('deleted_at')
+            ->find($id);
+
+        if (!$template || !$template->background_image_path) {
+            return response()->json(['error' => 'Background image not found'], 404);
+        }
+
+        if (!Storage::exists($template->background_image_path)) {
+            return response()->json(['error' => 'Background image file not found'], 404);
+        }
+
+        return Storage::response($template->background_image_path);
     }
 
     public function activate(Request $request, string $id)

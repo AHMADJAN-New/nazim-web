@@ -3262,5 +3262,64 @@ export const ps: TranslationKeys = {
     officialSeal: 'رسمی مهر',
     verified: 'تایید شوی',
     confidential: 'محرم'
+  },
+
+  graduation: {
+    batches: 'د فراغت ګروپونه',
+    types: {
+      finalYear: 'د وروستي کال فراغت',
+      promotion: 'ترقی',
+      transfer: 'لیږد'
+    },
+    multipleExams: 'ډیری ازموینې',
+    examWeights: 'د ازموینو وزنونه',
+    fromClass: 'د ټولګي څخه',
+    toClass: 'ټولګي ته',
+    minAttendancePercentage: 'د حاضرۍ لږترلږه سلنه',
+    requireAttendance: 'د حاضرۍ اړتیا',
+    excludeApprovedLeaves: 'تایید شوي رخصتونه حذف کړئ',
+    summary: {
+      totalBatches: 'ټول ګروپونه',
+      draftBatches: 'مسوده',
+      approvedBatches: 'تایید شوي',
+      issuedBatches: 'صادر شوي'
+    },
+    status: {
+      draft: 'مسوده',
+      approved: 'تایید شوی',
+      issued: 'صادر شوی'
+    },
+    filters: {
+      status: 'حالت',
+      dateFrom: 'د نیټې څخه',
+      dateTo: 'د نیټې تر',
+      searchPlaceholder: 'د کال، ټولګي، ازموینې له مخې ولټوئ...'
+    },
+    table: {
+      needsReview: 'د بیاکتنې اړتیا',
+      students: 'زده کونکي'
+    },
+    pagination: {
+      showing: 'ښودل کیږي',
+      of: 'د'
+    },
+    dashboard: {
+      title: 'د فراغت ډشبورډ',
+      currentYearBatches: 'د اوسني کال ګروپونه',
+      certificatesThisYear: 'د دې کال صادر شوي سندونه',
+      quickActions: 'د چټکو عملیاتو',
+      createBatch: 'نوی ګروپ جوړ کړئ',
+      createBatchDesc: 'د فراغت نوی ګروپ پیل کړئ',
+      viewTemplates: 'کينډۍ وګورئ',
+      viewTemplatesDesc: 'د سند کينډۍ مدیریت کړئ',
+      issuedCertificates: 'صادر شوي سندونه',
+      issuedCertificatesDesc: 'ټول صادر شوي سندونه وګورئ',
+      recentBatches: 'تیرو ګروپونو',
+      pendingApprovals: 'د تایید پاتې',
+      noPendingApprovals: 'هیڅ د تایید پاتې نشته',
+      upcomingGraduations: 'راتلونکي فراغتونه',
+      noSchools: 'هیڅ ښوونځي شتون نلري. مهرباني وکړئ د خپل مدیر سره اړیکه ونیسئ.',
+      selectSchool: 'مهرباني وکړئ د فراغت معلوماتو لیدو لپاره پورته ښوونځی وټاکئ.'
+    }
   }
 };

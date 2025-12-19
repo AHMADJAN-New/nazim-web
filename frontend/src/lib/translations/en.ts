@@ -3730,5 +3730,82 @@ export const en: TranslationKeys = {
     studentName: 'Student Name',
     rollNumber: 'Roll No',
     notFound: 'Preview not available. Please check if the template has questions.'
+  },
+
+  graduation: {
+    batches: 'Graduation Batches',
+    types: {
+      finalYear: 'Final Year',
+      promotion: 'Promotion',
+      transfer: 'Transfer'
+    },
+    multipleExams: 'Multiple Exams',
+    examWeights: 'Exam Weights',
+    fromClass: 'From Class',
+    toClass: 'To Class',
+    minAttendancePercentage: 'Minimum Attendance Percentage',
+    requireAttendance: 'Require Attendance',
+    excludeApprovedLeaves: 'Exclude Approved Leaves',
+    summary: {
+      totalBatches: 'Total Batches',
+      draftBatches: 'Draft',
+      approvedBatches: 'Approved',
+      issuedBatches: 'Issued'
+    },
+    status: {
+      draft: 'Draft',
+      approved: 'Approved',
+      issued: 'Issued'
+    },
+    filters: {
+      status: 'Status',
+      dateFrom: 'From Date',
+      dateTo: 'To Date',
+      searchPlaceholder: 'Search by year, class, exam...'
+    },
+    table: {
+      needsReview: 'Needs Review',
+      students: 'Students'
+    },
+    pagination: {
+      showing: 'Showing',
+      of: 'of'
+    },
+    dashboard: {
+      title: 'Graduation Dashboard',
+      currentYearBatches: 'Current Year Batches',
+      certificatesThisYear: 'Certificates Issued This Year',
+      quickActions: 'Quick Actions',
+      createBatch: 'Create New Batch',
+      createBatchDesc: 'Start a new graduation batch',
+      viewTemplates: 'View Templates',
+      viewTemplatesDesc: 'Manage certificate templates',
+      issuedCertificates: 'Issued Certificates',
+      issuedCertificatesDesc: 'View all issued certificates',
+      recentBatches: 'Recent Batches',
+      pendingApprovals: 'Pending Approvals',
+      noPendingApprovals: 'No pending approvals',
+      upcomingGraduations: 'Upcoming Graduations',
+      noSchools: 'No schools available. Please contact your administrator.',
+      selectSchool: 'Please select a school above to view graduation data.'
+    }
+  },
+
+  examTypes: {
+    title: 'Exam Types',
+    description: 'Manage exam types for your organization',
+    name: 'Name',
+    code: 'Code',
+    description: 'Description',
+    displayOrder: 'Display Order',
+    isActive: 'Active',
+    create: 'Create Exam Type',
+    createDescription: 'Add a new exam type',
+    edit: 'Edit Exam Type',
+    editDescription: 'Update exam type details',
+    deleteConfirm: 'Are you sure you want to delete this exam type?',
+    namePlaceholder: 'e.g., Monthly, Final, Mid-Term',
+    codePlaceholder: 'e.g., MONTHLY, FINAL',
+    descriptionPlaceholder: 'Description of this exam type...'
   }
 };

@@ -3,10 +3,12 @@
 namespace App\Services\Certificates;
 
 use App\Models\CertificateTemplate;
+use App\Models\ClassAcademicYear;
 use App\Models\GraduationBatch;
 use App\Models\GraduationBatchExam;
 use App\Models\GraduationStudent;
 use App\Models\IssuedCertificate;
+use App\Models\StudentAdmission;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -73,7 +75,7 @@ class GraduationBatchService
         return $batch->load('exams.examType');
     }
 
-    public function generateStudents(string $batchId, string $organizationId, string $schoolId, string $userId): Collection
+    public function updateBatch(string $batchId, array $payload, string $organizationId, string $schoolId, string $userId): GraduationBatch
     {
         $batch = GraduationBatch::where('organization_id', $organizationId)
             ->where('school_id', $schoolId)
@@ -84,18 +86,91 @@ class GraduationBatchService
         }
 
         if ($batch->status !== GraduationBatch::STATUS_DRAFT) {
+            throw new BadRequestHttpException('Cannot update batch that has been approved or issued.');
+        }
+
+        // Update batch fields
+        $batch->fill(array_filter($payload, function ($key) {
+            return in_array($key, [
+                'academic_year_id',
+                'class_id',
+                'exam_id',
+                'graduation_type',
+                'from_class_id',
+                'to_class_id',
+                'graduation_date',
+                'min_attendance_percentage',
+                'require_attendance',
+                'exclude_approved_leaves',
+            ]);
+        }, ARRAY_FILTER_USE_KEY));
+
+        $batch->save();
+
+        // Update exams if provided
+        if (isset($payload['exam_ids'])) {
+            $examIds = $payload['exam_ids'];
+            $examWeights = $payload['exam_weights'] ?? [];
+
+            // Delete existing exam associations
+            GraduationBatchExam::where('batch_id', $batch->id)->delete();
+
+            // Create new exam associations
+            foreach ($examIds as $index => $examId) {
+                GraduationBatchExam::create([
+                    'batch_id' => $batch->id,
+                    'exam_id' => $examId,
+                    'weight_percentage' => $examWeights[$examId] ?? null,
+                    'is_required' => true,
+                    'display_order' => $index,
+                ]);
+            }
+
+            // Update exam_id for backward compatibility
+            $batch->exam_id = $examIds[0] ?? null;
+            $batch->save();
+        }
+
+        $this->auditService->log($batch->organization_id, $batch->school_id, 'graduation_batch', $batch->id, 'update', [
+            'payload' => $payload,
+            'user_id' => $userId,
+        ]);
+
+        return $batch->fresh()->load('exams.examType');
+    }
+
+    public function generateStudents(string $batchId, string $organizationId, string $schoolId, string $userId): Collection
+    {
+        $batch = GraduationBatch::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->with('exams')
+            ->find($batchId);
+
+        if (!$batch) {
+            throw new NotFoundHttpException('Graduation batch not found.');
+        }
+
+        if ($batch->status !== GraduationBatch::STATUS_DRAFT) {
             throw new BadRequestHttpException('Cannot regenerate students once batch is approved or issued.');
         }
 
-        // Get all exam IDs from batch
-        $examIds = $batch->exams->pluck('exam_id')->toArray();
-        $weights = $batch->exams->pluck('weight_percentage', 'exam_id')->toArray();
+        // Get all exam IDs from batch - filter out null values
+        $examIds = $batch->exams->pluck('exam_id')->filter()->values()->toArray();
+        $weights = $batch->exams->pluck('weight_percentage', 'exam_id')->filter(function ($value, $key) {
+            return $key !== null;
+        })->toArray();
 
         // If no exams in pivot table, fall back to single exam_id (backward compatibility)
         if (empty($examIds) && $batch->exam_id) {
             $examIds = [$batch->exam_id];
             $weights = [];
         }
+
+        // Filter out any remaining null values
+        $examIds = array_filter($examIds, function ($id) {
+            return $id !== null && $id !== '';
+        });
+        $examIds = array_values($examIds); // Re-index array
 
         if (empty($examIds)) {
             throw new UnprocessableEntityHttpException('No exams found for this batch.');
@@ -115,12 +190,17 @@ class GraduationBatchService
             );
         } else {
             // Fall back to single exam evaluation
+            $firstExamId = $examIds[0] ?? null;
+            if (!$firstExamId) {
+                throw new UnprocessableEntityHttpException('No valid exam ID found for this batch.');
+            }
+            
             $eligibility = $this->eligibilityService->evaluate(
                 $organizationId,
                 $schoolId,
                 $batch->academic_year_id,
                 $batch->class_id,
-                $examIds[0]
+                $firstExamId
             );
         }
 
@@ -155,6 +235,7 @@ class GraduationBatchService
     {
         $batch = GraduationBatch::where('organization_id', $organizationId)
             ->where('school_id', $schoolId)
+            ->with('students.student')
             ->find($batchId);
 
         if (!$batch) {
@@ -165,21 +246,207 @@ class GraduationBatchService
             throw new BadRequestHttpException('Batch has already been approved or issued.');
         }
 
-        $batch->status = GraduationBatch::STATUS_APPROVED;
-        $batch->approved_at = now();
-        $batch->approved_by = $userId;
-        $batch->save();
+        return $this->db->transaction(function () use ($batch, $userId) {
+            // Handle transfer logic
+            if ($batch->graduation_type === GraduationBatch::TYPE_TRANSFER && $batch->to_class_id) {
+                $this->processTransfers($batch);
+            }
+            
+            // Handle graduation logic
+            if ($batch->graduation_type === GraduationBatch::TYPE_FINAL_YEAR) {
+                $this->processGraduations($batch);
+            }
+            
+            // Handle promotion logic (similar to transfer)
+            if ($batch->graduation_type === GraduationBatch::TYPE_PROMOTION && $batch->to_class_id) {
+                $this->processPromotions($batch);
+            }
 
-        $this->auditService->log(
-            $batch->organization_id,
-            $batch->school_id,
-            'graduation_batch',
-            $batch->id,
-            'approve',
-            ['user_id' => $userId]
-        );
+            $batch->status = GraduationBatch::STATUS_APPROVED;
+            $batch->approved_at = now();
+            $batch->approved_by = $userId;
+            $batch->save();
 
-        return $batch->fresh();
+            $this->auditService->log(
+                $batch->organization_id,
+                $batch->school_id,
+                'graduation_batch',
+                $batch->id,
+                'approve',
+                ['user_id' => $userId, 'graduation_type' => $batch->graduation_type]
+            );
+
+            return $batch->fresh();
+        });
+    }
+
+    /**
+     * Process student transfers: deactivate old admissions, create new ones
+     */
+    private function processTransfers(GraduationBatch $batch): void
+    {
+        $gradStudents = $batch->students;
+        
+        if ($gradStudents->isEmpty()) {
+            return;
+        }
+
+        // Get the target class academic year for the new class
+        $toClassAcademicYear = ClassAcademicYear::where('class_id', $batch->to_class_id)
+            ->where('academic_year_id', $batch->academic_year_id)
+            ->where('organization_id', $batch->organization_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$toClassAcademicYear) {
+            throw new UnprocessableEntityHttpException('Target class academic year not found for transfer.');
+        }
+
+        foreach ($gradStudents as $gradStudent) {
+            $studentId = $gradStudent->student_id;
+            
+            // Get all active admissions for this student in the current class
+            $currentAdmissions = StudentAdmission::where('student_id', $studentId)
+                ->where('class_id', $batch->class_id)
+                ->where('academic_year_id', $batch->academic_year_id)
+                ->where('organization_id', $batch->organization_id)
+                ->where('enrollment_status', 'active')
+                ->whereNull('deleted_at')
+                ->get();
+
+            // Deactivate current class admissions
+            foreach ($currentAdmissions as $admission) {
+                $admission->enrollment_status = 'inactive';
+                $admission->save();
+            }
+
+            // Check if student already has an active admission in the target class
+            $existingAdmission = StudentAdmission::where('student_id', $studentId)
+                ->where('class_id', $batch->to_class_id)
+                ->where('academic_year_id', $batch->academic_year_id)
+                ->where('organization_id', $batch->organization_id)
+                ->where('enrollment_status', 'active')
+                ->whereNull('deleted_at')
+                ->first();
+
+            // Only create new admission if one doesn't already exist
+            if (!$existingAdmission) {
+                StudentAdmission::create([
+                    'organization_id' => $batch->organization_id,
+                    'school_id' => $batch->school_id,
+                    'student_id' => $studentId,
+                    'academic_year_id' => $batch->academic_year_id,
+                    'class_id' => $batch->to_class_id,
+                    'class_academic_year_id' => $toClassAcademicYear->id,
+                    'admission_date' => $batch->graduation_date,
+                    'enrollment_status' => 'active',
+                    'enrollment_type' => 'transfer',
+                ]);
+            } else {
+                // If admission exists, just ensure it's active
+                $existingAdmission->enrollment_status = 'active';
+                $existingAdmission->enrollment_type = 'transfer';
+                $existingAdmission->save();
+            }
+        }
+    }
+
+    /**
+     * Process student graduations: set enrollment_status to 'graduated'
+     */
+    private function processGraduations(GraduationBatch $batch): void
+    {
+        $gradStudents = $batch->students;
+        
+        if ($gradStudents->isEmpty()) {
+            return;
+        }
+
+        foreach ($gradStudents as $gradStudent) {
+            $studentId = $gradStudent->student_id;
+            
+            // Update all active admissions for this student to 'graduated'
+            StudentAdmission::where('student_id', $studentId)
+                ->where('class_id', $batch->class_id)
+                ->where('academic_year_id', $batch->academic_year_id)
+                ->where('organization_id', $batch->organization_id)
+                ->where('enrollment_status', 'active')
+                ->whereNull('deleted_at')
+                ->update(['enrollment_status' => 'graduated']);
+        }
+    }
+
+    /**
+     * Process student promotions: similar to transfers but for promotions
+     */
+    private function processPromotions(GraduationBatch $batch): void
+    {
+        // Promotion logic is similar to transfer
+        // Deactivate old admissions and create new ones for the promoted class
+        $gradStudents = $batch->students;
+        
+        if ($gradStudents->isEmpty()) {
+            return;
+        }
+
+        // Get the target class academic year for the new class
+        $toClassAcademicYear = ClassAcademicYear::where('class_id', $batch->to_class_id)
+            ->where('academic_year_id', $batch->academic_year_id)
+            ->where('organization_id', $batch->organization_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$toClassAcademicYear) {
+            throw new UnprocessableEntityHttpException('Target class academic year not found for promotion.');
+        }
+
+        foreach ($gradStudents as $gradStudent) {
+            $studentId = $gradStudent->student_id;
+            
+            // Get all active admissions for this student in the current class
+            $currentAdmissions = StudentAdmission::where('student_id', $studentId)
+                ->where('class_id', $batch->class_id)
+                ->where('academic_year_id', $batch->academic_year_id)
+                ->where('organization_id', $batch->organization_id)
+                ->where('enrollment_status', 'active')
+                ->whereNull('deleted_at')
+                ->get();
+
+            // Deactivate current class admissions
+            foreach ($currentAdmissions as $admission) {
+                $admission->enrollment_status = 'inactive';
+                $admission->save();
+            }
+
+            // Check if student already has an active admission in the target class
+            $existingAdmission = StudentAdmission::where('student_id', $studentId)
+                ->where('class_id', $batch->to_class_id)
+                ->where('academic_year_id', $batch->academic_year_id)
+                ->where('organization_id', $batch->organization_id)
+                ->where('enrollment_status', 'active')
+                ->whereNull('deleted_at')
+                ->first();
+
+            // Only create new admission if one doesn't already exist
+            if (!$existingAdmission) {
+                StudentAdmission::create([
+                    'organization_id' => $batch->organization_id,
+                    'school_id' => $batch->school_id,
+                    'student_id' => $studentId,
+                    'academic_year_id' => $batch->academic_year_id,
+                    'class_id' => $batch->to_class_id,
+                    'class_academic_year_id' => $toClassAcademicYear->id,
+                    'admission_date' => $batch->graduation_date,
+                    'enrollment_status' => 'active',
+                    'enrollment_type' => 'promotion',
+                ]);
+            } else {
+                // If admission exists, just ensure it's active
+                $existingAdmission->enrollment_status = 'active';
+                $existingAdmission->enrollment_type = 'promotion';
+                $existingAdmission->save();
+            }
+        }
     }
 
     public function issueCertificates(
@@ -248,6 +515,8 @@ class GraduationBatchService
                     'issued_at' => now(),
                 ]);
 
+                // CertificateRenderService automatically uses layout_config if available,
+                // otherwise falls back to body_html (backward compatibility)
                 $pdfPath = $this->certificateRenderService->renderSingle($template, $certificate, [
                     'graduation_date' => $batch->graduation_date,
                     'class_id' => $batch->class_id,

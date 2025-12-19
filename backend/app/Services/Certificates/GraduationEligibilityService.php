@@ -11,6 +11,7 @@ use App\Models\ExamClass;
 use App\Models\ExamResult;
 use App\Models\ExamStudent;
 use App\Models\ExamSubject;
+use App\Models\StudentAdmission;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
@@ -42,9 +43,11 @@ class GraduationEligibilityService
 
         $examClassIds = ExamClass::query()
             ->where('exam_id', $examId)
+            ->whereNull('deleted_at')
             ->whereHas('classAcademicYear', function ($query) use ($academicYearId, $classId) {
                 $query->where('academic_year_id', $academicYearId)
-                    ->where('class_id', $classId);
+                    ->where('class_id', $classId)
+                    ->whereNull('deleted_at');
             })
             ->pluck('id');
 
@@ -52,7 +55,9 @@ class GraduationEligibilityService
             return ['students' => collect()];
         }
 
-        $subjects = ExamSubject::whereIn('exam_class_id', $examClassIds)->get();
+        $subjects = ExamSubject::whereIn('exam_class_id', $examClassIds)
+            ->whereNull('deleted_at')
+            ->get();
         $subjectTotals = $subjects->keyBy('id')->map(function (ExamSubject $subject) {
             return [
                 'total_marks' => $subject->total_marks ?? 0,
@@ -66,14 +71,30 @@ class GraduationEligibilityService
             'examResults' => function ($query) {
                 $query->whereNull('deleted_at');
             },
+            'studentAdmission' => function ($query) {
+                $query->whereNull('deleted_at');
+            },
             'studentAdmission.student',
         ])
             ->whereIn('exam_class_id', $examClassIds)
             ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
             ->get();
 
         $results = $examStudents->map(function (ExamStudent $examStudent) use ($subjectTotals, $organizationId, $schoolId) {
-            $student = $examStudent->studentAdmission?->student;
+            // Get student from admission, with fallback to direct student_id if admission is missing
+            $studentAdmission = $examStudent->studentAdmission;
+            $student = $studentAdmission?->student;
+            
+            // If student is null but we have student_admission_id, try to get student directly
+            if (!$student && $examStudent->student_admission_id) {
+                $studentAdmission = StudentAdmission::with('student')
+                    ->where('id', $examStudent->student_admission_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+                $student = $studentAdmission?->student;
+            }
+            
             $resultBySubject = $examStudent->examResults->keyBy('exam_subject_id');
 
             $issues = [];
@@ -119,9 +140,17 @@ class GraduationEligibilityService
             $gradePass = $percentage !== null ? GradeCalculator::isPass($percentage, $organizationId) : null;
             $isPass = empty($issues) && ($gradePass === null ? true : $gradePass === true);
 
+            // Get student_id from admission if student relationship is not loaded
+            $studentId = $student?->id ?? $studentAdmission?->student_id ?? null;
+            
+            // If still no student_id, skip this record (shouldn't happen, but safety check)
+            if (!$studentId) {
+                return null;
+            }
+            
             return [
-                'student_id' => $student?->id,
-                'student_name' => $student?->full_name,
+                'student_id' => $studentId,
+                'student_name' => $student?->full_name ?? $studentAdmission?->student?->full_name ?? 'Unknown',
                 'school_id' => $schoolId,
                 'exam_student_id' => $examStudent->id,
                 'final_result_status' => $isPass ? 'pass' : 'fail',
@@ -133,7 +162,7 @@ class GraduationEligibilityService
                     'total_possible' => $totalPossible,
                 ],
             ];
-        })->filter(fn ($item) => $item['student_id'] !== null);
+        })->filter(fn ($item) => $item !== null && $item['student_id'] !== null);
 
         // Calculate positions for passing students based on percentage (highest to lowest)
         $passingStudents = $results->filter(fn ($item) => $item['final_result_status'] === 'pass')
@@ -220,9 +249,11 @@ class GraduationEligibilityService
         // Get all exam class IDs for all exams
         $allExamClassIds = ExamClass::query()
             ->whereIn('exam_id', $examIds)
+            ->whereNull('deleted_at')
             ->whereHas('classAcademicYear', function ($query) use ($academicYearId, $classId) {
                 $query->where('academic_year_id', $academicYearId)
-                    ->where('class_id', $classId);
+                    ->where('class_id', $classId)
+                    ->whereNull('deleted_at');
             })
             ->pluck('id');
 
@@ -232,6 +263,7 @@ class GraduationEligibilityService
 
         // Get all subjects across all exams
         $allSubjects = ExamSubject::whereIn('exam_class_id', $allExamClassIds)
+            ->whereNull('deleted_at')
             ->with('examClass')
             ->get();
 
@@ -243,11 +275,15 @@ class GraduationEligibilityService
             'examResults' => function ($query) {
                 $query->whereNull('deleted_at');
             },
+            'studentAdmission' => function ($query) {
+                $query->whereNull('deleted_at');
+            },
             'studentAdmission.student',
             'examClass',
         ])
             ->whereIn('exam_class_id', $allExamClassIds)
             ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
             ->get();
 
         // Group students by student_id

@@ -34,17 +34,29 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $schoolId = $profile->default_school_id;
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user'], 403);
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
         }
 
         $query = GraduationBatch::query()
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $schoolId)
-            ->with(['academicYear:id,name', 'class:id,name', 'exam:id,name', 'school:id,school_name'])
-            ->where('school_id', $request->get('school_id', $profile->default_school_id))
-            ->with(['exams.examType'])
+            ->whereNull('deleted_at')
+            ->with([
+                'academicYear:id,name',
+                'class:id,name',
+                'exam:id,name',
+                'school:id,school_name',
+                'fromClass:id,name',
+                'toClass:id,name',
+                'exams' => function ($query) {
+                    $query->whereNull('exams.deleted_at')
+                        ->with('examType:id,name')
+                        ->withPivot('weight_percentage', 'is_required', 'display_order');
+                }
+            ])
             ->withCount(['students']);
 
         if ($request->filled('academic_year_id')) {
@@ -57,12 +69,25 @@ class GraduationBatchController extends Controller
 
         // Support both old exam_id and new exam_ids filter
         if ($request->filled('exam_id')) {
-            $query->whereHas('exams', function ($q) use ($request) {
-                $q->where('exams.id', $request->input('exam_id'));
-            })->orWhere('exam_id', $request->input('exam_id')); // Backward compatibility
+            $examId = $request->input('exam_id');
+            $query->where(function ($q) use ($examId) {
+                $q->whereHas('exams', function ($subQ) use ($examId) {
+                    $subQ->where('exams.id', $examId)
+                        ->whereNull('exams.deleted_at');
+                })->orWhere('exam_id', $examId); // Backward compatibility
+            });
         }
 
-        return response()->json($query->orderByDesc('created_at')->get());
+        try {
+            $batches = $query->orderByDesc('created_at')->get();
+            return response()->json($batches);
+        } catch (\Throwable $e) {
+            report($e);
+            \Log::error('GraduationBatchController::index error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to load graduation batches: ' . $e->getMessage()], 500);
+        }
     }
 
     public function store(Request $request)
@@ -122,23 +147,49 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $schoolId = $profile->default_school_id;
-        if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user'], 403);
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
+
+        // First try to find batch with school_id filter if provided
+        $query = GraduationBatch::where('organization_id', $profile->organization_id);
+        
+        if ($schoolId) {
+            $query->where('school_id', $schoolId);
         }
 
-        $batch = GraduationBatch::where('organization_id', $profile->organization_id)
-            ->where('school_id', $schoolId)
+        $batch = $query
             ->with([
                 'students.student',
                 'academicYear:id,name',
                 'class:id,name',
                 'exam:id,name',
-                'school:id,school_name'
+                'school:id,school_name',
+                'fromClass:id,name',
+                'toClass:id,name',
+                'exams' => function ($query) {
+                    $query->with('examType:id,name');
+                }
             ])
-            ->where('school_id', $request->get('school_id', $profile->default_school_id))
-            ->with(['students.student', 'exams.examType', 'fromClass', 'toClass'])
             ->find($id);
+
+        // If not found with school_id filter, try without it (batch might be from different school in same org)
+        if (!$batch && $schoolId) {
+            $batch = GraduationBatch::where('organization_id', $profile->organization_id)
+                ->where('id', $id)
+                ->with([
+                    'students.student',
+                    'academicYear:id,name',
+                    'class:id,name',
+                    'exam:id,name',
+                    'school:id,school_name',
+                    'fromClass:id,name',
+                    'toClass:id,name',
+                    'exams' => function ($query) {
+                        $query->with('examType:id,name');
+                    }
+                ])
+                ->first();
+        }
 
         if (!$batch) {
             return response()->json(['error' => 'Graduation batch not found'], 404);
@@ -169,9 +220,10 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $schoolId = $profile->default_school_id;
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user'], 403);
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
         }
 
         try {
@@ -203,9 +255,10 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $schoolId = $profile->default_school_id;
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user'], 403);
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
         }
 
         try {
@@ -237,9 +290,10 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $schoolId = $profile->default_school_id;
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user'], 403);
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
         }
 
         $validated = $request->validate([
@@ -260,6 +314,106 @@ class GraduationBatchController extends Controller
             report($e);
             $status = $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 422;
             return response()->json(['error' => $e->getMessage()], $status);
+        }
+    }
+
+    public function update(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($user);
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        if (!$user->hasPermissionTo('graduation_batches.update')) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
+        }
+
+        $batch = GraduationBatch::where('organization_id', $profile->organization_id)
+            ->where('school_id', $schoolId)
+            ->find($id);
+
+        if (!$batch) {
+            return response()->json(['error' => 'Graduation batch not found'], 404);
+        }
+
+        // Only allow editing draft batches
+        if ($batch->status !== GraduationBatch::STATUS_DRAFT) {
+            return response()->json(['error' => 'Cannot edit batch that has been approved or issued'], 422);
+        }
+
+        $validated = $request->validate([
+            'academic_year_id' => 'sometimes|uuid|exists:academic_years,id',
+            'class_id' => 'sometimes|uuid|exists:classes,id',
+            'exam_id' => 'nullable|uuid|exists:exams,id',
+            'exam_ids' => 'sometimes|array|min:1',
+            'exam_ids.*' => 'uuid|exists:exams,id',
+            'exam_weights' => 'nullable|array',
+            'exam_weights.*' => 'nullable|numeric|min:0|max:100',
+            'graduation_type' => 'nullable|in:final_year,promotion,transfer',
+            'from_class_id' => 'nullable|uuid|exists:classes,id',
+            'to_class_id' => 'nullable|uuid|exists:classes,id',
+            'graduation_date' => 'sometimes|date',
+            'min_attendance_percentage' => 'nullable|numeric|min:0|max:100',
+            'require_attendance' => 'nullable|boolean',
+            'exclude_approved_leaves' => 'nullable|boolean',
+        ]);
+
+        try {
+            $batch = $this->batchService->updateBatch($id, $validated, $profile->organization_id, $schoolId, (string) $user->id);
+            return response()->json($batch);
+        } catch (\Throwable $e) {
+            report($e);
+            $status = $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 500;
+            return response()->json(['error' => $e->getMessage()], $status);
+        }
+    }
+
+    public function destroy(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($user);
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        if (!$user->hasPermissionTo('graduation_batches.delete')) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
+        }
+
+        $batch = GraduationBatch::where('organization_id', $profile->organization_id)
+            ->where('school_id', $schoolId)
+            ->find($id);
+
+        if (!$batch) {
+            return response()->json(['error' => 'Graduation batch not found'], 404);
+        }
+
+        // Only allow deleting draft batches
+        if ($batch->status !== GraduationBatch::STATUS_DRAFT) {
+            return response()->json(['error' => 'Cannot delete batch that has been approved or issued'], 422);
+        }
+
+        try {
+            $batch->delete();
+            return response()->noContent();
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 }

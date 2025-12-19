@@ -150,7 +150,9 @@ class ApiClient {
         }
 
         // Create error but don't log expected 401s
-        const errorObj = new Error(error.message || error.error || `HTTP error! status: ${response.status}`);
+        // Laravel may return error in 'error' field or 'message' field
+        const errorMessage = error.message || error.error || `HTTP error! status: ${response.status}`;
+        const errorObj = new Error(errorMessage);
         if (isExpectedUnauth) {
           // Mark as expected so useAuth can handle it silently
           (errorObj as any).expected = true;
@@ -1668,6 +1670,20 @@ export const studentAdmissionsApi = {
   }) => {
     return apiClient.get('/student-admissions/report', params);
   },
+
+  bulkDeactivate: async (data: {
+    admission_ids: string[];
+  }) => {
+    return apiClient.post('/student-admissions/bulk-deactivate', data);
+  },
+
+  bulkDeactivateByStudentIds: async (data: {
+    student_ids: string[];
+    class_id: string;
+    academic_year_id: string;
+  }) => {
+    return apiClient.post('/student-admissions/bulk-deactivate-by-student-ids', data);
+  },
 };
 
 // Teacher Subject Assignments API
@@ -2389,7 +2405,7 @@ export const courseDocumentsApi = {
 
 // Certificate Templates API
 export const certificateTemplatesApi = {
-  list: async (params?: { active_only?: boolean }) =>
+  list: async (params?: { active_only?: boolean; type?: string; school_id?: string }) =>
     apiClient.get('/certificate-templates', params),
 
   get: async (id: string) => apiClient.get(`/certificate-templates/${id}`),
@@ -2867,41 +2883,6 @@ export const examAttendanceApi = {
 
   delete: async (id: string) => {
     return apiClient.delete(`/exam-attendance/${id}`);
-  },
-};
-
-// Exam Types API
-export const examTypesApi = {
-  list: async (params?: { organization_id?: string }) => {
-    return apiClient.get('/exam-types', params);
-  },
-
-  get: async (id: string) => {
-    return apiClient.get(`/exam-types/${id}`);
-  },
-
-  create: async (data: {
-    name: string;
-    code?: string | null;
-    description?: string | null;
-    display_order?: number;
-    is_active?: boolean;
-  }) => {
-    return apiClient.post('/exam-types', data);
-  },
-
-  update: async (id: string, data: {
-    name?: string;
-    code?: string | null;
-    description?: string | null;
-    display_order?: number;
-    is_active?: boolean;
-  }) => {
-    return apiClient.put(`/exam-types/${id}`, data);
-  },
-
-  delete: async (id: string) => {
-    return apiClient.delete(`/exam-types/${id}`);
   },
 };
 
@@ -3521,14 +3502,39 @@ export const graduationBatchesApi = {
     class_id?: string;
     exam_id?: string;
   }) => apiClient.get('/graduation/batches', params),
-  get: async (id: string) => apiClient.get(`/graduation/batches/${id}`),
+  get: async (id: string, params?: { school_id?: string }) => 
+    apiClient.get(`/graduation/batches/${id}`, params),
   create: async (data: {
     school_id: string;
     academic_year_id: string;
     class_id: string;
-    exam_id: string;
+    exam_id?: string; // Backward compatibility
+    exam_ids?: string[]; // New: multiple exams
     graduation_date: string;
+    graduation_type?: 'final_year' | 'promotion' | 'transfer';
+    from_class_id?: string;
+    to_class_id?: string;
+    min_attendance_percentage?: number;
+    require_attendance?: boolean;
+    exclude_approved_leaves?: boolean;
   }) => apiClient.post('/graduation/batches', data),
+  update: async (id: string, data: {
+    academic_year_id?: string;
+    class_id?: string;
+    exam_id?: string;
+    exam_ids?: string[];
+    exam_weights?: Record<string, number>;
+    graduation_date?: string;
+    graduation_type?: 'final_year' | 'promotion' | 'transfer';
+    from_class_id?: string;
+    to_class_id?: string;
+    min_attendance_percentage?: number;
+    require_attendance?: boolean;
+    exclude_approved_leaves?: boolean;
+  }, params?: { school_id?: string }) =>
+    apiClient.put(`/graduation/batches/${id}`, { ...data, ...params }),
+  delete: async (id: string, params?: { school_id?: string }) =>
+    apiClient.delete(`/graduation/batches/${id}`, params),
   generateStudents: async (id: string, params?: { school_id?: string }) =>
     apiClient.post(`/graduation/batches/${id}/generate-students`, params),
   approve: async (id: string, params?: { school_id?: string }) =>
@@ -3540,32 +3546,85 @@ export const graduationBatchesApi = {
 export const certificateTemplatesV2Api = {
   list: async (params?: { school_id?: string; type?: string }) =>
     apiClient.get('/certificates/templates', params),
-  create: async (data: {
+  get: async (id: string) => apiClient.get(`/certificates/templates/${id}`),
+  create: async (data: FormData | {
     school_id?: string;
     type: string;
     title: string;
-    body_html: string;
+    body_html?: string;
+    layout_config?: any;
+    background_image?: File | null;
     page_size?: 'A4' | 'A5' | 'custom';
     custom_width_mm?: number | null;
     custom_height_mm?: number | null;
     rtl?: boolean;
     font_family?: string | null;
     is_active?: boolean;
-  }) => apiClient.post('/certificates/templates', data),
-  update: async (id: string, data: {
+    description?: string | null;
+  }) => {
+    // If data is FormData, use it directly; otherwise convert to FormData
+    if (data instanceof FormData) {
+      return apiClient.post('/certificates/templates', data);
+    }
+    const formData = new FormData();
+    if (data.school_id) formData.append('school_id', data.school_id);
+    formData.append('type', data.type);
+    formData.append('title', data.title);
+    if (data.body_html) formData.append('body_html', data.body_html);
+    if (data.layout_config) formData.append('layout_config', JSON.stringify(data.layout_config));
+    if (data.background_image) formData.append('background_image', data.background_image);
+    if (data.page_size) formData.append('page_size', data.page_size);
+    if (data.custom_width_mm !== undefined) formData.append('custom_width_mm', String(data.custom_width_mm));
+    if (data.custom_height_mm !== undefined) formData.append('custom_height_mm', String(data.custom_height_mm));
+    if (data.rtl !== undefined) formData.append('rtl', data.rtl ? '1' : '0');
+    if (data.font_family) formData.append('font_family', data.font_family);
+    if (data.is_active !== undefined) formData.append('is_active', data.is_active ? '1' : '0');
+    if (data.description !== undefined) formData.append('description', data.description || '');
+    return apiClient.post('/certificates/templates', formData);
+  },
+  update: async (id: string, data: FormData | {
     school_id?: string;
     type?: string;
     title?: string;
     body_html?: string;
+    layout_config?: any;
+    background_image?: File | null;
     page_size?: 'A4' | 'A5' | 'custom';
     custom_width_mm?: number | null;
     custom_height_mm?: number | null;
     rtl?: boolean;
     font_family?: string | null;
     is_active?: boolean;
-  }) => apiClient.put(`/certificates/templates/${id}`, data),
+    description?: string | null;
+  }) => {
+    // If data is FormData, use it directly; otherwise convert to FormData
+    if (data instanceof FormData) {
+      // Laravel doesn't support PUT with FormData, use POST with _method
+      data.append('_method', 'PUT');
+      return apiClient.post(`/certificates/templates/${id}`, data);
+    }
+    const formData = new FormData();
+    if (data.school_id !== undefined) formData.append('school_id', data.school_id || '');
+    if (data.type) formData.append('type', data.type);
+    if (data.title) formData.append('title', data.title);
+    if (data.body_html !== undefined) formData.append('body_html', data.body_html || '');
+    if (data.layout_config !== undefined) formData.append('layout_config', JSON.stringify(data.layout_config));
+    if (data.background_image) formData.append('background_image', data.background_image);
+    if (data.page_size) formData.append('page_size', data.page_size);
+    if (data.custom_width_mm !== undefined) formData.append('custom_width_mm', String(data.custom_width_mm));
+    if (data.custom_height_mm !== undefined) formData.append('custom_height_mm', String(data.custom_height_mm));
+    if (data.rtl !== undefined) formData.append('rtl', data.rtl ? '1' : '0');
+    if (data.font_family !== undefined) formData.append('font_family', data.font_family || '');
+    if (data.is_active !== undefined) formData.append('is_active', data.is_active ? '1' : '0');
+    if (data.description !== undefined) formData.append('description', data.description || '');
+    // Laravel doesn't support PUT with FormData, use POST with _method
+    formData.append('_method', 'PUT');
+    return apiClient.post(`/certificates/templates/${id}`, formData);
+  },
+  delete: async (id: string) => apiClient.delete(`/certificates/templates/${id}`),
   activate: async (id: string) => apiClient.post(`/certificates/templates/${id}/activate`),
   deactivate: async (id: string) => apiClient.post(`/certificates/templates/${id}/deactivate`),
+  getBackgroundUrl: (id: string) => `${API_URL}/certificates/templates/${id}/background`,
 };
 
 export const issuedCertificatesApi = {
@@ -3576,6 +3635,7 @@ export const issuedCertificatesApi = {
     type?: string;
   }) => apiClient.get('/certificates/issued', params),
   get: async (id: string) => apiClient.get(`/certificates/issued/${id}`),
+  getCertificateData: async (id: string) => apiClient.get(`/certificates/issued/${id}/data`),
   revoke: async (id: string, reason: string) =>
     apiClient.post(`/certificates/issued/${id}/revoke`, { reason }),
   downloadPdf: async (id: string) =>

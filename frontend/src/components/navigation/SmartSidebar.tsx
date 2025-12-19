@@ -16,6 +16,7 @@ import {
   Clock,
   BookOpen,
   BookCheck,
+  ClipboardList,
   FileText,
   CreditCard,
   Settings,
@@ -178,6 +179,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasReportsPermission = useHasPermission('reports.read');
   const hasResidencyTypesPermission = useHasPermission('residency_types.read');
   const hasAcademicYearsPermission = useHasPermission('academic_years.read');
+  const hasExamTypesPermission = useHasPermission('exam_types.read');
   const hasClassesPermission = useHasPermission('classes.read');
   const hasSubjectsPermission = useHasPermission('subjects.read');
   const hasAssetsPermission = useHasPermission('assets.read');
@@ -414,6 +416,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
         priority: 3.053,
         children: [
           ...(hasGraduationBatchesPermission ? [{
+            title: "Dashboard",
+            titleKey: "nav.dashboard",
+            url: "/graduation",
+            icon: LucideIcons.Home,
+          }] : []),
+          ...(hasGraduationBatchesPermission ? [{
             title: "Graduation Batches",
             titleKey: "graduation.batches",
             url: "/graduation/batches",
@@ -422,7 +430,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           ...(hasCertificateTemplatesPermission ? [{
             title: "Certificate Templates",
             titleKey: "certificates.templates",
-            url: "/certificates/templates",
+            url: "/graduation/certificate-templates",
             icon: LucideIcons.Award,
           }] : []),
           ...(hasIssuedCertificatesPermission ? [{
@@ -488,6 +496,11 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "examAttendance",
             url: "/exams/attendance",
             icon: UserCheck,
+          }] : []),
+          ...(hasExamsTimetablePermission ? [{
+            title: "Exam Timetables",
+            url: "/exams/timetables",
+            icon: Clock,
           }] : []),
           // Exam Management Submenu (Enrollment, Student Enrollment, Roll Numbers, Secret Numbers)
           ...((hasExamsManagePermission || hasExamsEnrollPermission || hasExamsRollNumbersReadPermission || hasExamsRollNumbersAssignPermission || hasExamsSecretNumbersReadPermission || hasExamsSecretNumbersAssignPermission) ? [{
@@ -895,7 +908,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasTeacherSubjectAssignmentsPermission ? [{
             title: "Teacher Subject Assignments",
-            titleKey: "academic.teacherSubjectAssignments.title",
+            titleKey: "teacherSubjectAssignments.title",
             url: "/settings/teacher-subject-assignments",
             icon: UserCheck,
           }] : []),
@@ -996,6 +1009,12 @@ export const SmartSidebar = memo(function SmartSidebar() {
             url: "/settings/academic-years",
             icon: Calendar,
           }] : []),
+          ...(hasExamTypesPermission ? [{
+            title: "Exam Types",
+            titleKey: "examTypes.title",
+            url: "/settings/exam-types",
+            icon: ClipboardList,
+          }] : []),
           ...(hasStaffTypesPermission ? [{
             title: "Staff Types",
             url: "/settings/staff-types",
@@ -1047,7 +1066,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       if (item.titleKey === 'academicSettings') {
         // Show if user has any academic-related permission (excluding classes, subjects, assignments, and exams which are in separate menus)
-        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission || hasStaffTypesPermission || hasGradesPermission;
+        return hasBuildingsPermission || hasRoomsPermission || hasBrandingPermission || hasReportsPermission || hasResidencyTypesPermission || hasAcademicYearsPermission || hasExamTypesPermission || hasStaffTypesPermission || hasGradesPermission;
       }
 
       if (item.titleKey === 'exams') {
@@ -1091,7 +1110,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {
@@ -1260,7 +1279,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                             <CollapsibleTrigger asChild>
                               <SidebarMenuButton className={getNavCls({ isActive: isChildActive(child.children) })}>
                                 <child.icon className="h-4 w-4" />
-                                <span className="flex-1">{child.titleKey ? t(`nav.${child.titleKey}`) : child.title}</span>
+                                <span className="flex-1">{child.titleKey ? (child.titleKey.includes('.') ? t(child.titleKey) : t(`nav.${child.titleKey}`)) : child.title}</span>
                                 {isChildExpanded ? (
                                   <ChevronDown className="h-4 w-4" />
                                 ) : (
@@ -1279,7 +1298,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                                         end={(grandchild.url || '#') === '/'}
                                       >
                                         <grandchild.icon className="h-4 w-4" />
-                                        <span>{grandchild.titleKey ? t(`nav.${grandchild.titleKey}`) : grandchild.title}</span>
+                                        <span>{grandchild.titleKey ? (grandchild.titleKey.includes('.') ? t(grandchild.titleKey) : t(`nav.${grandchild.titleKey}`)) : grandchild.title}</span>
                                       </NavLink>
                                     </SidebarMenuButton>
                                   </SidebarMenuItem>
@@ -1300,7 +1319,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                             end={(child.url || '#') === '/'}
                           >
                             <child.icon className="h-4 w-4" />
-                            <span>{child.titleKey ? t(`nav.${child.titleKey}`) : child.title}</span>
+                            <span>{child.titleKey ? (child.titleKey.includes('.') ? t(child.titleKey) : t(`nav.${child.titleKey}`)) : child.title}</span>
                             {child.contextual && navigationContext.currentModule.includes('attendance') && (
                               <Star className="h-3 w-3 text-warning ml-auto" />
                             )}

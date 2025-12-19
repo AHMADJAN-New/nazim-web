@@ -37,9 +37,10 @@ class IssuedCertificateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $schoolId = $profile->default_school_id;
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user'], 403);
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
         }
 
         $query = IssuedCertificate::with(['template', 'student'])
@@ -76,9 +77,10 @@ class IssuedCertificateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $schoolId = $profile->default_school_id;
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user'], 403);
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
         }
 
         $certificate = IssuedCertificate::with(['template', 'student'])
@@ -91,6 +93,130 @@ class IssuedCertificateController extends Controller
         }
 
         return response()->json($certificate);
+    }
+
+    public function getCertificateData(Request $request, string $id)
+    {
+        $user = $request->user();
+        $profile = $this->getProfile($user);
+
+        if (!$profile || !$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        if (!$user->hasPermissionTo('issued_certificates.read')) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
+        if (!$schoolId) {
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
+        }
+
+        $certificate = IssuedCertificate::with(['template', 'student', 'batch'])
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $schoolId)
+            ->find($id);
+
+        if (!$certificate) {
+            return response()->json(['error' => 'Certificate not found'], 404);
+        }
+
+        // Load related data
+        $student = $certificate->student;
+        $batch = $certificate->batch;
+        $school = \App\Models\SchoolBranding::find($certificate->school_id);
+        $class = $batch ? \App\Models\ClassModel::find($batch->class_id) : null;
+        $academicYear = $batch ? \App\Models\AcademicYear::find($batch->academic_year_id) : null;
+        $graduationStudent = $batch ? \App\Models\GraduationStudent::where('batch_id', $batch->id)
+            ->where('student_id', $certificate->student_id)
+            ->first() : null;
+
+        // Get background image URL
+        $backgroundUrl = null;
+        if ($certificate->template && $certificate->template->background_image_path) {
+            $backgroundUrl = url('/api/certificates/templates/' . $certificate->template->id . '/background');
+        }
+
+        // Format graduation date
+        $graduationDate = null;
+        if ($batch && $batch->graduation_date) {
+            $graduationDate = \Illuminate\Support\Carbon::parse($batch->graduation_date)->format('Y-m-d');
+        }
+
+        // Format position
+        $position = null;
+        if ($graduationStudent && $graduationStudent->position) {
+            $pos = $graduationStudent->position;
+            $suffix = match ($pos % 10) {
+                1 => 'st',
+                2 => 'nd',
+                3 => 'rd',
+                default => 'th',
+            };
+            if ($pos % 100 >= 11 && $pos % 100 <= 13) {
+                $suffix = 'th';
+            }
+            $position = $pos . $suffix;
+        }
+
+        // Generate QR code
+        $qrBase64 = null;
+        $verificationUrl = url('/verify/certificate/' . $certificate->verification_hash);
+        try {
+            $qr = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')->size(240)->generate($certificate->qr_payload ?: $verificationUrl);
+            $qrBase64 = 'data:image/png;base64,' . base64_encode($qr);
+        } catch (\Exception $e) {
+            // QR code generation failed, leave as null
+        }
+
+        return response()->json([
+            'certificate' => [
+                'id' => $certificate->id,
+                'certificate_no' => $certificate->certificate_no,
+                'issued_at' => $certificate->issued_at,
+                'verification_hash' => $certificate->verification_hash,
+                'qr_payload' => $certificate->qr_payload,
+            ],
+            'student' => $student ? [
+                'id' => $student->id,
+                'full_name' => $student->full_name,
+                'father_name' => $student->father_name,
+                'grandfather_name' => $student->grandfather_name,
+                'mother_name' => $student->mother_name,
+                'guardian_name' => $student->guardian_name,
+                'curr_province' => $student->curr_province,
+                'curr_district' => $student->curr_district,
+                'curr_village' => $student->curr_village,
+                'nationality' => $student->nationality,
+                'picture_path' => $student->picture_path,
+            ] : null,
+            'batch' => $batch ? [
+                'id' => $batch->id,
+                'graduation_date' => $graduationDate,
+            ] : null,
+            'class' => $class ? [
+                'id' => $class->id,
+                'name' => $class->name,
+            ] : null,
+            'academicYear' => $academicYear ? [
+                'id' => $academicYear->id,
+                'name' => $academicYear->name,
+            ] : null,
+            'school' => $school ? [
+                'id' => $school->id,
+                'school_name' => $school->school_name,
+            ] : null,
+            'position' => $position,
+            'background_url' => $backgroundUrl,
+            'qr_code' => $qrBase64,
+            'verification_url' => $verificationUrl,
+            'template' => $certificate->template ? [
+                'id' => $certificate->template->id,
+                'layout_config' => $certificate->template->layout_config,
+            ] : null,
+        ]);
     }
 
     public function revoke(Request $request, string $id)
@@ -110,9 +236,10 @@ class IssuedCertificateController extends Controller
             'reason' => 'required|string|max:1000',
         ]);
 
-        $schoolId = $profile->default_school_id;
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user'], 403);
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
         }
 
         $certificate = IssuedCertificate::where('organization_id', $profile->organization_id)
@@ -158,9 +285,10 @@ class IssuedCertificateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $schoolId = $profile->default_school_id;
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user'], 403);
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
         }
 
         $certificate = IssuedCertificate::with('template')
@@ -213,9 +341,10 @@ class IssuedCertificateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $schoolId = $profile->default_school_id;
+        // Allow school_id from request, fallback to default_school_id
+        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user'], 403);
+            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
         }
 
         $certificates = IssuedCertificate::with('template')

@@ -213,6 +213,8 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     // Student Admissions
     Route::get('/student-admissions/stats', [StudentAdmissionController::class, 'stats']);
     Route::get('/student-admissions/report', [StudentAdmissionController::class, 'report']);
+    Route::post('/student-admissions/bulk-deactivate', [StudentAdmissionController::class, 'bulkDeactivate']);
+    Route::post('/student-admissions/bulk-deactivate-by-student-ids', [StudentAdmissionController::class, 'bulkDeactivateByStudentIds']);
     Route::apiResource('student-admissions', StudentAdmissionController::class);
 
     // Hostel aggregation
@@ -402,10 +404,22 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/certificate-templates/certificate-data/{courseStudentId}', [CertificateTemplateController::class, 'getCertificateData']);
     Route::apiResource('certificate-templates', CertificateTemplateController::class);
 
+    // Certificate Templates (v2 API - frontend compatibility)
+    Route::get('/certificates/templates', [CertificateTemplateController::class, 'index']);
+    Route::post('/certificates/templates', [CertificateTemplateController::class, 'store']);
+    Route::get('/certificates/templates/{id}', [CertificateTemplateController::class, 'show']);
+    Route::get('/certificates/templates/{id}/background', [CertificateTemplateController::class, 'getBackgroundImage']);
+    Route::put('/certificates/templates/{id}', [CertificateTemplateController::class, 'update']);
+    Route::delete('/certificates/templates/{id}', [CertificateTemplateController::class, 'destroy']);
+    Route::post('/certificates/templates/{id}/activate', [CertificateTemplateController::class, 'activate']);
+    Route::post('/certificates/templates/{id}/deactivate', [CertificateTemplateController::class, 'deactivate']);
+
     // Graduation Batches
     Route::get('/graduation/batches', [GraduationBatchController::class, 'index']);
     Route::post('/graduation/batches', [GraduationBatchController::class, 'store']);
     Route::get('/graduation/batches/{id}', [GraduationBatchController::class, 'show']);
+    Route::put('/graduation/batches/{id}', [GraduationBatchController::class, 'update']);
+    Route::delete('/graduation/batches/{id}', [GraduationBatchController::class, 'destroy']);
     Route::post('/graduation/batches/{id}/generate-students', [GraduationBatchController::class, 'generateStudents']);
     Route::post('/graduation/batches/{id}/approve', [GraduationBatchController::class, 'approve']);
     Route::post('/graduation/batches/{id}/issue-certificates', [GraduationBatchController::class, 'issueCertificates']);
@@ -416,6 +430,14 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/issued-certificates/{id}/revoke', [IssuedCertificateController::class, 'revoke']);
     Route::get('/issued-certificates/{id}/download', [IssuedCertificateController::class, 'downloadPdf']);
     Route::get('/issued-certificates/batch/{batchId}/download-zip', [IssuedCertificateController::class, 'downloadBatchZip']);
+
+    // Issued Certificates (v2 API - frontend compatibility)
+    Route::get('/certificates/issued', [IssuedCertificateController::class, 'index']);
+    Route::get('/certificates/issued/{id}', [IssuedCertificateController::class, 'show']);
+    Route::get('/certificates/issued/{id}/data', [IssuedCertificateController::class, 'getCertificateData']);
+    Route::post('/certificates/issued/{id}/revoke', [IssuedCertificateController::class, 'revoke']);
+    Route::get('/certificates/issued/{id}/pdf', [IssuedCertificateController::class, 'downloadPdf']);
+    Route::get('/certificates/batches/{batchId}/pdf', [IssuedCertificateController::class, 'downloadBatchZip']);
 
     // Leave Requests
     Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
