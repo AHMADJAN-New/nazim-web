@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { useFeeReportDashboard, useStudentFees, useFeeDefaulters, useFeeAssignments, useFeePayments, useFeeStructures } from '@/hooks/useFees';
+import { useFeeReportDashboard, useStudentFees, useFeeDefaulters, useFeeAssignments, useFeePayments, useFeeStructures, useFeeExceptions } from '@/hooks/useFees';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -132,6 +132,16 @@ export default function FeeReportsPage() {
     studentId: selectedStudentId || undefined,
   });
   const { data: feeStructures = [] } = useFeeStructures({
+    academicYearId: filterAcademicYear,
+  });
+  const { data: feeExceptions = [] } = useFeeExceptions({
+    academicYearId: filterAcademicYear,
+    classAcademicYearId: filterClassAy,
+  });
+  
+  // Get exceptions for selected student
+  const { data: studentFeeExceptions = [] } = useFeeExceptions({
+    studentId: selectedStudentId || undefined,
     academicYearId: filterAcademicYear,
   });
 
@@ -602,7 +612,23 @@ export default function FeeReportsPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">{student.className}</Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">{student.className}</Badge>
+                                {(() => {
+                                  // Check if student has any exceptions
+                                  const studentExceptions = feeExceptions.filter(
+                                    (exception) => exception.studentId === student.id
+                                  );
+                                  if (studentExceptions.length > 0) {
+                                    return (
+                                      <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+                                        {studentExceptions.length} {t('fees.exception') || 'Exception'}{studentExceptions.length > 1 ? 's' : ''}
+                                      </Badge>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </div>
                             </TableCell>
                             <TableCell className="text-right font-medium">
                               {formatCurrency(student.totalAssigned)}
@@ -868,6 +894,43 @@ export default function FeeReportsPage() {
                     </Card>
                   </div>
 
+                  {/* Fee Exceptions Summary */}
+                  {studentFeeExceptions.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>{t('fees.exceptions') || 'Fee Exceptions'}</CardTitle>
+                        <CardDescription>
+                          {t('fees.exceptionsSummary') || 'Active fee exceptions for this student'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {studentFeeExceptions
+                            .filter((ex) => ex.isActive)
+                            .map((exception) => (
+                              <div key={exception.id} className="flex items-center justify-between p-2 border rounded">
+                                <div className="flex items-center gap-2">
+                                  <Badge
+                                    variant={
+                                      exception.exceptionType === 'waiver'
+                                        ? 'destructive'
+                                        : exception.exceptionType === 'discount_percentage'
+                                        ? 'default'
+                                        : 'secondary'
+                                    }
+                                  >
+                                    {exception.exceptionType.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                                  </Badge>
+                                  <span className="text-sm text-muted-foreground">{exception.exceptionReason}</span>
+                                </div>
+                                <span className="font-semibold">{formatCurrency(exception.exceptionAmount)}</span>
+                              </div>
+                            ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <Card>
                     <CardHeader>
                       <CardTitle>{t('fees.status') || 'Status'}</CardTitle>
@@ -927,6 +990,47 @@ export default function FeeReportsPage() {
                                       <span className="font-medium">{assignment.dueDate ? formatDate(new Date(assignment.dueDate)) : '-'}</span>
                                     </div>
                                   </div>
+                                  {/* Fee Exceptions for this assignment */}
+                                  {(() => {
+                                    const assignmentExceptions = studentFeeExceptions.filter(
+                                      (exception) => exception.feeAssignmentId === assignment.id
+                                    );
+                                    
+                                    if (assignmentExceptions.length === 0) return null;
+                                    
+                                    return (
+                                      <div className="mt-3 pt-3 border-t space-y-2">
+                                        <div className="text-xs font-medium text-muted-foreground mb-2">
+                                          {t('fees.exceptions') || 'Exceptions'} ({assignmentExceptions.length})
+                                        </div>
+                                        {assignmentExceptions.map((exception) => (
+                                          <div key={exception.id} className="text-xs bg-muted/50 rounded p-2 space-y-1">
+                                            <div className="flex items-center justify-between">
+                                              <Badge
+                                                variant={
+                                                  exception.exceptionType === 'waiver'
+                                                    ? 'destructive'
+                                                    : exception.exceptionType === 'discount_percentage'
+                                                    ? 'default'
+                                                    : 'secondary'
+                                                }
+                                                className="text-xs"
+                                              >
+                                                {exception.exceptionType.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                                              </Badge>
+                                              <span className="font-medium">{formatCurrency(exception.exceptionAmount)}</span>
+                                            </div>
+                                            <p className="text-muted-foreground">{exception.exceptionReason}</p>
+                                            {exception.isActive && (
+                                              <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs">
+                                                Active
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                                 <div className="ml-4">
                                   {getStatusBadge(assignment.status)}

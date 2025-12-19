@@ -21,6 +21,7 @@ import {
   mapFeeAssignmentDomainToUpdate,
   mapFeeExceptionApiToDomain,
   mapFeeExceptionDomainToInsert,
+  mapFeeExceptionDomainToUpdate,
   mapFeePaymentApiToDomain,
   mapFeePaymentDomainToInsert,
   mapFeePaymentDomainToUpdate,

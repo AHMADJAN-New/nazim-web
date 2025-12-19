@@ -82,17 +82,17 @@ export type FeePaymentFormData = z.infer<typeof feePaymentSchema>;
 
 export const feeExceptionSchema = z.object({
   fee_assignment_id: uuidSchema,
-  student_id: optionalUuidSchema,
+  student_id: uuidSchema, // Required by backend
   exception_type: z.enum(['discount_percentage', 'discount_fixed', 'waiver', 'custom']),
   exception_amount: z.number().nonnegative(),
   exception_reason: requiredStringLength(2000, 'Reason'),
-  approved_by_user_id: optionalUuidSchema,
+  approved_by_user_id: uuidSchema, // Required by backend
   approved_at: dateStringSchema.optional().nullable(),
   valid_from: z.string().min(1, 'Valid from date is required'),
   valid_to: dateStringSchema.optional().nullable(),
   is_active: z.boolean().optional(),
   notes: optionalStringLength(2000, 'Notes'),
-  organization_id: optionalUuidSchema,
+  organization_id: uuidSchema, // Required by backend
 }).refine(
   (data) => {
     if (!data.valid_from || !data.valid_to) return true;

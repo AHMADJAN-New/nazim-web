@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Separator } from '@/components/ui/separator';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { FeePaymentForm } from '@/components/fees/FeePaymentForm';
-import { useCreateFeePayment, useFeeAssignments, useFeePayments, useFeeStructures } from '@/hooks/useFees';
+import { useCreateFeePayment, useFeeAssignments, useFeePayments, useFeeStructures, useFeeExceptions } from '@/hooks/useFees';
 import { useFinanceAccounts } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudents } from '@/hooks/useStudents';
@@ -18,6 +18,7 @@ import { showToast } from '@/lib/toast';
 import type { FeePaymentFormData } from '@/lib/validations/fees';
 import type { FeePayment } from '@/types/domain/fees';
 import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/utils';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -61,6 +62,10 @@ export default function FeePaymentsPage() {
   } = useFeePayments(undefined, true);
   const { data: accounts = [] } = useFinanceAccounts();
   const { data: students = [] } = useStudents();
+  const { data: feeExceptions = [] } = useFeeExceptions({
+    academicYearId: filterAcademicYear,
+    classAcademicYearId: filterClassAy,
+  });
   const createPayment = useCreateFeePayment();
   const [open, setOpen] = useState(false);
 
@@ -608,6 +613,69 @@ export default function FeePaymentsPage() {
                     <Separator />
                   </>
                 )}
+
+                {/* Fee Exceptions */}
+                {(() => {
+                  const assignmentExceptions = feeExceptions.filter(
+                    (exception) => exception.feeAssignmentId === viewingPayment.feeAssignmentId
+                  );
+                  
+                  if (assignmentExceptions.length === 0) return null;
+                  
+                  return (
+                    <>
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">{t('fees.exceptions')}</h3>
+                        <div className="space-y-3">
+                          {assignmentExceptions.map((exception) => (
+                            <div key={exception.id} className="border rounded-lg p-4 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Badge
+                                    variant={
+                                      exception.exceptionType === 'waiver'
+                                        ? 'destructive'
+                                        : exception.exceptionType === 'discount_percentage'
+                                        ? 'default'
+                                        : 'secondary'
+                                    }
+                                  >
+                                    {exception.exceptionType.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                                  </Badge>
+                                  {exception.isActive ? (
+                                    <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                      Active
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary">Inactive</Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm font-semibold">{formatCurrency(exception.exceptionAmount)}</p>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{exception.exceptionReason}</p>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                {exception.validFrom && (
+                                  <span>
+                                    {t('fees.validFrom')}: {format(exception.validFrom, 'PPP')}
+                                  </span>
+                                )}
+                                {exception.validTo && (
+                                  <span>
+                                    {t('fees.validTo')}: {format(exception.validTo, 'PPP')}
+                                  </span>
+                                )}
+                              </div>
+                              {exception.notes && (
+                                <p className="text-xs text-muted-foreground mt-1">{exception.notes}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <Separator />
+                    </>
+                  );
+                })()}
 
                 {/* Account Information */}
                 {viewingPayment.accountId && accountsById[viewingPayment.accountId] && (

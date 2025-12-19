@@ -137,6 +137,8 @@ export default function FeeExceptionsPage() {
           value: assignment.id,
           label: `${structureName} - ${className ?? t('common.notAvailable')}`,
           studentId: assignment.studentId,
+          classAcademicYearId: assignment.classAcademicYearId,
+          academicYearId: assignment.academicYearId,
         };
       }),
     [assignments, classAyById, structuresById, t],
@@ -221,14 +223,30 @@ export default function FeeExceptionsPage() {
 
   const handleSubmit = async (values: FeeExceptionFormData) => {
     try {
+      // Convert form data (snake_case) to domain type (camelCase)
+      const domainData: Partial<FeeException> = {
+        feeAssignmentId: values.fee_assignment_id,
+        studentId: values.student_id,
+        exceptionType: values.exception_type,
+        exceptionAmount: values.exception_amount,
+        exceptionReason: values.exception_reason,
+        approvedByUserId: values.approved_by_user_id,
+        approvedAt: values.approved_at ? new Date(values.approved_at) : null,
+        validFrom: values.valid_from ? new Date(values.valid_from) : new Date(),
+        validTo: values.valid_to ? new Date(values.valid_to) : null,
+        isActive: values.is_active ?? true,
+        notes: values.notes ?? null,
+        organizationId: values.organization_id,
+      };
+
       if (editingException) {
         await updateException.mutateAsync({
           id: editingException.id,
-          ...values,
+          ...domainData,
         });
         setEditingException(null);
       } else {
-        await createException.mutateAsync(values);
+        await createException.mutateAsync(domainData);
       }
       setOpen(false);
     } catch (error) {
@@ -301,6 +319,9 @@ export default function FeeExceptionsPage() {
                   organization_id: profile?.organization_id ?? '',
                 }}
                 assignments={assignmentOptions}
+                classAcademicYears={classAcademicYears}
+                academicYears={academicYears}
+                currentAcademicYearId={currentAcademicYear?.id}
                 onSubmit={handleSubmit}
                 isSubmitting={createException.isPending || updateException.isPending}
                 onCancel={handleCloseDialog}
