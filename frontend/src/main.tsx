@@ -5,6 +5,7 @@ import './index.css'
 // DISABLED: Console replacer causes infinite logging loop
 // import './lib/console-replacer' // Initialize logging system
 import { LanguageProvider } from '@/hooks/useLanguage';
+import { DatePreferenceProvider } from '@/hooks/useDatePreference';
 import { RootBootstrap } from './RootBootstrap';
 
 // Unregister any existing service workers (PWA removed for performance)
@@ -57,9 +58,11 @@ document.addEventListener('contextmenu', (e) => {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <LanguageProvider>
-      <RootBootstrap>
-        <App />
-      </RootBootstrap>
+      <DatePreferenceProvider>
+        <RootBootstrap>
+          <App />
+        </RootBootstrap>
+      </DatePreferenceProvider>
     </LanguageProvider>
   </StrictMode>
 );

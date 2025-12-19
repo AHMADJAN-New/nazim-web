@@ -11,6 +11,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { passwordChangeSchema, type PasswordChangeFormData } from '@/lib/validations/passwordChange';
 import { authApi } from '@/lib/api/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { DatePreferenceSettings } from '@/components/settings/DatePreferenceSettings';
 
 export default function UserSettings() {
   const { t } = useLanguage();
@@ -81,6 +82,10 @@ export default function UserSettings() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Date Preference Settings */}
+      <DatePreferenceSettings />
+
+      {/* Password Change Card */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
