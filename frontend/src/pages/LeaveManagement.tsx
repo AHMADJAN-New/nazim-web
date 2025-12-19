@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { format, addDays, addWeeks } from 'date-fns';
 import { Calendar, CheckCircle2, Download, Eye, FileText, Loader2, Printer, Shield, UserRound, Zap, Search, Scan } from 'lucide-react';
 import { useLeaveRequests, useCreateLeaveRequest, useApproveLeaveRequest, useRejectLeaveRequest } from '@/hooks/useLeaveRequests';
-import { useStudents, type Student } from '@/hooks/useStudents';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import type { Student } from '@/types/domain/student';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
@@ -68,9 +69,18 @@ export default function LeaveManagement() {
     year: filterYear,
   });
 
-  // Get all students - will be filtered by class client-side
-  const { data: allStudents } = useStudents(undefined, false);
-  const students: Student[] = (allStudents as Student[]) || [];
+  // Get student admissions with active status and class filter
+  const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
+    enrollment_status: 'active',
+    class_academic_year_id: selectedClass || undefined,
+  });
+  // Extract students from admissions
+  const students: Student[] = useMemo(() => {
+    if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
+    return studentAdmissions
+      .map(admission => admission.student)
+      .filter((student): student is Student => student !== null && student !== undefined);
+  }, [studentAdmissions]);
 
   const createLeave = useCreateLeaveRequest();
   const approveLeave = useApproveLeaveRequest();

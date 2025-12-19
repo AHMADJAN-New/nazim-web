@@ -63,18 +63,15 @@ export function FeeExceptionForm({
   const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string>(currentAcademicYearId || '');
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
 
-  // Get student admissions filtered by class
-  const { data: studentAdmissions = [] } = useStudentAdmissions(profile?.organization_id, false);
+  // Get student admissions with filters (active status, class, academic year)
+  const { data: studentAdmissions = [] } = useStudentAdmissions(profile?.organization_id, false, {
+    enrollment_status: 'active',
+    class_academic_year_id: selectedClassId || undefined,
+    academic_year_id: selectedAcademicYearId || undefined,
+  });
   
-  // Filter students by selected class
-  const filteredStudents = useMemo(() => {
-    if (!selectedClassId) return [];
-    return studentAdmissions.filter(
-      (admission) =>
-        admission.classAcademicYearId === selectedClassId &&
-        admission.enrollmentStatus === 'active'
-    );
-  }, [studentAdmissions, selectedClassId]);
+  // No need for client-side filtering - already filtered by API
+  const filteredStudents = studentAdmissions;
 
   // Create class options
   const classOptions: ComboboxOption[] = useMemo(

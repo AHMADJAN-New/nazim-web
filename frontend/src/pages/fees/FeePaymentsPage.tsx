@@ -12,8 +12,10 @@ import { FeePaymentForm } from '@/components/fees/FeePaymentForm';
 import { useCreateFeePayment, useFeeAssignments, useFeePayments, useFeeStructures, useFeeExceptions } from '@/hooks/useFees';
 import { useFinanceAccounts } from '@/hooks/useFinance';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useStudents } from '@/hooks/useStudents';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import type { Student } from '@/types/domain/student';
 import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useProfile } from '@/hooks/useProfiles';
 import { showToast } from '@/lib/toast';
 import type { FeePaymentFormData } from '@/lib/validations/fees';
 import type { FeePayment } from '@/types/domain/fees';
@@ -35,6 +37,7 @@ import { MoreHorizontal, Eye, FileText } from 'lucide-react';
 export default function FeePaymentsPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { data: profile } = useProfile();
   const [filterAcademicYear, setFilterAcademicYear] = useState<string | undefined>(undefined);
   const [filterClassAy, setFilterClassAy] = useState<string | undefined>(undefined);
   const [viewOpen, setViewOpen] = useState(false);
@@ -61,7 +64,16 @@ export default function FeePaymentsPage() {
     setPageSize,
   } = useFeePayments(undefined, true);
   const { data: accounts = [] } = useFinanceAccounts();
-  const { data: students = [] } = useStudents();
+  const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
+    enrollment_status: 'active',
+  });
+  // Extract students from admissions
+  const students: Student[] = useMemo(() => {
+    if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
+    return studentAdmissions
+      .map(admission => admission.student)
+      .filter((student): student is Student => student !== null && student !== undefined);
+  }, [studentAdmissions]);
   const { data: feeExceptions = [] } = useFeeExceptions({
     academicYearId: filterAcademicYear,
     classAcademicYearId: filterClassAy,

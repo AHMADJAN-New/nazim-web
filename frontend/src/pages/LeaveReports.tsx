@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { BarChart3, CalendarRange, Download, Filter, Loader2, RefreshCcw, CheckCircle2, Clock, XCircle, AlertCircle, FileText, Calendar, TrendingUp } from 'lucide-react';
 import { useLeaveRequests } from '@/hooks/useLeaveRequests';
-import { useStudents } from '@/hooks/useStudents';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import type { Student } from '@/types/domain/student';
 import { useClasses } from '@/hooks/useClasses';
 import { useSchools } from '@/hooks/useSchools';
+import { useProfile } from '@/hooks/useProfiles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,6 +23,7 @@ import type { LeaveRequest } from '@/types/domain/leave';
 
 export default function LeaveReports() {
   const { t, isRTL } = useLanguage();
+  const { data: profile } = useProfile();
 
   const statusChips: Array<{ value: LeaveRequest['status']; label: string; color: string }> = [
     { value: 'approved', label: t('leave.approved'), color: 'bg-emerald-100 text-emerald-700' },
@@ -46,7 +49,16 @@ export default function LeaveReports() {
     dateTo: dateTo || undefined,
   });
 
-  const { data: students } = useStudents(undefined, false);
+  const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
+    enrollment_status: 'active',
+  });
+  // Extract students from admissions
+  const students: Student[] = useMemo(() => {
+    if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
+    return studentAdmissions
+      .map(admission => admission.student)
+      .filter((student): student is Student => student !== null && student !== undefined);
+  }, [studentAdmissions]);
   const { data: classes } = useClasses();
   const { data: schools } = useSchools();
 

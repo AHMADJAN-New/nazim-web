@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, UserRound, DollarSign } from 'lucide-react';
+import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, UserRound, DollarSign, X } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
@@ -18,6 +18,7 @@ import {
   useDeleteStudentAdmission,
   useStudentAdmissions,
   useUpdateStudentAdmission,
+  useBulkDeactivateAdmissions,
   type StudentAdmission,
   type StudentAdmissionInsert,
   type AdmissionStatus,
@@ -45,6 +46,7 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef } from '@tanstack/react-table';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const getAdmissionSchema = (t: ReturnType<typeof useLanguage>['t']) => z.object({
   organization_id: z.string().uuid().optional(),
@@ -125,11 +127,14 @@ export function StudentAdmissions() {
   const createAdmission = useCreateStudentAdmission();
   const updateAdmission = useUpdateStudentAdmission();
   const deleteAdmission = useDeleteStudentAdmission();
+  const bulkDeactivate = useBulkDeactivateAdmissions();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [selectedAdmission, setSelectedAdmission] = useState<StudentAdmission | null>(null);
   const [admissionToDelete, setAdmissionToDelete] = useState<StudentAdmission | null>(null);
+  const [selectedAdmissionIds, setSelectedAdmissionIds] = useState<Set<string>>(new Set());
+  const [isBulkDeactivateDialogOpen, setIsBulkDeactivateDialogOpen] = useState(false);
   const [schoolFilter, setSchoolFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | AdmissionStatus>('all');
   const [residencyFilter, setResidencyFilter] = useState<string>('all');
@@ -289,6 +294,42 @@ export function StudentAdmissions() {
 
   // Define columns for DataTable
   const columns: ColumnDef<StudentAdmission>[] = [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => {
+            table.toggleAllPageRowsSelected(!!value);
+            if (value) {
+              const allIds = new Set(filteredAdmissions.map((adm) => adm.id));
+              setSelectedAdmissionIds(allIds);
+            } else {
+              setSelectedAdmissionIds(new Set());
+            }
+          }}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={selectedAdmissionIds.has(row.original.id)}
+          onCheckedChange={(checked) => {
+            const newSet = new Set(selectedAdmissionIds);
+            if (checked) {
+              newSet.add(row.original.id);
+            } else {
+              newSet.delete(row.original.id);
+            }
+            setSelectedAdmissionIds(newSet);
+            row.toggleSelected(!!checked);
+          }}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       id: 'picture',
       header: t('students.picture') || 'Picture',
@@ -565,6 +606,23 @@ export function StudentAdmissions() {
     }
   };
 
+  const handleBulkDeactivate = async () => {
+    if (selectedAdmissionIds.size === 0) return;
+    
+    const admissionIds = Array.from(selectedAdmissionIds);
+    await bulkDeactivate.mutateAsync(admissionIds, {
+      onSuccess: () => {
+        setSelectedAdmissionIds(new Set());
+        setIsBulkDeactivateDialogOpen(false);
+      },
+    });
+  };
+
+  const selectedCount = selectedAdmissionIds.size;
+  const canBulkDeactivate = selectedCount > 0 && filteredAdmissions.some(
+    (adm) => selectedAdmissionIds.has(adm.id) && adm.enrollmentStatus === 'active'
+  );
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -575,6 +633,16 @@ export function StudentAdmissions() {
           </p>
         </div>
         <div className="flex gap-2">
+          {canBulkDeactivate && (
+            <Button
+              variant="outline"
+              onClick={() => setIsBulkDeactivateDialogOpen(true)}
+              disabled={bulkDeactivate.isPending}
+            >
+              <X className="w-4 h-4 mr-2" />
+              {t('admissions.bulkDeactivate') || `Deactivate (${selectedCount})`}
+            </Button>
+          )}
           <Dialog 
             open={isDialogOpen} 
             onOpenChange={(open) => {
@@ -1070,6 +1138,31 @@ export function StudentAdmissions() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>{t('common.delete')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isBulkDeactivateDialogOpen} onOpenChange={setIsBulkDeactivateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('admissions.bulkDeactivateTitle') || 'Deactivate Students'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('admissions.bulkDeactivateDescription') || 
+                `Are you sure you want to deactivate ${selectedCount} selected student admission(s)? This will set their enrollment status to inactive.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeactivate.isPending}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBulkDeactivate}
+              disabled={bulkDeactivate.isPending}
+            >
+              {bulkDeactivate.isPending 
+                ? (t('common.processing') || 'Processing...') 
+                : (t('admissions.deactivate') || 'Deactivate')}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

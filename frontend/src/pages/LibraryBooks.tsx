@@ -3,8 +3,9 @@ import { Plus, Pencil, Trash2, Search, BookOpen, Copy, X, Eye } from 'lucide-rea
 import { format } from 'date-fns';
 import { useLibraryBooks, useCreateLibraryBook, useUpdateLibraryBook, useDeleteLibraryBook, useCreateLibraryCopy, useLibraryLoans } from '@/hooks/useLibrary';
 import { useLibraryCategories } from '@/hooks/useLibraryCategories';
-import { useStudents } from '@/hooks/useStudents';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { useStaff } from '@/hooks/useStaff';
+import { useProfile } from '@/hooks/useProfiles';
 import type { LibraryBook, LibraryLoan } from '@/types/domain/library';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
@@ -818,7 +819,19 @@ export default function LibraryBooks() {
 
 // Book History Panel Component
 function BookHistoryPanel({ bookId, allLoans }: { bookId: string; allLoans?: LibraryLoan[] }) {
-    const { data: students } = useStudents();
+    const { data: profile } = useProfile();
+    // For historical loans, we use active admissions to get current student data
+    // Note: Historical loans may reference inactive students, but we'll show active students for lookup
+    const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
+        enrollment_status: 'active',
+    });
+    // Extract students from admissions
+    const students = useMemo(() => {
+        if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
+        return studentAdmissions
+            .map(admission => admission.student)
+            .filter((student): student is NonNullable<typeof student> => student !== null && student !== undefined);
+    }, [studentAdmissions]);
     const { data: staff } = useStaff();
     
     const bookLoans = useMemo(() => {

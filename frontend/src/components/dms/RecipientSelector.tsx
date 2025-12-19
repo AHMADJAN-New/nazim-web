@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useStudents } from '@/hooks/useStudents';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { useStaff } from '@/hooks/useStaff';
 import type { Student } from '@/types/domain/student';
 import type { Staff } from '@/types/domain/staff';
@@ -59,15 +59,32 @@ export function RecipientSelector({
     profile?.organization_id
   );
 
-  // Fetch all students (will filter client-side)
-  const { data: allStudents, isLoading: studentsLoading } = useStudents(profile?.organization_id, false);
+  // Auto-select current academic year if not selected and available
+  const effectiveAcademicYearId = selectedAcademicYearId || currentAcademicYear?.id || null;
+
+  // Fetch student admissions with active status and academic year/class filters
+  const { data: studentAdmissions, isLoading: studentsLoading } = useStudentAdmissions(
+    profile?.organization_id,
+    false,
+    {
+      enrollment_status: 'active',
+      academic_year_id: effectiveAcademicYearId || undefined,
+      class_academic_year_id: selectedClassId || undefined,
+    }
+  );
+
+  // Extract students from admissions
+  const allStudents = useMemo(() => {
+    if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
+    return studentAdmissions
+      .map(admission => admission.student)
+      .filter((student): student is Student => student !== null && student !== undefined);
+  }, [studentAdmissions]);
 
   // Fetch all staff (will filter client-side)
   const { data: allStaff, isLoading: staffLoading } = useStaff(profile?.organization_id, false);
 
   // Filter students by search query
-  // Note: Students don't have academicYearId/classId directly - they're in StudentAdmission
-  // For now, we show all students and filter by search query only
   const filteredStudents = useMemo(() => {
     if (!allStudents || !Array.isArray(allStudents)) return [];
     
@@ -123,9 +140,6 @@ export function RecipientSelector({
     });
     return Array.from(uniqueClasses.values());
   }, [classAcademicYears]);
-
-  // Auto-select current academic year if not selected and available
-  const effectiveAcademicYearId = selectedAcademicYearId || currentAcademicYear?.id || null;
 
   if (recipientType === 'student') {
     return (

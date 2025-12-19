@@ -5,7 +5,8 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useProfile } from '@/hooks/useProfiles';
 import { useSchools } from '@/hooks/useSchools';
 import { useClasses } from '@/hooks/useClasses';
-import { useStudents } from '@/hooks/useStudents';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import type { Student } from '@/types/domain/student';
 import { attendanceSessionsApi } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,7 +80,16 @@ export default function AttendanceReports() {
   const { data: profile } = useProfile();
   const { data: schools } = useSchools(profile?.organization_id);
   const { data: classes } = useClasses(profile?.organization_id);
-  const { data: students } = useStudents(profile?.organization_id);
+  const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
+    enrollment_status: 'active',
+  });
+  // Extract students from admissions
+  const students: Student[] = useMemo(() => {
+    if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
+    return studentAdmissions
+      .map(admission => admission.student)
+      .filter((student): student is Student => student !== null && student !== undefined);
+  }, [studentAdmissions]);
 
   const [filters, setFilters] = useState({
     studentId: '',

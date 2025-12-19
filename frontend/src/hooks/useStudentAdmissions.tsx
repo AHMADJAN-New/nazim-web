@@ -12,25 +12,49 @@ import { useEffect } from 'react';
 // Re-export domain types for convenience
 export type { StudentAdmission, StudentAdmissionInsert, StudentAdmissionUpdate, AdmissionStatus, AdmissionStats } from '@/types/domain/studentAdmission';
 
-export const useStudentAdmissions = (organizationId?: string, usePaginated?: boolean) => {
+export interface StudentAdmissionFilters {
+  enrollment_status?: string;
+  academic_year_id?: string;
+  class_id?: string;
+  class_academic_year_id?: string;
+  school_id?: string;
+}
+
+export const useStudentAdmissions = (
+  organizationId?: string, 
+  usePaginated?: boolean,
+  filters?: StudentAdmissionFilters
+) => {
   const { user, profile } = useAuth();
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
     initialPage: 1,
     initialPageSize: 25,
   });
 
+  // Create filter key for queryKey (for proper cache invalidation)
+  const filterKey = filters ? JSON.stringify(filters) : undefined;
+
   const { data, isLoading, error } = useQuery<StudentAdmission[] | PaginatedResponse<StudentAdmissionApi.StudentAdmission>>({
-    queryKey: ['student-admissions', organizationId ?? profile?.organization_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+    queryKey: ['student-admissions', organizationId ?? profile?.organization_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined, filterKey],
     queryFn: async () => {
       if (!user || !profile) return [];
 
       try {
         const effectiveOrgId = organizationId || profile.organization_id;
         if (import.meta.env.DEV) {
-          console.log('[useStudentAdmissions] Fetching admissions for organization:', effectiveOrgId);
+          console.log('[useStudentAdmissions] Fetching admissions for organization:', effectiveOrgId, 'with filters:', filters);
         }
 
-        const params: { organization_id?: string; page?: number; per_page?: number } = {
+        const params: { 
+          organization_id?: string; 
+          page?: number; 
+          per_page?: number;
+          enrollment_status?: string;
+          academic_year_id?: string;
+          class_id?: string;
+          class_academic_year_id?: string;
+          school_id?: string;
+        } = {
           organization_id: effectiveOrgId || undefined,
         };
 
@@ -38,6 +62,25 @@ export const useStudentAdmissions = (organizationId?: string, usePaginated?: boo
         if (usePaginated) {
           params.page = page;
           params.per_page = pageSize;
+        }
+
+        // Add filters if provided
+        if (filters) {
+          if (filters.enrollment_status) {
+            params.enrollment_status = filters.enrollment_status;
+          }
+          if (filters.academic_year_id) {
+            params.academic_year_id = filters.academic_year_id;
+          }
+          if (filters.class_id) {
+            params.class_id = filters.class_id;
+          }
+          if (filters.class_academic_year_id) {
+            params.class_academic_year_id = filters.class_academic_year_id;
+          }
+          if (filters.school_id) {
+            params.school_id = filters.school_id;
+          }
         }
 
         const apiAdmissions = await studentAdmissionsApi.list(params);
@@ -233,4 +276,79 @@ export const useAdmissionStats = (organizationId?: string) => {
   });
 
   return { stats: stats || { total: 0, active: 0, pending: 0, boarders: 0 }, isLoading };
+};
+
+export const useBulkDeactivateAdmissions = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+
+  return useMutation({
+    mutationFn: async (admissionIds: string[]) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      const result = await studentAdmissionsApi.bulkDeactivate({
+        admission_ids: admissionIds,
+      });
+
+      return result as {
+        message: string;
+        deactivated_count: number;
+        skipped_count: number;
+        total_processed: number;
+      };
+    },
+    onSuccess: (result) => {
+      showToast.success(
+        `toast.studentAdmissions.bulkDeactivated` || 
+        `${result.deactivated_count} student(s) deactivated successfully`
+      );
+      void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'toast.studentAdmissions.bulkDeactivateFailed' || 'Failed to deactivate students');
+    },
+  });
+};
+
+export const useBulkDeactivateAdmissionsByStudentIds = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+
+  return useMutation({
+    mutationFn: async (data: {
+      student_ids: string[];
+      class_id: string;
+      academic_year_id: string;
+    }) => {
+      if (!profile) {
+        throw new Error('User not authenticated');
+      }
+
+      const result = await studentAdmissionsApi.bulkDeactivateByStudentIds(data);
+
+      return result as {
+        message: string;
+        deactivated_count: number;
+        skipped_count: number;
+        total_processed: number;
+      };
+    },
+    onSuccess: (result) => {
+      showToast.success(
+        `toast.studentAdmissions.bulkDeactivated` || 
+        `${result.deactivated_count} student(s) deactivated successfully`
+      );
+      void queryClient.invalidateQueries({ queryKey: ['student-admissions'] });
+      void queryClient.invalidateQueries({ queryKey: ['student-admissions-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['hostel-overview'] });
+      void queryClient.invalidateQueries({ queryKey: ['graduation-batch'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'toast.studentAdmissions.bulkDeactivateFailed' || 'Failed to deactivate students');
+    },
+  });
 };

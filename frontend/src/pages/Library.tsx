@@ -17,8 +17,9 @@ import {
   useLibraryLoans,
   useReturnLibraryLoan,
 } from '@/hooks/useLibrary';
-import { useStudents } from '@/hooks/useStudents';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { useStaff } from '@/hooks/useStaff';
+import { useProfile } from '@/hooks/useProfiles';
 import type { LibraryBook } from '@/types/domain/library';
 import { useLanguage } from '@/hooks/useLanguage';
 
@@ -28,10 +29,20 @@ const findAvailableCopy = (book: LibraryBook) => book.copies?.find((copy) => cop
 
 export default function Library() {
   const { t } = useLanguage();
+  const { data: profile } = useProfile();
   const { data: books = [], isLoading } = useLibraryBooks();
   const { data: openLoans = [] } = useLibraryLoans(true);
   const { data: dueSoon = [] } = useDueSoonLoans(7);
-  const { data: students = [] } = useStudents();
+  const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
+    enrollment_status: 'active',
+  });
+  // Extract students from admissions
+  const students = useMemo(() => {
+    if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
+    return studentAdmissions
+      .map(admission => admission.student)
+      .filter((student): student is NonNullable<typeof student> => student !== null && student !== undefined);
+  }, [studentAdmissions]);
   const { data: staff = [] } = useStaff();
 
   const createBook = useCreateLibraryBook();

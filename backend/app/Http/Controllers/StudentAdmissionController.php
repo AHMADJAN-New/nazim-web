@@ -676,6 +676,161 @@ class StudentAdmissionController extends Controller
             'boarders' => $boarders,
         ]);
     }
+
+    /**
+     * Bulk deactivate student admissions
+     */
+    public function bulkDeactivate(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_admissions.update')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_admissions.bulk_deactivate: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'admission_ids' => 'required|array|min:1',
+            'admission_ids.*' => 'required|uuid|exists:student_admissions,id',
+        ]);
+
+        $orgIds = $this->getAccessibleOrgIds($profile);
+
+        // Get admissions and verify they belong to user's organization
+        $admissions = StudentAdmission::whereIn('id', $validated['admission_ids'])
+            ->whereIn('organization_id', $orgIds)
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($admissions->isEmpty()) {
+            return response()->json(['error' => 'No valid admissions found'], 404);
+        }
+
+        $deactivated = 0;
+        $skipped = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($admissions as $admission) {
+                // Only deactivate if currently active
+                if ($admission->enrollment_status === 'active') {
+                    $admission->enrollment_status = 'inactive';
+                    $admission->save();
+                    $deactivated++;
+                } else {
+                    $skipped++;
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Bulk deactivation completed',
+                'deactivated_count' => $deactivated,
+                'skipped_count' => $skipped,
+                'total_processed' => $admissions->count(),
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Bulk deactivation failed: " . $e->getMessage());
+            return response()->json(['error' => 'Bulk deactivation failed', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Bulk deactivate student admissions by student IDs and batch context
+     * Used from graduation batches page
+     */
+    public function bulkDeactivateByStudentIds(Request $request)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        // Check permission WITH organization context
+        try {
+            if (!$user->hasPermissionTo('student_admissions.update')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for student_admissions.bulk_deactivate_by_student_ids: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'student_ids' => 'required|array|min:1',
+            'student_ids.*' => 'required|uuid|exists:students,id',
+            'class_id' => 'required|uuid|exists:classes,id',
+            'academic_year_id' => 'required|uuid|exists:academic_years,id',
+        ]);
+
+        $orgIds = $this->getAccessibleOrgIds($profile);
+
+        // Get active admissions for these students in the specified class and academic year
+        $admissions = StudentAdmission::whereIn('student_id', $validated['student_ids'])
+            ->where('class_id', $validated['class_id'])
+            ->where('academic_year_id', $validated['academic_year_id'])
+            ->whereIn('organization_id', $orgIds)
+            ->where('enrollment_status', 'active')
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($admissions->isEmpty()) {
+            return response()->json([
+                'message' => 'No active admissions found for the selected students',
+                'deactivated_count' => 0,
+                'skipped_count' => 0,
+                'total_processed' => 0,
+            ], 200);
+        }
+
+        $deactivated = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($admissions as $admission) {
+                $admission->enrollment_status = 'inactive';
+                $admission->save();
+                $deactivated++;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Bulk deactivation completed',
+                'deactivated_count' => $deactivated,
+                'skipped_count' => 0,
+                'total_processed' => $admissions->count(),
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Bulk deactivation by student IDs failed: " . $e->getMessage());
+            return response()->json(['error' => 'Bulk deactivation failed', 'message' => $e->getMessage()], 500);
+        }
+    }
 }
 
 

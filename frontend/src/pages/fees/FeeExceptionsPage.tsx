@@ -18,7 +18,8 @@ import type { FeeExceptionFormData } from '@/lib/validations/fees';
 import { useAcademicYears } from '@/hooks/useAcademicYears';
 import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useStudents } from '@/hooks/useStudents';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import type { Student } from '@/types/domain/student';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
@@ -102,7 +103,16 @@ export default function FeeExceptionsPage() {
     academicYearId: filterAcademicYear || undefined,
     classAcademicYearId: filterClassAy === 'all' ? undefined : filterClassAy,
   });
-  const { data: students = [] } = useStudents();
+  const { data: studentAdmissions } = useStudentAdmissions(profile?.organization_id, false, {
+    enrollment_status: 'active',
+  });
+  // Extract students from admissions
+  const students: Student[] = useMemo(() => {
+    if (!studentAdmissions || !Array.isArray(studentAdmissions)) return [];
+    return studentAdmissions
+      .map(admission => admission.student)
+      .filter((student): student is Student => student !== null && student !== undefined);
+  }, [studentAdmissions]);
 
   const createException = useCreateFeeException();
   const updateException = useUpdateFeeException();
