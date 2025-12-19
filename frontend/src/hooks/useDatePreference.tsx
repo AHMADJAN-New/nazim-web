@@ -9,6 +9,7 @@ import type { CalendarType, DatePreference } from '@/lib/datePreferences';
 import { CALENDAR_TYPES, DEFAULT_DATE_FORMATS, DATE_PREFERENCE_KEY, MONTH_NAMES, SHORT_MONTH_NAMES } from '@/lib/datePreferences';
 import { convertToCalendar, padNumber, convertNumerals, type ConvertedDate } from '@/lib/calendarConverter';
 import type { Language } from '@/lib/i18n';
+import { calendarState } from '@/lib/calendarState';
 
 interface DateFormatterOptions {
   includeTime?: boolean;
@@ -50,8 +51,15 @@ export function DatePreferenceProvider({ children, defaultCalendar = 'gregorian'
     if (Object.values(CALENDAR_TYPES).includes(cal)) {
       setCalendarState(cal);
       localStorage.setItem(DATE_PREFERENCE_KEY, cal);
+      // Sync with global state
+      calendarState.set(cal);
     }
   };
+
+  // Sync calendar changes with global state
+  useEffect(() => {
+    calendarState.set(calendar);
+  }, [calendar]);
 
   const preference = DEFAULT_DATE_FORMATS[calendar];
 

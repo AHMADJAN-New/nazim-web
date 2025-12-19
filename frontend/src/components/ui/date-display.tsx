@@ -1,11 +1,12 @@
 /**
  * Date Display Components
  * Wrapper components for displaying dates in user's preferred calendar
+ * These components use the calendar adapter for consistent formatting
  */
 
-import { useDateFormatter } from '@/hooks/useDatePreference';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { formatDate, formatDateTime, formatShortDate } from '@/lib/calendarAdapter';
 
 interface DateDisplayProps {
   date: Date | string;
@@ -26,8 +27,6 @@ interface DateBadgeProps extends DateDisplayProps {
  * Usage: <DateDisplay date={new Date()} />
  */
 export function DateDisplay({ date, className, fallback = '-' }: DateDisplayProps) {
-  const { formatDate } = useDateFormatter();
-
   if (!date) return <span className={className}>{fallback}</span>;
 
   try {
@@ -43,8 +42,6 @@ export function DateDisplay({ date, className, fallback = '-' }: DateDisplayProp
  * Usage: <DateTimeDisplay date={new Date()} />
  */
 export function DateTimeDisplay({ date, className, fallback = '-', showTime = true }: DateTimeDisplayProps) {
-  const { formatDate, formatDateTime } = useDateFormatter();
-
   if (!date) return <span className={className}>{fallback}</span>;
 
   try {
@@ -60,8 +57,6 @@ export function DateTimeDisplay({ date, className, fallback = '-', showTime = tr
  * Usage: <ShortDateDisplay date={new Date()} />
  */
 export function ShortDateDisplay({ date, className, fallback = '-' }: DateDisplayProps) {
-  const { formatShortDate } = useDateFormatter();
-
   if (!date) return <span className={className}>{fallback}</span>;
 
   try {
@@ -77,8 +72,6 @@ export function ShortDateDisplay({ date, className, fallback = '-' }: DateDispla
  * Usage: <DateBadge date={new Date()} variant="secondary" />
  */
 export function DateBadge({ date, className, fallback = '-', variant = 'secondary' }: DateBadgeProps) {
-  const { formatDate } = useDateFormatter();
-
   if (!date) return <Badge variant={variant} className={className}>{fallback}</Badge>;
 
   try {
@@ -94,8 +87,6 @@ export function DateBadge({ date, className, fallback = '-', variant = 'secondar
  * Usage: <ShortDateBadge date={new Date()} />
  */
 export function ShortDateBadge({ date, className, fallback = '-', variant = 'secondary' }: DateBadgeProps) {
-  const { formatShortDate } = useDateFormatter();
-
   if (!date) return <Badge variant={variant} className={className}>{fallback}</Badge>;
 
   try {
@@ -125,8 +116,6 @@ export function DateRangeDisplay({
   className,
   fallback = '-',
 }: DateRangeDisplayProps) {
-  const { formatDate } = useDateFormatter();
-
   if (!startDate || !endDate) return <span className={className}>{fallback}</span>;
 
   try {

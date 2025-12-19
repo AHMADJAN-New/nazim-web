@@ -1,19 +1,19 @@
+import { formatDate as adapterFormatDate, formatDateTime as adapterFormatDateTime } from './calendarAdapter';
+
 /**
  * Format a date string to a readable format
  * Handles ISO date strings like "2025-12-10T00:00:00.000000Z"
+ * Now uses the calendar adapter to respect user's calendar preference
  */
 export function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return "";
-  
+
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
-    
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+
+    // Use calendar adapter which respects user's calendar preference
+    return adapterFormatDate(date, 'en-US');
   } catch {
     return dateString;
   }
@@ -21,21 +21,17 @@ export function formatDate(dateString: string | null | undefined): string {
 
 /**
  * Format a date string to a full readable format with time
+ * Now uses the calendar adapter to respect user's calendar preference
  */
 export function formatDateTime(dateString: string | null | undefined): string {
   if (!dateString) return "";
-  
+
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
-    
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+
+    // Use calendar adapter which respects user's calendar preference
+    return adapterFormatDateTime(date, 'en-US');
   } catch {
     return dateString;
   }

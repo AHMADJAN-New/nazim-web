@@ -27,6 +27,7 @@ export function formatCurrency(
 
 /**
  * Format a date for display
+ * Now uses the calendar adapter to respect user's calendar preference
  * @param date The date to format (Date object or string)
  * @param locale The locale to use for formatting (default: 'en-US')
  * @returns Formatted date string
@@ -35,16 +36,14 @@ export function formatDate(
   date: Date | string,
   locale: string = 'en-US'
 ): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return dateObj.toLocaleDateString(locale, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  // Delegate to calendar adapter which handles calendar conversion
+  const { formatDate: adapterFormatDate } = require('./calendarAdapter');
+  return adapterFormatDate(date, locale);
 }
 
 /**
  * Format a date and time for display
+ * Now uses the calendar adapter to respect user's calendar preference
  * @param date The date to format (Date object or string)
  * @param locale The locale to use for formatting (default: 'en-US')
  * @returns Formatted date and time string
@@ -53,12 +52,7 @@ export function formatDateTime(
   date: Date | string,
   locale: string = 'en-US'
 ): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return dateObj.toLocaleString(locale, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  // Delegate to calendar adapter which handles calendar conversion
+  const { formatDateTime: adapterFormatDateTime } = require('./calendarAdapter');
+  return adapterFormatDateTime(date, locale);
 }
