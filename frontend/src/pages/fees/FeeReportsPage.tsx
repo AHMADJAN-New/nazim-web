@@ -11,8 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useFeeReportDashboard, useStudentFees, useFeeDefaulters } from '@/hooks/useFees';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { useFeeReportDashboard, useStudentFees, useFeeDefaulters, useFeeAssignments, useFeePayments, useFeeStructures } from '@/hooks/useFees';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
@@ -33,6 +36,10 @@ import {
   CreditCard,
   BarChart3,
   PieChart as PieChartIcon,
+  FileText,
+  Receipt,
+  User,
+  GraduationCap,
 } from 'lucide-react';
 import {
   ChartContainer,
@@ -61,16 +68,41 @@ export default function FeeReportsPage() {
   const [filterStatus, setFilterStatus] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-  const { data: academicYears = [] } = useAcademicYears();
+  const { data: academicYears = [], isLoading: academicYearsLoading } = useAcademicYears();
+  const { data: currentAcademicYear, isLoading: currentAcademicYearLoading } = useCurrentAcademicYear();
   const { data: classAcademicYears = [] } = useClassAcademicYears(filterAcademicYear);
 
-  // Auto-select first academic year
+  // Auto-select current academic year, or fall back to first academic year
   useEffect(() => {
+    // Only run if we're not loading and no academic year is selected
+    if (academicYearsLoading || currentAcademicYearLoading) {
+      return; // Wait for data to load
+    }
+
     if (!filterAcademicYear && academicYears.length > 0) {
+      // First, try to find current year from the list (most reliable)
+      const currentYearFromList = academicYears.find(ay => ay.isCurrent === true);
+      
+      if (currentYearFromList) {
+        // Use the current year from the list
+        setFilterAcademicYear(currentYearFromList.id);
+        return;
+      }
+
+      // Fall back to the hook result if available
+      if (currentAcademicYear) {
+        setFilterAcademicYear(currentAcademicYear.id);
+        return;
+      }
+
+      // Finally, fall back to first academic year if no current year is set
       setFilterAcademicYear(academicYears[0].id);
     }
-  }, [academicYears, filterAcademicYear]);
+  }, [academicYears, academicYearsLoading, currentAcademicYear, currentAcademicYearLoading, filterAcademicYear]);
 
   const { data: dashboard, isLoading: dashboardLoading } = useFeeReportDashboard({
     academicYearId: filterAcademicYear,
@@ -89,6 +121,41 @@ export default function FeeReportsPage() {
   const { data: defaultersData } = useFeeDefaulters({
     academicYearId: filterAcademicYear,
     classAcademicYearId: filterClassAy,
+  });
+
+  // Fetch detailed data for selected student
+  const { data: studentAssignments = [] } = useFeeAssignments({
+    studentId: selectedStudentId || undefined,
+    academicYearId: filterAcademicYear,
+  });
+  const { data: studentPayments = [] } = useFeePayments({
+    studentId: selectedStudentId || undefined,
+  });
+  const { data: feeStructures = [] } = useFeeStructures({
+    academicYearId: filterAcademicYear,
+  });
+
+  // Create a map of fee structure IDs to names
+  const feeStructureMap = useMemo(() => {
+    return new Map(feeStructures.map(s => [s.id, s.name]));
+  }, [feeStructures]);
+
+  // Get selected student from the list
+  const selectedStudentData = useMemo(() => {
+    if (!selectedStudentId || !studentFeesData) return null;
+    return studentFeesData.data.find(s => s.id === selectedStudentId);
+  }, [selectedStudentId, studentFeesData]);
+
+  // Get selected class data
+  const selectedClassData = useMemo(() => {
+    if (!selectedClassId || !dashboard) return null;
+    return dashboard.byClass.find(c => c.classAcademicYearId === selectedClassId);
+  }, [selectedClassId, dashboard]);
+
+  // Get students for selected class
+  const { data: classStudentsData } = useStudentFees({
+    academicYearId: filterAcademicYear,
+    classAcademicYearId: selectedClassId || undefined,
   });
 
   // Prepare status distribution data for pie chart
@@ -194,9 +261,9 @@ export default function FeeReportsPage() {
           <div>
             <label className="text-sm font-medium mb-2 block">{t('fees.class') || 'Class'}</label>
             <Select
-              value={filterClassAy || ''}
+              value={filterClassAy || 'all'}
               onValueChange={(val) => {
-                setFilterClassAy(val || undefined);
+                setFilterClassAy(val === 'all' ? undefined : val);
                 setCurrentPage(1);
               }}
             >
@@ -204,7 +271,7 @@ export default function FeeReportsPage() {
                 <SelectValue placeholder={t('fees.allClasses') || 'All Classes'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Classes</SelectItem>
+                <SelectItem value="all">All Classes</SelectItem>
                 {classAcademicYears.map((cay) => (
                   <SelectItem key={cay.id} value={cay.id}>
                     {cay.class?.name ?? cay.id}
@@ -216,9 +283,9 @@ export default function FeeReportsPage() {
           <div>
             <label className="text-sm font-medium mb-2 block">{t('fees.status') || 'Status'}</label>
             <Select
-              value={filterStatus || ''}
+              value={filterStatus || 'all'}
               onValueChange={(val) => {
-                setFilterStatus(val || undefined);
+                setFilterStatus(val === 'all' ? undefined : val);
                 setCurrentPage(1);
               }}
             >
@@ -226,7 +293,7 @@ export default function FeeReportsPage() {
                 <SelectValue placeholder={t('fees.allStatuses') || 'All Statuses'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
                 <SelectItem value="partial">Partial</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
@@ -457,19 +524,29 @@ export default function FeeReportsPage() {
         </Card>
       </div>
 
-      {/* Tabs for Student List and Recent Payments */}
-      <Tabs defaultValue="students" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="students">{t('fees.studentFees') || 'Student Fees'}</TabsTrigger>
-          <TabsTrigger value="payments">{t('fees.recentPayments') || 'Recent Payments'}</TabsTrigger>
-          <TabsTrigger value="defaulters">{t('fees.defaulters') || 'Defaulters'}</TabsTrigger>
+      {/* Main Tabs: Student-wise and Class-wise Summary */}
+      <Tabs defaultValue="student-wise" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="student-wise" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            {t('fees.studentWiseSummary') || 'Student-wise Summary'}
+          </TabsTrigger>
+          <TabsTrigger value="class-wise" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            {t('fees.classWiseSummary') || 'Class-wise Summary'}
+          </TabsTrigger>
         </TabsList>
 
-        {/* Students Tab */}
-        <TabsContent value="students">
+        {/* Student-wise Summary Tab */}
+        <TabsContent value="student-wise" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>{t('fees.studentFeeStatus') || 'Student Fee Status'}</CardTitle>
+              <div>
+                <CardTitle>{t('fees.studentFeeStatus') || 'Student Fee Status'}</CardTitle>
+                <CardDescription className="mt-1">
+                  {t('fees.studentWiseSummaryDescription') || 'View fee status for all students with detailed breakdown'}
+                </CardDescription>
+              </div>
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -485,68 +562,81 @@ export default function FeeReportsPage() {
             </CardHeader>
             <CardContent>
               {studentFeesLoading ? (
-                <div className="flex items-center justify-center py-8">
+                <div className="flex items-center justify-center py-12">
                   <LoadingSpinner />
                 </div>
-              ) : (
+              ) : studentFeesData && studentFeesData.data.length > 0 ? (
                 <>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('fees.student') || 'Student'}</TableHead>
-                        <TableHead>{t('fees.class') || 'Class'}</TableHead>
-                        <TableHead className="text-right">{t('fees.assigned') || 'Assigned'}</TableHead>
-                        <TableHead className="text-right">{t('fees.paid') || 'Paid'}</TableHead>
-                        <TableHead className="text-right">{t('fees.remaining') || 'Remaining'}</TableHead>
-                        <TableHead>{t('fees.status') || 'Status'}</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {studentFeesData?.data.map((student) => (
-                        <TableRow key={student.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">
-                                {student.firstName} {student.lastName}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {student.registrationNumber}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{student.className}</TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(student.totalAssigned)}
-                          </TableCell>
-                          <TableCell className="text-right text-green-600">
-                            {formatCurrency(student.totalPaid)}
-                          </TableCell>
-                          <TableCell className="text-right text-orange-600">
-                            {formatCurrency(student.totalRemaining)}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(student.overallStatus)}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/students/${student.id}/fees`)}
-                            >
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[250px]">{t('fees.student') || 'Student'}</TableHead>
+                          <TableHead>{t('fees.class') || 'Class'}</TableHead>
+                          <TableHead className="text-right">{t('fees.assigned') || 'Assigned'}</TableHead>
+                          <TableHead className="text-right">{t('fees.paid') || 'Paid'}</TableHead>
+                          <TableHead className="text-right">{t('fees.remaining') || 'Remaining'}</TableHead>
+                          <TableHead className="w-[120px]">{t('fees.status') || 'Status'}</TableHead>
+                          <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {studentFeesData.data.map((student) => (
+                          <TableRow 
+                            key={student.id} 
+                            className="hover:bg-muted/50 cursor-pointer"
+                            onClick={() => {
+                              setSelectedStudentId(student.id);
+                              setSelectedClassId(null);
+                              setIsPanelOpen(true);
+                            }}
+                          >
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">
+                                  {student.firstName} {student.lastName}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {student.registrationNumber}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{student.className}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {formatCurrency(student.totalAssigned)}
+                            </TableCell>
+                            <TableCell className="text-right font-medium text-green-600 dark:text-green-400">
+                              {formatCurrency(student.totalPaid)}
+                            </TableCell>
+                            <TableCell className="text-right font-medium text-orange-600 dark:text-orange-400">
+                              {formatCurrency(student.totalRemaining)}
+                            </TableCell>
+                            <TableCell>{getStatusBadge(student.overallStatus)}</TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/students/${student.id}/fees`)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
 
                   {/* Pagination */}
-                  {studentFeesData && studentFeesData.pagination.lastPage > 1 && (
-                    <div className="flex items-center justify-between mt-4">
+                  {studentFeesData.pagination.lastPage > 1 && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t">
                       <div className="text-sm text-muted-foreground">
-                        Showing {((currentPage - 1) * studentFeesData.pagination.perPage) + 1} to{' '}
-                        {Math.min(currentPage * studentFeesData.pagination.perPage, studentFeesData.pagination.total)} of{' '}
-                        {studentFeesData.pagination.total} students
+                        {t('pagination.showing') || 'Showing'} {((currentPage - 1) * studentFeesData.pagination.perPage) + 1} {t('common.to') || 'to'}{' '}
+                        {Math.min(currentPage * studentFeesData.pagination.perPage, studentFeesData.pagination.total)} {t('common.of') || 'of'}{' '}
+                        {studentFeesData.pagination.total} {t('fees.students') || 'students'}
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -555,7 +645,7 @@ export default function FeeReportsPage() {
                           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                           disabled={currentPage === 1}
                         >
-                          Previous
+                          {t('common.previous') || 'Previous'}
                         </Button>
                         <Button
                           variant="outline"
@@ -563,174 +653,482 @@ export default function FeeReportsPage() {
                           onClick={() => setCurrentPage(p => Math.min(studentFeesData.pagination.lastPage, p + 1))}
                           disabled={currentPage >= studentFeesData.pagination.lastPage}
                         >
-                          Next
+                          {t('common.next') || 'Next'}
                         </Button>
                       </div>
                     </div>
                   )}
                 </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-lg font-medium">{t('common.noData') || 'No students found'}</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {searchQuery ? 'Try adjusting your search filters' : 'No student fee data available for the selected filters'}
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Recent Payments Tab */}
-        <TabsContent value="payments">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>{t('fees.recentPayments') || 'Recent Payments'}</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => navigate('/finance/fees/payments')}>
-                {t('common.viewAll') || 'View All'}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('fees.student') || 'Student'}</TableHead>
-                    <TableHead>{t('fees.feeStructure') || 'Fee Structure'}</TableHead>
-                    <TableHead>{t('fees.paymentDate') || 'Date'}</TableHead>
-                    <TableHead>{t('fees.method') || 'Method'}</TableHead>
-                    <TableHead className="text-right">{t('fees.amount') || 'Amount'}</TableHead>
-                    <TableHead>{t('fees.reference') || 'Reference'}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {dashboard?.recentPayments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{payment.studentName || '-'}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {payment.studentRegistration || '-'}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{payment.feeStructureName || '-'}</TableCell>
-                      <TableCell>{formatDate(new Date(payment.paymentDate))}</TableCell>
-                      <TableCell className="capitalize">{payment.paymentMethod}</TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        {formatCurrency(payment.amount)}
-                      </TableCell>
-                      <TableCell>{payment.referenceNo || '-'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Defaulters Tab */}
-        <TabsContent value="defaulters">
+        {/* Class-wise Summary Tab */}
+        <TabsContent value="class-wise" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{t('fees.defaulters') || 'Fee Defaulters'}</CardTitle>
-                  <CardDescription className="mt-1">
-                    Students with pending or overdue fees
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Badge variant="destructive">
-                    {defaultersData?.summary.totalDefaulters || 0} Students
-                  </Badge>
-                  <Badge variant="outline">
-                    {formatCurrency(defaultersData?.summary.totalOutstanding || 0)} Outstanding
-                  </Badge>
-                </div>
+              <div>
+                <CardTitle>{t('fees.classWiseSummary') || 'Class-wise Summary'}</CardTitle>
+                <CardDescription className="mt-1">
+                  {t('fees.classWiseSummaryDescription') || 'View fee collection statistics grouped by class'}
+                </CardDescription>
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('fees.student') || 'Student'}</TableHead>
-                    <TableHead>{t('fees.class') || 'Class'}</TableHead>
-                    <TableHead>{t('fees.feeStructure') || 'Fee'}</TableHead>
-                    <TableHead className="text-right">{t('fees.remaining') || 'Remaining'}</TableHead>
-                    <TableHead>{t('fees.dueDate') || 'Due Date'}</TableHead>
-                    <TableHead>{t('fees.status') || 'Status'}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {defaultersData?.defaulters.slice(0, 15).map((defaulter) => (
-                    <TableRow key={defaulter.assignmentId}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {defaulter.firstName} {defaulter.lastName}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {defaulter.registrationNumber}
-                          </div>
-                          {defaulter.phone && (
-                            <div className="text-xs text-muted-foreground">
-                              {defaulter.phone}
-                            </div>
-                          )}
+              {dashboardLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <LoadingSpinner />
+                </div>
+              ) : dashboard && dashboard.byClass.length > 0 ? (
+                <>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[200px]">{t('fees.class') || 'Class'}</TableHead>
+                          <TableHead className="text-right">{t('fees.students') || 'Students'}</TableHead>
+                          <TableHead className="text-right">{t('fees.totalAssigned') || 'Total Assigned'}</TableHead>
+                          <TableHead className="text-right">{t('fees.collected') || 'Collected'}</TableHead>
+                          <TableHead className="text-right">{t('fees.remaining') || 'Remaining'}</TableHead>
+                          <TableHead className="text-right w-[200px]">{t('fees.collectionRate') || 'Collection Rate'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {dashboard.byClass.map((classData) => {
+                          const collectionRate = classData.collectionPercentage;
+                          return (
+                            <TableRow 
+                              key={classData.classAcademicYearId} 
+                              className="hover:bg-muted/50 cursor-pointer"
+                              onClick={() => {
+                                setSelectedClassId(classData.classAcademicYearId);
+                                setSelectedStudentId(null);
+                                setIsPanelOpen(true);
+                              }}
+                            >
+                              <TableCell>
+                                <div className="font-medium">{classData.className}</div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Badge variant="secondary">{classData.studentCount}</Badge>
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                {formatCurrency(classData.totalAssigned)}
+                              </TableCell>
+                              <TableCell className="text-right font-medium text-green-600 dark:text-green-400">
+                                {formatCurrency(classData.totalPaid)}
+                              </TableCell>
+                              <TableCell className="text-right font-medium text-orange-600 dark:text-orange-400">
+                                {formatCurrency(classData.totalRemaining)}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-end gap-3">
+                                  <Progress 
+                                    value={collectionRate} 
+                                    className="w-24 h-2"
+                                  />
+                                  <span className={`text-sm font-medium min-w-[45px] text-right ${
+                                    collectionRate >= 80 ? 'text-green-600 dark:text-green-400' :
+                                    collectionRate >= 50 ? 'text-yellow-600 dark:text-yellow-400' :
+                                    'text-orange-600 dark:text-orange-400'
+                                  }`}>
+                                    {collectionRate.toFixed(1)}%
+                                  </span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-sm font-medium text-muted-foreground mb-1">
+                          {t('fees.totalClasses') || 'Total Classes'}
                         </div>
-                      </TableCell>
-                      <TableCell>{defaulter.className}</TableCell>
-                      <TableCell>{defaulter.feeStructureName}</TableCell>
-                      <TableCell className="text-right font-medium text-red-600">
-                        {formatCurrency(defaulter.remainingAmount)}
-                      </TableCell>
-                      <TableCell>
-                        {defaulter.dueDate ? formatDate(new Date(defaulter.dueDate)) : '-'}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(defaulter.status)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        <div className="text-2xl font-bold">
+                          {dashboard.byClass.length}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-sm font-medium text-muted-foreground mb-1">
+                          {t('fees.averageCollectionRate') || 'Average Collection Rate'}
+                        </div>
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {dashboard.byClass.length > 0
+                            ? (dashboard.byClass.reduce((sum, c) => sum + c.collectionPercentage, 0) / dashboard.byClass.length).toFixed(1)
+                            : 0}%
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-sm font-medium text-muted-foreground mb-1">
+                          {t('fees.totalStudents') || 'Total Students'}
+                        </div>
+                        <div className="text-2xl font-bold">
+                          {dashboard.byClass.reduce((sum, c) => sum + c.studentCount, 0)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-lg font-medium">{t('common.noData') || 'No class data found'}</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {t('fees.noClassData') || 'No class fee data available for the selected filters'}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Class-wise Summary Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('fees.classWiseSummary') || 'Class-wise Summary'}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('fees.class') || 'Class'}</TableHead>
-                <TableHead className="text-right">{t('fees.students') || 'Students'}</TableHead>
-                <TableHead className="text-right">{t('fees.totalAssigned') || 'Total Assigned'}</TableHead>
-                <TableHead className="text-right">{t('fees.collected') || 'Collected'}</TableHead>
-                <TableHead className="text-right">{t('fees.remaining') || 'Remaining'}</TableHead>
-                <TableHead className="text-right">{t('fees.collectionRate') || 'Rate'}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dashboard?.byClass.map((classData) => (
-                <TableRow key={classData.classAcademicYearId}>
-                  <TableCell className="font-medium">{classData.className}</TableCell>
-                  <TableCell className="text-right">{classData.studentCount}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(classData.totalAssigned)}</TableCell>
-                  <TableCell className="text-right text-green-600">
-                    {formatCurrency(classData.totalPaid)}
-                  </TableCell>
-                  <TableCell className="text-right text-orange-600">
-                    {formatCurrency(classData.totalRemaining)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Progress value={classData.collectionPercentage} className="w-16 h-2" />
-                      <span className="text-sm">{classData.collectionPercentage.toFixed(0)}%</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Details Side Panel */}
+      <Sheet open={isPanelOpen} onOpenChange={setIsPanelOpen}>
+        <SheetContent className="w-full sm:max-w-3xl overflow-y-auto">
+          {selectedStudentData && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="text-2xl flex items-center gap-2">
+                  <User className="h-6 w-6" />
+                  {selectedStudentData.firstName} {selectedStudentData.lastName}
+                </SheetTitle>
+                <SheetDescription>
+                  {t('fees.student') || 'Student'} • {selectedStudentData.registrationNumber} • {selectedStudentData.className}
+                </SheetDescription>
+              </SheetHeader>
+
+              <Tabs defaultValue="summary" className="mt-6">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="summary">
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    {t('fees.summary') || 'Summary'}
+                  </TabsTrigger>
+                  <TabsTrigger value="assignments">
+                    <FileText className="h-4 w-4 mr-2" />
+                    {t('fees.assignments') || 'Assignments'} ({studentAssignments.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="payments">
+                    <Receipt className="h-4 w-4 mr-2" />
+                    {t('fees.payments') || 'Payments'} ({studentPayments.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Summary Tab */}
+                <TabsContent value="summary" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-sm font-medium text-muted-foreground mb-1">
+                          {t('fees.totalAssigned') || 'Total Assigned'}
+                        </div>
+                        <div className="text-2xl font-bold">
+                          {formatCurrency(selectedStudentData.totalAssigned)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-sm font-medium text-muted-foreground mb-1">
+                          {t('fees.paid') || 'Paid'}
+                        </div>
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {formatCurrency(selectedStudentData.totalPaid)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-sm font-medium text-muted-foreground mb-1">
+                          {t('fees.remaining') || 'Remaining'}
+                        </div>
+                        <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                          {formatCurrency(selectedStudentData.totalRemaining)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t('fees.status') || 'Status'}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-4">
+                        {getStatusBadge(selectedStudentData.overallStatus)}
+                        <div className="text-sm text-muted-foreground">
+                          {selectedStudentData.totalRemaining === 0 
+                            ? t('fees.fullyPaid') || 'Fully Paid'
+                            : selectedStudentData.totalPaid > 0
+                            ? t('fees.partiallyPaid') || 'Partially Paid'
+                            : t('fees.notPaid') || 'Not Paid'}
+                        </div>
+                      </div>
+                      {selectedStudentData.totalAssigned > 0 && (
+                        <div className="mt-4">
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="text-muted-foreground">{t('fees.collectionRate') || 'Collection Rate'}</span>
+                            <span className="font-medium">
+                              {((selectedStudentData.totalPaid / selectedStudentData.totalAssigned) * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                          <Progress value={(selectedStudentData.totalPaid / selectedStudentData.totalAssigned) * 100} />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Assignments Tab */}
+                <TabsContent value="assignments" className="space-y-4 mt-4">
+                  <ScrollArea className="h-[500px]">
+                    {studentAssignments.length > 0 ? (
+                      <div className="space-y-3">
+                        {studentAssignments.map((assignment) => (
+                          <Card key={assignment.id}>
+                            <CardContent className="pt-4">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium mb-2">{feeStructureMap.get(assignment.feeStructureId) || t('fees.feeStructure') || 'Fee Structure'}</div>
+                                  <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground">{t('fees.assigned') || 'Assigned'}: </span>
+                                      <span className="font-medium">{formatCurrency(assignment.assignedAmount)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">{t('fees.paid') || 'Paid'}: </span>
+                                      <span className="font-medium text-green-600">{formatCurrency(assignment.paidAmount)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">{t('fees.remaining') || 'Remaining'}: </span>
+                                      <span className="font-medium text-orange-600">{formatCurrency(assignment.remainingAmount)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">{t('fees.dueDate') || 'Due Date'}: </span>
+                                      <span className="font-medium">{assignment.dueDate ? formatDate(new Date(assignment.dueDate)) : '-'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="ml-4">
+                                  {getStatusBadge(assignment.status)}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                        <p className="text-lg font-medium">{t('common.noData') || 'No assignments found'}</p>
+                      </div>
+                    )}
+                  </ScrollArea>
+                </TabsContent>
+
+                {/* Payments Tab */}
+                <TabsContent value="payments" className="space-y-4 mt-4">
+                  <ScrollArea className="h-[500px]">
+                    {studentPayments.length > 0 ? (
+                      <div className="space-y-3">
+                        {studentPayments.map((payment) => (
+                          <Card key={payment.id}>
+                            <CardContent className="pt-4">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium mb-2">{formatCurrency(payment.amount)}</div>
+                                  <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground">{t('fees.paymentDate') || 'Date'}: </span>
+                                      <span className="font-medium">{formatDate(payment.paymentDate)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">{t('fees.method') || 'Method'}: </span>
+                                      <span className="font-medium capitalize">{payment.paymentMethod}</span>
+                                    </div>
+                                    {payment.referenceNo && (
+                                      <div className="col-span-2">
+                                        <span className="text-muted-foreground">{t('fees.reference') || 'Reference'}: </span>
+                                        <span className="font-medium">{payment.referenceNo}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="ml-4">
+                                  <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                    {t('fees.paid') || 'Paid'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
+                        <p className="text-lg font-medium">{t('common.noData') || 'No payments found'}</p>
+                      </div>
+                    )}
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+
+          {selectedClassData && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="text-2xl flex items-center gap-2">
+                  <GraduationCap className="h-6 w-6" />
+                  {selectedClassData.className}
+                </SheetTitle>
+                <SheetDescription>
+                  {t('fees.class') || 'Class'} • {selectedClassData.studentCount} {t('fees.students') || 'students'}
+                </SheetDescription>
+              </SheetHeader>
+
+              <Tabs defaultValue="summary" className="mt-6">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="summary">
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    {t('fees.summary') || 'Summary'}
+                  </TabsTrigger>
+                  <TabsTrigger value="students">
+                    <Users className="h-4 w-4 mr-2" />
+                    {t('fees.students') || 'Students'} ({classStudentsData?.data.length || 0})
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Summary Tab */}
+                <TabsContent value="summary" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-sm font-medium text-muted-foreground mb-1">
+                          {t('fees.totalAssigned') || 'Total Assigned'}
+                        </div>
+                        <div className="text-2xl font-bold">
+                          {formatCurrency(selectedClassData.totalAssigned)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-sm font-medium text-muted-foreground mb-1">
+                          {t('fees.collected') || 'Collected'}
+                        </div>
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {formatCurrency(selectedClassData.totalPaid)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-sm font-medium text-muted-foreground mb-1">
+                          {t('fees.remaining') || 'Remaining'}
+                        </div>
+                        <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                          {formatCurrency(selectedClassData.totalRemaining)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t('fees.collectionRate') || 'Collection Rate'}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">
+                            {formatCurrency(selectedClassData.totalPaid)} of {formatCurrency(selectedClassData.totalAssigned)}
+                          </span>
+                          <span className="text-lg font-bold">
+                            {selectedClassData.collectionPercentage.toFixed(1)}%
+                          </span>
+                        </div>
+                        <Progress value={selectedClassData.collectionPercentage} className="h-3" />
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">{t('fees.students') || 'Students'}: </span>
+                            <span className="font-medium">{selectedClassData.studentCount}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">{t('fees.assignments') || 'Assignments'}: </span>
+                            <span className="font-medium">{selectedClassData.assignmentCount}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Students Tab */}
+                <TabsContent value="students" className="space-y-4 mt-4">
+                  <ScrollArea className="h-[500px]">
+                    {classStudentsData && classStudentsData.data.length > 0 ? (
+                      <div className="space-y-2">
+                        {classStudentsData.data.map((student) => (
+                          <Card key={student.id} className="cursor-pointer hover:bg-muted/50" onClick={() => {
+                            setSelectedStudentId(student.id);
+                            setSelectedClassId(null);
+                          }}>
+                            <CardContent className="pt-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium">{student.firstName} {student.lastName}</div>
+                                  <div className="text-sm text-muted-foreground">{student.registrationNumber}</div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <div className="text-right">
+                                    <div className="text-sm font-medium">{formatCurrency(student.totalPaid)}</div>
+                                    <div className="text-xs text-muted-foreground">{t('fees.paid') || 'Paid'}</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm font-medium text-orange-600">{formatCurrency(student.totalRemaining)}</div>
+                                    <div className="text-xs text-muted-foreground">{t('fees.remaining') || 'Remaining'}</div>
+                                  </div>
+                                  {getStatusBadge(student.overallStatus)}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                        <p className="text-lg font-medium">{t('common.noData') || 'No students found'}</p>
+                      </div>
+                    )}
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

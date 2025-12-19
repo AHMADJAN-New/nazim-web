@@ -91,11 +91,12 @@ class FeeReportController extends Controller
                 ->when(!empty($validated['school_id']), fn($q) => $q->where('fee_assignments.school_id', $validated['school_id']))
                 ->leftJoin('class_academic_years', 'fee_assignments.class_academic_year_id', '=', 'class_academic_years.id')
                 ->leftJoin('classes', 'class_academic_years.class_id', '=', 'classes.id')
+                ->whereNotNull('classes.id') // Only include assignments with valid classes
                 ->groupBy('fee_assignments.class_academic_year_id', 'classes.name', 'classes.id')
                 ->selectRaw('
                     fee_assignments.class_academic_year_id,
                     classes.id as class_id,
-                    classes.name as class_name,
+                    COALESCE(classes.name, \'Unknown\') as class_name,
                     COUNT(*) as assignment_count,
                     COUNT(DISTINCT fee_assignments.student_id) as student_count,
                     COALESCE(SUM(fee_assignments.assigned_amount), 0) as total_assigned,
@@ -132,7 +133,7 @@ class FeeReportController extends Controller
             // Recent payments
             $recentPayments = FeePayment::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
-                ->with(['student:id,first_name,last_name,registration_number', 'feeAssignment.feeStructure:id,name'])
+                ->with(['student:id,full_name,admission_no', 'feeAssignment.feeStructure:id,name'])
                 ->orderBy('payment_date', 'desc')
                 ->limit(10)
                 ->get()
@@ -143,11 +144,9 @@ class FeeReportController extends Controller
                         'payment_date' => $payment->payment_date,
                         'payment_method' => $payment->payment_method,
                         'reference_no' => $payment->reference_no,
-                        'student_name' => $payment->student
-                            ? trim($payment->student->first_name . ' ' . $payment->student->last_name)
-                            : null,
-                        'student_registration' => $payment->student?->registration_number,
-                        'fee_structure_name' => $payment->feeAssignment?->feeStructure?->name,
+                        'student_name' => $payment->student?->full_name ?? null,
+                        'student_registration' => $payment->student?->admission_no ?? null,
+                        'fee_structure_name' => $payment->feeAssignment?->feeStructure?->name ?? null,
                     ];
                 });
 
@@ -175,7 +174,11 @@ class FeeReportController extends Controller
             ]);
         } catch (\Exception $e) {
             \Log::error('FeeReportController@dashboard error: ' . $e->getMessage());
-            return response()->json(['error' => 'An error occurred while fetching fee dashboard data'], 500);
+            \Log::error('FeeReportController@dashboard stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'error' => 'An error occurred while fetching fee dashboard data',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -235,21 +238,19 @@ class FeeReportController extends Controller
                 ->when(!empty($validated['search']), function($q) use ($validated) {
                     $search = '%' . $validated['search'] . '%';
                     $q->where(function($sub) use ($search) {
-                        $sub->where('students.first_name', 'ilike', $search)
-                            ->orWhere('students.last_name', 'ilike', $search)
-                            ->orWhere('students.registration_number', 'ilike', $search)
+                        $sub->where('students.full_name', 'ilike', $search)
+                            ->orWhere('students.admission_no', 'ilike', $search)
                             ->orWhere('students.father_name', 'ilike', $search);
                     });
                 })
-                ->groupBy('students.id', 'students.first_name', 'students.last_name', 'students.father_name',
-                    'students.registration_number', 'students.photo_url', 'classes.name', 'fee_assignments.class_academic_year_id')
+                ->groupBy('students.id', 'students.full_name', 'students.father_name',
+                    'students.admission_no', 'students.picture_path', 'classes.name', 'fee_assignments.class_academic_year_id')
                 ->selectRaw('
                     students.id,
-                    students.first_name,
-                    students.last_name,
+                    students.full_name,
                     students.father_name,
-                    students.registration_number,
-                    students.photo_url,
+                    students.admission_no as registration_number,
+                    students.picture_path,
                     classes.name as class_name,
                     fee_assignments.class_academic_year_id,
                     COUNT(fee_assignments.id) as assignment_count,
@@ -284,7 +285,7 @@ class FeeReportController extends Controller
 
             // Get paginated results
             $students = $query
-                ->orderBy('students.first_name')
+                ->orderBy('students.full_name')
                 ->offset(($page - 1) * $perPage)
                 ->limit($perPage)
                 ->get();
@@ -443,11 +444,10 @@ class FeeReportController extends Controller
                 ->select([
                     'fee_assignments.id as assignment_id',
                     'students.id as student_id',
-                    'students.first_name',
-                    'students.last_name',
+                    'students.full_name',
                     'students.father_name',
-                    'students.registration_number',
-                    'students.phone',
+                    'students.admission_no as registration_number',
+                    'students.guardian_phone as phone',
                     'classes.name as class_name',
                     'fee_structures.name as fee_structure_name',
                     'fee_assignments.assigned_amount',

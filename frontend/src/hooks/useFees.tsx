@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { showToast } from '@/lib/toast';
 import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
+import { usePagination } from './usePagination';
 import {
   feeAssignmentsApi,
   feeExceptionsApi,
@@ -12,6 +14,7 @@ import {
 } from '@/lib/api/client';
 import type * as FeeApi from '@/types/api/fees';
 import type { FeeAssignment, FeeException, FeePayment, FeeStructure } from '@/types/domain/fees';
+import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
 import {
   mapFeeAssignmentApiToDomain,
   mapFeeAssignmentDomainToInsert,
@@ -29,37 +32,134 @@ import type * as StudentAdmissionApi from '@/types/api/studentAdmission';
 
 const FIVE_MINUTES = 5 * 60 * 1000;
 
-export const useFeeStructures = (filters?: {
-  academicYearId?: string;
-  classId?: string;
-  classAcademicYearId?: string;
-  isActive?: boolean;
-}) => {
+export const useFeeStructures = (
+  filters?: {
+    academicYearId?: string;
+    classId?: string;
+    classAcademicYearId?: string;
+    isActive?: boolean;
+  },
+  usePaginated?: boolean
+) => {
   const { user, profile } = useAuth();
+  const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
+    initialPage: 1,
+    initialPageSize: 25,
+  });
 
-  return useQuery<FeeStructure[]>({
-    queryKey: ['fee-structures', profile?.organization_id, filters],
+  const { data, isLoading, error } = useQuery<FeeStructure[] | PaginatedResponse<FeeApi.FeeStructure>>({
+    queryKey: [
+      'fee-structures',
+      profile?.organization_id,
+      filters,
+      usePaginated ? page : undefined,
+      usePaginated ? pageSize : undefined,
+    ],
     queryFn: async () => {
       if (!user || !profile) {
         return [];
       }
 
-      const params = {
+      const params: any = {
         organization_id: profile.organization_id,
         academic_year_id: filters?.academicYearId,
         class_id: filters?.classId,
-        class_academic_year_id: filters?.classAcademicYearId,
         is_active: filters?.isActive,
       };
+      
+      // Only include class_academic_year_id if it's a valid UUID (not "all")
+      if (filters?.classAcademicYearId && filters.classAcademicYearId !== 'all') {
+        params.class_academic_year_id = filters.classAcademicYearId;
+      }
+
+      // Add pagination params if using pagination
+      if (usePaginated) {
+        params.page = page;
+        params.per_page = pageSize;
+      }
 
       const apiStructures = await feeStructuresApi.list(params);
-      return (apiStructures as FeeApi.FeeStructure[]).map(mapFeeStructureApiToDomain);
+
+      // Check if response is paginated (Laravel returns meta fields directly, not nested)
+      if (usePaginated && apiStructures && typeof apiStructures === 'object' && 'data' in apiStructures && 'current_page' in apiStructures) {
+        const paginatedResponse = apiStructures as any;
+        // Map API models to domain models
+        const structures = (paginatedResponse.data as FeeApi.FeeStructure[]).map(mapFeeStructureApiToDomain);
+        // Extract meta from Laravel's response structure
+        const meta: PaginationMeta = {
+          current_page: paginatedResponse.current_page,
+          from: paginatedResponse.from,
+          last_page: paginatedResponse.last_page,
+          per_page: paginatedResponse.per_page,
+          to: paginatedResponse.to,
+          total: paginatedResponse.total,
+          path: paginatedResponse.path,
+          first_page_url: paginatedResponse.first_page_url,
+          last_page_url: paginatedResponse.last_page_url,
+          next_page_url: paginatedResponse.next_page_url,
+          prev_page_url: paginatedResponse.prev_page_url,
+        };
+        return { data: structures, meta } as PaginatedResponse<FeeApi.FeeStructure>;
+      }
+
+      // Map API models to domain models (non-paginated or backend doesn't support pagination)
+      const structures = (apiStructures as FeeApi.FeeStructure[]).map(mapFeeStructureApiToDomain);
+      
+      // If pagination was requested but backend returned non-paginated response,
+      // wrap it in a paginated response structure for consistency
+      if (usePaginated) {
+        const meta: PaginationMeta = {
+          current_page: 1,
+          from: structures.length > 0 ? 1 : null,
+          last_page: 1,
+          per_page: structures.length,
+          to: structures.length,
+          total: structures.length,
+          path: '',
+          first_page_url: '',
+          last_page_url: '',
+          next_page_url: null,
+          prev_page_url: null,
+        };
+        return { data: structures, meta } as PaginatedResponse<FeeApi.FeeStructure>;
+      }
+
+      return structures;
     },
     enabled: !!user && !!profile,
     staleTime: FIVE_MINUTES,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  // Update pagination state from API response
+  useEffect(() => {
+    if (usePaginated && data && typeof data === 'object' && 'meta' in data) {
+      updateFromMeta((data as PaginatedResponse<FeeApi.FeeStructure>).meta);
+    }
+  }, [data, usePaginated, updateFromMeta]);
+
+  // Return appropriate format based on pagination mode
+  if (usePaginated) {
+    const paginatedData = data as PaginatedResponse<FeeApi.FeeStructure> | undefined;
+    return {
+      data: paginatedData?.data || [],
+      isLoading,
+      error,
+      pagination: paginatedData?.meta ?? null,
+      paginationState,
+      page,
+      pageSize,
+      setPage,
+      setPageSize,
+    };
+  }
+
+  return {
+    data: data as FeeStructure[] | undefined,
+    isLoading,
+    error,
+  };
 };
 
 export const useCreateFeeStructure = () => {
@@ -129,39 +229,150 @@ export const useDeleteFeeStructure = () => {
   });
 };
 
-export const useFeeAssignments = (filters?: {
-  studentId?: string;
-  studentAdmissionId?: string;
-  academicYearId?: string;
-  classAcademicYearId?: string;
-  classId?: string;
-  status?: string;
-}) => {
+export const useFeeAssignments = (
+  filters?: {
+    studentId?: string;
+    studentAdmissionId?: string;
+    academicYearId?: string;
+    classAcademicYearId?: string;
+    classId?: string;
+    status?: string;
+  },
+  usePaginated?: boolean
+) => {
   const { user, profile } = useAuth();
+  const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
+    initialPage: 1,
+    initialPageSize: 25,
+  });
 
-  return useQuery<FeeAssignment[]>({
-    queryKey: ['fee-assignments', profile?.organization_id, filters],
+  const { data, isLoading, error } = useQuery<FeeAssignment[] | PaginatedResponse<FeeApi.FeeAssignment>>({
+    queryKey: [
+      'fee-assignments',
+      profile?.organization_id,
+      filters,
+      usePaginated ? page : undefined,
+      usePaginated ? pageSize : undefined,
+    ],
     queryFn: async () => {
       if (!user || !profile) return [];
 
-      const params = {
+      const params: any = {
         organization_id: profile.organization_id,
         student_id: filters?.studentId,
         student_admission_id: filters?.studentAdmissionId,
         academic_year_id: filters?.academicYearId,
-        class_academic_year_id: filters?.classAcademicYearId,
         class_id: filters?.classId,
         status: filters?.status,
       };
+      
+      // Only include class_academic_year_id if it's a valid UUID (not "all")
+      if (filters?.classAcademicYearId && filters.classAcademicYearId !== 'all') {
+        params.class_academic_year_id = filters.classAcademicYearId;
+      }
+
+      // Add pagination params if using pagination
+      if (usePaginated) {
+        params.page = page;
+        params.per_page = pageSize;
+      }
 
       const apiAssignments = await feeAssignmentsApi.list(params);
-      return (apiAssignments as FeeApi.FeeAssignment[]).map(mapFeeAssignmentApiToDomain);
+
+      // Check if response is paginated (Laravel returns meta fields directly, not nested)
+      if (usePaginated && apiAssignments && typeof apiAssignments === 'object' && 'data' in apiAssignments && 'current_page' in apiAssignments) {
+        const paginatedResponse = apiAssignments as any;
+        // Map assignments and preserve student relationship data
+        const assignments = (paginatedResponse.data as any[]).map((api) => {
+          const mapped = mapFeeAssignmentApiToDomain(api as FeeApi.FeeAssignment);
+          // Preserve student data if available
+          if (api.student) {
+            (mapped as any).student = api.student;
+          }
+          return mapped;
+        });
+        // Extract meta from Laravel's response structure
+        const meta: PaginationMeta = {
+          current_page: paginatedResponse.current_page,
+          from: paginatedResponse.from,
+          last_page: paginatedResponse.last_page,
+          per_page: paginatedResponse.per_page,
+          to: paginatedResponse.to,
+          total: paginatedResponse.total,
+          path: paginatedResponse.path,
+          first_page_url: paginatedResponse.first_page_url,
+          last_page_url: paginatedResponse.last_page_url,
+          next_page_url: paginatedResponse.next_page_url,
+          prev_page_url: paginatedResponse.prev_page_url,
+        };
+        return { data: assignments, meta } as PaginatedResponse<FeeApi.FeeAssignment>;
+      }
+
+      // Map assignments and preserve student relationship data (non-paginated)
+      const assignments = (apiAssignments as any[]).map((api) => {
+        const mapped = mapFeeAssignmentApiToDomain(api as FeeApi.FeeAssignment);
+        // Preserve student data if available
+        if (api.student) {
+          (mapped as any).student = api.student;
+        }
+        return mapped;
+      });
+
+      // If pagination was requested but backend returned non-paginated response,
+      // wrap it in a paginated response structure for consistency
+      if (usePaginated) {
+        const meta: PaginationMeta = {
+          current_page: 1,
+          from: assignments.length > 0 ? 1 : null,
+          last_page: 1,
+          per_page: assignments.length,
+          to: assignments.length,
+          total: assignments.length,
+          path: '',
+          first_page_url: '',
+          last_page_url: '',
+          next_page_url: null,
+          prev_page_url: null,
+        };
+        return { data: assignments, meta } as PaginatedResponse<FeeApi.FeeAssignment>;
+      }
+
+      return assignments;
     },
     enabled: !!user && !!profile,
     staleTime: FIVE_MINUTES,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  // Update pagination state from API response
+  useEffect(() => {
+    if (usePaginated && data && typeof data === 'object' && 'meta' in data) {
+      updateFromMeta((data as PaginatedResponse<FeeApi.FeeAssignment>).meta);
+    }
+  }, [data, usePaginated, updateFromMeta]);
+
+  // Return appropriate format based on pagination mode
+  if (usePaginated) {
+    const paginatedData = data as PaginatedResponse<FeeApi.FeeAssignment> | undefined;
+    return {
+      data: paginatedData?.data || [],
+      isLoading,
+      error,
+      pagination: paginatedData?.meta ?? null,
+      paginationState,
+      page,
+      pageSize,
+      setPage,
+      setPageSize,
+    };
+  }
+
+  return {
+    data: data as FeeAssignment[] | undefined,
+    isLoading,
+    error,
+  };
 };
 
 export const useCreateFeeAssignment = () => {
@@ -181,12 +392,58 @@ export const useCreateFeeAssignment = () => {
       const apiAssignment = await feeAssignmentsApi.create(insert);
       return mapFeeAssignmentApiToDomain(apiAssignment as FeeApi.FeeAssignment);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success(t('toast.feeAssignmentCreated'));
-      void queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
+      await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
+      await queryClient.refetchQueries({ queryKey: ['fee-assignments'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feeAssignmentCreateFailed'));
+    },
+  });
+};
+
+export const useUpdateFeeAssignment = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<FeeAssignment> }) => {
+      if (!profile?.organization_id) {
+        throw new Error('toast.organizationRequired');
+      }
+
+      const updateData = mapFeeAssignmentDomainToUpdate(data);
+      const apiAssignment = await feeAssignmentsApi.update(id, updateData);
+      return mapFeeAssignmentApiToDomain(apiAssignment as FeeApi.FeeAssignment);
+    },
+    onSuccess: async () => {
+      showToast.success(t('toast.feeAssignmentUpdated'));
+      await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
+      await queryClient.refetchQueries({ queryKey: ['fee-assignments'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.feeAssignmentUpdateFailed'));
+    },
+  });
+};
+
+export const useDeleteFeeAssignment = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await feeAssignmentsApi.delete(id);
+    },
+    onSuccess: async () => {
+      showToast.success(t('toast.feeAssignmentDeleted'));
+      await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
+      await queryClient.refetchQueries({ queryKey: ['fee-assignments'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.feeAssignmentDeleteFailed'));
     },
   });
 };
@@ -285,6 +542,7 @@ export const useBulkAssignFeeAssignments = () => {
     onSuccess: async () => {
       showToast.success(t('toast.feeAssignmentCreated'));
       await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
+      await queryClient.refetchQueries({ queryKey: ['fee-assignments'] });
     },
     onError: (error: any) => {
       const message = getErrorMessage(error);
@@ -297,34 +555,127 @@ export const useBulkAssignFeeAssignments = () => {
   });
 };
 
-export const useFeePayments = (filters?: {
-  feeAssignmentId?: string;
-  studentId?: string;
-  paymentDateFrom?: string;
-  paymentDateTo?: string;
-}) => {
+export const useFeePayments = (
+  filters?: {
+    feeAssignmentId?: string;
+    studentId?: string;
+    paymentDateFrom?: string;
+    paymentDateTo?: string;
+  },
+  usePaginated?: boolean
+) => {
   const { user, profile } = useAuth();
+  const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
+    initialPage: 1,
+    initialPageSize: 25,
+  });
 
-  return useQuery<FeePayment[]>({
-    queryKey: ['fee-payments', profile?.organization_id, filters],
+  const { data, isLoading, error } = useQuery<FeePayment[] | PaginatedResponse<FeeApi.FeePayment>>({
+    queryKey: [
+      'fee-payments',
+      profile?.organization_id,
+      filters,
+      usePaginated ? page : undefined,
+      usePaginated ? pageSize : undefined,
+    ],
     queryFn: async () => {
       if (!user || !profile) return [];
 
-      const params = {
+      const params: any = {
         fee_assignment_id: filters?.feeAssignmentId,
         student_id: filters?.studentId,
         payment_date_from: filters?.paymentDateFrom,
         payment_date_to: filters?.paymentDateTo,
       };
 
+      // Add pagination params if using pagination
+      if (usePaginated) {
+        params.page = page;
+        params.per_page = pageSize;
+      }
+
       const apiPayments = await feePaymentsApi.list(params);
-      return (apiPayments as FeeApi.FeePayment[]).map(mapFeePaymentApiToDomain);
+
+      // Check if response is paginated (Laravel returns meta fields directly, not nested)
+      if (usePaginated && apiPayments && typeof apiPayments === 'object' && 'data' in apiPayments && 'current_page' in apiPayments) {
+        const paginatedResponse = apiPayments as any;
+        // Map API models to domain models
+        const payments = (paginatedResponse.data as FeeApi.FeePayment[]).map(mapFeePaymentApiToDomain);
+        // Extract meta from Laravel's response structure
+        const meta: PaginationMeta = {
+          current_page: paginatedResponse.current_page,
+          from: paginatedResponse.from,
+          last_page: paginatedResponse.last_page,
+          per_page: paginatedResponse.per_page,
+          to: paginatedResponse.to,
+          total: paginatedResponse.total,
+          path: paginatedResponse.path,
+          first_page_url: paginatedResponse.first_page_url,
+          last_page_url: paginatedResponse.last_page_url,
+          next_page_url: paginatedResponse.next_page_url,
+          prev_page_url: paginatedResponse.prev_page_url,
+        };
+        return { data: payments, meta } as PaginatedResponse<FeeApi.FeePayment>;
+      }
+
+      // Map API models to domain models (non-paginated)
+      const payments = (apiPayments as FeeApi.FeePayment[]).map(mapFeePaymentApiToDomain);
+
+      // If pagination was requested but backend returned non-paginated response,
+      // wrap it in a paginated response structure for consistency
+      if (usePaginated) {
+        const meta: PaginationMeta = {
+          current_page: 1,
+          from: payments.length > 0 ? 1 : null,
+          last_page: 1,
+          per_page: payments.length,
+          to: payments.length,
+          total: payments.length,
+          path: '',
+          first_page_url: '',
+          last_page_url: '',
+          next_page_url: null,
+          prev_page_url: null,
+        };
+        return { data: payments, meta } as PaginatedResponse<FeeApi.FeePayment>;
+      }
+
+      return payments;
     },
     enabled: !!user && !!profile,
     staleTime: FIVE_MINUTES,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  // Update pagination state from API response
+  useEffect(() => {
+    if (usePaginated && data && typeof data === 'object' && 'meta' in data) {
+      updateFromMeta((data as PaginatedResponse<FeeApi.FeePayment>).meta);
+    }
+  }, [data, usePaginated, updateFromMeta]);
+
+  // Return appropriate format based on pagination mode
+  if (usePaginated) {
+    const paginatedData = data as PaginatedResponse<FeeApi.FeePayment> | undefined;
+    return {
+      data: paginatedData?.data || [],
+      isLoading,
+      error,
+      pagination: paginatedData?.meta ?? null,
+      paginationState,
+      page,
+      pageSize,
+      setPage,
+      setPageSize,
+    };
+  }
+
+  return {
+    data: data as FeePayment[] | undefined,
+    isLoading,
+    error,
+  };
 };
 
 export const useCreateFeePayment = () => {
@@ -356,6 +707,57 @@ export const useCreateFeePayment = () => {
   });
 };
 
+export const useFeeExceptions = (filters?: {
+  academicYearId?: string;
+  classAcademicYearId?: string;
+  studentId?: string;
+  feeAssignmentId?: string;
+  exceptionType?: string;
+  isActive?: boolean;
+}) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<FeeException[]>({
+    queryKey: ['fee-exceptions', profile?.organization_id, filters],
+    queryFn: async () => {
+      if (!user || !profile || !profile.organization_id) {
+        if (import.meta.env.DEV) {
+          console.log('[useFeeExceptions] Missing user, profile, or organization_id');
+        }
+        return [];
+      }
+
+      try {
+        const apiExceptions = await feeExceptionsApi.list({
+          organization_id: profile.organization_id,
+          academic_year_id: filters?.academicYearId,
+          class_academic_year_id: filters?.classAcademicYearId,
+          student_id: filters?.studentId,
+          fee_assignment_id: filters?.feeAssignmentId,
+          exception_type: filters?.exceptionType,
+          is_active: filters?.isActive,
+        });
+
+        if (import.meta.env.DEV) {
+          console.log('[useFeeExceptions] Fetched', Array.isArray(apiExceptions) ? apiExceptions.length : 0, 'exceptions');
+        }
+
+        // Handle both array and object responses
+        const exceptionsArray = Array.isArray(apiExceptions) ? apiExceptions : [];
+        return exceptionsArray.map(mapFeeExceptionApiToDomain);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[useFeeExceptions] Error fetching exceptions:', error);
+        }
+        throw error;
+      }
+    },
+    enabled: !!user && !!profile && !!profile.organization_id,
+    staleTime: FIVE_MINUTES,
+    refetchOnWindowFocus: false,
+  });
+};
+
 export const useCreateFeeException = () => {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
@@ -374,12 +776,64 @@ export const useCreateFeeException = () => {
       const apiException = await feeExceptionsApi.create(insert);
       return mapFeeExceptionApiToDomain(apiException as FeeApi.FeeException);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success(t('toast.feeExceptionCreated'));
-      void queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
+      await queryClient.invalidateQueries({ queryKey: ['fee-exceptions'] });
+      await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.feeExceptionFailed'));
+    },
+  });
+};
+
+export const useUpdateFeeException = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<FeeException> & { id: string }) => {
+      if (!profile?.organization_id) {
+        throw new Error('toast.organizationRequired');
+      }
+
+      const updateData = mapFeeExceptionDomainToUpdate(updates);
+      const apiException = await feeExceptionsApi.update(id, updateData);
+      return mapFeeExceptionApiToDomain(apiException as FeeApi.FeeException);
+    },
+    onSuccess: async () => {
+      showToast.success(t('toast.feeExceptionUpdated'));
+      await queryClient.invalidateQueries({ queryKey: ['fee-exceptions'] });
+      await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.feeExceptionUpdateFailed'));
+    },
+  });
+};
+
+export const useDeleteFeeException = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!profile?.organization_id) {
+        throw new Error('toast.organizationRequired');
+      }
+
+      await feeExceptionsApi.delete(id);
+    },
+    onSuccess: async () => {
+      showToast.success(t('toast.feeExceptionDeleted'));
+      await queryClient.invalidateQueries({ queryKey: ['fee-exceptions'] });
+      await queryClient.refetchQueries({ queryKey: ['fee-exceptions'] });
+      await queryClient.invalidateQueries({ queryKey: ['fee-assignments'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || t('toast.feeExceptionDeleteFailed'));
     },
   });
 };
@@ -515,38 +969,54 @@ const mapDashboardResponse = (data: any): FeeReportDashboard => ({
   })),
 });
 
-const mapStudentFeeRecord = (item: any): StudentFeeRecord => ({
-  id: item.id,
-  firstName: item.first_name,
-  lastName: item.last_name,
-  fatherName: item.father_name,
-  registrationNumber: item.registration_number,
-  photoUrl: item.photo_url,
-  className: item.class_name || 'Unknown',
-  classAcademicYearId: item.class_academic_year_id,
-  assignmentCount: item.assignment_count,
-  totalAssigned: parseFloat(item.total_assigned),
-  totalPaid: parseFloat(item.total_paid),
-  totalRemaining: parseFloat(item.total_remaining),
-  overallStatus: item.overall_status,
-});
+const mapStudentFeeRecord = (item: any): StudentFeeRecord => {
+  // Split full_name into first and last name
+  const fullName = item.full_name || '';
+  const nameParts = fullName.trim().split(/\s+/);
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
 
-const mapFeeDefaulter = (item: any): FeeDefaulter => ({
-  assignmentId: item.assignment_id,
-  studentId: item.student_id,
-  firstName: item.first_name,
-  lastName: item.last_name,
-  fatherName: item.father_name,
-  registrationNumber: item.registration_number,
-  phone: item.phone,
-  className: item.class_name || 'Unknown',
-  feeStructureName: item.fee_structure_name || 'Unknown',
-  assignedAmount: parseFloat(item.assigned_amount),
-  paidAmount: parseFloat(item.paid_amount),
-  remainingAmount: parseFloat(item.remaining_amount),
-  dueDate: item.due_date,
-  status: item.status,
-});
+  return {
+    id: item.id,
+    firstName,
+    lastName,
+    fatherName: item.father_name,
+    registrationNumber: item.registration_number,
+    photoUrl: item.picture_path,
+    className: item.class_name || 'Unknown',
+    classAcademicYearId: item.class_academic_year_id,
+    assignmentCount: item.assignment_count,
+    totalAssigned: parseFloat(item.total_assigned),
+    totalPaid: parseFloat(item.total_paid),
+    totalRemaining: parseFloat(item.total_remaining),
+    overallStatus: item.overall_status,
+  };
+};
+
+const mapFeeDefaulter = (item: any): FeeDefaulter => {
+  // Split full_name into first and last name
+  const fullName = item.full_name || '';
+  const nameParts = fullName.trim().split(/\s+/);
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
+
+  return {
+    assignmentId: item.assignment_id,
+    studentId: item.student_id,
+    firstName,
+    lastName,
+    fatherName: item.father_name,
+    registrationNumber: item.registration_number,
+    phone: item.phone,
+    className: item.class_name || 'Unknown',
+    feeStructureName: item.fee_structure_name || 'Unknown',
+    assignedAmount: parseFloat(item.assigned_amount),
+    paidAmount: parseFloat(item.paid_amount),
+    remainingAmount: parseFloat(item.remaining_amount),
+    dueDate: item.due_date,
+    status: item.status,
+  };
+};
 
 export const useFeeReportDashboard = (filters?: {
   academicYearId?: string;

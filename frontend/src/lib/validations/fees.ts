@@ -56,17 +56,26 @@ export type FeeAssignmentFormData = z.infer<typeof feeAssignmentSchema>;
 
 export const feePaymentSchema = z.object({
   fee_assignment_id: uuidSchema,
-  student_id: optionalUuidSchema,
-  student_admission_id: optionalUuidSchema,
-  amount: z.number().positive('Amount must be greater than 0'),
-  currency_id: optionalUuidSchema,
-  payment_date: requiredStringLength(20, 'Payment date'),
+  student_id: optionalUuidSchema.or(z.literal('')),
+  student_admission_id: optionalUuidSchema.or(z.literal('')),
+  amount: z.preprocess(
+    (val) => {
+      if (typeof val === 'string') {
+        const num = parseFloat(val);
+        return isNaN(num) ? 0 : num;
+      }
+      return typeof val === 'number' ? val : 0;
+    },
+    z.number().positive('Amount must be greater than 0')
+  ),
+  currency_id: optionalUuidSchema.or(z.literal('')),
+  payment_date: z.string().min(1, 'Payment date is required'),
   payment_method: z.enum(['cash', 'bank_transfer', 'cheque', 'other']),
-  reference_no: optionalStringLength(100, 'Reference'),
+  reference_no: optionalStringLength(100, 'Reference').or(z.literal('')),
   account_id: uuidSchema,
-  received_by_user_id: optionalUuidSchema,
-  notes: optionalStringLength(2000, 'Notes'),
-  school_id: optionalUuidSchema,
+  received_by_user_id: optionalUuidSchema.or(z.literal('')),
+  notes: optionalStringLength(2000, 'Notes').or(z.literal('')),
+  school_id: optionalUuidSchema.or(z.literal('')),
 });
 
 export type FeePaymentFormData = z.infer<typeof feePaymentSchema>;
@@ -79,12 +88,24 @@ export const feeExceptionSchema = z.object({
   exception_reason: requiredStringLength(2000, 'Reason'),
   approved_by_user_id: optionalUuidSchema,
   approved_at: dateStringSchema.optional().nullable(),
-  valid_from: requiredStringLength(20, 'Valid from'),
+  valid_from: z.string().min(1, 'Valid from date is required'),
   valid_to: dateStringSchema.optional().nullable(),
   is_active: z.boolean().optional(),
   notes: optionalStringLength(2000, 'Notes'),
   organization_id: optionalUuidSchema,
-});
+}).refine(
+  (data) => {
+    if (!data.valid_from || !data.valid_to) return true;
+    const from = new Date(data.valid_from);
+    const to = new Date(data.valid_to);
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return true;
+    return to >= from;
+  },
+  {
+    message: 'Valid to date must be after or equal to valid from date.',
+    path: ['valid_to'],
+  }
+);
 
 export type FeeExceptionFormData = z.infer<typeof feeExceptionSchema>;
 

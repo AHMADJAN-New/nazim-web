@@ -9,10 +9,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useAuth } from '@/hooks/useAuth';
+import { useEffect } from 'react';
 
 interface FeeExceptionFormProps {
   defaultValues?: Partial<FeeExceptionFormData>;
@@ -36,6 +41,7 @@ export function FeeExceptionForm({
   isSubmitting,
 }: FeeExceptionFormProps) {
   const { t } = useLanguage();
+  const { profile } = useAuth();
 
   const form = useForm<FeeExceptionFormData>({
     resolver: zodResolver(feeExceptionSchema),
@@ -46,14 +52,33 @@ export function FeeExceptionForm({
       exception_amount: defaultValues?.exception_amount ?? 0,
       exception_reason: defaultValues?.exception_reason ?? '',
       approved_by_user_id: defaultValues?.approved_by_user_id ?? '',
-      approved_at: defaultValues?.approved_at ?? null,
+      approved_at: defaultValues?.approved_at ?? '',
       valid_from: defaultValues?.valid_from ?? '',
-      valid_to: defaultValues?.valid_to ?? null,
+      valid_to: defaultValues?.valid_to ?? '',
       is_active: defaultValues?.is_active ?? true,
       notes: defaultValues?.notes ?? '',
-      organization_id: defaultValues?.organization_id ?? null,
+      organization_id: defaultValues?.organization_id ?? '',
     },
   });
+
+  // Reset form when defaultValues change (for edit mode or new form)
+  useEffect(() => {
+    const resetValues = {
+      fee_assignment_id: defaultValues?.fee_assignment_id ?? '',
+      student_id: defaultValues?.student_id ?? '',
+      exception_type: defaultValues?.exception_type ?? 'discount_fixed',
+      exception_amount: defaultValues?.exception_amount ?? 0,
+      exception_reason: defaultValues?.exception_reason ?? '',
+      approved_by_user_id: defaultValues?.approved_by_user_id ?? profile?.id ?? '',
+      approved_at: defaultValues?.approved_at ?? (defaultValues ? '' : new Date().toISOString().slice(0, 10)),
+      valid_from: defaultValues?.valid_from ?? (defaultValues ? '' : new Date().toISOString().slice(0, 10)),
+      valid_to: defaultValues?.valid_to ?? '',
+      is_active: defaultValues?.is_active ?? true,
+      notes: defaultValues?.notes ?? '',
+      organization_id: defaultValues?.organization_id ?? profile?.organization_id ?? '',
+    };
+    form.reset(resetValues);
+  }, [defaultValues, form, profile]);
 
   const handleSubmit = async (values: FeeExceptionFormData) => {
     await onSubmit(values);
@@ -69,7 +94,7 @@ export function FeeExceptionForm({
             <FormItem>
               <FormLabel>{t('fees.assignment')}</FormLabel>
               <Select
-                value={field.value}
+                value={field.value ?? ''}
                 onValueChange={(val) => {
                   field.onChange(val);
                   const selected = assignments.find((opt) => opt.value === val);
@@ -103,7 +128,7 @@ export function FeeExceptionForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('fees.exceptionType')}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select value={field.value ?? 'discount_fixed'} onValueChange={field.onChange}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={t('fees.exceptionType')} />
@@ -128,7 +153,12 @@ export function FeeExceptionForm({
               <FormItem>
                 <FormLabel>{t('fees.exceptionAmount')}</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" {...field} />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : 0)}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -142,7 +172,7 @@ export function FeeExceptionForm({
               <FormItem>
                 <FormLabel>{t('fees.validFrom')}</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input type="date" value={field.value ?? ''} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -156,7 +186,7 @@ export function FeeExceptionForm({
               <FormItem>
                 <FormLabel>{t('fees.validTo')}</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input type="date" value={field.value ?? ''} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -171,9 +201,79 @@ export function FeeExceptionForm({
             <FormItem>
               <FormLabel>{t('fees.exceptionReason')}</FormLabel>
               <FormControl>
-                <Input placeholder={t('fees.exceptionReasonPlaceholder')} {...field} />
+                <Textarea 
+                  placeholder={t('fees.exceptionReasonPlaceholder') || 'Enter the reason for this exception...'} 
+                  value={field.value ?? ''} 
+                  onChange={field.onChange}
+                  rows={3}
+                  className="resize-none"
+                />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="approved_by_user_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('fees.approvedBy') || 'Approved By'}</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="text"
+                    value={profile?.full_name || profile?.email || field.value || ''} 
+                    onChange={() => {}} // Read-only
+                    disabled
+                    className="bg-muted"
+                  />
+                </FormControl>
+                <FormDescription className="text-xs">
+                  {t('fees.currentUserWillBeApprover') || 'Current user will be set as approver'}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="approved_at"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('fees.approvedAt') || 'Approved At'}</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="date" 
+                    value={field.value ?? ''} 
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="is_active"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">{t('fees.isActive') || 'Active'}</FormLabel>
+                <FormDescription>
+                  {t('fees.isActiveDescription') || 'Whether this exception is currently active'}
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value ?? true}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
             </FormItem>
           )}
         />
@@ -185,7 +285,13 @@ export function FeeExceptionForm({
             <FormItem>
               <FormLabel>{t('fees.notes')}</FormLabel>
               <FormControl>
-                <Input placeholder={t('fees.notesPlaceholder')} {...field} />
+                <Textarea 
+                  placeholder={t('fees.notesPlaceholder') || 'Enter any additional notes...'} 
+                  value={field.value ?? ''} 
+                  onChange={field.onChange}
+                  rows={3}
+                  className="resize-none"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

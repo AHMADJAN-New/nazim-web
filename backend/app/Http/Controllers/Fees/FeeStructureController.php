@@ -38,6 +38,8 @@ class FeeStructureController extends Controller
             'class_id' => 'nullable|uuid|exists:classes,id',
             'class_academic_year_id' => 'nullable|uuid|exists:class_academic_years,id',
             'is_active' => 'nullable|boolean',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
         $query = FeeStructure::whereNull('deleted_at')
@@ -60,7 +62,15 @@ class FeeStructureController extends Controller
             $query->where('is_active', $validated['is_active']);
         }
 
-        return response()->json($query->orderBy('display_order')->orderBy('name')->get());
+        $query->orderBy('display_order')->orderBy('name');
+
+        // Check if pagination is requested
+        if (!empty($validated['page']) || !empty($validated['per_page'])) {
+            $perPage = $validated['per_page'] ?? 25;
+            return response()->json($query->paginate($perPage));
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(FeeStructureStoreRequest $request)

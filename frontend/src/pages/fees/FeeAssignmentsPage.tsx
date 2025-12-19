@@ -1,7 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useFeeAssignments, useBulkAssignFeeAssignments, useFeeStructures } from '@/hooks/useFees';
+import {
+  useFeeAssignments,
+  useBulkAssignFeeAssignments,
+  useFeeStructures,
+  useUpdateFeeAssignment,
+  useDeleteFeeAssignment,
+  type FeeAssignment,
+} from '@/hooks/useFees';
 import { feeAssignmentSchema, type FeeAssignmentFormData } from '@/lib/validations/fees';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,24 +23,92 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAcademicYears } from '@/hooks/useAcademicYears';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears } from '@/hooks/useClasses';
-import { useEffect } from 'react';
 import { showToast } from '@/lib/toast';
+import { useNavigate } from 'react-router-dom';
 import type { ZodIssue } from 'zod';
+import { Pencil, Trash2, Users, GraduationCap } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { formatCurrency } from '@/lib/utils';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Eye, ExternalLink } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function FeeAssignmentsPage() {
   const { t } = useLanguage();
-  const [filterAcademicYear, setFilterAcademicYear] = useState<string | undefined>(undefined);
-  const [filterClassAy, setFilterClassAy] = useState<string | undefined>(undefined);
+  const navigate = useNavigate();
+  const { data: academicYears = [], isLoading: academicYearsLoading } = useAcademicYears();
+  const { data: currentAcademicYear, isLoading: currentAcademicYearLoading } = useCurrentAcademicYear();
 
-  const { data: academicYears = [] } = useAcademicYears();
-  const { data: classAcademicYears = [] } = useClassAcademicYears(filterAcademicYear);
+  // Initialize with empty string to keep Select controlled (never undefined)
+  const [filterAcademicYear, setFilterAcademicYear] = useState<string>('');
+  const [filterClassAy, setFilterClassAy] = useState<string>('all'); // Use 'all' instead of undefined to keep controlled
+  const [editingAssignment, setEditingAssignment] = useState<FeeAssignment | null>(null);
+  const [deletingAssignment, setDeletingAssignment] = useState<FeeAssignment | null>(null);
+  const [viewingAssignment, setViewingAssignment] = useState<FeeAssignment | null>(null);
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+
+  // Auto-select current academic year, or fall back to first academic year
+  // This logic matches FeeReportsPage for consistency
+  useEffect(() => {
+    // Only run if we're not loading and no academic year is selected
+    if (academicYearsLoading || currentAcademicYearLoading) {
+      return; // Wait for data to load
+    }
+
+    if (filterAcademicYear === '' && academicYears.length > 0) {
+      // First, try to find current year from the list (most reliable)
+      const currentYearFromList = academicYears.find(ay => ay.isCurrent === true);
+      
+      if (currentYearFromList) {
+        // Use the current year from the list
+        if (import.meta.env.DEV) {
+          console.log('[FeeAssignmentsPage] Auto-selecting current academic year from list:', currentYearFromList.id, currentYearFromList.name);
+        }
+        setFilterAcademicYear(currentYearFromList.id);
+        return;
+      }
+
+      // Fall back to the hook result if available
+      if (currentAcademicYear) {
+        if (import.meta.env.DEV) {
+          console.log('[FeeAssignmentsPage] Auto-selecting current academic year from hook:', currentAcademicYear.id, currentAcademicYear.name);
+        }
+        setFilterAcademicYear(currentAcademicYear.id);
+        return;
+      }
+
+      // Finally, fall back to first academic year if no current year is set
+      if (import.meta.env.DEV) {
+        console.log('[FeeAssignmentsPage] No current year found, falling back to first academic year:', academicYears[0].id, academicYears[0].name);
+      }
+      setFilterAcademicYear(academicYears[0].id);
+    }
+  }, [academicYears, academicYearsLoading, currentAcademicYear, currentAcademicYearLoading, filterAcademicYear]);
+  const { data: classAcademicYears = [] } = useClassAcademicYears(filterAcademicYear || undefined);
   const { data: structures = [] } = useFeeStructures({
-    academicYearId: filterAcademicYear,
-    classAcademicYearId: filterClassAy,
+    academicYearId: filterAcademicYear || undefined,
+    classAcademicYearId: filterClassAy === 'all' ? undefined : filterClassAy,
   });
 
   const classAyById = useMemo(
@@ -41,11 +116,25 @@ export default function FeeAssignmentsPage() {
     [classAcademicYears],
   );
 
-  const { data: assignments = [], isLoading } = useFeeAssignments({
-    academicYearId: filterAcademicYear,
-    classAcademicYearId: filterClassAy,
-  });
+  const {
+    data: assignments = [],
+    isLoading,
+    pagination,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    refetch: refetchAssignments,
+  } = useFeeAssignments(
+    {
+      academicYearId: filterAcademicYear || undefined,
+      classAcademicYearId: filterClassAy === 'all' ? undefined : filterClassAy,
+    },
+    true
+  );
   const createMutation = useBulkAssignFeeAssignments();
+  const updateMutation = useUpdateFeeAssignment();
+  const deleteMutation = useDeleteFeeAssignment();
   const [open, setOpen] = useState(false);
 
   const form = useForm<FeeAssignmentFormData>({
@@ -66,21 +155,38 @@ export default function FeeAssignmentsPage() {
 
   const handleSubmit = async (values: FeeAssignmentFormData) => {
     try {
-      const classAy = classAcademicYears.find((cay) => cay.id === values.class_academic_year_id);
-      await createMutation.mutateAsync({
-        feeStructureId: values.fee_structure_id,
-        academicYearId: values.academic_year_id,
-        classId: classAy?.classId || values.class_id,
-        classAcademicYearId: values.class_academic_year_id,
-        assignedAmount: values.assigned_amount,
-        dueDate: values.due_date,
-        paymentPeriodStart: values.payment_period_start ?? null,
-        paymentPeriodEnd: values.payment_period_end ?? null,
-        notes: values.notes,
-      schoolId: values.school_id ? values.school_id : null,
-      });
+      if (editingAssignment) {
+        await updateMutation.mutateAsync({
+          id: editingAssignment.id,
+          data: {
+            feeStructureId: values.fee_structure_id || editingAssignment.feeStructureId,
+            assignedAmount: values.assigned_amount ?? editingAssignment.assignedAmount,
+            dueDate: values.due_date ? new Date(values.due_date) : editingAssignment.dueDate,
+            paymentPeriodStart: values.payment_period_start ? new Date(values.payment_period_start) : editingAssignment.paymentPeriodStart,
+            paymentPeriodEnd: values.payment_period_end ? new Date(values.payment_period_end) : editingAssignment.paymentPeriodEnd,
+            notes: values.notes || editingAssignment.notes,
+          },
+        });
+        setEditingAssignment(null);
+      } else {
+        const classAy = classAcademicYears.find((cay) => cay.id === values.class_academic_year_id);
+        await createMutation.mutateAsync({
+          feeStructureId: values.fee_structure_id,
+          academicYearId: values.academic_year_id,
+          classId: classAy?.classId || values.class_id,
+          classAcademicYearId: values.class_academic_year_id,
+          assignedAmount: values.assigned_amount,
+          dueDate: values.due_date,
+          paymentPeriodStart: values.payment_period_start ?? null,
+          paymentPeriodEnd: values.payment_period_end ?? null,
+          notes: values.notes,
+          schoolId: values.school_id ? values.school_id : null,
+        });
+      }
       form.reset();
       setOpen(false);
+      // Refetch assignments to show updated data
+      await refetchAssignments();
     } catch (error) {
       const message = (error as Error)?.message || t('toast.feeAssignmentCreateFailed');
       showToast.error(message);
@@ -103,18 +209,144 @@ export default function FeeAssignmentsPage() {
     showToast.error(firstError || t('toast.feeAssignmentCreateFailed'));
   };
 
+  // Get status badge with appropriate colors
+  const getStatusBadge = (status: string) => {
+    const statusLower = status.toLowerCase();
+    let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'outline';
+    let className = '';
+
+    switch (statusLower) {
+      case 'paid':
+        variant = 'default';
+        className = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800';
+        break;
+      case 'partial':
+        variant = 'secondary';
+        className = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800';
+        break;
+      case 'pending':
+        variant = 'outline';
+        className = 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800';
+        break;
+      case 'overdue':
+        variant = 'destructive';
+        className = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800';
+        break;
+      case 'waived':
+        variant = 'secondary';
+        className = 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800';
+        break;
+      default:
+        variant = 'outline';
+        className = 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800';
+    }
+
+    return (
+      <Badge variant={variant} className={className}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
+  };
+
+  // Get fee type badge
+  const getFeeTypeBadge = (feeType: string | undefined) => {
+    if (!feeType) return null;
+    
+    const typeLower = feeType.toLowerCase();
+    let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'outline';
+    let className = '';
+
+    switch (typeLower) {
+      case 'monthly':
+        variant = 'default';
+        className = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+        break;
+      case 'one_time':
+      case 'one-time':
+        variant = 'secondary';
+        className = 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800';
+        break;
+      case 'semester':
+        variant = 'outline';
+        className = 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800';
+        break;
+      case 'annual':
+        variant = 'default';
+        className = 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400 border-teal-200 dark:border-teal-800';
+        break;
+      default:
+        variant = 'outline';
+    }
+
+    return (
+      <Badge variant={variant} className={className}>
+        {feeType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+      </Badge>
+    );
+  };
+
+  const handleView = (assignment: FeeAssignment, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setViewingAssignment(assignment);
+    setSidePanelOpen(true);
+  };
+
+  const handleEdit = (assignment: FeeAssignment, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setEditingAssignment(assignment);
+    form.reset({
+      fee_structure_id: assignment.feeStructureId,
+      academic_year_id: assignment.academicYearId,
+      class_academic_year_id: assignment.classAcademicYearId || '',
+      assigned_amount: assignment.assignedAmount,
+      due_date: assignment.dueDate ? new Date(assignment.dueDate).toISOString().split('T')[0] : '',
+      payment_period_start: assignment.paymentPeriodStart
+        ? new Date(assignment.paymentPeriodStart).toISOString().split('T')[0]
+        : '',
+      payment_period_end: assignment.paymentPeriodEnd
+        ? new Date(assignment.paymentPeriodEnd).toISOString().split('T')[0]
+        : '',
+      notes: assignment.notes || '',
+      school_id: assignment.schoolId || '',
+    });
+    setOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingAssignment) return;
+    try {
+      await deleteMutation.mutateAsync(deletingAssignment.id);
+      setDeletingAssignment(null);
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
+
   const structuresById = useMemo(
     () => Object.fromEntries(structures.map((s) => [s.id, s])),
     [structures],
   );
 
-  useEffect(() => {
-    if (!filterAcademicYear && academicYears.length > 0) {
-      const firstAy = academicYears[0];
-      setFilterAcademicYear(firstAy.id);
-      form.setValue('academic_year_id', firstAy.id);
-    }
-  }, [academicYears, filterAcademicYear, form]);
+  // Group assignments by class
+  const assignmentsByClass = useMemo(() => {
+    const grouped = new Map<string, FeeAssignment[]>();
+    assignments.forEach((assignment) => {
+      const key = assignment.classAcademicYearId || 'unknown';
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+      grouped.get(key)!.push(assignment);
+    });
+    return Array.from(grouped.entries()).map(([classId, assignments]) => ({
+      classId,
+      className: classAyById[classId]?.class?.name || classId,
+      assignments,
+      totalAssigned: assignments.reduce((sum, a) => sum + a.assignedAmount, 0),
+      totalPaid: assignments.reduce((sum, a) => sum + a.paidAmount, 0),
+      totalRemaining: assignments.reduce((sum, a) => sum + a.remainingAmount, 0),
+    }));
+  }, [assignments, classAyById]);
+
 
   // Keep form academic year in sync with selected filter
   useEffect(() => {
@@ -135,8 +367,16 @@ export default function FeeAssignmentsPage() {
     }
   }, [classAcademicYears, form]);
 
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setEditingAssignment(null);
+      form.reset();
+    }
+  }, [open, form]);
+
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('fees.assignments')}</h1>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -145,8 +385,10 @@ export default function FeeAssignmentsPage() {
           </DialogTrigger>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle>{t('fees.addAssignment')}</DialogTitle>
-              <DialogDescription className="sr-only">{t('fees.addAssignment')}</DialogDescription>
+              <DialogTitle>{editingAssignment ? t('fees.editAssignment') : t('fees.addAssignment')}</DialogTitle>
+              <DialogDescription className="sr-only">
+                {editingAssignment ? t('fees.editAssignment') : t('fees.addAssignment')}
+              </DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit, handleError)} className="space-y-4">
@@ -164,6 +406,7 @@ export default function FeeAssignmentsPage() {
                               field.onChange(value);
                               form.setValue('class_academic_year_id', '');
                             }}
+                            disabled={!!editingAssignment}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder={t('fees.selectAcademicYear')} />
@@ -196,6 +439,7 @@ export default function FeeAssignmentsPage() {
                               const selected = classAcademicYears.find((cay) => cay.id === value);
                               form.setValue('class_id', selected?.classId || '');
                             }}
+                            disabled={!!editingAssignment}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder={t('fees.selectClass')} />
@@ -226,10 +470,11 @@ export default function FeeAssignmentsPage() {
                             onValueChange={(value) => {
                               field.onChange(value);
                               const structure = structuresById[value];
-                              if (structure?.amount) {
+                              if (structure?.amount && !editingAssignment) {
                                 form.setValue('assigned_amount', structure.amount);
                               }
                             }}
+                            disabled={!!editingAssignment}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder={t('fees.selectStructure')} />
@@ -320,11 +565,23 @@ export default function FeeAssignmentsPage() {
                 />
 
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" type="button" onClick={() => setOpen(false)} disabled={createMutation.isPending}>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      setEditingAssignment(null);
+                    }}
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                  >
                     {t('common.cancel')}
                   </Button>
-                  <Button type="submit" disabled={createMutation.isPending}>
-                    {createMutation.isPending ? t('common.saving') : t('common.save')}
+                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                    {createMutation.isPending || updateMutation.isPending
+                      ? t('common.saving')
+                      : editingAssignment
+                        ? t('common.update')
+                        : t('common.save')}
                   </Button>
                 </div>
               </form>
@@ -337,14 +594,16 @@ export default function FeeAssignmentsPage() {
         <CardHeader>
           <CardTitle>{t('fees.filters')}</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <span className="text-sm font-medium">{t('fees.academicYear')}</span>
             <Select
               value={filterAcademicYear || ''}
-              onValueChange={(val) => {
-                setFilterAcademicYear(val || undefined);
-                setFilterClassAy(undefined);
+              onValueChange={async (val) => {
+                setFilterAcademicYear(val || '');
+                setFilterClassAy('all'); // Reset to 'all' when academic year changes
+                // Refetch assignments when academic year changes
+                await refetchAssignments();
               }}
             >
               <SelectTrigger>
@@ -361,11 +620,19 @@ export default function FeeAssignmentsPage() {
           </div>
           <div>
             <span className="text-sm font-medium">{t('fees.class')}</span>
-            <Select value={filterClassAy || ''} onValueChange={(val) => setFilterClassAy(val || undefined)}>
+            <Select
+              value={filterClassAy}
+              onValueChange={async (val) => {
+                setFilterClassAy(val);
+                // Refetch assignments when class filter changes
+                await refetchAssignments();
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder={t('fees.selectClass')} />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">{t('fees.allClasses')}</SelectItem>
                 {classAcademicYears.map((cay) => (
                   <SelectItem key={cay.id} value={cay.id}>
                     {cay.class?.name ?? cay.id}
@@ -377,45 +644,447 @@ export default function FeeAssignmentsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('fees.assignments')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p>{t('common.loading')}</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('fees.class')}</TableHead>
-                  <TableHead>{t('fees.structure')}</TableHead>
-                  <TableHead>{t('fees.amountAssigned')}</TableHead>
-                  <TableHead>{t('fees.paid')}</TableHead>
-                  <TableHead>{t('fees.remaining')}</TableHead>
-                  <TableHead>{t('fees.status')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {assignments.map((assignment) => (
-                  <TableRow key={assignment.id}>
-                    <TableCell>
-                      {classAyById[assignment.classAcademicYearId || '']?.class?.name ??
-                        assignment.classAcademicYearId}
-                    </TableCell>
-                    <TableCell>{structuresById[assignment.feeStructureId]?.name ?? assignment.feeStructureId}</TableCell>
-                    <TableCell>{assignment.assignedAmount.toFixed(2)}</TableCell>
-                    <TableCell>{assignment.paidAmount.toFixed(2)}</TableCell>
-                    <TableCell>{assignment.remainingAmount.toFixed(2)}</TableCell>
-                    <TableCell className="capitalize">{assignment.status}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+      <Tabs defaultValue="classes" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="classes" className="flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" />
+            {t('fees.assignedClasses') || 'Assigned Classes'}
+          </TabsTrigger>
+          <TabsTrigger value="students" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            {t('fees.students') || 'Students'}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="classes">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('fees.assignedClasses') || 'Assigned Classes'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <p>{t('common.loading')}</p>
+              ) : assignmentsByClass.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">{t('common.noData') || 'No data available'}</p>
+              ) : (
+                <>
+                  <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('fees.class')}</TableHead>
+                      <TableHead>{t('fees.structure')}</TableHead>
+                      <TableHead className="text-right">{t('fees.amountAssigned')}</TableHead>
+                      <TableHead className="text-right">{t('fees.paid')}</TableHead>
+                      <TableHead className="text-right">{t('fees.remaining')}</TableHead>
+                      <TableHead>{t('fees.status')}</TableHead>
+                      <TableHead className="text-right">{t('common.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assignmentsByClass.map((classGroup) =>
+                      classGroup.assignments.map((assignment) => (
+                        <TableRow 
+                          key={assignment.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => handleView(assignment)}
+                        >
+                          <TableCell>
+                            <div className="font-medium">{classGroup.className}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="font-medium">{structuresById[assignment.feeStructureId]?.name ?? assignment.feeStructureId}</div>
+                              {getFeeTypeBadge(structuresById[assignment.feeStructureId]?.feeType)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-semibold">{formatCurrency(assignment.assignedAmount)}</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="text-green-600 dark:text-green-400 font-medium">
+                              {formatCurrency(assignment.paidAmount)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className={assignment.remainingAmount > 0 ? 'text-red-600 dark:text-red-400 font-medium' : 'text-muted-foreground'}>
+                              {formatCurrency(assignment.remainingAmount)}
+                            </span>
+                          </TableCell>
+                          <TableCell>{getStatusBadge(assignment.status)}</TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="sm" onClick={(e) => handleView(assignment, e)}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={(e) => handleEdit(assignment, e)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeletingAssignment(assignment);
+                                }}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )),
+                    )}
+                  </TableBody>
+                </Table>
+                {pagination && (
+                  <DataTablePagination
+                    table={{
+                      getState: () => ({
+                        pagination: { pageIndex: page - 1, pageSize },
+                      }),
+                      setPageIndex: (index: number) => {
+                        setPage(index + 1);
+                      },
+                      setPageSize: (size: number) => {
+                        setPageSize(size);
+                        setPage(1);
+                      },
+                      getPageCount: () => pagination.last_page,
+                      getRowCount: () => pagination.total,
+                      getRowModel: () => ({ rows: [] }),
+                      options: { data: assignments },
+                    } as any}
+                    paginationMeta={pagination}
+                    onPageChange={setPage}
+                    onPageSizeChange={(newPageSize) => {
+                      setPageSize(newPageSize);
+                      setPage(1);
+                    }}
+                    showPageSizeSelector={true}
+                    showTotalCount={true}
+                  />
+                )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="students">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('fees.students') || 'Students'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <p>{t('common.loading')}</p>
+              ) : assignments.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">{t('common.noData') || 'No data available'}</p>
+              ) : (
+                <>
+                  <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('fees.student')}</TableHead>
+                      <TableHead>{t('fees.class')}</TableHead>
+                      <TableHead>{t('fees.structure')}</TableHead>
+                      <TableHead className="text-right">{t('fees.amountAssigned')}</TableHead>
+                      <TableHead className="text-right">{t('fees.paid')}</TableHead>
+                      <TableHead className="text-right">{t('fees.remaining')}</TableHead>
+                      <TableHead>{t('fees.status')}</TableHead>
+                      <TableHead className="text-right">{t('common.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assignments.map((assignment) => {
+                      // Get student name from assignment (if loaded via relationship)
+                      // The backend loads student relationship, but mapper doesn't preserve it
+                      // So we access it from the raw API response if available
+                      const studentName = (assignment as any).student?.full_name || assignment.studentId || 'Unknown';
+                      return (
+                        <TableRow 
+                          key={assignment.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => handleView(assignment)}
+                        >
+                          <TableCell>
+                            <div className="font-medium">{studentName}</div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">
+                              {(classAyById[assignment.classAcademicYearId || '']?.class?.name) ?? (assignment.classAcademicYearId || '-')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="font-medium">{structuresById[assignment.feeStructureId]?.name ?? assignment.feeStructureId}</div>
+                              {getFeeTypeBadge(structuresById[assignment.feeStructureId]?.feeType)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-semibold">{formatCurrency(assignment.assignedAmount)}</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="text-green-600 dark:text-green-400 font-medium">
+                              {formatCurrency(assignment.paidAmount)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className={assignment.remainingAmount > 0 ? 'text-red-600 dark:text-red-400 font-medium' : 'text-muted-foreground'}>
+                              {formatCurrency(assignment.remainingAmount)}
+                            </span>
+                          </TableCell>
+                          <TableCell>{getStatusBadge(assignment.status)}</TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="sm" onClick={(e) => handleView(assignment, e)}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={(e) => handleEdit(assignment, e)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeletingAssignment(assignment);
+                                }}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                {pagination && (
+                  <DataTablePagination
+                    table={{
+                      getState: () => ({
+                        pagination: { pageIndex: page - 1, pageSize },
+                      }),
+                      setPageIndex: (index: number) => {
+                        setPage(index + 1);
+                      },
+                      setPageSize: (size: number) => {
+                        setPageSize(size);
+                        setPage(1);
+                      },
+                      getPageCount: () => pagination.last_page,
+                      getRowCount: () => pagination.total,
+                      getRowModel: () => ({ rows: [] }),
+                      options: { data: assignments },
+                    } as any}
+                    paginationMeta={pagination}
+                    onPageChange={setPage}
+                    onPageSizeChange={(newPageSize) => {
+                      setPageSize(newPageSize);
+                      setPage(1);
+                    }}
+                    showPageSizeSelector={true}
+                    showTotalCount={true}
+                  />
+                )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <AlertDialog open={!!deletingAssignment} onOpenChange={(open) => !open && setDeletingAssignment(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('fees.deleteAssignmentConfirm') || 'Are you sure you want to delete this fee assignment? This action cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingAssignment(null)}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Side Panel for Viewing Assignment Details */}
+      <Sheet open={sidePanelOpen} onOpenChange={setSidePanelOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{t('fees.assignmentDetails') || 'Fee Assignment Details'}</SheetTitle>
+            <SheetDescription>
+              {t('fees.viewAssignmentDetails') || 'View detailed information about this fee assignment'}
+            </SheetDescription>
+          </SheetHeader>
+          
+          {viewingAssignment && (
+            <div className="mt-6 space-y-6">
+              {/* Student Information */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">{t('fees.student') || 'Student'}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('fees.studentName') || 'Name'}</p>
+                    <p className="font-medium">
+                      {(viewingAssignment as any).student?.full_name || viewingAssignment.studentId || 'Unknown'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('fees.studentId') || 'Student ID'}</p>
+                    <p className="font-medium">{viewingAssignment.studentId}</p>
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      navigate(`/students/${viewingAssignment.studentId}/fees`);
+                      setSidePanelOpen(false);
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    {t('fees.viewStudentFees') || 'View Student Fee Statement'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Fee Structure Information */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">{t('fees.feeStructure') || 'Fee Structure'}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('fees.structureName') || 'Name'}</p>
+                    <p className="font-medium">
+                      {structuresById[viewingAssignment.feeStructureId]?.name ?? viewingAssignment.feeStructureId}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('fees.feeType') || 'Type'}</p>
+                    <p className="font-medium capitalize">
+                      {structuresById[viewingAssignment.feeStructureId]?.feeType ?? 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Class Information */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">{t('fees.class') || 'Class'}</h3>
+                <div>
+                  <p className="text-sm text-muted-foreground">{t('fees.className') || 'Class Name'}</p>
+                  <p className="font-medium">
+                    {(classAyById[viewingAssignment.classAcademicYearId || '']?.class?.name) ?? 
+                     (viewingAssignment.classAcademicYearId || 'N/A')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Financial Information */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">{t('fees.financialDetails') || 'Financial Details'}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('fees.originalAmount') || 'Original Amount'}</p>
+                    <p className="font-medium">{formatCurrency(viewingAssignment.originalAmount ?? viewingAssignment.assignedAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('fees.assignedAmount') || 'Assigned Amount'}</p>
+                    <p className="font-medium">{formatCurrency(viewingAssignment.assignedAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('fees.paid') || 'Paid'}</p>
+                    <p className="font-medium text-green-600">{formatCurrency(viewingAssignment.paidAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('fees.remaining') || 'Remaining'}</p>
+                    <p className="font-medium text-red-600">{formatCurrency(viewingAssignment.remainingAmount)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status and Dates */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">{t('fees.statusAndDates') || 'Status & Dates'}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('fees.status') || 'Status'}</p>
+                    <p className="font-medium capitalize">{viewingAssignment.status}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('fees.dueDate') || 'Due Date'}</p>
+                    <p className="font-medium">
+                      {viewingAssignment.dueDate 
+                        ? new Date(viewingAssignment.dueDate).toLocaleDateString() 
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  {viewingAssignment.paymentPeriodStart && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t('fees.paymentPeriodStart') || 'Period Start'}</p>
+                      <p className="font-medium">
+                        {new Date(viewingAssignment.paymentPeriodStart).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                  {viewingAssignment.paymentPeriodEnd && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t('fees.paymentPeriodEnd') || 'Period End'}</p>
+                      <p className="font-medium">
+                        {new Date(viewingAssignment.paymentPeriodEnd).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Notes */}
+              {viewingAssignment.notes && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">{t('fees.notes') || 'Notes'}</h3>
+                  <p className="text-sm text-muted-foreground">{viewingAssignment.notes}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    handleEdit(viewingAssignment);
+                    setSidePanelOpen(false);
+                  }}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  {t('common.edit') || 'Edit'}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setDeletingAssignment(viewingAssignment);
+                    setSidePanelOpen(false);
+                  }}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {t('common.delete') || 'Delete'}
+                </Button>
+              </div>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
-

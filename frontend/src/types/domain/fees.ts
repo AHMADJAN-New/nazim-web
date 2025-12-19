@@ -83,7 +83,7 @@ export interface FeeException {
   exceptionAmount: number;
   exceptionReason: string;
   approvedByUserId: string;
-  approvedAt: Date;
+  approvedAt: Date | null;
   validFrom: Date;
   validTo: Date | null;
   isActive: boolean;
