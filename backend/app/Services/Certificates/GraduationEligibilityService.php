@@ -135,7 +135,40 @@ class GraduationEligibilityService
             ];
         })->filter(fn ($item) => $item['student_id'] !== null);
 
-        return ['students' => $results];
+        // Calculate positions for passing students based on percentage (highest to lowest)
+        $passingStudents = $results->filter(fn ($item) => $item['final_result_status'] === 'pass')
+            ->sortByDesc(fn ($item) => $item['eligibility_json']['percentage'] ?? 0)
+            ->values();
+
+        $position = 1;
+        $lastPercentage = null;
+        $sameRankCount = 0;
+
+        $passingStudents = $passingStudents->map(function ($student) use (&$position, &$lastPercentage, &$sameRankCount) {
+            $currentPercentage = $student['eligibility_json']['percentage'] ?? 0;
+
+            if ($lastPercentage !== null && abs($currentPercentage - $lastPercentage) < 0.01) {
+                // Same percentage as previous student - same rank
+                $sameRankCount++;
+            } else {
+                // Different percentage - increment position by the number of students with same previous rank
+                if ($lastPercentage !== null) {
+                    $position += $sameRankCount;
+                }
+                $sameRankCount = 1;
+            }
+
+            $student['position'] = $position;
+            $lastPercentage = $currentPercentage;
+
+            return $student;
+        });
+
+        // Merge passing students (with positions) back with failing students (position = null)
+        $failingStudents = $results->filter(fn ($item) => $item['final_result_status'] !== 'pass');
+        $allStudents = $passingStudents->concat($failingStudents);
+
+        return ['students' => $allStudents];
     }
 
     /**
