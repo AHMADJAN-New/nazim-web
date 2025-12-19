@@ -37,6 +37,8 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
 import {
     useExpenseEntries,
     useCreateExpenseEntry,
@@ -68,6 +70,8 @@ export default function ExpenseEntries() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editEntry, setEditEntry] = useState<ExpenseEntry | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [viewingEntry, setViewingEntry] = useState<ExpenseEntry | null>(null);
+    const [sidePanelOpen, setSidePanelOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState<string>('all');
     const [filterAccount, setFilterAccount] = useState<string>('all');
@@ -590,7 +594,14 @@ export default function ExpenseEntries() {
                         </TableHeader>
                         <TableBody>
                             {filteredEntries.map((entry) => (
-                                <TableRow key={entry.id}>
+                                <TableRow 
+                                    key={entry.id}
+                                    className="cursor-pointer hover:bg-muted/50"
+                                    onClick={() => {
+                                        setViewingEntry(entry);
+                                        setSidePanelOpen(true);
+                                    }}
+                                >
                                     <TableCell>{formatDate(entry.date)}</TableCell>
                                     <TableCell>
                                         <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">
@@ -692,6 +703,225 @@ export default function ExpenseEntries() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Side Panel for Viewing Entry Details */}
+            <Sheet open={sidePanelOpen} onOpenChange={setSidePanelOpen}>
+                <SheetContent className="sm:max-w-2xl overflow-y-auto">
+                    {viewingEntry && (
+                        <>
+                            <SheetHeader>
+                                <SheetTitle>{t('finance.entryDetails') || 'Expense Entry Details'}</SheetTitle>
+                                <SheetDescription>
+                                    {t('finance.viewEntryDetails') || 'View detailed information about this expense entry'}
+                                </SheetDescription>
+                            </SheetHeader>
+
+                            <div className="mt-6 space-y-6">
+                                {/* Entry Information */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">{t('finance.entryInformation') || 'Entry Information'}</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('finance.amount') || 'Amount'}</p>
+                                            <p className="text-lg font-semibold text-red-600">
+                                                -{formatCurrency(viewingEntry.amount)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('common.date') || 'Date'}</p>
+                                            <p className="text-sm font-medium">{formatDate(viewingEntry.date)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('common.status') || 'Status'}</p>
+                                            <div className="mt-1">{getStatusBadge(viewingEntry.status)}</div>
+                                        </div>
+                                        {viewingEntry.referenceNo && (
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('finance.referenceNo') || 'Reference No.'}</p>
+                                                <p className="text-sm font-medium">{viewingEntry.referenceNo}</p>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('finance.paymentMethod') || 'Payment Method'}</p>
+                                            <Badge variant="outline" className="mt-1">
+                                                {viewingEntry.paymentMethod.replace('_', ' ').toUpperCase()}
+                                            </Badge>
+                                        </div>
+                                        {viewingEntry.paidTo && (
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('finance.paidTo') || 'Paid To'}</p>
+                                                <Badge variant="outline" className="bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400 mt-1">
+                                                    {viewingEntry.paidTo}
+                                                </Badge>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {viewingEntry.description && (
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">{t('common.description') || 'Description'}</p>
+                                            <p className="text-sm mt-1">{viewingEntry.description}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Separator />
+
+                                {/* Account Information */}
+                                {viewingEntry.account && (
+                                    <>
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold">{t('finance.accountInformation') || 'Account Information'}</h3>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.accountName') || 'Account Name'}</p>
+                                                    <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 mt-1">
+                                                        {viewingEntry.account.name}
+                                                    </Badge>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.accountType') || 'Account Type'}</p>
+                                                    <Badge 
+                                                        variant="outline"
+                                                        className={
+                                                            viewingEntry.account.type === 'cash'
+                                                                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 mt-1'
+                                                                : 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400 mt-1'
+                                                        }
+                                                    >
+                                                        {viewingEntry.account.type === 'cash' ? t('finance.cash') || 'Cash' : t('finance.fund') || 'Fund'}
+                                                    </Badge>
+                                                </div>
+                                                <div className="col-span-2">
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.currentBalance') || 'Current Balance'}</p>
+                                                    <p className="text-2xl font-bold text-emerald-600 mt-1">
+                                                        {formatCurrency(viewingEntry.account.currentBalance)}
+                                                    </p>
+                                                </div>
+                                                {viewingEntry.account.code && (
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.accountCode') || 'Account Code'}</p>
+                                                        <p className="text-sm font-medium">{viewingEntry.account.code}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Separator />
+                                    </>
+                                )}
+
+                                {/* Category Information */}
+                                {viewingEntry.expenseCategory && (
+                                    <>
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold">{t('finance.categoryInformation') || 'Category Information'}</h3>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.category') || 'Category'}</p>
+                                                    <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 mt-1">
+                                                        {viewingEntry.expenseCategory.name}
+                                                    </Badge>
+                                                </div>
+                                                {viewingEntry.expenseCategory.code && (
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.categoryCode') || 'Category Code'}</p>
+                                                        <p className="text-sm font-medium">{viewingEntry.expenseCategory.code}</p>
+                                                    </div>
+                                                )}
+                                                {viewingEntry.expenseCategory.description && (
+                                                    <div className="col-span-2">
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('common.description') || 'Description'}</p>
+                                                        <p className="text-sm mt-1">{viewingEntry.expenseCategory.description}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Separator />
+                                    </>
+                                )}
+
+                                {/* Project Information */}
+                                {viewingEntry.project && (
+                                    <>
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold">{t('finance.projectInformation') || 'Project Information'}</h3>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.project') || 'Project'}</p>
+                                                    <Badge variant="outline" className="bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 mt-1">
+                                                        {viewingEntry.project.name}
+                                                    </Badge>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('common.status') || 'Status'}</p>
+                                                    <Badge variant="outline" className="mt-1 capitalize">
+                                                        {viewingEntry.project.status}
+                                                    </Badge>
+                                                </div>
+                                                {viewingEntry.project.budgetAmount && (
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.budgetAmount') || 'Budget Amount'}</p>
+                                                        <p className="text-sm font-medium">{formatCurrency(viewingEntry.project.budgetAmount)}</p>
+                                                    </div>
+                                                )}
+                                                {viewingEntry.project.balance !== undefined && (
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.projectBalance') || 'Project Balance'}</p>
+                                                        <p className="text-sm font-medium">{formatCurrency(viewingEntry.project.balance)}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Separator />
+                                    </>
+                                )}
+
+                                {/* Currency Information */}
+                                {viewingEntry.currency && (
+                                    <>
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold">{t('finance.currencyInformation') || 'Currency Information'}</h3>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <p className="text-sm font-medium text-muted-foreground">{t('finance.currency') || 'Currency'}</p>
+                                                    <Badge variant="outline" className="bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 mt-1">
+                                                        {viewingEntry.currency.code || 'N/A'}
+                                                    </Badge>
+                                                </div>
+                                                {viewingEntry.currency.symbol && (
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('finance.currencySymbol') || 'Symbol'}</p>
+                                                        <p className="text-sm font-medium">{viewingEntry.currency.symbol}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Separator />
+                                    </>
+                                )}
+
+                                {/* Metadata */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold">{t('common.metadata') || 'Metadata'}</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {viewingEntry.createdAt && (
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('common.createdAt') || 'Created At'}</p>
+                                                <p className="text-sm">{formatDate(viewingEntry.createdAt)}</p>
+                                            </div>
+                                        )}
+                                        {viewingEntry.updatedAt && (
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('common.updatedAt') || 'Updated At'}</p>
+                                                <p className="text-sm">{formatDate(viewingEntry.updatedAt)}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     );
 }
