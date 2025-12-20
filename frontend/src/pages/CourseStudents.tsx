@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
 import { useReactTable, getCoreRowModel, type PaginationState } from '@tanstack/react-table';
-import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -154,7 +154,7 @@ const StudentRow = ({
       </TableCell>
       <TableCell className="hidden md:table-cell text-sm">
         {student.registrationDate 
-          ? format(new Date(student.registrationDate), 'MMM d, yyyy')
+          ? formatDate(student.registrationDate)
           : '-'}
       </TableCell>
       <TableCell>

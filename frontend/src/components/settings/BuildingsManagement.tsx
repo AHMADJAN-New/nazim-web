@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useBuildings, useCreateBuilding, useUpdateBuilding, useDeleteBuilding, type Building } from '@/hooks/useBuildings';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -226,7 +227,7 @@ export function BuildingsManagement() {
     {
       accessorKey: 'createdAt',
       header: t('settings.buildings.createdAt'),
-      cell: ({ row }) => row.original.createdAt.toLocaleDateString(),
+      cell: ({ row }) => row.original.formatDate(createdAt),
     },
     {
       id: 'actions',
@@ -290,7 +291,7 @@ export function BuildingsManagement() {
       return {
         building_name: building.buildingName,
         school_name: buildingSchool?.schoolName || t('settings.buildings.unknownSchool'),
-        created_at: building.createdAt instanceof Date ? building.createdAt.toLocaleDateString() : new Date(building.createdAt).toLocaleDateString(),
+        created_at: building.createdAt instanceof Date ? building.formatDate(createdAt) : formatDate(building.createdAt),
       };
     });
   };

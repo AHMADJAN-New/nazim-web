@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProfile } from '@/hooks/useProfiles';
 import { useExams, useExamReport, useLatestExamFromCurrentYear, useMarksProgress } from '@/hooks/useExams';
@@ -220,7 +221,7 @@ export function ExamReports() {
                               <TableCell className="text-right">{subject.totalMarks ?? '—'}</TableCell>
                               <TableCell className="text-right">{subject.passingMarks ?? '—'}</TableCell>
                               <TableCell className="text-right">
-                                {subject.scheduledAt ? new Date(subject.scheduledAt).toLocaleDateString() : '—'}
+                                {subject.scheduledAt ? formatDate(subject.scheduledAt) : '—'}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -265,7 +266,7 @@ export function ExamReports() {
                         <TableCell className="text-right">{subject.totalMarks ?? '—'}</TableCell>
                         <TableCell className="text-right">{subject.passingMarks ?? '—'}</TableCell>
                         <TableCell className="text-right">
-                          {subject.scheduledAt ? new Date(subject.scheduledAt).toLocaleDateString() : 'Pending'}
+                          {subject.scheduledAt ? formatDate(subject.scheduledAt) : 'Pending'}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -292,7 +293,7 @@ export function ExamReports() {
                     <div className="text-sm text-muted-foreground">Passing: {subject.passingMarks ?? '—'}</div>
                     <div className="mt-2">
                       <Badge variant="outline">
-                        {subject.scheduledAt ? new Date(subject.scheduledAt).toLocaleDateString() : 'Awaiting schedule'}
+                        {subject.scheduledAt ? formatDate(subject.scheduledAt) : 'Awaiting schedule'}
                       </Badge>
                     </div>
                   </CardContent>

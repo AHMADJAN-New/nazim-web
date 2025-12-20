@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { Plus, FileText, Award, Printer, ArrowRight, Calendar, Users, CheckCircle2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -334,7 +335,7 @@ export default function GraduationDashboard() {
                         <StatusBadge status={batch.status} />
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {batch.class?.name || batch.class_id} • {batch.graduation_date ? new Date(batch.graduation_date).toLocaleDateString() : '—'}
+                        {batch.class?.name || batch.class_id} • {batch.graduation_date ? formatDate(batch.graduation_date) : '—'}
                       </p>
                       {batch.students_count !== undefined && (
                         <p className="text-xs text-muted-foreground mt-1">
@@ -375,7 +376,7 @@ export default function GraduationDashboard() {
                         <StatusBadge status={batch.status} />
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {batch.class?.name || batch.class_id} • {batch.graduation_date ? new Date(batch.graduation_date).toLocaleDateString() : '—'}
+                        {batch.class?.name || batch.class_id} • {batch.graduation_date ? formatDate(batch.graduation_date) : '—'}
                       </p>
                       {batch.students_count !== undefined && (
                         <p className="text-xs text-muted-foreground mt-1">
@@ -413,7 +414,7 @@ export default function GraduationDashboard() {
                       <StatusBadge status={batch.status} />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {batch.class?.name || batch.class_id} • {batch.graduation_date ? new Date(batch.graduation_date).toLocaleDateString() : '—'}
+                      {batch.class?.name || batch.class_id} • {batch.graduation_date ? formatDate(batch.graduation_date) : '—'}
                     </p>
                     {batch.students_count !== undefined && (
                       <p className="text-xs text-muted-foreground mt-1">

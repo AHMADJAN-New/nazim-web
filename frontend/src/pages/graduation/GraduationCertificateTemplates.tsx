@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   useCertificateTemplatesV2,
   useCreateCertificateTemplateV2,
@@ -48,7 +49,6 @@ import {
   Layout,
 } from 'lucide-react';
 import { GraduationCertificateLayoutEditor } from '@/components/certificates/GraduationCertificateLayoutEditor';
-import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -266,7 +266,7 @@ export default function GraduationCertificateTemplates() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {format(new Date(template.created_at), 'MMM d, yyyy')}
+                      {formatDate(template.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -1145,7 +1146,7 @@ function AssetHistoryPanel({ assetId, allAssets }: { assetId: string; allAssets:
                     )}
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {assignment.assignedOn ? format(new Date(assignment.assignedOn), 'MMM dd, yyyy') : 'N/A'}
+                    {assignment.assignedOn ? formatDate(assignment.assignedOn) : 'N/A'}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -1159,14 +1160,14 @@ function AssetHistoryPanel({ assetId, allAssets }: { assetId: string; allAssets:
                   <div>
                     <Label className="text-muted-foreground">Expected Return</Label>
                     <p className="font-medium">
-                      {assignment.expectedReturnDate ? format(new Date(assignment.expectedReturnDate), 'MMM dd, yyyy') : 'N/A'}
+                      {assignment.expectedReturnDate ? formatDate(assignment.expectedReturnDate) : 'N/A'}
                     </p>
                   </div>
                   {isReturned && assignment.returnedAt && (
                     <div>
                       <Label className="text-muted-foreground">Returned Date</Label>
                       <p className="font-medium">
-                        {format(new Date(assignment.returnedAt), 'MMM dd, yyyy')}
+                        {formatDate(assignment.returnedAt)}
                       </p>
                     </div>
                   )}

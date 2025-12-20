@@ -47,7 +47,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ArrowLeft, Check, X, Clock, AlertCircle, UserCheck, Users, ChevronDown, Save, QrCode, ScanLine, Activity, History, Lock, Unlock } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { formatDate, formatDateTime, cn } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/loading';
 import type { ExamAttendanceStatus, TimeslotStudent } from '@/types/domain/exam';
 
@@ -568,7 +568,7 @@ export default function ExamAttendancePage() {
                   ) : (
                     filteredTimes.map((time) => (
                       <SelectItem key={time.id} value={time.id}>
-                        {format(new Date(time.date), 'MMM dd')} - {time.startTime} to {time.endTime}
+                        {formatDate(time.date)} - {time.startTime} to {time.endTime}
                         {time.examSubject?.subject?.name && ` (${time.examSubject.subject.name})`}
                       </SelectItem>
                     ))
@@ -604,7 +604,7 @@ export default function ExamAttendancePage() {
                 </div>
                 {selectedExamTime && (
                   <CardDescription className="mt-1">
-                    {format(new Date(selectedExamTime.date), 'MMM dd, yyyy')} | {selectedExamTime.startTime} - {selectedExamTime.endTime}
+                    {formatDate(selectedExamTime.date)} | {selectedExamTime.startTime} - {selectedExamTime.endTime}
                     {selectedExamTime.examSubject?.subject?.name && ` | ${selectedExamTime.examSubject.subject.name}`}
                   </CardDescription>
                 )}
@@ -816,7 +816,7 @@ export default function ExamAttendancePage() {
                               className="text-xs flex flex-col items-start h-auto py-2 px-3"
                             >
                               <div className="flex items-center gap-1">
-                                {format(new Date(time.date), 'MMM dd')} {time.startTime}
+                                {formatDate(time.date)} {time.startTime}
                                 {selectedTimeIds.has(time.id) && <Check className="h-3 w-3 ml-1" />}
                               </div>
                               {time.examSubject?.subject?.name && (

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useReactTable, getCoreRowModel, type PaginationState } from '@tanstack/react-table';
-import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,11 +97,11 @@ const CourseRow = ({ course, onEdit, onDelete, onClose, onReopen, onViewStudents
       <TableCell className="hidden md:table-cell">
         <div className="text-sm">
           {course.startDate 
-            ? format(new Date(course.startDate), 'MMM d, yyyy')
+            ? formatDate(course.startDate)
             : '—'
           } → {
           course.endDate 
-            ? format(new Date(course.endDate), 'MMM d, yyyy')
+            ? formatDate(course.endDate)
             : '—'
           }
         </div>
@@ -489,7 +489,7 @@ const ShortTermCourses = () => {
               {selectedCourseForStudents.startDate && selectedCourseForStudents.endDate && (
                 <div className="mt-3 pt-3 border-t">
                   <p className="text-xs text-muted-foreground">
-                    {t('courses.coursePeriod')}: {format(new Date(selectedCourseForStudents.startDate), 'MMM d, yyyy')} → {format(new Date(selectedCourseForStudents.endDate), 'MMM d, yyyy')}
+                    {t('courses.coursePeriod')}: {formatDate(selectedCourseForStudents.startDate)} → {formatDate(selectedCourseForStudents.endDate)}
                   </p>
                 </div>
               )}
@@ -564,7 +564,7 @@ const ShortTermCourses = () => {
                               <div>
                                 <span className="text-muted-foreground">{t('courses.registered')}</span>
                                 <span className="ml-2 font-medium">
-                                  {format(new Date(student.registrationDate), 'MMM d, yyyy')}
+                                  {formatDate(student.registrationDate)}
                                 </span>
                               </div>
                             )}
@@ -572,7 +572,7 @@ const ShortTermCourses = () => {
                               <div>
                                 <span className="text-muted-foreground">{t('courses.completedLabel')}</span>
                                 <span className="ml-2 font-medium">
-                                  {format(new Date(student.completionDate), 'MMM d, yyyy')}
+                                  {formatDate(student.completionDate)}
                                 </span>
                               </div>
                             )}
@@ -610,13 +610,13 @@ const ShortTermCourses = () => {
                                     {t('courses.paid')}
                                   </Badge>
                                   <span className="text-sm font-semibold">
-                                    {student.feeAmount.toLocaleString()} AFN
+                                    {student.formatDateTime(feeAmount)} AFN
                                   </span>
                                 </div>
                               </div>
                               {student.feePaidDate && (
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {t('courses.paidOn')} {format(new Date(student.feePaidDate), 'MMM d, yyyy')}
+                                  {t('courses.paidOn')} {formatDate(student.feePaidDate)}
                                 </p>
                               )}
                             </div>

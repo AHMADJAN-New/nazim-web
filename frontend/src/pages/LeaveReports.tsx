@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { format } from 'date-fns';
 import { BarChart3, CalendarRange, Download, Filter, Loader2, RefreshCcw, CheckCircle2, Clock, XCircle, AlertCircle, FileText, Calendar, TrendingUp } from 'lucide-react';
 import { useLeaveRequests } from '@/hooks/useLeaveRequests';
@@ -550,7 +551,7 @@ export default function LeaveReports() {
                     return (
                       <div key={group.date} className="rounded-lg border p-3">
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-semibold">{format(new Date(group.date), 'PP')}</div>
+                          <div className="font-semibold">{formatDate(group.date)}</div>
                           <Badge variant="outline" className="text-xs">{group.items.length} {t('leave.leaves')}</Badge>
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs">

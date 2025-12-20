@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { BookOpen, BookCheck, AlertTriangle, Calendar, TrendingUp, Download, X, History, FileText, Tag, DollarSign, Layers, BarChart3 } from 'lucide-react';
 import { format, addDays, isAfter, isBefore } from 'date-fns';
 import { useLibraryBooks, useLibraryLoans, useDueSoonLoans } from '@/hooks/useLibrary';
@@ -500,7 +501,7 @@ export default function LibraryReports() {
                                                 <Badge variant="destructive">Overdue</Badge>
                                             </div>
                                             <div className="text-sm text-muted-foreground">
-                                                Due: {loan.due_date ? format(new Date(loan.due_date), 'MMM dd, yyyy') : 'N/A'}
+                                                Due: {loan.due_date ? formatDate(loan.due_date) : 'N/A'}
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Badge variant="outline">
@@ -604,7 +605,7 @@ export default function LibraryReports() {
                                         >
                                             <div className="font-semibold">{loan.book?.title}</div>
                                             <div className="text-sm text-muted-foreground">
-                                                Due: {loan.due_date ? format(new Date(loan.due_date), 'MMM dd, yyyy') : 'N/A'}
+                                                Due: {loan.due_date ? formatDate(loan.due_date) : 'N/A'}
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Badge variant="outline">
@@ -754,9 +755,9 @@ export default function LibraryReports() {
                                                 </Badge>
                                             </div>
                                             <div className="text-xs text-muted-foreground">
-                                                {loan.loan_date && format(new Date(loan.loan_date), 'MMM dd, yyyy')}
-                                                {loan.due_date && ` → Due: ${format(new Date(loan.due_date), 'MMM dd, yyyy')}`}
-                                                {loan.returned_at && ` (Returned: ${format(new Date(loan.returned_at), 'MMM dd, yyyy')})`}
+                                                {loan.loan_date && formatDate(loan.loan_date)}
+                                                {loan.due_date && ` → Due: ${formatDate(loan.due_date)}`}
+                                                {loan.returned_at && ` (Returned: ${formatDate(loan.returned_at)})`}
                                             </div>
                                         </div>
                                     ))}
@@ -958,10 +959,7 @@ export default function LibraryReports() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
-                                    {booksReportStats.totalPrice.toLocaleString('en-US', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
+                                    {booksReportStats.formatDateTime(totalPrice)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Sum of all book prices
@@ -976,10 +974,7 @@ export default function LibraryReports() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
-                                    {booksReportStats.totalValue.toLocaleString('en-US', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
+                                    {booksReportStats.formatDateTime(totalValue)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Price × Total Copies
@@ -994,10 +989,7 @@ export default function LibraryReports() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
-                                    {booksReportStats.averagePrice.toLocaleString('en-US', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
+                                    {booksReportStats.formatDateTime(averagePrice)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Per book
@@ -1110,7 +1102,7 @@ export default function LibraryReports() {
                                                                 {(() => {
                                                                     const price = book.price ?? 0;
                                                                     const numPrice = typeof price === 'string' ? parseFloat(price) : (typeof price === 'number' ? price : 0);
-                                                                    return isNaN(numPrice) ? '0.00' : numPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                                    return isNaN(numPrice) ? '0.00' : formatDateTime(numPrice);
                                                                 })()}
                                                             </TableCell>
                                                             <TableCell>{book.total_copies ?? 0}</TableCell>

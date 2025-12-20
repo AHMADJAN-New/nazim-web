@@ -58,7 +58,7 @@ import { useCurrencies } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 
 export default function FinanceAccounts() {
     const { t } = useLanguage();
@@ -574,7 +574,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                     <div>
                                         <p className="text-muted-foreground">{t('common.date') || 'Date'}</p>
                                         <p className="font-medium">
-                                            {transactions.latestTransaction.date.toLocaleDateString()}
+                                            {transactions.latestTransaction.formatDate(date)}
                                         </p>
                                     </div>
                                     <div>
@@ -654,7 +654,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                             <div>
                                                 <p className="font-medium text-sm">{transaction.category}</p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {transaction.date.toLocaleDateString()}
+                                                    {transaction.formatDate(date)}
                                                     {transaction.referenceNo && ` • ${transaction.referenceNo}`}
                                                 </p>
                                             </div>

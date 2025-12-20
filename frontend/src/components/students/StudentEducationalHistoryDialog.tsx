@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -43,7 +44,6 @@ import {
 } from '@/hooks/useStudents';
 import { educationalHistorySchema, type EducationalHistoryFormData } from '@/lib/validations';
 import { BookOpen, Plus, Pencil, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading';
 
 interface StudentEducationalHistoryDialogProps {
@@ -212,9 +212,9 @@ export function StudentEducationalHistoryDialog({
                       <TableCell>{record.grade_level || '—'}</TableCell>
                       <TableCell>
                         {record.start_date && record.end_date
-                          ? `${format(new Date(record.start_date), 'yyyy-MM-dd')} - ${format(new Date(record.end_date), 'yyyy-MM-dd')}`
+                          ? `${formatDate(record.start_date)} - ${formatDate(record.end_date)}`
                           : record.start_date
-                            ? format(new Date(record.start_date), 'yyyy-MM-dd')
+                            ? formatDate(record.start_date)
                             : '—'}
                       </TableCell>
                       <TableCell className="text-right">

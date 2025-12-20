@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -226,7 +227,7 @@ export function AuthMonitoringDashboard() {
                       )}
                       <span className="text-xs text-muted-foreground">
                         <Clock className="h-3 w-3 inline mr-1" />
-                        {new Date(event.created_at).toLocaleString()}
+                        {formatDateTime(event.created_at)}
                       </span>
                     </div>
                     

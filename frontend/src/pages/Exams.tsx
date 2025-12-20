@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useExams, useCreateExam, useUpdateExam, useDeleteExam, useUpdateExamStatus, useExamClasses, useExamSummaryReport } from '@/hooks/useExams';
@@ -558,12 +559,12 @@ export function Exams() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800">
                             <Calendar className="h-3 w-3 mr-1" />
-                            {new Date(exam.startDate).toLocaleDateString()}
+                            {formatDate(exam.startDate)}
                           </Badge>
                           <span className="text-muted-foreground">→</span>
                           <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800">
                             <Calendar className="h-3 w-3 mr-1" />
-                            {new Date(exam.endDate).toLocaleDateString()}
+                            {formatDate(exam.endDate)}
                           </Badge>
                         </div>
                       ) : (

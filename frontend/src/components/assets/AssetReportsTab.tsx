@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { BarChart3, TrendingUp, DollarSign, AlertTriangle, Calendar } from 'lucide-react';
 import { useAssets, useAssetStats } from '@/hooks/useAssets';
 import { useAssetCategories } from '@/hooks/useAssetCategories';
@@ -8,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format } from 'date-fns';
 import { isBefore, isAfter } from 'date-fns';
 import { useLanguage } from '@/hooks/useLanguage';
 import type { Asset } from '@/types/domain/asset';
@@ -87,7 +87,7 @@ export default function AssetReportsTab() {
   // Helper function to format price with currency symbol
   const formatAssetPrice = (asset: Asset, price: number): string => {
     const symbol = getAssetCurrencySymbol(asset);
-    return `${symbol} ${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${symbol} ${formatDateTime(price)}`;
   };
 
   // Calculate statistics
@@ -283,7 +283,7 @@ export default function AssetReportsTab() {
               {Object.entries(calculatedStats.totalPriceByCurrency).map(([code, { symbol, amount }], index) => (
                 <span key={code}>
                   {index > 0 && <span className="text-muted-foreground"> + </span>}
-                  <span>{symbol} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span>{symbol} {formatDateTime(amount)}</span>
                 </span>
               ))}
               {Object.keys(calculatedStats.totalPriceByCurrency).length === 0 && (
@@ -302,7 +302,7 @@ export default function AssetReportsTab() {
               {Object.entries(calculatedStats.totalValueByCurrency).map(([code, { symbol, amount }], index) => (
                 <span key={code}>
                   {index > 0 && <span className="text-muted-foreground"> + </span>}
-                  <span>{symbol} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span>{symbol} {formatDateTime(amount)}</span>
                 </span>
               ))}
               {Object.keys(calculatedStats.totalValueByCurrency).length === 0 && (
@@ -318,7 +318,7 @@ export default function AssetReportsTab() {
           <CardHeader className="pb-2">
             <CardDescription>Maintenance Cost</CardDescription>
             <CardTitle className="text-2xl">
-              ${calculatedStats.totalMaintenanceCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${calculatedStats.formatDateTime(totalMaintenanceCost)}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
               {calculatedStats.needsMaintenance} need attention
@@ -457,7 +457,7 @@ export default function AssetReportsTab() {
                           {Object.entries(statusValueByCurrency).map(([code, { symbol, amount }], index) => (
                             <span key={code}>
                               {index > 0 && <span className="text-muted-foreground"> + </span>}
-                              <span>{symbol} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              <span>{symbol} {formatDateTime(amount)}</span>
                             </span>
                           ))}
                           {Object.keys(statusValueByCurrency).length === 0 && (
@@ -534,7 +534,7 @@ export default function AssetReportsTab() {
                           {Object.entries(categoryValueByCurrency).map(([code, { symbol, amount }], index) => (
                             <span key={code}>
                               {index > 0 && <span className="text-muted-foreground"> + </span>}
-                              <span>{symbol} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              <span>{symbol} {formatDateTime(amount)}</span>
                             </span>
                           ))}
                           {Object.keys(categoryValueByCurrency).length === 0 && (
@@ -610,7 +610,7 @@ export default function AssetReportsTab() {
                           </TableCell>
                           <TableCell>
                             {latestMaintenance?.performedOn
-                              ? format(new Date(latestMaintenance.performedOn), 'MMM dd, yyyy')
+                              ? formatDate(latestMaintenance.performedOn)
                               : 'Never'}
                           </TableCell>
                         </TableRow>

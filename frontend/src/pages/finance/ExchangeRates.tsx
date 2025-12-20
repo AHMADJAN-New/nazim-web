@@ -3,6 +3,7 @@
  */
 
 import { useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -324,7 +325,7 @@ export default function ExchangeRates() {
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className="font-normal">
-                                                {rate.effectiveDate.toLocaleDateString()}
+                                                {rate.formatDate(effectiveDate)}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="max-w-xs truncate">{rate.notes || '-'}</TableCell>

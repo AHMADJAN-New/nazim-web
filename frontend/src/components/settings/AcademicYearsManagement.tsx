@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useAcademicYears, useCreateAcademicYear, useUpdateAcademicYear, useDeleteAcademicYear, useSetCurrentAcademicYear, type AcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -342,13 +343,13 @@ export function AcademicYearsManagement() {
                       </TableCell>
                       <TableCell>
                         {year.startDate instanceof Date 
-                          ? year.startDate.toLocaleDateString()
-                          : new Date(year.startDate).toLocaleDateString()}
+                          ? year.formatDate(startDate)
+                          : formatDate(year.startDate)}
                       </TableCell>
                       <TableCell>
                         {year.endDate instanceof Date
-                          ? year.endDate.toLocaleDateString()
-                          : new Date(year.endDate).toLocaleDateString()}
+                          ? year.formatDate(endDate)
+                          : formatDate(year.endDate)}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(year.status)}>

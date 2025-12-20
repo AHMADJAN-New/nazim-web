@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
-import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -331,7 +331,7 @@ export function CourseDocuments() {
                       </TableCell>
                       <TableCell>{formatFileSize(doc.file_size)}</TableCell>
                       <TableCell>
-                        {format(new Date(doc.created_at), 'MMM d, yyyy')}
+                        {formatDate(doc.created_at)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

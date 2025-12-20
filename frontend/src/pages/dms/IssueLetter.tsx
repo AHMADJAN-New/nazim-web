@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { dmsApi } from "@/lib/api/client";
 import type { LetterTemplate, TemplateVariable, OutgoingDocument } from "@/types/dms";
@@ -535,7 +536,7 @@ export default function IssueLetter() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Issue Date:</span>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(issuedDocument.issue_date).toLocaleDateString()}
+                      {formatDate(issuedDocument.issue_date)}
                     </span>
                   </div>
                 )}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useReactTable, getCoreRowModel, type PaginationState } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -159,7 +160,7 @@ const CourseStudentReports = () => {
         student.guardianPhone || '',
         student.birthYear?.toString() || '',
         student.age?.toString() || '',
-        student.registrationDate ? format(new Date(student.registrationDate), 'yyyy-MM-dd') : '',
+        student.registrationDate ? formatDate(student.registrationDate) : '',
         student.completionStatus || '',
         course?.name || '',
       ];
@@ -421,7 +422,7 @@ const CourseStudentReports = () => {
                             </TableCell>
                             <TableCell className="hidden md:table-cell text-sm">
                               {student.registrationDate
-                                ? format(new Date(student.registrationDate), 'MMM d, yyyy')
+                                ? formatDate(student.registrationDate)
                                 : '-'}
                             </TableCell>
                             <TableCell>

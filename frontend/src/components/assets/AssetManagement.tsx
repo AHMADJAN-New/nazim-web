@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -607,7 +608,7 @@ export function AssetManagement() {
                       <div className="flex items-center justify-between">
                         <span className="font-semibold capitalize">{item.event_type.replace('_', ' ')}</span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(item.created_at).toLocaleString()}
+                          {formatDateTime(item.created_at)}
                         </span>
                       </div>
                       {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}

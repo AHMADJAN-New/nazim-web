@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { format } from 'date-fns';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -139,7 +139,7 @@ export function CourseStudentDetailsPanel({
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Registration Date</span>
                     <span className="text-sm font-medium">
-                      {format(new Date(student.registrationDate), 'MMM d, yyyy')}
+                      {formatDate(student.registrationDate)}
                     </span>
                   </div>
                 )}
@@ -147,7 +147,7 @@ export function CourseStudentDetailsPanel({
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Completion Date</span>
                     <span className="text-sm font-medium">
-                      {format(new Date(student.completionDate), 'MMM d, yyyy')}
+                      {formatDate(student.completionDate)}
                     </span>
                   </div>
                 )}
@@ -208,7 +208,7 @@ export function CourseStudentDetailsPanel({
                     <div>
                       <p className="text-sm text-muted-foreground">Birth Date</p>
                       <p className="text-sm font-medium">
-                        {format(new Date(student.birthDate), 'MMM d, yyyy')}
+                        {formatDate(student.birthDate)}
                       </p>
                     </div>
                   )}
@@ -356,7 +356,7 @@ export function CourseStudentDetailsPanel({
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Payment Date</span>
                       <span className="text-sm font-medium">
-                        {format(new Date(student.feePaidDate), 'MMM d, yyyy')}
+                        {formatDate(student.feePaidDate)}
                       </span>
                     </div>
                   )}
@@ -392,7 +392,7 @@ export function CourseStudentDetailsPanel({
                       <div>
                         <p className="text-sm text-muted-foreground">Start Date</p>
                         <p className="text-sm font-medium">
-                          {format(new Date(currentCourse.startDate), 'MMM d, yyyy')}
+                          {formatDate(currentCourse.startDate)}
                         </p>
                       </div>
                     )}
@@ -400,7 +400,7 @@ export function CourseStudentDetailsPanel({
                       <div>
                         <p className="text-sm text-muted-foreground">End Date</p>
                         <p className="text-sm font-medium">
-                          {format(new Date(currentCourse.endDate), 'MMM d, yyyy')}
+                          {formatDate(currentCourse.endDate)}
                         </p>
                       </div>
                     )}
@@ -444,13 +444,13 @@ export function CourseStudentDetailsPanel({
                         {enrollment.registrationDate && (
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            <span>Registered: {format(new Date(enrollment.registrationDate), 'MMM d, yyyy')}</span>
+                            <span>Registered: {formatDate(enrollment.registrationDate)}</span>
                           </div>
                         )}
                         {enrollment.completionDate && (
                           <div className="flex items-center gap-1">
                             <CheckCircle className="h-3 w-3" />
-                            <span>Completed: {format(new Date(enrollment.completionDate), 'MMM d, yyyy')}</span>
+                            <span>Completed: {formatDate(enrollment.completionDate)}</span>
                           </div>
                         )}
                       </div>
@@ -495,7 +495,7 @@ export function CourseStudentDetailsPanel({
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-semibold">Enrolled</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(student.registrationDate), 'MMM d, yyyy')}
+                          {formatDate(student.registrationDate)}
                         </p>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -516,7 +516,7 @@ export function CourseStudentDetailsPanel({
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-semibold">Completed</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(student.completionDate), 'MMM d, yyyy')}
+                          {formatDate(student.completionDate)}
                         </p>
                       </div>
                       {student.grade && (
@@ -542,7 +542,7 @@ export function CourseStudentDetailsPanel({
                           Certificate Issued
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(student.certificateIssuedDate), 'MMM d, yyyy')}
+                          {formatDate(student.certificateIssuedDate)}
                         </p>
                       </div>
                     </div>
@@ -562,7 +562,7 @@ export function CourseStudentDetailsPanel({
                           Fee Paid
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(student.feePaidDate), 'MMM d, yyyy')}
+                          {formatDate(student.feePaidDate)}
                         </p>
                       </div>
                       {student.feeAmount !== null && student.feeAmount !== undefined && (
@@ -581,11 +581,11 @@ export function CourseStudentDetailsPanel({
                 <div className="space-y-2 text-xs text-muted-foreground">
                   <div className="flex justify-between">
                     <span>Created:</span>
-                    <span>{format(new Date(student.createdAt), 'MMM d, yyyy HH:mm')}</span>
+                    <span>{formatDate(student.createdAt)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Last Updated:</span>
-                    <span>{format(new Date(student.updatedAt), 'MMM d, yyyy HH:mm')}</span>
+                    <span>{formatDate(student.updatedAt)}</span>
                   </div>
                 </div>
               </CardContent>

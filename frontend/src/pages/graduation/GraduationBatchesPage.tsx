@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, ChevronUp, ChevronDown, ArrowUpDown, Edit, Trash2, Eye, Calendar, Users, GraduationCap, FileText, X, ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -930,7 +931,7 @@ export default function GraduationBatchesPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {batch.graduation_date ? new Date(batch.graduation_date).toLocaleDateString() : '—'}
+                          {batch.graduation_date ? formatDate(batch.graduation_date) : '—'}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
@@ -1128,7 +1129,7 @@ export default function GraduationBatchesPage() {
                     </CardHeader>
                     <CardContent>
                       <p className="text-lg font-semibold">
-                        {selectedBatch.graduation_date ? new Date(selectedBatch.graduation_date).toLocaleDateString() : '—'}
+                        {selectedBatch.graduation_date ? formatDate(selectedBatch.graduation_date) : '—'}
                       </p>
                     </CardContent>
                   </Card>

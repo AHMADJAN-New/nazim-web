@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   useCertificateTemplates,
   useCreateCertificateTemplate,
@@ -51,7 +52,6 @@ import {
   Layout,
 } from 'lucide-react';
 import { CertificateLayoutEditor } from '@/components/certificates/CertificateLayoutEditor';
-import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -256,7 +256,7 @@ export default function CertificateTemplates() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {format(new Date(template.created_at), 'MMM d, yyyy')}
+                      {formatDate(template.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

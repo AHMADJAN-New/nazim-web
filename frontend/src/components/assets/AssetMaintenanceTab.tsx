@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -25,7 +26,6 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef, flexRender } from '@tanstack/react-table';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useLanguage } from '@/hooks/useLanguage';
 
@@ -143,8 +143,8 @@ export default function AssetMaintenanceTab() {
       assetId: maintenance.assetId,
       maintenanceType: maintenance.data.maintenanceType || null,
       status: maintenance.data.status,
-      performedOn: maintenance.data.performedOn ? format(new Date(maintenance.data.performedOn), 'yyyy-MM-dd') : null,
-      nextDueDate: maintenance.data.nextDueDate ? format(new Date(maintenance.data.nextDueDate), 'yyyy-MM-dd') : null,
+      performedOn: maintenance.data.performedOn ? formatDate(maintenance.data.performedOn) : null,
+      nextDueDate: maintenance.data.nextDueDate ? formatDate(maintenance.data.nextDueDate) : null,
       cost: maintenance.data.cost ?? null,
       vendor: maintenance.data.vendor || null,
       notes: maintenance.data.notes || null,
@@ -252,7 +252,7 @@ export default function AssetMaintenanceTab() {
         header: 'Performed On',
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.data.performedOn ? format(new Date(row.original.data.performedOn), 'MMM dd, yyyy') : 'N/A'}
+            {row.original.data.performedOn ? formatDate(row.original.data.performedOn) : 'N/A'}
           </span>
         ),
       },
@@ -261,7 +261,7 @@ export default function AssetMaintenanceTab() {
         header: 'Next Due',
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.data.nextDueDate ? format(new Date(row.original.data.nextDueDate), 'MMM dd, yyyy') : 'N/A'}
+            {row.original.data.nextDueDate ? formatDate(row.original.data.nextDueDate) : 'N/A'}
           </span>
         ),
       },

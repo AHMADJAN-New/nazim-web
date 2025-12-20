@@ -1,4 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import type { Student } from '@/types/domain/student';
 import { useLanguage } from '@/hooks/useLanguage';
 
@@ -388,7 +389,7 @@ export function StudentProfilePrint({
     if (!value) return '';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString();
+    return formatDate(date);
   };
 
   return (

@@ -32,7 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus, CheckCircle, CalendarDays, NotebookPen, Award } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
+import { formatDate, formatDateTime, cn } from '@/lib/utils';
 
 interface ExamClassCardProps {
   examClass: ExamClass;
@@ -137,7 +137,7 @@ function ExamClassCard({
                         {subject.scheduledAt && (
                           <Badge variant="outline" className="text-xs">
                             <CalendarDays className="h-3 w-3 mr-1" />
-                            {new Date(subject.scheduledAt).toLocaleDateString()}
+                            {formatDate(subject.scheduledAt)}
                           </Badge>
                         )}
                         {hasAssign && (

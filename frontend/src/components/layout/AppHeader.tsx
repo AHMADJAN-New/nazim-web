@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useNavigate } from "react-router-dom";
 import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -175,7 +176,7 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(notification.created_at).toLocaleString()}
+                      {formatDateTime(notification.created_at)}
                     </span>
                   </DropdownMenuItem>
                 ))

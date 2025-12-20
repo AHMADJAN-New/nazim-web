@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Plus, BookOpen, ClipboardList, RefreshCw, Library as LibraryIcon, BookCheck, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -260,7 +261,7 @@ export default function Library() {
                           {(() => {
                             const price = book.price ?? book.deposit_amount ?? 0;
                             const numPrice = typeof price === 'string' ? parseFloat(price) : (typeof price === 'number' ? price : 0);
-                            return isNaN(numPrice) ? '0.00' : numPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            return isNaN(numPrice) ? '0.00' : formatDateTime(numPrice);
                           })()}
                         </TableCell>
                         <TableCell>

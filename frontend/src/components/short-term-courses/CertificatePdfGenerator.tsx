@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -675,7 +676,7 @@ export function CertificatePdfGenerator({
           // Format: Use custom dateText or default "Date:"
           const dateLabel = layout.dateText || 'Date:';
           const formattedDate = data.student.certificate_issued_at 
-            ? format(new Date(data.student.certificate_issued_at), 'MMM d, yyyy') 
+            ? formatDate(data.student.certificate_issued_at) 
             : format(new Date(), 'MMM d, yyyy');
           const dateText = `${dateLabel} ${formattedDate}`;
           ctx.fillText(prepareCanvasText(dateText), datePos.x, datePos.y);
@@ -1028,7 +1029,7 @@ export function CertificatePdfGenerator({
         // Format: Use custom dateText or default "Date:"
         const dateLabel = layout.dateText || 'Date:';
         const formattedDate = data.student.certificate_issued_at 
-          ? format(new Date(data.student.certificate_issued_at), 'MMM d, yyyy') 
+          ? formatDate(data.student.certificate_issued_at) 
           : format(new Date(), 'MMM d, yyyy');
         const dateText = `${dateLabel} ${formattedDate}`;
         content.push({
@@ -1262,7 +1263,7 @@ export function CertificatePdfGenerator({
                   <div>
                     <Label className="text-muted-foreground">Issued At</Label>
                     <p className="font-medium">
-                      {format(new Date(certificateData.student.certificate_issued_at), 'MMM d, yyyy')}
+                      {formatDate(certificateData.student.certificate_issued_at)}
                     </p>
                   </div>
                 )}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -20,8 +21,6 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Download, Award, Eye, Image as ImageIcon } from 'lucide-react';
 import { useCertificateTemplatesV2 } from '@/hooks/useGraduation';
 import { certificateTemplatesV2Api, issuedCertificatesApi } from '@/lib/api/client';
-import { format } from 'date-fns';
-
 // Import pdfmake for Arabic support
 import pdfMake from 'pdfmake-arabic/build/pdfmake';
 import * as pdfFonts from 'pdfmake-arabic/build/vfs_fonts';
@@ -665,7 +664,7 @@ export function GraduationCertificatePdfGenerator({
       const graduationDatePos = getPosition(layout.graduationDatePosition, pageWidth / 2, 540, fieldFont.fontSize);
       if (graduationDatePos) {
         const dateLabel = layout.graduationDateText || 'Date:';
-        const formattedDate = format(new Date(data.batch.graduation_date), 'MMM d, yyyy');
+        const formattedDate = formatDate(data.batch.graduation_date);
         const dateText = `${dateLabel} ${formattedDate}`;
         content.push({
           text: normalizeText(dateText),
@@ -951,7 +950,7 @@ export function GraduationCertificatePdfGenerator({
                     <div>
                       <Label className="text-muted-foreground">Issued At</Label>
                       <p className="font-medium">
-                        {format(new Date(certificateData.certificate.issued_at), 'MMM d, yyyy')}
+                        {formatDate(certificateData.certificate.issued_at)}
                       </p>
                     </div>
                   )}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -42,7 +43,6 @@ import {
 } from '@/hooks/useStudents';
 import { documentUploadSchema, type DocumentUploadFormData } from '@/lib/validations';
 import { FileText, Upload, Trash2, Download, Eye, Plus, X } from 'lucide-react';
-import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api/client';
@@ -273,7 +273,7 @@ export function StudentDocumentsDialog({
                         </TableCell>
                         <TableCell>{formatFileSize(doc.file_size)}</TableCell>
                         <TableCell>
-                          {format(new Date(doc.created_at), 'yyyy-MM-dd')}
+                          {formatDate(doc.created_at)}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>

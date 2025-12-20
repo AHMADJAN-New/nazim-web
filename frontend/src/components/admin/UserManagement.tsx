@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetUserPassword, type UserProfile, type CreateUserData, type UpdateUserData } from '@/hooks/useUsers';
 import { useSchools } from '@/hooks/useSchools';
 import { useHasPermission, useRoles } from '@/hooks/usePermissions';
@@ -250,7 +251,7 @@ export function UserManagement() {
         user.role,
         user.phone || '',
         user.isActive ? 'Active' : 'Inactive',
-        user.createdAt.toLocaleDateString(),
+        user.formatDate(createdAt),
       ].join(',')),
     ].join('\n');
 

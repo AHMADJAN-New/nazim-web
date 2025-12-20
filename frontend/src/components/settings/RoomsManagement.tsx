@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom } from '@/hooks/useRooms';
 import { useBuildings } from '@/hooks/useBuildings';
 import { useStaff } from '@/hooks/useStaff';
@@ -140,8 +141,8 @@ export function RoomsManagement() {
       cell: ({ row }) => {
         const date = row.original.createdAt;
         return date instanceof Date
-          ? date.toLocaleDateString()
-          : new Date(date).toLocaleDateString();
+          ? formatDate(date)
+          : formatDate(date);
       },
     },
     {

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Plus, Search, BookCheck, RefreshCw, Calendar, User, X, Minus } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLibraryLoans, useCreateLibraryLoan, useReturnLibraryLoan } from '@/hooks/useLibrary';
@@ -588,14 +589,14 @@ export default function LibraryDistribution() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell>
-                                                        {loan.loan_date ? format(new Date(loan.loan_date), 'MMM dd, yyyy') : 'N/A'}
+                                                        {loan.loan_date ? formatDate(loan.loan_date) : 'N/A'}
                                                     </TableCell>
                                                     <TableCell>
                                                         {loan.due_date ? (
                                                             <div className="flex items-center gap-2">
                                                                 <Calendar className="h-4 w-4 text-muted-foreground" />
                                                                 <span className={isOverdue ? 'text-destructive font-medium' : ''}>
-                                                                    {format(new Date(loan.due_date), 'MMM dd, yyyy')}
+                                                                    {formatDate(loan.due_date)}
                                                                 </span>
                                                                 {isOverdue && (
                                                                     <Badge variant="destructive" className="text-xs">

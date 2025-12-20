@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -53,7 +54,6 @@ import {
 } from '@/hooks/useStudents';
 import { disciplineRecordSchema, type DisciplineRecordFormData } from '@/lib/validations';
 import { AlertTriangle, Plus, Pencil, Trash2, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading';
 
 interface StudentDisciplineRecordsDialogProps {
@@ -231,7 +231,7 @@ export function StudentDisciplineRecordsDialog({
                   {records.map((record) => (
                     <TableRow key={record.id}>
                       <TableCell>
-                        {format(new Date(record.incident_date), 'yyyy-MM-dd')}
+                        {formatDate(record.incident_date)}
                       </TableCell>
                       <TableCell className="font-medium">{record.incident_type}</TableCell>
                       <TableCell>

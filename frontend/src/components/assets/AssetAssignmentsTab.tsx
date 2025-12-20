@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -27,7 +28,6 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef, flexRender } from '@tanstack/react-table';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useLanguage } from '@/hooks/useLanguage';
 
@@ -134,8 +134,8 @@ export default function AssetAssignmentsTab() {
       assetId: assignment.assetId,
       assignedToType: assignment.data.assignedToType,
       assignedToId: assignment.data.assignedToId || null,
-      assignedOn: assignment.data.assignedOn ? format(new Date(assignment.data.assignedOn), 'yyyy-MM-dd') : null,
-      expectedReturnDate: assignment.data.expectedReturnDate ? format(new Date(assignment.data.expectedReturnDate), 'yyyy-MM-dd') : null,
+      assignedOn: assignment.data.assignedOn ? formatDate(assignment.data.assignedOn) : null,
+      expectedReturnDate: assignment.data.expectedReturnDate ? formatDate(assignment.data.expectedReturnDate) : null,
       notes: assignment.data.notes || null,
     });
     setIsDialogOpen(true);
@@ -258,7 +258,7 @@ export default function AssetAssignmentsTab() {
         header: 'Assigned On',
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.data.assignedOn ? format(new Date(row.original.data.assignedOn), 'MMM dd, yyyy') : 'N/A'}
+            {row.original.data.assignedOn ? formatDate(row.original.data.assignedOn) : 'N/A'}
           </span>
         ),
       },
@@ -267,7 +267,7 @@ export default function AssetAssignmentsTab() {
         header: 'Expected Return',
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.data.expectedReturnDate ? format(new Date(row.original.data.expectedReturnDate), 'MMM dd, yyyy') : 'N/A'}
+            {row.original.data.expectedReturnDate ? formatDate(row.original.data.expectedReturnDate) : 'N/A'}
           </span>
         ),
       },

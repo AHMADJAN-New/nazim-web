@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
 import {
   useCourseAttendanceSessions,
@@ -281,7 +282,7 @@ export default function CourseAttendance() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">
-                            {format(new Date(session.session_date), 'MMM d, yyyy')}
+                            {formatDate(session.session_date)}
                           </p>
                           {session.session_title && (
                             <p className="text-sm text-muted-foreground">{session.session_title}</p>
@@ -476,7 +477,7 @@ export default function CourseAttendance() {
                                 <div>
                                   <p className="font-medium">{scan.course_student?.full_name}</p>
                                   <p className="text-sm text-muted-foreground">
-                                    {scan.marked_at && format(new Date(scan.marked_at), 'HH:mm:ss')}
+                                    {scan.marked_at && formatDate(scan.marked_at)}
                                   </p>
                                 </div>
                                 {getStatusBadge(scan.status)}

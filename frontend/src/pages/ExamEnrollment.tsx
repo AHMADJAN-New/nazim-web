@@ -45,7 +45,7 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
-import { cn } from '@/lib/utils';
+import { formatDate, formatDateTime, cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Collapsible,
@@ -361,7 +361,7 @@ function ExamClassCard({
                           {subject.scheduledAt && (
                             <Badge variant="outline" className="text-xs bg-background">
                               <CalendarDays className="h-3 w-3 mr-1" />
-                              {new Date(subject.scheduledAt).toLocaleDateString()}
+                              {formatDate(subject.scheduledAt)}
                             </Badge>
                           )}
                           {hasAssign && (

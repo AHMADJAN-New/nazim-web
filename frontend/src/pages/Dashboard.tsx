@@ -1,7 +1,7 @@
-import { 
-  Users, 
-  GraduationCap, 
-  UserCheck, 
+import {
+  Users,
+  GraduationCap,
+  UserCheck,
   CreditCard,
   TrendingUp,
   Calendar,
@@ -32,6 +32,7 @@ import {
   XCircle,
   TrendingDown
 } from "lucide-react";
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { StatsCard } from "@/components/dashboard/StatsCard";
@@ -232,7 +233,7 @@ export default function Dashboard() {
       const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
       
       return {
-        date: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+        date: formatDate(date),
         percentage,
         present,
         total,
@@ -254,7 +255,7 @@ export default function Dashboard() {
   const statsCards = dashboardStats ? [
     {
       title: t('dashboard.totalStudents') || "Total Students",
-      value: dashboardStats.totalStudents.toLocaleString(),
+      value: dashboardStats.formatDateTime(totalStudents),
       icon: Users,
       description: t('dashboard.activeStudents') || "Active students",
       color: "primary" as const,
@@ -262,7 +263,7 @@ export default function Dashboard() {
     },
     {
       title: t('dashboard.totalStaff') || "Total Staff",
-      value: dashboardStats.totalStaff.toLocaleString(),
+      value: dashboardStats.formatDateTime(totalStaff),
       icon: GraduationCap,
       description: t('dashboard.activeStaff') || "Active staff",
       color: "secondary" as const,
@@ -270,7 +271,7 @@ export default function Dashboard() {
     },
     {
       title: t('dashboard.totalClasses') || "Total Classes",
-      value: dashboardStats.totalClasses.toLocaleString(),
+      value: dashboardStats.formatDateTime(totalClasses),
       icon: BookOpen,
       description: t('dashboard.activeClasses') || "Active classes",
       color: "primary" as const,
@@ -278,7 +279,7 @@ export default function Dashboard() {
     },
     {
       title: t('dashboard.totalRooms') || "Total Rooms",
-      value: dashboardStats.totalRooms.toLocaleString(),
+      value: dashboardStats.formatDateTime(totalRooms),
       icon: Building,
       description: t('dashboard.availableRooms') || "Available rooms",
       color: "secondary" as const,
@@ -286,7 +287,7 @@ export default function Dashboard() {
     },
     {
       title: t('dashboard.totalBuildings') || "Total Buildings",
-      value: dashboardStats.totalBuildings.toLocaleString(),
+      value: dashboardStats.formatDateTime(totalBuildings),
       icon: Home,
       description: t('dashboard.schoolBuildings') || "School buildings",
       color: "primary" as const,

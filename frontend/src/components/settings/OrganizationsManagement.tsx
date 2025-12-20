@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useOrganizations, useCreateOrganization, useUpdateOrganization, useDeleteOrganization, useOrganizationStatistics } from '@/hooks/useOrganizations';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
@@ -238,13 +239,13 @@ export function OrganizationsManagement() {
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm">
                             <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {new Date(org.createdAt).toLocaleDateString()}
+                            {formatDate(org.createdAt)}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm">
                             <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {new Date(org.updatedAt).toLocaleDateString()}
+                            {formatDate(org.updatedAt)}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
@@ -379,11 +380,11 @@ export function OrganizationsManagement() {
                   </div>
                   <div>
                     <Label className="text-muted-foreground">{t('organizations.createdAt')}</Label>
-                    <p className="text-sm">{new Date(selectedOrg.createdAt).toLocaleString()}</p>
+                    <p className="text-sm">{formatDateTime(selectedOrg.createdAt)}</p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">{t('organizations.updatedAt')}</Label>
-                    <p className="text-sm">{new Date(selectedOrg.updatedAt).toLocaleString()}</p>
+                    <p className="text-sm">{formatDateTime(selectedOrg.updatedAt)}</p>
                   </div>
                 </div>
               </div>

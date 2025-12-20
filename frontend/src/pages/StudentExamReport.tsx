@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import type { Student } from '@/types/domain/student';
@@ -254,7 +255,7 @@ function GradeCard({ reportData, selectedStudent, selectedExam, academicYear, t 
                   <span className="text-sm text-muted-foreground min-w-[120px]">{t('studentReportCard.dateOfBirth')}:</span>
                   <span className="text-sm font-semibold">
                     {(selectedStudent && 'dateOfBirth' in selectedStudent && selectedStudent.dateOfBirth
-                      ? new Date(selectedStudent.dateOfBirth).toLocaleDateString()
+                      ? formatDate(selectedStudent.dateOfBirth)
                       : null) || '-'}
                   </span>
                 </div>

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { dmsApi } from "@/lib/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,7 +87,7 @@ export default function DepartmentsPage() {
                     <TableRow key={dept.id}>
                       <TableCell className="font-medium">{dept.name}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {dept.created_at ? new Date(dept.created_at).toLocaleDateString() : '-'}
+                        {dept.created_at ? formatDate(dept.created_at) : '-'}
                       </TableCell>
                     </TableRow>
                   ))}

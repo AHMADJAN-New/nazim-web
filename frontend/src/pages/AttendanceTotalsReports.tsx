@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
     Activity,
     AlertTriangle,
@@ -336,12 +337,12 @@ export default function AttendanceTotalsReports() {
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <SummaryCard
                             label={t('attendanceTotalsReport.totalSessions') || 'Sessions analyzed'}
-                            value={report.totals.sessions.toLocaleString()}
+                            value={report.totals.formatDateTime(sessions)}
                             icon={FileText}
                         />
                         <SummaryCard
                             label={t('attendanceTotalsReport.studentsMarked') || 'Students marked'}
-                            value={report.totals.studentsMarked.toLocaleString()}
+                            value={report.totals.formatDateTime(studentsMarked)}
                             icon={Activity}
                         />
                         <SummaryCard
@@ -353,7 +354,7 @@ export default function AttendanceTotalsReports() {
                         />
                         <SummaryCard
                             label={t('attendanceTotalsReport.absences') || 'Absences'}
-                            value={report.totals.absent.toLocaleString()}
+                            value={report.totals.formatDateTime(absent)}
                             helper={t('attendanceTotalsReport.absenceHelper') || 'Across selected filters'}
                             icon={AlertTriangle}
                             tone="warning"
@@ -375,7 +376,7 @@ export default function AttendanceTotalsReports() {
                                             <Icon className="h-3.5 w-3.5" />
                                             {meta.label}
                                         </div>
-                                        <div className="text-2xl font-semibold">{total.toLocaleString()}</div>
+                                        <div className="text-2xl font-semibold">{formatDateTime(total)}</div>
                                         <p className="text-xs text-muted-foreground">{t('attendanceTotalsReport.records') || 'records'}</p>
                                     </div>
                                 );
@@ -431,9 +432,9 @@ export default function AttendanceTotalsReports() {
                                                         <TableCell className="font-medium">{row.className}</TableCell>
                                                         <TableCell>{row.schoolName}</TableCell>
                                                         <TableCell className="text-right">{formatPercent(row.attendanceRate)}</TableCell>
-                                                        <TableCell className="text-right">{row.present.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{row.absent.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{row.totalRecords.toLocaleString()}</TableCell>
+                                                        <TableCell className="text-right">{row.formatDateTime(present)}</TableCell>
+                                                        <TableCell className="text-right">{row.formatDateTime(absent)}</TableCell>
+                                                        <TableCell className="text-right">{row.formatDateTime(totalRecords)}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -471,9 +472,9 @@ export default function AttendanceTotalsReports() {
                                                     <TableRow key={`${row.schoolId}-${row.schoolName}`}>
                                                         <TableCell className="font-medium">{row.schoolName}</TableCell>
                                                         <TableCell className="text-right">{formatPercent(row.attendanceRate)}</TableCell>
-                                                        <TableCell className="text-right">{row.present.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{row.absent.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{row.totalRecords.toLocaleString()}</TableCell>
+                                                        <TableCell className="text-right">{row.formatDateTime(present)}</TableCell>
+                                                        <TableCell className="text-right">{row.formatDateTime(absent)}</TableCell>
+                                                        <TableCell className="text-right">{row.formatDateTime(totalRecords)}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -520,9 +521,9 @@ export default function AttendanceTotalsReports() {
                                                         <TableCell>{session.className}</TableCell>
                                                         <TableCell>{session.schoolName || t('attendanceTotalsReport.noSchool') || 'No school'}</TableCell>
                                                         <TableCell className="text-right">{formatPercent(session.attendanceRate)}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.present.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.absent.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.records.toLocaleString()}</TableCell>
+                                                        <TableCell className="text-right">{session.totals.formatDateTime(present)}</TableCell>
+                                                        <TableCell className="text-right">{session.totals.formatDateTime(absent)}</TableCell>
+                                                        <TableCell className="text-right">{session.totals.formatDateTime(records)}</TableCell>
                                                     </TableRow>
                                                 ))}
                                         </TableBody>
@@ -585,9 +586,9 @@ export default function AttendanceTotalsReports() {
                                                         <TableCell>{session.className || t('attendanceTotalsReport.generalRoom') || 'General Room'}</TableCell>
                                                         <TableCell>{session.schoolName || t('attendanceTotalsReport.noSchool') || 'No school'}</TableCell>
                                                         <TableCell className="text-right">{formatPercent(session.attendanceRate)}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.present.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.absent.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right">{session.totals.records.toLocaleString()}</TableCell>
+                                                        <TableCell className="text-right">{session.totals.formatDateTime(present)}</TableCell>
+                                                        <TableCell className="text-right">{session.totals.formatDateTime(absent)}</TableCell>
+                                                        <TableCell className="text-right">{session.totals.formatDateTime(records)}</TableCell>
                                                     </TableRow>
                                                 ))}
                                         </TableBody>

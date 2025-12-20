@@ -22,7 +22,7 @@ import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import type { Student } from '@/types/domain/student';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/lib/utils';
+import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 import { Eye, Pencil, Trash2, Plus } from 'lucide-react';
 import {
   AlertDialog,
@@ -678,13 +678,13 @@ export default function FeeExceptionsPage() {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">{t('fees.validFrom') || 'Valid From'}</p>
                       <p className="font-medium">
-                        {viewingException.validFrom ? viewingException.validFrom.toLocaleDateString() : '-'}
+                        {viewingException.validFrom ? viewingException.formatDate(validFrom) : '-'}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">{t('fees.validTo') || 'Valid To'}</p>
                       <p className="font-medium">
-                        {viewingException.validTo ? viewingException.validTo.toLocaleDateString() : '-'}
+                        {viewingException.validTo ? viewingException.formatDate(validTo) : '-'}
                       </p>
                     </div>
                   </div>
