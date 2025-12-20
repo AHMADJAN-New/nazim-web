@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CertificateVerifyController;
 
 // Serve landing page - redirects to frontend React app
 Route::get('/', function () {
@@ -17,3 +18,6 @@ Route::get('/health', function () {
         'version' => '1.0.0',
     ]);
 });
+
+// Certificate verification route (public, no auth required)
+Route::get('/verify/certificate/{hash}', [CertificateVerifyController::class, 'show']);
