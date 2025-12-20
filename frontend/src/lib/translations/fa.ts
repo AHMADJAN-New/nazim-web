@@ -549,6 +549,173 @@ export const fa: TranslationKeys = {
     title: 'قالب‌های گواهینامه',
     updateTemplate: 'به‌روزرسانی قالب'
   },
+  idCards: {
+    title: 'کارت‌های شناسایی',
+    templates: 'قالب‌های کارت شناسایی',
+    generateIdCards: 'تولید کارت‌های شناسایی',
+    generateIdCardsDescription: 'دانش‌آموزان را انتخاب کنید و کارت‌های شناسایی را بر اساس قالب انتخاب شده تولید کنید.',
+    selectTemplate: 'انتخاب قالب',
+    selectTemplatePlaceholder: 'یک قالب انتخاب کنید',
+    selectStudents: 'انتخاب دانش‌آموزان',
+    selectedCount: '{count} دانش‌آموز(ان) انتخاب شده',
+    preview: 'پیش‌نمایش',
+    frontSide: 'روی کارت',
+    backSide: 'پشت کارت',
+    front: 'روی',
+    back: 'پشت',
+    previewPlaceholder: 'پیش‌نمایش اینجا نمایش داده می‌شود',
+    selectStudentForPreview: 'انتخاب دانش‌آموز برای پیش‌نمایش',
+    selectStudentAndTemplate: 'لطفاً یک دانش‌آموز و قالب برای پیش‌نمایش انتخاب کنید',
+    exportAsImages: 'خروجی به صورت تصاویر',
+    exportAsPdf: 'خروجی به صورت PDF',
+    exportSuccess: '{count} کارت شناسایی با موفقیت صادر شد',
+    exportFailed: 'صادر کردن کارت‌های شناسایی ناموفق بود',
+    previewFailed: 'ایجاد پیش‌نمایش ناموفق بود',
+    downloadSuccess: 'کارت با موفقیت دانلود شد',
+    downloadFailed: 'دانلود کارت ناموفق بود',
+    printPreview: 'پیش‌نمایش چاپ',
+    assignment: {
+      title: 'اختصاص کارت شناسایی',
+      subtitle: 'قالب‌های کارت شناسایی را به دانش‌آموزان اختصاص دهید و مدیریت اختصاصات کارت را انجام دهید',
+      filters: {
+        academicYear: 'سال تحصیلی',
+        academicYearRequired: 'سال تحصیلی الزامی است',
+        class: 'کلاس',
+        allClasses: 'همه کلاس‌ها',
+        enrollmentStatus: 'وضعیت ثبت‌نام',
+        allStatuses: 'همه وضعیت‌ها',
+        active: 'فعال',
+        template: 'قالب',
+        allTemplates: 'همه قالب‌ها',
+        search: 'جستجو',
+        searchPlaceholder: 'جستجو بر اساس نام دانش‌آموز یا شماره ثبت‌نام...'
+      },
+      studentList: {
+        title: 'دانش‌آموزان',
+        selectAll: 'انتخاب همه',
+        deselectAll: 'لغو انتخاب همه',
+        noStudentsFound: 'هیچ دانش‌آموزی یافت نشد',
+        showing: 'نمایش',
+        of: 'از',
+        students: 'دانش‌آموز'
+      },
+      assignmentPanel: {
+        title: 'اختصاص',
+        templateSelection: 'انتخاب قالب',
+        selectedStudents: 'دانش‌آموزان انتخاب شده',
+        cardFee: 'هزینه کارت',
+        cardFeeOptional: 'هزینه کارت (اختیاری)',
+        bulkAssign: 'اختصاص دسته‌ای',
+        assignButton: 'اختصاص کارت‌ها',
+        assigning: 'در حال اختصاص...'
+      },
+      preview: {
+        title: 'پیش‌نمایش کارت',
+        selectStudent: 'انتخاب دانش‌آموز',
+        side: 'طرف',
+        front: 'روی',
+        back: 'پشت'
+      },
+      managementTable: {
+        title: 'کارت‌های اختصاص داده شده',
+        studentName: 'نام دانش‌آموز',
+        admissionNumber: 'شماره ثبت‌نام',
+        class: 'کلاس',
+        template: 'قالب',
+        feeStatus: 'وضعیت هزینه',
+        printedStatus: 'وضعیت چاپ',
+        actions: 'عملیات',
+        markPrinted: 'علامت‌گذاری به عنوان چاپ شده',
+        markFeePaid: 'علامت‌گذاری هزینه به عنوان پرداخت شده',
+        edit: 'ویرایش',
+        delete: 'حذف',
+        bulkActions: 'عملیات دسته‌ای',
+        markSelectedPrinted: 'علامت‌گذاری انتخاب شده به عنوان چاپ شده',
+        markSelectedFeePaid: 'علامت‌گذاری هزینه انتخاب شده به عنوان پرداخت شده',
+        exportSelected: 'صادر کردن انتخاب شده',
+        noCardsFound: 'هیچ کارتی یافت نشد'
+      }
+    },
+    export: {
+      title: 'صادر کردن کارت شناسایی',
+      subtitle: 'کارت‌های شناسایی را به صورت فایل‌های ZIP یا PDF صادر کنید',
+      filters: {
+        academicYear: 'سال تحصیلی',
+        academicYearRequired: 'سال تحصیلی الزامی است',
+        class: 'کلاس',
+        allClasses: 'همه کلاس‌ها',
+        template: 'قالب',
+        allTemplates: 'همه قالب‌ها',
+        enrollmentStatus: 'وضعیت ثبت‌نام',
+        allStatuses: 'همه وضعیت‌ها',
+        active: 'فعال',
+        printedStatus: 'وضعیت چاپ',
+        all: 'همه',
+        printed: 'چاپ شده',
+        unprinted: 'چاپ نشده',
+        feeStatus: 'وضعیت هزینه',
+        paid: 'پرداخت شده',
+        unpaid: 'پرداخت نشده',
+        dateRange: 'بازه تاریخ',
+        from: 'از',
+        to: 'تا',
+        search: 'جستجو',
+        searchPlaceholder: 'جستجو بر اساس نام دانش‌آموز یا شماره ثبت‌نام...'
+      },
+      options: {
+        title: 'گزینه‌های صادر کردن',
+        exportFormat: 'فرمت صادر کردن',
+        zipPng: 'ZIP (PNG)',
+        zipPdf: 'ZIP (PDF)',
+        singlePdf: 'PDF تک',
+        cardSides: 'طرف‌های کارت',
+        frontOnly: 'فقط روی',
+        backOnly: 'فقط پشت',
+        bothSides: 'هر دو طرف',
+        cardsPerPage: 'کارت در هر صفحه',
+        quality: 'کیفیت',
+        standard: 'استاندارد (96 DPI)',
+        high: 'بالا (300 DPI)',
+        includeUnprinted: 'شامل کارت‌های چاپ نشده',
+        includeUnpaid: 'شامل کارت‌های پرداخت نشده',
+        fileNaming: 'نام‌گذاری فایل'
+      },
+      studentSelection: {
+        title: 'انتخاب دانش‌آموز',
+        selectAll: 'انتخاب همه',
+        deselectAll: 'لغو انتخاب همه',
+        selectByClass: 'انتخاب بر اساس کلاس',
+        selectByStatus: 'انتخاب بر اساس وضعیت',
+        selectedCount: '{count} انتخاب شده',
+        clearSelection: 'پاک کردن انتخاب',
+        noStudentsFound: 'هیچ دانش‌آموزی یافت نشد'
+      },
+      actions: {
+        exportSelected: 'صادر کردن انتخاب شده',
+        exportAllFiltered: 'صادر کردن همه فیلتر شده',
+        exportIndividual: 'صادر کردن تکی',
+        exporting: 'در حال صادر کردن...'
+      },
+      statistics: {
+        title: 'آمار',
+        totalCards: 'کل کارت‌ها',
+        printed: 'چاپ شده',
+        unprinted: 'چاپ نشده',
+        feePaid: 'هزینه پرداخت شده',
+        feeUnpaid: 'هزینه پرداخت نشده',
+        totalFeeCollected: 'کل هزینه جمع‌آوری شده',
+        totalFeePending: 'کل هزینه باقی‌مانده'
+      }
+    },
+    status: {
+      assigned: 'اختصاص داده شده',
+      notAssigned: 'اختصاص داده نشده',
+      printed: 'چاپ شده',
+      unprinted: 'چاپ نشده',
+      feePaid: 'هزینه پرداخت شده',
+      feeUnpaid: 'هزینه پرداخت نشده'
+    }
+  },
   common: {
     actions: 'اقدامات',
     add: 'افزودن',
@@ -2729,6 +2896,14 @@ export const fa: TranslationKeys = {
       defaultUpdated: 'قالب پیش‌فرض با موفقیت به‌روزرسانی شد',
       generated: 'گواهینامه با موفقیت تولید شد'
     },
+    idCardTemplateCreated: 'قالب کارت شناسایی با موفقیت ایجاد شد',
+    idCardTemplateUpdated: 'قالب کارت شناسایی با موفقیت به‌روزرسانی شد',
+    idCardTemplateDeleted: 'قالب کارت شناسایی با موفقیت حذف شد',
+    idCardTemplateSetDefault: 'قالب پیش‌فرض کارت شناسایی با موفقیت تنظیم شد',
+    idCardTemplateCreateFailed: 'ایجاد قالب کارت شناسایی ناموفق بود',
+    idCardTemplateUpdateFailed: 'به‌روزرسانی قالب کارت شناسایی ناموفق بود',
+    idCardTemplateDeleteFailed: 'حذف قالب کارت شناسایی ناموفق بود',
+    idCardTemplateSetDefaultFailed: 'تنظیم قالب پیش‌فرض کارت شناسایی ناموفق بود',
     // Course Attendance
     courseAttendance: {
       sessionCreated: 'جلسه حاضری با موفقیت ایجاد شد',
@@ -3282,9 +3457,34 @@ export const fa: TranslationKeys = {
     examWeights: 'وزن امتحانات',
     fromClass: 'از کلاس',
     toClass: 'به کلاس',
+    selectFromClass: 'انتخاب از کلاس',
+    selectToClass: 'انتخاب به کلاس',
+    selectSchoolDescription: 'لطفاً برای مشاهده دسته‌های فارغ‌التحصیلی، یک مدرسه از فیلترهای بالا انتخاب کنید',
     minAttendancePercentage: 'حداقل درصد حضور',
     requireAttendance: 'نیاز به حضور',
     excludeApprovedLeaves: 'مرخصی‌های تأیید شده را حذف کنید',
+    cannotChangeTypeWithStudents: 'نمی‌توان نوع فارغ‌التحصیلی را زمانی که دسته دانش‌آموز دارد تغییر داد',
+    batches: {
+      description: 'مدیریت دسته‌های فارغ‌التحصیلی، تأیید دانش‌آموزان و صدور گواهینامه‌ها'
+    },
+    noBatches: {
+      title: 'هیچ دسته فارغ‌التحصیلی وجود ندارد',
+      description: 'با ایجاد اولین دسته فارغ‌التحصیلی خود شروع کنید'
+    },
+    exams: {
+      weights: 'وزن امتحانات',
+      totalWeight: 'وزن کل',
+      equalWeights: 'توزیع مساوی'
+    },
+    attendance: {
+      minPercentage: 'حداقل درصد حضور',
+      requireAttendance: 'نیاز به حضور',
+      excludeLeaves: 'مرخصی‌های تأیید شده را حذف کنید'
+    },
+    validation: {
+      weightsMustSum100: 'وزن امتحانات باید به 100٪ برسد',
+      fromToClassDifferent: 'کلاس مبدأ و مقصد باید متفاوت باشند'
+    },
     summary: {
       totalBatches: 'کل دسته‌ها',
       draftBatches: 'پیش‌نویس',

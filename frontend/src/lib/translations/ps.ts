@@ -549,6 +549,173 @@ export const ps: TranslationKeys = {
     title: 'د سند قالبونه',
     updateTemplate: 'قالب تازه کړئ'
   },
+  idCards: {
+    title: 'د پېژندنې کارتونه',
+    templates: 'د پېژندنې کارت قالبونه',
+    generateIdCards: 'د پېژندنې کارتونه جوړ کړئ',
+    generateIdCardsDescription: 'زده کوونکي وټاکئ او د ټاکل شوي قالب پر بنسټ د پېژندنې کارتونه جوړ کړئ.',
+    selectTemplate: 'قالب وټاکئ',
+    selectTemplatePlaceholder: 'یو قالب وټاکئ',
+    selectStudents: 'زده کوونکي وټاکئ',
+    selectedCount: '{count} زده کوونکی(ان) ټاکل شوي',
+    preview: 'مخکتنه',
+    frontSide: 'مخنی برخه',
+    backSide: 'شاته برخه',
+    front: 'مخ',
+    back: 'شاته',
+    previewPlaceholder: 'مخکتنه دلته به ښکاره شي',
+    selectStudentForPreview: 'د مخکتنې لپاره زده کوونکی وټاکئ',
+    selectStudentAndTemplate: 'د مخکتنې لپاره یو زده کوونکی او قالب وټاکئ',
+    exportAsImages: 'د انځورونو په توګه صادر کړئ',
+    exportAsPdf: 'د PDF په توګه صادر کړئ',
+    exportSuccess: 'په بریالیتوب سره {count} د پېژندنې کارت(ونه) صادر شول',
+    exportFailed: 'د پېژندنې کارتونو صادرولو کې ناکامي',
+    previewFailed: 'د مخکتنې جوړولو کې ناکامي',
+    downloadSuccess: 'کارت په بریالیتوب سره ډاونلوډ شو',
+    downloadFailed: 'د کارت ډاونلوډ کې ناکامي',
+    printPreview: 'د چاپ مخکتنه',
+    assignment: {
+      title: 'د پېژندنې کارت تخصیص',
+      subtitle: 'د پېژندنې کارت قالبونه زده کوونکو ته تخصیص کړئ او د کارت تخصیصاتو مدیریت وکړئ',
+      filters: {
+        academicYear: 'تعلیمي کال',
+        academicYearRequired: 'تعلیمي کال اړین دی',
+        class: 'ټولګی',
+        allClasses: 'ټول ټولګي',
+        enrollmentStatus: 'د نوم لیکنې حالت',
+        allStatuses: 'ټول حالتونه',
+        active: 'فعال',
+        template: 'قالب',
+        allTemplates: 'ټول قالبونه',
+        search: 'لټون',
+        searchPlaceholder: 'د زده کوونکي نوم یا د نوم لیکنې شمیره لټون...'
+      },
+      studentList: {
+        title: 'زده کوونکي',
+        selectAll: 'ټول وټاکئ',
+        deselectAll: 'ټول لرې کړئ',
+        noStudentsFound: 'هیڅ زده کوونکی ونه موندل شو',
+        showing: 'ښکاره کول',
+        of: 'د',
+        students: 'زده کوونکي'
+      },
+      assignmentPanel: {
+        title: 'تخصیص',
+        templateSelection: 'د قالب ټاکل',
+        selectedStudents: 'ټاکل شوي زده کوونکي',
+        cardFee: 'د کارت فیس',
+        cardFeeOptional: 'د کارت فیس (اختیاري)',
+        bulkAssign: 'د ډیرو تخصیص',
+        assignButton: 'کارتونه تخصیص کړئ',
+        assigning: 'تخصیص کول...'
+      },
+      preview: {
+        title: 'د کارت مخکتنه',
+        selectStudent: 'زده کوونکی وټاکئ',
+        side: 'برخه',
+        front: 'مخ',
+        back: 'شاته'
+      },
+      managementTable: {
+        title: 'تخصیص شوي کارتونه',
+        studentName: 'د زده کوونکي نوم',
+        admissionNumber: 'د نوم لیکنې شمیره',
+        class: 'ټولګی',
+        template: 'قالب',
+        feeStatus: 'د فیس حالت',
+        printedStatus: 'د چاپ حالت',
+        actions: 'کړنې',
+        markPrinted: 'د چاپ شوي په توګه نښه کړئ',
+        markFeePaid: 'د فیس د ورکړل شوي په توګه نښه کړئ',
+        edit: 'سمون',
+        delete: 'ړنګول',
+        bulkActions: 'د ډیرو کړنې',
+        markSelectedPrinted: 'ټاکل شوي د چاپ شوي په توګه نښه کړئ',
+        markSelectedFeePaid: 'ټاکل شوي د فیس د ورکړل شوي په توګه نښه کړئ',
+        exportSelected: 'ټاکل شوي صادر کړئ',
+        noCardsFound: 'هیڅ کارت ونه موندل شو'
+      }
+    },
+    export: {
+      title: 'د پېژندنې کارت صادرول',
+      subtitle: 'د پېژندنې کارتونه د ZIP یا PDF فایلونو په توګه صادر کړئ',
+      filters: {
+        academicYear: 'تعلیمي کال',
+        academicYearRequired: 'تعلیمي کال اړین دی',
+        class: 'ټولګی',
+        allClasses: 'ټول ټولګي',
+        template: 'قالب',
+        allTemplates: 'ټول قالبونه',
+        enrollmentStatus: 'د نوم لیکنې حالت',
+        allStatuses: 'ټول حالتونه',
+        active: 'فعال',
+        printedStatus: 'د چاپ حالت',
+        all: 'ټول',
+        printed: 'چاپ شوي',
+        unprinted: 'چاپ نه شوي',
+        feeStatus: 'د فیس حالت',
+        paid: 'ورکړل شوي',
+        unpaid: 'نه ورکړل شوي',
+        dateRange: 'د نیټې سلسله',
+        from: 'څخه',
+        to: 'تر',
+        search: 'لټون',
+        searchPlaceholder: 'د زده کوونکي نوم یا د نوم لیکنې شمیره لټون...'
+      },
+      options: {
+        title: 'د صادرولو اختیارونه',
+        exportFormat: 'د صادرولو بڼه',
+        zipPng: 'ZIP (PNG)',
+        zipPdf: 'ZIP (PDF)',
+        singlePdf: 'یوازینی PDF',
+        cardSides: 'د کارت برخې',
+        frontOnly: 'یوازې مخ',
+        backOnly: 'یوازې شاته',
+        bothSides: 'دواړه برخې',
+        cardsPerPage: 'په هر پاڼه کې کارتونه',
+        quality: 'کیفیت',
+        standard: 'معیاري (96 DPI)',
+        high: 'لوړ (300 DPI)',
+        includeUnprinted: 'چاپ نه شوي کارتونه شامل کړئ',
+        includeUnpaid: 'فیس نه ورکړل شوي کارتونه شامل کړئ',
+        fileNaming: 'د فایل نومول'
+      },
+      studentSelection: {
+        title: 'د زده کوونکو ټاکل',
+        selectAll: 'ټول وټاکئ',
+        deselectAll: 'ټول لرې کړئ',
+        selectByClass: 'د ټولګي له مخې وټاکئ',
+        selectByStatus: 'د حالت له مخې وټاکئ',
+        selectedCount: '{count} ټاکل شوي',
+        clearSelection: 'ټاکل لرې کړئ',
+        noStudentsFound: 'هیڅ زده کوونکی ونه موندل شو'
+      },
+      actions: {
+        exportSelected: 'ټاکل شوي صادر کړئ',
+        exportAllFiltered: 'ټول فلټر شوي صادر کړئ',
+        exportIndividual: 'یوازینی صادر کړئ',
+        exporting: 'صادر کول...'
+      },
+      statistics: {
+        title: 'احصائیه',
+        totalCards: 'ټول کارتونه',
+        printed: 'چاپ شوي',
+        unprinted: 'چاپ نه شوي',
+        feePaid: 'فیس ورکړل شوی',
+        feeUnpaid: 'فیس نه ورکړل شوی',
+        totalFeeCollected: 'ټول راټول شوی فیس',
+        totalFeePending: 'ټول پاتې فیس'
+      }
+    },
+    status: {
+      assigned: 'تخصیص شوی',
+      notAssigned: 'تخصیص نه شوی',
+      printed: 'چاپ شوی',
+      unprinted: 'چاپ نه شوی',
+      feePaid: 'فیس ورکړل شوی',
+      feeUnpaid: 'فیس نه ورکړل شوی'
+    }
+  },
   common: {
     actions: 'کړنې',
     add: 'اضافه کول',
@@ -2728,6 +2895,14 @@ export const ps: TranslationKeys = {
       defaultUpdated: 'د تلوالیز تصدیق قالب په بریالیتوب سره تازه شو',
       generated: 'تصدیق په بریالیتوب سره تولید شو'
     },
+    idCardTemplateCreated: 'د پېژندنې کارت قالب په بریالیتوب سره جوړ شو',
+    idCardTemplateUpdated: 'د پېژندنې کارت قالب په بریالیتوب سره تازه شو',
+    idCardTemplateDeleted: 'د پېژندنې کارت قالب په بریالیتوب سره پاک شو',
+    idCardTemplateSetDefault: 'د تلوالیز پېژندنې کارت قالب په بریالیتوب سره ټاکل شو',
+    idCardTemplateCreateFailed: 'د پېژندنې کارت قالب جوړول ناکام شول',
+    idCardTemplateUpdateFailed: 'د پېژندنې کارت قالب تازه کول ناکام شول',
+    idCardTemplateDeleteFailed: 'د پېژندنې کارت قالب پاکول ناکام شول',
+    idCardTemplateSetDefaultFailed: 'د تلوالیز پېژندنې کارت قالب ټاکل ناکام شول',
     // Course Attendance
     courseAttendance: {
       sessionCreated: 'د حاضري ناسته په بریالیتوب سره جوړه شوه',
@@ -3275,9 +3450,34 @@ export const ps: TranslationKeys = {
     examWeights: 'د ازموینو وزنونه',
     fromClass: 'د ټولګي څخه',
     toClass: 'ټولګي ته',
+    selectFromClass: 'د ټولګي څخه وټاکئ',
+    selectToClass: 'ټولګي ته وټاکئ',
+    selectSchoolDescription: 'د فراغت ګروپونو لیدو لپاره لومړی د پورته فیلترونو څخه یو ښوونځی وټاکئ',
     minAttendancePercentage: 'د حاضرۍ لږترلږه سلنه',
     requireAttendance: 'د حاضرۍ اړتیا',
     excludeApprovedLeaves: 'تایید شوي رخصتونه حذف کړئ',
+    cannotChangeTypeWithStudents: 'کله چې ګروپ زده کونکي ولري، د فراغت ډول نشي بدلیدلی',
+    batches: {
+      description: 'د فراغت ګروپونه اداره کړئ، زده کونکي تایید کړئ، او سندونه صادر کړئ'
+    },
+    noBatches: {
+      title: 'د فراغت ګروپونه نشته',
+      description: 'د خپل لومړي د فراغت ګروپ جوړولو سره پیل وکړئ'
+    },
+    exams: {
+      weights: 'د ازموینو وزنونه',
+      totalWeight: 'ټول وزن',
+      equalWeights: 'برابر ویشل'
+    },
+    attendance: {
+      minPercentage: 'د حاضرۍ لږترلږه سلنه',
+      requireAttendance: 'د حاضرۍ اړتیا',
+      excludeLeaves: 'تایید شوي رخصتونه حذف کړئ'
+    },
+    validation: {
+      weightsMustSum100: 'د ازموینو وزنونه باید 100٪ ته ورسيږي',
+      fromToClassDifferent: 'د ټولګي څخه او ټولګي ته باید توپیر ولري'
+    },
     summary: {
       totalBatches: 'ټول ګروپونه',
       draftBatches: 'مسوده',

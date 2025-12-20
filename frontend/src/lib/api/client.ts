@@ -2437,6 +2437,33 @@ export const certificateTemplatesApi = {
     apiClient.get(`/certificate-templates/certificate-data/${courseStudentId}`),
 };
 
+// ID Card Templates API
+export const idCardTemplatesApi = {
+  list: async (params?: { active_only?: boolean; school_id?: string }) =>
+    apiClient.get('/id-card-templates', params),
+
+  get: async (id: string) => apiClient.get(`/id-card-templates/${id}`),
+
+  create: async (data: FormData) => apiClient.post('/id-card-templates', data),
+
+  update: async (id: string, data: FormData) => {
+    // Laravel doesn't support PUT with FormData, use POST with _method
+    data.append('_method', 'PUT');
+    return apiClient.post(`/id-card-templates/${id}`, data);
+  },
+
+  delete: async (id: string) => apiClient.delete(`/id-card-templates/${id}`),
+
+  setDefault: async (id: string) => apiClient.post(`/id-card-templates/${id}/set-default`),
+
+  getBackgroundUrl: (id: string, side: 'front' | 'back') => 
+    `${API_URL}/id-card-templates/${id}/background/${side}`,
+
+  getBackgroundImage: async (id: string, side: 'front' | 'back') => {
+    return apiClient.requestFile(`/id-card-templates/${id}/background/${side}`, { method: 'GET' });
+  },
+};
+
 // Translations API
 export const translationsApi = {
   get: async () => apiClient.get<{
@@ -3510,6 +3537,7 @@ export const graduationBatchesApi = {
     class_id: string;
     exam_id?: string; // Backward compatibility
     exam_ids?: string[]; // New: multiple exams
+    exam_weights?: Record<string, number>; // Exam weights (0-100, must sum to 100 if provided)
     graduation_date: string;
     graduation_type?: 'final_year' | 'promotion' | 'transfer';
     from_class_id?: string;
@@ -3570,6 +3598,12 @@ export const certificateTemplatesV2Api = {
     if (data.school_id) formData.append('school_id', data.school_id);
     formData.append('type', data.type);
     formData.append('title', data.title);
+    // Backend also expects 'name' field - use title as name if name not provided
+    if ((data as any).name) {
+      formData.append('name', (data as any).name);
+    } else {
+      formData.append('name', data.title);
+    }
     if (data.body_html) formData.append('body_html', data.body_html);
     if (data.layout_config) formData.append('layout_config', JSON.stringify(data.layout_config));
     if (data.background_image) formData.append('background_image', data.background_image);
@@ -3606,7 +3640,15 @@ export const certificateTemplatesV2Api = {
     const formData = new FormData();
     if (data.school_id !== undefined) formData.append('school_id', data.school_id || '');
     if (data.type) formData.append('type', data.type);
-    if (data.title) formData.append('title', data.title);
+    if (data.title) {
+      formData.append('title', data.title);
+      // Backend also expects 'name' field - use title as name if name not provided
+      if ((data as any).name) {
+        formData.append('name', (data as any).name);
+      } else {
+        formData.append('name', data.title);
+      }
+    }
     if (data.body_html !== undefined) formData.append('body_html', data.body_html || '');
     if (data.layout_config !== undefined) formData.append('layout_config', JSON.stringify(data.layout_config));
     if (data.background_image) formData.append('background_image', data.background_image);
@@ -3635,11 +3677,102 @@ export const issuedCertificatesApi = {
     type?: string;
   }) => apiClient.get('/certificates/issued', params),
   get: async (id: string) => apiClient.get(`/certificates/issued/${id}`),
-  getCertificateData: async (id: string) => apiClient.get(`/certificates/issued/${id}/data`),
+  getCertificateData: async (id: string, schoolId?: string) => 
+    apiClient.get(`/certificates/issued/${id}/data`, schoolId ? { school_id: schoolId } : undefined),
   revoke: async (id: string, reason: string) =>
     apiClient.post(`/certificates/issued/${id}/revoke`, { reason }),
   downloadPdf: async (id: string) =>
     apiClient.requestFile(`/certificates/issued/${id}/pdf`, { method: 'GET' }),
   downloadBatch: async (batchId: string) =>
     apiClient.requestFile(`/certificates/batches/${batchId}/pdf`, { method: 'GET' }),
+};
+
+// Student ID Cards API
+export const studentIdCardsApi = {
+  list: async (params?: {
+    academic_year_id?: string;
+    class_id?: string;
+    class_academic_year_id?: string;
+    enrollment_status?: string;
+    id_card_template_id?: string;
+    is_printed?: boolean;
+    card_fee_paid?: boolean;
+    search?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/student-id-cards', params),
+  
+  get: async (id: string) => apiClient.get(`/student-id-cards/${id}`),
+  
+  assign: async (data: {
+    academic_year_id: string;
+    id_card_template_id: string;
+    student_admission_ids: string[];
+    class_id?: string | null;
+    class_academic_year_id?: string | null;
+    card_fee?: number;
+    card_fee_paid?: boolean;
+    card_fee_paid_date?: string | null;
+    card_number?: string | null;
+    notes?: string | null;
+  }) => apiClient.post('/student-id-cards/assign', data),
+  
+  update: async (id: string, data: {
+    card_number?: string | null;
+    card_fee?: number;
+    card_fee_paid?: boolean;
+    card_fee_paid_date?: string | null;
+    is_printed?: boolean;
+    printed_at?: string | null;
+    printed_by?: string | null;
+    notes?: string | null;
+  }) => apiClient.put(`/student-id-cards/${id}`, data),
+  
+  markPrinted: async (id: string) => 
+    apiClient.post(`/student-id-cards/${id}/mark-printed`),
+  
+  markFeePaid: async (id: string, data: {
+    card_fee_paid: boolean;
+    card_fee_paid_date?: string;
+  }) => apiClient.post(`/student-id-cards/${id}/mark-fee-paid`, data),
+  
+  delete: async (id: string) => apiClient.delete(`/student-id-cards/${id}`),
+  
+  preview: async (id: string, side: 'front' | 'back' = 'front') =>
+    apiClient.requestFile(`/student-id-cards/export/preview?id=${id}&side=${side}`, {
+      method: 'GET',
+    }),
+  
+  exportBulk: async (data: {
+    card_ids?: string[];
+    filters?: {
+      academic_year_id?: string;
+      class_id?: string;
+      class_academic_year_id?: string;
+      enrollment_status?: string;
+      id_card_template_id?: string;
+      is_printed?: boolean;
+      card_fee_paid?: boolean;
+      search?: string;
+    };
+    format: 'zip' | 'pdf';
+    sides: 'front' | 'back' | 'both';
+    cards_per_page?: number;
+    quality?: 'standard' | 'high';
+    include_unprinted?: boolean;
+    include_unpaid?: boolean;
+    file_naming_template?: string;
+  }) => apiClient.requestFile('/student-id-cards/export/bulk', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }),
+  
+  exportIndividual: async (id: string, format: 'png' | 'pdf' = 'png') =>
+    apiClient.requestFile(`/student-id-cards/export/individual/${id}`, {
+      method: 'GET',
+      params: { format },
+    }),
 };

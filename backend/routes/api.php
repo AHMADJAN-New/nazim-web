@@ -56,6 +56,7 @@ use App\Http\Controllers\CourseAttendanceSessionController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\CourseDocumentController;
 use App\Http\Controllers\CertificateTemplateController;
+use App\Http\Controllers\IdCardTemplateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamClassController;
@@ -403,6 +404,24 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/certificate-templates/generate/{courseStudentId}', [CertificateTemplateController::class, 'generateCertificate']);
     Route::get('/certificate-templates/certificate-data/{courseStudentId}', [CertificateTemplateController::class, 'getCertificateData']);
     Route::apiResource('certificate-templates', CertificateTemplateController::class);
+
+    // ID Card Templates
+    Route::get('/id-card-templates/{id}/background/{side}', [IdCardTemplateController::class, 'getBackgroundImage'])
+        ->name('id-card-templates.background');
+    Route::post('/id-card-templates/{id}/set-default', [IdCardTemplateController::class, 'setDefault']);
+    Route::apiResource('id-card-templates', IdCardTemplateController::class);
+
+    // Student ID Cards
+    Route::get('/student-id-cards', [\App\Http\Controllers\StudentIdCardController::class, 'index']);
+    Route::post('/student-id-cards/assign', [\App\Http\Controllers\StudentIdCardController::class, 'assign']);
+    Route::get('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'show']);
+    Route::put('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'update']);
+    Route::delete('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'destroy']);
+    Route::post('/student-id-cards/{id}/mark-printed', [\App\Http\Controllers\StudentIdCardController::class, 'markPrinted']);
+    Route::post('/student-id-cards/{id}/mark-fee-paid', [\App\Http\Controllers\StudentIdCardController::class, 'markFeePaid']);
+    Route::get('/student-id-cards/export/preview', [\App\Http\Controllers\StudentIdCardController::class, 'preview']);
+    Route::post('/student-id-cards/export/bulk', [\App\Http\Controllers\StudentIdCardController::class, 'exportBulk']);
+    Route::get('/student-id-cards/export/individual/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'exportIndividual']);
 
     // Certificate Templates (v2 API - frontend compatibility)
     Route::get('/certificates/templates', [CertificateTemplateController::class, 'index']);

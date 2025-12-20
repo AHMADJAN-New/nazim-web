@@ -2297,6 +2297,178 @@ export interface TranslationKeys {
     defaultTemplate: string;
   };
 
+  // ID Cards
+  idCards: {
+    title: string;
+    templates: string;
+    generateIdCards: string;
+    generateIdCardsDescription: string;
+    selectTemplate: string;
+    selectTemplatePlaceholder: string;
+    selectStudents: string;
+    selectedCount: string;
+    preview: string;
+    frontSide: string;
+    backSide: string;
+    front: string;
+    back: string;
+    previewPlaceholder: string;
+    selectStudentForPreview: string;
+    selectStudentAndTemplate: string;
+    exportAsImages: string;
+    exportAsPdf: string;
+    exportSuccess: string;
+    exportFailed: string;
+    previewFailed: string;
+    downloadSuccess: string;
+    downloadFailed: string;
+    printPreview: string;
+    // Assignment page
+    assignment: {
+      title: string;
+      subtitle: string;
+      filters: {
+        academicYear: string;
+        academicYearRequired: string;
+        class: string;
+        allClasses: string;
+        enrollmentStatus: string;
+        allStatuses: string;
+        active: string;
+        template: string;
+        allTemplates: string;
+        search: string;
+        searchPlaceholder: string;
+      };
+      studentList: {
+        title: string;
+        selectAll: string;
+        deselectAll: string;
+        noStudentsFound: string;
+        showing: string;
+        of: string;
+        students: string;
+      };
+      assignmentPanel: {
+        title: string;
+        templateSelection: string;
+        selectedStudents: string;
+        cardFee: string;
+        cardFeeOptional: string;
+        bulkAssign: string;
+        assignButton: string;
+        assigning: string;
+      };
+      preview: {
+        title: string;
+        selectStudent: string;
+        side: string;
+        front: string;
+        back: string;
+      };
+      managementTable: {
+        title: string;
+        studentName: string;
+        admissionNumber: string;
+        class: string;
+        template: string;
+        feeStatus: string;
+        printedStatus: string;
+        actions: string;
+        markPrinted: string;
+        markFeePaid: string;
+        edit: string;
+        delete: string;
+        bulkActions: string;
+        markSelectedPrinted: string;
+        markSelectedFeePaid: string;
+        exportSelected: string;
+        noCardsFound: string;
+      };
+    };
+    // Export page
+    export: {
+      title: string;
+      subtitle: string;
+      filters: {
+        academicYear: string;
+        academicYearRequired: string;
+        class: string;
+        allClasses: string;
+        template: string;
+        allTemplates: string;
+        enrollmentStatus: string;
+        allStatuses: string;
+        active: string;
+        printedStatus: string;
+        all: string;
+        printed: string;
+        unprinted: string;
+        feeStatus: string;
+        paid: string;
+        unpaid: string;
+        dateRange: string;
+        from: string;
+        to: string;
+        search: string;
+        searchPlaceholder: string;
+      };
+      options: {
+        title: string;
+        exportFormat: string;
+        zipPng: string;
+        zipPdf: string;
+        singlePdf: string;
+        cardSides: string;
+        frontOnly: string;
+        backOnly: string;
+        bothSides: string;
+        cardsPerPage: string;
+        quality: string;
+        standard: string;
+        high: string;
+        includeUnprinted: string;
+        includeUnpaid: string;
+        fileNaming: string;
+      };
+      studentSelection: {
+        title: string;
+        selectAll: string;
+        deselectAll: string;
+        selectByClass: string;
+        selectByStatus: string;
+        selectedCount: string;
+        clearSelection: string;
+        noStudentsFound: string;
+      };
+      actions: {
+        exportSelected: string;
+        exportAllFiltered: string;
+        exportIndividual: string;
+        exporting: string;
+      };
+      statistics: {
+        title: string;
+        totalCards: string;
+        printed: string;
+        unprinted: string;
+        feePaid: string;
+        feeUnpaid: string;
+        totalFeeCollected: string;
+        totalFeePending: string;
+      };
+    };
+    // Status badges
+    status: {
+      assigned: string;
+      notAssigned: string;
+      printed: string;
+      unprinted: string;
+      feePaid: string;
+      feeUnpaid: string;
+    };
+  };
+
   // Teacher Subject Assignments
   teacherSubjectAssignments: {
     title: string;
@@ -3089,6 +3261,29 @@ export interface TranslationKeys {
       defaultUpdated: string;
       generated: string;
     };
+    // ID Card Templates
+    idCardTemplateCreated: string;
+    idCardTemplateUpdated: string;
+    idCardTemplateDeleted: string;
+    idCardTemplateSetDefault: string;
+    idCardTemplateCreateFailed: string;
+    idCardTemplateUpdateFailed: string;
+    idCardTemplateDeleteFailed: string;
+    idCardTemplateSetDefaultFailed: string;
+    // Student ID Cards
+    idCardsAssigned: string;
+    idCardAssignFailed: string;
+    idCardUpdated: string;
+    idCardUpdateFailed: string;
+    idCardMarkedPrinted: string;
+    idCardMarkPrintedFailed: string;
+    idCardFeeMarkedPaid: string;
+    idCardFeeMarkPaidFailed: string;
+    idCardDeleted: string;
+    idCardDeleteFailed: string;
+    idCardsExported: string;
+    idCardExportFailed: string;
+    idCardExported: string;
     // Course Attendance
     courseAttendance: {
       sessionCreated: string;
@@ -3495,7 +3690,9 @@ export interface TranslationKeys {
   };
 
   graduation: {
-    batches: string;
+    batches: string | {
+      description: string;
+    };
     types: {
       finalYear: string;
       promotion: string;
@@ -3505,9 +3702,35 @@ export interface TranslationKeys {
     examWeights: string;
     fromClass: string;
     toClass: string;
+    selectFromClass: string;
+    selectToClass: string;
     minAttendancePercentage: string;
     requireAttendance: string;
     excludeApprovedLeaves: string;
+    cannotChangeTypeWithStudents: string;
+    createTransfer: string;
+    classTransfer: string;
+    selectSchoolDescription: string;
+    deleteConfirm: string;
+    noBatches: {
+      title: string;
+      description: string;
+    };
+    exams: {
+      weights: string;
+      totalWeight: string;
+      equalWeights: string;
+    };
+    attendance: {
+      title: string;
+      minPercentage: string;
+      requireAttendance: string;
+      excludeLeaves: string;
+    };
+    validation: {
+      weightsMustSum100: string;
+      fromToClassDifferent: string;
+    };
     summary: {
       totalBatches: string;
       draftBatches: string;

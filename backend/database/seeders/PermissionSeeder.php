@@ -95,6 +95,8 @@ class PermissionSeeder extends Seeder
             'issued_certificates' => ['read'],
             'certificates' => ['issue', 'print', 'revoke'],
             'course_documents' => ['read', 'create', 'update', 'delete'],
+            // ID Cards permissions
+            'id_cards' => ['read', 'create', 'update', 'delete', 'export'],
             // Finance Module permissions
             'finance_accounts' => ['read', 'create', 'update', 'delete'],
             'income_entries' => ['read', 'create', 'update', 'delete'],
@@ -128,6 +130,8 @@ class PermissionSeeder extends Seeder
             // Question Bank & Exam Papers
             'exams.questions' => ['read', 'create', 'update', 'delete'],
             'exams.papers' => ['read', 'create', 'update', 'delete'],
+            // ID Cards
+            'id_cards' => ['read', 'create', 'update', 'delete', 'export'],
         ];
     }
 
@@ -175,6 +179,8 @@ class PermissionSeeder extends Seeder
                 'dms.settings.read',
                 // Question Bank & Papers - read only for staff
                 'exams.questions.read', 'exams.papers.read',
+                // ID Cards - read and create for staff
+                'id_cards.read', 'id_cards.create',
             ],
             'teacher' => [
                 // Teachers can read and manage academic content
@@ -224,6 +230,8 @@ class PermissionSeeder extends Seeder
                 // Question Bank & Papers - full access for teachers
                 'exams.questions.read', 'exams.questions.create', 'exams.questions.update', 'exams.questions.delete',
                 'exams.papers.read', 'exams.papers.create', 'exams.papers.update', 'exams.papers.delete',
+                // ID Cards - full access for teachers
+                'id_cards.read', 'id_cards.create', 'id_cards.update', 'id_cards.delete',
             ],
             'exam_controller' => [
                 // Dedicated exam controller role - full exam management except deletion
@@ -249,6 +257,8 @@ class PermissionSeeder extends Seeder
                 // Question Bank & Papers - full access for exam controller
                 'exams.questions.read', 'exams.questions.create', 'exams.questions.update', 'exams.questions.delete',
                 'exams.papers.read', 'exams.papers.create', 'exams.papers.update', 'exams.papers.delete',
+                // ID Cards - read only for exam controllers
+                'id_cards.read',
             ],
             'hostel_manager' => [
                 'hostel.read',

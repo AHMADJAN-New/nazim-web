@@ -1,0 +1,788 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useAuth } from '@/hooks/useAuth';
+import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
+import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
+import { useIdCardTemplates } from '@/hooks/useIdCardTemplates';
+import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import {
+  useStudentIdCards,
+  useAssignIdCards,
+  useUpdateStudentIdCard,
+  useMarkCardPrinted,
+  useMarkCardFeePaid,
+  useDeleteStudentIdCard,
+  usePreviewIdCard,
+  useExportIndividualIdCard,
+  type StudentIdCard,
+  type StudentIdCardFilters,
+  type AssignIdCardRequest,
+} from '@/hooks/useStudentIdCards';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import {
+  Filter,
+  Search,
+  CheckSquare,
+  Square,
+  Eye,
+  Printer,
+  DollarSign,
+  Download,
+  Trash2,
+  Edit,
+  X,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { StudentIdCardPreview } from '@/components/id-cards/StudentIdCardPreview';
+
+export default function IdCardAssignment() {
+  const { t } = useLanguage();
+  const { profile } = useAuth();
+  const organizationId = profile?.organization_id;
+
+  // Filter states
+  const [academicYearId, setAcademicYearId] = useState<string>('');
+  const [classId, setClassId] = useState<string>('');
+  const [classAcademicYearId, setClassAcademicYearId] = useState<string>('');
+  const [enrollmentStatus, setEnrollmentStatus] = useState<string>('active');
+  const [templateId, setTemplateId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Student selection (using admission IDs)
+  const [selectedAdmissionIds, setSelectedAdmissionIds] = useState<Set<string>>(new Set());
+
+  // Assignment panel
+  const [selectedTemplateForAssignment, setSelectedTemplateForAssignment] = useState<string>('');
+  const [cardFee, setCardFee] = useState<string>('');
+  const [cardFeePaid, setCardFeePaid] = useState<boolean>(false);
+  const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
+  const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front');
+
+  // Management table
+  const [editingCard, setEditingCard] = useState<StudentIdCard | null>(null);
+  const [deleteCardId, setDeleteCardId] = useState<string | null>(null);
+  const [selectedCardsForBulkAction, setSelectedCardsForBulkAction] = useState<Set<string>>(new Set());
+
+  // Dialogs
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+
+  // Data hooks
+  const { data: academicYears = [] } = useAcademicYears(organizationId);
+  const { data: currentAcademicYear } = useCurrentAcademicYear();
+  const { data: classes = [] } = useClasses(organizationId);
+  const { data: classAcademicYears = [] } = useClassAcademicYears(academicYearId, organizationId);
+  const { data: templates = [] } = useIdCardTemplates(true);
+  const { data: studentAdmissions = [] } = useStudentAdmissions(organizationId, false, {
+    academic_year_id: academicYearId || undefined,
+    class_id: classId || undefined,
+    class_academic_year_id: classAcademicYearId || undefined,
+    enrollment_status: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
+  });
+
+  // Set default academic year
+  useEffect(() => {
+    if (currentAcademicYear && !academicYearId) {
+      setAcademicYearId(currentAcademicYear.id);
+    }
+  }, [currentAcademicYear?.id, academicYearId]);
+
+  // Filters for ID cards
+  const cardFilters: StudentIdCardFilters = useMemo(() => ({
+    academicYearId: academicYearId || undefined,
+    classId: classId || undefined,
+    classAcademicYearId: classAcademicYearId || undefined,
+    enrollmentStatus: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
+    idCardTemplateId: templateId || undefined,
+    search: searchQuery || undefined,
+  }), [academicYearId, classId, classAcademicYearId, enrollmentStatus, templateId, searchQuery]);
+
+  const { data: idCards = [], isLoading: cardsLoading } = useStudentIdCards(cardFilters);
+  const assignCards = useAssignIdCards();
+  const updateCard = useUpdateStudentIdCard();
+  const markPrinted = useMarkCardPrinted();
+  const markFeePaid = useMarkCardFeePaid();
+  const deleteCard = useDeleteStudentIdCard();
+  const previewCard = usePreviewIdCard();
+  const exportIndividual = useExportIndividualIdCard();
+
+  // Filter students by search query
+  const filteredStudents = useMemo(() => {
+    if (!searchQuery) return studentAdmissions;
+    const query = searchQuery.toLowerCase();
+    return studentAdmissions.filter(admission => {
+      const student = admission.student;
+      if (!student) return false;
+      return (
+        student.fullName?.toLowerCase().includes(query) ||
+        student.admissionNumber?.toLowerCase().includes(query) ||
+        student.studentCode?.toLowerCase().includes(query)
+      );
+    });
+  }, [studentAdmissions, searchQuery]);
+
+  // Get students with card status
+  const studentsWithCardStatus = useMemo(() => {
+    return filteredStudents.map(admission => {
+      const card = idCards.find(c => c.studentAdmissionId === admission.id);
+      return {
+        admission,
+        card,
+        hasCard: !!card,
+        isPrinted: card?.isPrinted ?? false,
+        feePaid: card?.cardFeePaid ?? false,
+      };
+    });
+  }, [filteredStudents, idCards]);
+
+  // Handle student selection (using admission IDs)
+  const toggleStudentSelection = (admissionId: string) => {
+    setSelectedAdmissionIds(prev => {
+      const next = new Set(prev);
+      if (next.has(admissionId)) {
+        next.delete(admissionId);
+      } else {
+        next.add(admissionId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllStudents = () => {
+    if (selectedAdmissionIds.size === studentsWithCardStatus.length) {
+      setSelectedAdmissionIds(new Set());
+    } else {
+      setSelectedAdmissionIds(new Set(studentsWithCardStatus.map(s => s.admission.id)));
+    }
+  };
+
+  const selectByClass = (classAcadYearId: string) => {
+    const classAdmissions = studentsWithCardStatus
+      .filter(s => s.admission.classAcademicYearId === classAcadYearId)
+      .map(s => s.admission.id);
+    setSelectedAdmissionIds(new Set(classAdmissions));
+  };
+
+  // Handle bulk assignment
+  const handleBulkAssign = async () => {
+    if (!academicYearId || !selectedTemplateForAssignment || selectedAdmissionIds.size === 0) {
+      return;
+    }
+
+    const request: AssignIdCardRequest = {
+      academicYearId,
+      idCardTemplateId: selectedTemplateForAssignment,
+      studentAdmissionIds: Array.from(selectedAdmissionIds),
+      classId: classId || null,
+      classAcademicYearId: classAcademicYearId || null,
+      cardFee: cardFee ? parseFloat(cardFee) : undefined,
+      cardFeePaid: cardFeePaid,
+      cardFeePaidDate: cardFeePaid ? new Date() : undefined,
+    };
+
+    try {
+      await assignCards.mutateAsync(request);
+      setIsAssignDialogOpen(false);
+      setSelectedAdmissionIds(new Set());
+      setSelectedTemplateForAssignment('');
+      setCardFee('');
+      setCardFeePaid(false);
+    } catch (error) {
+      // Error handled by hook
+    }
+  };
+
+  // Handle card management actions
+  const handleMarkPrinted = async (cardId: string) => {
+    await markPrinted.mutateAsync(cardId);
+  };
+
+  const handleMarkFeePaid = async (cardId: string) => {
+    await markFeePaid.mutateAsync({ id: cardId, paidDate: new Date() });
+  };
+
+  const handleEditCard = (card: StudentIdCard) => {
+    setEditingCard(card);
+    setCardFee(card.cardFee.toString());
+    setCardFeePaid(card.cardFeePaid);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCard) return;
+
+    await updateCard.mutateAsync({
+      id: editingCard.id,
+      cardFee: cardFee ? parseFloat(cardFee) : undefined,
+      cardFeePaid: cardFeePaid,
+      cardFeePaidDate: cardFeePaid ? new Date() : undefined,
+    });
+
+    setIsEditDialogOpen(false);
+    setEditingCard(null);
+  };
+
+  const handleDeleteCard = async () => {
+    if (!deleteCardId) return;
+    await deleteCard.mutateAsync(deleteCardId);
+    setIsDeleteDialogOpen(false);
+    setDeleteCardId(null);
+  };
+
+  const handlePreview = (cardId: string, side: 'front' | 'back') => {
+    setPreviewStudentId(cardId);
+    setPreviewSide(side);
+    setIsPreviewDialogOpen(true);
+  };
+
+  // Filter cards for management table
+  const filteredCards = useMemo(() => {
+    return idCards.filter(card => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          card.student?.fullName?.toLowerCase().includes(query) ||
+          card.student?.admissionNumber?.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    });
+  }, [idCards, searchQuery]);
+
+  return (
+    <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('idCards.assignment.title') || 'ID Card Assignment'}</CardTitle>
+          <CardDescription>
+            {t('idCards.assignment.description') || 'Assign ID card templates to students and manage card assignments'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Filter Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <Label>{t('academic.academicYears.academicYear') || 'Academic Year'}</Label>
+              <Select value={academicYearId} onValueChange={setAcademicYearId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('common.select') || 'Select'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears.map(year => (
+                    <SelectItem key={year.id} value={year.id}>
+                      {year.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>{t('classes.class') || 'Class'}</Label>
+              <Select value={classId} onValueChange={setClassId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('common.all') || 'All'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{t('common.all') || 'All'}</SelectItem>
+                  {classes.map(cls => (
+                    <SelectItem key={cls.id} value={cls.id}>
+                      {cls.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>{t('students.enrollmentStatus') || 'Enrollment Status'}</Label>
+              <Select value={enrollmentStatus} onValueChange={setEnrollmentStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                  <SelectItem value="active">{t('students.active') || 'Active'}</SelectItem>
+                  <SelectItem value="inactive">{t('students.inactive') || 'Inactive'}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>{t('idCards.template') || 'Template'}</Label>
+              <Select value={templateId} onValueChange={setTemplateId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('common.all') || 'All'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{t('common.all') || 'All'}</SelectItem>
+                  {templates.map(template => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t('common.search') || 'Search students...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+
+          {/* Main Content: Student List + Assignment Panel */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            {/* Student List (40%) */}
+            <div className="lg:col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">
+                  {t('students.students') || 'Students'} ({studentsWithCardStatus.length})
+                </Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={selectAllStudents}
+                >
+                  {selectedAdmissionIds.size === studentsWithCardStatus.length ? (
+                    <>
+                      <Square className="h-4 w-4 mr-1" />
+                      {t('common.deselectAll') || 'Deselect All'}
+                    </>
+                  ) : (
+                    <>
+                      <CheckSquare className="h-4 w-4 mr-1" />
+                      {t('common.selectAll') || 'Select All'}
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <ScrollArea className="h-[500px] border rounded-lg p-2">
+                <div className="space-y-2">
+                  {studentsWithCardStatus.map(({ admission, card, hasCard, isPrinted, feePaid }) => {
+                    const student = admission.student;
+                    if (!student) return null;
+
+                    const isSelected = selectedAdmissionIds.has(admission.id);
+                    return (
+                      <div
+                        key={admission.id}
+                        className={cn(
+                          "flex items-center gap-2 p-2 rounded-lg border transition-colors cursor-pointer",
+                          isSelected
+                            ? "bg-primary/10 border-primary"
+                            : "hover:bg-muted/50"
+                        )}
+                        onClick={() => toggleStudentSelection(admission.id)}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleStudentSelection(admission.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{student.fullName}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {t('students.admissionNo') || 'Admission'}: {student.admissionNumber}
+                          </div>
+                          <div className="flex gap-1 mt-1">
+                            {hasCard ? (
+                              <Badge variant="default" className="text-xs">
+                                {t('idCards.assigned') || 'Assigned'}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">
+                                {t('idCards.notAssigned') || 'Not Assigned'}
+                              </Badge>
+                            )}
+                            {isPrinted && (
+                              <Badge variant="secondary" className="text-xs">
+                                {t('idCards.printed') || 'Printed'}
+                              </Badge>
+                            )}
+                            {feePaid && (
+                              <Badge variant="outline" className="text-xs">
+                                {t('idCards.feePaid') || 'Fee Paid'}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Assignment Panel (60%) */}
+            <div className="lg:col-span-3 space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {t('idCards.assignment.assignTemplate') || 'Assign Template'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>{t('idCards.template') || 'Template'}</Label>
+                    <Select
+                      value={selectedTemplateForAssignment}
+                      onValueChange={setSelectedTemplateForAssignment}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('idCards.selectTemplate') || 'Select template'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map(template => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>{t('idCards.cardFee') || 'Card Fee'}</Label>
+                      <Input
+                        type="number"
+                        value={cardFee}
+                        onChange={(e) => setCardFee(e.target.value)}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="fee-paid"
+                          checked={cardFeePaid}
+                          onCheckedChange={(checked) => setCardFeePaid(checked as boolean)}
+                        />
+                        <Label htmlFor="fee-paid" className="cursor-pointer">
+                          {t('idCards.feePaid') || 'Fee Paid'}
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      {t('idCards.selectedStudents') || 'Selected'}: {selectedAdmissionIds.size}
+                    </div>
+                    <Button
+                      onClick={() => setIsAssignDialogOpen(true)}
+                      disabled={!academicYearId || !selectedTemplateForAssignment || selectedAdmissionIds.size === 0}
+                    >
+                      {t('idCards.assign') || 'Assign Cards'}
+                    </Button>
+                  </div>
+
+                  {/* Preview Section */}
+                  <Separator />
+                  <div>
+                    <Label>{t('idCards.preview') || 'Preview'}</Label>
+                    <div className="flex gap-2 mt-2">
+                      <Select
+                        value={previewStudentId || ''}
+                        onValueChange={(value) => setPreviewStudentId(value || null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('idCards.selectStudentForPreview') || 'Select student'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {studentsWithCardStatus
+                            .filter(s => s.hasCard)
+                            .map(({ admission }) => (
+                              <SelectItem key={admission.id} value={admission.id}>
+                                {admission.student?.fullName}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={previewSide} onValueChange={(value: 'front' | 'back') => setPreviewSide(value)}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="front">{t('idCards.front') || 'Front'}</SelectItem>
+                          <SelectItem value="back">{t('idCards.back') || 'Back'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {previewStudentId && (
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const card = idCards.find(c => c.studentAdmissionId === previewStudentId);
+                            if (card) handlePreview(card.id, previewSide);
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          {t('common.preview') || 'Preview'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Card Management Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                {t('idCards.management.title') || 'Card Management'} ({filteredCards.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {cardsLoading ? (
+                <div className="text-center py-8">{t('common.loading') || 'Loading...'}</div>
+              ) : filteredCards.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {t('idCards.noCards') || 'No ID cards found'}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('students.student') || 'Student'}</TableHead>
+                      <TableHead>{t('students.admissionNo') || 'Admission No'}</TableHead>
+                      <TableHead>{t('classes.class') || 'Class'}</TableHead>
+                      <TableHead>{t('idCards.template') || 'Template'}</TableHead>
+                      <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
+                      <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
+                      <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCards.map(card => (
+                      <TableRow key={card.id}>
+                        <TableCell className="font-medium">
+                          {card.student?.fullName || '-'}
+                        </TableCell>
+                        <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
+                        <TableCell>{card.class?.name || '-'}</TableCell>
+                        <TableCell>{card.template?.name || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
+                            {card.cardFeePaid
+                              ? t('idCards.feePaid') || 'Paid'
+                              : t('idCards.feeUnpaid') || 'Unpaid'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={card.isPrinted ? 'default' : 'secondary'}>
+                            {card.isPrinted
+                              ? t('idCards.printed') || 'Printed'
+                              : t('idCards.unprinted') || 'Unprinted'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const admissionId = card.studentAdmissionId;
+                                setPreviewStudentId(admissionId);
+                                setPreviewSide('front');
+                                handlePreview(card.id, 'front');
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {!card.isPrinted && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleMarkPrinted(card.id)}
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {!card.cardFeePaid && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleMarkFeePaid(card.id)}
+                              >
+                                <DollarSign className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditCard(card)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setDeleteCardId(card.id);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </CardContent>
+      </Card>
+
+      {/* Assign Dialog */}
+      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('idCards.assignment.confirmAssign') || 'Confirm Assignment'}</DialogTitle>
+            <DialogDescription>
+              {t('idCards.assignment.assignToStudents', { count: selectedAdmissionIds.size }) ||
+                `Assign ID card to ${selectedAdmissionIds.size} student(s)?`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
+              {t('common.cancel') || 'Cancel'}
+            </Button>
+            <Button onClick={handleBulkAssign} disabled={assignCards.isPending}>
+              {assignCards.isPending
+                ? t('common.processing') || 'Processing...'
+                : t('common.confirm') || 'Confirm'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('idCards.editCard') || 'Edit ID Card'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{t('idCards.cardFee') || 'Card Fee'}</Label>
+              <Input
+                type="number"
+                value={cardFee}
+                onChange={(e) => setCardFee(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="edit-fee-paid"
+                checked={cardFeePaid}
+                onCheckedChange={(checked) => setCardFeePaid(checked as boolean)}
+              />
+              <Label htmlFor="edit-fee-paid" className="cursor-pointer">
+                {t('idCards.feePaid') || 'Fee Paid'}
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              {t('common.cancel') || 'Cancel'}
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={updateCard.isPending}>
+              {updateCard.isPending ? t('common.saving') || 'Saving...' : t('common.save') || 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('common.confirmDelete') || 'Confirm Delete'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('idCards.deleteConfirm') || 'Are you sure you want to delete this ID card assignment?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCard} disabled={deleteCard.isPending}>
+              {deleteCard.isPending ? t('common.deleting') || 'Deleting...' : t('common.delete') || 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Preview Dialog */}
+      <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('idCards.preview') || 'Card Preview'}</DialogTitle>
+          </DialogHeader>
+          {previewStudentId && (
+            <StudentIdCardPreview
+              card={idCards.find(c => c.id === previewStudentId) || null}
+              side={previewSide}
+              showControls={true}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+

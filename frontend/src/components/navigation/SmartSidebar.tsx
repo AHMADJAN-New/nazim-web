@@ -199,6 +199,8 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasCertificateTemplatesPermission = useHasPermission('certificate_templates.read');
   const hasGraduationBatchesPermission = useHasPermission('graduation_batches.read');
   const hasIssuedCertificatesPermission = useHasPermission('issued_certificates.read');
+  const hasIdCardsPermission = useHasPermission('id_cards.read');
+  const hasIdCardsExportPermission = useHasPermission('id_cards.export');
   const hasCourseDocumentsPermission = useHasPermission('course_documents.read');
   const hasStaffTypesPermission = useHasPermission('staff_types.read');
   const hasScheduleSlotsPermission = useHasPermission('schedule_slots.read');
@@ -438,6 +440,32 @@ export const SmartSidebar = memo(function SmartSidebar() {
             titleKey: "certificates.issued",
             url: "/certificates/issued",
             icon: LucideIcons.Printer,
+          }] : []),
+        ],
+      }] : []),
+      ...(hasIdCardsPermission || hasIdCardsExportPermission ? [{
+        titleKey: "idCards",
+        icon: LucideIcons.CreditCard,
+        badge: null,
+        priority: 3.054,
+        children: [
+          ...(hasIdCardsPermission ? [{
+            title: "ID Card Templates",
+            titleKey: "idCards.templates",
+            url: "/id-cards/templates",
+            icon: LucideIcons.CreditCard,
+          }] : []),
+          ...(hasIdCardsPermission ? [{
+            title: "ID Card Assignment",
+            titleKey: "idCards.assignment.title",
+            url: "/id-cards/assignment",
+            icon: LucideIcons.UserCheck,
+          }] : []),
+          ...(hasIdCardsExportPermission ? [{
+            title: "ID Card Export",
+            titleKey: "idCards.export.title",
+            url: "/id-cards/export",
+            icon: LucideIcons.Download,
           }] : []),
         ],
       }] : []),
@@ -1110,7 +1138,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
 
       return true;
     });
-  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission]);
+  }, [hasSettingsPermission, hasOrganizationsPermission, hasBuildingsPermission, hasRoomsPermission, hasAssetsPermission, hasProfilesPermission, hasUsersPermission, hasBrandingPermission, hasReportsPermission, hasPermissionsPermission, hasRolesPermission, hasResidencyTypesPermission, hasAcademicYearsPermission, hasExamTypesPermission, hasClassesPermission, hasSubjectsPermission, hasScheduleSlotsPermission, hasTeacherSubjectAssignmentsPermission, hasTimetablesPermission, hasStaffPermission, hasAttendanceSessionsPermission, hasLeaveRequestsPermission, hasStudentsPermission, hasStudentAdmissionsPermission, hasStudentReportsPermission, hasStudentAdmissionsReportPermission, hasHostelPermission, hasShortTermCoursesPermission, hasCourseStudentsPermission, hasCourseReportsPermission, hasCourseAttendancePermission, hasCertificateTemplatesPermission, hasCourseDocumentsPermission, hasIdCardsPermission, hasFinancePermission, hasFinanceAccountsPermission, hasIncomeCategoriesPermission, hasIncomeEntriesPermission, hasExpenseCategoriesPermission, hasExpenseEntriesPermission, hasFinanceProjectsPermission, hasDonorsPermission, hasFinanceReportsPermission, hasDmsPermission, hasDmsIncomingPermission, hasDmsOutgoingPermission, hasDmsTemplatesPermission, hasDmsLetterheadsPermission, hasDmsDepartmentsPermission, hasDmsReportsPermission, hasDmsSettingsPermission, hasDmsArchivePermission]);
 
   // Helper function to get navigation items (already filtered by permissions)
   const getNavigationItems = (context: NavigationContext): NavigationItem[] => {

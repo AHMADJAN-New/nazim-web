@@ -548,6 +548,173 @@ export const ar: TranslationKeys = {
     title: 'قوالب الشهادات',
     updateTemplate: 'تحديث القالب'
   },
+  idCards: {
+    title: 'بطاقات الهوية',
+    templates: 'قوالب بطاقات الهوية',
+    generateIdCards: 'إنشاء بطاقات الهوية',
+    generateIdCardsDescription: 'اختر الطلاب وأنشئ بطاقات الهوية بناءً على القالب المحدد.',
+    selectTemplate: 'اختر القالب',
+    selectTemplatePlaceholder: 'اختر قالبًا',
+    selectStudents: 'اختر الطلاب',
+    selectedCount: '{count} طالب(ون) محددون',
+    preview: 'معاينة',
+    frontSide: 'الجانب الأمامي',
+    backSide: 'الجانب الخلفي',
+    front: 'أمامي',
+    back: 'خلفي',
+    previewPlaceholder: 'ستظهر المعاينة هنا',
+    selectStudentForPreview: 'اختر طالبًا للمعاينة',
+    selectStudentAndTemplate: 'يرجى اختيار طالب وقالب للمعاينة',
+    exportAsImages: 'تصدير كصور',
+    exportAsPdf: 'تصدير كـ PDF',
+    exportSuccess: 'تم تصدير {count} بطاقة(ات) هوية بنجاح',
+    exportFailed: 'فشل تصدير بطاقات الهوية',
+    previewFailed: 'فشل إنشاء المعاينة',
+    downloadSuccess: 'تم تنزيل البطاقة بنجاح',
+    downloadFailed: 'فشل تنزيل البطاقة',
+    printPreview: 'معاينة الطباعة',
+    assignment: {
+      title: 'تعيين بطاقة الهوية',
+      subtitle: 'قم بتعيين قوالب بطاقات الهوية للطلاب وإدارة تعيينات البطاقات',
+      filters: {
+        academicYear: 'السنة الأكاديمية',
+        academicYearRequired: 'السنة الأكاديمية مطلوبة',
+        class: 'الصف',
+        allClasses: 'جميع الصفوف',
+        enrollmentStatus: 'حالة التسجيل',
+        allStatuses: 'جميع الحالات',
+        active: 'نشط',
+        template: 'القالب',
+        allTemplates: 'جميع القوالب',
+        search: 'بحث',
+        searchPlaceholder: 'البحث حسب اسم الطالب أو رقم القبول...'
+      },
+      studentList: {
+        title: 'الطلاب',
+        selectAll: 'تحديد الكل',
+        deselectAll: 'إلغاء تحديد الكل',
+        noStudentsFound: 'لم يتم العثور على أي طلاب',
+        showing: 'عرض',
+        of: 'من',
+        students: 'طالب'
+      },
+      assignmentPanel: {
+        title: 'التعيين',
+        templateSelection: 'اختيار القالب',
+        selectedStudents: 'الطلاب المحددون',
+        cardFee: 'رسوم البطاقة',
+        cardFeeOptional: 'رسوم البطاقة (اختياري)',
+        bulkAssign: 'تعيين مجمع',
+        assignButton: 'تعيين البطاقات',
+        assigning: 'جاري التعيين...'
+      },
+      preview: {
+        title: 'معاينة البطاقة',
+        selectStudent: 'اختر الطالب',
+        side: 'الجانب',
+        front: 'أمامي',
+        back: 'خلفي'
+      },
+      managementTable: {
+        title: 'البطاقات المعينة',
+        studentName: 'اسم الطالب',
+        admissionNumber: 'رقم القبول',
+        class: 'الصف',
+        template: 'القالب',
+        feeStatus: 'حالة الرسوم',
+        printedStatus: 'حالة الطباعة',
+        actions: 'الإجراءات',
+        markPrinted: 'وضع علامة كمطبوعة',
+        markFeePaid: 'وضع علامة على الرسوم كمدفوعة',
+        edit: 'تعديل',
+        delete: 'حذف',
+        bulkActions: 'إجراءات مجمعة',
+        markSelectedPrinted: 'وضع علامة على المحدد كمطبوعة',
+        markSelectedFeePaid: 'وضع علامة على رسوم المحدد كمدفوعة',
+        exportSelected: 'تصدير المحدد',
+        noCardsFound: 'لم يتم العثور على أي بطاقات'
+      }
+    },
+    export: {
+      title: 'تصدير بطاقة الهوية',
+      subtitle: 'قم بتصدير بطاقات الهوية كملفات ZIP أو PDF',
+      filters: {
+        academicYear: 'السنة الأكاديمية',
+        academicYearRequired: 'السنة الأكاديمية مطلوبة',
+        class: 'الصف',
+        allClasses: 'جميع الصفوف',
+        template: 'القالب',
+        allTemplates: 'جميع القوالب',
+        enrollmentStatus: 'حالة التسجيل',
+        allStatuses: 'جميع الحالات',
+        active: 'نشط',
+        printedStatus: 'حالة الطباعة',
+        all: 'الكل',
+        printed: 'مطبوعة',
+        unprinted: 'غير مطبوعة',
+        feeStatus: 'حالة الرسوم',
+        paid: 'مدفوعة',
+        unpaid: 'غير مدفوعة',
+        dateRange: 'نطاق التاريخ',
+        from: 'من',
+        to: 'إلى',
+        search: 'بحث',
+        searchPlaceholder: 'البحث حسب اسم الطالب أو رقم القبول...'
+      },
+      options: {
+        title: 'خيارات التصدير',
+        exportFormat: 'تنسيق التصدير',
+        zipPng: 'ZIP (PNG)',
+        zipPdf: 'ZIP (PDF)',
+        singlePdf: 'PDF واحد',
+        cardSides: 'جوانب البطاقة',
+        frontOnly: 'أمامي فقط',
+        backOnly: 'خلفي فقط',
+        bothSides: 'كلا الجانبين',
+        cardsPerPage: 'البطاقات في كل صفحة',
+        quality: 'الجودة',
+        standard: 'قياسي (96 DPI)',
+        high: 'عالية (300 DPI)',
+        includeUnprinted: 'تضمين البطاقات غير المطبوعة',
+        includeUnpaid: 'تضمين البطاقات غير المدفوعة',
+        fileNaming: 'تسمية الملف'
+      },
+      studentSelection: {
+        title: 'اختيار الطالب',
+        selectAll: 'تحديد الكل',
+        deselectAll: 'إلغاء تحديد الكل',
+        selectByClass: 'اختيار حسب الصف',
+        selectByStatus: 'اختيار حسب الحالة',
+        selectedCount: '{count} محدد',
+        clearSelection: 'مسح التحديد',
+        noStudentsFound: 'لم يتم العثور على أي طلاب'
+      },
+      actions: {
+        exportSelected: 'تصدير المحدد',
+        exportAllFiltered: 'تصدير جميع المفلترة',
+        exportIndividual: 'تصدير فردي',
+        exporting: 'جاري التصدير...'
+      },
+      statistics: {
+        title: 'الإحصائيات',
+        totalCards: 'إجمالي البطاقات',
+        printed: 'مطبوعة',
+        unprinted: 'غير مطبوعة',
+        feePaid: 'الرسوم مدفوعة',
+        feeUnpaid: 'الرسوم غير مدفوعة',
+        totalFeeCollected: 'إجمالي الرسوم المجمعة',
+        totalFeePending: 'إجمالي الرسوم المعلقة'
+      }
+    },
+    status: {
+      assigned: 'معينة',
+      notAssigned: 'غير معينة',
+      printed: 'مطبوعة',
+      unprinted: 'غير مطبوعة',
+      feePaid: 'الرسوم مدفوعة',
+      feeUnpaid: 'الرسوم غير مدفوعة'
+    }
+  },
   common: {
     actions: 'الإجراءات',
     add: 'إضافة',
@@ -2727,6 +2894,14 @@ export const ar: TranslationKeys = {
       defaultUpdated: 'تم تحديث قالب الشهادة الافتراضي بنجاح',
       generated: 'تم إنشاء الشهادة بنجاح'
     },
+    idCardTemplateCreated: 'تم إنشاء قالب بطاقة الهوية بنجاح',
+    idCardTemplateUpdated: 'تم تحديث قالب بطاقة الهوية بنجاح',
+    idCardTemplateDeleted: 'تم حذف قالب بطاقة الهوية بنجاح',
+    idCardTemplateSetDefault: 'تم تعيين قالب بطاقة الهوية الافتراضي بنجاح',
+    idCardTemplateCreateFailed: 'فشل إنشاء قالب بطاقة الهوية',
+    idCardTemplateUpdateFailed: 'فشل تحديث قالب بطاقة الهوية',
+    idCardTemplateDeleteFailed: 'فشل حذف قالب بطاقة الهوية',
+    idCardTemplateSetDefaultFailed: 'فشل تعيين قالب بطاقة الهوية الافتراضي',
     // Course Attendance
     courseAttendance: {
       sessionCreated: 'تم إنشاء جلسة الحضور بنجاح',
@@ -3276,9 +3451,34 @@ export const ar: TranslationKeys = {
     examWeights: 'أوزان الامتحانات',
     fromClass: 'من الصف',
     toClass: 'إلى الصف',
+    selectFromClass: 'اختر من الصف',
+    selectToClass: 'اختر إلى الصف',
+    selectSchoolDescription: 'يرجى اختيار مدرسة من المرشحات أعلاه لعرض دفعات التخرج',
     minAttendancePercentage: 'نسبة الحضور الدنيا',
     requireAttendance: 'يتطلب الحضور',
     excludeApprovedLeaves: 'استبعاد الإجازات المعتمدة',
+    cannotChangeTypeWithStudents: 'لا يمكن تغيير نوع التخرج عندما تحتوي الدفعة على طلاب',
+    batches: {
+      description: 'إدارة دفعات التخرج، الموافقة على الطلاب، وإصدار الشهادات'
+    },
+    noBatches: {
+      title: 'لا توجد دفعات تخرج',
+      description: 'ابدأ بإنشاء دفعة التخرج الأولى الخاصة بك'
+    },
+    exams: {
+      weights: 'أوزان الامتحانات',
+      totalWeight: 'الوزن الإجمالي',
+      equalWeights: 'توزيع متساوي'
+    },
+    attendance: {
+      minPercentage: 'نسبة الحضور الدنيا',
+      requireAttendance: 'يتطلب الحضور',
+      excludeLeaves: 'استبعاد الإجازات المعتمدة'
+    },
+    validation: {
+      weightsMustSum100: 'يجب أن يصل مجموع أوزان الامتحانات إلى 100٪',
+      fromToClassDifferent: 'يجب أن يكون الصف المصدر والصف الهدف مختلفين'
+    },
     summary: {
       totalBatches: 'إجمالي الدفعات',
       draftBatches: 'مسودة',

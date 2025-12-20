@@ -591,6 +591,186 @@ export const en: TranslationKeys = {
     title: 'Certificate Templates',
     updateTemplate: 'Update Template'
   },
+  idCards: {
+    title: 'ID Cards',
+    templates: 'ID Card Templates',
+    generateIdCards: 'Generate ID Cards',
+    generateIdCardsDescription: 'Select students and generate ID cards based on the selected template.',
+    selectTemplate: 'Select Template',
+    selectTemplatePlaceholder: 'Choose a template',
+    selectStudents: 'Select Students',
+    selectedCount: '{count} student(s) selected',
+    preview: 'Preview',
+    frontSide: 'Front Side',
+    backSide: 'Back Side',
+    front: 'Front',
+    back: 'Back',
+    previewPlaceholder: 'Preview will appear here',
+    selectStudentForPreview: 'Select student for preview',
+    selectStudentAndTemplate: 'Please select a student and template to preview',
+    exportAsImages: 'Export as Images',
+    exportAsPdf: 'Export as PDF',
+    exportSuccess: 'Successfully exported {count} ID card(s)',
+    exportFailed: 'Failed to export ID cards',
+    previewFailed: 'Failed to generate preview',
+    downloadSuccess: 'Card downloaded successfully',
+    downloadFailed: 'Failed to download card',
+    printPreview: 'Print Preview',
+    assign: 'Assign',
+    template: 'Template',
+    cardFee: 'Card Fee',
+    feePaid: 'Fee Paid',
+    printed: 'Printed',
+    assigned: 'Assigned',
+    notAssigned: 'Not Assigned',
+    selectedStudents: 'Selected Students',
+    confirmAssign: 'Confirm Assignment',
+    assignToStudents: 'Assign ID card to {count} student(s)?',
+    // Assignment page
+    assignment: {
+      title: 'ID Card Assignment',
+      subtitle: 'Assign ID card templates to students and manage card assignments',
+      filters: {
+        academicYear: 'Academic Year',
+        academicYearRequired: 'Academic year is required',
+        class: 'Class',
+        allClasses: 'All Classes',
+        enrollmentStatus: 'Enrollment Status',
+        allStatuses: 'All Statuses',
+        active: 'Active',
+        template: 'Template',
+        allTemplates: 'All Templates',
+        search: 'Search',
+        searchPlaceholder: 'Search by student name or admission number...'
+      },
+      studentList: {
+        title: 'Students',
+        selectAll: 'Select All',
+        deselectAll: 'Deselect All',
+        noStudentsFound: 'No students found',
+        showing: 'Showing',
+        of: 'of',
+        students: 'students'
+      },
+      assignmentPanel: {
+        title: 'Assignment',
+        templateSelection: 'Template Selection',
+        selectedStudents: 'Selected Students',
+        cardFee: 'Card Fee',
+        cardFeeOptional: 'Card Fee (Optional)',
+        bulkAssign: 'Bulk Assign',
+        assignButton: 'Assign Cards',
+        assigning: 'Assigning...'
+      },
+      preview: {
+        title: 'Card Preview',
+        selectStudent: 'Select Student',
+        side: 'Side',
+        front: 'Front',
+        back: 'Back'
+      },
+      managementTable: {
+        title: 'Assigned Cards',
+        studentName: 'Student Name',
+        admissionNumber: 'Admission No.',
+        class: 'Class',
+        template: 'Template',
+        feeStatus: 'Fee Status',
+        printedStatus: 'Printed Status',
+        actions: 'Actions',
+        markPrinted: 'Mark as Printed',
+        markFeePaid: 'Mark Fee as Paid',
+        edit: 'Edit',
+        delete: 'Delete',
+        bulkActions: 'Bulk Actions',
+        markSelectedPrinted: 'Mark Selected as Printed',
+        markSelectedFeePaid: 'Mark Selected Fee as Paid',
+        exportSelected: 'Export Selected',
+        noCardsFound: 'No cards found'
+      }
+    },
+    // Export page
+    export: {
+      title: 'ID Card Export',
+      subtitle: 'Export ID cards as ZIP or PDF files',
+      filters: {
+        academicYear: 'Academic Year',
+        academicYearRequired: 'Academic year is required',
+        class: 'Class',
+        allClasses: 'All Classes',
+        template: 'Template',
+        allTemplates: 'All Templates',
+        enrollmentStatus: 'Enrollment Status',
+        allStatuses: 'All Statuses',
+        active: 'Active',
+        printedStatus: 'Printed Status',
+        all: 'All',
+        printed: 'Printed',
+        unprinted: 'Unprinted',
+        feeStatus: 'Fee Status',
+        paid: 'Paid',
+        unpaid: 'Unpaid',
+        dateRange: 'Date Range',
+        from: 'From',
+        to: 'To',
+        search: 'Search',
+        searchPlaceholder: 'Search by student name or admission number...'
+      },
+      options: {
+        title: 'Export Options',
+        exportFormat: 'Export Format',
+        zipPng: 'ZIP (PNG)',
+        zipPdf: 'ZIP (PDF)',
+        singlePdf: 'Single PDF',
+        cardSides: 'Card Sides',
+        frontOnly: 'Front Only',
+        backOnly: 'Back Only',
+        bothSides: 'Both Sides',
+        cardsPerPage: 'Cards Per Page',
+        quality: 'Quality',
+        standard: 'Standard (96 DPI)',
+        high: 'High (300 DPI)',
+        includeUnprinted: 'Include Unprinted Cards',
+        includeUnpaid: 'Include Unpaid Cards',
+        fileNaming: 'File Naming'
+      },
+      studentSelection: {
+        title: 'Student Selection',
+        selectAll: 'Select All',
+        deselectAll: 'Deselect All',
+        selectByClass: 'Select by Class',
+        selectByStatus: 'Select by Status',
+        selectedCount: '{count} selected',
+        clearSelection: 'Clear Selection',
+        noStudentsFound: 'No students found'
+      },
+      actions: {
+        exportSelected: 'Export Selected',
+        exportAllFiltered: 'Export All Filtered',
+        exportIndividual: 'Export Individual',
+        exporting: 'Exporting...'
+      },
+      statistics: {
+        title: 'Statistics',
+        totalCards: 'Total Cards',
+        printed: 'Printed',
+        unprinted: 'Unprinted',
+        feePaid: 'Fee Paid',
+        feeUnpaid: 'Fee Unpaid',
+        totalFeeCollected: 'Total Fee Collected',
+        totalFeePending: 'Total Fee Pending'
+      }
+    },
+    // Status badges
+    status: {
+      assigned: 'Assigned',
+      notAssigned: 'Not Assigned',
+      printed: 'Printed',
+      unprinted: 'Unprinted',
+      feePaid: 'Fee Paid',
+      feeUnpaid: 'Fee Unpaid'
+    }
+  },
   common: {
     actions: 'Actions',
     add: 'Add',
@@ -3004,6 +3184,28 @@ export const en: TranslationKeys = {
       defaultUpdated: 'Default certificate template updated successfully',
       generated: 'Certificate generated successfully'
     },
+    idCardTemplateCreated: 'ID card template created successfully',
+    idCardTemplateUpdated: 'ID card template updated successfully',
+    idCardTemplateDeleted: 'ID card template deleted successfully',
+    idCardTemplateSetDefault: 'Default ID card template set successfully',
+    idCardTemplateCreateFailed: 'Failed to create ID card template',
+    idCardTemplateUpdateFailed: 'Failed to update ID card template',
+    idCardTemplateDeleteFailed: 'Failed to delete ID card template',
+    idCardTemplateSetDefaultFailed: 'Failed to set default ID card template',
+    // Student ID Cards
+    idCardsAssigned: 'ID cards assigned successfully',
+    idCardAssignFailed: 'Failed to assign ID cards',
+    idCardUpdated: 'ID card updated successfully',
+    idCardUpdateFailed: 'Failed to update ID card',
+    idCardMarkedPrinted: 'ID card marked as printed',
+    idCardMarkPrintedFailed: 'Failed to mark ID card as printed',
+    idCardFeeMarkedPaid: 'ID card fee marked as paid',
+    idCardFeeMarkPaidFailed: 'Failed to mark ID card fee as paid',
+    idCardDeleted: 'ID card deleted successfully',
+    idCardDeleteFailed: 'Failed to delete ID card',
+    idCardsExported: 'ID cards exported successfully',
+    idCardExportFailed: 'Failed to export ID cards',
+    idCardExported: 'ID card exported successfully',
     graduation: {
       batchCreated: 'Graduation batch created successfully',
       batchCreateFailed: 'Failed to create graduation batch',
@@ -3734,6 +3936,9 @@ export const en: TranslationKeys = {
 
   graduation: {
     batches: 'Graduation Batches',
+    batches: {
+      description: 'Manage graduation batches, approve students, and issue certificates'
+    },
     types: {
       finalYear: 'Final Year',
       promotion: 'Promotion',
@@ -3743,9 +3948,32 @@ export const en: TranslationKeys = {
     examWeights: 'Exam Weights',
     fromClass: 'From Class',
     toClass: 'To Class',
+    selectFromClass: 'Select From Class',
+    selectToClass: 'Select To Class',
+    selectSchoolDescription: 'Please select a school from the filters above to view graduation batches',
     minAttendancePercentage: 'Minimum Attendance Percentage',
     requireAttendance: 'Require Attendance',
     excludeApprovedLeaves: 'Exclude Approved Leaves',
+    cannotChangeTypeWithStudents: 'Cannot change graduation type when batch has students',
+    noBatches: {
+      title: 'No Graduation Batches',
+      description: 'Get started by creating your first graduation batch'
+    },
+    exams: {
+      weights: 'Exam Weights',
+      totalWeight: 'Total Weight',
+      equalWeights: 'Distribute Equally'
+    },
+    attendance: {
+      title: 'Attendance Requirements',
+      minPercentage: 'Minimum Attendance %',
+      requireAttendance: 'Require Attendance',
+      excludeLeaves: 'Exclude Approved Leaves'
+    },
+    validation: {
+      weightsMustSum100: 'Exam weights must sum to 100%',
+      fromToClassDifferent: 'From and To classes must be different'
+    },
     summary: {
       totalBatches: 'Total Batches',
       draftBatches: 'Draft',
