@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,17 +9,30 @@ import { issuedCertificatesApi } from '@/lib/api/client';
 import { useIssuedCertificates, useRevokeCertificate } from '@/hooks/useGraduation';
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useAuth } from '@/hooks/useAuth';
 import { GraduationCertificatePdfGenerator } from '@/components/graduation/GraduationCertificatePdfGenerator';
 import { Eye } from 'lucide-react';
 
 export default function IssuedCertificatesPage() {
   const { t } = useLanguage();
+  const { profile } = useAuth();
   const { data: schools = [] } = useSchools();
   const [schoolId, setSchoolId] = useState<string | undefined>(undefined);
   const [batchId, setBatchId] = useState<string | undefined>(undefined);
   const [studentId, setStudentId] = useState<string | undefined>(undefined);
   const [previewCertificateId, setPreviewCertificateId] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  // Auto-select school if there's only one, or use profile's default_school_id
+  useEffect(() => {
+    if (schools.length === 1 && !schoolId) {
+      // Auto-select if only one school
+      setSchoolId(schools[0].id);
+    } else if (profile?.default_school_id && !schoolId) {
+      // Use default school from profile if available
+      setSchoolId(profile.default_school_id);
+    }
+  }, [schools, profile?.default_school_id, schoolId]);
 
   const { data: certificates = [], isLoading } = useIssuedCertificates({
     school_id: schoolId,
@@ -97,6 +110,13 @@ export default function IssuedCertificatesPage() {
         <CardContent>
           {isLoading ? (
             <p>{t('common.loading')}</p>
+          ) : certificates.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>{t('common.noData') || 'No certificates found'}</p>
+              <p className="text-xs mt-2">
+                {t('certificates.noIssuedCertificates') || 'No certificates have been issued yet, or you may not have permission to view them.'}
+              </p>
+            </div>
           ) : (
             <Table>
               <TableHeader>

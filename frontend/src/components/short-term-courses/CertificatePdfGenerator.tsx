@@ -28,26 +28,42 @@ import {
 import { certificateTemplatesApi } from '@/lib/api/client';
 import { format } from 'date-fns';
 
-// Import pdfmake for Arabic support
-import pdfMake from 'pdfmake-arabic/build/pdfmake';
-import * as pdfFonts from 'pdfmake-arabic/build/vfs_fonts';
+// Import pdfmake for Arabic support - handle both default and named exports
+import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
+const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
+
+// Make pdfMake available globally for vfs_fonts
+if (typeof window !== 'undefined') {
+  (window as any).pdfMake = pdfMake;
+}
+
+// Use regular pdfmake vfs_fonts instead of pdfmake-arabic's (which has issues)
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 // Set up fonts for Arabic/Pashto support
 try {
-  // Initialize VFS
-  if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
-    pdfMake.vfs = pdfFonts.pdfMake.vfs;
+  // Initialize VFS using Object.assign to avoid read-only error
+  if (pdfFonts && typeof pdfFonts === 'object') {
+    // pdfmake's vfs_fonts exports the VFS directly
+    // Use Object.assign to merge VFS instead of direct assignment
+    if (!(pdfMake as any).vfs) {
+      (pdfMake as any).vfs = {};
+    }
+    Object.assign((pdfMake as any).vfs, pdfFonts);
   } else if (pdfFonts && (pdfFonts as any).vfs) {
-    pdfMake.vfs = (pdfFonts as any).vfs;
+    if (!(pdfMake as any).vfs) {
+      (pdfMake as any).vfs = {};
+    }
+    Object.assign((pdfMake as any).vfs, (pdfFonts as any).vfs);
   }
 
   // Register fonts properly - pdfmake-arabic includes Roboto by default
-  if (!pdfMake.fonts) {
-    pdfMake.fonts = {};
+  if (!(pdfMake as any).fonts) {
+    (pdfMake as any).fonts = {};
   }
 
   // Check what fonts are available in VFS
-  const vfs = pdfMake.vfs || {};
+  const vfs = (pdfMake as any).vfs || {};
   const vfsKeys = Object.keys(vfs);
 
   // Find Roboto font files in VFS
@@ -84,8 +100,8 @@ try {
   const robotoBoldItalic = findRobotoFont('bolditalic');
 
   // Register Roboto fonts (default pdfmake fonts, available in pdfmake-arabic)
-  if (!pdfMake.fonts!['Roboto']) {
-    pdfMake.fonts!['Roboto'] = {
+  if (!(pdfMake as any).fonts!['Roboto']) {
+    (pdfMake as any).fonts!['Roboto'] = {
       normal: robotoRegular,
       bold: robotoBold,
       italics: robotoItalic,
@@ -95,9 +111,9 @@ try {
 
   // Register Arial as an alias to Roboto (since Arial might be requested but not available)
   // Use the same font configuration as Roboto
-  if (!pdfMake.fonts!['Arial']) {
-    const robotoFont = pdfMake.fonts!['Roboto'];
-    pdfMake.fonts!['Arial'] = {
+  if (!(pdfMake as any).fonts!['Arial']) {
+    const robotoFont = (pdfMake as any).fonts!['Roboto'];
+    (pdfMake as any).fonts!['Arial'] = {
       normal: robotoFont.normal,
       bold: robotoFont.bold,
       italics: robotoFont.italics,
@@ -173,19 +189,19 @@ async function loadCustomFonts() {
       const boldBase64Data = arrayBufferToBase64(boldArrayBuffer);
       
       // Add fonts to VFS (Virtual File System) - required for pdfmake
-      if (!pdfMake.vfs) {
-        pdfMake.vfs = {};
+      if (!(pdfMake as any).vfs) {
+        (pdfMake as any).vfs = {};
       }
       
-      pdfMake.vfs['BahijNassim-Regular.ttf'] = regularBase64Data;
-      pdfMake.vfs['BahijNassim-Bold.ttf'] = boldBase64Data;
+      (pdfMake as any).vfs['BahijNassim-Regular.ttf'] = regularBase64Data;
+      (pdfMake as any).vfs['BahijNassim-Bold.ttf'] = boldBase64Data;
       
       // Register fonts with pdfmake (reference VFS paths)
-      if (!pdfMake.fonts) {
-        pdfMake.fonts = {};
+      if (!(pdfMake as any).fonts) {
+        (pdfMake as any).fonts = {};
       }
       
-      pdfMake.fonts['BahijNassim'] = {
+      (pdfMake as any).fonts['BahijNassim'] = {
         normal: 'BahijNassim-Regular.ttf',
         bold: 'BahijNassim-Bold.ttf',
       };
@@ -815,9 +831,9 @@ export function CertificatePdfGenerator({
 
     // Default font family
     let defaultFontFamily = 'Roboto';
-    if (isRtl && fontsLoaded && pdfMake.fonts?.['BahijNassim']) {
+    if (isRtl && fontsLoaded && (pdfMake as any).fonts?.['BahijNassim']) {
       defaultFontFamily = 'BahijNassim'; // Will use bold variant when bold: true is set
-    } else if (layout.fontFamily && (pdfMake.fonts?.[layout.fontFamily] || pdfMake.fonts?.['Arial'])) {
+    } else if (layout.fontFamily && ((pdfMake as any).fonts?.[layout.fontFamily] || (pdfMake as any).fonts?.['Arial'])) {
       defaultFontFamily = layout.fontFamily;
     }
     
@@ -835,11 +851,11 @@ export function CertificatePdfGenerator({
       if (fieldFont?.fontFamily) {
         const requestedFont = fieldFont.fontFamily;
         // Check if the font is available in pdfmake
-        if (pdfMake.fonts?.[requestedFont]) {
+        if ((pdfMake as any).fonts?.[requestedFont]) {
           fieldFontFamily = requestedFont;
-        } else if (requestedFont === 'Bahij Nassim' && pdfMake.fonts?.['BahijNassim']) {
+        } else if (requestedFont === 'Bahij Nassim' && (pdfMake as any).fonts?.['BahijNassim']) {
           fieldFontFamily = 'BahijNassim';
-        } else if (pdfMake.fonts?.['Roboto']) {
+        } else if ((pdfMake as any).fonts?.['Roboto']) {
           fieldFontFamily = 'Roboto'; // Fallback to Roboto
         }
       }

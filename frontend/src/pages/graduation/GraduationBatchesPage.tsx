@@ -1,9 +1,11 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ChevronUp, ChevronDown, ArrowUpDown, Edit, Trash2, Eye, Calendar, Users, GraduationCap, FileText, X, ArrowRightLeft } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, ArrowUpDown, Edit, Trash2, Eye, Calendar, Users, GraduationCap, FileText, X, ArrowRightLeft, Filter, LayoutGrid, Table as TableIcon, RefreshCw, CheckCircle2, HelpCircle } from 'lucide-react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,6 +22,13 @@ import { useExams } from '@/hooks/useExams';
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useAuth } from '@/hooks/useAuth';
+import { graduationBatchSchema, type GraduationBatchFormData } from '@/lib/validations/graduation';
+import { ExamWeightsEditor } from '@/components/graduation/ExamWeightsEditor';
+import { AttendanceSettings } from '@/components/graduation/AttendanceSettings';
+import { BatchWorkflowStepper } from '@/components/graduation/BatchWorkflowStepper';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatDate } from '@/lib/dateUtils';
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {
@@ -31,6 +40,20 @@ const StatusBadge = ({ status }: { status: string }) => {
   };
   const config = variants[status] || variants.draft;
   return <Badge variant={config.variant}>{config.label}</Badge>;
+};
+
+// Helper function to get status color for border
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case 'draft':
+      return 'rgb(156 163 175)'; // gray-400
+    case 'approved':
+      return 'rgb(59 130 246)'; // blue-500
+    case 'issued':
+      return 'rgb(34 197 94)'; // green-500
+    default:
+      return 'rgb(156 163 175)';
+  }
 };
 
 export default function GraduationBatchesPage() {
@@ -51,6 +74,8 @@ export default function GraduationBatchesPage() {
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   
   // Sorting state
   const [sortField, setSortField] = useState<string>('graduation_date');
@@ -97,35 +122,66 @@ export default function GraduationBatchesPage() {
   const deleteBatch = useDeleteGraduationBatch();
   const generateStudents = useGenerateGraduationStudents();
   const approveBatch = useApproveGraduationBatch();
-  const [form, setForm] = useState({
-    school_id: '',
-    academic_year_id: '',
-    class_id: '',
-    exam_ids: [] as string[],
-    graduation_date: '',
-  });
-  const [transferForm, setTransferForm] = useState({
-    school_id: '',
-    academic_year_id: '',
-    from_class_id: '',
-    to_class_id: '',
-    exam_ids: [] as string[],
-    graduation_date: '',
-  });
-  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
 
-  // Initialize transfer form with school_id when dialog opens
-  useEffect(() => {
-    if (isTransferDialogOpen && schoolId && !transferForm.school_id) {
-      setTransferForm((prev) => ({ ...prev, school_id: schoolId }));
-    }
-  }, [isTransferDialogOpen, schoolId, transferForm.school_id]);
-  const [editForm, setEditForm] = useState({
-    academic_year_id: '',
-    class_id: '',
-    exam_ids: [] as string[],
-    graduation_date: '',
+  // Unified form with React Hook Form
+  const form = useForm<GraduationBatchFormData>({
+    resolver: zodResolver(graduationBatchSchema),
+    defaultValues: {
+      graduation_type: 'final_year',
+      school_id: schoolId || '',
+      academic_year_id: '',
+      class_id: '',
+      from_class_id: '',
+      to_class_id: '',
+      exam_ids: [],
+      exam_weights: {},
+      graduation_date: '',
+      min_attendance_percentage: 75.0,
+      require_attendance: true,
+      exclude_approved_leaves: true,
+    },
   });
+
+  // Watch form values for conditional rendering
+  const graduationType = form.watch('graduation_type');
+  const examIds = form.watch('exam_ids');
+  const examWeights = form.watch('exam_weights') || {};
+  const requireAttendance = form.watch('require_attendance') ?? true;
+  const minAttendancePercentage = form.watch('min_attendance_percentage') ?? 75.0;
+  const excludeApprovedLeaves = form.watch('exclude_approved_leaves') ?? true;
+
+  // Update school_id when schoolId changes
+  useEffect(() => {
+    if (schoolId) {
+      form.setValue('school_id', schoolId);
+    }
+  }, [schoolId, form]);
+
+  const editForm = useForm<GraduationBatchFormData>({
+    resolver: zodResolver(graduationBatchSchema),
+    defaultValues: {
+      graduation_type: 'final_year',
+      school_id: '',
+      academic_year_id: '',
+      class_id: '',
+      from_class_id: '',
+      to_class_id: '',
+      exam_ids: [],
+      exam_weights: {},
+      graduation_date: '',
+      min_attendance_percentage: 75.0,
+      require_attendance: true,
+      exclude_approved_leaves: true,
+    },
+  });
+
+  // Watch edit form values for conditional rendering
+  const editGraduationType = editForm.watch('graduation_type');
+  const editExamIds = editForm.watch('exam_ids');
+  const editExamWeights = editForm.watch('exam_weights') || {};
+  const editRequireAttendance = editForm.watch('require_attendance') ?? true;
+  const editMinAttendancePercentage = editForm.watch('min_attendance_percentage') ?? 75.0;
+  const editExcludeApprovedLeaves = editForm.watch('exclude_approved_leaves') ?? true;
 
   const classNameById = useMemo(
     () => Object.fromEntries(classes.map((c) => [c.id, c.name])),
@@ -227,56 +283,56 @@ export default function GraduationBatchesPage() {
     setPage(1);
   }, [statusFilter, dateFrom, dateTo, searchQuery, academicYearId, classId, examId]);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (form.exam_ids.length === 0) {
-      alert('Please select at least one exam');
-      return;
-    }
-    await createBatch.mutateAsync({
-      ...form,
-      exam_ids: form.exam_ids,
-      graduation_type: 'final_year',
-    });
-    setCreateOpen(false);
-    setForm({
-      school_id: '',
-      academic_year_id: '',
-      class_id: '',
-      exam_ids: [],
-      graduation_date: '',
-    });
-  };
+  const handleCreate = async (data: GraduationBatchFormData) => {
+    try {
+      // Prepare payload for API
+      const payload: any = {
+        school_id: data.school_id,
+        academic_year_id: data.academic_year_id,
+        class_id: data.class_id,
+        exam_ids: data.exam_ids,
+        graduation_date: data.graduation_date,
+        graduation_type: data.graduation_type,
+        min_attendance_percentage: data.min_attendance_percentage,
+        require_attendance: data.require_attendance ?? true,
+        exclude_approved_leaves: data.exclude_approved_leaves ?? true,
+      };
 
-  const handleCreateTransfer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (transferForm.exam_ids.length === 0) {
-      alert('Please select at least one exam');
-      return;
+      // Add from/to class IDs for promotion and transfer
+      if (data.graduation_type === 'promotion' || data.graduation_type === 'transfer') {
+        payload.from_class_id = data.from_class_id;
+        payload.to_class_id = data.to_class_id;
+        // For transfer, use from_class_id as the main class_id
+        if (data.graduation_type === 'transfer') {
+          payload.class_id = data.from_class_id;
+        }
+      }
+
+      // Add exam weights if provided and multiple exams
+      if (data.exam_ids.length > 1 && data.exam_weights && Object.keys(data.exam_weights).length > 0) {
+        payload.exam_weights = data.exam_weights;
+      }
+
+      await createBatch.mutateAsync(payload);
+      setCreateOpen(false);
+      form.reset({
+        graduation_type: 'final_year',
+        school_id: schoolId || '',
+        academic_year_id: '',
+        class_id: '',
+        from_class_id: '',
+        to_class_id: '',
+        exam_ids: [],
+        exam_weights: {},
+        graduation_date: '',
+        min_attendance_percentage: 75.0,
+        require_attendance: true,
+        exclude_approved_leaves: true,
+      });
+    } catch (error) {
+      // Error handling is done by the mutation hook
+      console.error('Failed to create graduation batch:', error);
     }
-    if (!transferForm.from_class_id || !transferForm.to_class_id) {
-      alert('Please select both from class and to class');
-      return;
-    }
-    await createBatch.mutateAsync({
-      school_id: transferForm.school_id || schoolId || '',
-      academic_year_id: transferForm.academic_year_id,
-      class_id: transferForm.from_class_id, // Use from_class_id as the main class_id
-      from_class_id: transferForm.from_class_id,
-      to_class_id: transferForm.to_class_id,
-      exam_ids: transferForm.exam_ids,
-      graduation_date: transferForm.graduation_date,
-      graduation_type: 'transfer',
-    });
-    setIsTransferDialogOpen(false);
-    setTransferForm({
-      school_id: schoolId || '',
-      academic_year_id: '',
-      from_class_id: '',
-      to_class_id: '',
-      exam_ids: [],
-      graduation_date: '',
-    });
   };
 
   const handleRowClick = (batch: any) => {
@@ -286,25 +342,94 @@ export default function GraduationBatchesPage() {
 
   const handleEdit = () => {
     if (!selectedBatch) return;
-    setEditForm({
-      academic_year_id: selectedBatch.academic_year_id,
-      class_id: selectedBatch.class_id,
-      exam_ids: selectedBatch.exams?.map((e: any) => e.id || e.pivot?.exam_id) || (selectedBatch.exam_id ? [selectedBatch.exam_id] : []),
+    
+    // Extract exam IDs and weights from batch.exams pivot data
+    const examIds: string[] = [];
+    const examWeights: Record<string, number> = {};
+    
+    if (selectedBatch.exams && Array.isArray(selectedBatch.exams)) {
+      selectedBatch.exams.forEach((exam: any) => {
+        const examId = exam.id || exam.pivot?.exam_id || exam.exam_id;
+        if (examId) {
+          examIds.push(examId);
+          // Extract weight from pivot if available
+          if (exam.pivot?.weight_percentage !== null && exam.pivot?.weight_percentage !== undefined) {
+            examWeights[examId] = parseFloat(exam.pivot.weight_percentage);
+          }
+        }
+      });
+    } else if (selectedBatch.exam_id) {
+      examIds.push(selectedBatch.exam_id);
+    }
+    
+    // For promotion/transfer, use from_class_id if available, otherwise fall back to class_id
+    const isPromotionOrTransfer = selectedBatch.graduation_type === 'promotion' || 
+                                   selectedBatch.graduation_type === 'transfer';
+    
+    editForm.reset({
+      graduation_type: selectedBatch.graduation_type || 'final_year',
+      school_id: selectedBatch.school_id || '',
+      academic_year_id: selectedBatch.academic_year_id || '',
+      class_id: selectedBatch.class_id || '',
+      // For promotion/transfer, use from_class_id if available, otherwise fall back to class_id
+      from_class_id: isPromotionOrTransfer 
+        ? (selectedBatch.from_class_id || selectedBatch.class_id || '')
+        : '',
+      to_class_id: selectedBatch.to_class_id || '',
+      exam_ids: examIds,
+      exam_weights: examWeights,
       graduation_date: selectedBatch.graduation_date || '',
+      min_attendance_percentage: selectedBatch.min_attendance_percentage ?? 75.0,
+      require_attendance: selectedBatch.require_attendance ?? true,
+      exclude_approved_leaves: selectedBatch.exclude_approved_leaves ?? true,
     });
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedBatch || editForm.exam_ids.length === 0) return;
-    await updateBatch.mutateAsync({
-      id: selectedBatch.id,
-      data: editForm,
-    });
-    setIsEditDialogOpen(false);
-    setIsSidePanelOpen(false);
-    setSelectedBatch(null);
+  const handleUpdate = async (data: GraduationBatchFormData) => {
+    if (!selectedBatch) return;
+    
+    try {
+      const payload: any = {
+        academic_year_id: data.academic_year_id,
+        class_id: data.class_id,
+        exam_ids: data.exam_ids,
+        graduation_date: data.graduation_date,
+        graduation_type: data.graduation_type,
+        min_attendance_percentage: data.min_attendance_percentage,
+        require_attendance: data.require_attendance ?? true,
+        exclude_approved_leaves: data.exclude_approved_leaves ?? true,
+      };
+
+      // Add from/to class IDs for promotion and transfer
+      if (data.graduation_type === 'promotion' || data.graduation_type === 'transfer') {
+        payload.from_class_id = data.from_class_id;
+        payload.to_class_id = data.to_class_id;
+        // For transfer, use from_class_id as the main class_id
+        if (data.graduation_type === 'transfer') {
+          payload.class_id = data.from_class_id;
+        }
+      }
+
+      // Add exam weights if multiple exams
+      if (data.exam_ids.length > 1 && data.exam_weights && Object.keys(data.exam_weights).length > 0) {
+        payload.exam_weights = data.exam_weights;
+      }
+
+      await updateBatch.mutateAsync({
+        id: selectedBatch.id,
+        data: payload,
+      });
+      
+      setIsEditDialogOpen(false);
+      setIsSidePanelOpen(false);
+      setSelectedBatch(null);
+    } catch (error) {
+      // Error handling is done by the mutation hook
+      if (import.meta.env.DEV) {
+        console.error('Failed to update graduation batch:', error);
+      }
+    }
   };
 
   const handleDelete = async () => {
@@ -315,19 +440,21 @@ export default function GraduationBatchesPage() {
     setSelectedBatch(null);
   };
 
-  const handleGenerateStudents = async () => {
-    if (!selectedBatch) return;
+  const handleGenerateStudents = async (batch?: any) => {
+    const targetBatch = batch || selectedBatch;
+    if (!targetBatch) return;
     await generateStudents.mutateAsync({
-      batchId: selectedBatch.id,
-      schoolId: selectedBatch.school_id,
+      batchId: targetBatch.id,
+      schoolId: targetBatch.school_id,
     });
   };
 
-  const handleApprove = async () => {
-    if (!selectedBatch) return;
+  const handleApprove = async (batch?: any) => {
+    const targetBatch = batch || selectedBatch;
+    if (!targetBatch) return;
     await approveBatch.mutateAsync({
-      batchId: selectedBatch.id,
-      schoolId: selectedBatch.school_id,
+      batchId: targetBatch.id,
+      schoolId: targetBatch.school_id,
     });
   };
 
@@ -370,150 +497,107 @@ export default function GraduationBatchesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <Dialog 
+            open={createOpen} 
+            onOpenChange={(open) => {
+              setCreateOpen(open);
+              if (!open) {
+                // Reset form when dialog closes
+                form.reset({
+                  graduation_type: 'final_year',
+                  school_id: schoolId || '',
+                  academic_year_id: '',
+                  class_id: '',
+                  from_class_id: '',
+                  to_class_id: '',
+                  exam_ids: [],
+                  exam_weights: {},
+                  graduation_date: '',
+                  min_attendance_percentage: 75.0,
+                  require_attendance: true,
+                  exclude_approved_leaves: true,
+                });
+              }
+            }}
+          >
             <DialogTrigger asChild>
               <Button>
                 <GraduationCap className="h-4 w-4 mr-2" />
                 {t('common.create') || 'Create Batch'}
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{t('nav.graduation.batches')}</DialogTitle>
-            </DialogHeader>
-            <form className="space-y-4" onSubmit={handleCreate}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>{t('common.schoolManagement')}</Label>
-                  <Select
-                    value={form.school_id || schoolId || ''}
-                    onValueChange={(val) => setForm((prev) => ({ ...prev, school_id: val }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('common.selectSchool')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {schools.map((school) => (
-                        <SelectItem key={school.id} value={school.id}>
-                          {school.schoolName}
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{t('nav.graduation.batches')}</DialogTitle>
+                <DialogDescription>
+                  {t('graduation.batches.description') || 'Create a new graduation batch. Configure the graduation type, select classes, exams, and set eligibility criteria.'}
+                </DialogDescription>
+              </DialogHeader>
+              <form className="space-y-4" onSubmit={form.handleSubmit(handleCreate)}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Graduation Type */}
+                  <div className="md:col-span-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="graduation_type">{t('common.type') || 'Graduation Type'}</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="font-semibold mb-1">Graduation Types:</p>
+                            <p className="text-xs mb-1">
+                              <strong>Final Year:</strong> Students completing their final year
+                            </p>
+                            <p className="text-xs mb-1">
+                              <strong>Promotion:</strong> Moving students to next class
+                            </p>
+                            <p className="text-xs">
+                              <strong>Transfer:</strong> Moving students between classes
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <Select
+                      value={graduationType}
+                      onValueChange={(val) => {
+                        form.setValue('graduation_type', val as 'final_year' | 'promotion' | 'transfer');
+                        // Reset from/to class when changing type
+                        if (val === 'final_year') {
+                          form.setValue('from_class_id', '');
+                          form.setValue('to_class_id', '');
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('common.type')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="final_year">
+                          {t('graduation.types.finalYear') || 'Final Year Graduation'}
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t('fees.academicYear')}</Label>
-                  <Select
-                    value={form.academic_year_id}
-                    onValueChange={(val) => setForm((prev) => ({ ...prev, academic_year_id: val }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {academicYears.map((ay) => (
-                        <SelectItem key={ay.id} value={ay.id}>
-                          {ay.name}
+                        <SelectItem value="promotion">
+                          {t('graduation.types.promotion') || 'Promotion'}
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t('fees.class')}</Label>
-                  <Select
-                    value={form.class_id}
-                    onValueChange={(val) => setForm((prev) => ({ ...prev, class_id: val }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('common.selectClass')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classes.map((cls) => (
-                        <SelectItem key={cls.id} value={cls.id}>
-                          {cls.name}
+                        <SelectItem value="transfer">
+                          {t('graduation.types.transfer') || 'Transfer'}
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="md:col-span-2">
-                  <Label>{t('nav.exams')}</Label>
-                  <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
-                    {exams.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">{t('common.noData') || 'No exams available'}</p>
-                    ) : (
-                      exams.map((exam) => (
-                        <div key={exam.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`exam-${exam.id}`}
-                            checked={form.exam_ids.includes(exam.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setForm((prev) => ({ ...prev, exam_ids: [...prev.exam_ids, exam.id] }));
-                              } else {
-                                setForm((prev) => ({ ...prev, exam_ids: prev.exam_ids.filter((id) => id !== exam.id) }));
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor={`exam-${exam.id}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            {exam.name}
-                          </label>
-                        </div>
-                      ))
+                      </SelectContent>
+                    </Select>
+                    {form.formState.errors.graduation_type && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.graduation_type.message}
+                      </p>
                     )}
                   </div>
-                  {form.exam_ids.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {form.exam_ids.length} {form.exam_ids.length === 1 ? 'exam' : 'exams'} selected
-                    </p>
-                  )}
-                </div>
-                <div className="md:col-span-2">
-                  <Label>{t('common.graduationDate') ?? 'Graduation Date'}</Label>
-                  <Input
-                    type="date"
-                    value={form.graduation_date}
-                    onChange={(e) => setForm((prev) => ({ ...prev, graduation_date: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button type="submit" disabled={createBatch.isPending}>
-                  {t('common.save')}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
 
-        <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">
-              <ArrowRightLeft className="h-4 w-4 mr-2" />
-              {t('graduation.createTransfer') || 'Create Transfer Batch'}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{t('graduation.createTransfer') || 'Create Transfer Batch'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCreateTransfer}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+                  {/* School */}
                   <div>
-                    <Label>{t('common.schoolManagement')}</Label>
-                    <Select 
-                      value={transferForm.school_id || schoolId || ''} 
-                      onValueChange={(val) => setTransferForm((prev) => ({ ...prev, school_id: val }))}
-                      required
+                    <Label htmlFor="school_id">{t('common.schoolManagement')}</Label>
+                    <Select
+                      value={form.watch('school_id') || schoolId || ''}
+                      onValueChange={(val) => form.setValue('school_id', val)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder={t('common.selectSchool')} />
@@ -526,13 +610,19 @@ export default function GraduationBatchesPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {form.formState.errors.school_id && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.school_id.message}
+                      </p>
+                    )}
                   </div>
+
+                  {/* Academic Year */}
                   <div>
-                    <Label>{t('fees.academicYear')}</Label>
-                    <Select 
-                      value={transferForm.academic_year_id} 
-                      onValueChange={(val) => setTransferForm((prev) => ({ ...prev, academic_year_id: val }))}
-                      required
+                    <Label htmlFor="academic_year_id">{t('fees.academicYear')}</Label>
+                    <Select
+                      value={form.watch('academic_year_id')}
+                      onValueChange={(val) => form.setValue('academic_year_id', val)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder={t('fees.academicYear')} />
@@ -545,104 +635,204 @@ export default function GraduationBatchesPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>{t('graduation.fromClass') || 'From Class'}</Label>
-                    <Select 
-                      value={transferForm.from_class_id} 
-                      onValueChange={(val) => setTransferForm((prev) => ({ ...prev, from_class_id: val }))}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('graduation.selectFromClass') || 'Select From Class'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {classes.map((cls) => (
-                          <SelectItem key={cls.id} value={cls.id}>
-                            {cls.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>{t('graduation.toClass') || 'To Class'}</Label>
-                    <Select 
-                      value={transferForm.to_class_id} 
-                      onValueChange={(val) => setTransferForm((prev) => ({ ...prev, to_class_id: val }))}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('graduation.selectToClass') || 'Select To Class'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {classes.map((cls) => (
-                          <SelectItem key={cls.id} value={cls.id}>
-                            {cls.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="md:col-span-2">
-                  <Label>{t('nav.exams')}</Label>
-                  <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
-                    {exams.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">{t('common.noData') || 'No exams available'}</p>
-                    ) : (
-                      exams.map((exam) => (
-                        <div key={exam.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`transfer-exam-${exam.id}`}
-                            checked={transferForm.exam_ids.includes(exam.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setTransferForm((prev) => ({ ...prev, exam_ids: [...prev.exam_ids, exam.id] }));
-                              } else {
-                                setTransferForm((prev) => ({ ...prev, exam_ids: prev.exam_ids.filter((id) => id !== exam.id) }));
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor={`transfer-exam-${exam.id}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            {exam.name}
-                          </label>
-                        </div>
-                      ))
+                    {form.formState.errors.academic_year_id && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.academic_year_id.message}
+                      </p>
                     )}
                   </div>
-                  {transferForm.exam_ids.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {transferForm.exam_ids.length} {transferForm.exam_ids.length === 1 ? 'exam' : 'exams'} selected
-                    </p>
+
+                  {/* Class Fields - Conditional based on type */}
+                  {graduationType === 'final_year' ? (
+                    <div>
+                      <Label htmlFor="class_id">{t('fees.class')}</Label>
+                      <Select
+                        value={form.watch('class_id')}
+                        onValueChange={(val) => form.setValue('class_id', val)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('common.selectClass')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classes.map((cls) => (
+                            <SelectItem key={cls.id} value={cls.id}>
+                              {cls.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {form.formState.errors.class_id && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.class_id.message}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <Label htmlFor="from_class_id">{t('graduation.fromClass') || 'From Class'}</Label>
+                        <Select
+                          value={form.watch('from_class_id')}
+                          onValueChange={(val) => form.setValue('from_class_id', val)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('graduation.selectFromClass') || 'Select From Class'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {classes.map((cls) => (
+                              <SelectItem key={cls.id} value={cls.id}>
+                                {cls.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {form.formState.errors.from_class_id && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.from_class_id.message}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="to_class_id">{t('graduation.toClass') || 'To Class'}</Label>
+                        <Select
+                          value={form.watch('to_class_id')}
+                          onValueChange={(val) => form.setValue('to_class_id', val)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('graduation.selectToClass') || 'Select To Class'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {classes
+                              .filter((cls) => cls.id !== form.watch('from_class_id'))
+                              .map((cls) => (
+                                <SelectItem key={cls.id} value={cls.id}>
+                                  {cls.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        {form.formState.errors.to_class_id && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.to_class_id.message}
+                          </p>
+                        )}
+                      </div>
+                    </>
                   )}
+
+                  {/* Exams */}
+                  <div className="md:col-span-2">
+                    <Label>{t('nav.exams')}</Label>
+                    <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
+                      {exams.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">{t('common.noData') || 'No exams available'}</p>
+                      ) : (
+                        exams.map((exam) => (
+                          <div key={exam.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`exam-${exam.id}`}
+                              checked={examIds.includes(exam.id)}
+                              onCheckedChange={(checked) => {
+                                const currentIds = form.watch('exam_ids');
+                                if (checked) {
+                                  form.setValue('exam_ids', [...currentIds, exam.id]);
+                                } else {
+                                  form.setValue('exam_ids', currentIds.filter((id) => id !== exam.id));
+                                  // Remove weight when exam is deselected
+                                  const currentWeights = form.watch('exam_weights') || {};
+                                  const newWeights = { ...currentWeights };
+                                  delete newWeights[exam.id];
+                                  form.setValue('exam_weights', newWeights);
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor={`exam-${exam.id}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {exam.name}
+                            </label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {examIds.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {examIds.length} {examIds.length === 1 ? 'exam' : 'exams'} selected
+                      </p>
+                    )}
+                    {form.formState.errors.exam_ids && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.exam_ids.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Exam Weights - Show when 2+ exams selected */}
+                  {examIds.length > 1 && (
+                    <div className="md:col-span-2">
+                      <ExamWeightsEditor
+                        examIds={examIds}
+                        weights={examWeights}
+                        onChange={(newWeights) => form.setValue('exam_weights', newWeights)}
+                        exams={exams}
+                      />
+                      {form.formState.errors.exam_weights && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.exam_weights.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Attendance Settings */}
+                  <div className="md:col-span-2">
+                    <Label>{t('graduation.attendance.title') || 'Attendance Requirements'}</Label>
+                    <AttendanceSettings
+                      minAttendancePercentage={minAttendancePercentage}
+                      requireAttendance={requireAttendance}
+                      excludeApprovedLeaves={excludeApprovedLeaves}
+                      onChange={(settings) => {
+                        form.setValue('min_attendance_percentage', settings.min_attendance_percentage);
+                        form.setValue('require_attendance', settings.require_attendance);
+                        form.setValue('exclude_approved_leaves', settings.exclude_approved_leaves);
+                      }}
+                    />
+                  </div>
+
+                  {/* Graduation Date */}
+                  <div className="md:col-span-2">
+                    <Label htmlFor="graduation_date">{t('common.graduationDate') ?? 'Graduation Date'}</Label>
+                    <Controller
+                      control={form.control}
+                      name="graduation_date"
+                      render={({ field }) => (
+                        <Input
+                          id="graduation_date"
+                          type="date"
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                        />
+                      )}
+                    />
+                    {form.formState.errors.graduation_date && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.graduation_date.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="md:col-span-2">
-                  <Label>{t('common.graduationDate') ?? 'Graduation Date'}</Label>
-                  <Input
-                    type="date"
-                    value={transferForm.graduation_date}
-                    onChange={(e) => setTransferForm((prev) => ({ ...prev, graduation_date: e.target.value }))}
-                    required
-                  />
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button type="submit" disabled={createBatch.isPending}>
+                    {createBatch.isPending ? t('common.saving') : t('common.save')}
+                  </Button>
                 </div>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsTransferDialogOpen(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button type="submit" disabled={createBatch.isPending}>
-                  {t('common.save')}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -706,22 +896,82 @@ export default function GraduationBatchesPage() {
         </Button>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder={t('graduation.filters.searchPlaceholder') || 'Search by year, class, exam...'}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-8"
-        />
+      {/* Search Bar and View Toggle */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t('graduation.filters.searchPlaceholder') || 'Search by year, class, exam...'}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+              onClick={() => setSearchQuery('')}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === 'cards' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('cards')}
+            title="Card View"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('table')}
+            title="Table View"
+          >
+            <TableIcon className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
+      {/* Collapsible Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle>{t('common.filter')}</CardTitle>
+        <CardHeader 
+          className="cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <CardTitle>{t('common.filter')}</CardTitle>
+              {(() => {
+                const activeFilterCount = [
+                  schoolId,
+                  academicYearId,
+                  classId,
+                  examId,
+                  dateFrom,
+                  dateTo,
+                ].filter(Boolean).length;
+                return activeFilterCount > 0 ? (
+                  <Badge variant="secondary" className="ml-2">
+                    {activeFilterCount}
+                  </Badge>
+                ) : null;
+              })()}
+            </div>
+            {filtersOpen ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </div>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {filtersOpen && (
+          <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <Label>{t('common.schoolManagement')}</Label>
             <Select value={schoolId || ''} onValueChange={(val) => setSchoolId(val || undefined)}>
@@ -798,7 +1048,8 @@ export default function GraduationBatchesPage() {
               onChange={(e) => setDateTo(e.target.value)}
             />
           </div>
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
 
       {/* Grouped Batches by Academic Year */}
@@ -811,13 +1062,26 @@ export default function GraduationBatchesPage() {
       ) : groupedBatches.length === 0 ? (
         <Card>
           <CardContent className="pt-12 pb-12">
-            <div className="text-center space-y-4">
-              <GraduationCap className="h-12 w-12 mx-auto text-muted-foreground" />
+            <div className="text-center space-y-4 max-w-md mx-auto">
+              <div className="mx-auto w-24 h-24 rounded-full bg-muted flex items-center justify-center">
+                <GraduationCap className="h-12 w-12 text-muted-foreground" />
+              </div>
               <div>
-                <h3 className="text-lg font-semibold">{t('graduation.noBatches.title') || 'No Graduation Batches'}</h3>
-                <p className="text-sm text-muted-foreground mt-2">
+                <h3 className="text-lg font-semibold mb-2">
+                  {t('graduation.noBatches.title') || 'No Graduation Batches'}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
                   {t('graduation.noBatches.description') || 'Get started by creating your first graduation batch'}
                 </p>
+                <div className="space-y-2 text-left bg-muted/50 p-4 rounded-lg">
+                  <p className="text-sm font-medium">Quick Start:</p>
+                  <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                    <li>Select a school from the filter above</li>
+                    <li>Click "Create Batch" to start</li>
+                    <li>Choose graduation type and configure settings</li>
+                    <li>Generate eligible students</li>
+                  </ol>
+                </div>
               </div>
               <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                 <DialogTrigger asChild>
@@ -841,7 +1105,134 @@ export default function GraduationBatchesPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
+                {viewMode === 'cards' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {items.map((batch: any) => (
+                      <Card
+                        key={batch.id}
+                        className="hover:shadow-lg transition-shadow cursor-pointer border-l-4"
+                        style={{ borderLeftColor: getStatusColor(batch.status) }}
+                        onClick={() => navigate(`/graduation/batches/${batch.id}`)}
+                      >
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-lg mb-1">
+                                {batch.class?.name || batch.class_id || 'Class'}
+                              </CardTitle>
+                              <div className="flex items-center gap-2 mt-1">
+                                <StatusBadge status={batch.status} />
+                                {batch.graduation_type !== 'final_year' && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {batch.graduation_type === 'promotion'
+                                      ? t('graduation.types.promotion') || 'Promotion'
+                                      : batch.graduation_type === 'transfer'
+                                        ? t('graduation.types.transfer') || 'Transfer'
+                                        : ''}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRowClick(batch);
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <BatchWorkflowStepper batch={batch} />
+                          <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Students</p>
+                              <p className="text-lg font-semibold flex items-center gap-1">
+                                <Users className="h-4 w-4" />
+                                {batch.students_count || batch.students?.length || 0}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Exams</p>
+                              <p className="text-lg font-semibold">{batch.exams?.length || 1}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Academic Year:</span>
+                              <span className="font-medium">{batch.academic_year?.name || '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Date:</span>
+                              <span className="font-medium">
+                                {batch.graduation_date ? formatDate(batch.graduation_date) : '—'}
+                              </span>
+                            </div>
+                            {(batch.graduation_type === 'promotion' || batch.graduation_type === 'transfer') &&
+                              batch.from_class_id &&
+                              batch.to_class_id && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-muted-foreground">Transfer:</span>
+                                  <span className="font-medium text-xs">
+                                    {batch.from_class?.name || batch.from_class_id} →{' '}
+                                    {batch.to_class?.name || batch.to_class_id}
+                                  </span>
+                                </div>
+                              )}
+                          </div>
+                          <div className="flex gap-2 pt-2 border-t">
+                            {batch.status === 'draft' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleGenerateStudents(batch);
+                                  }}
+                                  disabled={generateStudents.isPending}
+                                >
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                  Generate
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleApprove(batch);
+                                  }}
+                                  disabled={approveBatch.isPending}
+                                >
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  Approve
+                                </Button>
+                              </>
+                            )}
+                            {batch.status === 'approved' && (
+                              <Button
+                                size="sm"
+                                className="flex-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/graduation/batches/${batch.id}`);
+                                }}
+                              >
+                                <FileText className="h-3 w-3 mr-1" />
+                                Issue Certificates
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>
@@ -930,7 +1321,7 @@ export default function GraduationBatchesPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {batch.graduation_date ? new Date(batch.graduation_date).toLocaleDateString() : '—'}
+                          {batch.graduation_date ? formatDate(batch.graduation_date) : '—'}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
@@ -961,6 +1352,7 @@ export default function GraduationBatchesPage() {
                     ))}
                   </TableBody>
                 </Table>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -1128,7 +1520,7 @@ export default function GraduationBatchesPage() {
                     </CardHeader>
                     <CardContent>
                       <p className="text-lg font-semibold">
-                        {selectedBatch.graduation_date ? new Date(selectedBatch.graduation_date).toLocaleDateString() : '—'}
+                        {selectedBatch.graduation_date ? formatDate(selectedBatch.graduation_date) : '—'}
                       </p>
                     </CardContent>
                   </Card>
@@ -1221,82 +1613,267 @@ export default function GraduationBatchesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('common.edit')} {t('nav.graduation.batches')}</DialogTitle>
+            <DialogDescription>
+              {t('graduation.editBatchDescription') || 'Update the graduation batch settings. Some fields may be locked if students have already been generated.'}
+            </DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleUpdate}>
+          <form className="space-y-4" onSubmit={editForm.handleSubmit(handleUpdate)}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Graduation Type - Read-only if batch has students */}
+              <div>
+                <Label>{t('common.type') || 'Graduation Type'}</Label>
+                <Controller
+                  control={editForm.control}
+                  name="graduation_type"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        // Reset from/to class when changing type
+                        if (val === 'final_year') {
+                          editForm.setValue('from_class_id', '');
+                          editForm.setValue('to_class_id', '');
+                        }
+                      }}
+                      disabled={selectedBatch?.students_count > 0 || selectedBatch?.students?.length > 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="final_year">{t('graduation.types.finalYear') || 'Final Year'}</SelectItem>
+                        <SelectItem value="promotion">{t('graduation.types.promotion') || 'Promotion'}</SelectItem>
+                        <SelectItem value="transfer">{t('graduation.types.transfer') || 'Transfer'}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {selectedBatch?.students_count > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('graduation.cannotChangeTypeWithStudents') || 'Cannot change type when batch has students'}
+                  </p>
+                )}
+                {editForm.formState.errors.graduation_type && (
+                  <p className="text-sm text-destructive mt-1">
+                    {editForm.formState.errors.graduation_type.message}
+                  </p>
+                )}
+              </div>
               <div>
                 <Label>{t('fees.academicYear')}</Label>
-                <Select
-                  value={editForm.academic_year_id}
-                  onValueChange={(val) => setEditForm((prev) => ({ ...prev, academic_year_id: val }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('fees.academicYear')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {academicYears.map((ay) => (
-                      <SelectItem key={ay.id} value={ay.id}>
-                        {ay.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={editForm.control}
+                  name="academic_year_id"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('fees.academicYear')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {academicYears.map((ay) => (
+                          <SelectItem key={ay.id} value={ay.id}>
+                            {ay.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {editForm.formState.errors.academic_year_id && (
+                  <p className="text-sm text-destructive mt-1">
+                    {editForm.formState.errors.academic_year_id.message}
+                  </p>
+                )}
               </div>
-              <div>
-                <Label>{t('fees.class')}</Label>
-                <Select
-                  value={editForm.class_id}
-                  onValueChange={(val) => setEditForm((prev) => ({ ...prev, class_id: val }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('common.selectClass')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {classes.map((cls) => (
-                      <SelectItem key={cls.id} value={cls.id}>
-                        {cls.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              
+              {/* Conditional class fields based on graduation type */}
+              {editGraduationType === 'final_year' ? (
+                <div>
+                  <Label>{t('fees.class')}</Label>
+                  <Controller
+                    control={editForm.control}
+                    name="class_id"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('common.selectClass')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classes.map((cls) => (
+                            <SelectItem key={cls.id} value={cls.id}>
+                              {cls.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {editForm.formState.errors.class_id && (
+                    <p className="text-sm text-destructive mt-1">
+                      {editForm.formState.errors.class_id.message}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <Label>{t('graduation.fromClass') || 'From Class'}</Label>
+                    <Controller
+                      control={editForm.control}
+                      name="from_class_id"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('graduation.selectFromClass') || 'Select From Class'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {classes.map((cls) => (
+                              <SelectItem key={cls.id} value={cls.id}>
+                                {cls.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {editForm.formState.errors.from_class_id && (
+                      <p className="text-sm text-destructive mt-1">
+                        {editForm.formState.errors.from_class_id.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>{t('graduation.toClass') || 'To Class'}</Label>
+                    <Controller
+                      control={editForm.control}
+                      name="to_class_id"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('graduation.selectToClass') || 'Select To Class'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {classes.filter((cls) => cls.id !== editForm.watch('from_class_id')).map((cls) => (
+                              <SelectItem key={cls.id} value={cls.id}>
+                                {cls.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {editForm.formState.errors.to_class_id && (
+                      <p className="text-sm text-destructive mt-1">
+                        {editForm.formState.errors.to_class_id.message}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+              
+              {/* Exams */}
               <div className="md:col-span-2">
                 <Label>{t('nav.exams')}</Label>
                 <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
-                  {exams.map((exam) => (
-                    <div key={exam.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`edit-exam-${exam.id}`}
-                        checked={editForm.exam_ids.includes(exam.id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setEditForm((prev) => ({ ...prev, exam_ids: [...prev.exam_ids, exam.id] }));
-                          } else {
-                            setEditForm((prev) => ({ ...prev, exam_ids: prev.exam_ids.filter((id) => id !== exam.id) }));
-                          }
-                        }}
-                      />
-                      <label
-                        htmlFor={`edit-exam-${exam.id}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                      >
-                        {exam.name}
-                      </label>
-                    </div>
-                  ))}
+                  {exams.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t('common.noData') || 'No exams available'}</p>
+                  ) : (
+                    exams.map((exam) => (
+                      <div key={exam.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`edit-exam-${exam.id}`}
+                          checked={editExamIds.includes(exam.id)}
+                          onCheckedChange={(checked) => {
+                            const currentIds = editForm.watch('exam_ids');
+                            if (checked) {
+                              editForm.setValue('exam_ids', [...currentIds, exam.id]);
+                            } else {
+                              editForm.setValue('exam_ids', currentIds.filter((id) => id !== exam.id));
+                              // Remove weight when exam is deselected
+                              const currentWeights = editForm.watch('exam_weights') || {};
+                              const newWeights = { ...currentWeights };
+                              delete newWeights[exam.id];
+                              editForm.setValue('exam_weights', newWeights);
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`edit-exam-${exam.id}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {exam.name}
+                        </label>
+                      </div>
+                    ))
+                  )}
                 </div>
+                {editExamIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {editExamIds.length} {editExamIds.length === 1 ? 'exam' : 'exams'} selected
+                  </p>
+                )}
+                {editForm.formState.errors.exam_ids && (
+                  <p className="text-sm text-destructive mt-1">
+                    {editForm.formState.errors.exam_ids.message}
+                  </p>
+                )}
               </div>
+
+              {/* Exam Weights - Show when 2+ exams selected */}
+              {editExamIds.length > 1 && (
+                <div className="md:col-span-2">
+                  <ExamWeightsEditor
+                    examIds={editExamIds}
+                    weights={editExamWeights}
+                    onChange={(newWeights) => editForm.setValue('exam_weights', newWeights)}
+                    exams={exams}
+                  />
+                  {editForm.formState.errors.exam_weights && (
+                    <p className="text-sm text-destructive mt-1">
+                      {editForm.formState.errors.exam_weights.message}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Attendance Settings */}
               <div className="md:col-span-2">
-                <Label>{t('common.graduationDate') ?? 'Graduation Date'}</Label>
-                <Input
-                  type="date"
-                  value={editForm.graduation_date}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, graduation_date: e.target.value }))}
-                  required
+                <Label>{t('graduation.attendance.title') || 'Attendance Requirements'}</Label>
+                <AttendanceSettings
+                  minAttendancePercentage={editMinAttendancePercentage}
+                  requireAttendance={editRequireAttendance}
+                  excludeApprovedLeaves={editExcludeApprovedLeaves}
+                  onChange={(settings) => {
+                    editForm.setValue('min_attendance_percentage', settings.min_attendance_percentage);
+                    editForm.setValue('require_attendance', settings.require_attendance);
+                    editForm.setValue('exclude_approved_leaves', settings.exclude_approved_leaves);
+                  }}
                 />
+              </div>
+              
+              {/* Graduation Date */}
+              <div className="md:col-span-2">
+                <Label htmlFor="edit-graduation_date">{t('common.graduationDate') ?? 'Graduation Date'}</Label>
+                <Controller
+                  control={editForm.control}
+                  name="graduation_date"
+                  render={({ field }) => (
+                    <Input
+                      type="date"
+                      {...field}
+                      required
+                    />
+                  )}
+                />
+                {editForm.formState.errors.graduation_date && (
+                  <p className="text-sm text-destructive mt-1">
+                    {editForm.formState.errors.graduation_date.message}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex justify-end space-x-2">

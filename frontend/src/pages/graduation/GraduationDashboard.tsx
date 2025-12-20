@@ -11,6 +11,7 @@ import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useAuth } from '@/hooks/useAuth';
+import { formatDate } from '@/lib/dateUtils';
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {
@@ -334,7 +335,7 @@ export default function GraduationDashboard() {
                         <StatusBadge status={batch.status} />
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {batch.class?.name || batch.class_id} • {batch.graduation_date ? new Date(batch.graduation_date).toLocaleDateString() : '—'}
+                        {batch.class?.name || batch.class_id} • {batch.graduation_date ? formatDate(batch.graduation_date) : '—'}
                       </p>
                       {batch.students_count !== undefined && (
                         <p className="text-xs text-muted-foreground mt-1">
@@ -375,7 +376,7 @@ export default function GraduationDashboard() {
                         <StatusBadge status={batch.status} />
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {batch.class?.name || batch.class_id} • {batch.graduation_date ? new Date(batch.graduation_date).toLocaleDateString() : '—'}
+                        {batch.class?.name || batch.class_id} • {batch.graduation_date ? formatDate(batch.graduation_date) : '—'}
                       </p>
                       {batch.students_count !== undefined && (
                         <p className="text-xs text-muted-foreground mt-1">

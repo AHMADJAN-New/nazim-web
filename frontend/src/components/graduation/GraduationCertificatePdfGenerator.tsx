@@ -19,28 +19,48 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Download, Award, Eye, Image as ImageIcon } from 'lucide-react';
 import { useCertificateTemplatesV2 } from '@/hooks/useGraduation';
-import { certificateTemplatesV2Api, issuedCertificatesApi } from '@/lib/api/client';
+import { certificateTemplatesV2Api, issuedCertificatesApi, apiClient } from '@/lib/api/client';
 import { format } from 'date-fns';
 
-// Import pdfmake for Arabic support
-import pdfMake from 'pdfmake-arabic/build/pdfmake';
-import * as pdfFonts from 'pdfmake-arabic/build/vfs_fonts';
+// Import pdfmake for Arabic support - handle both default and named exports
+import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
+const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
 
-// Set up fonts for Arabic/Pashto support (same as CertificatePdfGenerator)
+// Make pdfMake available globally for vfs_fonts
+if (typeof window !== 'undefined') {
+  (window as any).pdfMake = pdfMake;
+}
+
+// Use regular pdfmake vfs_fonts instead of pdfmake-arabic's (which has issues)
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+
+// Set up fonts for Arabic/Pashto support
 try {
-  if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
-    pdfMake.vfs = pdfFonts.pdfMake.vfs;
+  // Initialize VFS using Object.assign to avoid read-only error
+  if (pdfFonts && typeof pdfFonts === 'object') {
+    // pdfmake's vfs_fonts exports the VFS directly
+    // Use Object.assign to merge VFS instead of direct assignment
+    if (!(pdfMake as any).vfs) {
+      (pdfMake as any).vfs = {};
+    }
+    Object.assign((pdfMake as any).vfs, pdfFonts);
   } else if (pdfFonts && (pdfFonts as any).vfs) {
-    pdfMake.vfs = (pdfFonts as any).vfs;
+    if (!(pdfMake as any).vfs) {
+      (pdfMake as any).vfs = {};
+    }
+    Object.assign((pdfMake as any).vfs, (pdfFonts as any).vfs);
   }
 
-  if (!pdfMake.fonts) {
-    pdfMake.fonts = {};
+  // Register fonts properly - pdfmake-arabic includes Roboto by default
+  if (!(pdfMake as any).fonts) {
+    (pdfMake as any).fonts = {};
   }
 
-  const vfs = pdfMake.vfs || {};
+  // Check what fonts are available in VFS
+  const vfs = (pdfMake as any).vfs || {};
   const vfsKeys = Object.keys(vfs);
 
+  // Find Roboto font files in VFS
   const findRobotoFont = (variant: 'regular' | 'bold' | 'italic' | 'bolditalic'): string => {
     const patterns = {
       regular: ['roboto', 'regular'],
@@ -57,9 +77,11 @@ try {
     
     if (key && vfs[key]) return key;
     
+    // Fallback: try to find any Roboto font
     const anyRoboto = vfsKeys.find(k => k.toLowerCase().includes('roboto'));
     if (anyRoboto) return anyRoboto;
     
+    // Last resort: use default names (pdfmake-arabic should have these)
     return variant === 'regular' ? 'Roboto-Regular.ttf' :
            variant === 'bold' ? 'Roboto-Medium.ttf' :
            variant === 'italic' ? 'Roboto-Italic.ttf' :
@@ -71,8 +93,9 @@ try {
   const robotoItalic = findRobotoFont('italic');
   const robotoBoldItalic = findRobotoFont('bolditalic');
 
-  if (!pdfMake.fonts!['Roboto']) {
-    pdfMake.fonts!['Roboto'] = {
+  // Register Roboto fonts (default pdfmake fonts, available in pdfmake-arabic)
+  if (!(pdfMake as any).fonts!['Roboto']) {
+    (pdfMake as any).fonts!['Roboto'] = {
       normal: robotoRegular,
       bold: robotoBold,
       italics: robotoItalic,
@@ -80,9 +103,11 @@ try {
     };
   }
 
-  if (!pdfMake.fonts!['Arial']) {
-    const robotoFont = pdfMake.fonts!['Roboto'];
-    pdfMake.fonts!['Arial'] = {
+  // Register Arial as an alias to Roboto (since Arial might be requested but not available)
+  // Use the same font configuration as Roboto
+  if (!(pdfMake as any).fonts!['Arial']) {
+    const robotoFont = (pdfMake as any).fonts!['Roboto'];
+    (pdfMake as any).fonts!['Arial'] = {
       normal: robotoFont.normal,
       bold: robotoFont.bold,
       italics: robotoFont.italics,
@@ -142,18 +167,20 @@ async function loadCustomFonts() {
       const regularBase64Data = arrayBufferToBase64(regularArrayBuffer);
       const boldBase64Data = arrayBufferToBase64(boldArrayBuffer);
       
-      if (!pdfMake.vfs) {
-        pdfMake.vfs = {};
+      // Add fonts to VFS (Virtual File System) - required for pdfmake
+      if (!(pdfMake as any).vfs) {
+        (pdfMake as any).vfs = {};
       }
       
-      pdfMake.vfs['BahijNassim-Regular.ttf'] = regularBase64Data;
-      pdfMake.vfs['BahijNassim-Bold.ttf'] = boldBase64Data;
+      (pdfMake as any).vfs['BahijNassim-Regular.ttf'] = regularBase64Data;
+      (pdfMake as any).vfs['BahijNassim-Bold.ttf'] = boldBase64Data;
       
-      if (!pdfMake.fonts) {
-        pdfMake.fonts = {};
+      // Register fonts with pdfmake (reference VFS paths)
+      if (!(pdfMake as any).fonts) {
+        (pdfMake as any).fonts = {};
       }
       
-      pdfMake.fonts['BahijNassim'] = {
+      (pdfMake as any).fonts['BahijNassim'] = {
         normal: 'BahijNassim-Regular.ttf',
         bold: 'BahijNassim-Bold.ttf',
       };
@@ -258,7 +285,8 @@ export function GraduationCertificatePdfGenerator({
   useEffect(() => {
     if (isOpen && certificateId) {
       setIsLoadingData(true);
-      issuedCertificatesApi.getCertificateData(certificateId)
+      // Pass school_id as query parameter to avoid 403 error
+      issuedCertificatesApi.getCertificateData(certificateId, schoolId)
         .then((data) => {
           setCertificateData(data as GraduationCertificateData);
         })
@@ -269,7 +297,7 @@ export function GraduationCertificatePdfGenerator({
           setIsLoadingData(false);
         });
     }
-  }, [isOpen, certificateId]);
+  }, [isOpen, certificateId, schoolId]);
 
   // Auto-select template based on school_id when dialog opens or templates/schoolId changes
   useEffect(() => {
@@ -317,7 +345,8 @@ export function GraduationCertificatePdfGenerator({
         console.log('[GraduationCertificatePdfGenerator] Fetching background image from endpoint:', endpoint);
       }
 
-      const { blob } = await certificateTemplatesV2Api.getBackgroundImage(endpoint);
+      // Use apiClient.requestFile directly since certificateTemplatesV2Api doesn't have getBackgroundImage
+      const { blob } = await apiClient.requestFile(endpoint, { method: 'GET' });
 
       if (!blob.type.startsWith('image/')) {
         console.warn('[GraduationCertificatePdfGenerator] Invalid image type:', blob.type);
@@ -460,9 +489,9 @@ export function GraduationCertificatePdfGenerator({
     };
 
     let defaultFontFamily = 'Roboto';
-    if (isRtl && fontsLoaded && pdfMake.fonts?.['BahijNassim']) {
+    if (isRtl && fontsLoaded && (pdfMake as any).fonts?.['BahijNassim']) {
       defaultFontFamily = 'BahijNassim';
-    } else if (layout.fontFamily && (pdfMake.fonts?.[layout.fontFamily] || pdfMake.fonts?.['Arial'])) {
+    } else if (layout.fontFamily && ((pdfMake as any).fonts?.[layout.fontFamily] || (pdfMake as any).fonts?.['Arial'])) {
       defaultFontFamily = layout.fontFamily;
     }
     
@@ -477,11 +506,11 @@ export function GraduationCertificatePdfGenerator({
       let fieldFontFamily = defaultFontFamily;
       if (fieldFont?.fontFamily) {
         const requestedFont = fieldFont.fontFamily;
-        if (pdfMake.fonts?.[requestedFont]) {
+        if ((pdfMake as any).fonts?.[requestedFont]) {
           fieldFontFamily = requestedFont;
-        } else if (requestedFont === 'Bahij Nassim' && pdfMake.fonts?.['BahijNassim']) {
+        } else if (requestedFont === 'Bahij Nassim' && (pdfMake as any).fonts?.['BahijNassim']) {
           fieldFontFamily = 'BahijNassim';
-        } else if (pdfMake.fonts?.['Roboto']) {
+        } else if ((pdfMake as any).fonts?.['Roboto']) {
           fieldFontFamily = 'Roboto';
         }
       }

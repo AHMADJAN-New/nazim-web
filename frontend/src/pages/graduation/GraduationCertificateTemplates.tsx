@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   useCertificateTemplatesV2,
   useCreateCertificateTemplateV2,
@@ -25,6 +25,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -70,6 +71,23 @@ interface GraduationCertificateTemplate {
   updated_at: string;
 }
 
+// Available font families including Bahij fonts
+const fontFamilyOptions = [
+  { value: 'Arial', label: 'Arial' },
+  { value: 'Roboto', label: 'Roboto' },
+  { value: 'Bahij Nassim', label: 'Bahij Nassim (Regular)' },
+  { value: 'Bahij Nassim-Bold', label: 'Bahij Nassim Bold' },
+  { value: 'Bahij Nassim-Regular', label: 'Bahij Nassim Regular' },
+  { value: 'Bahij Titr-Bold', label: 'Bahij Titr Bold' },
+  { value: 'Times New Roman', label: 'Times New Roman' },
+  { value: 'Courier New', label: 'Courier New' },
+  { value: 'Georgia', label: 'Georgia' },
+  { value: 'Verdana', label: 'Verdana' },
+  { value: 'Helvetica', label: 'Helvetica' },
+  { value: 'Tahoma', label: 'Tahoma' },
+  { value: 'Noto Sans Arabic', label: 'Noto Sans Arabic' },
+];
+
 export default function GraduationCertificateTemplates() {
   const { t } = useLanguage();
   const { profile } = useAuth();
@@ -102,11 +120,22 @@ export default function GraduationCertificateTemplates() {
     graduationDatePosition: { x: 90, y: 90 },
   });
 
+  // Load all graduation templates (no school filter - show all templates for management)
   const { data: templates = [], isLoading } = useCertificateTemplatesV2({ type: 'graduation' });
   const { data: schools = [] } = useSchools();
   const createTemplate = useCreateCertificateTemplateV2();
   const updateTemplate = useUpdateCertificateTemplateV2();
   const deleteTemplate = useDeleteCertificateTemplateV2();
+
+  // Auto-select default school if available
+  useEffect(() => {
+    if (schools.length > 0 && !schoolId && profile?.default_school_id) {
+      setSchoolId(profile.default_school_id);
+    } else if (schools.length === 1 && !schoolId) {
+      // If only one school, auto-select it
+      setSchoolId(schools[0].id);
+    }
+  }, [schools, profile?.default_school_id, schoolId]);
 
   const resetForm = () => {
     setName('');
@@ -143,9 +172,15 @@ export default function GraduationCertificateTemplates() {
   };
 
   const handleSave = async () => {
+    if (!name.trim()) {
+      alert('Template name is required');
+      return;
+    }
+
     const data = {
       type: 'graduation',
-      title: name,
+      title: name.trim(),
+      name: name.trim(), // Backend also expects 'name' field
       description: description || null,
       background_image: backgroundImage,
       layout_config: layoutConfig,
@@ -153,12 +188,22 @@ export default function GraduationCertificateTemplates() {
       is_active: isActive,
     };
 
-    if (selectedTemplate) {
-      await updateTemplate.mutateAsync({ id: selectedTemplate.id, data });
-    } else {
-      await createTemplate.mutateAsync(data);
+    try {
+      if (selectedTemplate) {
+        await updateTemplate.mutateAsync({ id: selectedTemplate.id, data });
+      } else {
+        await createTemplate.mutateAsync(data);
+      }
+      // Close dialog and reset form after successful save
+      // The query will automatically refetch, so the table will update
+      handleCloseDialog();
+    } catch (error) {
+      // Error is already handled by the mutation's onError
+      // Don't close dialog on error so user can fix and retry
+      if (import.meta.env.DEV) {
+        console.error('Failed to save template:', error);
+      }
     }
-    handleCloseDialog();
   };
 
   const handleDelete = async () => {
@@ -312,6 +357,11 @@ export default function GraduationCertificateTemplates() {
             <DialogTitle>
               {selectedTemplate ? 'Edit Template' : 'Create Template'}
             </DialogTitle>
+            <DialogDescription>
+              {selectedTemplate
+                ? 'Update the certificate template details and settings.'
+                : 'Create a new certificate template for graduation certificates. All fields marked with * are required.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -324,23 +374,26 @@ export default function GraduationCertificateTemplates() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>School (Optional)</Label>
-                <Select value={schoolId || 'none'} onValueChange={(value) => setSchoolId(value === 'none' ? '' : value)}>
+                <Label>School *</Label>
+                <Select value={schoolId || ''} onValueChange={(value) => setSchoolId(value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a school (optional)" />
+                    <SelectValue placeholder="Select a school" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None (General Template)</SelectItem>
-                    {schools.map((school) => (
-                      <SelectItem key={school.id} value={school.id}>
-                        {school.schoolName}
-                      </SelectItem>
-                    ))}
+                    {schools.length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">No schools available</div>
+                    ) : (
+                      schools.map((school) => (
+                        <SelectItem key={school.id} value={school.id}>
+                          {school.schoolName}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Assign this template to a specific school. Select "None" for general use.
-                </p>
+                {!schoolId && (
+                  <p className="text-xs text-destructive mt-1">School selection is required</p>
+                )}
               </div>
             </div>
             <div className="space-y-2">
@@ -378,10 +431,25 @@ export default function GraduationCertificateTemplates() {
                 </div>
                 <div className="space-y-2">
                   <Label>Font Family</Label>
-                  <Input
-                    value={layoutConfig.fontFamily || 'Arial'}
-                    onChange={(e) => setLayoutConfig({ ...layoutConfig, fontFamily: e.target.value })}
-                  />
+                  <div className="relative">
+                    <Input
+                      list="font-family-options"
+                      value={layoutConfig.fontFamily || 'Arial'}
+                      onChange={(e) => setLayoutConfig({ ...layoutConfig, fontFamily: e.target.value })}
+                      placeholder="Type or select a font family"
+                      className="pr-10"
+                    />
+                    <datalist id="font-family-options">
+                      {fontFamilyOptions.map((font) => (
+                        <option key={font.value} value={font.value}>
+                          {font.label}
+                        </option>
+                      ))}
+                    </datalist>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Type any font name or select from suggestions (includes Bahij fonts)
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Text Color</Label>
@@ -417,7 +485,7 @@ export default function GraduationCertificateTemplates() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={!name || createTemplate.isPending || updateTemplate.isPending}
+              disabled={!name || !schoolId || createTemplate.isPending || updateTemplate.isPending}
             >
               {createTemplate.isPending || updateTemplate.isPending ? 'Saving...' : 'Save Template'}
             </Button>
@@ -431,6 +499,9 @@ export default function GraduationCertificateTemplates() {
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Layout: {selectedTemplate.name || selectedTemplate.title}</DialogTitle>
+              <DialogDescription>
+                Customize the layout, positioning, and styling of certificate elements. Drag elements to reposition them.
+              </DialogDescription>
             </DialogHeader>
             <GraduationCertificateLayoutEditor
               templateId={selectedTemplate.id}
