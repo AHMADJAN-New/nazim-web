@@ -670,11 +670,11 @@ export function AssetManagement() {
               </div>
               <div>
                 <Label>Purchase Date</Label>
-                <Input type="date" {...register('purchaseDate')} />
+                <CalendarFormField control={assignmentForm.control} name="purchaseDate" label="Category" />
               </div>
               <div>
                 <Label>Warranty Expiry</Label>
-                <Input type="date" {...register('warrantyExpiry')} />
+                <CalendarFormField control={assignmentForm.control} name="warrantyExpiry" label="Purchase Price" />
               </div>
               <div>
                 <Label>Vendor</Label>

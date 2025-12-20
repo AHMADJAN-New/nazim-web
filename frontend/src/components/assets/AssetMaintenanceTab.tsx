@@ -434,11 +434,11 @@ export default function AssetMaintenanceTab() {
               </div>
               <div>
                 <Label>Performed On</Label>
-                <Input type="date" {...register('performedOn')} />
+                <CalendarFormField control={form.control} name="performedOn" label="Performed On" />
               </div>
               <div>
                 <Label>Next Due Date</Label>
-                <Input type="date" {...register('nextDueDate')} />
+                <CalendarFormField control={form.control} name="nextDueDate" label="Performed On" />
               </div>
               <div>
                 <Label>Cost</Label>

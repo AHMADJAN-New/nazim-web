@@ -699,23 +699,11 @@ export default function LibraryReports() {
                                 <div className="flex flex-col md:flex-row gap-4 items-end">
                                     <div className="space-y-2">
                                         <Label htmlFor="date-from">From Date</Label>
-                                        <Input
-                                            id="date-from"
-                                            type="date"
-                                            value={dateFrom}
-                                            onChange={(e) => setDateFrom(e.target.value)}
-                                            className="w-full md:w-40"
-                                        />
+                                        <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="date-to">To Date</Label>
-                                        <Input
-                                            id="date-to"
-                                            type="date"
-                                            value={dateTo}
-                                            onChange={(e) => setDateTo(e.target.value)}
-                                            className="w-full md:w-40"
-                                        />
+                                        <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
                                     </div>
                                     {hasActiveFilters && (
                                         <div className="w-full md:w-auto">

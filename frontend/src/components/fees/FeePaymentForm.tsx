@@ -170,19 +170,7 @@ export function FeePaymentForm({
             }}
           />
 
-          <FormField
-            control={form.control}
-            name="payment_date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('fees.paymentDate')}</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <CalendarFormField control={form.control} name="payment_date" label={t('fees.paymentDate')} />
 
           <FormField
             control={form.control}

@@ -748,14 +748,14 @@ export default function AssetListTab() {
                 <Label>
                   Purchase Date <span className="text-destructive">*</span>
                 </Label>
-                <Input type="date" {...register('purchaseDate')} />
+                <CalendarFormField control={form.control} name="purchaseDate" label="Number of Copies" />
                 {errors.purchaseDate && (
                   <p className="text-sm text-destructive mt-1">{errors.purchaseDate.message}</p>
                 )}
               </div>
               <div>
                 <Label>Warranty Expiry</Label>
-                <Input type="date" {...register('warrantyExpiry')} />
+                <CalendarFormField control={form.control} name="warrantyExpiry" label="Warranty Expiry" />
               </div>
               <div>
                 <Label>Vendor</Label>

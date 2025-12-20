@@ -475,12 +475,7 @@ export default function GraduationBatchesPage() {
                 </div>
                 <div className="md:col-span-2">
                   <Label>{t('common.graduationDate') ?? 'Graduation Date'}</Label>
-                  <Input
-                    type="date"
-                    value={form.graduation_date}
-                    onChange={(e) => setForm((prev) => ({ ...prev, graduation_date: e.target.value }))}
-                    required
-                  />
+                  <CalendarDatePicker date={form.graduation_date ? new Date(form.graduation_date) : undefined} onDateChange={(date) => setForm(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
               </div>
               <div className="flex justify-end space-x-2">
@@ -625,12 +620,7 @@ export default function GraduationBatchesPage() {
                 </div>
                 <div className="md:col-span-2">
                   <Label>{t('common.graduationDate') ?? 'Graduation Date'}</Label>
-                  <Input
-                    type="date"
-                    value={transferForm.graduation_date}
-                    onChange={(e) => setTransferForm((prev) => ({ ...prev, graduation_date: e.target.value }))}
-                    required
-                  />
+                  <CalendarDatePicker date={transferForm.graduation_date ? new Date(transferForm.graduation_date) : undefined} onDateChange={(date) => setTransferForm(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
               </div>
               <div className="flex justify-end space-x-2">
@@ -785,19 +775,11 @@ export default function GraduationBatchesPage() {
           </div>
           <div>
             <Label>{t('graduation.filters.dateFrom') || 'From Date'}</Label>
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-            />
+            <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
           </div>
           <div>
             <Label>{t('graduation.filters.dateTo') || 'To Date'}</Label>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
+            <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
           </div>
         </CardContent>
       </Card>
@@ -1292,12 +1274,7 @@ export default function GraduationBatchesPage() {
               </div>
               <div className="md:col-span-2">
                 <Label>{t('common.graduationDate') ?? 'Graduation Date'}</Label>
-                <Input
-                  type="date"
-                  value={editForm.graduation_date}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, graduation_date: e.target.value }))}
-                  required
-                />
+                <CalendarDatePicker date={editForm.graduation_date ? new Date(editForm.graduation_date) : undefined} onDateChange={(date) => setEditForm(date ? date.toISOString().split("T")[0] : "")} />
               </div>
             </div>
             <div className="flex justify-end space-x-2">

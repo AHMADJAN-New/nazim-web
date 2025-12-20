@@ -962,7 +962,7 @@ export function StaffList() {
                                                     </div>
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="birth_date">{t('staff.dateOfBirth')}</Label>
-                                                        <Input id="birth_date" type="date" {...register('birth_date')} />
+                                                        <CalendarFormField control={form.control} name="birth_date" label="{t('staff.dateOfBirth')}" />
                                                         <p className="text-xs text-muted-foreground">{t('staff.dateOfBirthHelper')}</p>
                                                     </div>
                                                 </div>
@@ -1431,7 +1431,7 @@ export function StaffList() {
                                                     </div>
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="edit_birth_date">Date of Birth</Label>
-                                                        <Input id="edit_birth_date" type="date" {...register('birth_date')} />
+                                                        <CalendarFormField control={form.control} name="birth_date" label="Birth Year" />
                                                         <p className="text-xs text-muted-foreground">Employee must be at least 18 years old</p>
                                                     </div>
                                                 </div>

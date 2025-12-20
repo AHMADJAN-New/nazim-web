@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { useCreateCourseStudent, useUpdateCourseStudent } from '@/hooks/useCourseStudents';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import type { CourseStudent } from '@/types/domain/courseStudent';
@@ -254,13 +255,7 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
                 </div>
 
                 <div>
-                  <Label htmlFor="registrationDate">Registration Date *</Label>
-                  <Input
-                    id="registrationDate"
-                    type="date"
-                    {...register('registrationDate', { required: 'Registration date is required' })}
-                  />
-                  {errors.registrationDate && <p className="text-sm text-destructive mt-1">{errors.registrationDate.message}</p>}
+                  <CalendarFormField control={control} name="registrationDate" label="Registration Date" required />
                 </div>
 
                 <div>
@@ -346,11 +341,7 @@ export const CourseStudentFormDialog = memo(function CourseStudentFormDialog({
 
                 <div>
                   <Label htmlFor="birthDate">Birth Date</Label>
-                  <Input
-                    id="birthDate"
-                    type="date"
-                    {...register('birthDate')}
-                  />
+                  <CalendarFormField control={form.control} name="birthDate" label="Birth Year" />
                 </div>
 
                 <div>

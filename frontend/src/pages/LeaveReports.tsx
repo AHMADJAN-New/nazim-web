@@ -255,11 +255,11 @@ export default function LeaveReports() {
               </div>
               <div className="space-y-2">
                 <Label>{t('leave.from')}</Label>
-                <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+                <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} placeholder="Select date" />
               </div>
               <div className="space-y-2">
                 <Label>{t('leave.to')}</Label>
-                <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+                <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} placeholder="Select date" />
               </div>
               <div className="space-y-2">
                 <Label>{t('leave.rowsPerPage')}</Label>

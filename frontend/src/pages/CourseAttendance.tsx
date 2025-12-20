@@ -504,11 +504,7 @@ export default function CourseAttendance() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Date</Label>
-              <Input
-                type="date"
-                value={newSessionDate}
-                onChange={(e) => setNewSessionDate(e.target.value)}
-              />
+              <CalendarDatePicker date={newSessionDate ? new Date(newSessionDate) : undefined} onDateChange={(date) => setNewSessionDate(date ? date.toISOString().split("T")[0] : "")} />
             </div>
             <div className="space-y-2">
               <Label>Title (Optional)</Label>

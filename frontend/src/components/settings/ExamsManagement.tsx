@@ -28,6 +28,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus, CheckCircle, CalendarDays, NotebookPen, Award } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -170,13 +171,12 @@ function ExamClassCard({
                       </div>
                       <div>
                         <Label className="text-xs">Schedule</Label>
-                        <Input
-                          type="date"
-                          value={draft.scheduledAt}
-                          onChange={(e) => onDraftChange(subject.id, { ...draft, scheduledAt: e.target.value })}
+                        <CalendarDatePicker
+                          date={draft.scheduledAt ? new Date(draft.scheduledAt) : undefined}
+                          onDateChange={(date) => onDraftChange(subject.id, { ...draft, scheduledAt: date ? date.toISOString().slice(0, 10) : '' })}
                           disabled={!hasAssign}
-                          min={selectedExam?.startDate ? new Date(selectedExam.startDate).toISOString().slice(0, 10) : undefined}
-                          max={selectedExam?.endDate ? new Date(selectedExam.endDate).toISOString().slice(0, 10) : undefined}
+                          minDate={selectedExam?.startDate ? new Date(selectedExam.startDate) : undefined}
+                          maxDate={selectedExam?.endDate ? new Date(selectedExam.endDate) : undefined}
                         />
                       </div>
                       <div className="flex gap-2">

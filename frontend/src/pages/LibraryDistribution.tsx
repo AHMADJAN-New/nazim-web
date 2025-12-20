@@ -779,22 +779,14 @@ export default function LibraryDistribution() {
                                     <Label htmlFor="loan_date">
                                         Loan Date <span className="text-destructive">*</span>
                                     </Label>
-                                    <Input
-                                        id="loan_date"
-                                        type="date"
-                                        {...register('loan_date')}
-                                    />
+                                    <CalendarFormField control={form.control} name="loan_date" label="Loan Date" />
                                     {errors.loan_date && (
                                         <p className="text-sm text-destructive mt-1">{errors.loan_date.message}</p>
                                     )}
                                 </div>
                                 <div>
                                     <Label htmlFor="due_date">Due Date</Label>
-                                    <Input
-                                        id="due_date"
-                                        type="date"
-                                        {...register('due_date')}
-                                    />
+                                    <CalendarFormField control={form.control} name="due_date" label="Due Date" />
                                     {errors.due_date && (
                                         <p className="text-sm text-destructive mt-1">{errors.due_date.message}</p>
                                     )}

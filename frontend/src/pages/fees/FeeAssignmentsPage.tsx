@@ -549,47 +549,11 @@ export default function FeeAssignmentsPage() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="due_date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('fees.dueDate')}</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <CalendarFormField control={form.control} name="due_date" label={t('fees.dueDate')} />
 
-                  <FormField
-                    control={form.control}
-                    name="payment_period_start"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('fees.paymentPeriodStart')}</FormLabel>
-                        <FormControl>
-                          <Input type="date" value={field.value ?? ''} onChange={field.onChange} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <CalendarFormField control={form.control} name="payment_period_start" label={t('fees.paymentPeriodStart')} />
 
-                  <FormField
-                    control={form.control}
-                    name="payment_period_end"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('fees.paymentPeriodEnd')}</FormLabel>
-                        <FormControl>
-                          <Input type="date" value={field.value ?? ''} onChange={field.onChange} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <CalendarFormField control={form.control} name="payment_period_end" label={t('fees.paymentPeriodEnd')} />
                 </div>
 
                 <FormField

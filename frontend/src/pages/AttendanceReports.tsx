@@ -372,19 +372,11 @@ export default function AttendanceReports() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">{t('attendanceReports.fromDate') || 'From Date'}</label>
-                  <Input
-                    type="date"
-                    value={filters.dateFrom}
-                    onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                  />
+                  <CalendarDatePicker date={filters.dateFrom ? new Date(filters.dateFrom) : undefined} onDateChange={(date) => handleFilterChange('dateFrom', date ? date.toISOString().split("T")[0] : "")} />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">{t('attendanceReports.toDate') || 'To Date'}</label>
-                  <Input
-                    type="date"
-                    value={filters.dateTo}
-                    onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                  />
+                  <CalendarDatePicker date={filters.dateTo ? new Date(filters.dateTo) : undefined} onDateChange={(date) => handleFilterChange('dateTo', date ? date.toISOString().split("T")[0] : "")} />
                 </div>
               </div>
             </CollapsibleContent>

@@ -322,11 +322,7 @@ export function StudentDisciplineRecordsDialog({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="incident_date">{t('students.incidentDate') || 'Incident Date'} *</Label>
-                <Input
-                  id="incident_date"
-                  type="date"
-                  {...register('incident_date')}
-                />
+                <CalendarFormField control={form.control} name="incident_date" label="{t('students.incidentDate') || 'Incident Date'} *" />
                 {errors.incident_date && (
                   <p className="text-sm text-destructive mt-1">{errors.incident_date.message}</p>
                 )}

@@ -313,22 +313,14 @@ export function StudentEducationalHistoryDialog({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="start_date">{t('students.startDate') || 'Start Date'}</Label>
-                <Input
-                  id="start_date"
-                  type="date"
-                  {...register('start_date')}
-                />
+                <CalendarFormField control={form.control} name="start_date" label="{t('students.startDate') || 'Start Date'}" />
                 {errors.start_date && (
                   <p className="text-sm text-destructive mt-1">{errors.start_date.message}</p>
                 )}
               </div>
               <div>
                 <Label htmlFor="end_date">{t('students.endDate') || 'End Date'}</Label>
-                <Input
-                  id="end_date"
-                  type="date"
-                  {...register('end_date')}
-                />
+                <CalendarFormField control={form.control} name="end_date" label="{t('students.endDate') || 'End Date'}" />
                 {errors.end_date && (
                   <p className="text-sm text-destructive mt-1">{errors.end_date.message}</p>
                 )}

@@ -438,11 +438,7 @@ export function AcademicYearsManagement() {
                   <Label htmlFor="start_date">
                     {t('academic.academicYears.startDate')} *
                   </Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    {...register('start_date')}
-                  />
+                  <CalendarFormField control={form.control} name="start_date" label="{t('academic.academicYears.startDate')} *" />
                   {errors.start_date && (
                     <p className="text-sm text-destructive">{errors.start_date.message}</p>
                   )}
@@ -451,11 +447,7 @@ export function AcademicYearsManagement() {
                   <Label htmlFor="end_date">
                     {t('academic.academicYears.endDate')} *
                   </Label>
-                  <Input
-                    id="end_date"
-                    type="date"
-                    {...register('end_date')}
-                  />
+                  <CalendarFormField control={form.control} name="end_date" label="{t('academic.academicYears.endDate')} *" />
                   {errors.end_date && (
                     <p className="text-sm text-destructive">{errors.end_date.message}</p>
                   )}

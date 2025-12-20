@@ -292,12 +292,7 @@ export default function ExpenseEntries() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="date">{t('common.date') || 'Date'} *</Label>
-                    <Input
-                        id="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    />
+                    <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -478,22 +473,14 @@ export default function ExpenseEntries() {
                                 <Calendar className="inline h-3 w-3 mr-1" />
                                 {t('common.from') || 'From'}
                             </Label>
-                            <Input
-                                type="date"
-                                value={dateFrom}
-                                onChange={(e) => setDateFrom(e.target.value)}
-                            />
+                            <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
                         </div>
                         <div className="min-w-[150px]">
                             <Label className="text-xs text-muted-foreground mb-1 block">
                                 <Calendar className="inline h-3 w-3 mr-1" />
                                 {t('common.to') || 'To'}
                             </Label>
-                            <Input
-                                type="date"
-                                value={dateTo}
-                                onChange={(e) => setDateTo(e.target.value)}
-                            />
+                            <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
                         </div>
                         <div className="min-w-[140px]">
                             <Label className="text-xs text-muted-foreground mb-1 block">

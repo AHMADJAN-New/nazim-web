@@ -511,11 +511,11 @@ export default function AssetAssignmentsTab() {
               </div>
               <div>
                 <Label>Assigned On</Label>
-                <Input type="date" {...register('assignedOn')} />
+                <CalendarFormField control={form.control} name="assignedOn" label="Assigned On" />
               </div>
               <div>
                 <Label>Expected Return Date</Label>
-                <Input type="date" {...register('expectedReturnDate')} />
+                <CalendarFormField control={form.control} name="expectedReturnDate" label="Assigned On" />
               </div>
             </div>
             <div>

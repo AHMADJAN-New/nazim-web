@@ -417,20 +417,12 @@ export default function ArchiveSearch() {
 
             <div className="space-y-2">
               <Label>From Date</Label>
-              <Input
-                type="date"
-                value={filters.from_date}
-                onChange={(e) => setFilters((s) => ({ ...s, from_date: e.target.value }))}
-              />
+              <CalendarDatePicker date={filters.from_date ? new Date(filters.from_date) : undefined} onDateChange={(date) => setFilters(date ? date.toISOString().split("T")[0] : "")} />
             </div>
 
             <div className="space-y-2">
               <Label>To Date</Label>
-              <Input
-                type="date"
-                value={filters.to_date}
-                onChange={(e) => setFilters((s) => ({ ...s, to_date: e.target.value }))}
-              />
+              <CalendarDatePicker date={filters.to_date ? new Date(filters.to_date) : undefined} onDateChange={(date) => setFilters(date ? date.toISOString().split("T")[0] : "")} />
             </div>
           </div>
 

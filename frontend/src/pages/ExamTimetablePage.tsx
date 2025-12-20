@@ -467,14 +467,7 @@ export function ExamTimetablePage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Input
-                type="date"
-                value={selectedDateFilter}
-                onChange={(e) => setSelectedDateFilter(e.target.value)}
-                className="w-[200px]"
-                min={exam.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : undefined}
-                max={exam.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : undefined}
-              />
+              <CalendarDatePicker date={selectedDateFilter ? new Date(selectedDateFilter) : undefined} onDateChange={(date) => setSelectedDateFilter(date ? date.toISOString().split("T")[0] : "")} />
               {selectedDateFilter && (
                 <Button variant="ghost" size="sm" onClick={() => setSelectedDateFilter('')}>
                   {t('common.clear') || 'Clear'}
@@ -671,13 +664,7 @@ export function ExamTimetablePage() {
             </div>
             <div>
               <Label>{t('exams.date') || 'Date'} *</Label>
-              <Input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                min={exam.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : undefined}
-                max={exam.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : undefined}
-              />
+              <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -769,13 +756,7 @@ export function ExamTimetablePage() {
             )}
             <div>
               <Label>{t('exams.date') || 'Date'} *</Label>
-              <Input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                min={exam.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : undefined}
-                max={exam.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : undefined}
-              />
+              <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

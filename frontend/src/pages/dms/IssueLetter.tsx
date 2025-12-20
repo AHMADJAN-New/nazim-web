@@ -401,11 +401,7 @@ export default function IssueLetter() {
                     </Label>
                     <SecurityBadge level={payload.security_level_key} />
                   </div>
-                  <Input
-                    type="date"
-                    value={payload.issue_date}
-                    onChange={(e) => setPayload((s) => ({ ...s, issue_date: e.target.value }))}
-                  />
+                  <CalendarDatePicker date={payload.issue_date ? new Date(payload.issue_date) : undefined} onDateChange={(date) => setPayload(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
 
                 {templateVariables.length > 0 && (

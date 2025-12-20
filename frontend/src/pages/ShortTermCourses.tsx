@@ -338,11 +338,11 @@ const ShortTermCourses = () => {
             </div>
             <div className="space-y-2">
               <Label>{t('courses.startFrom')}</Label>
-              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
             </div>
             <div className="space-y-2">
               <Label>{t('courses.startTo')}</Label>
-              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
             </div>
             <div className="flex items-end">
               <Button variant="outline" className="w-full" onClick={() => {

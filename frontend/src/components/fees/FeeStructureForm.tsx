@@ -298,47 +298,11 @@ export function FeeStructureForm({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="due_date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('fees.dueDate')}</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <CalendarFormField control={form.control} name="due_date" label={t('fees.dueDate')} />
 
-          <FormField
-            control={form.control}
-            name="start_date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('fees.startDate')}</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <CalendarFormField control={form.control} name="start_date" label={t('fees.startDate')} />
 
-          <FormField
-            control={form.control}
-            name="end_date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('fees.endDate')}</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <CalendarFormField control={form.control} name="end_date" label={t('fees.endDate')} />
 
           <FormField
             control={form.control}

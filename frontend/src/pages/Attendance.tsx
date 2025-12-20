@@ -340,7 +340,7 @@ export default function Attendance() {
           </div>
           <div className="space-y-3">
             <Label>{t('attendancePage.dateLabel')}</Label>
-            <Input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)} />
+            <CalendarDatePicker date={sessionDate ? new Date(sessionDate) : undefined} onDateChange={(date) => setSessionDate(date ? date.toISOString().split("T")[0] : "")} placeholder="Select date" />
           </div>
           <div className="space-y-3">
             <Label>{t('attendancePage.methodLabel')}</Label>

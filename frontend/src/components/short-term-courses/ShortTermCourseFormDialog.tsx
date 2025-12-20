@@ -168,20 +168,12 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
 
             <div>
               <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                {...register('startDate')}
-              />
+              <CalendarFormField control={form.control} name="startDate" label="Location" />
             </div>
 
             <div>
               <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                {...register('endDate')}
-              />
+              <CalendarFormField control={form.control} name="endDate" label="Start Date" />
             </div>
 
             <div>

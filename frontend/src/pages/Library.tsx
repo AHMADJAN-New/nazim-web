@@ -378,19 +378,11 @@ export default function Library() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label>Loan Date</Label>
-                      <Input
-                        type="date"
-                        value={loanForm.loan_date}
-                        onChange={(e) => setLoanForm({ ...loanForm, loan_date: e.target.value })}
-                      />
+                      <CalendarDatePicker date={loanForm.loan_date ? new Date(loanForm.loan_date) : undefined} onDateChange={(date) => setLoanForm(date ? date.toISOString().split("T")[0] : "")} />
                     </div>
                     <div>
                       <Label>Due Date</Label>
-                      <Input
-                        type="date"
-                        value={loanForm.due_date}
-                        onChange={(e) => setLoanForm({ ...loanForm, due_date: e.target.value })}
-                      />
+                      <CalendarDatePicker date={loanForm.due_date ? new Date(loanForm.due_date) : undefined} onDateChange={(date) => setLoanForm(date ? date.toISOString().split("T")[0] : "")} />
                     </div>
                   </div>
                   <div>

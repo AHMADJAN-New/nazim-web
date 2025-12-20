@@ -189,13 +189,7 @@ export default function ExchangeRates() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="effectiveDate">{t('finance.effectiveDate') || 'Effective Date'} *</Label>
-                    <Input
-                        id="effectiveDate"
-                        type="date"
-                        value={formData.effectiveDate}
-                        onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
-                        required
-                    />
+                    <CalendarDatePicker date={formData.effectiveDate ? new Date(formData.effectiveDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
             </div>
             <div className="space-y-2">

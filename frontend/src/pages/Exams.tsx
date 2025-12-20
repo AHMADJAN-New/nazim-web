@@ -743,22 +743,11 @@ export function Exams() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="create-start-date">{t('exams.startDate') || 'Start Date'}</Label>
-                <Input
-                  id="create-start-date"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                />
+                <CalendarDatePicker date={formData.startDate ? new Date(formData.startDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
               </div>
               <div>
                 <Label htmlFor="create-end-date">{t('exams.endDate') || 'End Date'}</Label>
-                <Input
-                  id="create-end-date"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  min={formData.startDate || undefined}
-                />
+                <CalendarDatePicker date={formData.endDate ? new Date(formData.endDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
               </div>
             </div>
           </div>
@@ -843,22 +832,11 @@ export function Exams() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-start-date">{t('exams.startDate') || 'Start Date'}</Label>
-                <Input
-                  id="edit-start-date"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                />
+                <CalendarDatePicker date={formData.startDate ? new Date(formData.startDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
               </div>
               <div>
                 <Label htmlFor="edit-end-date">{t('exams.endDate') || 'End Date'}</Label>
-                <Input
-                  id="edit-end-date"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  min={formData.startDate || undefined}
-                />
+                <CalendarDatePicker date={formData.endDate ? new Date(formData.endDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
               </div>
             </div>
           </div>

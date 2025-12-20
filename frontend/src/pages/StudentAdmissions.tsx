@@ -876,7 +876,7 @@ export function StudentAdmissions() {
                   </div>
                   <div>
                     <Label>{t('admissions.admissionDate') || 'Admission Date'}</Label>
-                    <Input type="date" {...register('admission_date')} />
+                    <CalendarFormField control={form.control} name="admission_date" label="{t('admissions.admissionYear') || 'Admission Year'}" />
                   </div>
                   <div>
                     <Label>{t('admissions.enrollmentStatus') || 'Enrollment Status'}</Label>
