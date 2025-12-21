@@ -3,6 +3,7 @@
 export interface StudentIdCard {
   id: string;
   organization_id: string;
+  school_id: string | null;
   student_id: string;
   student_admission_id: string;
   id_card_template_id: string;
@@ -13,6 +14,7 @@ export interface StudentIdCard {
   card_fee: number;
   card_fee_paid: boolean;
   card_fee_paid_date: string | null;
+  income_entry_id: string | null;
   is_printed: boolean;
   printed_at: string | null;
   printed_by: string | null;
@@ -57,6 +59,13 @@ export interface StudentIdCard {
     id: string;
     full_name: string | null;
   };
+  income_entry?: {
+    id: string;
+    account_id: string;
+    income_category_id: string;
+    amount: number;
+    date: string;
+  };
 }
 
 export interface StudentIdCardInsert {
@@ -79,6 +88,8 @@ export interface StudentIdCardUpdate {
   card_fee?: number;
   card_fee_paid?: boolean;
   card_fee_paid_date?: string | null;
+  account_id?: string | null;
+  income_category_id?: string | null;
   is_printed?: boolean;
   printed_at?: string | null;
   printed_by?: string | null;
@@ -94,12 +105,15 @@ export interface AssignIdCardRequest {
   card_fee?: number;
   card_fee_paid?: boolean;
   card_fee_paid_date?: string | null;
+  account_id?: string | null;
+  income_category_id?: string | null;
   card_number?: string | null;
   notes?: string | null;
 }
 
 export interface StudentIdCardFilters {
   academic_year_id?: string;
+  school_id?: string;
   class_id?: string;
   class_academic_year_id?: string;
   enrollment_status?: string;

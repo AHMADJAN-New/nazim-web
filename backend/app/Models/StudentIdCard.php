@@ -21,6 +21,7 @@ class StudentIdCard extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'student_id',
         'student_admission_id',
         'id_card_template_id',
@@ -31,6 +32,7 @@ class StudentIdCard extends Model
         'card_fee',
         'card_fee_paid',
         'card_fee_paid_date',
+        'income_entry_id',
         'is_printed',
         'printed_at',
         'printed_by',
@@ -68,6 +70,14 @@ class StudentIdCard extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organization_id');
+    }
+
+    /**
+     * Get the school for this ID card
+     */
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 
     /**
@@ -127,11 +137,38 @@ class StudentIdCard extends Model
     }
 
     /**
+     * Get the income entry for this ID card fee payment
+     */
+    public function incomeEntry()
+    {
+        return $this->belongsTo(IncomeEntry::class, 'income_entry_id');
+    }
+
+    /**
      * Scope to filter by organization
      */
     public function scopeForOrganization($query, $organizationId)
     {
         return $query->where('organization_id', $organizationId);
+    }
+
+    /**
+     * Scope to filter by school
+     */
+    public function scopeForSchool($query, $schoolId)
+    {
+        return $query->where('school_id', $schoolId);
+    }
+
+    /**
+     * Scope to filter by accessible schools
+     */
+    public function scopeForAccessibleSchools($query, array $schoolIds)
+    {
+        if (empty($schoolIds)) {
+            return $query->whereRaw('1 = 0'); // Return no results if no accessible schools
+        }
+        return $query->whereIn('school_id', $schoolIds);
     }
 
     /**

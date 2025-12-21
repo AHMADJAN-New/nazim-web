@@ -28,8 +28,27 @@ class IdCardExportService
     public function generateCardImage(StudentIdCard $card, string $side = 'front'): string
     {
         try {
-            // Load relationships
-            $card->load(['student', 'template', 'academicYear', 'class']);
+            // Load relationships if not already loaded
+            if (!$card->relationLoaded('student')) {
+                $card->load('student');
+            }
+            if (!$card->relationLoaded('template')) {
+                $card->load('template');
+            }
+            if (!$card->relationLoaded('academicYear')) {
+                $card->load('academicYear');
+            }
+            if (!$card->relationLoaded('class')) {
+                $card->load('class');
+            }
+            if (!$card->relationLoaded('studentAdmission')) {
+                $card->load('studentAdmission');
+            }
+
+            // Check if template exists
+            if (!$card->template) {
+                throw new \RuntimeException('ID card template not found');
+            }
 
             // Prepare student data for rendering
             $studentData = $this->prepareStudentData($card);
@@ -38,7 +57,7 @@ class IdCardExportService
             $imagePath = $this->renderService->render($card->template, $studentData, $side);
 
             if (!$imagePath) {
-                throw new \RuntimeException('Failed to render card image');
+                throw new \RuntimeException('Failed to render card image - render service returned null');
             }
 
             return $imagePath;
@@ -46,7 +65,10 @@ class IdCardExportService
             Log::error("Failed to generate card image: " . $e->getMessage(), [
                 'card_id' => $card->id,
                 'side' => $side,
+                'template_id' => $card->template?->id,
+                'has_template' => $card->template !== null,
                 'exception' => $e,
+                'trace' => $e->getTraceAsString(),
             ]);
             throw $e;
         }
@@ -88,6 +110,7 @@ class IdCardExportService
                 throw new \RuntimeException('Cannot create ZIP file');
             }
 
+            $filesAdded = 0;
             foreach ($cards as $card) {
                 foreach ($sides as $side) {
                     try {
@@ -100,26 +123,97 @@ class IdCardExportService
                         
                         // Add to ZIP
                         if (Storage::exists($imagePath)) {
-                            $zip->addFile(Storage::path($imagePath), $fileName);
+                            $fullImagePath = Storage::path($imagePath);
+                            if (file_exists($fullImagePath) && filesize($fullImagePath) > 0) {
+                                if ($zip->addFile($fullImagePath, $fileName)) {
+                                    $filesAdded++;
+                                } else {
+                                    Log::warning("Failed to add file to ZIP", [
+                                        'card_id' => $card->id,
+                                        'side' => $side,
+                                        'image_path' => $imagePath,
+                                    ]);
+                                }
+                            } else {
+                                Log::warning("Image file does not exist or is empty", [
+                                    'card_id' => $card->id,
+                                    'side' => $side,
+                                    'image_path' => $imagePath,
+                                    'full_path' => $fullImagePath,
+                                ]);
+                            }
+                        } else {
+                            Log::warning("Image path does not exist in storage", [
+                                'card_id' => $card->id,
+                                'side' => $side,
+                                'image_path' => $imagePath,
+                            ]);
                         }
                     } catch (\Exception $e) {
                         Log::warning("Failed to add card to ZIP: " . $e->getMessage(), [
                             'card_id' => $card->id,
                             'side' => $side,
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
                         ]);
                         // Continue with next card
                     }
                 }
             }
 
+            if ($filesAdded === 0) {
+                $zip->close();
+                unlink($fullZipPath);
+                throw new \RuntimeException('No card images were added to the ZIP file. Please check that cards have valid templates and student data.');
+            }
+
+            Log::info("Added {$filesAdded} files to ZIP", [
+                'card_count' => count($cards),
+                'sides_count' => count($sides),
+            ]);
+
             $zip->close();
 
+            // Verify ZIP file was created and has content
+            if (!file_exists($fullZipPath)) {
+                throw new \RuntimeException('ZIP file was not created');
+            }
+
+            $zipSize = filesize($fullZipPath);
+            if ($zipSize === 0) {
+                unlink($fullZipPath);
+                throw new \RuntimeException('ZIP file is empty - no card images were added');
+            }
+
+            // Ensure exports directory exists
+            $permanentDir = 'id-cards/exports';
+            $fullPermanentDir = storage_path('app/' . $permanentDir);
+            if (!is_dir($fullPermanentDir)) {
+                mkdir($fullPermanentDir, 0755, true);
+            }
+
             // Move ZIP to permanent storage
-            $permanentPath = 'id-cards/exports/' . $zipFileName;
-            Storage::move($zipPath, $permanentPath);
+            $permanentPath = $permanentDir . '/' . $zipFileName;
+            $fullPermanentPath = storage_path('app/' . $permanentPath);
+
+            // Use rename for moving (more reliable than Storage::move)
+            if (!rename($fullZipPath, $fullPermanentPath)) {
+                throw new \RuntimeException('Failed to move ZIP file to permanent storage');
+            }
+
+            // Verify file was moved successfully
+            if (!file_exists($fullPermanentPath)) {
+                throw new \RuntimeException('ZIP file was not found after moving to permanent storage');
+            }
 
             // Clean up temporary directory
             $this->cleanupDirectory($fullTempDir);
+
+            Log::info('ZIP export completed successfully', [
+                'file_path' => $permanentPath,
+                'file_size' => filesize($fullPermanentPath),
+                'card_count' => count($cardIds),
+            ]);
 
             return $permanentPath;
         } catch (\Exception $e) {
@@ -243,9 +337,9 @@ class IdCardExportService
 
         // Get school name if available
         $schoolName = '';
-        if ($student->school_id) {
-            $school = \DB::table('schools')
-                ->where('id', $student->school_id)
+        if ($card->school_id) {
+            $school = \DB::table('school_branding')
+                ->where('id', $card->school_id)
                 ->whereNull('deleted_at')
                 ->first();
             $schoolName = $school->school_name ?? '';

@@ -5,6 +5,8 @@ import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYea
 import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
 import { useIdCardTemplates } from '@/hooks/useIdCardTemplates';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
+import { useSchools } from '@/hooks/useSchools';
+import { useFinanceAccounts, useIncomeCategories } from '@/hooks/useFinance';
 import {
   useStudentIdCards,
   useAssignIdCards,
@@ -60,6 +62,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Filter,
   Search,
@@ -74,6 +77,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { showToast } from '@/lib/toast';
 import { StudentIdCardPreview } from '@/components/id-cards/StudentIdCardPreview';
 
 export default function IdCardAssignment() {
@@ -83,6 +87,7 @@ export default function IdCardAssignment() {
 
   // Filter states
   const [academicYearId, setAcademicYearId] = useState<string>('');
+  const [schoolId, setSchoolId] = useState<string>('');
   const [classId, setClassId] = useState<string>('');
   const [classAcademicYearId, setClassAcademicYearId] = useState<string>('');
   const [enrollmentStatus, setEnrollmentStatus] = useState<string>('active');
@@ -90,6 +95,7 @@ export default function IdCardAssignment() {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Helper to convert empty string to 'all' for Select components
+  const schoolIdForSelect = schoolId || 'all';
   const classIdForSelect = classId || 'all';
   const templateIdForSelect = templateId || 'all';
 
@@ -100,6 +106,8 @@ export default function IdCardAssignment() {
   const [selectedTemplateForAssignment, setSelectedTemplateForAssignment] = useState<string>('');
   const [cardFee, setCardFee] = useState<string>('');
   const [cardFeePaid, setCardFeePaid] = useState<boolean>(false);
+  const [accountId, setAccountId] = useState<string>('');
+  const [incomeCategoryId, setIncomeCategoryId] = useState<string>('');
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
   const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front');
 
@@ -117,11 +125,13 @@ export default function IdCardAssignment() {
   // Data hooks
   const { data: academicYears = [] } = useAcademicYears(organizationId);
   const { data: currentAcademicYear } = useCurrentAcademicYear();
+  const { data: schools = [] } = useSchools(organizationId);
   const { data: classes = [] } = useClasses(organizationId);
   const { data: classAcademicYears = [] } = useClassAcademicYears(academicYearId, organizationId);
   const { data: templates = [] } = useIdCardTemplates(true);
   const { data: studentAdmissions = [] } = useStudentAdmissions(organizationId, false, {
     academic_year_id: academicYearId || undefined,
+    school_id: schoolId || undefined,
     class_id: classId || undefined,
     class_academic_year_id: classAcademicYearId || undefined,
     enrollment_status: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
@@ -137,14 +147,17 @@ export default function IdCardAssignment() {
   // Filters for ID cards
   const cardFilters: StudentIdCardFilters = useMemo(() => ({
     academicYearId: academicYearId || undefined,
+    schoolId: schoolId || undefined,
     classId: classId || undefined,
     classAcademicYearId: classAcademicYearId || undefined,
     enrollmentStatus: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
     idCardTemplateId: templateId || undefined,
     search: searchQuery || undefined,
-  }), [academicYearId, classId, classAcademicYearId, enrollmentStatus, templateId, searchQuery]);
+  }), [academicYearId, schoolId, classId, classAcademicYearId, enrollmentStatus, templateId, searchQuery]);
 
   const { data: idCards = [], isLoading: cardsLoading } = useStudentIdCards(cardFilters);
+  const { data: financeAccounts = [] } = useFinanceAccounts({ isActive: true });
+  const { data: incomeCategories = [] } = useIncomeCategories({ isActive: true });
   const assignCards = useAssignIdCards();
   const updateCard = useUpdateStudentIdCard();
   const markPrinted = useMarkCardPrinted();
@@ -216,6 +229,12 @@ export default function IdCardAssignment() {
       return;
     }
 
+    // Validate account and category if fee is paid
+    if (cardFeePaid && (!accountId || !incomeCategoryId)) {
+      showToast.error(t('idCards.accountAndCategoryRequired') || 'Account and Income Category are required when fee is paid');
+      return;
+    }
+
     const request: AssignIdCardRequest = {
       academicYearId,
       idCardTemplateId: selectedTemplateForAssignment,
@@ -224,7 +243,9 @@ export default function IdCardAssignment() {
       classAcademicYearId: classAcademicYearId || null,
       cardFee: cardFee ? parseFloat(cardFee) : undefined,
       cardFeePaid: cardFeePaid,
-      cardFeePaidDate: cardFeePaid ? new Date() : undefined,
+      cardFeePaidDate: cardFeePaid ? new Date().toISOString() : undefined,
+      accountId: cardFeePaid && accountId ? accountId : null,
+      incomeCategoryId: cardFeePaid && incomeCategoryId ? incomeCategoryId : null,
     };
 
     try {
@@ -234,6 +255,8 @@ export default function IdCardAssignment() {
       setSelectedTemplateForAssignment('');
       setCardFee('');
       setCardFeePaid(false);
+      setAccountId('');
+      setIncomeCategoryId('');
     } catch (error) {
       // Error handled by hook
     }
@@ -250,23 +273,36 @@ export default function IdCardAssignment() {
 
   const handleEditCard = (card: StudentIdCard) => {
     setEditingCard(card);
-    setCardFee(card.cardFee.toString());
+    setCardFee(card.cardFee?.toString() || '');
     setCardFeePaid(card.cardFeePaid);
+    // Pre-fill account and category from existing income entry if available
+    setAccountId(card.incomeEntry?.accountId || '');
+    setIncomeCategoryId(card.incomeEntry?.incomeCategoryId || '');
     setIsEditDialogOpen(true);
   };
 
   const handleSaveEdit = async () => {
     if (!editingCard) return;
 
+    // Validate account and category if fee is paid
+    if (cardFeePaid && (!accountId || !incomeCategoryId)) {
+      showToast.error(t('idCards.accountAndCategoryRequired') || 'Account and Income Category are required when fee is paid');
+      return;
+    }
+
     await updateCard.mutateAsync({
       id: editingCard.id,
       cardFee: cardFee ? parseFloat(cardFee) : undefined,
       cardFeePaid: cardFeePaid,
-      cardFeePaidDate: cardFeePaid ? new Date() : undefined,
+      cardFeePaidDate: cardFeePaid ? new Date().toISOString() : undefined,
+      accountId: cardFeePaid && accountId ? accountId : null,
+      incomeCategoryId: cardFeePaid && incomeCategoryId ? incomeCategoryId : null,
     });
 
     setIsEditDialogOpen(false);
     setEditingCard(null);
+    setAccountId('');
+    setIncomeCategoryId('');
   };
 
   const handleDeleteCard = async () => {
@@ -305,9 +341,21 @@ export default function IdCardAssignment() {
             {t('idCards.assignment.description') || 'Assign ID card templates to students and manage card assignments'}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Filter Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <CardContent>
+          <Tabs defaultValue="assignment" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="assignment">
+                {t('idCards.assignment') || 'Assignment'}
+              </TabsTrigger>
+              <TabsTrigger value="assigned">
+                {t('idCards.assignedCards') || 'Assigned Cards'} ({filteredCards.length})
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Assignment Tab */}
+            <TabsContent value="assignment" className="space-y-4 mt-4">
+              {/* Filter Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <Label>{t('academic.academicYears.academicYear') || 'Academic Year'}</Label>
               <Select value={academicYearId} onValueChange={setAcademicYearId}>
@@ -318,6 +366,23 @@ export default function IdCardAssignment() {
                   {academicYears.map(year => (
                     <SelectItem key={year.id} value={year.id}>
                       {year.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>{t('schools.school') || 'School'}</Label>
+              <Select value={schoolIdForSelect} onValueChange={(value) => setSchoolId(value === 'all' ? '' : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('common.all') || 'All'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                  {schools.map(school => (
+                    <SelectItem key={school.id} value={school.id}>
+                      {school.schoolName}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -428,12 +493,31 @@ export default function IdCardAssignment() {
                             ? "bg-primary/10 border-primary"
                             : "hover:bg-muted/50"
                         )}
-                        onClick={() => toggleStudentSelection(admission.id)}
+                        onClick={(e) => {
+                          // Don't toggle if clicking directly on checkbox or its container
+                          const target = e.target as HTMLElement;
+                          if (target.closest('button') || target.closest('[role="checkbox"]')) {
+                            return;
+                          }
+                          toggleStudentSelection(admission.id);
+                        }}
                       >
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleStudentSelection(admission.id)}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedAdmissionIds(prev => new Set(prev).add(admission.id));
+                              } else {
+                                setSelectedAdmissionIds(prev => {
+                                  const next = new Set(prev);
+                                  next.delete(admission.id);
+                                  return next;
+                                });
+                              }
+                            }}
+                          />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{student.fullName}</div>
                           <div className="text-sm text-muted-foreground">
@@ -520,6 +604,51 @@ export default function IdCardAssignment() {
                     </div>
                   </div>
 
+                  {cardFeePaid && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>{t('finance.accounts.account') || 'Account'} *</Label>
+                        <Select value={accountId} onValueChange={setAccountId} required>
+                          <SelectTrigger className={!accountId ? 'border-destructive' : ''}>
+                            <SelectValue placeholder={t('common.select') || 'Select account'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {financeAccounts.map(account => (
+                              <SelectItem key={account.id} value={account.id}>
+                                {account.name} {account.currency?.code ? `(${account.currency.code})` : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {!accountId && (
+                          <p className="text-sm text-destructive mt-1">
+                            {t('common.required') || 'Required'}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label>{t('finance.incomeCategories.category') || 'Income Category'} *</Label>
+                        <Select value={incomeCategoryId} onValueChange={setIncomeCategoryId} required>
+                          <SelectTrigger className={!incomeCategoryId ? 'border-destructive' : ''}>
+                            <SelectValue placeholder={t('common.select') || 'Select category'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {incomeCategories.map(category => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {!incomeCategoryId && (
+                          <p className="text-sm text-destructive mt-1">
+                            {t('common.required') || 'Required'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">
                       {t('idCards.selectedStudents') || 'Selected'}: {selectedAdmissionIds.size}
@@ -581,115 +710,323 @@ export default function IdCardAssignment() {
               </Card>
             </div>
           </div>
+            </TabsContent>
 
-          {/* Card Management Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {t('idCards.management.title') || 'Card Management'} ({filteredCards.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+            {/* Assigned Cards Tab */}
+            <TabsContent value="assigned" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {t('idCards.assignedCards.title') || 'Assigned Cards'}
+                  </CardTitle>
+                  <CardDescription>
+                    {t('idCards.assignedCards.description') || 'View and manage assigned ID cards'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
               {cardsLoading ? (
                 <div className="text-center py-8">{t('common.loading') || 'Loading...'}</div>
-              ) : filteredCards.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {t('idCards.noCards') || 'No ID cards found'}
-                </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('students.student') || 'Student'}</TableHead>
-                      <TableHead>{t('students.admissionNo') || 'Admission No'}</TableHead>
-                      <TableHead>{t('classes.class') || 'Class'}</TableHead>
-                      <TableHead>{t('idCards.template') || 'Template'}</TableHead>
-                      <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
-                      <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
-                      <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredCards.map(card => (
-                      <TableRow key={card.id}>
-                        <TableCell className="font-medium">
-                          {card.student?.fullName || '-'}
-                        </TableCell>
-                        <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
-                        <TableCell>{card.class?.name || '-'}</TableCell>
-                        <TableCell>{card.template?.name || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
-                            {card.cardFeePaid
-                              ? t('idCards.feePaid') || 'Paid'
-                              : t('idCards.feeUnpaid') || 'Unpaid'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={card.isPrinted ? 'default' : 'secondary'}>
-                            {card.isPrinted
-                              ? t('idCards.printed') || 'Printed'
-                              : t('idCards.unprinted') || 'Unprinted'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const admissionId = card.studentAdmissionId;
-                                setPreviewStudentId(admissionId);
-                                setPreviewSide('front');
-                                handlePreview(card.id, 'front');
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {!card.isPrinted && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleMarkPrinted(card.id)}
-                              >
-                                <Printer className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {!card.cardFeePaid && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleMarkFeePaid(card.id)}
-                              >
-                                <DollarSign className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditCard(card)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setDeleteCardId(card.id);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <Tabs defaultValue="all" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="all">
+                      {t('common.all') || 'All'} ({filteredCards.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="unprinted">
+                      {t('idCards.unprinted') || 'Unprinted'} ({filteredCards.filter(c => !c.isPrinted).length})
+                    </TabsTrigger>
+                    <TabsTrigger value="printed">
+                      {t('idCards.printed') || 'Printed'} ({filteredCards.filter(c => c.isPrinted).length})
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="all" className="mt-4">
+                    {filteredCards.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        {t('idCards.noCards') || 'No ID cards found'}
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t('students.student') || 'Student'}</TableHead>
+                            <TableHead>{t('students.admissionNo') || 'Admission No'}</TableHead>
+                            <TableHead>{t('classes.class') || 'Class'}</TableHead>
+                            <TableHead>{t('idCards.template') || 'Template'}</TableHead>
+                            <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
+                            <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
+                            <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredCards.map(card => (
+                            <TableRow key={card.id}>
+                              <TableCell className="font-medium">
+                                {card.student?.fullName || '-'}
+                              </TableCell>
+                              <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
+                              <TableCell>{card.class?.name || '-'}</TableCell>
+                              <TableCell>{card.template?.name || '-'}</TableCell>
+                              <TableCell>
+                                <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
+                                  {card.cardFeePaid
+                                    ? t('idCards.feePaid') || 'Paid'
+                                    : t('idCards.feeUnpaid') || 'Unpaid'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={card.isPrinted ? 'default' : 'secondary'}>
+                                  {card.isPrinted
+                                    ? t('idCards.printed') || 'Printed'
+                                    : t('idCards.unprinted') || 'Unprinted'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const admissionId = card.studentAdmissionId;
+                                      setPreviewStudentId(admissionId);
+                                      setPreviewSide('front');
+                                      handlePreview(card.id, 'front');
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  {!card.isPrinted && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleMarkPrinted(card.id)}
+                                    >
+                                      <Printer className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {!card.cardFeePaid && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleMarkFeePaid(card.id)}
+                                    >
+                                      <DollarSign className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditCard(card)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setDeleteCardId(card.id);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="unprinted" className="mt-4">
+                    {filteredCards.filter(c => !c.isPrinted).length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        {t('idCards.noUnprintedCards') || 'No unprinted cards found'}
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t('students.student') || 'Student'}</TableHead>
+                            <TableHead>{t('students.admissionNo') || 'Admission No'}</TableHead>
+                            <TableHead>{t('classes.class') || 'Class'}</TableHead>
+                            <TableHead>{t('idCards.template') || 'Template'}</TableHead>
+                            <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
+                            <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
+                            <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredCards.filter(c => !c.isPrinted).map(card => (
+                            <TableRow key={card.id}>
+                              <TableCell className="font-medium">
+                                {card.student?.fullName || '-'}
+                              </TableCell>
+                              <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
+                              <TableCell>{card.class?.name || '-'}</TableCell>
+                              <TableCell>{card.template?.name || '-'}</TableCell>
+                              <TableCell>
+                                <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
+                                  {card.cardFeePaid
+                                    ? t('idCards.feePaid') || 'Paid'
+                                    : t('idCards.feeUnpaid') || 'Unpaid'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary">
+                                  {t('idCards.unprinted') || 'Unprinted'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const admissionId = card.studentAdmissionId;
+                                      setPreviewStudentId(admissionId);
+                                      setPreviewSide('front');
+                                      handlePreview(card.id, 'front');
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleMarkPrinted(card.id)}
+                                  >
+                                    <Printer className="h-4 w-4" />
+                                  </Button>
+                                  {!card.cardFeePaid && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleMarkFeePaid(card.id)}
+                                    >
+                                      <DollarSign className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditCard(card)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setDeleteCardId(card.id);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="printed" className="mt-4">
+                    {filteredCards.filter(c => c.isPrinted).length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        {t('idCards.noPrintedCards') || 'No printed cards found'}
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t('students.student') || 'Student'}</TableHead>
+                            <TableHead>{t('students.admissionNo') || 'Admission No'}</TableHead>
+                            <TableHead>{t('classes.class') || 'Class'}</TableHead>
+                            <TableHead>{t('idCards.template') || 'Template'}</TableHead>
+                            <TableHead>{t('idCards.feeStatus') || 'Fee Status'}</TableHead>
+                            <TableHead>{t('idCards.printedStatus') || 'Printed Status'}</TableHead>
+                            <TableHead className="text-right">{t('common.actions') || 'Actions'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredCards.filter(c => c.isPrinted).map(card => (
+                            <TableRow key={card.id}>
+                              <TableCell className="font-medium">
+                                {card.student?.fullName || '-'}
+                              </TableCell>
+                              <TableCell>{card.student?.admissionNumber || '-'}</TableCell>
+                              <TableCell>{card.class?.name || '-'}</TableCell>
+                              <TableCell>{card.template?.name || '-'}</TableCell>
+                              <TableCell>
+                                <Badge variant={card.cardFeePaid ? 'default' : 'outline'}>
+                                  {card.cardFeePaid
+                                    ? t('idCards.feePaid') || 'Paid'
+                                    : t('idCards.feeUnpaid') || 'Unpaid'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="default">
+                                  {t('idCards.printed') || 'Printed'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const admissionId = card.studentAdmissionId;
+                                      setPreviewStudentId(admissionId);
+                                      setPreviewSide('front');
+                                      handlePreview(card.id, 'front');
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  {!card.cardFeePaid && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleMarkFeePaid(card.id)}
+                                    >
+                                      <DollarSign className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditCard(card)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setDeleteCardId(card.id);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </TabsContent>
+                </Tabs>
               )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
@@ -741,6 +1078,50 @@ export default function IdCardAssignment() {
                 {t('idCards.feePaid') || 'Fee Paid'}
               </Label>
             </div>
+            {cardFeePaid && (
+              <>
+                <div>
+                  <Label>{t('finance.accounts.account') || 'Account'} *</Label>
+                  <Select value={accountId} onValueChange={setAccountId} required>
+                    <SelectTrigger className={!accountId ? 'border-destructive' : ''}>
+                      <SelectValue placeholder={t('common.select') || 'Select account'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {financeAccounts.map(account => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name} {account.currency?.code ? `(${account.currency.code})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!accountId && (
+                    <p className="text-sm text-destructive mt-1">
+                      {t('common.required') || 'Required'}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label>{t('finance.incomeCategories.category') || 'Income Category'} *</Label>
+                  <Select value={incomeCategoryId} onValueChange={setIncomeCategoryId} required>
+                    <SelectTrigger className={!incomeCategoryId ? 'border-destructive' : ''}>
+                      <SelectValue placeholder={t('common.select') || 'Select category'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {incomeCategories.map(category => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!incomeCategoryId && (
+                    <p className="text-sm text-destructive mt-1">
+                      {t('common.required') || 'Required'}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
@@ -773,7 +1154,7 @@ export default function IdCardAssignment() {
 
       {/* Preview Dialog */}
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('idCards.preview') || 'Card Preview'}</DialogTitle>
           </DialogHeader>

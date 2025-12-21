@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClasses, useClassAcademicYears } from '@/hooks/useClasses';
 import { useIdCardTemplates } from '@/hooks/useIdCardTemplates';
+import { useSchools } from '@/hooks/useSchools';
 import {
   useStudentIdCards,
   useExportIdCards,
@@ -56,6 +57,7 @@ export default function IdCardExport() {
 
   // Filter states
   const [academicYearId, setAcademicYearId] = useState<string>('');
+  const [schoolId, setSchoolId] = useState<string>('');
   const [classId, setClassId] = useState<string>('');
   const [classAcademicYearId, setClassAcademicYearId] = useState<string>('');
   const [templateId, setTemplateId] = useState<string>('');
@@ -65,6 +67,7 @@ export default function IdCardExport() {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Helper to convert empty string to 'all' for Select components
+  const schoolIdForSelect = schoolId || 'all';
   const classIdForSelect = classId || 'all';
   const templateIdForSelect = templateId || 'all';
 
@@ -82,6 +85,7 @@ export default function IdCardExport() {
   // Data hooks
   const { data: academicYears = [] } = useAcademicYears(organizationId);
   const { data: currentAcademicYear } = useCurrentAcademicYear();
+  const { data: schools = [] } = useSchools(organizationId);
   const { data: classes = [] } = useClasses(organizationId);
   const { data: classAcademicYears = [] } = useClassAcademicYears(academicYearId, organizationId);
   const { data: templates = [] } = useIdCardTemplates(true);
@@ -96,6 +100,7 @@ export default function IdCardExport() {
   // Filters for ID cards
   const cardFilters: StudentIdCardFilters = useMemo(() => ({
     academicYearId: academicYearId || undefined,
+    schoolId: schoolId || undefined,
     classId: classId || undefined,
     classAcademicYearId: classAcademicYearId || undefined,
     enrollmentStatus: enrollmentStatus === 'all' ? undefined : enrollmentStatus,
@@ -103,7 +108,7 @@ export default function IdCardExport() {
     isPrinted: printedStatus === 'all' ? undefined : printedStatus === 'printed',
     cardFeePaid: feeStatus === 'all' ? undefined : feeStatus === 'paid',
     search: searchQuery || undefined,
-  }), [academicYearId, classId, classAcademicYearId, enrollmentStatus, templateId, printedStatus, feeStatus, searchQuery]);
+  }), [academicYearId, schoolId, classId, classAcademicYearId, enrollmentStatus, templateId, printedStatus, feeStatus, searchQuery]);
 
   const { data: idCards = [], isLoading: cardsLoading } = useStudentIdCards(cardFilters);
   const exportCards = useExportIdCards();
@@ -117,10 +122,10 @@ export default function IdCardExport() {
     const feeUnpaid = total - feePaid;
     const totalFeeCollected = idCards
       .filter(c => c.cardFeePaid)
-      .reduce((sum, c) => sum + c.cardFee, 0);
+      .reduce((sum, c) => sum + (Number(c.cardFee) || 0), 0);
     const totalFeePending = idCards
       .filter(c => !c.cardFeePaid)
-      .reduce((sum, c) => sum + c.cardFee, 0);
+      .reduce((sum, c) => sum + (Number(c.cardFee) || 0), 0);
 
     return {
       total,
@@ -276,7 +281,7 @@ export default function IdCardExport() {
             <Card>
               <CardContent className="pt-4">
                 <div className="text-2xl font-bold">
-                  {statistics.totalFeeCollected.toFixed(2)}
+                  {(Number(statistics.totalFeeCollected) || 0).toFixed(2)}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {t('idCards.totalFeeCollected') || 'Fee Collected'}
@@ -291,7 +296,7 @@ export default function IdCardExport() {
               <CardTitle className="text-lg">{t('common.filters') || 'Filters'}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div>
                   <Label>{t('academic.academicYears.academicYear') || 'Academic Year'}</Label>
                   <Select value={academicYearId} onValueChange={setAcademicYearId}>
@@ -302,6 +307,23 @@ export default function IdCardExport() {
                       {academicYears.map(year => (
                         <SelectItem key={year.id} value={year.id}>
                           {year.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>{t('schools.school') || 'School'}</Label>
+                  <Select value={schoolIdForSelect} onValueChange={(value) => setSchoolId(value === 'all' ? '' : value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('common.all') || 'All'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
+                      {schools.map(school => (
+                        <SelectItem key={school.id} value={school.id}>
+                          {school.schoolName}
                         </SelectItem>
                       ))}
                     </SelectContent>

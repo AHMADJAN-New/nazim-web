@@ -124,9 +124,14 @@ export const useAssignIdCards = () => {
       }
       return [];
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success(t('toast.idCardsAssigned'));
-      void queryClient.invalidateQueries({ queryKey: ['student-id-cards'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-id-cards'] });
+      await queryClient.refetchQueries({ queryKey: ['student-id-cards'] });
+      // Invalidate finance queries if income entries were created
+      await queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+      await queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
+      await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.idCardAssignFailed'));
@@ -152,10 +157,15 @@ export const useUpdateStudentIdCard = () => {
       const apiCard = await studentIdCardsApi.update(id, apiUpdates);
       return mapStudentIdCardApiToDomain(apiCard as StudentIdCardApi.StudentIdCard);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success(t('toast.idCardUpdated'));
-      void queryClient.invalidateQueries({ queryKey: ['student-id-cards'] });
-      void queryClient.invalidateQueries({ queryKey: ['student-id-card'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-id-cards'] });
+      await queryClient.refetchQueries({ queryKey: ['student-id-cards'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-id-card'] });
+      // Invalidate finance queries if income entries were created/updated
+      await queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+      await queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
+      await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.idCardUpdateFailed'));
@@ -194,17 +204,34 @@ export const useMarkCardFeePaid = () => {
   const { t } = useLanguage();
 
   return useMutation({
-    mutationFn: async ({ id, paidDate }: { id: string; paidDate?: Date }) => {
+    mutationFn: async ({ 
+      id, 
+      paidDate, 
+      accountId, 
+      incomeCategoryId 
+    }: { 
+      id: string; 
+      paidDate?: Date;
+      accountId?: string | null;
+      incomeCategoryId?: string | null;
+    }) => {
       const apiCard = await studentIdCardsApi.markFeePaid(id, {
         card_fee_paid: true,
         card_fee_paid_date: paidDate?.toISOString() ?? new Date().toISOString(),
+        account_id: accountId || null,
+        income_category_id: incomeCategoryId || null,
       });
       return mapStudentIdCardApiToDomain(apiCard as StudentIdCardApi.StudentIdCard);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success(t('toast.idCardFeeMarkedPaid'));
-      void queryClient.invalidateQueries({ queryKey: ['student-id-cards'] });
-      void queryClient.invalidateQueries({ queryKey: ['student-id-card'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-id-cards'] });
+      await queryClient.refetchQueries({ queryKey: ['student-id-cards'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-id-card'] });
+      // Invalidate finance queries if income entries were created
+      await queryClient.invalidateQueries({ queryKey: ['income-entries'] });
+      await queryClient.invalidateQueries({ queryKey: ['finance-accounts'] });
+      await queryClient.invalidateQueries({ queryKey: ['finance-dashboard'] });
     },
     onError: (error: Error) => {
       showToast.error(error.message || t('toast.idCardFeeMarkPaidFailed'));
@@ -265,7 +292,25 @@ export const useExportIdCards = () => {
         file_naming_template: data.fileNamingTemplate,
       };
 
-      return await studentIdCardsApi.exportBulk(exportData);
+      const result = await studentIdCardsApi.exportBulk(exportData);
+      
+      // Trigger file download
+      if (result && result.blob) {
+        const blob = result.blob;
+        const filename = result.filename || `id-cards-export-${new Date().toISOString().split('T')[0]}.${data.format === 'zip' ? 'zip' : 'pdf'}`;
+        
+        // Create download link and trigger download
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
+      
+      return result;
     },
     onSuccess: () => {
       showToast.success(t('toast.idCardsExported'));
@@ -281,7 +326,8 @@ export const useExportIdCards = () => {
  */
 export const usePreviewIdCard = () => {
   return useMutation({
-    mutationFn: async ({ id, side }: { id: string; side: 'front' | 'back' }) => {
+    mutationFn: async ({ id, side }: { id: string; side: 'front' | 'back' }): Promise<Blob> => {
+      // The preview API now returns a Blob directly
       return await studentIdCardsApi.preview(id, side);
     },
   });

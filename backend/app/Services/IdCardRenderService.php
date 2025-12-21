@@ -43,14 +43,26 @@ class IdCardRenderService
             $white = imagecolorallocate($image, 255, 255, 255);
             imagefill($image, 0, 0, $white);
 
-            // Get layout config
-            $layout = $side === 'front' 
+            // Get layout config (handle JSON string or array)
+            $layoutRaw = $side === 'front' 
                 ? $template->layout_config_front 
                 : $template->layout_config_back;
+            
+            // Decode if it's a JSON string
+            $layout = null;
+            if (is_string($layoutRaw)) {
+                $layout = json_decode($layoutRaw, true);
+            } elseif (is_array($layoutRaw)) {
+                $layout = $layoutRaw;
+            }
 
             if (!$layout || !is_array($layout)) {
-                \Log::warning("No layout config for {$side} side of template {$template->id}");
-                // Still save the white image
+                \Log::warning("No layout config for {$side} side of template {$template->id}", [
+                    'template_id' => $template->id,
+                    'side' => $side,
+                    'layout_type' => gettype($layoutRaw),
+                ]);
+                // Still save the white image (card with no fields)
             } else {
                 // Draw background image if available
                 $backgroundPath = $side === 'front'

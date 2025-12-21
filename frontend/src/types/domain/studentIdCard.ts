@@ -3,6 +3,7 @@
 export interface StudentIdCard {
   id: string;
   organizationId: string;
+  schoolId: string | null;
   studentId: string;
   studentAdmissionId: string;
   idCardTemplateId: string;
@@ -13,6 +14,7 @@ export interface StudentIdCard {
   cardFee: number | null;
   cardFeePaid: boolean;
   cardFeePaidDate: Date | null;
+  incomeEntryId: string | null;
   isPrinted: boolean;
   printedAt: Date | null;
   printedBy: string | null;
@@ -65,6 +67,13 @@ export interface StudentIdCard {
     id: string;
     fullName: string | null;
   };
+  incomeEntry?: {
+    id: string;
+    accountId: string;
+    incomeCategoryId: string;
+    amount: number;
+    date: Date;
+  };
 }
 
 export interface StudentIdCardInsert {
@@ -90,6 +99,8 @@ export type StudentIdCardUpdate = Partial<Omit<StudentIdCardInsert, 'studentId' 
   cardFee?: number | null;
   cardFeePaid?: boolean;
   cardFeePaidDate?: string | null;
+  accountId?: string | null;
+  incomeCategoryId?: string | null;
   isPrinted?: boolean;
   printedAt?: string | null;
   printedBy?: string | null;
@@ -105,12 +116,15 @@ export interface AssignIdCardRequest {
   cardFee?: number | null;
   cardFeePaid?: boolean;
   cardFeePaidDate?: string | null;
+  accountId?: string | null;
+  incomeCategoryId?: string | null;
   cardNumber?: string | null;
   notes?: string | null;
 }
 
 export interface IdCardFilters {
   academicYearId?: string;
+  schoolId?: string;
   classId?: string;
   classAcademicYearId?: string;
   enrollmentStatus?: string;

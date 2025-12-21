@@ -18,6 +18,7 @@ export function mapStudentIdCardApiToDomain(api: StudentIdCardApi.StudentIdCard)
   return {
     id: api.id,
     organizationId: api.organization_id,
+    schoolId: api.school_id,
     studentId: api.student_id,
     studentAdmissionId: api.student_admission_id,
     idCardTemplateId: api.id_card_template_id,
@@ -28,6 +29,7 @@ export function mapStudentIdCardApiToDomain(api: StudentIdCardApi.StudentIdCard)
     cardFee: api.card_fee,
     cardFeePaid: api.card_fee_paid,
     cardFeePaidDate: api.card_fee_paid_date ? new Date(api.card_fee_paid_date) : null,
+    incomeEntryId: api.income_entry_id,
     isPrinted: api.is_printed,
     printedAt: api.printed_at ? new Date(api.printed_at) : null,
     printedBy: api.printed_by,
@@ -77,6 +79,13 @@ export function mapStudentIdCardApiToDomain(api: StudentIdCardApi.StudentIdCard)
       id: api.printed_by_user.id,
       fullName: api.printed_by_user.full_name || null,
     } : undefined,
+    incomeEntry: api.income_entry ? {
+      id: api.income_entry.id,
+      accountId: api.income_entry.account_id,
+      incomeCategoryId: api.income_entry.income_category_id,
+      amount: api.income_entry.amount,
+      date: new Date(api.income_entry.date),
+    } : undefined,
   };
 }
 
@@ -115,6 +124,8 @@ export function mapStudentIdCardDomainToUpdate(domain: StudentIdCardUpdate): Stu
   if (domain.cardFee !== undefined) update.card_fee = domain.cardFee;
   if (domain.cardFeePaid !== undefined) update.card_fee_paid = domain.cardFeePaid;
   if (domain.cardFeePaidDate !== undefined) update.card_fee_paid_date = domain.cardFeePaidDate;
+  if (domain.accountId !== undefined) update.account_id = domain.accountId;
+  if (domain.incomeCategoryId !== undefined) update.income_category_id = domain.incomeCategoryId;
   if (domain.isPrinted !== undefined) update.is_printed = domain.isPrinted;
   if (domain.printedAt !== undefined) update.printed_at = domain.printedAt;
   if (domain.printedBy !== undefined) update.printed_by = domain.printedBy;
@@ -136,6 +147,8 @@ export function mapAssignIdCardRequestDomainToApi(domain: AssignIdCardRequest): 
     card_fee: domain.cardFee,
     card_fee_paid: domain.cardFeePaid,
     card_fee_paid_date: domain.cardFeePaidDate,
+    account_id: domain.accountId,
+    income_category_id: domain.incomeCategoryId,
     card_number: domain.cardNumber,
     notes: domain.notes,
   };
@@ -148,6 +161,7 @@ export function mapStudentIdCardFiltersDomainToApi(domain: IdCardFilters): Stude
   const filters: StudentIdCardApi.StudentIdCardFilters = {};
   
   if (domain.academicYearId !== undefined) filters.academic_year_id = domain.academicYearId;
+  if (domain.schoolId !== undefined) filters.school_id = domain.schoolId;
   if (domain.classId !== undefined) filters.class_id = domain.classId;
   if (domain.classAcademicYearId !== undefined) filters.class_academic_year_id = domain.classAcademicYearId;
   if (domain.enrollmentStatus !== undefined) filters.enrollment_status = domain.enrollmentStatus;

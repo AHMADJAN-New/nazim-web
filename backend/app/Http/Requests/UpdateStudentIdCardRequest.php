@@ -67,6 +67,18 @@ class UpdateStudentIdCardRequest extends FormRequest
                 'date',
                 'required_if:card_fee_paid,true',
             ],
+            'account_id' => [
+                'nullable',
+                'uuid',
+                'exists:finance_accounts,id',
+                'required_if:card_fee_paid,true',
+            ],
+            'income_category_id' => [
+                'nullable',
+                'uuid',
+                'exists:income_categories,id',
+                'required_if:card_fee_paid,true',
+            ],
             'is_printed' => [
                 'nullable',
                 'boolean',
