@@ -89,6 +89,10 @@ export default function IdCardAssignment() {
   const [templateId, setTemplateId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Helper to convert empty string to 'all' for Select components
+  const classIdForSelect = classId || 'all';
+  const templateIdForSelect = templateId || 'all';
+
   // Student selection (using admission IDs)
   const [selectedAdmissionIds, setSelectedAdmissionIds] = useState<Set<string>>(new Set());
 
@@ -322,12 +326,12 @@ export default function IdCardAssignment() {
 
             <div>
               <Label>{t('classes.class') || 'Class'}</Label>
-              <Select value={classId} onValueChange={setClassId}>
+              <Select value={classIdForSelect} onValueChange={(value) => setClassId(value === 'all' ? '' : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('common.all') || 'All'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('common.all') || 'All'}</SelectItem>
+                  <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
                   {classes.map(cls => (
                     <SelectItem key={cls.id} value={cls.id}>
                       {cls.name}
@@ -353,12 +357,12 @@ export default function IdCardAssignment() {
 
             <div>
               <Label>{t('idCards.template') || 'Template'}</Label>
-              <Select value={templateId} onValueChange={setTemplateId}>
+              <Select value={templateIdForSelect} onValueChange={(value) => setTemplateId(value === 'all' ? '' : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('common.all') || 'All'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('common.all') || 'All'}</SelectItem>
+                  <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
                   {templates.map(template => (
                     <SelectItem key={template.id} value={template.id}>
                       {template.name}

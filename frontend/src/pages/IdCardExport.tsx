@@ -64,6 +64,10 @@ export default function IdCardExport() {
   const [feeStatus, setFeeStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Helper to convert empty string to 'all' for Select components
+  const classIdForSelect = classId || 'all';
+  const templateIdForSelect = templateId || 'all';
+
   // Export options
   const [exportFormat, setExportFormat] = useState<'zip' | 'pdf'>('zip');
   const [exportSides, setExportSides] = useState<'front' | 'back' | 'both'>('both');
@@ -306,12 +310,12 @@ export default function IdCardExport() {
 
                 <div>
                   <Label>{t('classes.class') || 'Class'}</Label>
-                  <Select value={classId} onValueChange={setClassId}>
+                  <Select value={classIdForSelect} onValueChange={(value) => setClassId(value === 'all' ? '' : value)}>
                     <SelectTrigger>
                       <SelectValue placeholder={t('common.all') || 'All'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">{t('common.all') || 'All'}</SelectItem>
+                      <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
                       {classes.map(cls => (
                         <SelectItem key={cls.id} value={cls.id}>
                           {cls.name}
@@ -323,12 +327,12 @@ export default function IdCardExport() {
 
                 <div>
                   <Label>{t('idCards.template') || 'Template'}</Label>
-                  <Select value={templateId} onValueChange={setTemplateId}>
+                  <Select value={templateIdForSelect} onValueChange={(value) => setTemplateId(value === 'all' ? '' : value)}>
                     <SelectTrigger>
                       <SelectValue placeholder={t('common.all') || 'All'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">{t('common.all') || 'All'}</SelectItem>
+                      <SelectItem value="all">{t('common.all') || 'All'}</SelectItem>
                       {templates.map(template => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.name}
@@ -646,4 +650,5 @@ export default function IdCardExport() {
     </div>
   );
 }
+
 
