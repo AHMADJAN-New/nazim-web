@@ -4,15 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGraduationBatch, useGenerateGraduationStudents, useApproveGraduationBatch, useIssueGraduationCertificates, useCertificateTemplatesV2 } from '@/hooks/useGraduation';
 import { useBulkDeactivateAdmissionsByStudentIds } from '@/hooks/useStudentAdmissions';
 import { useLanguage } from '@/hooks/useLanguage';
-import { X, RefreshCw, CheckCircle2, FileText, Users, TrendingUp, XCircle, ArrowLeft } from 'lucide-react';
+import { X, RefreshCw, CheckCircle2, FileText, Users, TrendingUp, XCircle, ArrowLeft, Hash, Info } from 'lucide-react';
 import { BatchWorkflowStepper } from '@/components/graduation/BatchWorkflowStepper';
 import { formatDate, formatDateTime } from '@/lib/dateUtils';
 
@@ -60,6 +62,13 @@ export default function GraduationBatchDetailPage() {
 
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
   const [isBulkDeactivateDialogOpen, setIsBulkDeactivateDialogOpen] = useState(false);
+  
+  // Certificate number configuration dialog
+  const [isCertificateConfigDialogOpen, setIsCertificateConfigDialogOpen] = useState(false);
+  const [startingNumber, setStartingNumber] = useState<number | undefined>(undefined);
+  const [prefix, setPrefix] = useState<string>('NZM');
+  const [certificateType, setCertificateType] = useState<string>('GRADUATION');
+  const [padding, setPadding] = useState<number>(4);
 
   const studentCount = batch?.students?.length || 0;
   const passCount = useMemo(
@@ -72,6 +81,28 @@ export default function GraduationBatchDetailPage() {
 
   const selectedCount = selectedStudentIds.size;
   const canBulkDeactivate = selectedCount > 0 && batch?.status === 'draft';
+
+  // Calculate preview certificate numbers - MUST be before any early returns
+  const previewNumbers = useMemo(() => {
+    if (!passCount || !batch?.graduation_date) return [];
+    const year = new Date(batch.graduation_date).getFullYear();
+    const typePart = certificateType || 'GRADUATION';
+    const start = startingNumber || 1;
+    const pad = padding || 4;
+    const pref = prefix || 'NZM';
+    
+    const numbers: string[] = [];
+    for (let i = 0; i < Math.min(passCount, 5); i++) {
+      const num = start + i;
+      numbers.push(`${pref}-${typePart}-${year}-${String(num).padStart(pad, '0')}`);
+    }
+    if (passCount > 5) {
+      numbers.push('...');
+      const lastNum = start + passCount - 1;
+      numbers.push(`${pref}-${typePart}-${year}-${String(lastNum).padStart(pad, '0')}`);
+    }
+    return numbers;
+  }, [passCount, batch?.graduation_date, startingNumber, prefix, certificateType, padding]);
 
   if (!id) return null;
 
@@ -91,9 +122,23 @@ export default function GraduationBatchDetailPage() {
     await approveBatch.mutateAsync({ batchId: id, schoolId: batch.school_id });
   };
 
+  const handleIssueClick = () => {
+    if (!templateId) return;
+    setIsCertificateConfigDialogOpen(true);
+  };
+
   const handleIssue = async () => {
     if (!templateId) return;
-    await issueCertificates.mutateAsync({ batchId: id, templateId, schoolId: batch.school_id });
+    setIsCertificateConfigDialogOpen(false);
+    await issueCertificates.mutateAsync({ 
+      batchId: id, 
+      templateId, 
+      schoolId: batch.school_id,
+      startingNumber: startingNumber || undefined,
+      prefix: prefix || undefined,
+      certificateType: certificateType || undefined,
+      padding: padding || undefined,
+    });
   };
 
   const handleBulkDeactivate = async () => {
@@ -583,7 +628,7 @@ export default function GraduationBatchDetailPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('certificates.issued') ?? 'Issue Certificates'}</CardTitle>
           <Button
-            onClick={handleIssue}
+            onClick={handleIssueClick}
             disabled={!templateId || issueCertificates.isPending || batch.status !== 'approved' || !hasPassedStudents}
             title={
               batch.status !== 'approved' 
@@ -645,6 +690,144 @@ export default function GraduationBatchDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Certificate Number Configuration Dialog */}
+      <Dialog open={isCertificateConfigDialogOpen} onOpenChange={setIsCertificateConfigDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Hash className="h-5 w-5" />
+              Certificate Number Configuration
+            </DialogTitle>
+            <DialogDescription>
+              Configure how certificate numbers will be generated for {passCount} passing student(s)
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Info Banner */}
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-900 dark:text-blue-100">
+                  <p className="font-medium mb-1">For Schools with Existing Certificates</p>
+                  <p className="text-blue-700 dark:text-blue-300">
+                    If your school has already issued certificates and you want to continue numbering, 
+                    enter the next number in the "Starting Number" field. For example, if your last certificate 
+                    was number 150, enter 151 as the starting number.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Starting Number */}
+            <div className="space-y-2">
+              <Label htmlFor="starting-number">
+                Starting Number <span className="text-muted-foreground">(Optional)</span>
+              </Label>
+              <Input
+                id="starting-number"
+                type="number"
+                min="1"
+                placeholder="Leave empty to auto-generate from 1"
+                value={startingNumber || ''}
+                onChange={(e) => setStartingNumber(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+              />
+              <p className="text-xs text-muted-foreground">
+                The sequence number to start from. If empty, will continue from the last issued certificate number.
+              </p>
+            </div>
+
+            {/* Prefix */}
+            <div className="space-y-2">
+              <Label htmlFor="prefix">
+                Prefix <span className="text-muted-foreground">(Optional)</span>
+              </Label>
+              <Input
+                id="prefix"
+                type="text"
+                maxLength={20}
+                placeholder="NZM"
+                value={prefix}
+                onChange={(e) => setPrefix(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Prefix for certificate numbers (e.g., "NZM", "SCH", "CERT"). Default: "NZM"
+              </p>
+            </div>
+
+            {/* Certificate Type/Code */}
+            <div className="space-y-2">
+              <Label htmlFor="certificate-type">
+                Certificate Type/Code <span className="text-muted-foreground">(Optional)</span>
+              </Label>
+              <Input
+                id="certificate-type"
+                type="text"
+                maxLength={50}
+                placeholder="GRADUATION"
+                value={certificateType}
+                onChange={(e) => setCertificateType(e.target.value.toUpperCase().replace(/\s+/g, '-'))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Certificate type or code (e.g., "GRADUATION", "DIPLOMA", "CERT"). This appears in the certificate number. Default: "GRADUATION"
+              </p>
+            </div>
+
+            {/* Padding */}
+            <div className="space-y-2">
+              <Label htmlFor="padding">
+                Number Padding <span className="text-muted-foreground">(Optional)</span>
+              </Label>
+              <Input
+                id="padding"
+                type="number"
+                min="1"
+                max="10"
+                placeholder="4"
+                value={padding}
+                onChange={(e) => setPadding(parseInt(e.target.value, 10) || 4)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Number of digits for the sequence (e.g., 4 = 0001, 5 = 00001). Default: 4
+              </p>
+            </div>
+
+            {/* Preview */}
+            {previewNumbers.length > 0 && (
+              <div className="space-y-2">
+                <Label>Preview Certificate Numbers</Label>
+                <div className="bg-muted rounded-lg p-4 space-y-1">
+                  {previewNumbers.map((num, idx) => (
+                    <p key={idx} className="text-sm font-mono text-muted-foreground">
+                      {num}
+                    </p>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Format: {prefix || 'NZM'}-{certificateType || 'GRADUATION'}-{batch?.graduation_date ? new Date(batch.graduation_date).getFullYear() : 'YYYY'}-{'[SEQUENCE]'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCertificateConfigDialogOpen(false)}
+              disabled={issueCertificates.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleIssue}
+              disabled={issueCertificates.isPending}
+            >
+              {issueCertificates.isPending ? 'Issuing...' : 'Issue Certificates'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

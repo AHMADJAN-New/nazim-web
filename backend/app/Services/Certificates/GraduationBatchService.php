@@ -454,7 +454,11 @@ class GraduationBatchService
         string $templateId,
         string $organizationId,
         string $schoolId,
-        string $userId
+        string $userId,
+        ?int $startingNumber = null,
+        ?string $prefix = null,
+        ?string $certificateType = null,
+        ?int $padding = null
     ): Collection {
         $batch = GraduationBatch::where('organization_id', $organizationId)
             ->where('school_id', $schoolId)
@@ -487,15 +491,23 @@ class GraduationBatchService
             throw new UnprocessableEntityHttpException('No eligible students found for issuing certificates.');
         }
 
-        $issued = $this->db->transaction(function () use ($batch, $template, $passStudents, $userId) {
+        $startingNum = $startingNumber;
+        $prefixValue = $prefix;
+        $certType = $certificateType ?? $template->type ?? 'graduation';
+        $paddingValue = $padding;
+        
+        $issued = $this->db->transaction(function () use ($batch, $template, $passStudents, $userId, $startingNum, $prefixValue, $certType, $paddingValue) {
             $records = collect();
 
             foreach ($passStudents as $gradStudent) {
                 $certificateNo = $this->certificateNumberService->generate(
                     $batch->organization_id,
                     $batch->school_id,
-                    $template->type ?? 'graduation',
-                    $batch->graduation_date
+                    $certType,
+                    $batch->graduation_date,
+                    $startingNum,
+                    $prefixValue,
+                    $paddingValue
                 );
 
                 $verificationHash = hash('sha256', Str::uuid()->toString() . $gradStudent->student_id . microtime(true));

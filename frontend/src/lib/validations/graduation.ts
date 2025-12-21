@@ -94,3 +94,4 @@ export const graduationBatchSchema = z
 
 export type GraduationBatchFormData = z.infer<typeof graduationBatchSchema>;
 
+

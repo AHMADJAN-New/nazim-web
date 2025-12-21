@@ -92,6 +92,15 @@ use App\Http\Controllers\Dms\OutgoingDocumentsController;
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::get('/leave-requests/scan/{token}', [LeaveRequestController::class, 'scanPublic']);
 
+// Public certificate verification routes (rate limited)
+use App\Http\Controllers\CertificateVerifyController;
+Route::get('/verify/certificate/{hash}', [CertificateVerifyController::class, 'show'])
+    ->middleware('throttle:60,1'); // 60 requests per minute for hash verification
+
+// Certificate number search (stricter rate limiting for security)
+Route::post('/verify/certificate/search', [CertificateVerifyController::class, 'search'])
+    ->middleware('throttle:10,1'); // 10 requests per minute for searches (stricter)
+
 // Public stats endpoints (for landing page)
 // Note: These return aggregate counts across all organizations
 // Consider protecting if aggregate data is sensitive

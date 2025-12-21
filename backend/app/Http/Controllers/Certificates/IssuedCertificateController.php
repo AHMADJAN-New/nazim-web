@@ -108,19 +108,47 @@ class IssuedCertificateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Allow school_id from request, fallback to default_school_id
-        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
-        if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
-        }
-
+        // First, try to find the certificate to get its school_id
         $certificate = IssuedCertificate::with(['template', 'student', 'batch'])
             ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $schoolId)
             ->find($id);
 
         if (!$certificate) {
             return response()->json(['error' => 'Certificate not found'], 404);
+        }
+
+        // Determine school_id: request > certificate's school_id > default_school_id > auto-select
+        // Priority: Use certificate's school_id first (most reliable), then fallback to defaults
+        $schoolId = $request->get('school_id') 
+            ?? $certificate->school_id
+            ?? $profile->default_school_id;
+
+        // If still no school_id, try to auto-select from organization schools
+        if (!$schoolId) {
+            // Get all schools in organization
+            $orgSchoolIds = DB::table('school_branding')
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->pluck('id')
+                ->toArray();
+
+            // If only one school in organization, use that automatically
+            if (count($orgSchoolIds) === 1) {
+                $schoolId = $orgSchoolIds[0];
+            } else {
+                // Multiple schools - require explicit selection
+                return response()->json([
+                    'error' => 'No school specified. Please select a school or contact administrator to set a default school.',
+                    'requires_school_selection' => true,
+                    'available_schools' => $orgSchoolIds,
+                ], 400);
+            }
+        }
+
+        // Verify the certificate belongs to the determined school (if school_id was provided in request)
+        // If using certificate's own school_id, skip this check
+        if ($request->has('school_id') && $certificate->school_id !== $schoolId) {
+            return response()->json(['error' => 'Certificate does not belong to the specified school'], 403);
         }
 
         // Load related data
@@ -236,18 +264,46 @@ class IssuedCertificateController extends Controller
             'reason' => 'required|string|max:1000',
         ]);
 
-        // Allow school_id from request, fallback to default_school_id
-        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
-        if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
-        }
-
+        // First, try to find the certificate to get its school_id
         $certificate = IssuedCertificate::where('organization_id', $profile->organization_id)
-            ->where('school_id', $schoolId)
             ->find($id);
 
         if (!$certificate) {
             return response()->json(['error' => 'Certificate not found'], 404);
+        }
+
+        // Determine school_id: request > certificate's school_id > default_school_id > auto-select
+        // Priority: Use certificate's school_id first (most reliable), then fallback to defaults
+        $schoolId = $request->get('school_id') 
+            ?? $certificate->school_id
+            ?? $profile->default_school_id;
+
+        // If still no school_id, try to auto-select from organization schools
+        if (!$schoolId) {
+            // Get all schools in organization
+            $orgSchoolIds = DB::table('school_branding')
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->pluck('id')
+                ->toArray();
+
+            // If only one school in organization, use that automatically
+            if (count($orgSchoolIds) === 1) {
+                $schoolId = $orgSchoolIds[0];
+            } else {
+                // Multiple schools - require explicit selection
+                return response()->json([
+                    'error' => 'No school specified. Please select a school or contact administrator to set a default school.',
+                    'requires_school_selection' => true,
+                    'available_schools' => $orgSchoolIds,
+                ], 400);
+            }
+        }
+
+        // Verify the certificate belongs to the determined school (if school_id was provided in request)
+        // If using certificate's own school_id, skip this check
+        if ($request->has('school_id') && $certificate->school_id !== $schoolId) {
+            return response()->json(['error' => 'Certificate does not belong to the specified school'], 403);
         }
 
         if ($certificate->revoked_at) {
@@ -285,16 +341,48 @@ class IssuedCertificateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Allow school_id from request, fallback to default_school_id
-        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
-        if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
-        }
-
+        // First, try to find the certificate to get its school_id
         $certificate = IssuedCertificate::with('template')
             ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $schoolId)
             ->find($id);
+
+        if (!$certificate) {
+            return response()->json(['error' => 'Certificate not found'], 404);
+        }
+
+        // Determine school_id: request > certificate's school_id > default_school_id > auto-select
+        // Priority: Use certificate's school_id first (most reliable), then fallback to defaults
+        $schoolId = $request->get('school_id') 
+            ?? $certificate->school_id
+            ?? $profile->default_school_id;
+
+        // If still no school_id, try to auto-select from organization schools
+        if (!$schoolId) {
+            // Get all schools in organization
+            $orgSchoolIds = DB::table('school_branding')
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->pluck('id')
+                ->toArray();
+
+            // If only one school in organization, use that automatically
+            if (count($orgSchoolIds) === 1) {
+                $schoolId = $orgSchoolIds[0];
+            } else {
+                // Multiple schools - require explicit selection
+                return response()->json([
+                    'error' => 'No school specified. Please select a school or contact administrator to set a default school.',
+                    'requires_school_selection' => true,
+                    'available_schools' => $orgSchoolIds,
+                ], 400);
+            }
+        }
+
+        // Verify the certificate belongs to the determined school (if school_id was provided in request)
+        // If using certificate's own school_id, skip this check
+        if ($request->has('school_id') && $certificate->school_id !== $schoolId) {
+            return response()->json(['error' => 'Certificate does not belong to the specified school'], 403);
+        }
 
         if (!$certificate) {
             return response()->json(['error' => 'Certificate not found'], 404);

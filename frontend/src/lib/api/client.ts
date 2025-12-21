@@ -3567,7 +3567,14 @@ export const graduationBatchesApi = {
     apiClient.post(`/graduation/batches/${id}/generate-students`, params),
   approve: async (id: string, params?: { school_id?: string }) =>
     apiClient.post(`/graduation/batches/${id}/approve`, params),
-  issueCertificates: async (id: string, data: { template_id: string; school_id?: string }) =>
+  issueCertificates: async (id: string, data: { 
+    template_id: string; 
+    school_id?: string;
+    starting_number?: number;
+    prefix?: string;
+    certificate_type?: string;
+    padding?: number;
+  }) =>
     apiClient.post(`/graduation/batches/${id}/issue-certificates`, data),
 };
 
@@ -3679,10 +3686,16 @@ export const issuedCertificatesApi = {
   get: async (id: string) => apiClient.get(`/certificates/issued/${id}`),
   getCertificateData: async (id: string, schoolId?: string) => 
     apiClient.get(`/certificates/issued/${id}/data`, schoolId ? { school_id: schoolId } : undefined),
-  revoke: async (id: string, reason: string) =>
-    apiClient.post(`/certificates/issued/${id}/revoke`, { reason }),
-  downloadPdf: async (id: string) =>
-    apiClient.requestFile(`/certificates/issued/${id}/pdf`, { method: 'GET' }),
+  revoke: async (id: string, reason: string, schoolId?: string) =>
+    apiClient.post(`/certificates/issued/${id}/revoke`, { 
+      reason,
+      ...(schoolId && { school_id: schoolId }),
+    }),
+  downloadPdf: async (id: string, schoolId?: string) =>
+    apiClient.requestFile(`/certificates/issued/${id}/pdf`, { 
+      method: 'GET',
+      params: schoolId ? { school_id: schoolId } : undefined,
+    }),
   downloadBatch: async (batchId: string) =>
     apiClient.requestFile(`/certificates/batches/${batchId}/pdf`, { method: 'GET' }),
 };
@@ -3734,14 +3747,19 @@ export const studentIdCardsApi = {
   markFeePaid: async (id: string, data: {
     card_fee_paid: boolean;
     card_fee_paid_date?: string;
+    account_id?: string | null;
+    income_category_id?: string | null;
   }) => apiClient.post(`/student-id-cards/${id}/mark-fee-paid`, data),
   
   delete: async (id: string) => apiClient.delete(`/student-id-cards/${id}`),
   
-  preview: async (id: string, side: 'front' | 'back' = 'front') =>
-    apiClient.requestFile(`/student-id-cards/export/preview?id=${id}&side=${side}`, {
+  preview: async (id: string, side: 'front' | 'back' = 'front') => {
+    const result = await apiClient.requestFile(`/student-id-cards/export/preview?id=${id}&side=${side}`, {
       method: 'GET',
-    }),
+    });
+    // Return just the blob for preview
+    return result.blob;
+  },
   
   exportBulk: async (data: {
     card_ids?: string[];

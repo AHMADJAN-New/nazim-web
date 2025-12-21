@@ -137,7 +137,8 @@ import {
   FeePaymentsPage,
   FeeExceptionsPage,
   FeeReportsPage,
-  StudentFeeStatementPage
+  StudentFeeStatementPage,
+  VerifyCertificate
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
@@ -185,6 +186,23 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  
+                  {/* Public verification routes - no auth required */}
+                  <Route path="/verify/certificate/:hash" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <VerifyCertificate />
+                    </Suspense>
+                  } />
+                  <Route path="/verify/certificate" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <VerifyCertificate />
+                    </Suspense>
+                  } />
+                  <Route path="/verify" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <VerifyCertificate />
+                    </Suspense>
+                  } />
 
                   {/* Protected routes with persistent layout */}
                   <Route element={<ProtectedRoute><PersistentLayout /></ProtectedRoute>}>

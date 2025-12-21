@@ -196,8 +196,31 @@ export const useIssueGraduationCertificates = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ batchId, templateId, schoolId }: { batchId: string; templateId: string; schoolId?: string }) =>
-      graduationBatchesApi.issueCertificates(batchId, { template_id: templateId, school_id: schoolId }),
+    mutationFn: ({ 
+      batchId, 
+      templateId, 
+      schoolId,
+      startingNumber,
+      prefix,
+      certificateType,
+      padding,
+    }: { 
+      batchId: string; 
+      templateId: string; 
+      schoolId?: string;
+      startingNumber?: number;
+      prefix?: string;
+      certificateType?: string;
+      padding?: number;
+    }) =>
+      graduationBatchesApi.issueCertificates(batchId, { 
+        template_id: templateId, 
+        school_id: schoolId,
+        starting_number: startingNumber,
+        prefix: prefix,
+        certificate_type: certificateType,
+        padding: padding,
+      }),
     onSuccess: (_, vars) => {
       showToast.success('toast.graduation.certificatesIssued');
       void queryClient.invalidateQueries({ queryKey: ['graduation-batch', vars.batchId] });
@@ -366,7 +389,8 @@ export const useRevokeCertificate = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) => issuedCertificatesApi.revoke(id, reason),
+    mutationFn: ({ id, reason, school_id }: { id: string; reason: string; school_id?: string }) => 
+      issuedCertificatesApi.revoke(id, reason, school_id),
     onSuccess: () => {
       showToast.success('toast.certificates.revoked');
       void queryClient.invalidateQueries({ queryKey: ['issued-certificates'] });

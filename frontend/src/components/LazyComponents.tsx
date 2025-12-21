@@ -111,6 +111,7 @@ export const FeePaymentsPage = lazy(() => import('@/pages/fees/FeePaymentsPage')
 export const FeeExceptionsPage = lazy(() => import('@/pages/fees/FeeExceptionsPage'));
 export const FeeReportsPage = lazy(() => import('@/pages/fees/FeeReportsPage'));
 export const StudentFeeStatementPage = lazy(() => import('@/pages/fees/StudentFeeStatementPage'));
+export const VerifyCertificate = lazy(() => import('@/pages/VerifyCertificate'));
 
 // Document Management System
 export const DmsDashboard = lazy(() => import('@/pages/dms/DmsDashboard'));
