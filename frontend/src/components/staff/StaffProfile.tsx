@@ -264,7 +264,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <Label className="text-muted-foreground text-sm">Hire Date:</Label>
-                  <span className="text-sm">{staff.formatDate(createdAt)}</span>
+                  <span className="text-sm">{formatDate(staff.createdAt)}</span>
                 </div>
               )}
             </div>
@@ -668,13 +668,13 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 {staff.createdAt && (
                   <div>
                     <Label className="text-muted-foreground">Created At</Label>
-                    <p className="font-medium">{staff.formatDate(createdAt)}</p>
+                    <p className="font-medium">{formatDate(staff.createdAt)}</p>
                   </div>
                 )}
                 {staff.updatedAt && (
                   <div>
                     <Label className="text-muted-foreground">Last Updated</Label>
-                    <p className="font-medium">{staff.formatDate(updatedAt)}</p>
+                    <p className="font-medium">{formatDate(staff.updatedAt)}</p>
                   </div>
                 )}
               </CardContent>

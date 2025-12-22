@@ -21,6 +21,7 @@ import { useExams } from '@/hooks/useExams';
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useAuth } from '@/hooks/useAuth';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {

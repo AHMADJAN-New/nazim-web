@@ -31,6 +31,7 @@ import { RichTextEditor } from "@/components/dms/RichTextEditor";
 import { formatDate, getShortDescription } from "@/lib/dateUtils";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { FileText, Upload, Search, Plus, X, Eye, File, Download, Image as ImageIcon, X as XIcon, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 

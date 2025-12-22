@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { formatDate as adapterFormatDate, formatDateTime as adapterFormatDateTime } from './calendarAdapter';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -37,7 +38,6 @@ export function formatDate(
   locale: string = 'en-US'
 ): string {
   // Delegate to calendar adapter which handles calendar conversion
-  const { formatDate: adapterFormatDate } = require('./calendarAdapter');
   return adapterFormatDate(date, locale);
 }
 
@@ -53,6 +53,5 @@ export function formatDateTime(
   locale: string = 'en-US'
 ): string {
   // Delegate to calendar adapter which handles calendar conversion
-  const { formatDateTime: adapterFormatDateTime } = require('./calendarAdapter');
   return adapterFormatDateTime(date, locale);
 }

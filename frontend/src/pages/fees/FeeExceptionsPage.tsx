@@ -678,13 +678,13 @@ export default function FeeExceptionsPage() {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">{t('fees.validFrom') || 'Valid From'}</p>
                       <p className="font-medium">
-                        {viewingException.validFrom ? viewingException.formatDate(validFrom) : '-'}
+                        {viewingException.validFrom ? formatDate(viewingException.validFrom) : '-'}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">{t('fees.validTo') || 'Valid To'}</p>
                       <p className="font-medium">
-                        {viewingException.validTo ? viewingException.formatDate(validTo) : '-'}
+                        {viewingException.validTo ? formatDate(viewingException.validTo) : '-'}
                       </p>
                     </div>
                   </div>

@@ -23,6 +23,7 @@ import { useStaff } from '@/hooks/useStaff';
 import { useProfile } from '@/hooks/useProfiles';
 import type { LibraryBook } from '@/types/domain/library';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 const defaultLoanDate = format(new Date(), 'yyyy-MM-dd');
 

@@ -55,6 +55,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, TrendingDown, Search, Filter, Calendar, X } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 export default function ExpenseEntries() {
     const { t } = useLanguage();

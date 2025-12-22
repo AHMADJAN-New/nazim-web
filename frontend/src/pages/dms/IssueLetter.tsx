@@ -19,6 +19,7 @@ import { useProfile } from "@/hooks/useProfiles";
 import type { Student } from "@/types/domain/student";
 import type { Staff } from "@/types/domain/staff";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 type TemplatePreviewResponse = {
   html?: string | null;

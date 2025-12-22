@@ -251,7 +251,7 @@ export function UserManagement() {
         user.role,
         user.phone || '',
         user.isActive ? 'Active' : 'Inactive',
-        user.formatDate(createdAt),
+        formatDate(user.createdAt),
       ].join(',')),
     ].join('\n');
 

@@ -614,6 +614,12 @@ export const fa: TranslationKeys = {
     previousSlide: 'اسلاید قبلی',
     enterCurrentPassword: 'رمز عبور فعلی خود را وارد کنید',
     enterNewPassword: 'رمز عبور جدید خود را وارد کنید',
+    currentPassword: 'رمز عبور فعلی',
+    weak: 'ضعیف',
+    fair: 'متوسط',
+    good: 'خوب',
+    strong: 'قوی',
+    veryStrong: 'خیلی قوی',
     enterFullName: 'نام کامل خود را وارد کنید',
     enterPhoneNumber: 'شماره تلفن خود را وارد کنید',
     gradeExample: 'مثلاً، 1، 2، 3',
@@ -1472,7 +1478,15 @@ export const fa: TranslationKeys = {
     roomsManagement: 'مدیریت اتاق‌ها',
     roomUpdated: 'اتاق با موفقیت به‌روزرسانی شد',
     staff: 'کارکنان',
-    warden: 'مسئول نگهبان'
+    warden: 'مسئول نگهبان',
+    userSettings: {
+      title: 'تنظیمات کاربر',
+      description: 'مدیریت تنظیمات حساب و تنظیمات امنیتی',
+      preferences: 'ترجیحات',
+      security: 'امنیت',
+      changePassword: 'تغییر رمز عبور',
+      changePasswordDescription: 'رمز عبور خود را به‌روزرسانی کنید تا حساب شما امن بماند'
+    }
   },
   staff: {
     addStaff: 'افزودن کارکنان',
@@ -2593,6 +2607,8 @@ export const fa: TranslationKeys = {
     userDeleteFailed: 'حذف کاربر ناموفق بود',
     passwordReset: 'رمز عبور با موفقیت بازنشانی شد',
     passwordResetFailed: 'بازنشانی رمز عبور ناموفق بود',
+    passwordChanged: 'رمز عبور با موفقیت تغییر کرد',
+    passwordChangeFailed: 'تغییر رمز عبور ناموفق بود',
     // Schedule Slots
     scheduleSlotCreated: 'بازه زمانی با موفقیت ایجاد شد',
     scheduleSlotUpdated: 'بازه زمانی با موفقیت به‌روزرسانی شد',

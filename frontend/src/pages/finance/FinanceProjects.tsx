@@ -50,6 +50,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, FolderKanban, TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 export default function FinanceProjects() {
     const { t } = useLanguage();

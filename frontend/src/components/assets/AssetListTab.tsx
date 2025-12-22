@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, Pencil, Trash2, Printer, Eye } from 'lucide-react';
@@ -32,6 +32,7 @@ import { useHasPermission } from '@/hooks/usePermissions';
 import { useFinanceAccounts } from '@/hooks/useFinance';
 import { useCurrencies } from '@/hooks/useCurrencies';
 import type { Asset } from '@/types/domain/asset';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
@@ -127,6 +128,14 @@ export default function AssetListTab() {
   const updateAsset = useUpdateAsset();
   const deleteAsset = useDeleteAsset();
 
+  const formMethods = useForm<AssetFormValues>({
+    resolver: zodResolver(assetSchema),
+    defaultValues: {
+      status: 'available',
+      purchasePrice: null,
+    },
+  });
+
   const {
     register,
     handleSubmit,
@@ -135,13 +144,7 @@ export default function AssetListTab() {
     watch,
     control,
     formState: { errors },
-  } = useForm<AssetFormValues>({
-    resolver: zodResolver(assetSchema),
-    defaultValues: {
-      status: 'available',
-      purchasePrice: null,
-    },
-  });
+  } = formMethods;
 
   // Filter rooms by selected building (if building is selected, show only rooms from that building)
   // Must be after useForm hook to access watch
@@ -672,8 +675,9 @@ export default function AssetListTab() {
           <DialogHeader>
             <DialogTitle>{editingAsset ? 'Update Asset' : 'Create Asset'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmitAsset)} className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <FormProvider {...formMethods}>
+            <form onSubmit={handleSubmit(onSubmitAsset)} className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
                 <Label>Name *</Label>
                 <Input {...register('name')} />
@@ -748,14 +752,14 @@ export default function AssetListTab() {
                 <Label>
                   Purchase Date <span className="text-destructive">*</span>
                 </Label>
-                <CalendarFormField control={form.control} name="purchaseDate" label="Number of Copies" />
+                <CalendarFormField control={control} name="purchaseDate" label="Purchase Date" />
                 {errors.purchaseDate && (
                   <p className="text-sm text-destructive mt-1">{errors.purchaseDate.message}</p>
                 )}
               </div>
               <div>
                 <Label>Warranty Expiry</Label>
-                <CalendarFormField control={form.control} name="warrantyExpiry" label="Warranty Expiry" />
+                <CalendarFormField control={control} name="warrantyExpiry" label="Warranty Expiry" />
               </div>
               <div>
                 <Label>Vendor</Label>
@@ -917,7 +921,8 @@ export default function AssetListTab() {
                 {editingAsset ? 'Update' : 'Create'}
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 

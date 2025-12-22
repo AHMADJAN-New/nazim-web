@@ -21,6 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import type { LeaveRequest } from '@/types/domain/leave';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 export default function LeaveReports() {
   const { t, isRTL } = useLanguage();

@@ -33,6 +33,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RichTextEditor } from "@/components/dms/RichTextEditor";
 import { formatDate, getShortDescription } from "@/lib/dateUtils";
 import { Separator } from "@/components/ui/separator";
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 const statusOptions = [
   { label: "Pending", value: "pending" },

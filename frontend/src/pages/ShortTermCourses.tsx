@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 import { useReactTable, getCoreRowModel, type PaginationState } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ import { useCourseStudents } from '@/hooks/useCourseStudents';
 import type { CourseStudent } from '@/types/domain/courseStudent';
 import { ShortTermCourseFormDialog } from '@/components/short-term-courses/ShortTermCourseFormDialog';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import {
   CalendarRange,
   Filter,
@@ -610,7 +611,7 @@ const ShortTermCourses = () => {
                                     {t('courses.paid')}
                                   </Badge>
                                   <span className="text-sm font-semibold">
-                                    {student.formatDateTime(feeAmount)} AFN
+                                    {formatCurrency(student.feeAmount)} AFN
                                   </span>
                                 </div>
                               </div>

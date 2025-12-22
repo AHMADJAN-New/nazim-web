@@ -227,7 +227,7 @@ export function BuildingsManagement() {
     {
       accessorKey: 'createdAt',
       header: t('settings.buildings.createdAt'),
-      cell: ({ row }) => row.original.formatDate(createdAt),
+      cell: ({ row }) => formatDate(row.original.createdAt),
     },
     {
       id: 'actions',
@@ -291,7 +291,7 @@ export function BuildingsManagement() {
       return {
         building_name: building.buildingName,
         school_name: buildingSchool?.schoolName || t('settings.buildings.unknownSchool'),
-        created_at: building.createdAt instanceof Date ? building.formatDate(createdAt) : formatDate(building.createdAt),
+        created_at: formatDate(building.createdAt),
       };
     });
   };

@@ -25,6 +25,7 @@ import { leaveRequestsApi, studentAdmissionsApi } from '@/lib/api/client';
 import type { LeaveRequest, LeaveRequestInsert } from '@/types/domain/leave';
 import { mapLeaveRequestApiToDomain } from '@/mappers/leaveMapper';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-800 border-amber-200',

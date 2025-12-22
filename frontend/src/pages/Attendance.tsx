@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 interface RosterStudent {
   id: string;

@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import {
     ChartContainer,
     ChartTooltip,

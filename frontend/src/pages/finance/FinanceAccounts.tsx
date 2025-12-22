@@ -574,7 +574,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                     <div>
                                         <p className="text-muted-foreground">{t('common.date') || 'Date'}</p>
                                         <p className="font-medium">
-                                            {transactions.latestTransaction.formatDate(date)}
+                                            {formatDate(transactions.latestTransaction.date)}
                                         </p>
                                     </div>
                                     <div>
@@ -654,7 +654,7 @@ function AccountDetailsPanel({ account, open, onOpenChange, onEdit, onDelete }: 
                                             <div>
                                                 <p className="font-medium text-sm">{transaction.category}</p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {transaction.formatDate(date)}
+                                                    {formatDate(transaction.date)}
                                                     {transaction.referenceNo && ` • ${transaction.referenceNo}`}
                                                 </p>
                                             </div>

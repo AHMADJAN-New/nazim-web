@@ -37,6 +37,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { AttendanceRecord } from '@/types/domain/attendance';
 import { mapAttendanceRecordApiToDomain } from '@/mappers/attendanceMapper';
 import type * as AttendanceApi from '@/types/api/attendance';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 interface AttendanceReportRecord {
   id: string;

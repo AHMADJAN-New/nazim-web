@@ -39,7 +39,8 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Pencil, Trash2, Search, GraduationCap, Calendar, Star } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useForm } from 'react-hook-form';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
@@ -81,19 +82,23 @@ export function AcademicYearsManagement() {
   const setCurrentAcademicYear = useSetCurrentAcademicYear();
 
   const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<AcademicYearFormData>({
+  const formMethods = useForm<AcademicYearFormData>({
     resolver: zodResolver(academicYearSchema),
     defaultValues: {
       status: 'active',
       is_current: false,
     },
   });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    control,
+    formState: { errors },
+  } = formMethods;
 
   const isCurrentValue = watch('is_current');
   const statusValue = watch('status');
@@ -342,14 +347,10 @@ export function AcademicYearsManagement() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {year.startDate instanceof Date 
-                          ? year.formatDate(startDate)
-                          : formatDate(year.startDate)}
+                        {formatDate(year.startDate)}
                       </TableCell>
                       <TableCell>
-                        {year.endDate instanceof Date
-                          ? year.formatDate(endDate)
-                          : formatDate(year.endDate)}
+                        {formatDate(year.endDate instanceof Date ? year.endDate : year.endDate)}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(year.status)}>
@@ -406,8 +407,9 @@ export function AcademicYearsManagement() {
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <DialogHeader>
+          <FormProvider {...formMethods}>
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <DialogHeader>
               <DialogTitle>
                 {selectedAcademicYear 
                   ? t('academic.academicYears.editAcademicYear')
@@ -438,7 +440,7 @@ export function AcademicYearsManagement() {
                   <Label htmlFor="start_date">
                     {t('academic.academicYears.startDate')} *
                   </Label>
-                  <CalendarFormField control={form.control} name="start_date" label="{t('academic.academicYears.startDate')} *" />
+                  <CalendarFormField control={control} name="start_date" label={t('academic.academicYears.startDate') + ' *'} />
                   {errors.start_date && (
                     <p className="text-sm text-destructive">{errors.start_date.message}</p>
                   )}
@@ -447,7 +449,7 @@ export function AcademicYearsManagement() {
                   <Label htmlFor="end_date">
                     {t('academic.academicYears.endDate')} *
                   </Label>
-                  <CalendarFormField control={form.control} name="end_date" label="{t('academic.academicYears.endDate')} *" />
+                  <CalendarFormField control={control} name="end_date" label={t('academic.academicYears.endDate') + ' *'} />
                   {errors.end_date && (
                     <p className="text-sm text-destructive">{errors.end_date.message}</p>
                   )}
@@ -504,7 +506,8 @@ export function AcademicYearsManagement() {
                 {t('common.save')}
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 

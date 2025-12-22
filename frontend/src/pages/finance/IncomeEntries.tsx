@@ -55,6 +55,7 @@ import { useCurrencies, useConvertCurrency } from '@/hooks/useCurrencies';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, TrendingUp, Search, Filter, Calendar, X, DollarSign } from 'lucide-react';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { PaymentMethod } from '@/types/domain/finance';
 

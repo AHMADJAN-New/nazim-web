@@ -51,6 +51,7 @@ import {
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, ArrowRightLeft } from 'lucide-react';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 export default function ExchangeRates() {
     const { t } = useLanguage();
@@ -319,7 +320,7 @@ export default function ExchangeRates() {
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className="font-normal">
-                                                {rate.formatDate(effectiveDate)}
+                                                {formatDate(rate.effectiveDate)}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="max-w-xs truncate">{rate.notes || '-'}</TableCell>

@@ -21,6 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Link } from 'react-router-dom';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 const statusOrder: AdmissionStatus[] = ['active', 'admitted', 'pending', 'inactive', 'suspended', 'withdrawn', 'graduated'];
 

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 import { BookOpen, BookCheck, AlertTriangle, Calendar, TrendingUp, Download, X, History, FileText, Tag, DollarSign, Layers, BarChart3 } from 'lucide-react';
 import { format, addDays, isAfter, isBefore } from 'date-fns';
 import { useLibraryBooks, useLibraryLoans, useDueSoonLoans } from '@/hooks/useLibrary';
@@ -16,6 +16,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 export default function LibraryReports() {
     const { t } = useLanguage();
@@ -947,7 +948,7 @@ export default function LibraryReports() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
-                                    {booksReportStats.formatDateTime(totalPrice)}
+                                    {formatCurrency(booksReportStats.totalPrice)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Sum of all book prices
@@ -962,7 +963,7 @@ export default function LibraryReports() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
-                                    {booksReportStats.formatDateTime(totalValue)}
+                                    {formatCurrency(booksReportStats.totalValue)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Price × Total Copies
@@ -977,7 +978,7 @@ export default function LibraryReports() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
-                                    {booksReportStats.formatDateTime(averagePrice)}
+                                    {formatCurrency(booksReportStats.averagePrice)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Per book

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -41,6 +41,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import {
   useStudentDisciplineRecords,
   useCreateStudentDisciplineRecord,
@@ -85,13 +86,7 @@ export function StudentDisciplineRecordsDialog({
   const deleteRecord = useDeleteStudentDisciplineRecord();
   const resolveRecord = useResolveStudentDisciplineRecord();
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<DisciplineRecordFormData>({
+  const formMethods = useForm<DisciplineRecordFormData>({
     resolver: zodResolver(disciplineRecordSchema),
     defaultValues: {
       incident_date: '',
@@ -322,7 +317,7 @@ export function StudentDisciplineRecordsDialog({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="incident_date">{t('students.incidentDate') || 'Incident Date'} *</Label>
-                <CalendarFormField control={form.control} name="incident_date" label="{t('students.incidentDate') || 'Incident Date'} *" />
+                <CalendarFormField control={control} name="incident_date" label={t('students.incidentDate') || 'Incident Date'} />
                 {errors.incident_date && (
                   <p className="text-sm text-destructive mt-1">{errors.incident_date.message}</p>
                 )}
@@ -403,7 +398,8 @@ export function StudentDisciplineRecordsDialog({
                   : t('common.save') || 'Save'}
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 

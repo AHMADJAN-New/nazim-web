@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 import { BarChart3, TrendingUp, DollarSign, AlertTriangle, Calendar } from 'lucide-react';
 import { useAssets, useAssetStats } from '@/hooks/useAssets';
 import { useAssetCategories } from '@/hooks/useAssetCategories';
@@ -318,7 +318,7 @@ export default function AssetReportsTab() {
           <CardHeader className="pb-2">
             <CardDescription>Maintenance Cost</CardDescription>
             <CardTitle className="text-2xl">
-              ${calculatedStats.formatDateTime(totalMaintenanceCost)}
+              {formatCurrency(calculatedStats.totalMaintenanceCost)}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
               {calculatedStats.needsMaintenance} need attention

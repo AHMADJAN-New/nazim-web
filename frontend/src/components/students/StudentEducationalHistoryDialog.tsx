@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -33,6 +33,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import {
   useStudentEducationalHistory,
   useCreateStudentEducationalHistory,
@@ -67,12 +68,7 @@ export function StudentEducationalHistoryDialog({
   const updateHistory = useUpdateStudentEducationalHistory();
   const deleteHistory = useDeleteStudentEducationalHistory();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<EducationalHistoryFormData>({
+  const formMethods = useForm<EducationalHistoryFormData>({
     resolver: zodResolver(educationalHistorySchema),
     defaultValues: {
       institution_name: '',
@@ -84,6 +80,14 @@ export function StudentEducationalHistoryDialog({
       notes: '',
     },
   });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = formMethods;
 
   const resetForm = () => {
     reset({
@@ -313,14 +317,14 @@ export function StudentEducationalHistoryDialog({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="start_date">{t('students.startDate') || 'Start Date'}</Label>
-                <CalendarFormField control={form.control} name="start_date" label="{t('students.startDate') || 'Start Date'}" />
+                <CalendarFormField control={control} name="start_date" label={t('students.startDate') || 'Start Date'} />
                 {errors.start_date && (
                   <p className="text-sm text-destructive mt-1">{errors.start_date.message}</p>
                 )}
               </div>
               <div>
                 <Label htmlFor="end_date">{t('students.endDate') || 'End Date'}</Label>
-                <CalendarFormField control={form.control} name="end_date" label="{t('students.endDate') || 'End Date'}" />
+                <CalendarFormField control={control} name="end_date" label={t('students.endDate') || 'End Date'} />
                 {errors.end_date && (
                   <p className="text-sm text-destructive mt-1">{errors.end_date.message}</p>
                 )}
@@ -367,7 +371,8 @@ export function StudentEducationalHistoryDialog({
                   : t('common.save') || 'Save'}
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 
