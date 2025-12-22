@@ -1026,6 +1026,26 @@ class StudentIdCardController extends Controller
             'side' => 'nullable|in:front,back|default:front',
         ]);
 
+        // Load required relationships
+        $card->load(['student', 'template', 'academicYear', 'class']);
+
+        // Validate required relationships
+        if (!$card->student) {
+            Log::error("ID card export failed: Student not found", [
+                'card_id' => $card->id,
+                'student_id' => $card->student_id,
+            ]);
+            return response()->json(['error' => 'Student not found for this ID card'], 404);
+        }
+
+        if (!$card->template) {
+            Log::error("ID card export failed: Template not found", [
+                'card_id' => $card->id,
+                'template_id' => $card->template_id,
+            ]);
+            return response()->json(['error' => 'ID card template not found'], 404);
+        }
+
         try {
             $filePath = $this->exportService->exportIndividual(
                 $card,
@@ -1033,14 +1053,36 @@ class StudentIdCardController extends Controller
                 $validated['side'] ?? 'front'
             );
 
-            if (!$filePath || !Storage::exists($filePath)) {
-                return response()->json(['error' => 'Failed to generate export'], 500);
+            if (!$filePath) {
+                Log::error("ID card export failed: exportService returned null", [
+                    'card_id' => $card->id,
+                    'format' => $validated['format'] ?? 'png',
+                    'side' => $validated['side'] ?? 'front',
+                ]);
+                return response()->json(['error' => 'Failed to generate export - service returned null'], 500);
+            }
+
+            if (!Storage::exists($filePath)) {
+                Log::error("ID card export failed: Generated file not found", [
+                    'card_id' => $card->id,
+                    'file_path' => $filePath,
+                    'format' => $validated['format'] ?? 'png',
+                ]);
+                return response()->json(['error' => 'Failed to generate export - file not found'], 500);
             }
 
             return Storage::download($filePath);
         } catch (\Exception $e) {
-            Log::error("Individual export failed: " . $e->getMessage());
-            return response()->json(['error' => 'Export failed', 'message' => $e->getMessage()], 500);
+            Log::error("Individual export failed: " . $e->getMessage(), [
+                'card_id' => $card->id,
+                'format' => $validated['format'] ?? 'png',
+                'side' => $validated['side'] ?? 'front',
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'error' => 'Export failed',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 

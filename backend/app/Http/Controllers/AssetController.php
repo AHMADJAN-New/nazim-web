@@ -549,7 +549,19 @@ class AssetController extends Controller
             ->pluck('total', 'status');
 
         $assetIds = (clone $baseQuery)->pluck('id');
-        $totalValue = (float) ((clone $baseQuery)->sum('purchase_price') ?? 0);
+        
+        // Calculate total value: purchase_price × total_copies (at least 1 copy)
+        $assets = (clone $baseQuery)
+            ->whereNotNull('purchase_price')
+            ->where('purchase_price', '>', 0)
+            ->get();
+        
+        $totalValue = 0;
+        foreach ($assets as $asset) {
+            $price = (float) $asset->purchase_price;
+            $copies = max(1, (int) ($asset->total_copies ?? 1)); // At least 1 copy
+            $totalValue += $price * $copies;
+        }
 
         $maintenanceCost = 0;
         if ($assetIds->isNotEmpty()) {
@@ -558,11 +570,41 @@ class AssetController extends Controller
                 ->sum('cost');
         }
 
+        // Calculate assets by finance account
+        $assetsByAccount = [];
+        $assetsWithAccounts = (clone $baseQuery)
+            ->whereNotNull('finance_account_id')
+            ->whereNotNull('purchase_price')
+            ->where('purchase_price', '>', 0)
+            ->with(['financeAccount', 'currency'])
+            ->get();
+        
+        foreach ($assetsWithAccounts as $asset) {
+            $price = (float) $asset->purchase_price;
+            $copies = max(1, (int) ($asset->total_copies ?? 1));
+            $assetValue = $price * $copies;
+            
+            $accountId = $asset->finance_account_id;
+            if (!isset($assetsByAccount[$accountId])) {
+                $assetsByAccount[$accountId] = [
+                    'account_id' => $accountId,
+                    'account_name' => $asset->financeAccount ? $asset->financeAccount->name : 'Unknown',
+                    'total_value' => 0,
+                    'asset_count' => 0,
+                    'currency_code' => $asset->currency ? $asset->currency->code : ($asset->financeAccount && $asset->financeAccount->currency ? $asset->financeAccount->currency->code : 'N/A'),
+                ];
+            }
+            $assetsByAccount[$accountId]['total_value'] += $assetValue;
+            $assetsByAccount[$accountId]['asset_count']++;
+        }
+        $assetsByAccountArray = array_values($assetsByAccount);
+
         return response()->json([
             'status_counts' => $statusCounts,
             'total_purchase_value' => $totalValue,
             'maintenance_cost_total' => $maintenanceCost,
             'asset_count' => (clone $baseQuery)->count(),
+            'assets_by_account' => $assetsByAccountArray,
         ]);
     }
 

@@ -336,7 +336,7 @@ export default function IdCardAssignment() {
     <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
       <Card>
         <CardHeader>
-          <CardTitle>{t('idCards.assignment.title') || 'ID Card Assignment'}</CardTitle>
+          <CardTitle>{t('idCards.assignment') || 'ID Card Assignment'}</CardTitle>
           <CardDescription>
             {t('idCards.assignment.description') || 'Assign ID card templates to students and manage card assignments'}
           </CardDescription>

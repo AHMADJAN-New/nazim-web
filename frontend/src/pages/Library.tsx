@@ -20,8 +20,11 @@ import {
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { useStaff } from '@/hooks/useStaff';
 import { useProfile } from '@/hooks/useProfiles';
+import { useFinanceAccounts } from '@/hooks/useFinance';
+import { useCurrencies } from '@/hooks/useCurrencies';
 import type { LibraryBook } from '@/types/domain/library';
 import { useLanguage } from '@/hooks/useLanguage';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const defaultLoanDate = format(new Date(), 'yyyy-MM-dd');
 
@@ -44,6 +47,8 @@ export default function Library() {
       .filter((student): student is NonNullable<typeof student> => student !== null && student !== undefined);
   }, [studentAdmissions]);
   const { data: staff = [] } = useStaff();
+  const { data: financeAccounts } = useFinanceAccounts();
+  const { data: currencies } = useCurrencies();
 
   const createBook = useCreateLibraryBook();
   const createCopy = useCreateLibraryCopy();
@@ -60,6 +65,8 @@ export default function Library() {
     initial_copies: 1,
     default_loan_days: 30,
     deposit_amount: 0,
+    currency_id: '',
+    finance_account_id: '',
   });
 
   const [loanForm, setLoanForm] = useState({
@@ -92,6 +99,8 @@ export default function Library() {
           initial_copies: 1,
           default_loan_days: 30,
           deposit_amount: 0,
+          currency_id: '',
+          finance_account_id: '',
         });
       },
     });
@@ -211,6 +220,57 @@ export default function Library() {
                         value={bookForm.deposit_amount}
                         onChange={(e) => setBookForm({ ...bookForm, deposit_amount: Number(e.target.value) })}
                       />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>{t('finance.accounts.account') || 'Finance Account'}</Label>
+                      <Select
+                        value={bookForm.finance_account_id || ''}
+                        onValueChange={(value) => {
+                          setBookForm({ ...bookForm, finance_account_id: value || '' });
+                          // Auto-select currency from account if account has currency
+                          if (value && financeAccounts) {
+                            const account = financeAccounts.find((acc) => acc.id === value);
+                            if (account?.currencyId) {
+                              setBookForm((prev) => ({ ...prev, currency_id: account.currencyId || '' }));
+                            } else {
+                              setBookForm((prev) => ({ ...prev, currency_id: '' }));
+                            }
+                          } else {
+                            setBookForm((prev) => ({ ...prev, currency_id: '' }));
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('finance.selectAccount') || 'Select finance account (optional)'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {financeAccounts?.map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.name} {account.code ? `(${account.code})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>{t('finance.currency') || 'Currency'}</Label>
+                      <Select
+                        value={bookForm.currency_id || ''}
+                        onValueChange={(value) => setBookForm({ ...bookForm, currency_id: value || '' })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency (optional)'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {currencies?.map((currency) => (
+                            <SelectItem key={currency.id} value={currency.id}>
+                              {currency.code} - {currency.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={createBook.isPending}>

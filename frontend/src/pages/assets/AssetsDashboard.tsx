@@ -452,6 +452,56 @@ export default function AssetsDashboard() {
                     </CardContent>
                 </Card>
 
+                {/* Assets by Finance Account */}
+                {dashboard.assetsByAccount && dashboard.assetsByAccount.length > 0 && (
+                    <Card className="md:col-span-1">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="text-lg">{t('assets.assetsByFinanceAccount') || 'Assets by Finance Account'}</CardTitle>
+                                <CardDescription>
+                                    {t('assets.linkedToAccounts') || 'Assets linked to finance accounts'}
+                                </CardDescription>
+                            </div>
+                            <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => navigate('/finance/accounts')}
+                            >
+                                {t('finance.viewAccounts') || 'View Accounts'}
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {dashboard.assetsByAccount.slice(0, 7).map((account) => (
+                                    <div 
+                                        key={account.account_id} 
+                                        className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                                                <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-medium text-sm truncate">
+                                                    {account.account_name}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {account.asset_count} {t('assets.items') || 'items'} • {account.currency_code}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="font-semibold text-sm">
+                                                {formatCurrency(account.total_value)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Recent Assignments */}
                 <Card className="md:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between">

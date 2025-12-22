@@ -547,7 +547,29 @@ class StudentController extends Controller
             }
 
             // Check file size (max 5MB = 5120 KB)
-            if ($file->getSize() > 5120 * 1024) {
+            // Use try-catch to handle cases where getSize() fails (temporary file might be moved)
+            $fileSize = null;
+            try {
+                $fileSize = $file->getSize();
+            } catch (\Exception $e) {
+                // Fallback: try to get size from temporary path
+                $tempPath = $file->getPathname();
+                if (file_exists($tempPath)) {
+                    $fileSize = filesize($tempPath);
+                } else {
+                    Log::warning('Cannot determine file size - temporary file not found', [
+                        'temp_path' => $tempPath,
+                        'error' => $e->getMessage(),
+                    ]);
+                    return response()->json(['error' => 'Failed to read file size'], 422);
+                }
+            }
+
+            if ($fileSize === null || $fileSize === false) {
+                return response()->json(['error' => 'Failed to determine file size'], 422);
+            }
+
+            if ($fileSize > 5120 * 1024) {
                 return response()->json(['error' => 'File size exceeds maximum allowed size of 5MB'], 422);
             }
 
@@ -637,7 +659,7 @@ class StudentController extends Controller
                 'user_id' => $user->id,
                 'old_picture_path' => $oldPicturePath,
                 'new_picture_path' => $path,
-                'file_size' => $file->getSize(),
+                'file_size' => $fileSize,
                 'file_extension' => $extension,
             ]);
 

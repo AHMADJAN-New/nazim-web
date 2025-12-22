@@ -457,13 +457,13 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
           ...(hasIdCardsPermission ? [{
             title: "ID Card Assignment",
-            titleKey: "idCards.assignment.title",
+            titleKey: "idCards.assignment",
             url: "/id-cards/assignment",
             icon: LucideIcons.UserCheck,
           }] : []),
           ...(hasIdCardsExportPermission ? [{
             title: "ID Card Export",
-            titleKey: "idCards.export.title",
+            titleKey: "idCards.export",
             url: "/id-cards/export",
             icon: LucideIcons.Download,
           }] : []),

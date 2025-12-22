@@ -3312,6 +3312,21 @@ export interface TranslationKeys {
       maintenanceUpdated: string;
       maintenanceRemoved: string;
     };
+    // Library
+    library: {
+      bookSaved: string;
+      bookUpdated: string;
+      bookRemoved: string;
+      bookSaveFailed: string;
+      bookUpdateFailed: string;
+      bookRemoveFailed: string;
+      copyAdded: string;
+      copyAddFailed: string;
+      loanCreated: string;
+      loanCreateFailed: string;
+      bookReturned: string;
+      bookReturnFailed: string;
+    };
     // Certificate Templates
     certificateTemplates: {
       created: string;

@@ -14,6 +14,8 @@ export interface LibraryCategory {
 export interface LibraryBook {
   id: string;
   organization_id: string;
+  currency_id?: string | null;
+  finance_account_id?: string | null;
   title: string;
   author?: string | null;
   isbn?: string | null;
@@ -28,6 +30,14 @@ export interface LibraryBook {
   available_copies?: number;
   copies?: LibraryCopy[];
   categoryRelation?: LibraryCategory | null; // Relationship to LibraryCategory
+  currency?: { id: string; code: string; name: string; symbol: string | null } | null;
+  finance_account?: { 
+    id: string; 
+    name: string; 
+    code: string | null;
+    currency_id: string | null;
+    currency?: { id: string; code: string; name: string; symbol: string | null } | null;
+  } | null;
   deleted_at?: string | null; // Soft delete timestamp
 }
 

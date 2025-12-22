@@ -12,6 +12,7 @@ use App\Models\Donor;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
 use App\Models\Asset;
+use App\Models\LibraryBook;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -73,8 +74,39 @@ class FinanceReportController extends Controller
                 ->get();
             
             $totalBalance = 0;
+            $totalCashBalance = 0; // Cash only (without assets and books)
             foreach ($accounts as $account) {
-                // Recalculate balance to include assets
+                // Calculate cash-only balance (opening + income - expenses)
+                $cashIncome = 0;
+                $cashExpense = 0;
+                
+                // Process income entries
+                foreach ($account->incomeEntries()->whereNull('deleted_at')->get() as $entry) {
+                    $amount = (float) $entry->amount;
+                    if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
+                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $entry->date);
+                    }
+                    $cashIncome += $amount;
+                }
+                
+                // Process expense entries (only approved)
+                foreach ($account->expenseEntries()->whereNull('deleted_at')->where('status', 'approved')->get() as $entry) {
+                    $amount = (float) $entry->amount;
+                    if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
+                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $entry->date);
+                    }
+                    $cashExpense += $amount;
+                }
+                
+                $openingBalance = (float) $account->opening_balance;
+                if ($targetCurrencyId && $account->currency_id && $account->currency_id !== $targetCurrencyId) {
+                    $openingBalance = $this->convertAmount($openingBalance, $account->currency_id, $targetCurrencyId, $orgId);
+                }
+                
+                $cashBalance = $openingBalance + $cashIncome - $cashExpense;
+                $totalCashBalance += $cashBalance;
+                
+                // Recalculate balance to include assets and books
                 $account->recalculateBalance();
                 
                 $balance = (float) $account->current_balance;
@@ -205,10 +237,12 @@ class FinanceReportController extends Controller
                 ->count();
 
             // Calculate assets value (with currency conversion)
+            // Only include assets that are linked to finance accounts (for balance calculation)
             $assets = Asset::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
                 ->whereIn('status', ['available', 'assigned', 'maintenance'])
                 ->whereNotNull('purchase_price')
+                ->whereNotNull('finance_account_id') // Only assets linked to accounts
                 ->with(['currency', 'financeAccount.currency'])
                 ->get();
 
@@ -222,6 +256,10 @@ class FinanceReportController extends Controller
                     continue;
                 }
 
+                // Assets can have multiple copies, so multiply price by total_copies
+                $copies = max(1, (int) ($asset->total_copies ?? 1)); // At least 1 copy
+                $assetValue = $price * $copies;
+
                 // Determine asset's currency
                 $assetCurrencyId = $asset->currency_id;
                 if (!$assetCurrencyId && $asset->financeAccount && $asset->financeAccount->currency_id) {
@@ -234,10 +272,10 @@ class FinanceReportController extends Controller
                 }
 
                 // Convert to target currency
-                $convertedPrice = $price;
+                $convertedPrice = $assetValue;
                 if ($targetCurrencyId && $assetCurrencyId && $assetCurrencyId !== $targetCurrencyId) {
                     $convertedPrice = $this->convertAmount(
-                        $price,
+                        $assetValue,
                         $assetCurrencyId,
                         $targetCurrencyId,
                         $orgId,
@@ -277,7 +315,7 @@ class FinanceReportController extends Controller
                             'converted_value' => 0,
                         ];
                     }
-                    $assetsByCurrency[$assetCurrencyId]['total_value'] += $price;
+                    $assetsByCurrency[$assetCurrencyId]['total_value'] += $assetValue;
                     $assetsByCurrency[$assetCurrencyId]['converted_value'] += $convertedPrice;
                 }
             }
@@ -286,8 +324,98 @@ class FinanceReportController extends Controller
             $assetsByAccountArray = array_values($assetsByAccount);
             $assetsByCurrencyArray = array_values($assetsByCurrency);
 
-            // Update total balance to include assets value
-            $totalBalanceWithAssets = $totalBalance + $totalAssetsValue;
+            // Calculate library books value (with currency conversion)
+            // Only include books that are linked to finance accounts (for balance calculation)
+            $libraryBooks = LibraryBook::whereNull('deleted_at')
+                ->where('organization_id', $orgId)
+                ->where('price', '>', 0)
+                ->whereNotNull('finance_account_id') // Only books linked to accounts
+                ->with(['currency', 'financeAccount.currency'])
+                ->withCount(['copies as total_copies' => function ($builder) {
+                    $builder->whereNull('deleted_at');
+                }])
+                ->get();
+
+            $totalLibraryBooksValue = 0;
+            $libraryBooksByAccount = [];
+            $libraryBooksByCurrency = [];
+
+            foreach ($libraryBooks as $book) {
+                $totalCopies = $book->total_copies ?? 0;
+                if ($totalCopies <= 0) {
+                    continue;
+                }
+
+                $bookValue = (float) $book->price * $totalCopies;
+
+                // Determine book's currency
+                $bookCurrencyId = $book->currency_id;
+                if (!$bookCurrencyId && $book->financeAccount && $book->financeAccount->currency_id) {
+                    // Use account's currency if book doesn't have one
+                    $bookCurrencyId = $book->financeAccount->currency_id;
+                }
+                if (!$bookCurrencyId) {
+                    // Use base currency if no currency found
+                    $bookCurrencyId = $targetCurrencyId;
+                }
+
+                // Convert to target currency
+                $convertedValue = $bookValue;
+                if ($targetCurrencyId && $bookCurrencyId && $bookCurrencyId !== $targetCurrencyId) {
+                    $convertedValue = $this->convertAmount(
+                        $bookValue,
+                        $bookCurrencyId,
+                        $targetCurrencyId,
+                        $orgId,
+                        $book->created_at ? $book->created_at->toDateString() : null
+                    );
+                }
+
+                $totalLibraryBooksValue += $convertedValue;
+
+                // Group by account
+                if ($book->finance_account_id) {
+                    $accountId = $book->finance_account_id;
+                    $accountName = $book->financeAccount ? $book->financeAccount->name : 'Unknown';
+                    $currencyCode = $book->currency ? $book->currency->code : ($book->financeAccount && $book->financeAccount->currency ? $book->financeAccount->currency->code : 'N/A');
+                    $currencySymbol = $book->currency ? $book->currency->symbol : ($book->financeAccount && $book->financeAccount->currency ? $book->financeAccount->currency->symbol : 'N/A');
+
+                    if (!isset($libraryBooksByAccount[$accountId])) {
+                        $libraryBooksByAccount[$accountId] = [
+                            'account_id' => $accountId,
+                            'account_name' => $accountName,
+                            'total_value' => 0,
+                            'currency_code' => $currencyCode,
+                            'currency_symbol' => $currencySymbol,
+                        ];
+                    }
+                    $libraryBooksByAccount[$accountId]['total_value'] += $convertedValue;
+                }
+
+                // Group by currency
+                if ($bookCurrencyId) {
+                    $currencyCode = $book->currency ? $book->currency->code : 'N/A';
+                    if (!isset($libraryBooksByCurrency[$bookCurrencyId])) {
+                        $libraryBooksByCurrency[$bookCurrencyId] = [
+                            'currency_id' => $bookCurrencyId,
+                            'currency_code' => $currencyCode,
+                            'total_value' => 0,
+                            'converted_value' => 0,
+                        ];
+                    }
+                    $libraryBooksByCurrency[$bookCurrencyId]['total_value'] += $bookValue;
+                    $libraryBooksByCurrency[$bookCurrencyId]['converted_value'] += $convertedValue;
+                }
+            }
+
+            // Convert arrays to indexed arrays
+            $libraryBooksByAccountArray = array_values($libraryBooksByAccount);
+            $libraryBooksByCurrencyArray = array_values($libraryBooksByCurrency);
+
+            // Calculate total balance as: cash + assets + books
+            // This ensures consistency since all values use the same currency conversion logic
+            // The account-based totalBalance might have slight rounding differences
+            $totalBalanceWithAssets = $totalCashBalance + $totalAssetsValue + $totalLibraryBooksValue;
 
             // Recent income entries
             $recentIncome = IncomeEntry::whereNull('deleted_at')
@@ -309,12 +437,14 @@ class FinanceReportController extends Controller
             return response()->json([
                 'summary' => [
                     'total_balance' => $totalBalanceWithAssets,
+                    'total_cash_balance' => $totalCashBalance,
                     'current_month_income' => $currentMonthIncome,
                     'current_month_expense' => $currentMonthExpense,
                     'net_this_month' => $currentMonthIncome - $currentMonthExpense,
                     'active_projects' => $activeProjects,
                     'active_donors' => $activeDonors,
                     'total_assets_value' => $totalAssetsValue,
+                    'total_library_books_value' => $totalLibraryBooksValue,
                 ],
                 'account_balances' => $accountBalances->toArray(),
                 'income_by_category' => $incomeByCategory->toArray(),
@@ -323,6 +453,8 @@ class FinanceReportController extends Controller
                 'recent_expenses' => $recentExpenses->toArray(),
                 'assets_by_account' => $assetsByAccountArray,
                 'assets_by_currency' => $assetsByCurrencyArray,
+                'library_books_by_account' => $libraryBooksByAccountArray,
+                'library_books_by_currency' => $libraryBooksByCurrencyArray,
             ]);
         } catch (\Exception $e) {
             \Log::error('FinanceReportController@dashboard error: ' . $e->getMessage());

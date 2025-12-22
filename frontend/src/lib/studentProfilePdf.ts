@@ -12,7 +12,43 @@ import type { Student } from '@/types/domain/student';
 // Initialize pdfmake fonts
 try {
   if (pdfFonts && typeof pdfFonts === 'object') {
-    (pdfMake as any).vfs = pdfFonts;
+    // Check if vfs already exists or if we can add it
+    if (!(pdfMake as any).vfs) {
+      try {
+        // Try to create vfs property
+        Object.defineProperty(pdfMake, 'vfs', {
+          value: {},
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        });
+      } catch (e) {
+        // If object is not extensible, try to use existing vfs or skip
+        if ((pdfMake as any).vfs) {
+          // vfs already exists, merge fonts into it
+          Object.assign((pdfMake as any).vfs, pdfFonts);
+        } else {
+          // Can't add vfs, but pdfmake-arabic should have it initialized
+          console.warn('[studentProfilePdf] Could not create vfs, object may not be extensible. Using existing vfs if available.');
+        }
+      }
+    }
+    
+    // Merge fonts into VFS if vfs exists
+    if ((pdfMake as any).vfs) {
+      try {
+        if (pdfFonts && typeof pdfFonts === 'object' && !(pdfFonts as any).vfs) {
+          // pdfFonts is the VFS object directly
+          Object.assign((pdfMake as any).vfs, pdfFonts);
+        } else if ((pdfFonts as any).vfs) {
+          // pdfFonts has a vfs property
+          Object.assign((pdfMake as any).vfs, (pdfFonts as any).vfs);
+        }
+      } catch (e) {
+        // VFS might be frozen, but that's okay if fonts are already there
+        console.warn('[studentProfilePdf] Could not merge fonts into vfs, may already be initialized.');
+      }
+    }
     
     // Register Roboto fonts from vfs_fonts (default pdfmake fonts)
     // vfs_fonts typically includes: Roboto-Regular.ttf, Roboto-Medium.ttf, Roboto-Bold.ttf
@@ -115,12 +151,31 @@ async function loadCustomFonts() {
       
       // Add fonts to VFS (Virtual File System) - required for pdfmake
       if (!(pdfMake as any).vfs) {
-        (pdfMake as any).vfs = {};
+        try {
+          // Try to create vfs property
+          Object.defineProperty(pdfMake, 'vfs', {
+            value: {},
+            writable: true,
+            enumerable: true,
+            configurable: true,
+          });
+        } catch (e) {
+          // If object is not extensible, skip custom fonts
+          console.warn('[studentProfilePdf] Could not create vfs for custom fonts, using Roboto only');
+          return;
+        }
       }
       
-      (pdfMake as any).vfs['BahijNassim-Regular.ttf'] = regularBase64;
-      (pdfMake as any).vfs['BahijNassim-Bold.ttf'] = boldBase64;
-      (pdfMake as any).vfs['BahijTitr-Bold.ttf'] = titrBoldBase64;
+      // Add custom fonts to VFS
+      try {
+        (pdfMake as any).vfs['BahijNassim-Regular.ttf'] = regularBase64;
+        (pdfMake as any).vfs['BahijNassim-Bold.ttf'] = boldBase64;
+        (pdfMake as any).vfs['BahijTitr-Bold.ttf'] = titrBoldBase64;
+      } catch (e) {
+        // VFS might be frozen, skip custom fonts
+        console.warn('[studentProfilePdf] Could not add custom fonts to VFS, using Roboto only');
+        return;
+      }
       
       // Register fonts with pdfmake (reference VFS paths)
       (pdfMake as any).fonts = {

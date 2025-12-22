@@ -2658,6 +2658,21 @@ export const ps: TranslationKeys = {
       maintenanceUpdated: 'د ساتنې ریکارډ په بریالیتوب سره تازه شو',
       maintenanceRemoved: 'د ساتنې ریکارډ په بریالیتوب سره لرې شو'
     },
+    // Library
+    library: {
+      bookSaved: 'د کتابتون کتاب په بریالیتوب سره خوندي شو',
+      bookUpdated: 'د کتابتون کتاب په بریالیتوب سره تازه شو',
+      bookRemoved: 'د کتابتون کتاب په بریالیتوب سره لرې شو',
+      bookSaveFailed: 'د کتابتون کتاب خوندي کول ناکام شول',
+      bookUpdateFailed: 'د کتابتون کتاب تازه کول ناکام شول',
+      bookRemoveFailed: 'د کتابتون کتاب لرې کول ناکام شول',
+      copyAdded: 'د کتاب کاپي په بریالیتوب سره اضافه شو',
+      copyAddFailed: 'د کتاب کاپي اضافه کول ناکام شول',
+      loanCreated: 'د کتاب قرضه په بریالیتوب سره جوړه شوه',
+      loanCreateFailed: 'د کتاب قرضه جوړول ناکام شول',
+      bookReturned: 'کتاب په بریالیتوب سره بیرته ورکړل شو',
+      bookReturnFailed: 'کتاب بیرته ورکړل ناکام شول'
+    },
     // Certificate Templates
     certificateTemplates: {
       created: 'د تصدیق قالب په بریالیتوب سره جوړ شو',

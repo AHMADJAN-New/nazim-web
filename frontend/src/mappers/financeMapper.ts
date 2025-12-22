@@ -331,12 +331,14 @@ export function mapFinanceDashboardApiToDomain(api: FinanceApi.FinanceDashboard)
     return {
         summary: {
             totalBalance: parseDecimal(api.summary.total_balance),
+            totalCashBalance: api.summary.total_cash_balance ? parseDecimal(api.summary.total_cash_balance) : undefined,
             currentMonthIncome: parseDecimal(api.summary.current_month_income),
             currentMonthExpense: parseDecimal(api.summary.current_month_expense),
             netThisMonth: parseDecimal(api.summary.net_this_month),
             activeProjects: api.summary.active_projects,
             activeDonors: api.summary.active_donors,
             totalAssetsValue: parseDecimal(api.summary.total_assets_value || '0'),
+            totalLibraryBooksValue: api.summary.total_library_books_value ? parseDecimal(api.summary.total_library_books_value) : 0,
         },
         accountBalances: Array.isArray(api.account_balances) 
             ? api.account_balances.map(ab => ({
@@ -383,6 +385,24 @@ export function mapFinanceDashboardApiToDomain(api: FinanceApi.FinanceDashboard)
                 convertedValue: parseDecimal(ac.converted_value),
             }))
             : [],
+        libraryBooksByAccount: Array.isArray(api.library_books_by_account)
+            ? api.library_books_by_account.map(lba => ({
+                accountId: lba.account_id,
+                accountName: lba.account_name,
+                totalValue: parseDecimal(lba.total_value),
+                currencyCode: lba.currency_code,
+                currencySymbol: lba.currency_symbol,
+            }))
+            : [],
+        libraryBooksByCurrency: Array.isArray(api.library_books_by_currency)
+            ? api.library_books_by_currency.map(lbc => ({
+                currencyId: lbc.currency_id,
+                currencyCode: lbc.currency_code,
+                totalValue: parseDecimal(lbc.total_value),
+                convertedValue: parseDecimal(lbc.converted_value),
+            }))
+            : [],
+        totalLibraryBooksValue: api.summary.total_library_books_value ? parseDecimal(api.summary.total_library_books_value) : 0,
     };
 }
 

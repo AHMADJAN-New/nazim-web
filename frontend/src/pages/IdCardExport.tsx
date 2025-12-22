@@ -246,7 +246,7 @@ export default function IdCardExport() {
     <div className="container mx-auto py-4 space-y-4 max-w-7xl px-4">
       <Card>
         <CardHeader>
-          <CardTitle>{t('idCards.export.title') || 'ID Card Export'}</CardTitle>
+          <CardTitle>{t('idCards.export') || 'ID Card Export'}</CardTitle>
           <CardDescription>
             {t('idCards.export.description') || 'Export ID cards as ZIP or PDF files'}
           </CardDescription>

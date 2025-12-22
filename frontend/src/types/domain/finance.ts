@@ -239,6 +239,7 @@ export type ExpenseEntryFormData = {
 export interface FinanceDashboard {
     summary: {
         totalBalance: number;
+        totalCashBalance?: number;
         currentMonthIncome: number;
         currentMonthExpense: number;
         netThisMonth: number;
@@ -277,6 +278,20 @@ export interface FinanceDashboard {
         totalValue: number;
         convertedValue: number;
     }>;
+    libraryBooksByAccount?: Array<{
+        accountId: string;
+        accountName: string;
+        totalValue: number;
+        currencyCode: string;
+        currencySymbol: string;
+    }>;
+    libraryBooksByCurrency?: Array<{
+        currencyId: string;
+        currencyCode: string;
+        totalValue: number;
+        convertedValue: number;
+    }>;
+    totalLibraryBooksValue?: number;
 }
 
 // Daily Cashbook

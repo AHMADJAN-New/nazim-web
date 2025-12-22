@@ -2933,6 +2933,21 @@ export const en: TranslationKeys = {
       maintenanceUpdated: 'Maintenance record updated successfully',
       maintenanceRemoved: 'Maintenance record removed successfully'
     },
+    // Library
+    library: {
+      bookSaved: 'Library book saved successfully',
+      bookUpdated: 'Library book updated successfully',
+      bookRemoved: 'Library book removed successfully',
+      bookSaveFailed: 'Failed to save library book',
+      bookUpdateFailed: 'Failed to update library book',
+      bookRemoveFailed: 'Failed to remove library book',
+      copyAdded: 'Book copy added successfully',
+      copyAddFailed: 'Failed to add book copy',
+      loanCreated: 'Book loan created successfully',
+      loanCreateFailed: 'Failed to create book loan',
+      bookReturned: 'Book returned successfully',
+      bookReturnFailed: 'Failed to return book'
+    },
     // Certificate Templates
     certificateTemplates: {
       created: 'Certificate template created successfully',
