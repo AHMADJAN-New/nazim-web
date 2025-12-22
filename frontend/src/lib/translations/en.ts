@@ -3670,6 +3670,7 @@ export const en: TranslationKeys = {
         template: 'Template',
         description: 'Description',
         downloadPdf: 'Download PDF',
+        print: 'Print',
         noPreview: 'No preview available',
         noAttachments: 'No attachments found'
       },
@@ -3682,6 +3683,9 @@ export const en: TranslationKeys = {
       draftModeActive: 'Draft mode: You can upload attachments. Click \'Issue Letter\' when ready.',
       issuing: 'Issuing...',
       issueButton: 'Issue Letter',
+      print: 'Print',
+      printFailed: 'Failed to generate PDF for printing',
+      generatingPdf: 'Generating PDF...',
       selectTemplateFirst: 'Please select a template first',
       fillRequiredFields: 'Please fill in all required fields'
     }

@@ -13,7 +13,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { showToast } from "@/lib/toast";
 import { SecurityBadge } from "@/components/dms/SecurityBadge";
 import { DocumentNumberBadge } from "@/components/dms/DocumentNumberBadge";
-import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw, Printer } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
 import { useClassAcademicYears } from "@/hooks/useClasses";
@@ -565,6 +565,109 @@ export default function IssueLetter() {
     setIsDetailsPanelOpen(true);
   };
 
+  const handlePrintPreview = async () => {
+    if (!templateDetails?.id) {
+      showToast.error(t("dms.issueLetter.selectTemplateFirst") || "Please select a template first");
+      return;
+    }
+
+    try {
+      // Show loading state
+      showToast.info(t("dms.issueLetter.generatingPdf") || "Generating PDF...");
+      
+      // Generate PDF from preview data
+      const blob = await dmsApi.templates.previewPdf(
+        templateDetails.id,
+        previewVariables,
+        {
+          recipient_type: payload.recipient_type,
+          recipient_id: payload.recipient_id || undefined,
+        }
+      );
+      
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a hidden iframe in the current page for printing
+      // This keeps the print dialog in the same tab
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      iframe.style.opacity = '0';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.zIndex = '-1';
+      iframe.src = url;
+      
+      // Store iframe reference for cleanup
+      let iframeRef: HTMLIFrameElement | null = iframe;
+      let urlRef: string = url;
+      
+      document.body.appendChild(iframe);
+      
+      // Cleanup function
+      const cleanup = () => {
+        if (iframeRef && iframeRef.parentNode) {
+          document.body.removeChild(iframeRef);
+        }
+        window.URL.revokeObjectURL(urlRef);
+        iframeRef = null;
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
+      
+      // Handle after print event - only clean up when user closes print dialog
+      const handleAfterPrint = () => {
+        // Wait a bit before cleaning up to ensure print dialog is fully closed
+        setTimeout(cleanup, 1000);
+      };
+      
+      window.addEventListener('afterprint', handleAfterPrint);
+      
+      // Wait for PDF to load, then trigger print
+      iframe.onload = () => {
+        // Give PDF more time to fully render (especially for letterheads with images)
+        setTimeout(() => {
+          try {
+            if (iframe.contentWindow && iframeRef) {
+              iframe.contentWindow.focus();
+              // Trigger print - dialog will stay open until user closes it
+              iframe.contentWindow.print();
+            }
+          } catch (error) {
+            if (import.meta.env.DEV) {
+              console.error("[IssueLetter] Print error:", error);
+            }
+            // Fallback: open PDF in new window
+            window.open(urlRef, '_blank');
+            cleanup();
+          }
+        }, 2000); // Increased delay to ensure PDF and letterhead images are fully loaded
+      };
+      
+      // Fallback: if onload doesn't fire, try after 5 seconds
+      setTimeout(() => {
+        if (iframeRef && document.body.contains(iframeRef)) {
+          try {
+            if (iframeRef.contentWindow) {
+              iframeRef.contentWindow.focus();
+              iframeRef.contentWindow.print();
+            }
+          } catch (error) {
+            window.open(urlRef, '_blank');
+            cleanup();
+          }
+        }
+      }, 5000);
+    } catch (error: any) {
+      if (import.meta.env.DEV) {
+        console.error("[IssueLetter] Failed to generate PDF for print:", error);
+      }
+      showToast.error(error.message || t("dms.issueLetter.printFailed") || "Failed to generate PDF for printing");
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
       <Tabs defaultValue="issue" className="space-y-6">
@@ -908,18 +1011,31 @@ export default function IssueLetter() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Live Preview</span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => previewMutation.mutate()}
-                disabled={!templateDetails?.id || previewMutation.isPending || isPreviewLoading}
-              >
-                {previewMutation.isPending || isPreviewLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => previewMutation.mutate()}
+                  disabled={!templateDetails?.id || previewMutation.isPending || isPreviewLoading}
+                >
+                  {previewMutation.isPending || isPreviewLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                </Button>
+                {previewHtml && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handlePrintPreview}
+                    disabled={!previewHtml}
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    {t("dms.issueLetter.print") || "Print"}
+                  </Button>
                 )}
-              </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

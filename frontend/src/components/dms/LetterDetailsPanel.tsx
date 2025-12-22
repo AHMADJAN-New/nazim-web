@@ -15,7 +15,7 @@ import { SecurityBadge } from "@/components/dms/SecurityBadge";
 import { useLanguage } from "@/hooks/useLanguage";
 import { showToast } from "@/lib/toast";
 import { formatDate } from "@/lib/dateUtils";
-import { Download, File, Loader2, FileText, X } from "lucide-react";
+import { Download, File, Loader2, FileText, X, Printer } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading";
 
 interface LetterDetailsPanelProps {
@@ -259,6 +259,69 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
     }
   };
 
+  const handlePrint = async () => {
+    if (!displayLetter?.id) return;
+    try {
+      // Download PDF and open in print dialog
+      const blob = await dmsApi.outgoing.downloadPdf(displayLetter.id);
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a hidden iframe to load the PDF
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.src = url;
+      
+      document.body.appendChild(iframe);
+      
+      // Wait for PDF to load, then trigger print
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.print();
+            // Clean up after a delay
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              window.URL.revokeObjectURL(url);
+            }, 1000);
+          } catch (error) {
+            // If print fails, fall back to opening PDF in new window
+            window.open(url, '_blank');
+            document.body.removeChild(iframe);
+            window.URL.revokeObjectURL(url);
+          }
+        }, 500);
+      };
+      
+      // Fallback: if onload doesn't fire, try after 2 seconds
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          try {
+            iframe.contentWindow?.print();
+            setTimeout(() => {
+              if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+              }
+              window.URL.revokeObjectURL(url);
+            }, 1000);
+          } catch (error) {
+            window.open(url, '_blank');
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+            window.URL.revokeObjectURL(url);
+          }
+        }
+      }, 2000);
+    } catch (error: any) {
+      showToast.error(error.message || 'Failed to print letter');
+    }
+  };
+
   // Get recipient display name
   const getRecipientName = (): string => {
     if (!displayLetter) return "";
@@ -371,10 +434,14 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
                   {displayLetter.pdf_path && (
                     <>
                       <Separator />
-                      <div>
-                        <Button onClick={handleDownloadPdf} variant="outline" className="w-full">
+                      <div className="flex gap-2">
+                        <Button onClick={handleDownloadPdf} variant="outline" className="flex-1">
                           <Download className="h-4 w-4 mr-2" />
                           {t("dms.issueLetter.letterDetails.downloadPdf") || "Download PDF"}
+                        </Button>
+                        <Button onClick={handlePrint} variant="outline" className="flex-1">
+                          <Printer className="h-4 w-4 mr-2" />
+                          {t("dms.issueLetter.letterDetails.print") || "Print"}
                         </Button>
                       </div>
                     </>
@@ -388,6 +455,12 @@ export function LetterDetailsPanel({ letter, open, onOpenChange }: LetterDetails
               {displayLetter.body_html ? (
                 <Card>
                   <CardContent className="pt-6">
+                    <div className="flex justify-end mb-2">
+                      <Button onClick={handlePrint} variant="outline" size="sm">
+                        <Printer className="h-4 w-4 mr-2" />
+                        {t("dms.issueLetter.letterDetails.print") || "Print"}
+                      </Button>
+                    </div>
                     <div className="border rounded-lg bg-white overflow-hidden">
                       <iframe
                         srcDoc={displayLetter.body_html}

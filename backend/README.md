@@ -21,6 +21,10 @@ php artisan migrate
 # Seed database (optional)
 php artisan db:seed
 
+# Install PDF letterhead dependencies (Imagick/Ghostscript)
+# See INSTALL_DEPENDENCIES.md for detailed instructions
+# On Ubuntu/Debian: bash scripts/install-dependencies.sh
+
 # Start development server
 php artisan serve
 ```
@@ -59,6 +63,14 @@ backend/
 - **All tenant tables require `organization_id`** - Enforced via migrations and middleware
 - **Permissions are organization-scoped** - Use Spatie's team feature
 - **Soft deletes are used** - Data is never permanently deleted
+
+## PDF Letterhead Dependencies
+
+For PDF letterhead rendering to work correctly, you need to install either:
+- **Imagick PHP extension** (recommended) - Best quality and performance
+- **Ghostscript** (alternative) - Works if Imagick is not available
+
+See [INSTALL_DEPENDENCIES.md](./INSTALL_DEPENDENCIES.md) for detailed installation instructions.
 
 ## API Documentation
 

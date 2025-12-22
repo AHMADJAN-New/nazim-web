@@ -350,7 +350,7 @@ class OutgoingDocumentsController extends BaseDmsController
         }
         [$user, $profile, $schoolIds] = $context;
 
-        $doc = OutgoingDocument::with(['template.letterhead', 'template.watermark'])
+        $doc = OutgoingDocument::with(['template.letterhead', 'template.watermark', 'letterhead'])
             ->where('id', $id)
             ->where('organization_id', $profile->organization_id)
             ->firstOrFail();
@@ -406,10 +406,21 @@ class OutgoingDocumentsController extends BaseDmsController
                 );
 
                 $processedText = $this->renderingService->replaceTemplateVariables($template->body_text ?? '', $allVars);
+                
+                // Use document's letterhead if set, otherwise use template's letterhead
+                // Temporarily override template's letterhead with document's letterhead for rendering
+                $originalLetterhead = $template->letterhead;
+                if ($doc->letterhead) {
+                    $template->setRelation('letterhead', $doc->letterhead);
+                }
+                
                 $html = $this->renderingService->render($template, $processedText, [
                     'table_payload' => $doc->table_payload ?? null,
                     'for_browser' => false,
                 ]);
+                
+                // Restore original letterhead relationship
+                $template->setRelation('letterhead', $originalLetterhead);
 
                 $directory = 'dms/outgoing/' . ($doc->school_id ?: $profile->default_school_id ?: $profile->organization_id);
                 $pdfPath = $this->pdfService->generate($html, $template->page_layout ?? 'A4_portrait', $directory);

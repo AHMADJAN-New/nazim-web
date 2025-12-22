@@ -3204,6 +3204,7 @@ export const ar: TranslationKeys = {
         template: 'القالب',
         description: 'الوصف',
         downloadPdf: 'تحميل PDF',
+        print: 'طباعة',
         noPreview: 'لا توجد معاينة متاحة',
         noAttachments: 'لم يتم العثور على مرفقات'
       },
@@ -3216,6 +3217,9 @@ export const ar: TranslationKeys = {
       draftModeActive: 'وضع المسودة: يمكنك تحميل المرفقات. انقر على \'إصدار الخطاب\' عندما تكون جاهزًا.',
       issuing: 'جاري الإصدار...',
       issueButton: 'إصدار الخطاب',
+      print: 'طباعة',
+      printFailed: 'فشل إنشاء PDF للطباعة',
+      generatingPdf: 'جاري إنشاء PDF...',
       selectTemplateFirst: 'الرجاء اختيار قالب أولاً',
       fillRequiredFields: 'الرجاء ملء جميع الحقول المطلوبة'
     }

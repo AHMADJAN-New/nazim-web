@@ -217,6 +217,7 @@ export interface TranslationKeys {
         issueDate: string;
         subject: string;
         status: string;
+        print: string;
         recipient: string;
         securityLevel: string;
         address: string;
@@ -235,6 +236,9 @@ export interface TranslationKeys {
       draftModeActive: string;
       issuing: string;
       issueButton: string;
+      print: string;
+      printFailed: string;
+      generatingPdf: string;
       selectTemplateFirst: string;
       fillRequiredFields: string;
     };

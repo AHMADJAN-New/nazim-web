@@ -583,6 +583,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::delete('/dms/templates/{id}', [LetterTemplatesController::class, 'destroy']);
     Route::post('/dms/templates/{id}/duplicate', [LetterTemplatesController::class, 'duplicate']);
     Route::post('/dms/templates/{id}/preview', [LetterTemplatesController::class, 'preview']);
+    Route::post('/dms/templates/{id}/preview-pdf', [LetterTemplatesController::class, 'previewPdf']);
 
     Route::get('/dms/letterheads', [LetterheadsController::class, 'index']);
     Route::post('/dms/letterheads', [LetterheadsController::class, 'store']);

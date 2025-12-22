@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, Award, Eye, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Download, Award, Eye, Image as ImageIcon, Printer } from 'lucide-react';
 import {
   useCertificateTemplates,
   useGenerateCertificate,
@@ -1373,6 +1373,59 @@ export function CertificatePdfGenerator({
               <ImageIcon className="h-4 w-4 mr-2" />
             )}
             Download Image
+          </Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              if (!selectedTemplateId || !certificateData) return;
+              setIsGenerating(true);
+              try {
+                // Generate certificate first if needed
+                await generateCertificate.mutateAsync({
+                  courseStudentId,
+                  templateId: selectedTemplateId,
+                });
+
+                // Get updated certificate data
+                const updatedData = await certificateTemplatesApi.getCertificateData(courseStudentId) as CertificateData;
+                const backgroundUrl = updatedData?.background_url || certificateData.background_url;
+                let backgroundImageBase64: string | null = null;
+                if (backgroundUrl) {
+                  backgroundImageBase64 = await convertImageToBase64(backgroundUrl);
+                }
+
+                // Generate PDF blob
+                const docDefinition = await buildPdfDocument(updatedData || certificateData, selectedTemplate!, backgroundImageBase64);
+                pdfMake.createPdf(docDefinition).getBlob((blob) => {
+                  // Open PDF in new window and print
+                  const url = URL.createObjectURL(blob);
+                  const printWindow = window.open(url, '_blank');
+                  if (printWindow) {
+                    printWindow.onload = () => {
+                      setTimeout(() => {
+                        printWindow.print();
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                      }, 500);
+                    };
+                  }
+                  setIsGenerating(false);
+                }, (error) => {
+                  console.error('[CertificatePdfGenerator] Print failed:', error);
+                  setIsGenerating(false);
+                });
+              } catch (error) {
+                console.error('[CertificatePdfGenerator] Print failed:', error);
+                setIsGenerating(false);
+              }
+            }}
+            disabled={!selectedTemplateId || isGenerating || dataLoading}
+          >
+            {isGenerating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Printer className="h-4 w-4 mr-2" />
+            )}
+            Print
           </Button>
           <Button
             onClick={() => handleGeneratePdf(true)}

@@ -6,19 +6,24 @@ use App\Models\LetterTemplate;
 use App\Models\Letterhead;
 use App\Services\FieldMappingService;
 use App\Services\DocumentRenderingService;
+use App\Services\DocumentPdfService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class LetterTemplatesController extends BaseDmsController
 {
     protected FieldMappingService $fieldMappingService;
     protected DocumentRenderingService $renderingService;
+    protected DocumentPdfService $pdfService;
 
     public function __construct(
         FieldMappingService $fieldMappingService,
-        DocumentRenderingService $renderingService
+        DocumentRenderingService $renderingService,
+        DocumentPdfService $pdfService
     ) {
         $this->fieldMappingService = $fieldMappingService;
         $this->renderingService = $renderingService;
+        $this->pdfService = $pdfService;
     }
 
     public function index(Request $request)
@@ -285,6 +290,98 @@ class LetterTemplatesController extends BaseDmsController
             'template' => $template,
             'mock_data' => $mockData,
         ]);
+    }
+
+    /**
+     * Generate PDF from template preview (for printing before issuing)
+     */
+    public function previewPdf(string $id, Request $request)
+    {
+        $context = $this->requireOrganizationContext($request, 'dms.templates.read');
+        if ($context instanceof \Illuminate\Http\JsonResponse) {
+            return $context;
+        }
+        [, $profile] = $context;
+
+        $template = LetterTemplate::where('id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->with(['letterhead', 'watermark'])
+            ->firstOrFail();
+
+        $this->authorize('view', $template);
+
+        // Get recipient type from request or use category
+        $recipientType = $request->input('recipient_type', $template->category);
+        $recipientId = $request->input('recipient_id');
+
+        // Get actual recipient data if recipient_id is provided, otherwise use mock data
+        if ($recipientId) {
+            $actualData = $this->fieldMappingService->buildVariablesForOutgoingDocument(
+                $recipientType,
+                $recipientId,
+                [],
+                []
+            );
+            $mockData = [];
+        } else {
+            $actualData = [];
+            $mockData = $this->fieldMappingService->getMockData($recipientType);
+        }
+
+        // Merge with any custom variables from request
+        $customVariables = $request->input('variables', []);
+        $allData = array_merge($mockData, $actualData, $customVariables);
+
+        // Filter out null values and ensure all values are strings
+        $allData = array_filter($allData, fn($value) => $value !== null);
+        $allData = array_map(fn($value) => $value !== null && $value !== '' ? (string) $value : '', $allData);
+
+        // Replace placeholders in body_text
+        $bodyText = $template->body_text ?? '';
+        $processedText = $this->renderingService->replaceTemplateVariables($bodyText, $allData);
+
+        // Build table payload if template supports tables
+        $tablePayload = null;
+        if ($template->supports_tables && !empty($template->table_structure)) {
+            $tablePayload = $request->input('table_payload', $template->table_structure);
+        }
+
+        // Render the document for PDF generation (not for browser)
+        $html = $this->renderingService->render($template, $processedText, [
+            'table_payload' => $tablePayload,
+            'for_browser' => false, // Use base64 data URLs for PDF generation
+        ]);
+
+        // Debug: Log letterhead info (only in development)
+        if (config('app.debug')) {
+            \Log::debug('Preview PDF generation', [
+                'template_id' => $template->id,
+                'has_letterhead' => $template->letterhead !== null,
+                'letterhead_id' => $template->letterhead?->id,
+                'letterhead_file_path' => $template->letterhead?->file_path,
+                'html_length' => strlen($html),
+                'html_contains_letterhead' => str_contains($html, 'letterhead-background') || str_contains($html, 'letterhead-header'),
+                'html_contains_data_url' => str_contains($html, 'data:image') || str_contains($html, 'data:application/pdf'),
+            ]);
+        }
+
+        try {
+            // Generate PDF in temp directory
+            $directory = 'dms/temp';
+            $pdfPath = $this->pdfService->generate($html, $template->page_layout ?? 'A4_portrait', $directory);
+
+            // Return PDF file
+            return Storage::download($pdfPath, 'letter-preview.pdf');
+        } catch (\Exception $e) {
+            \Log::error('Failed to generate preview PDF', [
+                'template_id' => $template->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'error' => 'Failed to generate PDF: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

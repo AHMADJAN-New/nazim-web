@@ -3203,6 +3203,7 @@ export const ps: TranslationKeys = {
         template: 'کینډۍ',
         description: 'تفصیل',
         downloadPdf: 'PDF ډاونلوډ کړئ',
+        print: 'چاپ',
         noPreview: 'هیڅ مخکتنه شتون نلري',
         noAttachments: 'هیڅ ضمیمه ونه موندل شوه'
       },
@@ -3215,6 +3216,9 @@ export const ps: TranslationKeys = {
       draftModeActive: 'د مسودې حالت: تاسو کولی شئ ضمیمې اپلوډ کړئ. چمتو شئ چې \'لیک صادر کړئ\' کلیک وکړئ.',
       issuing: 'صادر کېږي...',
       issueButton: 'لیک صادر کړئ',
+      print: 'چاپ',
+      printFailed: 'د چاپ لپاره PDF جوړول ناکام شول',
+      generatingPdf: 'PDF جوړیږي...',
       selectTemplateFirst: 'لومړی یو کړکۍ وټاکئ',
       fillRequiredFields: 'لومړی اړینې ساحې ډک کړئ'
     }

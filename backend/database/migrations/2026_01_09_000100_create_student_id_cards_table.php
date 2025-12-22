@@ -25,6 +25,8 @@ return new class extends Migration
         $classesExists = Schema::hasTable('classes');
         $classAcademicYearsExists = Schema::hasTable('class_academic_years');
         $profilesExists = Schema::hasTable('profiles');
+        $schoolBrandingExists = Schema::hasTable('school_branding');
+        $incomeEntriesExists = Schema::hasTable('income_entries');
 
         Schema::create('student_id_cards', function (Blueprint $table) use (
             $organizationsExists,
@@ -34,7 +36,9 @@ return new class extends Migration
             $academicYearsExists,
             $classesExists,
             $classAcademicYearsExists,
-            $profilesExists
+            $profilesExists,
+            $schoolBrandingExists,
+            $incomeEntriesExists
         ) {
             // UUID primary key
             $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
@@ -43,6 +47,12 @@ return new class extends Migration
             $table->uuid('organization_id');
             if ($organizationsExists) {
                 $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
+            }
+
+            // School reference (nullable, as some cards might not have a school)
+            $table->uuid('school_id')->nullable()->after('organization_id');
+            if ($schoolBrandingExists) {
+                $table->foreign('school_id')->references('id')->on('school_branding')->onDelete('set null');
             }
 
             // Student and admission references
@@ -84,6 +94,10 @@ return new class extends Migration
             $table->decimal('card_fee', 10, 2)->default(0);
             $table->boolean('card_fee_paid')->default(false);
             $table->timestampTz('card_fee_paid_date')->nullable();
+            $table->uuid('income_entry_id')->nullable()->after('card_fee_paid_date');
+            if ($incomeEntriesExists) {
+                $table->foreign('income_entry_id')->references('id')->on('income_entries')->onDelete('set null');
+            }
             $table->boolean('is_printed')->default(false);
             $table->timestampTz('printed_at')->nullable();
 
@@ -103,12 +117,14 @@ return new class extends Migration
 
             // Indexes for performance
             $table->index('organization_id');
+            $table->index('school_id');
             $table->index('student_id');
             $table->index('student_admission_id');
             $table->index('id_card_template_id');
             $table->index('academic_year_id');
             $table->index('class_id');
             $table->index('class_academic_year_id');
+            $table->index('income_entry_id');
             $table->index('is_printed');
             $table->index('card_fee_paid');
             $table->index('deleted_at');

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Download, Eye } from 'lucide-react';
+import { Loader2, Download, Eye, Printer } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { usePreviewIdCard, useExportIndividualIdCard, useStudentIdCard } from '@/hooks/useStudentIdCards';
 import { useIdCardTemplate } from '@/hooks/useIdCardTemplates';
@@ -237,6 +237,39 @@ export function StudentIdCardPreview({
                   <Download className="h-4 w-4 mr-2" />
                 )}
                 {t('common.download') || 'Download'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (previewImageUrl) {
+                    const printWindow = window.open();
+                    if (printWindow) {
+                      printWindow.document.write(`
+                        <html>
+                          <head>
+                            <title>Print ID Card</title>
+                            <style>
+                              body { margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; }
+                              img { max-width: 100%; height: auto; }
+                            </style>
+                          </head>
+                          <body>
+                            <img src="${previewImageUrl}" alt="ID Card ${side} side" />
+                          </body>
+                        </html>
+                      `);
+                      printWindow.document.close();
+                      setTimeout(() => {
+                        printWindow.print();
+                      }, 250);
+                    }
+                  }
+                }}
+                disabled={!previewImageUrl}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                {t('common.print') || 'Print'}
               </Button>
             </div>
           </div>

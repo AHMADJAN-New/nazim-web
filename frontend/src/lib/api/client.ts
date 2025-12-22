@@ -3212,6 +3212,17 @@ export const dmsApi = {
       variables?: Record<string, string>,
       options?: { recipient_type?: string; table_payload?: any }
     ) => apiClient.post(`/dms/templates/${id}/preview`, { variables: variables || {}, ...(options || {}) }),
+    previewPdf: async (
+      id: string,
+      variables?: Record<string, string>,
+      options?: { recipient_type?: string; recipient_id?: string; table_payload?: any }
+    ) => {
+      const result = await apiClient.requestFile(`/dms/templates/${id}/preview-pdf`, {
+        method: 'POST',
+        body: JSON.stringify({ variables: variables || {}, ...(options || {}) }),
+      });
+      return result.blob;
+    },
     previewDraft: async (payload: {
       template: Record<string, any>;
       variables?: Record<string, string>;

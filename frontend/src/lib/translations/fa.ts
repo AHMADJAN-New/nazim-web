@@ -3210,6 +3210,7 @@ export const fa: TranslationKeys = {
         template: 'قالب',
         description: 'توضیحات',
         downloadPdf: 'دانلود PDF',
+        print: 'چاپ',
         noPreview: 'پیش‌نمایش در دسترس نیست',
         noAttachments: 'هیچ پیوستی یافت نشد'
       },
@@ -3222,6 +3223,9 @@ export const fa: TranslationKeys = {
       draftModeActive: 'حالت پیش‌نویس: می‌توانید پیوست‌ها را آپلود کنید. وقتی آماده شدید روی \'صدور نامه\' کلیک کنید.',
       issuing: 'در حال صدور...',
       issueButton: 'صدور نامه',
+      print: 'چاپ',
+      printFailed: 'تولید PDF برای چاپ ناموفق بود',
+      generatingPdf: 'در حال تولید PDF...',
       selectTemplateFirst: 'لطفاً ابتدا یک قالب انتخاب کنید',
       fillRequiredFields: 'لطفاً تمام فیلدهای الزامی را پر کنید'
     }

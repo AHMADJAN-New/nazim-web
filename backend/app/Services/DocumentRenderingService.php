@@ -848,14 +848,119 @@ HTML;
         </div>
 HTML;
             } else {
-                // PDF generation: Without Imagick, we can't convert PDF to image
-                // Log error and return empty - better than showing broken content
-                \Log::error("PDF letterhead cannot be rendered in PDF generation without Imagick extension", [
+                // PDF generation: Without Imagick, try to convert PDF to image using Ghostscript
+                // If Ghostscript is not available, use object tag (Browsershot might render it)
+                $objectFit = $isBackground ? 'cover' : 'contain';
+                
+                // Try Ghostscript conversion first (if available)
+                $gsAvailable = false;
+                $imageDataUrl = null;
+                
+                try {
+                    // Check if Ghostscript is available
+                    // Try multiple methods to detect Ghostscript
+                    $gsCheck = @shell_exec('gs --version 2>&1');
+                    $gsPath = trim(@shell_exec('which gs') ?: @shell_exec('where gs') ?: '');
+                    
+                    // Check if gs command exists and returns a version (any version string means it's installed)
+                    $hasGs = false;
+                    if (!empty($gsCheck) && !str_contains($gsCheck, 'not found') && !str_contains($gsCheck, 'command not found')) {
+                        $hasGs = true;
+                    } elseif (!empty($gsPath) && file_exists($gsPath)) {
+                        $hasGs = true;
+                    }
+                    
+                    if ($hasGs) {
+                        $gsAvailable = true;
+                        
+                        // Convert PDF first page to PNG using Ghostscript
+                        $pdfPath = Storage::path($letterhead->file_path);
+                        $tempPngPath = sys_get_temp_dir() . '/' . Str::uuid()->toString() . '.png';
+                        
+                        // Use Ghostscript to convert PDF to PNG at 300 DPI
+                        $command = sprintf(
+                            'gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r300 -dFirstPage=1 -dLastPage=1 -sOutputFile="%s" "%s" 2>&1',
+                            escapeshellarg($tempPngPath),
+                            escapeshellarg($pdfPath)
+                        );
+                        
+                        $output = [];
+                        $returnVar = 0;
+                        @exec($command, $output, $returnVar);
+                        
+                        if ($returnVar === 0 && file_exists($tempPngPath) && filesize($tempPngPath) > 0) {
+                            $imageData = file_get_contents($tempPngPath);
+                            if ($imageData && strlen($imageData) > 0) {
+                                $base64Image = base64_encode($imageData);
+                                $imageDataUrl = "data:image/png;base64,{$base64Image}";
+                                
+                                // Clean up temp file
+                                @unlink($tempPngPath);
+                                
+                                \Log::info("Successfully converted PDF letterhead to image using Ghostscript", [
+                                    'letterhead_id' => $letterhead->id,
+                                    'image_size' => strlen($imageData),
+                                    'pdf_path' => $pdfPath,
+                                ]);
+                            } else {
+                                \Log::warning("Ghostscript conversion produced empty image", [
+                                    'letterhead_id' => $letterhead->id,
+                                    'temp_path' => $tempPngPath,
+                                    'command_output' => implode("\n", $output),
+                                ]);
+                                @unlink($tempPngPath);
+                            }
+                        } else {
+                            \Log::warning("Ghostscript conversion failed", [
+                                'letterhead_id' => $letterhead->id,
+                                'return_code' => $returnVar,
+                                'command_output' => implode("\n", $output),
+                                'temp_path_exists' => file_exists($tempPngPath),
+                            ]);
+                            if (file_exists($tempPngPath)) {
+                                @unlink($tempPngPath);
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Ghostscript conversion failed for letterhead {$letterhead->id}: {$e->getMessage()}", [
+                        'letterhead_id' => $letterhead->id,
+                    ]);
+                }
+                
+                // If Ghostscript conversion succeeded, use the image
+                if ($imageDataUrl) {
+                    return <<<HTML
+        <div class="{$class}" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1 !important; pointer-events: none; overflow: hidden; background-color: #ffffff; {$extraStyle}">
+            <img src="{$imageDataUrl}" alt="Letterhead" style="width: 100%; height: 100%; object-fit: {$objectFit}; display: block; min-height: 100vh; position: absolute; top: 0; left: 0;" />
+        </div>
+HTML;
+                }
+                
+                // Fallback: Use embed tag with PDF data URL
+                // Note: Browsershot may not render PDF embeds properly without Imagick/Ghostscript
+                // This is a last resort - the letterhead may not appear
+                \Log::error("Imagick and Ghostscript not available for PDF letterhead conversion - letterhead may not render", [
                     'letterhead_id' => $letterhead->id,
                     'file_path' => $letterhead->file_path,
-                    'message' => 'Imagick extension is required for PDF letterheads in PDF generation',
+                    'recommendation' => 'Install Imagick PHP extension (php-imagick) or Ghostscript (gs) for PDF letterhead support',
                 ]);
-                return '';
+                
+                // Use embed tag as last resort - Browsershot might render it, but likely won't work
+                // Show a visible placeholder so user knows letterhead should be there
+                $objectFit = $isBackground ? 'cover' : 'contain';
+                return <<<HTML
+        <div class="{$class}" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1 !important; pointer-events: none; overflow: hidden; background-color: #ffffff; {$extraStyle}">
+            <embed src="{$dataUrl}" type="application/pdf" style="width: 100%; height: 100%; min-height: 100vh; position: absolute; top: 0; left: 0; border: none; pointer-events: none;" />
+            <!-- Fallback: Show warning if PDF doesn't load -->
+            <div style="position: absolute; inset: 0; background: rgba(255, 255, 255, 0.95); display: flex; align-items: center; justify-content: center; color: #999; font-size: 11px; text-align: center; padding: 20px; z-index: 2;">
+                <div>
+                    <p style="margin: 0 0 8px 0; font-weight: 500;">⚠️ PDF Letterhead</p>
+                    <p style="margin: 0; font-size: 10px; opacity: 0.8;">Imagick or Ghostscript required for PDF letterhead rendering. Letterhead may not appear in generated PDF.</p>
+                </div>
+            </div>
+        </div>
+HTML;
             }
         }
         
