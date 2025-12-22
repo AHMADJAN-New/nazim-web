@@ -70,8 +70,6 @@ class LetterTemplatesController extends BaseDmsController
             'watermark_id' => ['nullable', 'uuid', 'exists:letterheads,id'],
             'letter_type' => ['nullable', 'string', 'max:50'],
             'body_text' => ['nullable', 'string'],
-            'font_family' => ['nullable', 'string', 'max:100'],
-            'font_size' => ['nullable', 'integer', 'min:8', 'max:72'],
             'variables' => ['nullable', 'array'],
             'supports_tables' => ['boolean'],
             'table_structure' => ['nullable', 'array'],
@@ -112,8 +110,6 @@ class LetterTemplatesController extends BaseDmsController
             'watermark_id' => ['nullable', 'uuid', 'exists:letterheads,id'],
             'letter_type' => ['nullable', 'string', 'max:50'],
             'body_text' => ['nullable', 'string'],
-            'font_family' => ['nullable', 'string', 'max:100'],
-            'font_size' => ['nullable', 'integer', 'min:8', 'max:72'],
             'variables' => ['nullable', 'array'],
             'supports_tables' => ['boolean'],
             'table_structure' => ['nullable', 'array'],
@@ -220,30 +216,41 @@ class LetterTemplatesController extends BaseDmsController
 
         // Get recipient type from request or use category
         $recipientType = $request->input('recipient_type', $template->category);
-
-        // Get recipient_id from request - if provided, use actual data instead of mock
         $recipientId = $request->input('recipient_id');
-        $schoolId = $request->input('school_id');
 
-        // Get data for the recipient type (actual data if recipient_id provided, otherwise mock)
+        // Get actual recipient data if recipient_id is provided, otherwise use mock data
         if ($recipientId) {
-            // Use buildVariablesForOutgoingDocument to get all data (recipient + school + general)
-            $baseData = $this->fieldMappingService->buildVariablesForOutgoingDocument(
+            $actualData = $this->fieldMappingService->buildVariablesForOutgoingDocument(
                 $recipientType,
                 $recipientId,
-                [], // customData
-                [], // documentData
-                $schoolId,
-                $profile->organization_id
+                [],
+                []
             );
+            $mockData = []; // Don't use mock data when we have actual data
         } else {
-            // Use mock data for preview
-            $baseData = $this->fieldMappingService->getMockData($recipientType);
+            $actualData = [];
+            $mockData = $this->fieldMappingService->getMockData($recipientType);
         }
 
-        // Merge with any custom variables from request
+        // Merge with any custom variables from request (custom variables override actual/mock data)
         $customVariables = $request->input('variables', []);
-        $allData = array_merge($baseData, $customVariables);
+        $allData = array_merge($mockData, $actualData, $customVariables);
+
+        // Filter out null values and ensure all values are strings
+        $allData = array_filter($allData, fn($value) => $value !== null);
+        $allData = array_map(fn($value) => $value !== null && $value !== '' ? (string) $value : '', $allData);
+
+        // Debug: Log variables being used (only in development)
+        if (config('app.debug')) {
+            \Log::debug('Template preview variables', [
+                'template_id' => $template->id,
+                'recipient_type' => $recipientType,
+                'recipient_id' => $recipientId,
+                'variables_count' => count($allData),
+                'variable_keys' => array_keys($allData),
+                'has_custom_variables' => !empty($customVariables),
+            ]);
+        }
 
         // Replace placeholders in body_text
         $bodyText = $template->body_text ?? '';
@@ -255,14 +262,10 @@ class LetterTemplatesController extends BaseDmsController
             $tablePayload = $request->input('table_payload', $template->table_structure);
         }
 
-        // Get frontend URL from request or use default
-        $frontendUrl = $request->input('frontend_url', config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173')));
-        
         // Render the document for browser preview (use HTTP URLs instead of file://)
         $renderedHtml = $this->renderingService->render($template, $processedText, [
             'table_payload' => $tablePayload,
             'for_browser' => true, // Use HTTP URLs for browser preview
-            'frontend_url' => $frontendUrl, // Pass frontend URL for font loading
         ]);
 
         // Debug: Log letterhead info (only in development)
@@ -280,7 +283,7 @@ class LetterTemplatesController extends BaseDmsController
         return response()->json([
             'html' => $renderedHtml,
             'template' => $template,
-            'mock_data' => $baseData,
+            'mock_data' => $mockData,
         ]);
     }
 
@@ -309,12 +312,9 @@ class LetterTemplatesController extends BaseDmsController
             'template.field_positions' => ['nullable', 'array'],
             'template.supports_tables' => ['nullable', 'boolean'],
             'template.table_structure' => ['nullable', 'array'],
-            'template.font_family' => ['nullable', 'string', 'max:100'],
-            'template.font_size' => ['nullable', 'integer', 'min:8', 'max:72'],
             'recipient_type' => ['nullable', 'string', 'max:255'],
             'variables' => ['nullable', 'array'],
             'table_payload' => ['nullable', 'array'],
-            'frontend_url' => ['nullable', 'string', 'url'], // Frontend URL for font loading
         ]);
 
         $templatePayload = $data['template'];
@@ -330,8 +330,6 @@ class LetterTemplatesController extends BaseDmsController
         $template->field_positions = $templatePayload['field_positions'] ?? [];
         $template->supports_tables = $templatePayload['supports_tables'] ?? false;
         $template->table_structure = $templatePayload['table_structure'] ?? null;
-        $template->font_family = $templatePayload['font_family'] ?? null;
-        $template->font_size = $templatePayload['font_size'] ?? null;
 
         if (!empty($template->letterhead_id)) {
             $letterhead = Letterhead::where('organization_id', $profile->organization_id)->find($template->letterhead_id);
@@ -348,27 +346,9 @@ class LetterTemplatesController extends BaseDmsController
         }
 
         $recipientType = $data['recipient_type'] ?? $template->category;
-        $recipientId = $data['recipient_id'] ?? null;
-        $schoolId = $data['school_id'] ?? null;
-
-        // Get data for the recipient type (actual data if recipient_id provided, otherwise mock)
-        if ($recipientId) {
-            // Use buildVariablesForOutgoingDocument to get all data (recipient + school + general)
-            $baseData = $this->fieldMappingService->buildVariablesForOutgoingDocument(
-                $recipientType,
-                $recipientId,
-                [], // customData
-                [], // documentData
-                $schoolId,
-                $profile->organization_id
-            );
-        } else {
-            // Use mock data for preview
-            $baseData = $this->fieldMappingService->getMockData($recipientType);
-        }
-
+        $mockData = $this->fieldMappingService->getMockData($recipientType);
         $customVariables = $data['variables'] ?? [];
-        $allData = array_merge($baseData, $customVariables);
+        $allData = array_merge($mockData, $customVariables);
 
         $processedText = $this->renderingService->replaceTemplateVariables($template->body_text ?? '', $allData);
 
@@ -380,12 +360,11 @@ class LetterTemplatesController extends BaseDmsController
         $renderedHtml = $this->renderingService->render($template, $processedText, [
             'table_payload' => $tablePayload,
             'for_browser' => true,
-            'frontend_url' => $data['frontend_url'] ?? null, // Pass frontend URL for font loading
         ]);
 
         return response()->json([
             'html' => $renderedHtml,
-            'mock_data' => $baseData, // Use baseData which is already set above
+            'mock_data' => $mockData,
         ]);
     }
 

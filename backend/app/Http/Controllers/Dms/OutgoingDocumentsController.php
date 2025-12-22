@@ -13,7 +13,6 @@ use App\Services\FieldMappingService;
 use App\Services\SecurityGateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -134,31 +133,6 @@ class OutgoingDocumentsController extends BaseDmsController
 
         $data = $request->validate($validationRules);
 
-        // Auto-detect school_id and academic_year_id from recipient if not provided
-        if (empty($data['school_id']) && !empty($data['recipient_id']) && !empty($data['recipient_type'])) {
-            if ($data['recipient_type'] === 'student') {
-                $student = \App\Models\Student::find($data['recipient_id']);
-                if ($student && $student->school_id) {
-                    $data['school_id'] = $student->school_id;
-                }
-                // Get academic_year_id from student's current admission
-                if (empty($data['academic_year_id']) && Schema::hasColumn('outgoing_documents', 'academic_year_id')) {
-                    $admission = \App\Models\StudentAdmission::where('student_id', $data['recipient_id'])
-                        ->where('enrollment_status', 'active')
-                        ->orderByDesc('admission_year')
-                        ->first();
-                    if ($admission && $admission->academic_year_id) {
-                        $data['academic_year_id'] = $admission->academic_year_id;
-                    }
-                }
-            } elseif ($data['recipient_type'] === 'staff') {
-                $staff = \App\Models\Staff::find($data['recipient_id']);
-                if ($staff && $staff->school_id) {
-                    $data['school_id'] = $staff->school_id;
-                }
-            }
-        }
-
         if ($response = $this->ensureSchoolAccess($data['school_id'] ?? null, $schoolIds)) {
             return $response;
         }
@@ -210,9 +184,7 @@ class OutgoingDocumentsController extends BaseDmsController
                     $data['recipient_type'] ?? 'general',
                     $data['recipient_id'] ?? null,
                     $templateVars,
-                    $documentVars,
-                    $data['school_id'] ?? null,
-                    $profile->organization_id
+                    $documentVars
                 );
 
                 $processedText = $this->renderingService->replaceTemplateVariables($template->body_text ?? '', $allVars);
@@ -250,9 +222,14 @@ class OutgoingDocumentsController extends BaseDmsController
 
     public function show(string $id, Request $request)
     {
+        // Try to get context with read permission first, then try create permission
         $context = $this->requireOrganizationContext($request, 'dms.outgoing.read');
         if ($context instanceof \Illuminate\Http\JsonResponse) {
-            return $context;
+            // If read permission fails, try create permission (for users who can issue letters)
+            $context = $this->requireOrganizationContext($request, 'dms.outgoing.create');
+            if ($context instanceof \Illuminate\Http\JsonResponse) {
+                return $context;
+            }
         }
         [$user, $profile, $schoolIds] = $context;
 
@@ -260,14 +237,31 @@ class OutgoingDocumentsController extends BaseDmsController
             ->where('organization_id', $profile->organization_id)
             ->firstOrFail();
 
-        $this->authorize('view', $doc);
+        // Check if user has either read OR create permission
+        $hasReadPermission = $user->hasPermissionTo('dms.outgoing.read');
+        $hasCreatePermission = $user->hasPermissionTo('dms.outgoing.create');
+        
+        if (!$hasReadPermission && !$hasCreatePermission) {
+            return response()->json(['error' => 'You do not have permission to view outgoing documents. You need either "Read Outgoing Documents" or "Create Outgoing Documents" permission.'], 403);
+        }
 
         if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
             return $response;
         }
 
-        if ($doc->security_level_key && !$this->securityGateService->canView($user, $doc->security_level_key, $profile->organization_id)) {
-            return response()->json(['error' => 'Insufficient clearance'], 403);
+        // Check if user created this document (users can always view documents they created)
+        $userCreatedDocument = isset($doc->created_by) && $doc->created_by === $user->id;
+
+        // Check security clearance
+        // Skip security clearance check if:
+        // 1. User created the document (they should be able to view their own documents)
+        // 2. User has create permission (they can issue letters, so they should be able to view them regardless of security level)
+        if ($doc->security_level_key && !$userCreatedDocument && !$hasCreatePermission) {
+            // Only enforce security clearance for users with ONLY read permission who didn't create the document
+            // Users with create permission can view any document (they issued it), bypassing security clearance
+            if (!$this->securityGateService->canView($user, $doc->security_level_key, $profile->organization_id)) {
+                return response()->json(['error' => 'Insufficient security clearance to view this document'], 403);
+            }
         }
 
         $files = DocumentFile::where('owner_type', 'outgoing')
@@ -345,54 +339,50 @@ class OutgoingDocumentsController extends BaseDmsController
 
     public function downloadPdf(string $id, Request $request)
     {
-        $user = $request->user();
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
-
-        if (!$profile || !$profile->organization_id) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        // Try to get context with read permission first, then try create permission
+        $context = $this->requireOrganizationContext($request, 'dms.outgoing.read');
+        if ($context instanceof \Illuminate\Http\JsonResponse) {
+            // If read permission fails, try create permission (for users who can issue letters)
+            $context = $this->requireOrganizationContext($request, 'dms.outgoing.create');
+            if ($context instanceof \Illuminate\Http\JsonResponse) {
+                return $context;
+            }
         }
+        [$user, $profile, $schoolIds] = $context;
 
-        // Set organization context for Spatie permissions
-        if (method_exists($user, 'setPermissionsTeamId')) {
-            $user->setPermissionsTeamId($profile->organization_id);
-        }
-
-        // Check if user has read or create permission for outgoing documents
-        // Users with read access can download, users with create access can download their own documents
-        try {
-            $hasReadPermission = $user->hasPermissionTo('dms.outgoing.read');
-            $hasCreatePermission = $user->hasPermissionTo('dms.outgoing.create');
-        } catch (\Exception $e) {
-            Log::warning("Permission check failed for dms.outgoing: {$e->getMessage()}");
-            $hasReadPermission = false;
-            $hasCreatePermission = false;
-        }
-
-        // Allow if user has read permission OR create permission
-        if (!$hasReadPermission && !$hasCreatePermission) {
-            return response()->json(['error' => 'This action is unauthorized. You need dms.outgoing.read or dms.outgoing.create permission.'], 403);
-        }
-
-        // Get document
         $doc = OutgoingDocument::with(['template.letterhead', 'template.watermark'])
             ->where('id', $id)
             ->where('organization_id', $profile->organization_id)
             ->firstOrFail();
 
-        // Get school IDs for access check
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        // Check if user has either read OR create permission
+        $hasReadPermission = $user->hasPermissionTo('dms.outgoing.read');
+        $hasCreatePermission = $user->hasPermissionTo('dms.outgoing.create');
+        
+        if (!$hasReadPermission && !$hasCreatePermission) {
+            return response()->json(['error' => 'You do not have permission to download outgoing document PDFs. You need either "Read Outgoing Documents" or "Create Outgoing Documents" permission.'], 403);
+        }
+
+        // Check if user created this document (users can always download documents they created)
+        $userCreatedDocument = false;
+        if (isset($doc->created_by) && $doc->created_by === $user->id) {
+            $userCreatedDocument = true;
+        }
+
+        // Check security clearance
+        // Skip security clearance check if:
+        // 1. User created the document (they should be able to download their own documents)
+        // 2. User has create permission (they can issue letters, so they should be able to download them regardless of security level)
+        if ($doc->security_level_key && !$userCreatedDocument && !$hasCreatePermission) {
+            // Only enforce security clearance for users with ONLY read permission who didn't create the document
+            // Users with create permission can download any document (they issued it), bypassing security clearance
+            if (!$this->securityGateService->canView($user, $doc->security_level_key, $profile->organization_id)) {
+                return response()->json(['error' => 'Insufficient security clearance to view this document'], 403);
+            }
+        }
 
         if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
             return $response;
-        }
-
-        // Check security level clearance (if document has security level)
-        // Users with read permission can download regardless of security level
-        // Security level check only applies if user doesn't have read permission
-        if ($doc->security_level_key && !$hasReadPermission) {
-            if (!$this->securityGateService->canView($user, $doc->security_level_key, $profile->organization_id)) {
-                return response()->json(['error' => 'Insufficient clearance'], 403);
-            }
         }
 
         $pdfPath = $doc->pdf_path;
@@ -412,9 +402,7 @@ class OutgoingDocumentsController extends BaseDmsController
                     $doc->recipient_type ?? 'general',
                     $doc->recipient_id,
                     $templateVars,
-                    $documentVars,
-                    $doc->school_id,
-                    $profile->organization_id
+                    $documentVars
                 );
 
                 $processedText = $this->renderingService->replaceTemplateVariables($template->body_text ?? '', $allVars);
@@ -423,7 +411,7 @@ class OutgoingDocumentsController extends BaseDmsController
                     'for_browser' => false,
                 ]);
 
-                $directory = 'dms/outgoing/' . ($doc->school_id ?: ($profile->default_school_id ?? $profile->organization_id));
+                $directory = 'dms/outgoing/' . ($doc->school_id ?: $profile->default_school_id ?: $profile->organization_id);
                 $pdfPath = $this->pdfService->generate($html, $template->page_layout ?? 'A4_portrait', $directory);
 
                 $doc->pdf_path = $pdfPath;
@@ -432,7 +420,7 @@ class OutgoingDocumentsController extends BaseDmsController
                 }
                 $doc->save();
             } catch (\Exception $e) {
-                Log::error('Failed to generate PDF for outgoing document', [
+                \Log::error('Failed to generate PDF for outgoing document', [
                     'document_id' => $doc->id,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
@@ -444,21 +432,22 @@ class OutgoingDocumentsController extends BaseDmsController
         }
 
         if (!$pdfPath || !Storage::exists($pdfPath)) {
-            Log::error('PDF file not found for outgoing document', [
+            \Log::error('PDF path does not exist after generation', [
                 'document_id' => $doc->id,
                 'pdf_path' => $pdfPath,
             ]);
-            return response()->json(['error' => 'PDF file not found. Please try regenerating the document.'], 404);
+            return response()->json(['error' => 'Failed to generate outgoing document PDF'], 500);
         }
 
         try {
             $filename = $this->buildPdfFilename($doc);
             return Storage::download($pdfPath, $filename);
         } catch (\Exception $e) {
-            Log::error('Failed to download PDF file', [
+            \Log::error('Failed to download PDF file', [
                 'document_id' => $doc->id,
                 'pdf_path' => $pdfPath,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
             return response()->json([
                 'error' => 'Failed to download PDF: ' . $e->getMessage(),

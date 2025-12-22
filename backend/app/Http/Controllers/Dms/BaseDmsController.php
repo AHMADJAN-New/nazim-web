@@ -24,16 +24,59 @@ abstract class BaseDmsController extends Controller
 
         // Scope Spatie permissions to the organization
         // Set the team context for Spatie permissions
-        if (method_exists($user, 'setPermissionsTeamId')) {
-            $user->setPermissionsTeamId($profile->organization_id);
+        // Note: setPermissionsTeamId() is a global helper function, not a method on User
+        if (function_exists('setPermissionsTeamId')) {
+            setPermissionsTeamId($profile->organization_id);
         }
 
         try {
             if (!$user->hasPermissionTo($permission)) {
-                return response()->json(['error' => 'This action is unauthorized'], 403);
+                // Log detailed permission information for debugging
+                $userRoles = DB::table('model_has_roles')
+                    ->where('model_type', 'App\\Models\\User')
+                    ->where('model_id', $user->id)
+                    ->where('organization_id', $profile->organization_id)
+                    ->pluck('role_id')
+                    ->toArray();
+                
+                $roleNames = DB::table('roles')
+                    ->whereIn('id', $userRoles)
+                    ->where('organization_id', $profile->organization_id)
+                    ->pluck('name')
+                    ->toArray();
+                
+                $permissionExists = DB::table('permissions')
+                    ->where('name', $permission)
+                    ->where(function($query) use ($profile) {
+                        $query->whereNull('organization_id')
+                              ->orWhere('organization_id', $profile->organization_id);
+                    })
+                    ->exists();
+                
+                Log::warning("Permission check failed", [
+                    'user_id' => $user->id,
+                    'permission' => $permission,
+                    'organization_id' => $profile->organization_id,
+                    'user_roles' => $roleNames,
+                    'permission_exists' => $permissionExists,
+                ]);
+                
+                return response()->json([
+                    'error' => 'This action is unauthorized',
+                    'message' => "You need the '{$permission}' permission to perform this action.",
+                    'debug' => [
+                        'permission' => $permission,
+                        'user_roles' => $roleNames,
+                    ]
+                ], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for {$permission}: {$e->getMessage()}");
+            Log::warning("Permission check failed for {$permission}: {$e->getMessage()}", [
+                'user_id' => $user->id,
+                'organization_id' => $profile->organization_id,
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 

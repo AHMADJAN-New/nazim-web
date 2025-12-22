@@ -184,6 +184,61 @@ export interface TranslationKeys {
     "dms.archive": string;
     "dms.reports": string;
     "dms.settings": string;
+  };
+
+  // Document Management System
+  dms: {
+    issueLetter: {
+      tabs: {
+        issue: string;
+        allIssued: string;
+      };
+      issuedLetters: {
+        title: string;
+        searchPlaceholder: string;
+        noLettersFound: string;
+        documentNumber: string;
+        subject: string;
+        recipient: string;
+        issueDate: string;
+        security: string;
+        recipientType: string;
+        academicYear: string;
+        fromDate: string;
+        toDate: string;
+        noSubject: string;
+      };
+      letterDetails: {
+        title: string;
+        details: string;
+        preview: string;
+        attachments: string;
+        documentNumber: string;
+        issueDate: string;
+        subject: string;
+        status: string;
+        recipient: string;
+        securityLevel: string;
+        address: string;
+        template: string;
+        description: string;
+        downloadPdf: string;
+        noPreview: string;
+        noAttachments: string;
+      };
+      uploadAttachments: string;
+      uploadAttachmentsDescription: string;
+      attachmentsNote: string;
+      draftCreated: string;
+      draftCreateFailed: string;
+      creatingDraft: string;
+      draftModeActive: string;
+      issuing: string;
+      issueButton: string;
+      selectTemplateFirst: string;
+      fillRequiredFields: string;
+    };
+  };
     "finance.fees": string;
     "finance.fees.dashboard": string;
     "finance.fees.structures": string;

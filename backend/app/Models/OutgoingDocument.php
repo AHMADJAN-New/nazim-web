@@ -46,6 +46,8 @@ class OutgoingDocument extends Model
         'announcement_scope',
         'table_payload',
         'template_variables',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
