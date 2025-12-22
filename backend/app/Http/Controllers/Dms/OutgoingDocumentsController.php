@@ -222,9 +222,14 @@ class OutgoingDocumentsController extends BaseDmsController
 
     public function show(string $id, Request $request)
     {
+        // Try to get context with read permission first, then try create permission
         $context = $this->requireOrganizationContext($request, 'dms.outgoing.read');
         if ($context instanceof \Illuminate\Http\JsonResponse) {
-            return $context;
+            // If read permission fails, try create permission (for users who can issue letters)
+            $context = $this->requireOrganizationContext($request, 'dms.outgoing.create');
+            if ($context instanceof \Illuminate\Http\JsonResponse) {
+                return $context;
+            }
         }
         [$user, $profile, $schoolIds] = $context;
 
@@ -232,14 +237,31 @@ class OutgoingDocumentsController extends BaseDmsController
             ->where('organization_id', $profile->organization_id)
             ->firstOrFail();
 
-        $this->authorize('view', $doc);
+        // Check if user has either read OR create permission
+        $hasReadPermission = $user->hasPermissionTo('dms.outgoing.read');
+        $hasCreatePermission = $user->hasPermissionTo('dms.outgoing.create');
+        
+        if (!$hasReadPermission && !$hasCreatePermission) {
+            return response()->json(['error' => 'You do not have permission to view outgoing documents. You need either "Read Outgoing Documents" or "Create Outgoing Documents" permission.'], 403);
+        }
 
         if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
             return $response;
         }
 
-        if ($doc->security_level_key && !$this->securityGateService->canView($user, $doc->security_level_key, $profile->organization_id)) {
-            return response()->json(['error' => 'Insufficient clearance'], 403);
+        // Check if user created this document (users can always view documents they created)
+        $userCreatedDocument = isset($doc->created_by) && $doc->created_by === $user->id;
+
+        // Check security clearance
+        // Skip security clearance check if:
+        // 1. User created the document (they should be able to view their own documents)
+        // 2. User has create permission (they can issue letters, so they should be able to view them regardless of security level)
+        if ($doc->security_level_key && !$userCreatedDocument && !$hasCreatePermission) {
+            // Only enforce security clearance for users with ONLY read permission who didn't create the document
+            // Users with create permission can view any document (they issued it), bypassing security clearance
+            if (!$this->securityGateService->canView($user, $doc->security_level_key, $profile->organization_id)) {
+                return response()->json(['error' => 'Insufficient security clearance to view this document'], 403);
+            }
         }
 
         $files = DocumentFile::where('owner_type', 'outgoing')
@@ -317,9 +339,14 @@ class OutgoingDocumentsController extends BaseDmsController
 
     public function downloadPdf(string $id, Request $request)
     {
+        // Try to get context with read permission first, then try create permission
         $context = $this->requireOrganizationContext($request, 'dms.outgoing.read');
         if ($context instanceof \Illuminate\Http\JsonResponse) {
-            return $context;
+            // If read permission fails, try create permission (for users who can issue letters)
+            $context = $this->requireOrganizationContext($request, 'dms.outgoing.create');
+            if ($context instanceof \Illuminate\Http\JsonResponse) {
+                return $context;
+            }
         }
         [$user, $profile, $schoolIds] = $context;
 
@@ -328,14 +355,34 @@ class OutgoingDocumentsController extends BaseDmsController
             ->where('organization_id', $profile->organization_id)
             ->firstOrFail();
 
-        $this->authorize('view', $doc);
+        // Check if user has either read OR create permission
+        $hasReadPermission = $user->hasPermissionTo('dms.outgoing.read');
+        $hasCreatePermission = $user->hasPermissionTo('dms.outgoing.create');
+        
+        if (!$hasReadPermission && !$hasCreatePermission) {
+            return response()->json(['error' => 'You do not have permission to download outgoing document PDFs. You need either "Read Outgoing Documents" or "Create Outgoing Documents" permission.'], 403);
+        }
+
+        // Check if user created this document (users can always download documents they created)
+        $userCreatedDocument = false;
+        if (isset($doc->created_by) && $doc->created_by === $user->id) {
+            $userCreatedDocument = true;
+        }
+
+        // Check security clearance
+        // Skip security clearance check if:
+        // 1. User created the document (they should be able to download their own documents)
+        // 2. User has create permission (they can issue letters, so they should be able to download them regardless of security level)
+        if ($doc->security_level_key && !$userCreatedDocument && !$hasCreatePermission) {
+            // Only enforce security clearance for users with ONLY read permission who didn't create the document
+            // Users with create permission can download any document (they issued it), bypassing security clearance
+            if (!$this->securityGateService->canView($user, $doc->security_level_key, $profile->organization_id)) {
+                return response()->json(['error' => 'Insufficient security clearance to view this document'], 403);
+            }
+        }
 
         if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
             return $response;
-        }
-
-        if ($doc->security_level_key && !$this->securityGateService->canView($user, $doc->security_level_key, $profile->organization_id)) {
-            return response()->json(['error' => 'Insufficient clearance'], 403);
         }
 
         $pdfPath = $doc->pdf_path;
@@ -346,39 +393,66 @@ class OutgoingDocumentsController extends BaseDmsController
                 ], 422);
             }
 
-            $template = $doc->template;
-            $templateVars = is_array($doc->template_variables) ? $doc->template_variables : [];
-            $documentVars = $this->buildOutgoingDocumentVariablesFromModel($doc);
+            try {
+                $template = $doc->template;
+                $templateVars = is_array($doc->template_variables) ? $doc->template_variables : [];
+                $documentVars = $this->buildOutgoingDocumentVariablesFromModel($doc);
 
-            $allVars = $this->fieldMappingService->buildVariablesForOutgoingDocument(
-                $doc->recipient_type ?? 'general',
-                $doc->recipient_id,
-                $templateVars,
-                $documentVars
-            );
+                $allVars = $this->fieldMappingService->buildVariablesForOutgoingDocument(
+                    $doc->recipient_type ?? 'general',
+                    $doc->recipient_id,
+                    $templateVars,
+                    $documentVars
+                );
 
-            $processedText = $this->renderingService->replaceTemplateVariables($template->body_text ?? '', $allVars);
-            $html = $this->renderingService->render($template, $processedText, [
-                'table_payload' => $doc->table_payload ?? null,
-                'for_browser' => false,
-            ]);
+                $processedText = $this->renderingService->replaceTemplateVariables($template->body_text ?? '', $allVars);
+                $html = $this->renderingService->render($template, $processedText, [
+                    'table_payload' => $doc->table_payload ?? null,
+                    'for_browser' => false,
+                ]);
 
-            $directory = 'dms/outgoing/' . ($doc->school_id ?: $profile->default_school_id ?: $profile->organization_id);
-            $pdfPath = $this->pdfService->generate($html, $template->page_layout ?? 'A4_portrait', $directory);
+                $directory = 'dms/outgoing/' . ($doc->school_id ?: $profile->default_school_id ?: $profile->organization_id);
+                $pdfPath = $this->pdfService->generate($html, $template->page_layout ?? 'A4_portrait', $directory);
 
-            $doc->pdf_path = $pdfPath;
-            if ($doc->status === 'issued') {
-                $doc->status = 'printed';
+                $doc->pdf_path = $pdfPath;
+                if ($doc->status === 'issued') {
+                    $doc->status = 'printed';
+                }
+                $doc->save();
+            } catch (\Exception $e) {
+                \Log::error('Failed to generate PDF for outgoing document', [
+                    'document_id' => $doc->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                return response()->json([
+                    'error' => 'Failed to generate PDF: ' . $e->getMessage(),
+                ], 500);
             }
-            $doc->save();
         }
 
         if (!$pdfPath || !Storage::exists($pdfPath)) {
+            \Log::error('PDF path does not exist after generation', [
+                'document_id' => $doc->id,
+                'pdf_path' => $pdfPath,
+            ]);
             return response()->json(['error' => 'Failed to generate outgoing document PDF'], 500);
         }
 
-        $filename = $this->buildPdfFilename($doc);
-        return Storage::download($pdfPath, $filename);
+        try {
+            $filename = $this->buildPdfFilename($doc);
+            return Storage::download($pdfPath, $filename);
+        } catch (\Exception $e) {
+            \Log::error('Failed to download PDF file', [
+                'document_id' => $doc->id,
+                'pdf_path' => $pdfPath,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'error' => 'Failed to download PDF: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     private function buildOutgoingDocumentVariablesFromPayload(array $data): array

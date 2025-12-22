@@ -26,8 +26,34 @@ class IncomingDocumentPolicy
 
     public function update(User $user, IncomingDocument $document): bool
     {
-        return $user->hasPermissionTo('dms.incoming.update')
-            && $this->hasClearance($user, $document->security_level_key, $document->organization_id);
+        if (!$user->hasPermissionTo('dms.incoming.update')) {
+            \Log::warning("IncomingDocumentPolicy::update failed - missing permission", [
+                'user_id' => $user->id,
+                'document_id' => $document->id,
+                'permission' => 'dms.incoming.update',
+            ]);
+            return false;
+        }
+
+        // Allow document creators to update their own documents regardless of security level
+        $userCreatedDocument = isset($document->created_by) && $document->created_by === $user->id;
+        if ($userCreatedDocument) {
+            return true;
+        }
+
+        // For other users, check security clearance
+        $hasClearance = $this->hasClearance($user, $document->security_level_key, $document->organization_id);
+        
+        if (!$hasClearance) {
+            \Log::warning("IncomingDocumentPolicy::update failed - insufficient clearance", [
+                'user_id' => $user->id,
+                'document_id' => $document->id,
+                'document_security_level' => $document->security_level_key,
+                'user_clearance' => $user->profile->clearance_level_key ?? null,
+            ]);
+        }
+        
+        return $hasClearance;
     }
 
     public function delete(User $user, IncomingDocument $document): bool

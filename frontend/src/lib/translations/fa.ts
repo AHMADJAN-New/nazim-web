@@ -3171,5 +3171,59 @@ export const fa: TranslationKeys = {
     officialSeal: 'مهر رسمی',
     verified: 'تایید شده',
     confidential: 'محرمانه'
+  },
+
+  // Document Management System
+  dms: {
+    issueLetter: {
+      tabs: {
+        issue: 'صدور نامه',
+        allIssued: 'تمام نامه‌های صادر شده'
+      },
+      issuedLetters: {
+        title: 'تمام نامه‌های صادر شده',
+        searchPlaceholder: 'جستجو بر اساس موضوع یا شماره سند...',
+        noLettersFound: 'هیچ نامه صادر شده‌ای یافت نشد',
+        documentNumber: 'شماره سند',
+        subject: 'موضوع',
+        recipient: 'گیرنده',
+        issueDate: 'تاریخ صدور',
+        security: 'امنیت',
+        recipientType: 'نوع گیرنده',
+        academicYear: 'سال تحصیلی',
+        fromDate: 'از',
+        toDate: 'تا',
+        noSubject: 'بدون موضوع'
+      },
+      letterDetails: {
+        title: 'جزئیات نامه',
+        details: 'جزئیات',
+        preview: 'پیش‌نمایش',
+        attachments: 'پیوست‌ها',
+        documentNumber: 'شماره سند',
+        issueDate: 'تاریخ صدور',
+        subject: 'موضوع',
+        status: 'وضعیت',
+        recipient: 'گیرنده',
+        securityLevel: 'سطح امنیت',
+        address: 'آدرس',
+        template: 'قالب',
+        description: 'توضیحات',
+        downloadPdf: 'دانلود PDF',
+        noPreview: 'پیش‌نمایش در دسترس نیست',
+        noAttachments: 'هیچ پیوستی یافت نشد'
+      },
+      uploadAttachments: 'آپلود پیوست‌ها',
+      uploadAttachmentsDescription: 'پیوست‌ها یا فایل‌های این نامه را آپلود کنید. تصاویر به طور خودکار فشرده می‌شوند.',
+      attachmentsNote: 'برای آپلود پیوست‌ها ابتدا پیش‌نویس ایجاد کنید، یا مستقیماً صادر کنید',
+      draftCreated: 'پیش‌نویس ایجاد شد. اکنون می‌توانید پیوست‌ها را آپلود کنید.',
+      draftCreateFailed: 'ایجاد پیش‌نویس ناموفق بود',
+      creatingDraft: 'در حال ایجاد...',
+      draftModeActive: 'حالت پیش‌نویس: می‌توانید پیوست‌ها را آپلود کنید. وقتی آماده شدید روی \'صدور نامه\' کلیک کنید.',
+      issuing: 'در حال صدور...',
+      issueButton: 'صدور نامه',
+      selectTemplateFirst: 'لطفاً ابتدا یک قالب انتخاب کنید',
+      fillRequiredFields: 'لطفاً تمام فیلدهای الزامی را پر کنید'
+    }
   }
 };

@@ -451,7 +451,11 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::put('/dms/settings', [DocumentSettingsController::class, 'update']);
 
     Route::get('/dms/departments', [DmsDepartmentsController::class, 'index']);
+    Route::get('/dms/departments/stats', [DmsDepartmentsController::class, 'stats']);
     Route::post('/dms/departments', [DmsDepartmentsController::class, 'store']);
+    Route::get('/dms/departments/{id}', [DmsDepartmentsController::class, 'show']);
+    Route::put('/dms/departments/{id}', [DmsDepartmentsController::class, 'update']);
+    Route::delete('/dms/departments/{id}', [DmsDepartmentsController::class, 'destroy']);
 
     Route::get('/dms/incoming', [IncomingDocumentsController::class, 'index']);
     Route::post('/dms/incoming', [IncomingDocumentsController::class, 'store']);

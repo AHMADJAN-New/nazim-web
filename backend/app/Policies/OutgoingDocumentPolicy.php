@@ -15,8 +15,27 @@ class OutgoingDocumentPolicy
 
     public function view(User $user, OutgoingDocument $document): bool
     {
-        return $user->hasPermissionTo('dms.outgoing.read')
-            && $this->hasClearance($user, $document->security_level_key, $document->organization_id);
+        // Allow if user has either read OR create permission
+        $hasReadPermission = $user->hasPermissionTo('dms.outgoing.read');
+        $hasCreatePermission = $user->hasPermissionTo('dms.outgoing.create');
+        
+        if (!$hasReadPermission && !$hasCreatePermission) {
+            return false;
+        }
+
+        // Allow document creators to view their own documents regardless of security level
+        $userCreatedDocument = isset($document->created_by) && $document->created_by === $user->id;
+        if ($userCreatedDocument) {
+            return true;
+        }
+
+        // Users with create permission can view any document (they can issue letters)
+        if ($hasCreatePermission) {
+            return true;
+        }
+
+        // For users with only read permission, check security clearance
+        return $this->hasClearance($user, $document->security_level_key, $document->organization_id);
     }
 
     public function create(User $user): bool
@@ -26,8 +45,18 @@ class OutgoingDocumentPolicy
 
     public function update(User $user, OutgoingDocument $document): bool
     {
-        return $user->hasPermissionTo('dms.outgoing.update')
-            && $this->hasClearance($user, $document->security_level_key, $document->organization_id);
+        if (!$user->hasPermissionTo('dms.outgoing.update')) {
+            return false;
+        }
+
+        // Allow document creators to update their own documents regardless of security level
+        $userCreatedDocument = isset($document->created_by) && $document->created_by === $user->id;
+        if ($userCreatedDocument) {
+            return true;
+        }
+
+        // For other users, check security clearance
+        return $this->hasClearance($user, $document->security_level_key, $document->organization_id);
     }
 
     public function delete(User $user, OutgoingDocument $document): bool

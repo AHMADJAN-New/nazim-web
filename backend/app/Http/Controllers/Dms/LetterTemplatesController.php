@@ -216,13 +216,41 @@ class LetterTemplatesController extends BaseDmsController
 
         // Get recipient type from request or use category
         $recipientType = $request->input('recipient_type', $template->category);
+        $recipientId = $request->input('recipient_id');
 
-        // Get mock data for the recipient type
-        $mockData = $this->fieldMappingService->getMockData($recipientType);
+        // Get actual recipient data if recipient_id is provided, otherwise use mock data
+        if ($recipientId) {
+            $actualData = $this->fieldMappingService->buildVariablesForOutgoingDocument(
+                $recipientType,
+                $recipientId,
+                [],
+                []
+            );
+            $mockData = []; // Don't use mock data when we have actual data
+        } else {
+            $actualData = [];
+            $mockData = $this->fieldMappingService->getMockData($recipientType);
+        }
 
-        // Merge with any custom variables from request
+        // Merge with any custom variables from request (custom variables override actual/mock data)
         $customVariables = $request->input('variables', []);
-        $allData = array_merge($mockData, $customVariables);
+        $allData = array_merge($mockData, $actualData, $customVariables);
+
+        // Filter out null values and ensure all values are strings
+        $allData = array_filter($allData, fn($value) => $value !== null);
+        $allData = array_map(fn($value) => $value !== null && $value !== '' ? (string) $value : '', $allData);
+
+        // Debug: Log variables being used (only in development)
+        if (config('app.debug')) {
+            \Log::debug('Template preview variables', [
+                'template_id' => $template->id,
+                'recipient_type' => $recipientType,
+                'recipient_id' => $recipientId,
+                'variables_count' => count($allData),
+                'variable_keys' => array_keys($allData),
+                'has_custom_variables' => !empty($customVariables),
+            ]);
+        }
 
         // Replace placeholders in body_text
         $bodyText = $template->body_text ?? '';

@@ -3631,5 +3631,59 @@ export const en: TranslationKeys = {
     studentName: 'Student Name',
     rollNumber: 'Roll No',
     notFound: 'Preview not available. Please check if the template has questions.'
+  },
+
+  // Document Management System
+  dms: {
+    issueLetter: {
+      tabs: {
+        issue: 'Issue Letter',
+        allIssued: 'All Issued Letters'
+      },
+      issuedLetters: {
+        title: 'All Issued Letters',
+        searchPlaceholder: 'Search by subject or document number...',
+        noLettersFound: 'No issued letters found',
+        documentNumber: 'Document Number',
+        subject: 'Subject',
+        recipient: 'Recipient',
+        issueDate: 'Issue Date',
+        security: 'Security',
+        recipientType: 'Recipient Type',
+        academicYear: 'Academic Year',
+        fromDate: 'From',
+        toDate: 'To',
+        noSubject: 'No subject'
+      },
+      letterDetails: {
+        title: 'Letter Details',
+        details: 'Details',
+        preview: 'Preview',
+        attachments: 'Attachments',
+        documentNumber: 'Document Number',
+        issueDate: 'Issue Date',
+        subject: 'Subject',
+        status: 'Status',
+        recipient: 'Recipient',
+        securityLevel: 'Security Level',
+        address: 'Address',
+        template: 'Template',
+        description: 'Description',
+        downloadPdf: 'Download PDF',
+        noPreview: 'No preview available',
+        noAttachments: 'No attachments found'
+      },
+      uploadAttachments: 'Upload Attachments',
+      uploadAttachmentsDescription: 'Upload attachments or files for this letter. Images will be automatically compressed.',
+      attachmentsNote: 'Create a draft to upload attachments before issuing, or issue directly',
+      draftCreated: 'Draft created. You can now upload attachments.',
+      draftCreateFailed: 'Failed to create draft',
+      creatingDraft: 'Creating...',
+      draftModeActive: 'Draft mode: You can upload attachments. Click \'Issue Letter\' when ready.',
+      issuing: 'Issuing...',
+      issueButton: 'Issue Letter',
+      selectTemplateFirst: 'Please select a template first',
+      fillRequiredFields: 'Please fill in all required fields'
+    }
   }
 };

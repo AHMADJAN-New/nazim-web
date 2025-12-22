@@ -298,43 +298,53 @@ class FieldMappingService
      */
     private function getStudentData(string $studentId): array
     {
-        $student = Student::with(['class', 'academicYear', 'school', 'organization'])
+        $student = Student::with(['organization'])
             ->find($studentId);
 
         if (!$student) {
             return [];
         }
 
+        // Get current admission to get class and academic year information
+        $admission = StudentAdmission::where('student_id', $studentId)
+            ->whereNull('deleted_at')
+            ->with([
+                'class',
+                'classAcademicYear.class', // Load class through classAcademicYear
+                'academicYear',
+                'school'
+            ])
+            ->orderBy('admission_date', 'desc')
+            ->first();
+
         return [
-            'student_name' => $student->name,
+            'student_name' => $student->full_name ?? $student->name ?? '',
             'student_id' => $student->id,
-            'student_code' => $student->code,
-            'father_name' => $student->father_name,
-            'grandfather_name' => $student->grandfather_name,
-            'mother_name' => $student->mother_name,
-            'gender' => $student->gender,
+            'student_code' => $student->student_code ?? $student->code ?? '',
+            'admission_number' => $student->admission_no ?? '',
+            'father_name' => $student->father_name ?? '',
+            'grandfather_name' => $student->grandfather_name ?? '',
+            'mother_name' => $student->mother_name ?? '',
+            'gender' => $student->gender ?? '',
             'date_of_birth' => $student->date_of_birth?->format('Y-m-d'),
-            'place_of_birth' => $student->place_of_birth,
-            'nationality' => $student->nationality,
-            'tazkira_number' => $student->tazkira_number,
-            'class_name' => $student->class->name ?? '',
-            'grade' => $student->grade,
-            'section' => $student->section,
-            'roll_number' => $student->roll_number,
-            'enrollment_date' => $student->enrollment_date?->format('Y-m-d'),
-            'academic_year' => $student->academicYear->name ?? '',
-            'shift' => $student->shift,
-            'status' => $student->status,
-            'phone' => $student->phone,
-            'email' => $student->email,
-            'address' => $student->address,
-            'province' => $student->province,
-            'district' => $student->district,
-            'village' => $student->village,
-            'guardian_name' => $student->guardian_name,
-            'guardian_phone' => $student->guardian_phone,
-            'guardian_relation' => $student->guardian_relation,
-            'guardian_occupation' => $student->guardian_occupation,
+            'place_of_birth' => $student->place_of_birth ?? '',
+            'nationality' => $student->nationality ?? '',
+            'tazkira_number' => $student->tazkira_number ?? '',
+            'class_name' => $admission?->classAcademicYear?->class?->name ?? $admission?->class?->name ?? '',
+            'section' => $admission?->classAcademicYear?->section_name ?? '',
+            'academic_year' => $admission?->academicYear?->name ?? '',
+            'shift' => $admission?->shift ?? '',
+            'enrollment_status' => $admission?->enrollment_status ?? '',
+            'phone' => $student->phone ?? '',
+            'email' => $student->email ?? '',
+            'address' => $student->home_address ?? $student->address ?? '',
+            'province' => $student->curr_province ?? $student->province ?? '',
+            'district' => $student->curr_district ?? $student->district ?? '',
+            'village' => $student->curr_village ?? $student->village ?? '',
+            'guardian_name' => $student->guardian_name ?? '',
+            'guardian_phone' => $student->guardian_phone ?? '',
+            'guardian_relation' => $student->guardian_relation ?? '',
+            'guardian_occupation' => $student->guardian_occupation ?? '',
         ];
     }
 

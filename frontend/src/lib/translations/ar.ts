@@ -3165,5 +3165,59 @@ export const ar: TranslationKeys = {
     officialSeal: 'الختم الرسمي',
     verified: 'تم التحقق',
     confidential: 'سري'
+  },
+
+  // Document Management System
+  dms: {
+    issueLetter: {
+      tabs: {
+        issue: 'إصدار خطاب',
+        allIssued: 'جميع الخطابات الصادرة'
+      },
+      issuedLetters: {
+        title: 'جميع الخطابات الصادرة',
+        searchPlaceholder: 'البحث حسب الموضوع أو رقم المستند...',
+        noLettersFound: 'لم يتم العثور على خطابات صادرة',
+        documentNumber: 'رقم المستند',
+        subject: 'الموضوع',
+        recipient: 'المستلم',
+        issueDate: 'تاريخ الإصدار',
+        security: 'الأمان',
+        recipientType: 'نوع المستلم',
+        academicYear: 'السنة الأكاديمية',
+        fromDate: 'من',
+        toDate: 'إلى',
+        noSubject: 'لا يوجد موضوع'
+      },
+      letterDetails: {
+        title: 'تفاصيل الخطاب',
+        details: 'التفاصيل',
+        preview: 'معاينة',
+        attachments: 'المرفقات',
+        documentNumber: 'رقم المستند',
+        issueDate: 'تاريخ الإصدار',
+        subject: 'الموضوع',
+        status: 'الحالة',
+        recipient: 'المستلم',
+        securityLevel: 'مستوى الأمان',
+        address: 'العنوان',
+        template: 'القالب',
+        description: 'الوصف',
+        downloadPdf: 'تحميل PDF',
+        noPreview: 'لا توجد معاينة متاحة',
+        noAttachments: 'لم يتم العثور على مرفقات'
+      },
+      uploadAttachments: 'تحميل المرفقات',
+      uploadAttachmentsDescription: 'قم بتحميل المرفقات أو الملفات لهذا الخطاب. سيتم ضغط الصور تلقائيًا.',
+      attachmentsNote: 'أنشئ مسودة لتحميل المرفقات قبل الإصدار، أو أصدر مباشرة',
+      draftCreated: 'تم إنشاء المسودة. يمكنك الآن تحميل المرفقات.',
+      draftCreateFailed: 'فشل إنشاء المسودة',
+      creatingDraft: 'جاري الإنشاء...',
+      draftModeActive: 'وضع المسودة: يمكنك تحميل المرفقات. انقر على \'إصدار الخطاب\' عندما تكون جاهزًا.',
+      issuing: 'جاري الإصدار...',
+      issueButton: 'إصدار الخطاب',
+      selectTemplateFirst: 'الرجاء اختيار قالب أولاً',
+      fillRequiredFields: 'الرجاء ملء جميع الحقول المطلوبة'
+    }
   }
 };

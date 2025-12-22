@@ -3133,7 +3133,11 @@ export const dmsApi = {
 
   departments: {
     list: async () => apiClient.get('/dms/departments'),
+    get: async (id: string) => apiClient.get(`/dms/departments/${id}`),
     create: async (data: any) => apiClient.post('/dms/departments', data),
+    update: async (id: string, data: any) => apiClient.put(`/dms/departments/${id}`, data),
+    delete: async (id: string) => apiClient.delete(`/dms/departments/${id}`),
+    stats: async () => apiClient.get('/dms/departments/stats'),
   },
 
   files: {

@@ -3164,5 +3164,59 @@ export const ps: TranslationKeys = {
     officialSeal: 'رسمی مهر',
     verified: 'تایید شوی',
     confidential: 'محرم'
+  },
+
+  // Document Management System
+  dms: {
+    issueLetter: {
+      tabs: {
+        issue: 'لیک صادر کړئ',
+        allIssued: 'ټول صادر شوي لیکونه'
+      },
+      issuedLetters: {
+        title: 'ټول صادر شوي لیکونه',
+        searchPlaceholder: 'د موضوع یا د سند شمیرې له مخې لټون...',
+        noLettersFound: 'هیڅ صادر شوی لیک ونه موندل شو',
+        documentNumber: 'د سند شمیره',
+        subject: 'موضوع',
+        recipient: 'ترلاسه کوونکی',
+        issueDate: 'د صادر کولو نیټه',
+        security: 'امنیت',
+        recipientType: 'د ترلاسه کوونکي ډول',
+        academicYear: 'اکادمیک کال',
+        fromDate: 'له',
+        toDate: 'تر',
+        noSubject: 'هیڅ موضوع نشته'
+      },
+      letterDetails: {
+        title: 'د لیک جزئیات',
+        details: 'جزئیات',
+        preview: 'مخکتنه',
+        attachments: 'ضمیمې',
+        documentNumber: 'د سند شمیره',
+        issueDate: 'د صادر کولو نیټه',
+        subject: 'موضوع',
+        status: 'حالت',
+        recipient: 'ترلاسه کوونکی',
+        securityLevel: 'د امنیت کچه',
+        address: 'پته',
+        template: 'کینډۍ',
+        description: 'تفصیل',
+        downloadPdf: 'PDF ډاونلوډ کړئ',
+        noPreview: 'هیڅ مخکتنه شتون نلري',
+        noAttachments: 'هیڅ ضمیمه ونه موندل شوه'
+      },
+      uploadAttachments: 'ضمیمې اپلوډ کړئ',
+      uploadAttachmentsDescription: 'د دې لیک لپاره ضمیمې یا فایلونه اپلوډ کړئ. انځورونه به په اتوماتیک ډول کمپریس شي.',
+      attachmentsNote: 'د ضمیمو اپلوډ کولو لپاره لومړی مسوده جوړه کړئ، یا مستقیم صادر کړئ',
+      draftCreated: 'مسوده جوړه شوه. اوس تاسو کولی شئ ضمیمې اپلوډ کړئ.',
+      draftCreateFailed: 'د مسودې جوړول ناکام شول',
+      creatingDraft: 'جوړیږي...',
+      draftModeActive: 'د مسودې حالت: تاسو کولی شئ ضمیمې اپلوډ کړئ. چمتو شئ چې \'لیک صادر کړئ\' کلیک وکړئ.',
+      issuing: 'صادر کېږي...',
+      issueButton: 'لیک صادر کړئ',
+      selectTemplateFirst: 'لومړی یو کړکۍ وټاکئ',
+      fillRequiredFields: 'لومړی اړینې ساحې ډک کړئ'
+    }
   }
 };
