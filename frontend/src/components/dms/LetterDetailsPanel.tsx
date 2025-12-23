@@ -14,7 +14,7 @@ import { DocumentNumberBadge } from "@/components/dms/DocumentNumberBadge";
 import { SecurityBadge } from "@/components/dms/SecurityBadge";
 import { useLanguage } from "@/hooks/useLanguage";
 import { showToast } from "@/lib/toast";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate } from "@/lib/utils";
 import { Download, File, Loader2, FileText, X, Printer } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading";
 

@@ -7,6 +7,7 @@ import {
   getGraduationCertificateBackgroundUrl,
 } from '@/hooks/useGraduation';
 import { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
+import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

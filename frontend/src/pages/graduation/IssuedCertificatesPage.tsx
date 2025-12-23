@@ -41,7 +41,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { showToast } from '@/lib/toast';
-import { format } from 'date-fns';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 export default function IssuedCertificatesPage() {
   const { t } = useLanguage();
@@ -194,14 +194,6 @@ export default function IssuedCertificatesPage() {
     setSelectedCertificate(null);
   };
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return 'N/A';
-    try {
-      return format(new Date(dateString), 'MMM dd, yyyy HH:mm');
-    } catch {
-      return dateString;
-    }
-  };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -283,7 +275,7 @@ export default function IssuedCertificatesPage() {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>{formatDate(cert.issued_at)}</TableCell>
+                    <TableCell>{formatDateTime(cert.issued_at)}</TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -479,12 +471,12 @@ export default function IssuedCertificatesPage() {
                         <Calendar className="h-4 w-4" />
                         Issued Date
                       </p>
-                      <p className="text-base">{formatDate(selectedCertificate.issued_at)}</p>
+                      <p className="text-base">{formatDateTime(selectedCertificate.issued_at)}</p>
                     </div>
                     {selectedCertificate.revoked_at && (
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-muted-foreground">Revoked Date</p>
-                        <p className="text-base text-destructive">{formatDate(selectedCertificate.revoked_at)}</p>
+                        <p className="text-base text-destructive">{formatDateTime(selectedCertificate.revoked_at)}</p>
                       </div>
                     )}
                     {selectedCertificate.verification_hash && (

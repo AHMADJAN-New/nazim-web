@@ -29,7 +29,7 @@ import { AttendanceSettings } from '@/components/graduation/AttendanceSettings';
 import { BatchWorkflowStepper } from '@/components/graduation/BatchWorkflowStepper';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatDate } from '@/lib/dateUtils';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {
@@ -145,7 +145,7 @@ export default function GraduationBatchesPage() {
 
   // Watch form values for conditional rendering
   const graduationType = form.watch('graduation_type');
-  const examIds = form.watch('exam_ids');
+  const examIds = form.watch('exam_ids') || [];
   const examWeights = form.watch('exam_weights') || {};
   const requireAttendance = form.watch('require_attendance') ?? true;
   const minAttendancePercentage = form.watch('min_attendance_percentage') ?? 75.0;
@@ -592,17 +592,26 @@ export default function GraduationBatchesPage() {
                       </p>
                     )}
                   </div>
-                  {form.exam_ids.length > 0 && (
+                  {examIds.length > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {form.exam_ids.length} {form.exam_ids.length === 1 ? 'exam' : 'exams'} selected
+                      {examIds.length} {examIds.length === 1 ? 'exam' : 'exams'} selected
                     </p>
                   )}
+                  
+                  {/* Graduation Date */}
+                  <div className="md:col-span-2">
+                    <Label>{t('common.graduationDate') ?? 'Graduation Date'}</Label>
+                    <CalendarDatePicker 
+                      date={form.watch('graduation_date') ? new Date(form.watch('graduation_date')) : undefined} 
+                      onDateChange={(date) => form.setValue('graduation_date', date ? date.toISOString().split("T")[0] : '')} 
+                    />
+                    {form.formState.errors.graduation_date && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.graduation_date.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="md:col-span-2">
-                  <Label>{t('common.graduationDate') ?? 'Graduation Date'}</Label>
-                  <CalendarDatePicker date={form.graduation_date ? new Date(form.graduation_date) : undefined} onDateChange={(date) => setForm(date ? date.toISOString().split("T")[0] : "")} />
-                </div>
-              </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
                   {t('common.cancel')}
@@ -614,250 +623,8 @@ export default function GraduationBatchesPage() {
             </form>
           </DialogContent>
         </Dialog>
-
-                  {/* School */}
-                  <div>
-                    <Label htmlFor="school_id">{t('common.schoolManagement')}</Label>
-                    <Select
-                      value={form.watch('school_id') || schoolId || ''}
-                      onValueChange={(val) => form.setValue('school_id', val)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('common.selectSchool')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {schools.map((school) => (
-                          <SelectItem key={school.id} value={school.id}>
-                            {school.schoolName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.school_id && (
-                      <p className="text-sm text-destructive mt-1">
-                        {form.formState.errors.school_id.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Academic Year */}
-                  <div>
-                    <Label htmlFor="academic_year_id">{t('fees.academicYear')}</Label>
-                    <Select
-                      value={form.watch('academic_year_id')}
-                      onValueChange={(val) => form.setValue('academic_year_id', val)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('fees.academicYear')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {academicYears.map((ay) => (
-                          <SelectItem key={ay.id} value={ay.id}>
-                            {ay.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.academic_year_id && (
-                      <p className="text-sm text-destructive mt-1">
-                        {form.formState.errors.academic_year_id.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Class Fields - Conditional based on type */}
-                  {graduationType === 'final_year' ? (
-                    <div>
-                      <Label htmlFor="class_id">{t('fees.class')}</Label>
-                      <Select
-                        value={form.watch('class_id')}
-                        onValueChange={(val) => form.setValue('class_id', val)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('common.selectClass')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {classes.map((cls) => (
-                            <SelectItem key={cls.id} value={cls.id}>
-                              {cls.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {form.formState.errors.class_id && (
-                        <p className="text-sm text-destructive mt-1">
-                          {form.formState.errors.class_id.message}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      <div>
-                        <Label htmlFor="from_class_id">{t('graduation.fromClass') || 'From Class'}</Label>
-                        <Select
-                          value={form.watch('from_class_id')}
-                          onValueChange={(val) => form.setValue('from_class_id', val)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('graduation.selectFromClass') || 'Select From Class'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {classes.map((cls) => (
-                              <SelectItem key={cls.id} value={cls.id}>
-                                {cls.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {form.formState.errors.from_class_id && (
-                          <p className="text-sm text-destructive mt-1">
-                            {form.formState.errors.from_class_id.message}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="to_class_id">{t('graduation.toClass') || 'To Class'}</Label>
-                        <Select
-                          value={form.watch('to_class_id')}
-                          onValueChange={(val) => form.setValue('to_class_id', val)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('graduation.selectToClass') || 'Select To Class'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {classes
-                              .filter((cls) => cls.id !== form.watch('from_class_id'))
-                              .map((cls) => (
-                                <SelectItem key={cls.id} value={cls.id}>
-                                  {cls.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                        {form.formState.errors.to_class_id && (
-                          <p className="text-sm text-destructive mt-1">
-                            {form.formState.errors.to_class_id.message}
-                          </p>
-                        )}
-                      </div>
-                    </>
-                  )}
-
-                  {/* Exams */}
-                  <div className="md:col-span-2">
-                    <Label>{t('nav.exams')}</Label>
-                    <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
-                      {exams.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">{t('common.noData') || 'No exams available'}</p>
-                      ) : (
-                        exams.map((exam) => (
-                          <div key={exam.id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`exam-${exam.id}`}
-                              checked={examIds.includes(exam.id)}
-                              onCheckedChange={(checked) => {
-                                const currentIds = form.watch('exam_ids');
-                                if (checked) {
-                                  form.setValue('exam_ids', [...currentIds, exam.id]);
-                                } else {
-                                  form.setValue('exam_ids', currentIds.filter((id) => id !== exam.id));
-                                  // Remove weight when exam is deselected
-                                  const currentWeights = form.watch('exam_weights') || {};
-                                  const newWeights = { ...currentWeights };
-                                  delete newWeights[exam.id];
-                                  form.setValue('exam_weights', newWeights);
-                                }
-                              }}
-                            />
-                            <label
-                              htmlFor={`exam-${exam.id}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                              {exam.name}
-                            </label>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    {examIds.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {examIds.length} {examIds.length === 1 ? 'exam' : 'exams'} selected
-                      </p>
-                    )}
-                    {form.formState.errors.exam_ids && (
-                      <p className="text-sm text-destructive mt-1">
-                        {form.formState.errors.exam_ids.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Exam Weights - Show when 2+ exams selected */}
-                  {examIds.length > 1 && (
-                    <div className="md:col-span-2">
-                      <ExamWeightsEditor
-                        examIds={examIds}
-                        weights={examWeights}
-                        onChange={(newWeights) => form.setValue('exam_weights', newWeights)}
-                        exams={exams}
-                      />
-                      {form.formState.errors.exam_weights && (
-                        <p className="text-sm text-destructive mt-1">
-                          {form.formState.errors.exam_weights.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Attendance Settings */}
-                  <div className="md:col-span-2">
-                    <Label>{t('graduation.attendance.title') || 'Attendance Requirements'}</Label>
-                    <AttendanceSettings
-                      minAttendancePercentage={minAttendancePercentage}
-                      requireAttendance={requireAttendance}
-                      excludeApprovedLeaves={excludeApprovedLeaves}
-                      onChange={(settings) => {
-                        form.setValue('min_attendance_percentage', settings.min_attendance_percentage);
-                        form.setValue('require_attendance', settings.require_attendance);
-                        form.setValue('exclude_approved_leaves', settings.exclude_approved_leaves);
-                      }}
-                    />
-                  </div>
-
-                  {/* Graduation Date */}
-                  <div className="md:col-span-2">
-                    <Label htmlFor="graduation_date">{t('common.graduationDate') ?? 'Graduation Date'}</Label>
-                    <Controller
-                      control={form.control}
-                      name="graduation_date"
-                      render={({ field }) => (
-                        <Input
-                          id="graduation_date"
-                          type="date"
-                          value={field.value || ''}
-                          onChange={field.onChange}
-                        />
-                      )}
-                    />
-                    {form.formState.errors.graduation_date && (
-                      <p className="text-sm text-destructive mt-1">
-                        {form.formState.errors.graduation_date.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-                    {t('common.cancel')}
-                  </Button>
-                  <Button type="submit" disabled={createBatch.isPending}>
-                    {createBatch.isPending ? t('common.saving') : t('common.save')}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
       </div>
+    </div>
 
       {/* Summary Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1877,10 +1644,9 @@ export default function GraduationBatchesPage() {
                   control={editForm.control}
                   name="graduation_date"
                   render={({ field }) => (
-                    <Input
-                      type="date"
-                      {...field}
-                      required
+                    <CalendarDatePicker
+                      date={field.value ? new Date(field.value) : undefined}
+                      onDateChange={(date) => field.onChange(date ? date.toISOString().split("T")[0] : '')}
                     />
                   )}
                 />

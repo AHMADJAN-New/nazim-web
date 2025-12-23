@@ -176,7 +176,7 @@ export default function LeaveManagement() {
     }
     
     return studentOptions;
-  }, [studentOptions, selectedStudent, allStudents]);
+  }, [studentOptions, selectedStudent, students]);
 
   // Reset student when class changes
   useEffect(() => {

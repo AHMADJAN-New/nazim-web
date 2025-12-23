@@ -52,7 +52,7 @@ import {
   Layout,
 } from 'lucide-react';
 import { IdCardLayoutEditor } from '@/components/id-cards/IdCardLayoutEditor';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/utils';
 import { useLanguage } from '@/hooks/useLanguage';
 
 export default function IdCardTemplates() {
@@ -280,7 +280,7 @@ export default function IdCardTemplates() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {format(template.createdAt, 'MMM d, yyyy')}
+                      {formatDate(template.createdAt)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

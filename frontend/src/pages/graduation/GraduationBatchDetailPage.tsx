@@ -16,7 +16,7 @@ import { useBulkDeactivateAdmissionsByStudentIds } from '@/hooks/useStudentAdmis
 import { useLanguage } from '@/hooks/useLanguage';
 import { X, RefreshCw, CheckCircle2, FileText, Users, TrendingUp, XCircle, ArrowLeft, Hash, Info } from 'lucide-react';
 import { BatchWorkflowStepper } from '@/components/graduation/BatchWorkflowStepper';
-import { formatDate, formatDateTime } from '@/lib/dateUtils';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 export default function GraduationBatchDetailPage() {
   const { id } = useParams<{ id: string }>();

@@ -15,12 +15,14 @@ import { SecurityBadge } from "@/components/dms/SecurityBadge";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademicYears } from "@/hooks/useAcademicYears";
-import { formatDate, getShortDescription } from "@/lib/dateUtils";
+import { formatDate } from "@/lib/utils";
+import { getShortDescription } from "@/lib/dateUtils";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { Search, Eye } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { CalendarDatePicker } from "@/components/ui/calendar-date-picker";
 
 const recipientTypeOptions = [
   { label: "All Types", value: "all" },
@@ -182,20 +184,16 @@ export function IssuedLettersTable({ onRowClick }: IssuedLettersTableProps) {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="from-date">{t("dms.issueLetter.issuedLetters.fromDate") || "From"}</Label>
-                <Input
-                  id="from-date"
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
+                <CalendarDatePicker
+                  date={fromDate ? new Date(fromDate) : undefined}
+                  onDateChange={(date) => setFromDate(date ? date.toISOString().split("T")[0] : "")}
                 />
               </div>
               <div>
                 <Label htmlFor="to-date">{t("dms.issueLetter.issuedLetters.toDate") || "To"}</Label>
-                <Input
-                  id="to-date"
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
+                <CalendarDatePicker
+                  date={toDate ? new Date(toDate) : undefined}
+                  onDateChange={(date) => setToDate(date ? date.toISOString().split("T")[0] : "")}
                 />
               </div>
             </div>
