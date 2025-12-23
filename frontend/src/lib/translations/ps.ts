@@ -614,6 +614,12 @@ export const ps: TranslationKeys = {
     previousSlide: 'مخکنی سلایډ',
     enterCurrentPassword: 'خپل اوسنی پاسورډ ولیکئ',
     enterNewPassword: 'خپل نوی پاسورډ ولیکئ',
+    currentPassword: 'اوسنی پاسورډ',
+    weak: 'ضعیف',
+    fair: 'متوسط',
+    good: 'ښه',
+    strong: 'قوي',
+    veryStrong: 'ډیر قوي',
     enterFullName: 'خپل بشپړ نوم ولیکئ',
     enterPhoneNumber: 'خپله د ټیلیفون شمیره ولیکئ',
     gradeExample: 'د بیلګې په توګه، 1، 2، 3',
@@ -1410,7 +1416,15 @@ export const ps: TranslationKeys = {
     roomsManagement: 'د اطاقونو مدیریت',
     roomUpdated: 'اطاق په بریالیتوب سره تغیر شو',
     staff: 'کارکوونکی',
-    warden: 'مسؤل نګران'
+    warden: 'مسؤل نګران',
+    userSettings: {
+      title: 'د کارن تنظیمات',
+      description: 'خپل حساب غوره توبونه او امنیتي تنظیمات مدیریت کړئ',
+      preferences: 'غوره توبونه',
+      security: 'امنیت',
+      changePassword: 'پاسورډ تغیر کړئ',
+      changePasswordDescription: 'خپل پاسورډ تازه کړئ ترڅو خپل حساب خوندي وساتئ'
+    }
   },
   staff: {
     addStaff: 'Add Staff',
@@ -2530,6 +2544,8 @@ export const ps: TranslationKeys = {
     userDeleteFailed: 'د کارن پاکولو کې ناکامي',
     passwordReset: 'پاسورډ بریالۍ سره بیا تنظیم شو',
     passwordResetFailed: 'د پاسورډ بیا تنظیمولو کې ناکامي',
+    passwordChanged: 'پاسورډ بریالۍ سره تغیر شو',
+    passwordChangeFailed: 'د پاسورډ تغیرولو کې ناکامي',
     // Schedule Slots
     scheduleSlotCreated: 'د وخت جدول بریالۍ سره جوړ شو',
     scheduleSlotUpdated: 'د وخت جدول بریالۍ سره تازه شو',

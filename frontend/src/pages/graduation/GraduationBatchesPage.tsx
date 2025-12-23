@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, ChevronUp, ChevronDown, ArrowUpDown, Edit, Trash2, Eye, Calendar, Users, GraduationCap, FileText, X, ArrowRightLeft, Filter, LayoutGrid, Table as TableIcon, RefreshCw, CheckCircle2, HelpCircle } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
@@ -591,6 +592,28 @@ export default function GraduationBatchesPage() {
                       </p>
                     )}
                   </div>
+                  {form.exam_ids.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {form.exam_ids.length} {form.exam_ids.length === 1 ? 'exam' : 'exams'} selected
+                    </p>
+                  )}
+                </div>
+                <div className="md:col-span-2">
+                  <Label>{t('common.graduationDate') ?? 'Graduation Date'}</Label>
+                  <CalendarDatePicker date={form.graduation_date ? new Date(form.graduation_date) : undefined} onDateChange={(date) => setForm(date ? date.toISOString().split("T")[0] : "")} />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button type="submit" disabled={createBatch.isPending}>
+                  {t('common.save')}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
                   {/* School */}
                   <div>
@@ -1034,19 +1057,11 @@ export default function GraduationBatchesPage() {
           </div>
           <div>
             <Label>{t('graduation.filters.dateFrom') || 'From Date'}</Label>
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-            />
+            <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
           </div>
           <div>
             <Label>{t('graduation.filters.dateTo') || 'To Date'}</Label>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
+            <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
           </div>
           </CardContent>
         )}

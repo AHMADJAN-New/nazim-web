@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { useEffect } from 'react';
 
 interface Option {
@@ -170,19 +171,7 @@ export function FeePaymentForm({
             }}
           />
 
-          <FormField
-            control={form.control}
-            name="payment_date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('fees.paymentDate')}</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <CalendarFormField control={form.control} name="payment_date" label={t('fees.paymentDate')} />
 
           <FormField
             control={form.control}

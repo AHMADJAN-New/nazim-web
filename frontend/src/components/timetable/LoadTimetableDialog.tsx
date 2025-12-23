@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -97,7 +98,7 @@ export function LoadTimetableDialog({ open, onOpenChange, organizationId, academ
 										/>
 										<div className="text-sm flex-1">
 											<div className="font-medium">{tt.name}</div>
-											<div className="text-muted-foreground text-xs">{new Date(tt.created_at).toLocaleString()}</div>
+											<div className="text-muted-foreground text-xs">{formatDateTime(tt.created_at)}</div>
 											{tt.description && <div className="mt-1 text-xs">{tt.description}</div>}
 											{previewTimetable && selectedId === tt.id && (
 												<div className="mt-2 text-xs text-muted-foreground">

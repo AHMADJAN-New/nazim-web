@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -48,6 +48,7 @@ import { Search, Plus, Pencil, Trash2, Eye, Users, Filter, X, ChevronRight, Chev
 import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { StaffProfile } from '@/components/staff/StaffProfile';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { toast } from 'sonner';
@@ -161,6 +162,13 @@ export function StaffList() {
     const createStaff = useCreateStaff();
     const updateStaff = useUpdateStaff();
 
+    const formMethods = useForm<StaffFormData>({
+        resolver: zodResolver(staffSchema),
+        defaultValues: {
+            status: 'active',
+        },
+    });
+
     const {
         register,
         handleSubmit,
@@ -168,12 +176,7 @@ export function StaffList() {
         reset,
         trigger,
         formState: { errors },
-    } = useForm<StaffFormData>({
-        resolver: zodResolver(staffSchema),
-        defaultValues: {
-            status: 'active',
-        },
-    });
+    } = formMethods;
 
     // Client-side filtering for search
     const filteredStaff = useMemo(() => {
@@ -670,7 +673,8 @@ export function StaffList() {
                 }
             }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <form onSubmit={handleSubmit(async (data) => {
+                    <FormProvider {...formMethods}>
+                      <form onSubmit={handleSubmit(async (data) => {
                         // Wait for profile to load
                         if (!profile) {
                             toast.error(t('staff.pleaseWait'));
@@ -962,7 +966,7 @@ export function StaffList() {
                                                     </div>
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="birth_date">{t('staff.dateOfBirth')}</Label>
-                                                        <Input id="birth_date" type="date" {...register('birth_date')} />
+                                                        <CalendarFormField control={control} name="birth_date" label={t('staff.dateOfBirth')} />
                                                         <p className="text-xs text-muted-foreground">{t('staff.dateOfBirthHelper')}</p>
                                                     </div>
                                                 </div>
@@ -1174,7 +1178,8 @@ export function StaffList() {
                                 )}
                             </div>
                         </DialogFooter>
-                    </form>
+                      </form>
+                    </FormProvider>
                 </DialogContent>
             </Dialog>
 
@@ -1431,7 +1436,7 @@ export function StaffList() {
                                                     </div>
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="edit_birth_date">Date of Birth</Label>
-                                                        <Input id="edit_birth_date" type="date" {...register('birth_date')} />
+                                                        <CalendarFormField control={control} name="birth_date" label="Date of Birth" />
                                                         <p className="text-xs text-muted-foreground">Employee must be at least 18 years old</p>
                                                     </div>
                                                 </div>
@@ -1641,7 +1646,8 @@ export function StaffList() {
                                 )}
                             </div>
                         </DialogFooter>
-                    </form>
+                      </form>
+                    </FormProvider>
                 </DialogContent>
             </Dialog>
 

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, Pencil, Trash2, Printer, Eye } from 'lucide-react';
@@ -31,6 +32,7 @@ import { useHasPermission } from '@/hooks/usePermissions';
 import { useFinanceAccounts } from '@/hooks/useFinance';
 import { useCurrencies } from '@/hooks/useCurrencies';
 import type { Asset } from '@/types/domain/asset';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
@@ -126,6 +128,14 @@ export default function AssetListTab() {
   const updateAsset = useUpdateAsset();
   const deleteAsset = useDeleteAsset();
 
+  const formMethods = useForm<AssetFormValues>({
+    resolver: zodResolver(assetSchema),
+    defaultValues: {
+      status: 'available',
+      purchasePrice: null,
+    },
+  });
+
   const {
     register,
     handleSubmit,
@@ -134,13 +144,7 @@ export default function AssetListTab() {
     watch,
     control,
     formState: { errors },
-  } = useForm<AssetFormValues>({
-    resolver: zodResolver(assetSchema),
-    defaultValues: {
-      status: 'available',
-      purchasePrice: null,
-    },
-  });
+  } = formMethods;
 
   // Filter rooms by selected building (if building is selected, show only rooms from that building)
   // Must be after useForm hook to access watch
@@ -671,8 +675,9 @@ export default function AssetListTab() {
           <DialogHeader>
             <DialogTitle>{editingAsset ? 'Update Asset' : 'Create Asset'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmitAsset)} className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <FormProvider {...formMethods}>
+            <form onSubmit={handleSubmit(onSubmitAsset)} className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
                 <Label>Name *</Label>
                 <Input {...register('name')} />
@@ -747,14 +752,14 @@ export default function AssetListTab() {
                 <Label>
                   Purchase Date <span className="text-destructive">*</span>
                 </Label>
-                <Input type="date" {...register('purchaseDate')} />
+                <CalendarFormField control={control} name="purchaseDate" label="Purchase Date" />
                 {errors.purchaseDate && (
                   <p className="text-sm text-destructive mt-1">{errors.purchaseDate.message}</p>
                 )}
               </div>
               <div>
                 <Label>Warranty Expiry</Label>
-                <Input type="date" {...register('warrantyExpiry')} />
+                <CalendarFormField control={control} name="warrantyExpiry" label="Warranty Expiry" />
               </div>
               <div>
                 <Label>Vendor</Label>
@@ -916,7 +921,8 @@ export default function AssetListTab() {
                 {editingAsset ? 'Update' : 'Create'}
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 
@@ -1145,7 +1151,7 @@ function AssetHistoryPanel({ assetId, allAssets }: { assetId: string; allAssets:
                     )}
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {assignment.assignedOn ? format(new Date(assignment.assignedOn), 'MMM dd, yyyy') : 'N/A'}
+                    {assignment.assignedOn ? formatDate(assignment.assignedOn) : 'N/A'}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -1159,14 +1165,14 @@ function AssetHistoryPanel({ assetId, allAssets }: { assetId: string; allAssets:
                   <div>
                     <Label className="text-muted-foreground">Expected Return</Label>
                     <p className="font-medium">
-                      {assignment.expectedReturnDate ? format(new Date(assignment.expectedReturnDate), 'MMM dd, yyyy') : 'N/A'}
+                      {assignment.expectedReturnDate ? formatDate(assignment.expectedReturnDate) : 'N/A'}
                     </p>
                   </div>
                   {isReturned && assignment.returnedAt && (
                     <div>
                       <Label className="text-muted-foreground">Returned Date</Label>
                       <p className="font-medium">
-                        {format(new Date(assignment.returnedAt), 'MMM dd, yyyy')}
+                        {formatDate(assignment.returnedAt)}
                       </p>
                     </div>
                   )}

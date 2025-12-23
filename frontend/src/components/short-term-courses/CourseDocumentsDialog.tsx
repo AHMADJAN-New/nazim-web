@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -51,8 +52,6 @@ import {
   useDownloadCourseDocument,
   CourseDocument,
 } from '@/hooks/useCourseDocuments';
-import { format } from 'date-fns';
-
 interface CourseDocumentsDialogProps {
   courseId: string;
   courseName: string;
@@ -308,7 +307,7 @@ export function CourseDocumentsDialog({
                             </TableCell>
                             <TableCell>{formatFileSize(doc.file_size)}</TableCell>
                             <TableCell>
-                              {format(new Date(doc.created_at), 'MMM d, yyyy')}
+                              {formatDate(doc.created_at)}
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">

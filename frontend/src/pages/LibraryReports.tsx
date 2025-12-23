@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 import { BookOpen, BookCheck, AlertTriangle, Calendar, TrendingUp, Download, X, History, FileText, Tag, DollarSign, Layers, BarChart3 } from 'lucide-react';
 import { format, addDays, isAfter, isBefore } from 'date-fns';
 import { useLibraryBooks, useLibraryLoans, useDueSoonLoans } from '@/hooks/useLibrary';
@@ -15,6 +16,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 export default function LibraryReports() {
     const { t } = useLanguage();
@@ -500,7 +502,7 @@ export default function LibraryReports() {
                                                 <Badge variant="destructive">Overdue</Badge>
                                             </div>
                                             <div className="text-sm text-muted-foreground">
-                                                Due: {loan.due_date ? format(new Date(loan.due_date), 'MMM dd, yyyy') : 'N/A'}
+                                                Due: {loan.due_date ? formatDate(loan.due_date) : 'N/A'}
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Badge variant="outline">
@@ -604,7 +606,7 @@ export default function LibraryReports() {
                                         >
                                             <div className="font-semibold">{loan.book?.title}</div>
                                             <div className="text-sm text-muted-foreground">
-                                                Due: {loan.due_date ? format(new Date(loan.due_date), 'MMM dd, yyyy') : 'N/A'}
+                                                Due: {loan.due_date ? formatDate(loan.due_date) : 'N/A'}
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Badge variant="outline">
@@ -698,23 +700,11 @@ export default function LibraryReports() {
                                 <div className="flex flex-col md:flex-row gap-4 items-end">
                                     <div className="space-y-2">
                                         <Label htmlFor="date-from">From Date</Label>
-                                        <Input
-                                            id="date-from"
-                                            type="date"
-                                            value={dateFrom}
-                                            onChange={(e) => setDateFrom(e.target.value)}
-                                            className="w-full md:w-40"
-                                        />
+                                        <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="date-to">To Date</Label>
-                                        <Input
-                                            id="date-to"
-                                            type="date"
-                                            value={dateTo}
-                                            onChange={(e) => setDateTo(e.target.value)}
-                                            className="w-full md:w-40"
-                                        />
+                                        <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} />
                                     </div>
                                     {hasActiveFilters && (
                                         <div className="w-full md:w-auto">
@@ -754,9 +744,9 @@ export default function LibraryReports() {
                                                 </Badge>
                                             </div>
                                             <div className="text-xs text-muted-foreground">
-                                                {loan.loan_date && format(new Date(loan.loan_date), 'MMM dd, yyyy')}
-                                                {loan.due_date && ` → Due: ${format(new Date(loan.due_date), 'MMM dd, yyyy')}`}
-                                                {loan.returned_at && ` (Returned: ${format(new Date(loan.returned_at), 'MMM dd, yyyy')})`}
+                                                {loan.loan_date && formatDate(loan.loan_date)}
+                                                {loan.due_date && ` → Due: ${formatDate(loan.due_date)}`}
+                                                {loan.returned_at && ` (Returned: ${formatDate(loan.returned_at)})`}
                                             </div>
                                         </div>
                                     ))}
@@ -958,10 +948,7 @@ export default function LibraryReports() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
-                                    {booksReportStats.totalPrice.toLocaleString('en-US', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
+                                    {formatCurrency(booksReportStats.totalPrice)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Sum of all book prices
@@ -976,10 +963,7 @@ export default function LibraryReports() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
-                                    {booksReportStats.totalValue.toLocaleString('en-US', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
+                                    {formatCurrency(booksReportStats.totalValue)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Price × Total Copies
@@ -994,10 +978,7 @@ export default function LibraryReports() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
-                                    {booksReportStats.averagePrice.toLocaleString('en-US', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
+                                    {formatCurrency(booksReportStats.averagePrice)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Per book
@@ -1110,7 +1091,7 @@ export default function LibraryReports() {
                                                                 {(() => {
                                                                     const price = book.price ?? 0;
                                                                     const numPrice = typeof price === 'string' ? parseFloat(price) : (typeof price === 'number' ? price : 0);
-                                                                    return isNaN(numPrice) ? '0.00' : numPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                                    return isNaN(numPrice) ? '0.00' : formatDateTime(numPrice);
                                                                 })()}
                                                             </TableCell>
                                                             <TableCell>{book.total_copies ?? 0}</TableCell>

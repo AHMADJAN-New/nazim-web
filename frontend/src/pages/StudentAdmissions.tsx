@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, UserCheck, MapPin, Shield, ClipboardList, Pencil, Trash2, Search, UserRound, DollarSign, X } from 'lucide-react';
@@ -47,6 +47,7 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 
 const getAdmissionSchema = (t: ReturnType<typeof useLanguage>['t']) => z.object({
   organization_id: z.string().uuid().optional(),
@@ -142,6 +143,15 @@ export function StudentAdmissions() {
 
   const admissionSchema = getAdmissionSchema(t);
 
+  const formMethods = useForm<z.infer<typeof admissionSchema>>({
+    resolver: zodResolver(admissionSchema),
+    defaultValues: {
+      enrollment_status: 'admitted',
+      is_boarder: false,
+      admission_year: new Date().getFullYear().toString(),
+    },
+  });
+
   const {
     register,
     handleSubmit,
@@ -150,14 +160,7 @@ export function StudentAdmissions() {
     setValue,
     watch,
     formState: { errors },
-  } = useForm<z.infer<typeof admissionSchema>>({
-    resolver: zodResolver(admissionSchema),
-    defaultValues: {
-      enrollment_status: 'admitted',
-      is_boarder: false,
-      admission_year: new Date().getFullYear().toString(),
-    },
-  });
+  } = formMethods;
 
   const formAcademicYear = watch('academic_year_id');
   useEffect(() => {
@@ -676,8 +679,9 @@ export function StudentAdmissions() {
                   {t('admissions.dialogDescription') || 'Map a registered learner into a class, academic year, and residency type with status tracking.'}
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
+              <FormProvider {...formMethods}>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
               {schools && schools.length > 1 && (
                 <div>
                   <Label>{t('admissions.school') || 'School'}</Label>
@@ -876,7 +880,7 @@ export function StudentAdmissions() {
                   </div>
                   <div>
                     <Label>{t('admissions.admissionDate') || 'Admission Date'}</Label>
-                    <Input type="date" {...register('admission_date')} />
+                    <CalendarFormField control={control} name="admission_date" label={t('admissions.admissionDate') || 'Admission Date'} />
                   </div>
                   <div>
                     <Label>{t('admissions.enrollmentStatus') || 'Enrollment Status'}</Label>
@@ -947,6 +951,7 @@ export function StudentAdmissions() {
                   </Button>
                 </DialogFooter>
               </form>
+              </FormProvider>
             </DialogContent>
           </Dialog>
         </div>

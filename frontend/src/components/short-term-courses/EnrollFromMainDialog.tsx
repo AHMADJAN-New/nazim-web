@@ -209,12 +209,7 @@ export const EnrollFromMainDialog = memo(function EnrollFromMainDialog({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="registrationDate">Registration Date</Label>
-              <Input
-                id="registrationDate"
-                type="date"
-                value={registrationDate}
-                onChange={(e) => setRegistrationDate(e.target.value)}
-              />
+              <CalendarDatePicker date={registrationDate ? new Date(registrationDate) : undefined} onDateChange={(date) => setRegistrationDate(date ? date.toISOString().split("T")[0] : "")} />
             </div>
             <div className="flex items-center space-x-2 pt-6">
               <Checkbox

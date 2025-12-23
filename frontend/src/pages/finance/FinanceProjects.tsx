@@ -50,6 +50,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, FolderKanban, TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 export default function FinanceProjects() {
     const { t } = useLanguage();
@@ -154,21 +155,11 @@ export default function FinanceProjects() {
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="startDate">{t('common.startDate') || 'Start Date'}</Label>
-                    <Input
-                        id="startDate"
-                        type="date"
-                        value={formData.startDate || ''}
-                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value || null })}
-                    />
+                    <CalendarDatePicker date={formData.startDate || '' ? new Date(formData.startDate || '') : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="endDate">{t('common.endDate') || 'End Date'}</Label>
-                    <Input
-                        id="endDate"
-                        type="date"
-                        value={formData.endDate || ''}
-                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
-                    />
+                    <CalendarDatePicker date={formData.endDate || '' ? new Date(formData.endDate || '') : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

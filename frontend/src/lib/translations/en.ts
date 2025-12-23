@@ -656,6 +656,12 @@ export const en: TranslationKeys = {
     previousSlide: 'Previous slide',
     enterCurrentPassword: 'Enter your current password',
     enterNewPassword: 'Enter your new password',
+    currentPassword: 'Current Password',
+    weak: 'Weak',
+    fair: 'Fair',
+    good: 'Good',
+    strong: 'Strong',
+    veryStrong: 'Very Strong',
     enterFullName: 'Enter your full name',
     enterPhoneNumber: 'Enter your phone number',
     gradeExample: 'e.g., 1, 2, 3',
@@ -1613,6 +1619,14 @@ export const en: TranslationKeys = {
       createdAt: 'Created At',
       na: 'N/A',
       deleteConfirmRooms: '. If this room is in use, the deletion will fail.'
+    },
+    userSettings: {
+      title: 'User Settings',
+      description: 'Manage your account preferences and security settings',
+      preferences: 'Preferences',
+      security: 'Security',
+      changePassword: 'Change Password',
+      changePasswordDescription: 'Update your password to keep your account secure'
     }
   },
   staff: {
@@ -2806,6 +2820,8 @@ export const en: TranslationKeys = {
     userDeleteFailed: 'Failed to delete user',
     passwordReset: 'Password reset successfully',
     passwordResetFailed: 'Failed to reset password',
+    passwordChanged: 'Password changed successfully',
+    passwordChangeFailed: 'Failed to change password',
     // Schedule Slots
     scheduleSlotCreated: 'Schedule slot created successfully',
     scheduleSlotUpdated: 'Schedule slot updated successfully',

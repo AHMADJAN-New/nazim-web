@@ -31,6 +31,7 @@ import { RichTextEditor } from "@/components/dms/RichTextEditor";
 import { formatDate, getShortDescription } from "@/lib/dateUtils";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { FileText, Upload, Search, Plus, X, Eye, File, Download, Image as ImageIcon, X as XIcon, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 
@@ -811,11 +812,7 @@ export default function OutgoingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>Issue Date <span className="text-destructive">*</span></Label>
-                    <Input
-                      type="date"
-                      value={newDoc.issue_date}
-                      onChange={(e) => setNewDoc((s) => ({ ...s, issue_date: e.target.value }))}
-                    />
+                    <CalendarDatePicker date={newDoc.issue_date ? new Date(newDoc.issue_date) : undefined} onDateChange={(date) => setNewDoc(date ? date.toISOString().split("T")[0] : "")} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label>Subject <span className="text-destructive">*</span></Label>
@@ -956,11 +953,7 @@ export default function OutgoingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>External Document Date</Label>
-                    <Input
-                      type="date"
-                      value={newDoc.external_doc_date}
-                      onChange={(e) => setNewDoc((s) => ({ ...s, external_doc_date: e.target.value }))}
-                    />
+                    <CalendarDatePicker date={newDoc.external_doc_date ? new Date(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc(date ? date.toISOString().split("T")[0] : "")} />
                   </div>
                   <div className="space-y-2">
                     <Label>Security Level</Label>
@@ -1353,11 +1346,7 @@ export default function OutgoingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>Issue Date <span className="text-destructive">*</span></Label>
-                    <Input
-                      type="date"
-                      value={newDoc.issue_date}
-                      onChange={(e) => setNewDoc((s) => ({ ...s, issue_date: e.target.value }))}
-                    />
+                    <CalendarDatePicker date={newDoc.issue_date ? new Date(newDoc.issue_date) : undefined} onDateChange={(date) => setNewDoc(date ? date.toISOString().split("T")[0] : "")} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label>Subject <span className="text-destructive">*</span></Label>
@@ -1498,11 +1487,7 @@ export default function OutgoingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>External Document Date</Label>
-                    <Input
-                      type="date"
-                      value={newDoc.external_doc_date}
-                      onChange={(e) => setNewDoc((s) => ({ ...s, external_doc_date: e.target.value }))}
-                    />
+                    <CalendarDatePicker date={newDoc.external_doc_date ? new Date(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc(date ? date.toISOString().split("T")[0] : "")} />
                   </div>
                   <div className="space-y-2">
                     <Label>Security Level</Label>

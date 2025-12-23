@@ -613,6 +613,12 @@ export const ar: TranslationKeys = {
     previousSlide: 'الشريحة السابقة',
     enterCurrentPassword: 'أدخل كلمة المرور الحالية',
     enterNewPassword: 'أدخل كلمة المرور الجديدة',
+    currentPassword: 'كلمة المرور الحالية',
+    weak: 'ضعيف',
+    fair: 'متوسط',
+    good: 'جيد',
+    strong: 'قوي',
+    veryStrong: 'قوي جداً',
     enterFullName: 'أدخل اسمك الكامل',
     enterPhoneNumber: 'أدخل رقم هاتفك',
     gradeExample: 'مثل، 1، 2، 3',
@@ -1409,7 +1415,15 @@ export const ar: TranslationKeys = {
     roomsManagement: 'إدارة الغرف',
     roomUpdated: 'تم تحديث الغرفة بنجاح',
     staff: 'الموظفون',
-    warden: 'المسؤول'
+    warden: 'المسؤول',
+    userSettings: {
+      title: 'إعدادات المستخدم',
+      description: 'إدارة تفضيلات الحساب وإعدادات الأمان',
+      preferences: 'التفضيلات',
+      security: 'الأمان',
+      changePassword: 'تغيير كلمة المرور',
+      changePasswordDescription: 'قم بتحديث كلمة المرور للحفاظ على أمان حسابك'
+    }
   },
   staff: {
     addStaff: 'إضافة موظف',
@@ -2529,6 +2543,8 @@ export const ar: TranslationKeys = {
     userDeleteFailed: 'فشل حذف المستخدم',
     passwordReset: 'تم إعادة تعيين كلمة المرور بنجاح',
     passwordResetFailed: 'فشل إعادة تعيين كلمة المرور',
+    passwordChanged: 'تم تغيير كلمة المرور بنجاح',
+    passwordChangeFailed: 'فشل تغيير كلمة المرور',
     // Schedule Slots
     scheduleSlotCreated: 'تم إنشاء فتحة الجدول الزمني بنجاح',
     scheduleSlotUpdated: 'تم تحديث فتحة الجدول الزمني بنجاح',

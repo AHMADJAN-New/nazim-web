@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   useExam, useExamClasses, useExamSubjects, useExamTimes,
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { showToast } from '@/lib/toast';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import {
   Dialog,
   DialogContent,
@@ -415,7 +417,7 @@ export function ExamTimetablePage() {
         {exam.startDate && exam.endDate && (
           <Badge variant="secondary" className="gap-1">
             <CalendarIcon className="h-3 w-3" />
-            {new Date(exam.startDate).toLocaleDateString()} - {new Date(exam.endDate).toLocaleDateString()}
+            {formatDate(exam.startDate)} - {formatDate(exam.endDate)}
           </Badge>
         )}
       </div>
@@ -466,14 +468,7 @@ export function ExamTimetablePage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Input
-                type="date"
-                value={selectedDateFilter}
-                onChange={(e) => setSelectedDateFilter(e.target.value)}
-                className="w-[200px]"
-                min={exam.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : undefined}
-                max={exam.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : undefined}
-              />
+              <CalendarDatePicker date={selectedDateFilter ? new Date(selectedDateFilter) : undefined} onDateChange={(date) => setSelectedDateFilter(date ? date.toISOString().split("T")[0] : "")} />
               {selectedDateFilter && (
                 <Button variant="ghost" size="sm" onClick={() => setSelectedDateFilter('')}>
                   {t('common.clear') || 'Clear'}
@@ -518,7 +513,7 @@ export function ExamTimetablePage() {
                   <div className="flex items-center gap-2 mb-3">
                     <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                     <h3 className="font-medium">
-                      {new Date(dateKey).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      {formatDate(dateKey)}
                     </h3>
                     <Badge variant="outline">{times.length} {t('exams.sessions') || 'sessions'}</Badge>
                   </div>
@@ -670,13 +665,7 @@ export function ExamTimetablePage() {
             </div>
             <div>
               <Label>{t('exams.date') || 'Date'} *</Label>
-              <Input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                min={exam.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : undefined}
-                max={exam.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : undefined}
-              />
+              <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -768,13 +757,7 @@ export function ExamTimetablePage() {
             )}
             <div>
               <Label>{t('exams.date') || 'Date'} *</Label>
-              <Input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                min={exam.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : undefined}
-                max={exam.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : undefined}
-              />
+              <CalendarDatePicker date={formData.date ? new Date(formData.date) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -860,7 +843,7 @@ export function ExamTimetablePage() {
                 <div className="mt-2 font-medium">
                   {getClassName(timeToDelete.examClassId)} - {getSubjectName(timeToDelete.examSubjectId)}
                   <br />
-                  {new Date(timeToDelete.date).toLocaleDateString()} {timeToDelete.startTime} - {timeToDelete.endTime}
+                  {formatDate(timeToDelete.date)} {timeToDelete.startTime} - {timeToDelete.endTime}
                 </div>
               )}
             </AlertDialogDescription>

@@ -5,16 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings, Eye, EyeOff, Lock } from 'lucide-react';
-import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Settings, Eye, EyeOff, Lock, Calendar, Shield } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { passwordChangeSchema, type PasswordChangeFormData } from '@/lib/validations/passwordChange';
 import { authApi } from '@/lib/api/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { showToast } from '@/lib/toast';
+import { DatePreferenceSettings } from '@/components/settings/DatePreferenceSettings';
 
 export default function UserSettings() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -49,14 +49,13 @@ export default function UserSettings() {
     ];
 
     const strength = checks.filter(Boolean).length;
-    const percentage = (strength / 5) * 100;
 
-    if (strength === 0) return { strength: 0, label: 'Very Weak', color: 'bg-red-500' };
-    if (strength === 1) return { strength: 20, label: 'Weak', color: 'bg-red-400' };
-    if (strength === 2) return { strength: 40, label: 'Fair', color: 'bg-yellow-500' };
-    if (strength === 3) return { strength: 60, label: 'Good', color: 'bg-yellow-400' };
-    if (strength === 4) return { strength: 80, label: 'Strong', color: 'bg-green-400' };
-    return { strength: 100, label: 'Very Strong', color: 'bg-green-500' };
+    if (strength === 0) return { strength: 0, label: t('resetPassword.passwordStrength'), color: 'bg-red-500' };
+    if (strength === 1) return { strength: 20, label: t('common.weak'), color: 'bg-red-400' };
+    if (strength === 2) return { strength: 40, label: t('common.fair'), color: 'bg-yellow-500' };
+    if (strength === 3) return { strength: 60, label: t('common.good'), color: 'bg-yellow-400' };
+    if (strength === 4) return { strength: 80, label: t('common.strong'), color: 'bg-green-400' };
+    return { strength: 100, label: t('common.veryStrong'), color: 'bg-green-500' };
   };
 
   const passwordStrength = getPasswordStrength(newPassword || '');
@@ -70,165 +69,188 @@ export default function UserSettings() {
         new_password_confirmation: data.new_password_confirmation,
       });
 
-      toast.success('Password changed successfully');
+      showToast.success(t('toast.passwordChanged'));
       reset();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to change password');
+      showToast.error(error.message || t('toast.passwordChangeFailed'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            <CardTitle>User Settings</CardTitle>
-          </div>
-          <CardDescription>Manage your account settings and preferences</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Password Change Section */}
-            <div className="space-y-4">
+    <div className="container mx-auto p-4 md:p-6 max-w-4xl">
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Settings className="h-6 w-6" />
+          <h1 className="text-2xl font-bold">{t('settings.userSettings.title')}</h1>
+        </div>
+        <p className="text-muted-foreground">{t('settings.userSettings.description')}</p>
+      </div>
+
+      <Tabs defaultValue="preferences" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="preferences" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            {t('settings.userSettings.preferences')}
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            {t('settings.userSettings.security')}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Preferences Tab */}
+        <TabsContent value="preferences" className="mt-6">
+          <DatePreferenceSettings />
+        </TabsContent>
+
+        {/* Security Tab */}
+        <TabsContent value="security" className="mt-6">
+          <Card>
+            <CardHeader>
               <div className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                <h3 className="text-lg font-semibold">Change Password</h3>
+                <Lock className="h-5 w-5" />
+                <CardTitle>{t('settings.userSettings.changePassword')}</CardTitle>
               </div>
-
-              {/* Current Password */}
-              <div className="space-y-2">
-                <Label htmlFor="current_password">Current Password *</Label>
-                <div className="relative">
-                  <Input
-                    id="current_password"
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    {...register('current_password')}
-                    placeholder={t('common.enterCurrentPassword')}
-                    disabled={isSubmitting}
-                    className="pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    disabled={isSubmitting}
-                  >
-                    {showCurrentPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-                {errors.current_password && (
-                  <p className="text-sm text-destructive">{errors.current_password.message}</p>
-                )}
-              </div>
-
-              {/* New Password */}
-              <div className="space-y-2">
-                <Label htmlFor="new_password">New Password *</Label>
-                <div className="relative">
-                  <Input
-                    id="new_password"
-                    type={showNewPassword ? 'text' : 'password'}
-                    {...register('new_password')}
-                    placeholder={t('common.enterNewPassword')}
-                    disabled={isSubmitting}
-                    className="pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    disabled={isSubmitting}
-                  >
-                    {showNewPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-                {errors.new_password && (
-                  <p className="text-sm text-destructive">{errors.new_password.message}</p>
-                )}
-                {/* Password Strength Indicator */}
-                {newPassword && (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Password strength:</span>
-                      <span className="font-medium">{passwordStrength.label}</span>
-                    </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-300 ${passwordStrength.color}`}
-                        style={{ width: `${passwordStrength.strength}%` }}
-                      />
-                    </div>
+              <CardDescription>
+                {t('settings.userSettings.changePasswordDescription')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* Current Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="current_password">{t('common.currentPassword')} *</Label>
+                  <div className="relative">
+                    <Input
+                      id="current_password"
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      {...register('current_password')}
+                      placeholder={t('common.enterCurrentPassword')}
+                      disabled={isSubmitting}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      disabled={isSubmitting}
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
                   </div>
-                )}
-              </div>
-
-              {/* Confirm New Password */}
-              <div className="space-y-2">
-                <Label htmlFor="new_password_confirmation">Confirm New Password *</Label>
-                <div className="relative">
-                  <Input
-                    id="new_password_confirmation"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    {...register('new_password_confirmation')}
-                    placeholder="Confirm your new password"
-                    disabled={isSubmitting}
-                    className="pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    disabled={isSubmitting}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
+                  {errors.current_password && (
+                    <p className="text-sm text-destructive">{errors.current_password.message}</p>
+                  )}
                 </div>
-                {errors.new_password_confirmation && (
-                  <p className="text-sm text-destructive">{errors.new_password_confirmation.message}</p>
-                )}
-              </div>
 
-              {/* Password Requirements */}
-              <div className="rounded-lg bg-muted p-4 space-y-2">
-                <p className="text-sm font-medium">Password Requirements:</p>
-                <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>At least 8 characters long</li>
-                  <li>At least one uppercase letter</li>
-                  <li>At least one lowercase letter</li>
-                  <li>At least one number</li>
-                  <li>At least one special character</li>
-                </ul>
-              </div>
+                {/* New Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="new_password">{t('resetPassword.newPassword')} *</Label>
+                  <div className="relative">
+                    <Input
+                      id="new_password"
+                      type={showNewPassword ? 'text' : 'password'}
+                      {...register('new_password')}
+                      placeholder={t('common.enterNewPassword')}
+                      disabled={isSubmitting}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      disabled={isSubmitting}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                  {errors.new_password && (
+                    <p className="text-sm text-destructive">{errors.new_password.message}</p>
+                  )}
+                  {/* Password Strength Indicator */}
+                  {newPassword && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{t('resetPassword.passwordStrength')}:</span>
+                        <span className="font-medium">{passwordStrength.label}</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${passwordStrength.color}`}
+                          style={{ width: `${passwordStrength.strength}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-              {/* Submit Button */}
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Changing Password...' : 'Change Password'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                {/* Confirm New Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="new_password_confirmation">{t('resetPassword.confirmPassword')} *</Label>
+                  <div className="relative">
+                    <Input
+                      id="new_password_confirmation"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      {...register('new_password_confirmation')}
+                      placeholder={t('resetPassword.confirmPassword')}
+                      disabled={isSubmitting}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      disabled={isSubmitting}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                  {errors.new_password_confirmation && (
+                    <p className="text-sm text-destructive">{errors.new_password_confirmation.message}</p>
+                  )}
+                </div>
+
+                {/* Password Requirements */}
+                <div className="rounded-lg bg-muted p-4 space-y-2">
+                  <p className="text-sm font-medium">{t('resetPassword.passwordRequirements')}</p>
+                  <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>{t('resetPassword.requirement8Chars')}</li>
+                    <li>{t('resetPassword.requirementUppercase')}</li>
+                    <li>{t('resetPassword.requirementLowercase')}</li>
+                    <li>{t('resetPassword.requirementNumber')}</li>
+                    <li>{t('resetPassword.requirementSpecial')}</li>
+                  </ul>
+                </div>
+
+                {/* Submit Button */}
+                <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                  {isSubmitting ? t('resetPassword.updatingPassword') : t('resetPassword.updatePassword')}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

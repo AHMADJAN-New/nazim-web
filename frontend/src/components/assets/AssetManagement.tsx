@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -31,6 +32,7 @@ import { useRooms } from '@/hooks/useRooms';
 import { useStaff } from '@/hooks/useStaff';
 import { useStudents } from '@/hooks/useStudents';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import type { Asset, AssetAssignmentDomain, AssetMaintenanceDomain } from '@/types/domain/asset';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
@@ -607,7 +609,7 @@ export function AssetManagement() {
                       <div className="flex items-center justify-between">
                         <span className="font-semibold capitalize">{item.event_type.replace('_', ' ')}</span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(item.created_at).toLocaleString()}
+                          {formatDateTime(item.created_at)}
                         </span>
                       </div>
                       {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
@@ -669,11 +671,11 @@ export function AssetManagement() {
               </div>
               <div>
                 <Label>Purchase Date</Label>
-                <Input type="date" {...register('purchaseDate')} />
+                <CalendarFormField control={assignmentForm.control} name="purchaseDate" label="Category" />
               </div>
               <div>
                 <Label>Warranty Expiry</Label>
-                <Input type="date" {...register('warrantyExpiry')} />
+                <CalendarFormField control={assignmentForm.control} name="warrantyExpiry" label="Purchase Price" />
               </div>
               <div>
                 <Label>Vendor</Label>

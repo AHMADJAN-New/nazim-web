@@ -1,5 +1,5 @@
 import { useEffect, memo } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { useCreateShortTermCourse, useUpdateShortTermCourse } from '@/hooks/useShortTermCourses';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 
 interface ShortTermCourseFormDialogProps {
   open: boolean;
@@ -48,7 +49,7 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
   const createMutation = useCreateShortTermCourse();
   const updateMutation = useUpdateShortTermCourse();
 
-  const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<CourseFormValues>({
+  const formMethods = useForm<CourseFormValues>({
     defaultValues: {
       name: '',
       description: '',
@@ -62,6 +63,8 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
       location: '',
     },
   });
+
+  const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = formMethods;
 
   useEffect(() => {
     if (!open) return;
@@ -127,8 +130,9 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormProvider {...formMethods}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <Label htmlFor="name">Course Name *</Label>
               <Input
@@ -168,20 +172,12 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
 
             <div>
               <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                {...register('startDate')}
-              />
+              <CalendarFormField control={control} name="startDate" label="Start Date" />
             </div>
 
             <div>
               <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                {...register('endDate')}
-              />
+              <CalendarFormField control={control} name="endDate" label="End Date" />
             </div>
 
             <div>
@@ -248,7 +244,8 @@ export const ShortTermCourseFormDialog = memo(function ShortTermCourseFormDialog
               {isEdit ? t('courses.updateCourse') : 'Create Course'}
             </Button>
           </DialogFooter>
-        </form>
+          </form>
+        </FormProvider>
       </DialogContent>
     </Dialog>
   );

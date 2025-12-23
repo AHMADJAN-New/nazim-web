@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -783,7 +784,7 @@ export function GraduationCertificatePdfGenerator({
       const graduationDatePos = getPosition(layout.graduationDatePosition, pageWidth / 2, 540, fieldFont.fontSize);
       if (graduationDatePos) {
         const dateLabel = layout.graduationDateText || 'Date:';
-        const formattedDate = format(new Date(data.batch.graduation_date), 'MMM d, yyyy');
+        const formattedDate = formatDate(data.batch.graduation_date);
         const dateText = `${dateLabel} ${formattedDate}`;
         content.push({
           text: normalizeText(dateText),
@@ -1069,7 +1070,7 @@ export function GraduationCertificatePdfGenerator({
                     <div>
                       <Label className="text-muted-foreground">Issued At</Label>
                       <p className="font-medium">
-                        {format(new Date(certificateData.certificate.issued_at), 'MMM d, yyyy')}
+                        {formatDate(certificateData.certificate.issued_at)}
                       </p>
                     </div>
                   )}

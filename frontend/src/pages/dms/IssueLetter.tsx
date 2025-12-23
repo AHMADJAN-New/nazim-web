@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { dmsApi } from "@/lib/api/client";
 import type { LetterTemplate, TemplateVariable, OutgoingDocument } from "@/types/dms";
@@ -900,11 +901,7 @@ export default function IssueLetter() {
                     </Label>
                     <SecurityBadge level={payload.security_level_key} />
                   </div>
-                  <Input
-                    type="date"
-                    value={payload.issue_date}
-                    onChange={(e) => setPayload((s) => ({ ...s, issue_date: e.target.value }))}
-                  />
+                  <CalendarDatePicker date={payload.issue_date ? new Date(payload.issue_date) : undefined} onDateChange={(date) => setPayload(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
 
                 {/* Template Variables - Individual Fields with Better UX */}
@@ -1114,23 +1111,54 @@ export default function IssueLetter() {
               {t("dms.issueLetter.uploadAttachmentsDescription") || "Upload attachments or files for this letter. Images will be automatically compressed."}
             </DialogDescription>
           </DialogHeader>
-          {draftLetterId ? (
-            <ImageFileUploader
-              ownerType="outgoing"
-              ownerId={draftLetterId}
-              fileType="attachment"
-              maxFiles={10}
-              compressionOptions={{
-                maxWidth: 1920,
-                maxHeight: 1920,
-                quality: 0.85,
-                maxSizeMB: 2,
-                mimeType: 'image/jpeg',
-              }}
-            />
-          ) : (
-            <div className="flex h-32 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="space-y-4 py-4">
+            {issuedDocument && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Document Number:</span>
+                  <DocumentNumberBadge value={issuedDocument.full_outdoc_number || 'N/A'} type="outgoing" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Subject:</span>
+                  <span className="text-sm text-muted-foreground">{issuedDocument.subject}</span>
+                </div>
+                {issuedDocument.issue_date && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Issue Date:</span>
+                    <span className="text-sm text-muted-foreground">
+                      {formatDate(issuedDocument.issue_date)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="flex gap-2 pt-2">
+              <Button
+                onClick={handleDownloadPdf}
+                disabled={!issuedDocument?.id || downloadPdfMutation.isPending}
+                className="flex-1"
+              >
+                {downloadPdfMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowSuccessDialog(false);
+                  setIssuedDocument(null);
+                }}
+              >
+                Close
+              </Button>
             </div>
           )}
         </DialogContent>

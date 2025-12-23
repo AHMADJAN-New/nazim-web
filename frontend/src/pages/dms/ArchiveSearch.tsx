@@ -20,6 +20,7 @@ import { formatDate, getShortDescription } from "@/lib/dateUtils";
 import { Search, X, Eye, FileText, Archive, Calendar, User, Building2, File, Download, Inbox, Send, FileCheck } from "lucide-react";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { Badge } from "@/components/ui/badge";
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 const statusOptions = [
   { label: "All Statuses", value: "all" },
@@ -417,20 +418,12 @@ export default function ArchiveSearch() {
 
             <div className="space-y-2">
               <Label>From Date</Label>
-              <Input
-                type="date"
-                value={filters.from_date}
-                onChange={(e) => setFilters((s) => ({ ...s, from_date: e.target.value }))}
-              />
+              <CalendarDatePicker date={filters.from_date ? new Date(filters.from_date) : undefined} onDateChange={(date) => setFilters(date ? date.toISOString().split("T")[0] : "")} />
             </div>
 
             <div className="space-y-2">
               <Label>To Date</Label>
-              <Input
-                type="date"
-                value={filters.to_date}
-                onChange={(e) => setFilters((s) => ({ ...s, to_date: e.target.value }))}
-              />
+              <CalendarDatePicker date={filters.to_date ? new Date(filters.to_date) : undefined} onDateChange={(date) => setFilters(date ? date.toISOString().split("T")[0] : "")} />
             </div>
           </div>
 

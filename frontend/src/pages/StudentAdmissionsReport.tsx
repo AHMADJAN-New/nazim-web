@@ -21,6 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Link } from 'react-router-dom';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 const statusOrder: AdmissionStatus[] = ['active', 'admitted', 'pending', 'inactive', 'suspended', 'withdrawn', 'graduated'];
 
@@ -271,19 +272,11 @@ const StudentAdmissionsReport = () => {
               </div>
               <div className="space-y-2">
                 <Label>{t('admissions.fromDate') || 'From date'}</Label>
-                <Input
-                  type="date"
-                  value={filters.fromDate || ''}
-                  onChange={(e) => handleFilterChange('fromDate', e.target.value || undefined)}
-                />
+                <CalendarDatePicker date={filters.fromDate || '' ? new Date(filters.fromDate || '') : undefined} onDateChange={(date) => handleFilterChange("fromDate", date ? date.toISOString().split("T")[0] : "")} />
               </div>
               <div className="space-y-2">
                 <Label>{t('admissions.toDate') || 'To date'}</Label>
-                <Input
-                  type="date"
-                  value={filters.toDate || ''}
-                  onChange={(e) => handleFilterChange('toDate', e.target.value || undefined)}
-                />
+                <CalendarDatePicker date={filters.toDate || '' ? new Date(filters.toDate || '') : undefined} onDateChange={(date) => handleFilterChange("toDate", date ? date.toISOString().split("T")[0] : "")} />
               </div>
               <div className="flex items-center justify-between rounded-lg border px-4 py-3 md:col-span-2">
                 <div className="space-y-1">

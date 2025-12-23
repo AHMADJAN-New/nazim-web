@@ -3,6 +3,7 @@
  */
 
 import { useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,6 +51,7 @@ import {
 import { useLanguage } from '@/hooks/useLanguage';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { Plus, Pencil, Trash2, ArrowRightLeft } from 'lucide-react';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 export default function ExchangeRates() {
     const { t } = useLanguage();
@@ -188,13 +190,7 @@ export default function ExchangeRates() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="effectiveDate">{t('finance.effectiveDate') || 'Effective Date'} *</Label>
-                    <Input
-                        id="effectiveDate"
-                        type="date"
-                        value={formData.effectiveDate}
-                        onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
-                        required
-                    />
+                    <CalendarDatePicker date={formData.effectiveDate ? new Date(formData.effectiveDate) : undefined} onDateChange={(date) => setFormData(date ? date.toISOString().split("T")[0] : "")} />
                 </div>
             </div>
             <div className="space-y-2">
@@ -324,7 +320,7 @@ export default function ExchangeRates() {
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className="font-normal">
-                                                {rate.effectiveDate.toLocaleDateString()}
+                                                {formatDate(rate.effectiveDate)}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="max-w-xs truncate">{rate.notes || '-'}</TableCell>

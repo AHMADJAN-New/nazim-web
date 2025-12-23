@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useAcademicYears, useCreateAcademicYear, useUpdateAcademicYear, useDeleteAcademicYear, useSetCurrentAcademicYear, type AcademicYear } from '@/hooks/useAcademicYears';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -38,7 +39,8 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Pencil, Trash2, Search, GraduationCap, Calendar, Star } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useForm } from 'react-hook-form';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
@@ -80,19 +82,23 @@ export function AcademicYearsManagement() {
   const setCurrentAcademicYear = useSetCurrentAcademicYear();
 
   const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<AcademicYearFormData>({
+  const formMethods = useForm<AcademicYearFormData>({
     resolver: zodResolver(academicYearSchema),
     defaultValues: {
       status: 'active',
       is_current: false,
     },
   });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    control,
+    formState: { errors },
+  } = formMethods;
 
   const isCurrentValue = watch('is_current');
   const statusValue = watch('status');
@@ -341,14 +347,10 @@ export function AcademicYearsManagement() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {year.startDate instanceof Date 
-                          ? year.startDate.toLocaleDateString()
-                          : new Date(year.startDate).toLocaleDateString()}
+                        {formatDate(year.startDate)}
                       </TableCell>
                       <TableCell>
-                        {year.endDate instanceof Date
-                          ? year.endDate.toLocaleDateString()
-                          : new Date(year.endDate).toLocaleDateString()}
+                        {formatDate(year.endDate instanceof Date ? year.endDate : year.endDate)}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(year.status)}>
@@ -405,8 +407,9 @@ export function AcademicYearsManagement() {
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <DialogHeader>
+          <FormProvider {...formMethods}>
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <DialogHeader>
               <DialogTitle>
                 {selectedAcademicYear 
                   ? t('academic.academicYears.editAcademicYear')
@@ -437,11 +440,7 @@ export function AcademicYearsManagement() {
                   <Label htmlFor="start_date">
                     {t('academic.academicYears.startDate')} *
                   </Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    {...register('start_date')}
-                  />
+                  <CalendarFormField control={control} name="start_date" label={t('academic.academicYears.startDate') + ' *'} />
                   {errors.start_date && (
                     <p className="text-sm text-destructive">{errors.start_date.message}</p>
                   )}
@@ -450,11 +449,7 @@ export function AcademicYearsManagement() {
                   <Label htmlFor="end_date">
                     {t('academic.academicYears.endDate')} *
                   </Label>
-                  <Input
-                    id="end_date"
-                    type="date"
-                    {...register('end_date')}
-                  />
+                  <CalendarFormField control={control} name="end_date" label={t('academic.academicYears.endDate') + ' *'} />
                   {errors.end_date && (
                     <p className="text-sm text-destructive">{errors.end_date.message}</p>
                   )}
@@ -511,7 +506,8 @@ export function AcademicYearsManagement() {
                 {t('common.save')}
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 

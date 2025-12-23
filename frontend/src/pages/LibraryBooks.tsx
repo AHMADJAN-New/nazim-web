@@ -1,6 +1,5 @@
     import { useState, useMemo, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Search, BookOpen, Copy, X, Eye } from 'lucide-react';
-import { format } from 'date-fns';
 import { useLibraryBooks, useCreateLibraryBook, useUpdateLibraryBook, useDeleteLibraryBook, useCreateLibraryCopy, useLibraryLoans } from '@/hooks/useLibrary';
 import { useLibraryCategories } from '@/hooks/useLibraryCategories';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
@@ -50,7 +49,7 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { useLanguage } from '@/hooks/useLanguage';
-import { cn } from '@/lib/utils';
+import { formatDate, formatDateTime, cn } from '@/lib/utils';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -334,7 +333,7 @@ export default function LibraryBooks() {
             cell: ({ row }) => {
                 const price = row.original.price ?? 0;
                 const numPrice = typeof price === 'string' ? parseFloat(price) : (typeof price === 'number' ? price : 0);
-                return isNaN(numPrice) ? '0.00' : numPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                return isNaN(numPrice) ? '0.00' : formatDateTime(numPrice);
             },
         },
         {
@@ -866,7 +865,7 @@ export default function LibraryBooks() {
                                                         {(() => {
                                                             const price = viewBook.price ?? 0;
                                                             const numPrice = typeof price === 'string' ? parseFloat(price) : (typeof price === 'number' ? price : 0);
-                                                            return isNaN(numPrice) ? '0.00' : numPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                            return isNaN(numPrice) ? '0.00' : formatDateTime(numPrice);
                                                         })()}
                                                     </p>
                                                 </div>
@@ -997,7 +996,7 @@ function BookHistoryPanel({ bookId, allLoans }: { bookId: string; allLoans?: Lib
                                         </Badge>
                                     </div>
                                     <span className="text-sm text-muted-foreground">
-                                        {loan.loan_date ? format(new Date(loan.loan_date), 'MMM dd, yyyy') : 'N/A'}
+                                        {loan.loan_date ? formatDate(loan.loan_date) : 'N/A'}
                                     </span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -1011,14 +1010,14 @@ function BookHistoryPanel({ bookId, allLoans }: { bookId: string; allLoans?: Lib
                                     <div>
                                         <Label className="text-muted-foreground">Due Date</Label>
                                         <p className="font-medium">
-                                            {loan.due_date ? format(new Date(loan.due_date), 'MMM dd, yyyy') : 'N/A'}
+                                            {loan.due_date ? formatDate(loan.due_date) : 'N/A'}
                                         </p>
                                     </div>
                                     {isReturned && (
                                         <div>
                                             <Label className="text-muted-foreground">Returned Date</Label>
                                             <p className="font-medium">
-                                                {loan.returned_at ? format(new Date(loan.returned_at), 'MMM dd, yyyy') : 'N/A'}
+                                                {loan.returned_at ? formatDate(loan.returned_at) : 'N/A'}
                                             </p>
                                         </div>
                                     )}

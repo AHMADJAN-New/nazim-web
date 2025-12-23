@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
     Activity,
     AlertTriangle,
@@ -298,25 +299,11 @@ export default function AttendanceTotalsReports() {
                                 <>
                                     <div className="space-y-2">
                                         <Label>{t('attendanceTotalsReport.fromDate') || 'From date'}</Label>
-                                        <Input
-                                            type="date"
-                                            value={filters.dateFrom || ''}
-                                            onChange={(e) => {
-                                                handleFilterChange('dateFrom', e.target.value || undefined);
-                                                setDateRangePreset('custom');
-                                            }}
-                                        />
+                                        <CalendarDatePicker date={filters.dateFrom || '' ? new Date(filters.dateFrom || '') : undefined} onDateChange={(date) => handleFilterChange("dateFrom", date ? date.toISOString().split("T")[0] : "")} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>{t('attendanceTotalsReport.toDate') || 'To date'}</Label>
-                                        <Input
-                                            type="date"
-                                            value={filters.dateTo || ''}
-                                            onChange={(e) => {
-                                                handleFilterChange('dateTo', e.target.value || undefined);
-                                                setDateRangePreset('custom');
-                                            }}
-                                        />
+                                        <CalendarDatePicker date={filters.dateTo || '' ? new Date(filters.dateTo || '') : undefined} onDateChange={(date) => handleFilterChange("dateTo", date ? date.toISOString().split("T")[0] : "")} />
                                     </div>
                                 </>
                             )}
@@ -375,7 +362,7 @@ export default function AttendanceTotalsReports() {
                                             <Icon className="h-3.5 w-3.5" />
                                             {meta.label}
                                         </div>
-                                        <div className="text-2xl font-semibold">{total.toLocaleString()}</div>
+                                        <div className="text-2xl font-semibold">{formatDateTime(total)}</div>
                                         <p className="text-xs text-muted-foreground">{t('attendanceTotalsReport.records') || 'records'}</p>
                                     </div>
                                 );

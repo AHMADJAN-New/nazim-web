@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useStaffMember, useStaffDocuments, useUploadStaffPicture, useUploadStaffDocument, useDeleteStaffDocument } from '@/hooks/useStaff';
 import type { Staff } from '@/types/domain/staff';
 import { useProfile } from '@/hooks/useProfiles';
@@ -263,7 +264,7 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <Label className="text-muted-foreground text-sm">Hire Date:</Label>
-                  <span className="text-sm">{staff.createdAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                  <span className="text-sm">{formatDate(staff.createdAt)}</span>
                 </div>
               )}
             </div>
@@ -667,13 +668,13 @@ export function StaffProfile({ staffId, onClose }: StaffProfileProps) {
                 {staff.createdAt && (
                   <div>
                     <Label className="text-muted-foreground">Created At</Label>
-                    <p className="font-medium">{staff.createdAt.toLocaleDateString()}</p>
+                    <p className="font-medium">{formatDate(staff.createdAt)}</p>
                   </div>
                 )}
                 {staff.updatedAt && (
                   <div>
                     <Label className="text-muted-foreground">Last Updated</Label>
-                    <p className="font-medium">{staff.updatedAt.toLocaleDateString()}</p>
+                    <p className="font-medium">{formatDate(staff.updatedAt)}</p>
                   </div>
                 )}
               </CardContent>

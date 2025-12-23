@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,8 +32,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { format } from 'date-fns';
-
 interface GraduationCertificateTemplate {
   id: string;
   organization_id: string;
@@ -171,7 +170,7 @@ export default function CertificateTemplatesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {format(new Date(tpl.created_at), 'MMM d, yyyy')}
+                      {formatDate(tpl.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

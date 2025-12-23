@@ -25,6 +25,7 @@ import { leaveRequestsApi, studentAdmissionsApi } from '@/lib/api/client';
 import type { LeaveRequest, LeaveRequestInsert } from '@/types/domain/leave';
 import { mapLeaveRequestApiToDomain } from '@/mappers/leaveMapper';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-800 border-amber-200',
@@ -593,25 +594,11 @@ export default function LeaveManagement() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
                     <Label htmlFor="start-date">{t('leave.startDate')} <span className="text-destructive">*</span></Label>
-                    <Input 
-                      id="start-date"
-                      type="date" 
-                      value={startDate} 
-                      onChange={e => setStartDate(e.target.value)}
-                      min={format(new Date(), 'yyyy-MM-dd')}
-                      dir={isRTL ? 'rtl' : 'ltr'}
-                    />
+                    <CalendarDatePicker date={startDate ? new Date(startDate) : undefined} onDateChange={(date) => setStartDate(date ? date.toISOString().split("T")[0] : "")} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="end-date">{t('leave.endDate')} <span className="text-destructive">*</span></Label>
-                    <Input 
-                      id="end-date"
-                      type="date" 
-                      value={endDate} 
-                      onChange={e => setEndDate(e.target.value)}
-                      min={startDate || format(new Date(), 'yyyy-MM-dd')}
-                      dir={isRTL ? 'rtl' : 'ltr'}
-                    />
+                    <CalendarDatePicker date={endDate ? new Date(endDate) : undefined} onDateChange={(date) => setEndDate(date ? date.toISOString().split("T")[0] : "")} />
                   </div>
                 </div>
               </div>

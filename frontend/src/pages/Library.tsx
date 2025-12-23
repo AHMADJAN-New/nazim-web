@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Plus, BookOpen, ClipboardList, RefreshCw, Library as LibraryIcon, BookCheck, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -320,7 +321,7 @@ export default function Library() {
                           {(() => {
                             const price = book.price ?? book.deposit_amount ?? 0;
                             const numPrice = typeof price === 'string' ? parseFloat(price) : (typeof price === 'number' ? price : 0);
-                            return isNaN(numPrice) ? '0.00' : numPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            return isNaN(numPrice) ? '0.00' : formatDateTime(numPrice);
                           })()}
                         </TableCell>
                         <TableCell>
@@ -437,19 +438,11 @@ export default function Library() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label>Loan Date</Label>
-                      <Input
-                        type="date"
-                        value={loanForm.loan_date}
-                        onChange={(e) => setLoanForm({ ...loanForm, loan_date: e.target.value })}
-                      />
+                      <CalendarDatePicker date={loanForm.loan_date ? new Date(loanForm.loan_date) : undefined} onDateChange={(date) => setLoanForm(date ? date.toISOString().split("T")[0] : "")} />
                     </div>
                     <div>
                       <Label>Due Date</Label>
-                      <Input
-                        type="date"
-                        value={loanForm.due_date}
-                        onChange={(e) => setLoanForm({ ...loanForm, due_date: e.target.value })}
-                      />
+                      <CalendarDatePicker date={loanForm.due_date ? new Date(loanForm.due_date) : undefined} onDateChange={(date) => setLoanForm(date ? date.toISOString().split("T")[0] : "")} />
                     </div>
                   </div>
                   <div>

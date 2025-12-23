@@ -1,7 +1,7 @@
-import { 
-  Users, 
-  GraduationCap, 
-  UserCheck, 
+import {
+  Users,
+  GraduationCap,
+  UserCheck,
   CreditCard,
   TrendingUp,
   Calendar,
@@ -32,6 +32,7 @@ import {
   XCircle,
   TrendingDown
 } from "lucide-react";
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { StatsCard } from "@/components/dashboard/StatsCard";
@@ -232,7 +233,7 @@ export default function Dashboard() {
       const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
       
       return {
-        date: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+        date: formatDate(date),
         percentage,
         present,
         total,

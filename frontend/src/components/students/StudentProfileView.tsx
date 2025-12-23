@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, memo } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -227,7 +228,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
     if (!value) return '';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString();
+    return formatDate(date);
   };
   const escapeHtml = (value: string) =>
     value
@@ -640,7 +641,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                           <span className="font-medium truncate">{doc.file_name}</span>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          {new Date(doc.created_at).toLocaleDateString()} • {doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} ${t('common.kb') || 'KB'}` : '—'}
+                          {formatDate(doc.created_at)} • {doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} ${t('common.kb') || 'KB'}` : '—'}
                         </div>
                         {doc.description && (
                           <div className="text-sm text-muted-foreground mt-1">{doc.description}</div>
@@ -685,13 +686,13 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                         {record.start_date && record.end_date && (
                           <div>
                             <span className="font-medium">{t('students.period') || 'Period'}:</span>{' '}
-                            {new Date(record.start_date).toLocaleDateString()} {t('common.to') || '-'} {new Date(record.end_date).toLocaleDateString()}
+                            {formatDate(record.start_date)} {t('common.to') || '-'} {formatDate(record.end_date)}
                           </div>
                         )}
                         {record.start_date && !record.end_date && (
                           <div>
                             <span className="font-medium">{t('students.startDate') || 'Start Date'}:</span>{' '}
-                            {new Date(record.start_date).toLocaleDateString()}
+                            {formatDate(record.start_date)}
                           </div>
                         )}
                       </div>
@@ -766,7 +767,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                       </div>
                       <div className="text-sm text-muted-foreground mb-2">
                         <Calendar className="w-4 h-4 inline mr-1" />
-                        {new Date(record.incident_date).toLocaleDateString()}
+                        {formatDate(record.incident_date)}
                       </div>
                       {record.description && (
                         <div className="text-sm mb-2">
@@ -782,7 +783,7 @@ export const StudentProfileView = memo(function StudentProfileView({ open, onOpe
                       )}
                       {record.resolved && record.resolved_date && (
                         <div className="text-xs text-muted-foreground mt-2">
-                          {t('students.resolved') || 'Resolved'} {t('common.on') || 'on'} {new Date(record.resolved_date).toLocaleDateString()}
+                          {t('students.resolved') || 'Resolved'} {t('common.on') || 'on'} {formatDate(record.resolved_date)}
                         </div>
                       )}
                     </div>

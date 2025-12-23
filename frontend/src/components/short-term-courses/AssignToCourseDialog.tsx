@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { useCourseStudents } from '@/hooks/useCourseStudents';
 import { useShortTermCourses } from '@/hooks/useShortTermCourses';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -268,15 +269,7 @@ export const AssignToCourseDialog = memo(function AssignToCourseDialog({
 
           {/* Registration Date */}
           <div className="space-y-2">
-            <Label htmlFor="registrationDate">Registration Date *</Label>
-            <Input
-              id="registrationDate"
-              type="date"
-              {...register('registrationDate', { required: 'Registration date is required' })}
-            />
-            {errors.registrationDate && (
-              <p className="text-sm text-destructive">{errors.registrationDate.message}</p>
-            )}
+            <CalendarFormField control={control} name="registrationDate" label="Registration Date" required />
           </div>
 
           {/* Fee Information */}

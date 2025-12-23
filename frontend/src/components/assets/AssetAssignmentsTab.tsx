@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, Pencil, Trash2, ShieldCheck } from 'lucide-react';
@@ -27,9 +28,9 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef, flexRender } from '@tanstack/react-table';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 
 const assignmentSchema = z.object({
   assetId: z.string().min(1, 'Asset is required'),
@@ -61,19 +62,22 @@ export default function AssetAssignmentsTab() {
   const updateAssignment = useUpdateAssignment();
   const removeAssignment = useRemoveAssignment();
 
+  const formMethods = useForm<AssignmentFormValues>({
+    resolver: zodResolver(assignmentSchema),
+    defaultValues: {
+      assignedToType: 'staff',
+    },
+  });
+
   const {
     register,
     handleSubmit,
     reset,
     setValue,
     watch,
+    control,
     formState: { errors },
-  } = useForm<AssignmentFormValues>({
-    resolver: zodResolver(assignmentSchema),
-    defaultValues: {
-      assignedToType: 'staff',
-    },
-  });
+  } = formMethods;
 
   // Collect all assignments from all assets
   const allAssignments = useMemo(() => {
@@ -134,8 +138,8 @@ export default function AssetAssignmentsTab() {
       assetId: assignment.assetId,
       assignedToType: assignment.data.assignedToType,
       assignedToId: assignment.data.assignedToId || null,
-      assignedOn: assignment.data.assignedOn ? format(new Date(assignment.data.assignedOn), 'yyyy-MM-dd') : null,
-      expectedReturnDate: assignment.data.expectedReturnDate ? format(new Date(assignment.data.expectedReturnDate), 'yyyy-MM-dd') : null,
+      assignedOn: assignment.data.assignedOn ? formatDate(assignment.data.assignedOn) : null,
+      expectedReturnDate: assignment.data.expectedReturnDate ? formatDate(assignment.data.expectedReturnDate) : null,
       notes: assignment.data.notes || null,
     });
     setIsDialogOpen(true);
@@ -258,7 +262,7 @@ export default function AssetAssignmentsTab() {
         header: 'Assigned On',
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.data.assignedOn ? format(new Date(row.original.data.assignedOn), 'MMM dd, yyyy') : 'N/A'}
+            {row.original.data.assignedOn ? formatDate(row.original.data.assignedOn) : 'N/A'}
           </span>
         ),
       },
@@ -267,7 +271,7 @@ export default function AssetAssignmentsTab() {
         header: 'Expected Return',
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.data.expectedReturnDate ? format(new Date(row.original.data.expectedReturnDate), 'MMM dd, yyyy') : 'N/A'}
+            {row.original.data.expectedReturnDate ? formatDate(row.original.data.expectedReturnDate) : 'N/A'}
           </span>
         ),
       },
@@ -437,8 +441,9 @@ export default function AssetAssignmentsTab() {
               {editingAssignment ? 'Update the asset assignment details.' : 'Assign an asset to a staff member, student, or room.'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {!editingAssignment && (
+          <FormProvider {...formMethods}>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {!editingAssignment && (
               <div>
                 <Label>Asset *</Label>
                 <Select
@@ -511,11 +516,11 @@ export default function AssetAssignmentsTab() {
               </div>
               <div>
                 <Label>Assigned On</Label>
-                <Input type="date" {...register('assignedOn')} />
+                <CalendarFormField control={control} name="assignedOn" label="Assigned On" />
               </div>
               <div>
                 <Label>Expected Return Date</Label>
-                <Input type="date" {...register('expectedReturnDate')} />
+                <CalendarFormField control={control} name="expectedReturnDate" label="Expected Return Date" />
               </div>
             </div>
             <div>
@@ -530,7 +535,8 @@ export default function AssetAssignmentsTab() {
                 {editingAssignment ? 'Update' : 'Create'}
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
     </div>

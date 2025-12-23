@@ -45,7 +45,8 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
-import { cn } from '@/lib/utils';
+import { formatDate, formatDateTime, cn } from '@/lib/utils';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Collapsible,
@@ -361,7 +362,7 @@ function ExamClassCard({
                           {subject.scheduledAt && (
                             <Badge variant="outline" className="text-xs bg-background">
                               <CalendarDays className="h-3 w-3 mr-1" />
-                              {new Date(subject.scheduledAt).toLocaleDateString()}
+                              {formatDate(subject.scheduledAt)}
                             </Badge>
                           )}
                           {hasAssign && (
@@ -401,14 +402,13 @@ function ExamClassCard({
                         </div>
                         <div>
                           <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('exams.date') || 'Date'}</Label>
-                          <Input
-                            type="date"
-                            value={draft.scheduledAt}
-                            onChange={(e) => onDraftChange(subject.id, { ...draft, scheduledAt: e.target.value })}
+                          <CalendarDatePicker
+                            date={draft.scheduledAt ? new Date(draft.scheduledAt) : undefined}
+                            onDateChange={(date) => onDraftChange(subject.id, { ...draft, scheduledAt: date ? date.toISOString().slice(0, 10) : '' })}
                             disabled={!hasAssign}
                             className="h-8 text-sm"
-                            min={exam?.startDate ? new Date(exam.startDate).toISOString().slice(0, 10) : undefined}
-                            max={exam?.endDate ? new Date(exam.endDate).toISOString().slice(0, 10) : undefined}
+                            minDate={exam?.startDate ? new Date(exam.startDate) : undefined}
+                            maxDate={exam?.endDate ? new Date(exam.endDate) : undefined}
                           />
                         </div>
                         <div className="flex items-end">

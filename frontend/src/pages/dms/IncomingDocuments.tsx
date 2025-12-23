@@ -34,6 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RichTextEditor } from "@/components/dms/RichTextEditor";
 import { formatDate, formatDateForInput, getShortDescription } from "@/lib/dateUtils";
 import { Separator } from "@/components/ui/separator";
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 const statusOptions = [
   { label: "Pending", value: "pending" },
@@ -828,11 +829,7 @@ export default function IncomingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>Received Date <span className="text-destructive">*</span></Label>
-                    <Input
-                      type="date"
-                      value={newDoc.received_date}
-                      onChange={(e) => setNewDoc((s) => ({ ...s, received_date: e.target.value }))}
-                    />
+                    <CalendarDatePicker date={newDoc.received_date ? new Date(newDoc.received_date) : undefined} onDateChange={(date) => setNewDoc(date ? date.toISOString().split("T")[0] : "")} />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -956,11 +953,7 @@ export default function IncomingDocuments() {
                   </div>
                   <div className="space-y-2">
                     <Label>External Document Date</Label>
-                    <Input
-                      type="date"
-                      value={newDoc.external_doc_date}
-                      onChange={(e) => setNewDoc((s) => ({ ...s, external_doc_date: e.target.value }))}
-                    />
+                    <CalendarDatePicker date={newDoc.external_doc_date ? new Date(newDoc.external_doc_date) : undefined} onDateChange={(date) => setNewDoc(date ? date.toISOString().split("T")[0] : "")} />
                   </div>
                 </div>
                 <div className="space-y-2">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -32,6 +33,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import {
   useStudentEducationalHistory,
   useCreateStudentEducationalHistory,
@@ -43,7 +45,6 @@ import {
 } from '@/hooks/useStudents';
 import { educationalHistorySchema, type EducationalHistoryFormData } from '@/lib/validations';
 import { BookOpen, Plus, Pencil, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading';
 
 interface StudentEducationalHistoryDialogProps {
@@ -67,12 +68,7 @@ export function StudentEducationalHistoryDialog({
   const updateHistory = useUpdateStudentEducationalHistory();
   const deleteHistory = useDeleteStudentEducationalHistory();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<EducationalHistoryFormData>({
+  const formMethods = useForm<EducationalHistoryFormData>({
     resolver: zodResolver(educationalHistorySchema),
     defaultValues: {
       institution_name: '',
@@ -84,6 +80,14 @@ export function StudentEducationalHistoryDialog({
       notes: '',
     },
   });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = formMethods;
 
   const resetForm = () => {
     reset({
@@ -212,9 +216,9 @@ export function StudentEducationalHistoryDialog({
                       <TableCell>{record.grade_level || '—'}</TableCell>
                       <TableCell>
                         {record.start_date && record.end_date
-                          ? `${format(new Date(record.start_date), 'yyyy-MM-dd')} - ${format(new Date(record.end_date), 'yyyy-MM-dd')}`
+                          ? `${formatDate(record.start_date)} - ${formatDate(record.end_date)}`
                           : record.start_date
-                            ? format(new Date(record.start_date), 'yyyy-MM-dd')
+                            ? formatDate(record.start_date)
                             : '—'}
                       </TableCell>
                       <TableCell className="text-right">
@@ -313,22 +317,14 @@ export function StudentEducationalHistoryDialog({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="start_date">{t('students.startDate') || 'Start Date'}</Label>
-                <Input
-                  id="start_date"
-                  type="date"
-                  {...register('start_date')}
-                />
+                <CalendarFormField control={control} name="start_date" label={t('students.startDate') || 'Start Date'} />
                 {errors.start_date && (
                   <p className="text-sm text-destructive mt-1">{errors.start_date.message}</p>
                 )}
               </div>
               <div>
                 <Label htmlFor="end_date">{t('students.endDate') || 'End Date'}</Label>
-                <Input
-                  id="end_date"
-                  type="date"
-                  {...register('end_date')}
-                />
+                <CalendarFormField control={control} name="end_date" label={t('students.endDate') || 'End Date'} />
                 {errors.end_date && (
                   <p className="text-sm text-destructive mt-1">{errors.end_date.message}</p>
                 )}
@@ -375,7 +371,8 @@ export function StudentEducationalHistoryDialog({
                   : t('common.save') || 'Save'}
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 

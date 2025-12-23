@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Plus, Search, BookCheck, RefreshCw, Calendar, User, X, Minus } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLibraryLoans, useCreateLibraryLoan, useReturnLibraryLoan } from '@/hooks/useLibrary';
@@ -33,11 +34,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { toast } from 'sonner';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 
 const defaultLoanDate = format(new Date(), 'yyyy-MM-dd');
 
@@ -102,6 +104,15 @@ export default function LibraryDistribution() {
     const createLoan = useCreateLibraryLoan();
     const returnLoan = useReturnLibraryLoan();
 
+    const formMethods = useForm<LoanFormData>({
+        resolver: zodResolver(loanSchema),
+        defaultValues: {
+            borrower_type: 'student',
+            loan_date: defaultLoanDate,
+            deposit_amount: 0,
+        },
+    });
+
     const {
         register,
         handleSubmit,
@@ -110,14 +121,7 @@ export default function LibraryDistribution() {
         watch,
         setValue,
         formState: { errors },
-    } = useForm<LoanFormData>({
-        resolver: zodResolver(loanSchema),
-        defaultValues: {
-            borrower_type: 'student',
-            loan_date: defaultLoanDate,
-            deposit_amount: 0,
-        },
-    });
+    } = formMethods;
     
     // Watch book_id to update deposit amount when book changes
     const watchedBookId = watch('book_id');
@@ -588,14 +592,14 @@ export default function LibraryDistribution() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell>
-                                                        {loan.loan_date ? format(new Date(loan.loan_date), 'MMM dd, yyyy') : 'N/A'}
+                                                        {loan.loan_date ? formatDate(loan.loan_date) : 'N/A'}
                                                     </TableCell>
                                                     <TableCell>
                                                         {loan.due_date ? (
                                                             <div className="flex items-center gap-2">
                                                                 <Calendar className="h-4 w-4 text-muted-foreground" />
                                                                 <span className={isOverdue ? 'text-destructive font-medium' : ''}>
-                                                                    {format(new Date(loan.due_date), 'MMM dd, yyyy')}
+                                                                    {formatDate(loan.due_date)}
                                                                 </span>
                                                                 {isOverdue && (
                                                                     <Badge variant="destructive" className="text-xs">
@@ -778,22 +782,14 @@ export default function LibraryDistribution() {
                                     <Label htmlFor="loan_date">
                                         Loan Date <span className="text-destructive">*</span>
                                     </Label>
-                                    <Input
-                                        id="loan_date"
-                                        type="date"
-                                        {...register('loan_date')}
-                                    />
+                                    <CalendarFormField control={control} name="loan_date" label="Loan Date" />
                                     {errors.loan_date && (
                                         <p className="text-sm text-destructive mt-1">{errors.loan_date.message}</p>
                                     )}
                                 </div>
                                 <div>
                                     <Label htmlFor="due_date">Due Date</Label>
-                                    <Input
-                                        id="due_date"
-                                        type="date"
-                                        {...register('due_date')}
-                                    />
+                                    <CalendarFormField control={control} name="due_date" label="Due Date" />
                                     {errors.due_date && (
                                         <p className="text-sm text-destructive mt-1">{errors.due_date.message}</p>
                                     )}
@@ -822,7 +818,8 @@ export default function LibraryDistribution() {
                                 Assign Book
                             </Button>
                         </DialogFooter>
-                    </form>
+                      </form>
+                    </FormProvider>
                 </DialogContent>
             </Dialog>
 

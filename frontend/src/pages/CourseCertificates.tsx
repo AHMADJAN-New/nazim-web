@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
-import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -209,7 +209,7 @@ export default function CourseCertificates() {
                       <TableCell className="hidden md:table-cell">
                         {student.certificateIssuedDate ? (
                           <Badge variant="outline" className="font-mono">
-                            {format(new Date(student.certificateIssuedDate), 'yyyy-MM-dd')}
+                            {formatDate(student.certificateIssuedDate)}
                           </Badge>
                         ) : (
                           '-'
@@ -217,7 +217,7 @@ export default function CourseCertificates() {
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                         {student.certificateIssuedDate
-                          ? format(new Date(student.certificateIssuedDate), 'MMM d, yyyy')
+                          ? formatDate(student.certificateIssuedDate)
                           : '-'}
                       </TableCell>
                       <TableCell className="text-right">

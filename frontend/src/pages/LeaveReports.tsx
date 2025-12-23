@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { format } from 'date-fns';
 import { BarChart3, CalendarRange, Download, Filter, Loader2, RefreshCcw, CheckCircle2, Clock, XCircle, AlertCircle, FileText, Calendar, TrendingUp } from 'lucide-react';
 import { useLeaveRequests } from '@/hooks/useLeaveRequests';
@@ -20,6 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { showToast } from '@/lib/toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import type { LeaveRequest } from '@/types/domain/leave';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 export default function LeaveReports() {
   const { t, isRTL } = useLanguage();
@@ -254,11 +256,11 @@ export default function LeaveReports() {
               </div>
               <div className="space-y-2">
                 <Label>{t('leave.from')}</Label>
-                <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+                <CalendarDatePicker date={dateFrom ? new Date(dateFrom) : undefined} onDateChange={(date) => setDateFrom(date ? date.toISOString().split("T")[0] : "")} placeholder="Select date" />
               </div>
               <div className="space-y-2">
                 <Label>{t('leave.to')}</Label>
-                <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+                <CalendarDatePicker date={dateTo ? new Date(dateTo) : undefined} onDateChange={(date) => setDateTo(date ? date.toISOString().split("T")[0] : "")} placeholder="Select date" />
               </div>
               <div className="space-y-2">
                 <Label>{t('leave.rowsPerPage')}</Label>
@@ -550,7 +552,7 @@ export default function LeaveReports() {
                     return (
                       <div key={group.date} className="rounded-lg border p-3">
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-semibold">{format(new Date(group.date), 'PP')}</div>
+                          <div className="font-semibold">{formatDate(group.date)}</div>
                           <Badge variant="outline" className="text-xs">{group.items.length} {t('leave.leaves')}</Badge>
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs">

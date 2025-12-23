@@ -60,6 +60,12 @@ export interface TranslationKeys {
     previousSlide: string;
     enterCurrentPassword: string;
     enterNewPassword: string;
+    currentPassword: string;
+    weak: string;
+    fair: string;
+    good: string;
+    strong: string;
+    veryStrong: string;
     enterFullName: string;
     enterPhoneNumber: string;
     gradeExample: string;
@@ -989,6 +995,14 @@ export interface TranslationKeys {
       createdAt: string;
       na: string;
       deleteConfirmRooms: string;
+    };
+    userSettings: {
+      title: string;
+      description: string;
+      preferences: string;
+      security: string;
+      changePassword: string;
+      changePasswordDescription: string;
     };
   };
 
@@ -3184,6 +3198,8 @@ export interface TranslationKeys {
     userDeleteFailed: string;
     passwordReset: string;
     passwordResetFailed: string;
+    passwordChanged: string;
+    passwordChangeFailed: string;
     // Schedule Slots
     scheduleSlotCreated: string;
     scheduleSlotUpdated: string;

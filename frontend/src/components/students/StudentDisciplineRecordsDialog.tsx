@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -40,6 +41,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import {
   useStudentDisciplineRecords,
   useCreateStudentDisciplineRecord,
@@ -53,7 +55,6 @@ import {
 } from '@/hooks/useStudents';
 import { disciplineRecordSchema, type DisciplineRecordFormData } from '@/lib/validations';
 import { AlertTriangle, Plus, Pencil, Trash2, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading';
 
 interface StudentDisciplineRecordsDialogProps {
@@ -85,13 +86,7 @@ export function StudentDisciplineRecordsDialog({
   const deleteRecord = useDeleteStudentDisciplineRecord();
   const resolveRecord = useResolveStudentDisciplineRecord();
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<DisciplineRecordFormData>({
+  const formMethods = useForm<DisciplineRecordFormData>({
     resolver: zodResolver(disciplineRecordSchema),
     defaultValues: {
       incident_date: '',
@@ -231,7 +226,7 @@ export function StudentDisciplineRecordsDialog({
                   {records.map((record) => (
                     <TableRow key={record.id}>
                       <TableCell>
-                        {format(new Date(record.incident_date), 'yyyy-MM-dd')}
+                        {formatDate(record.incident_date)}
                       </TableCell>
                       <TableCell className="font-medium">{record.incident_type}</TableCell>
                       <TableCell>
@@ -322,11 +317,7 @@ export function StudentDisciplineRecordsDialog({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="incident_date">{t('students.incidentDate') || 'Incident Date'} *</Label>
-                <Input
-                  id="incident_date"
-                  type="date"
-                  {...register('incident_date')}
-                />
+                <CalendarFormField control={control} name="incident_date" label={t('students.incidentDate') || 'Incident Date'} />
                 {errors.incident_date && (
                   <p className="text-sm text-destructive mt-1">{errors.incident_date.message}</p>
                 )}
@@ -407,7 +398,8 @@ export function StudentDisciplineRecordsDialog({
                   : t('common.save') || 'Save'}
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 

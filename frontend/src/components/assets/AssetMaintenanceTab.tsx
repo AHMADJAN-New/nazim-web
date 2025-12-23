@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, Pencil, Trash2, Wrench, CheckCircle2 } from 'lucide-react';
@@ -25,9 +26,9 @@ import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
 import { ColumnDef, flexRender } from '@tanstack/react-table';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 
 const maintenanceSchema = z.object({
   assetId: z.string().min(1, 'Asset is required'),
@@ -67,20 +68,23 @@ export default function AssetMaintenanceTab() {
   const updateMaintenance = useUpdateMaintenance();
   const removeMaintenance = useRemoveMaintenance();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<MaintenanceFormValues>({
+  const formMethods = useForm<MaintenanceFormValues>({
     resolver: zodResolver(maintenanceSchema),
     defaultValues: {
       status: 'scheduled',
       cost: null,
     },
   });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    control,
+    formState: { errors },
+  } = formMethods;
 
   // Collect all maintenance records from all assets
   const allMaintenance = useMemo(() => {
@@ -143,8 +147,8 @@ export default function AssetMaintenanceTab() {
       assetId: maintenance.assetId,
       maintenanceType: maintenance.data.maintenanceType || null,
       status: maintenance.data.status,
-      performedOn: maintenance.data.performedOn ? format(new Date(maintenance.data.performedOn), 'yyyy-MM-dd') : null,
-      nextDueDate: maintenance.data.nextDueDate ? format(new Date(maintenance.data.nextDueDate), 'yyyy-MM-dd') : null,
+      performedOn: maintenance.data.performedOn ? formatDate(maintenance.data.performedOn) : null,
+      nextDueDate: maintenance.data.nextDueDate ? formatDate(maintenance.data.nextDueDate) : null,
       cost: maintenance.data.cost ?? null,
       vendor: maintenance.data.vendor || null,
       notes: maintenance.data.notes || null,
@@ -252,7 +256,7 @@ export default function AssetMaintenanceTab() {
         header: 'Performed On',
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.data.performedOn ? format(new Date(row.original.data.performedOn), 'MMM dd, yyyy') : 'N/A'}
+            {row.original.data.performedOn ? formatDate(row.original.data.performedOn) : 'N/A'}
           </span>
         ),
       },
@@ -261,7 +265,7 @@ export default function AssetMaintenanceTab() {
         header: 'Next Due',
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.data.nextDueDate ? format(new Date(row.original.data.nextDueDate), 'MMM dd, yyyy') : 'N/A'}
+            {row.original.data.nextDueDate ? formatDate(row.original.data.nextDueDate) : 'N/A'}
           </span>
         ),
       },
@@ -396,7 +400,8 @@ export default function AssetMaintenanceTab() {
           <DialogHeader>
             <DialogTitle>{editingMaintenance ? t('assets.updateMaintenance') : t('assets.logMaintenance')}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <FormProvider {...formMethods}>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {!editingMaintenance && (
               <div>
                 <Label>Asset *</Label>
@@ -434,11 +439,11 @@ export default function AssetMaintenanceTab() {
               </div>
               <div>
                 <Label>Performed On</Label>
-                <Input type="date" {...register('performedOn')} />
+                <CalendarFormField control={control} name="performedOn" label="Performed On" />
               </div>
               <div>
                 <Label>Next Due Date</Label>
-                <Input type="date" {...register('nextDueDate')} />
+                <CalendarFormField control={control} name="nextDueDate" label="Next Due Date" />
               </div>
               <div>
                 <Label>Cost</Label>
@@ -461,7 +466,8 @@ export default function AssetMaintenanceTab() {
                 {editingMaintenance ? 'Update' : 'Log'}
               </Button>
             </DialogFooter>
-          </form>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
     </div>

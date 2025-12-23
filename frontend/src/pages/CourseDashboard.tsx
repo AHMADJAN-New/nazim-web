@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useShortTermCourses, useCourseStats } from '@/hooks/useShortTermCourses';
 import { useCourseStudents } from '@/hooks/useCourseStudents';
@@ -66,7 +67,9 @@ try {
     Object.assign((pdfMake as any).vfs, (pdfFonts as any).vfs);
   }
 } catch (error) {
-  console.warn('Failed to initialize pdfmake fonts:', error);
+  if (import.meta.env.DEV) {
+    console.warn('Failed to initialize pdfmake fonts:', error);
+  }
 }
 
 interface CourseStats {
@@ -162,7 +165,7 @@ export default function CourseDashboard() {
         student.fatherName,
         course?.name || '',
         student.status.charAt(0).toUpperCase() + student.status.slice(1),
-        student.registrationDate ? format(new Date(student.registrationDate), 'MMM d, yyyy') : '-',
+        student.registrationDate ? formatDate(student.registrationDate) : '-',
       ]);
     });
 
@@ -390,12 +393,12 @@ export default function CourseDashboard() {
                         </TableCell>
                         <TableCell>
                           {student.registrationDate
-                            ? format(new Date(student.registrationDate), 'MMM d, yyyy')
+                            ? formatDate(student.registrationDate)
                             : '-'}
                         </TableCell>
                         <TableCell>
                           {student.completionDate
-                            ? format(new Date(student.completionDate), 'MMM d, yyyy')
+                            ? formatDate(student.completionDate)
                             : '-'}
                         </TableCell>
                         {reportType === 'attendance' && (

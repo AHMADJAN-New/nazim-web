@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Shield, Users, Clock, AlertCircle } from 'lucide-react';
-import { format } from 'date-fns';
-
 interface SecurityAlert {
   id: string;
   event_type: string;
@@ -195,7 +194,7 @@ export const SecurityMonitoringDashboard: React.FC = () => {
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {format(new Date(alert.created_at), 'MMM dd, HH:mm')}
+                      {formatDate(alert.created_at)}
                     </span>
                   </div>
                 </div>
@@ -237,7 +236,7 @@ export const SecurityMonitoringDashboard: React.FC = () => {
                   </div>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  {format(new Date(alert.created_at), 'MMM dd, HH:mm')}
+                  {formatDate(alert.created_at)}
                 </span>
               </div>
             ))}

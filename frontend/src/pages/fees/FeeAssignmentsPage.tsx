@@ -43,7 +43,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { formatCurrency } from '@/lib/utils';
+import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import {
   Sheet,
   SheetContent,
@@ -549,47 +550,11 @@ export default function FeeAssignmentsPage() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="due_date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('fees.dueDate')}</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <CalendarFormField control={form.control} name="due_date" label={t('fees.dueDate')} />
 
-                  <FormField
-                    control={form.control}
-                    name="payment_period_start"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('fees.paymentPeriodStart')}</FormLabel>
-                        <FormControl>
-                          <Input type="date" value={field.value ?? ''} onChange={field.onChange} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <CalendarFormField control={form.control} name="payment_period_start" label={t('fees.paymentPeriodStart')} />
 
-                  <FormField
-                    control={form.control}
-                    name="payment_period_end"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('fees.paymentPeriodEnd')}</FormLabel>
-                        <FormControl>
-                          <Input type="date" value={field.value ?? ''} onChange={field.onChange} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <CalendarFormField control={form.control} name="payment_period_end" label={t('fees.paymentPeriodEnd')} />
                 </div>
 
                 <FormField
@@ -1061,7 +1026,7 @@ export default function FeeAssignmentsPage() {
                     <p className="text-sm text-muted-foreground">{t('fees.dueDate') || 'Due Date'}</p>
                     <p className="font-medium">
                       {viewingAssignment.dueDate 
-                        ? new Date(viewingAssignment.dueDate).toLocaleDateString() 
+                        ? formatDate(viewingAssignment.dueDate) 
                         : 'N/A'}
                     </p>
                   </div>
@@ -1069,7 +1034,7 @@ export default function FeeAssignmentsPage() {
                     <div>
                       <p className="text-sm text-muted-foreground">{t('fees.paymentPeriodStart') || 'Period Start'}</p>
                       <p className="font-medium">
-                        {new Date(viewingAssignment.paymentPeriodStart).toLocaleDateString()}
+                        {formatDate(viewingAssignment.paymentPeriodStart)}
                       </p>
                     </div>
                   )}
@@ -1077,7 +1042,7 @@ export default function FeeAssignmentsPage() {
                     <div>
                       <p className="text-sm text-muted-foreground">{t('fees.paymentPeriodEnd') || 'Period End'}</p>
                       <p className="font-medium">
-                        {new Date(viewingAssignment.paymentPeriodEnd).toLocaleDateString()}
+                        {formatDate(viewingAssignment.paymentPeriodEnd)}
                       </p>
                     </div>
                   )}

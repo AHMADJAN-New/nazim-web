@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { useLanguage } from '@/hooks/useLanguage';
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
 import { useAuth } from '@/hooks/useAuth';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { useEffect, useMemo, useState } from 'react';
@@ -349,33 +350,9 @@ export function FeeExceptionForm({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="valid_from"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('fees.validFrom')}</FormLabel>
-                <FormControl>
-                  <Input type="date" value={field.value ?? ''} onChange={field.onChange} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <CalendarFormField control={form.control} name="valid_from" label={t('fees.validFrom')} />
 
-          <FormField
-            control={form.control}
-            name="valid_to"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('fees.validTo')}</FormLabel>
-                <FormControl>
-                  <Input type="date" value={field.value ?? ''} onChange={field.onChange} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <CalendarFormField control={form.control} name="valid_to" label={t('fees.validTo')} />
         </div>
 
         <FormField
@@ -422,23 +399,7 @@ export function FeeExceptionForm({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="approved_at"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('fees.approvedAt') || 'Approved At'}</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="date" 
-                    value={field.value ?? ''} 
-                    onChange={field.onChange}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <CalendarFormField control={form.control} name="approved_at" label={t('fees.approvedAt') || 'Approved At'} />
         </div>
 
         <FormField

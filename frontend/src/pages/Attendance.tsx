@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 interface RosterStudent {
   id: string;
@@ -340,7 +341,7 @@ export default function Attendance() {
           </div>
           <div className="space-y-3">
             <Label>{t('attendancePage.dateLabel')}</Label>
-            <Input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)} />
+            <CalendarDatePicker date={sessionDate ? new Date(sessionDate) : undefined} onDateChange={(date) => setSessionDate(date ? date.toISOString().split("T")[0] : "")} placeholder="Select date" />
           </div>
           <div className="space-y-3">
             <Label>{t('attendancePage.methodLabel')}</Label>
