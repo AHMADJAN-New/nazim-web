@@ -98,14 +98,6 @@ export function StudentDisciplineRecordsDialog({
     },
   });
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = formMethods;
-
   const resetForm = () => {
     reset({
       incident_date: '',
@@ -321,8 +313,7 @@ export function StudentDisciplineRecordsDialog({
               {t('students.disciplineRecordFormDescription') || 'Enter the discipline record details'}
             </DialogDescription>
           </DialogHeader>
-          <FormProvider {...formMethods}>
-            <form onSubmit={handleSubmit(handleSave)} className="space-y-4">
+          <form onSubmit={handleSubmit(handleSave)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="incident_date">{t('students.incidentDate') || 'Incident Date'} *</Label>

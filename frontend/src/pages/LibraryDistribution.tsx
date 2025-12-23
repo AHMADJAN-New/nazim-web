@@ -644,8 +644,7 @@ export default function LibraryDistribution() {
                             Loan a book to a student or staff member
                         </DialogDescription>
                     </DialogHeader>
-                    <FormProvider {...formMethods}>
-                      <form onSubmit={handleSubmit(onSubmitLoan)}>
+                    <form onSubmit={handleSubmit(onSubmitLoan)}>
                         <div className="space-y-4 py-4">
                             <div>
                                 <Label htmlFor="book_id">

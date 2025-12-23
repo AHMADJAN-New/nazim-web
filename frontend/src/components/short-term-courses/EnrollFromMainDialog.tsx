@@ -19,7 +19,6 @@ import { useStudents } from '@/hooks/useStudents';
 import { useEnrollFromMain } from '@/hooks/useCourseStudents';
 import type { ShortTermCourse } from '@/types/domain/shortTermCourse';
 import { Search, UserPlus } from 'lucide-react';
-import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
 interface EnrollFromMainDialogProps {
   open: boolean;

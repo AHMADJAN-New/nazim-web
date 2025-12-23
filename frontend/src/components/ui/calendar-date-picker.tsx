@@ -230,7 +230,7 @@ export function CalendarDatePicker({
     options.sort((a, b) => a.value - b.value);
 
     return options;
-  }, [currentCalendar, language, month instanceof Date ? month.getTime() : undefined]);
+  }, [currentCalendar, language, month?.getFullYear(), month?.getMonth(), month?.getDate()]);
 
   // Memoize year options to improve performance
   const yearOptions = React.useMemo(() => {

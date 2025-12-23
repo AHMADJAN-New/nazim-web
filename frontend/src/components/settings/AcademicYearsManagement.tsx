@@ -81,6 +81,7 @@ export function AcademicYearsManagement() {
   const deleteAcademicYear = useDeleteAcademicYear();
   const setCurrentAcademicYear = useSetCurrentAcademicYear();
 
+  const {
   const formMethods = useForm<AcademicYearFormData>({
     resolver: zodResolver(academicYearSchema),
     defaultValues: {

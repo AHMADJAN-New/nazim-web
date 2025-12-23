@@ -1193,8 +1193,7 @@ export function StaffList() {
                 }
             }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <FormProvider {...formMethods}>
-                      <form onSubmit={handleSubmit(async (data) => {
+                    <form onSubmit={handleSubmit(async (data) => {
                         if (!editingStaff || !data.staff_type_id) {
                             toast.error(t('staff.pleaseSelectStaffType'));
                             return;
