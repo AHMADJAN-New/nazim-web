@@ -34,7 +34,7 @@ return new class extends Migration
 
             $table->foreign('school_id')
                 ->references('id')
-                ->on('schools')
+                ->on('school_branding')
                 ->onDelete('cascade');
 
             $table->foreign('event_type_id')

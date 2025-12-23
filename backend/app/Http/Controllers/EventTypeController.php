@@ -88,7 +88,7 @@ class EventTypeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string',
-            'school_id' => 'required|uuid|exists:schools,id',
+            'school_id' => 'required|uuid|exists:school_branding,id',
             'is_active' => 'boolean',
         ]);
 
@@ -183,7 +183,7 @@ class EventTypeController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:100',
             'description' => 'nullable|string',
-            'school_id' => 'sometimes|required|uuid|exists:schools,id',
+            'school_id' => 'sometimes|required|uuid|exists:school_branding,id',
             'is_active' => 'boolean',
         ]);
 

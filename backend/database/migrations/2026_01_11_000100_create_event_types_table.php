@@ -29,7 +29,7 @@ return new class extends Migration
 
             $table->foreign('school_id')
                 ->references('id')
-                ->on('schools')
+                ->on('school_branding')
                 ->onDelete('cascade');
 
             $table->index(['organization_id', 'is_active']);

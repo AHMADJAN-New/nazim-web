@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { eventTypesApi } from '@/lib/api/client';
 import type { EventType } from '@/types/events';
 import { EventTypeFormDialog } from './EventTypeFormDialog';
@@ -47,11 +47,11 @@ export function EventTypesList({ schoolId, onDesignFields }: EventTypesListProps
     mutationFn: (id: string) => eventTypesApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-types'] });
-      toast.success('Event type deleted successfully');
+      showToast.success('toast.eventTypeDeleted');
       setDeletingEventType(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete event type');
+      showToast.error(error.message || 'toast.eventTypeDeleteFailed');
     },
   });
 

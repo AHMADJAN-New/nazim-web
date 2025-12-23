@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   ArrowLeft,
   Calendar,
@@ -10,6 +10,11 @@ import {
   QrCode,
   UserPlus,
   BarChart3,
+  CheckCircle,
+  XCircle,
+  Send,
+  Ban,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +24,8 @@ import { eventsApi } from '@/lib/api/client';
 import { GuestsList } from '@/components/events';
 import { EVENT_STATUS_LABELS } from '@/types/events';
 import type { EventStatus } from '@/types/events';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { showToast } from '@/lib/toast';
 
 const STATUS_COLORS: Record<EventStatus, string> = {
   draft: 'bg-gray-100 text-gray-800',
@@ -30,6 +37,9 @@ const STATUS_COLORS: Record<EventStatus, string> = {
 export default function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const hasCheckinPermission = useHasPermission('event_checkins.create');
+  const hasEventUpdatePermission = useHasPermission('events.update');
 
   const { data: event, isLoading } = useQuery({
     queryKey: ['event', eventId],
@@ -41,6 +51,19 @@ export default function EventDetailPage() {
     queryKey: ['event-stats', eventId],
     queryFn: () => eventsApi.getStats(eventId!),
     enabled: !!eventId,
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: (status: EventStatus) =>
+      eventsApi.update(eventId!, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      showToast.success('toast.eventUpdated');
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'toast.eventUpdateFailed');
+    },
   });
 
   if (isLoading) {
@@ -81,15 +104,70 @@ export default function EventDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate(`/events/${eventId}/guests/add`)}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Guest
-          </Button>
-          <Button onClick={() => navigate(`/events/${eventId}/checkin`)}>
-            <QrCode className="h-4 w-4 mr-2" />
-            Check-in
-          </Button>
+        <div className="flex flex-wrap gap-2">
+          {/* Quick Status Update Buttons - Only show if user has events.update permission */}
+          {hasEventUpdatePermission && (
+            <div className="flex gap-2">
+              {event.status !== 'published' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateStatusMutation.mutate('published')}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Publish
+                </Button>
+              )}
+              {event.status !== 'completed' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateStatusMutation.mutate('completed')}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Mark Completed
+                </Button>
+              )}
+              {event.status !== 'cancelled' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateStatusMutation.mutate('cancelled')}
+                  disabled={updateStatusMutation.isPending}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Ban className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+              )}
+              {event.status !== 'draft' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateStatusMutation.mutate('draft')}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Mark Draft
+                </Button>
+              )}
+            </div>
+          )}
+          
+          <div className="flex gap-2 border-l pl-2">
+            <Button variant="outline" onClick={() => navigate(`/events/${eventId}/guests/add`)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Guest
+            </Button>
+            {hasCheckinPermission && (
+              <Button onClick={() => navigate(`/events/${eventId}/checkin`)}>
+                <QrCode className="h-4 w-4 mr-2" />
+                Check-in
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -144,11 +222,11 @@ export default function EventDetailPage() {
           <div className="flex flex-wrap gap-6">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-muted-foreground" />
-              <span>{format(new Date(event.starts_at), 'PPP p')}</span>
+              <span>{formatDateTime(event.starts_at)}</span>
               {event.ends_at && (
                 <>
                   <span className="text-muted-foreground">to</span>
-                  <span>{format(new Date(event.ends_at), 'p')}</span>
+                  <span>{formatDateTime(event.ends_at)}</span>
                 </>
               )}
             </div>
@@ -221,6 +299,31 @@ export default function EventDetailPage() {
           )}
         </TabsContent>
 
+        {hasEventUpdatePermission && (
+          <TabsContent value="users" className="mt-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Event Users</CardTitle>
+                  <Button onClick={() => navigate(`/events/${eventId}/users`)}>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Manage Event Users
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Event users are locked to this specific event and can only access event-related features.
+                  They will be automatically deactivated when the event is completed.
+                </p>
+                <Button variant="outline" onClick={() => navigate(`/events/${eventId}/users`)}>
+                  <Shield className="h-4 w-4 mr-2" />
+                  Go to Event Users Management
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
         <TabsContent value="settings" className="mt-4">
           <Card>
             <CardContent className="pt-6">

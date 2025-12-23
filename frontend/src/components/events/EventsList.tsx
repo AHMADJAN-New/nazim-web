@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   Plus,
   Calendar,
@@ -13,6 +13,11 @@ import {
   QrCode,
   UserPlus,
   Eye,
+  CheckCircle,
+  XCircle,
+  Send,
+  Ban,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -41,11 +46,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { eventsApi } from '@/lib/api/client';
 import type { Event, EventStatus } from '@/types/events';
 import { EVENT_STATUS_LABELS } from '@/types/events';
 import { EventFormDialog } from './EventFormDialog';
+import { useHasPermission } from '@/hooks/usePermissions';
 
 interface EventsListProps {
   schoolId?: string;
@@ -61,6 +67,8 @@ const STATUS_COLORS: Record<EventStatus, string> = {
 export function EventsList({ schoolId }: EventsListProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const hasCheckinPermission = useHasPermission('event_checkins.create');
+  const hasEventUpdatePermission = useHasPermission('events.update');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<EventStatus | 'all'>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -83,11 +91,23 @@ export function EventsList({ schoolId }: EventsListProps) {
     mutationFn: (id: string) => eventsApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Event deleted successfully');
+      showToast.success('toast.eventDeleted');
       setDeletingEvent(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete event');
+      showToast.error(error.message || 'toast.eventDeleteFailed');
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: EventStatus }) =>
+      eventsApi.update(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      showToast.success('toast.eventUpdated');
+    },
+    onError: (error: Error) => {
+      showToast.error(error.message || 'toast.eventUpdateFailed');
     },
   });
 
@@ -178,14 +198,68 @@ export function EventsList({ schoolId }: EventsListProps) {
                           <Users className="h-4 w-4 mr-2" />
                           Guests
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(`/events/${event.id}/checkin`)}>
-                          <QrCode className="h-4 w-4 mr-2" />
-                          Check-in
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditingEvent(event)}>
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
+                        {hasCheckinPermission && (
+                          <DropdownMenuItem onClick={() => navigate(`/events/${event.id}/checkin`)}>
+                            <QrCode className="h-4 w-4 mr-2" />
+                            Check-in
+                          </DropdownMenuItem>
+                        )}
+                        {hasEventUpdatePermission && (
+                          <DropdownMenuItem onClick={() => navigate(`/events/${event.id}/users`)}>
+                            <Shield className="h-4 w-4 mr-2" />
+                            Event Users
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {/* Status Update Actions - Only show if user has events.update permission */}
+                        {hasEventUpdatePermission && (
+                          <>
+                            <div className="border-t my-1" />
+                            {event.status !== 'published' && (
+                              <DropdownMenuItem
+                                onClick={() => updateStatusMutation.mutate({ id: event.id, status: 'published' })}
+                                disabled={updateStatusMutation.isPending}
+                              >
+                                <Send className="h-4 w-4 mr-2" />
+                                Publish
+                              </DropdownMenuItem>
+                            )}
+                            {event.status !== 'completed' && (
+                              <DropdownMenuItem
+                                onClick={() => updateStatusMutation.mutate({ id: event.id, status: 'completed' })}
+                                disabled={updateStatusMutation.isPending}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark as Completed
+                              </DropdownMenuItem>
+                            )}
+                            {event.status !== 'cancelled' && (
+                              <DropdownMenuItem
+                                onClick={() => updateStatusMutation.mutate({ id: event.id, status: 'cancelled' })}
+                                disabled={updateStatusMutation.isPending}
+                                className="text-destructive"
+                              >
+                                <Ban className="h-4 w-4 mr-2" />
+                                Cancel Event
+                              </DropdownMenuItem>
+                            )}
+                            {event.status !== 'draft' && (
+                              <DropdownMenuItem
+                                onClick={() => updateStatusMutation.mutate({ id: event.id, status: 'draft' })}
+                                disabled={updateStatusMutation.isPending}
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Mark as Draft
+                              </DropdownMenuItem>
+                            )}
+                            
+                            <div className="border-t my-1" />
+                            <DropdownMenuItem onClick={() => setEditingEvent(event)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                          </>
+                        )}
                         <DropdownMenuItem
                           onClick={() => setDeletingEvent(event)}
                           className="text-destructive"
@@ -203,7 +277,7 @@ export function EventsList({ schoolId }: EventsListProps) {
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    <span>{format(new Date(event.starts_at), 'PPP p')}</span>
+                    <span>{formatDateTime(event.starts_at)}</span>
                   </div>
                   {event.venue && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -232,14 +306,16 @@ export function EventsList({ schoolId }: EventsListProps) {
                       <UserPlus className="h-4 w-4 mr-1" />
                       Add Guest
                     </Button>
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => navigate(`/events/${event.id}/checkin`)}
-                    >
-                      <QrCode className="h-4 w-4 mr-1" />
-                      Check-in
-                    </Button>
+                    {hasCheckinPermission && (
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => navigate(`/events/${event.id}/checkin`)}
+                      >
+                        <QrCode className="h-4 w-4 mr-1" />
+                        Check-in
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -23,12 +23,33 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { eventsApi, eventGuestsApi } from '@/lib/api/client';
 import { createGuestSchema, quickAddGuestSchema, type CreateGuestFormData, type QuickAddGuestFormData } from '@/lib/validations/events';
 import type { EventGuest, GuestType, EventTypeField, EventTypeFieldGroup } from '@/types/events';
 import { GUEST_TYPE_LABELS } from '@/types/events';
 import { QRCodeSVG } from 'qrcode.react';
+
+// QR Code generation fallback for browser compatibility
+async function generateQRCodeImage(data: string, size: number = 200): Promise<string> {
+  try {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
+    const response = await fetch(qrUrl);
+    if (!response.ok) throw new Error('Failed to generate QR code');
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('[GuestFormMobile] QR code generation failed:', error);
+    }
+    throw error;
+  }
+}
 
 interface GuestFormMobileProps {
   eventId: string;
@@ -42,10 +63,10 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
   const queryClient = useQueryClient();
   const isEditing = !!guest;
   const [showSuccess, setShowSuccess] = useState<EventGuest | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(guest?.photo_url || null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-
+  
   // Fetch event with fields
   const { data: event } = useQuery({
     queryKey: ['event', eventId],
@@ -62,6 +83,75 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
   }));
   const ungroupedFields = fields.filter(f => !f.field_group_id && f.is_enabled);
 
+  // Expand all groups by default when field groups are loaded
+  useEffect(() => {
+    if (fieldGroups.length > 0 && expandedGroups.size === 0) {
+      setExpandedGroups(new Set(fieldGroups.map(g => g.id)));
+    }
+  }, [fieldGroups, expandedGroups.size]);
+  
+  // Fetch guest photo if editing and guest has photo_path
+  useEffect(() => {
+    if (isEditing && guest?.id) {
+      // Fetch photo via API endpoint
+      const fetchPhoto = async () => {
+        try {
+          const { apiClient } = await import('@/lib/api/client');
+          const token = apiClient.getToken();
+          const url = `/api/guests/${guest.id}/photo`;
+          
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'image/*',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            },
+            credentials: 'include',
+          });
+          
+          if (response.ok) {
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            setPhotoPreview(blobUrl);
+          } else if (response.status !== 404) {
+            if (import.meta.env.DEV) {
+              console.error('Failed to fetch guest photo:', response.status);
+            }
+          }
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.error('Error fetching guest photo:', error);
+          }
+        }
+      };
+      
+      fetchPhoto();
+      
+      // Cleanup blob URL on unmount
+      return () => {
+        if (photoPreview && photoPreview.startsWith('blob:')) {
+          URL.revokeObjectURL(photoPreview);
+        }
+      };
+    }
+  }, [isEditing, guest?.id]);
+  const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
+  const [useQrImageFallback, setUseQrImageFallback] = useState(false);
+  
+  // Detect Opera browser and use image fallback
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userAgent = navigator.userAgent;
+      const isOpera = (
+        userAgent.indexOf('OPR') > -1 ||
+        userAgent.indexOf('Opera') > -1 ||
+        (userAgent.indexOf('Chrome') > -1 && userAgent.indexOf('OPR') > -1) ||
+        userAgent.indexOf('Opera/') > -1
+      );
+      setUseQrImageFallback(isOpera);
+    }
+  }, []);
+
   const schema = quickMode ? quickAddGuestSchema : createGuestSchema;
 
   const {
@@ -70,6 +160,7 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
     control,
     setValue,
     watch,
+    getValues,
     reset,
     formState: { errors },
   } = useForm<CreateGuestFormData | QuickAddGuestFormData>({
@@ -79,33 +170,84 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
       phone: guest?.phone || '',
       guest_type: guest?.guest_type || 'external',
       invite_count: guest?.invite_count || 1,
-      field_values: [],
+      field_values: guest?.field_values?.map(fv => ({
+        field_id: fv.field_id,
+        value: fv.value,
+      })) || [],
     },
   });
+
+  // Initialize field values when editing a guest
+  useEffect(() => {
+    if (guest?.field_values && fields.length > 0) {
+      // Set each field value individually using React Hook Form's nested path
+      guest.field_values.forEach(fv => {
+        if (fv.field_id) {
+          setValue(`field_values.${fv.field_id}` as any, fv.value || '');
+        }
+      });
+    }
+  }, [guest, fields, setValue]);
 
   const createMutation = useMutation({
     mutationFn: async (data: CreateGuestFormData) => {
       const newGuest = await eventGuestsApi.create(eventId, data);
 
-      // Upload photo if provided
+      // Upload photo if provided - do this synchronously to ensure it completes
       if (photoFile && newGuest.id) {
         try {
-          await eventGuestsApi.uploadPhoto(newGuest.id, photoFile);
-        } catch (e) {
-          console.error('Photo upload failed:', e);
+          // Validate file again before upload (in case it changed)
+          if (!photoFile || photoFile.size === 0) {
+            throw new Error('Invalid file selected');
+          }
+          
+          if (import.meta.env.DEV) {
+            console.log('Uploading photo for guest:', {
+              guestId: newGuest.id,
+              fileName: photoFile.name,
+              fileSize: photoFile.size,
+              fileType: photoFile.type,
+            });
+          }
+          
+          const uploadResult = await eventGuestsApi.uploadPhoto(newGuest.id, photoFile);
+          
+          if (import.meta.env.DEV) {
+            console.log('Photo upload successful:', uploadResult);
+          }
+          
+          // Photo uploaded successfully - will be fetched via API endpoint when displaying
+        } catch (e: any) {
+          const errorMessage = e?.message || 'Failed to upload photo';
+          if (import.meta.env.DEV) {
+            console.error('Photo upload failed:', e);
+            console.error('File details:', {
+              name: photoFile?.name,
+              size: photoFile?.size,
+              type: photoFile?.type,
+            });
+            console.error('Guest ID:', newGuest.id);
+          }
+          // Show error to user but don't fail the entire guest creation
+          showToast.error(errorMessage);
+          // Log for debugging
+          if (import.meta.env.DEV) {
+            console.warn('Guest created but photo upload failed:', newGuest.id);
+          }
         }
       }
 
-      return newGuest;
+      // Return guest - photo will be fetched via API endpoint when needed
+      return newGuest as EventGuest;
     },
     onSuccess: (newGuest) => {
       queryClient.invalidateQueries({ queryKey: ['event-guests', eventId] });
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
-      toast.success('Guest added successfully');
-      setShowSuccess(newGuest as EventGuest);
+      showToast.success('toast.guestAdded');
+      setShowSuccess(newGuest);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to add guest');
+      showToast.error(error.message || 'toast.guestAddFailed');
     },
   });
 
@@ -116,9 +258,23 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
       // Upload photo if provided
       if (photoFile) {
         try {
+          // Validate file before upload
+          if (!photoFile || photoFile.size === 0) {
+            throw new Error('Invalid file selected');
+          }
+          
           await eventGuestsApi.uploadPhoto(guest!.id, photoFile);
-        } catch (e) {
-          console.error('Photo upload failed:', e);
+        } catch (e: any) {
+          const errorMessage = e?.message || 'Failed to upload photo';
+          if (import.meta.env.DEV) {
+            console.error('Photo upload failed:', e);
+            console.error('File details:', {
+              name: photoFile?.name,
+              size: photoFile?.size,
+              type: photoFile?.type,
+            });
+          }
+          showToast.error(errorMessage);
         }
       }
 
@@ -127,29 +283,111 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-guests', eventId] });
       queryClient.invalidateQueries({ queryKey: ['event-guest', eventId, guest!.id] });
-      toast.success('Guest updated successfully');
+      showToast.success('toast.guestUpdated');
       onBack?.() || navigate(-1);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update guest');
+      showToast.error(error.message || 'toast.guestUpdateFailed');
     },
   });
 
   const onSubmit = (data: CreateGuestFormData | QuickAddGuestFormData) => {
+    // Get all form values including field_values
+    const allValues = getValues();
+    
+    // Transform field_values from object format to array format for API
+    // React Hook Form stores nested values as { field_values: { [fieldId]: value } }
+    const fieldValuesObj = (allValues as any).field_values || {};
+    const fieldValuesArray = fields
+      .filter(f => f.is_enabled)
+      .map(field => {
+        // Access field value from nested object structure
+        const fieldValue = fieldValuesObj[field.id];
+        
+        // Skip undefined, null, or empty string values
+        if (fieldValue === undefined || fieldValue === null) {
+          return null;
+        }
+        
+        // For string values, skip empty strings
+        if (typeof fieldValue === 'string' && fieldValue.trim() === '') {
+          return null;
+        }
+        
+        // For arrays, skip empty arrays
+        if (Array.isArray(fieldValue) && fieldValue.length === 0) {
+          return null;
+        }
+        
+        // Handle boolean values (for toggle fields) - convert to string
+        if (typeof fieldValue === 'boolean') {
+          return {
+            field_id: field.id,
+            value: fieldValue ? 'true' : 'false',
+          };
+        }
+        
+        return {
+          field_id: field.id,
+          value: fieldValue,
+        };
+      })
+      .filter((fv): fv is { field_id: string; value: string | string[] | null } => fv !== null);
+
+    const submitData: CreateGuestFormData = {
+      ...data,
+      field_values: fieldValuesArray.length > 0 ? fieldValuesArray : undefined,
+    };
+
     if (isEditing) {
-      updateMutation.mutate(data as CreateGuestFormData);
+      updateMutation.mutate(submitData);
     } else {
-      createMutation.mutate(data as CreateGuestFormData);
+      createMutation.mutate(submitData);
     }
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file type for Android Chrome compatibility
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      const validExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      
+      if (!validTypes.includes(file.type) && !(fileExtension && validExtensions.includes(fileExtension))) {
+        if (import.meta.env.DEV) {
+          console.error('Invalid file type:', file.type, fileExtension);
+        }
+        showToast.error('Please select a valid image file (JPG, PNG, or WEBP)');
+        // Reset input
+        e.target.value = '';
+        return;
+      }
+      
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        showToast.error('Image size must be less than 5MB');
+        e.target.value = '';
+        return;
+      }
+      
       setPhotoFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
+        const result = reader.result as string;
+        // Revoke old blob URL if it exists
+        if (photoPreview && photoPreview.startsWith('blob:')) {
+          URL.revokeObjectURL(photoPreview);
+        }
+        setPhotoPreview(result);
+      };
+      reader.onerror = () => {
+        if (import.meta.env.DEV) {
+          console.error('Error reading file:', reader.error);
+        }
+        showToast.error('Error reading image file. Please try again.');
+        e.target.value = '';
       };
       reader.readAsDataURL(file);
     }
@@ -161,6 +399,29 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
     setPhotoPreview(null);
     setShowSuccess(null);
   };
+
+  const handleBack = useCallback(() => {
+    if (onBack) {
+      onBack();
+    } else {
+      navigate(`/events/${eventId}/guests`);
+    }
+  }, [onBack, navigate, eventId]);
+
+  // Generate QR code image as fallback for browser compatibility
+  useEffect(() => {
+    if (showSuccess?.qr_token && useQrImageFallback) {
+      generateQRCodeImage(showSuccess.qr_token, 200)
+        .then(setQrCodeImage)
+        .catch((error) => {
+          if (import.meta.env.DEV) {
+            console.error('[GuestFormMobile] Failed to generate QR code image:', error);
+          }
+        });
+    } else {
+      setQrCodeImage(null);
+    }
+  }, [showSuccess?.qr_token, useQrImageFallback]);
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
@@ -174,16 +435,45 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
               <Check className="h-8 w-8 text-green-600" />
             </div>
             <h2 className="text-xl font-semibold mb-2">Guest Added!</h2>
-            <p className="text-muted-foreground mb-4">{showSuccess.full_name}</p>
+            
+            {/* Guest Photo */}
+            <GuestPhotoAvatar guestId={showSuccess.id} guestName={showSuccess.full_name} size="lg" />
+            
+            <p className="text-muted-foreground mb-4 font-medium">{showSuccess.full_name}</p>
 
-            <div className="bg-white p-4 rounded-lg inline-block mb-4">
-              <QRCodeSVG
-                value={showSuccess.qr_token}
-                size={200}
-                level="H"
-                includeMargin
-              />
-            </div>
+            {showSuccess.qr_token ? (
+              <div className="bg-white p-4 rounded-lg mb-4 flex justify-center items-center w-full">
+                {useQrImageFallback ? (
+                  qrCodeImage ? (
+                    <img
+                      src={qrCodeImage}
+                      alt="QR Code"
+                      className="w-[200px] h-[200px]"
+                      onError={() => {
+                        if (import.meta.env.DEV) {
+                          console.error('[GuestFormMobile] QR code image failed to load');
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="w-[200px] h-[200px] flex items-center justify-center text-muted-foreground">
+                      Loading QR code...
+                    </div>
+                  )
+                ) : (
+                  <QRCodeSVG
+                    value={showSuccess.qr_token}
+                    size={200}
+                    level="H"
+                    includeMargin
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="bg-muted p-4 rounded-lg mb-4 text-muted-foreground">
+                QR code will be generated...
+              </div>
+            )}
 
             <p className="text-sm text-muted-foreground mb-4">
               Code: <span className="font-mono font-medium">{showSuccess.guest_code}</span>
@@ -212,7 +502,12 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b px-4 py-3 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => onBack?.() || navigate(-1)}>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          type="button"
+          onClick={handleBack}
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-semibold">
@@ -389,6 +684,81 @@ export function GuestFormMobile({ eventId, guest, onBack, quickMode = false }: G
   );
 }
 
+// Helper component to fetch and display guest photo
+function GuestPhotoAvatar({ guestId, guestName, size = 'default' }: { guestId: string; guestName: string; size?: 'default' | 'lg' }) {
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let currentBlobUrl: string | null = null;
+
+    const fetchPhoto = async () => {
+      try {
+        const { apiClient } = await import('@/lib/api/client');
+        const token = apiClient.getToken();
+        const url = `/api/guests/${guestId}/photo`;
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'image/*',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          currentBlobUrl = blobUrl;
+          setPhotoUrl(blobUrl);
+        } else if (response.status === 404) {
+          // No photo - this is expected, don't show error
+          setPhotoUrl(null);
+          setIsLoading(false);
+        } else {
+          // Other error - log but don't show to user
+          if (import.meta.env.DEV) {
+            console.warn('Failed to fetch guest photo:', response.status, response.statusText);
+          }
+          setPhotoUrl(null);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('Error fetching guest photo:', error);
+        }
+        setPhotoUrl(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchPhoto();
+    
+    return () => {
+      if (currentBlobUrl) {
+        URL.revokeObjectURL(currentBlobUrl);
+      }
+    };
+  }, [guestId]);
+
+  if (isLoading || !photoUrl) {
+    return null; // Don't show anything if no photo
+  }
+
+  return (
+    <div className="mb-4 flex justify-center">
+      <Avatar className={size === 'lg' ? 'h-20 w-20' : 'h-12 w-12'}>
+        <AvatarImage src={photoUrl} alt={guestName} />
+        <AvatarFallback className="bg-muted">
+          <UserPlus className={size === 'lg' ? 'h-8 w-8' : 'h-6 w-6'} />
+        </AvatarFallback>
+      </Avatar>
+    </div>
+  );
+}
+
 interface DynamicFieldProps {
   field: EventTypeField;
   control: any;
@@ -397,6 +767,10 @@ interface DynamicFieldProps {
 
 function DynamicField({ field, control, register }: DynamicFieldProps) {
   const baseInputClass = "h-12 text-base";
+  const fieldName = `field_values.${field.id}` as const;
+
+  // Get default value from existing guest data if editing
+  const defaultValue = field.field_type === 'toggle' ? false : '';
 
   switch (field.field_type) {
     case 'text':
@@ -409,10 +783,18 @@ function DynamicField({ field, control, register }: DynamicFieldProps) {
             {field.label}
             {field.is_required && ' *'}
           </Label>
-          <Input
-            type={field.field_type === 'email' ? 'email' : field.field_type === 'phone' ? 'tel' : 'text'}
-            placeholder={field.placeholder || undefined}
-            className={baseInputClass}
+          <Controller
+            name={fieldName}
+            control={control}
+            defaultValue={defaultValue}
+            render={({ field: formField }) => (
+              <Input
+                type={field.field_type === 'email' ? 'email' : field.field_type === 'phone' ? 'tel' : 'text'}
+                placeholder={field.placeholder || undefined}
+                className={baseInputClass}
+                {...formField}
+              />
+            )}
           />
           {field.help_text && (
             <p className="text-sm text-muted-foreground">{field.help_text}</p>
@@ -428,9 +810,17 @@ function DynamicField({ field, control, register }: DynamicFieldProps) {
             {field.label}
             {field.is_required && ' *'}
           </Label>
-          <Textarea
-            placeholder={field.placeholder || undefined}
-            rows={3}
+          <Controller
+            name={fieldName}
+            control={control}
+            defaultValue={defaultValue}
+            render={({ field: formField }) => (
+              <Textarea
+                placeholder={field.placeholder || undefined}
+                rows={3}
+                {...formField}
+              />
+            )}
           />
           {field.help_text && (
             <p className="text-sm text-muted-foreground">{field.help_text}</p>
@@ -445,10 +835,20 @@ function DynamicField({ field, control, register }: DynamicFieldProps) {
             {field.label}
             {field.is_required && ' *'}
           </Label>
-          <Input
-            type="number"
-            placeholder={field.placeholder || undefined}
-            className={baseInputClass}
+          <Controller
+            name={fieldName}
+            control={control}
+            defaultValue={defaultValue}
+            render={({ field: formField }) => (
+              <Input
+                type="number"
+                placeholder={field.placeholder || undefined}
+                className={baseInputClass}
+                {...formField}
+                value={formField.value || ''}
+                onChange={(e) => formField.onChange(e.target.value ? Number(e.target.value) : null)}
+              />
+            )}
           />
         </div>
       );
@@ -460,9 +860,18 @@ function DynamicField({ field, control, register }: DynamicFieldProps) {
             {field.label}
             {field.is_required && ' *'}
           </Label>
-          <Input
-            type="date"
-            className={baseInputClass}
+          <Controller
+            name={fieldName}
+            control={control}
+            defaultValue={defaultValue}
+            render={({ field: formField }) => (
+              <Input
+                type="date"
+                className={baseInputClass}
+                {...formField}
+                value={formField.value || ''}
+              />
+            )}
           />
         </div>
       );
@@ -474,18 +883,60 @@ function DynamicField({ field, control, register }: DynamicFieldProps) {
             {field.label}
             {field.is_required && ' *'}
           </Label>
-          <Select>
-            <SelectTrigger className="h-12">
-              <SelectValue placeholder={field.placeholder || 'Select...'} />
-            </SelectTrigger>
-            <SelectContent>
-              {field.options?.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            name={fieldName}
+            control={control}
+            defaultValue={defaultValue}
+            render={({ field: formField }) => (
+              <Select value={formField.value || ''} onValueChange={formField.onChange}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder={field.placeholder || 'Select...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {field.options?.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+      );
+
+    case 'multiselect':
+      return (
+        <div className="space-y-2">
+          <Label>
+            {field.label}
+            {field.is_required && ' *'}
+          </Label>
+          <Controller
+            name={fieldName}
+            control={control}
+            defaultValue={[]}
+            render={({ field: formField }) => (
+              <Select
+                value={Array.isArray(formField.value) ? formField.value.join(',') : ''}
+                onValueChange={(value) => {
+                  const values = value ? value.split(',').filter(v => v) : [];
+                  formField.onChange(values);
+                }}
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder={field.placeholder || 'Select...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {field.options?.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
       );
 
@@ -498,7 +949,17 @@ function DynamicField({ field, control, register }: DynamicFieldProps) {
               <p className="text-sm text-muted-foreground">{field.help_text}</p>
             )}
           </div>
-          <Switch />
+          <Controller
+            name={fieldName}
+            control={control}
+            defaultValue={false}
+            render={({ field: formField }) => (
+              <Switch
+                checked={formField.value || false}
+                onCheckedChange={formField.onChange}
+              />
+            )}
+          />
         </div>
       );
 

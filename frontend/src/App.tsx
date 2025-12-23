@@ -122,10 +122,12 @@ import {
   EventTypesPage,
   EventsPage,
   EventDetailPage,
+  GuestsPage,
   GuestAddPage,
   GuestDetailPage,
   GuestEditPage,
   CheckinPage,
+  EventUsersPage,
   // Finance Module
   FinanceDashboard,
   FinanceAccounts,
@@ -975,6 +977,13 @@ const App = () => (
                         </Suspense>
                       </PermissionRoute>
                     } />
+                    <Route path="/events/:eventId/guests" element={
+                      <PermissionRoute permission="event_guests.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <GuestsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
                     <Route path="/events/:eventId/guests/add" element={
                       <PermissionRoute permission="event_guests.create">
                         <Suspense fallback={<PageSkeleton />}>
@@ -1000,6 +1009,13 @@ const App = () => (
                       <PermissionRoute permission="event_checkins.create">
                         <Suspense fallback={<PageSkeleton />}>
                           <CheckinPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/events/:eventId/users" element={
+                      <PermissionRoute permission="events.update">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <EventUsersPage />
                         </Suspense>
                       </PermissionRoute>
                     } />

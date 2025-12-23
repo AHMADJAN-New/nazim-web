@@ -104,6 +104,15 @@ class Event extends Model
     }
 
     /**
+     * Get the event-specific users for this event
+     */
+    public function eventUsers()
+    {
+        return $this->hasMany(Profile::class, 'event_id')
+            ->where('is_event_user', true);
+    }
+
+    /**
      * Scope to filter by organization
      */
     public function scopeForOrganization($query, $organizationId)

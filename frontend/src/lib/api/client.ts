@@ -3833,6 +3833,9 @@ import type {
   CreateGuestRequest,
   UpdateGuestRequest,
   CheckinRequest,
+  EventUser,
+  CreateEventUserRequest,
+  UpdateEventUserRequest,
 } from '@/types/events';
 
 // Event Types API
@@ -3903,8 +3906,39 @@ export const eventGuestsApi = {
 
   uploadPhoto: async (guestId: string, file: File) => {
     const formData = new FormData();
-    formData.append('photo', file);
-    return apiClient.post<{ photo_url: string; photo_thumb_url: string }>(`/guests/${guestId}/photo`, formData);
+    // Explicitly append file with name to ensure Android Chrome compatibility
+    formData.append('photo', file, file.name);
+    
+    if (import.meta.env.DEV) {
+      console.log('[uploadPhoto] Uploading file:', {
+        guestId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      });
+    }
+    
+    try {
+      const result = await apiClient.post<{ photo_url: string; photo_thumb_url: string }>(`/guests/${guestId}/photo`, formData, {
+        headers: {}, // Let browser set Content-Type with boundary (important for Android Chrome)
+      });
+      
+      if (import.meta.env.DEV) {
+        console.log('[uploadPhoto] Upload successful:', result);
+      }
+      
+      return result;
+    } catch (error: any) {
+      if (import.meta.env.DEV) {
+        console.error('[uploadPhoto] Upload failed:', error);
+        console.error('[uploadPhoto] Error details:', {
+          message: error?.message,
+          response: error?.response,
+          status: error?.status,
+        });
+      }
+      throw error;
+    }
   },
 
   import: async (eventId: string, file: File) => {
@@ -3927,4 +3961,19 @@ export const eventCheckinApi = {
 
   undo: async (eventId: string, checkinId: string) =>
     apiClient.delete(`/events/${eventId}/checkin/${checkinId}`),
+};
+
+// Event Users API
+export const eventUsersApi = {
+  list: async (eventId: string) =>
+    apiClient.get<EventUser[]>(`/events/${eventId}/users`),
+
+  create: async (eventId: string, data: CreateEventUserRequest) =>
+    apiClient.post<EventUser>(`/events/${eventId}/users`, data),
+
+  update: async (eventId: string, userId: string, data: UpdateEventUserRequest) =>
+    apiClient.put(`/events/${eventId}/users/${userId}`, data),
+
+  delete: async (eventId: string, userId: string) =>
+    apiClient.delete(`/events/${eventId}/users/${userId}`),
 };

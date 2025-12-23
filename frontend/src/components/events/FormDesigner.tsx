@@ -38,7 +38,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { eventTypesApi } from '@/lib/api/client';
 import type { EventType, EventTypeField, EventTypeFieldGroup, FieldType, FieldOption } from '@/types/events';
 import { FIELD_TYPE_LABELS } from '@/types/events';
@@ -117,11 +117,11 @@ export function FormDesigner({ eventTypeId, onBack }: FormDesignerProps) {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-type-fields', eventTypeId] });
-      toast.success('Fields saved successfully');
+      showToast.success('toast.fieldsSaved');
       setIsDirty(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to save fields');
+      showToast.error(error.message || 'toast.fieldsSaveFailed');
     },
   });
 

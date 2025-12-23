@@ -635,6 +635,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::delete('/events/{eventId}/guests/{guestId}', [\App\Http\Controllers\EventGuestController::class, 'destroy']);
 
     // Guest Photo Upload
+    Route::get('/guests/{guestId}/photo', [\App\Http\Controllers\EventGuestController::class, 'getPhoto']);
     Route::post('/guests/{guestId}/photo', [\App\Http\Controllers\EventGuestController::class, 'uploadPhoto']);
 
     // Event Check-in
@@ -642,4 +643,10 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/events/{eventId}/checkin/history', [\App\Http\Controllers\EventCheckinController::class, 'history']);
     Route::post('/events/{eventId}/checkin/lookup', [\App\Http\Controllers\EventCheckinController::class, 'lookupByToken']);
     Route::delete('/events/{eventId}/checkin/{checkinId}', [\App\Http\Controllers\EventCheckinController::class, 'undoCheckin']);
+    
+    // Event-specific users management
+    Route::get('/events/{eventId}/users', [\App\Http\Controllers\EventUserController::class, 'index']);
+    Route::post('/events/{eventId}/users', [\App\Http\Controllers\EventUserController::class, 'store']);
+    Route::put('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'update']);
+    Route::delete('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'destroy']);
 });

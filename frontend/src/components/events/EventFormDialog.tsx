@@ -1,7 +1,7 @@
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { formatDateForInput } from '@/lib/dateUtils';
 import {
   Dialog,
   DialogContent,
@@ -19,11 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { eventsApi, eventTypesApi, schoolsApi } from '@/lib/api/client';
 import { createEventSchema, type CreateEventFormData } from '@/lib/validations/events';
 import type { Event, EventStatus } from '@/types/events';
 import { EVENT_STATUS_LABELS } from '@/types/events';
+import { useHasPermission } from '@/hooks/usePermissions';
 
 interface EventFormDialogProps {
   open: boolean;
@@ -40,6 +41,7 @@ export function EventFormDialog({
 }: EventFormDialogProps) {
   const queryClient = useQueryClient();
   const isEditing = !!event;
+  const hasEventUpdatePermission = useHasPermission('events.update');
 
   const { data: schools } = useQuery({
     queryKey: ['schools'],
@@ -67,10 +69,26 @@ export function EventFormDialog({
       school_id: event?.school_id || schoolId || '',
       event_type_id: event?.event_type_id || undefined,
       starts_at: event?.starts_at
-        ? format(new Date(event.starts_at), "yyyy-MM-dd'T'HH:mm")
+        ? (() => {
+            const date = new Date(event.starts_at);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+          })()
         : '',
       ends_at: event?.ends_at
-        ? format(new Date(event.ends_at), "yyyy-MM-dd'T'HH:mm")
+        ? (() => {
+            const date = new Date(event.ends_at);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+          })()
         : undefined,
       venue: event?.venue || undefined,
       capacity: event?.capacity || undefined,
@@ -84,12 +102,12 @@ export function EventFormDialog({
     mutationFn: (data: CreateEventFormData) => eventsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Event created successfully');
+      showToast.success('toast.eventCreated');
       reset();
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create event');
+      showToast.error(error.message || 'toast.eventCreateFailed');
     },
   });
 
@@ -98,11 +116,11 @@ export function EventFormDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['event', event!.id] });
-      toast.success('Event updated successfully');
+      showToast.success('toast.eventUpdated');
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update event');
+      showToast.error(error.message || 'toast.eventUpdateFailed');
     },
   });
 
@@ -162,32 +180,6 @@ export function EventFormDialog({
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="event_type_id">Event Type</Label>
-              <Controller
-                name="event_type_id"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value || 'none'}
-                    onValueChange={(val) => field.onChange(val === 'none' ? undefined : val)}
-                    disabled={!selectedSchoolId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No type</SelectItem>
-                      {eventTypes?.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -236,27 +228,30 @@ export function EventFormDialog({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Controller
-                name="status"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(EVENT_STATUS_LABELS) as EventStatus[]).map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {EVENT_STATUS_LABELS[status]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
+            {/* Status field - Only show if user has events.update permission */}
+            {hasEventUpdatePermission && (
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(EVENT_STATUS_LABELS) as EventStatus[]).map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {EVENT_STATUS_LABELS[status]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>

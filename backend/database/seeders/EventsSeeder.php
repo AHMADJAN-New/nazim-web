@@ -28,7 +28,7 @@ class EventsSeeder extends Seeder
             return;
         }
 
-        $school = DB::table('schools')->where('organization_id', $org->id)->first();
+        $school = DB::table('school_branding')->where('organization_id', $org->id)->first();
         if (!$school) {
             $this->command->error('No school found. Please create a school first.');
             return;

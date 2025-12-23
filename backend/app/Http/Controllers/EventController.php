@@ -35,9 +35,18 @@ class EventController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        // Check if user is event-specific (locked to one event)
+        $isEventUser = $profile->is_event_user ?? false;
+        $userEventId = $profile->event_id ?? null;
+        
         $query = Event::with(['eventType:id,name', 'school:id,school_name'])
             ->whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id);
+        
+        // If user is event-specific, only show their assigned event
+        if ($isEventUser && $userEventId) {
+            $query->where('id', $userEventId);
+        }
 
         // Filter by school_id
         if ($request->has('school_id') && $request->school_id) {
@@ -118,7 +127,7 @@ class EventController extends Controller
 
         $validated = $request->validate([
             'title' => 'required|string|max:200',
-            'school_id' => 'required|uuid|exists:schools,id',
+            'school_id' => 'required|uuid|exists:school_branding,id',
             'event_type_id' => 'nullable|uuid|exists:event_types,id',
             'starts_at' => 'required|date',
             'ends_at' => 'nullable|date|after:starts_at',
@@ -233,7 +242,7 @@ class EventController extends Controller
 
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:200',
-            'school_id' => 'sometimes|required|uuid|exists:schools,id',
+            'school_id' => 'sometimes|required|uuid|exists:school_branding,id',
             'event_type_id' => 'nullable|uuid|exists:event_types,id',
             'starts_at' => 'sometimes|required|date',
             'ends_at' => 'nullable|date|after:starts_at',
@@ -243,7 +252,27 @@ class EventController extends Controller
         ]);
 
         try {
+            $oldStatus = $event->status;
             $event->update($validated);
+            
+            // Auto-block event-specific users when event is completed
+            if ($oldStatus !== 'completed' && $validated['status'] === 'completed') {
+                DB::table('profiles')
+                    ->where('event_id', $event->id)
+                    ->where('is_event_user', true)
+                    ->update([
+                        'is_active' => false,
+                        'updated_at' => now(),
+                    ]);
+                Log::info("Event-specific users auto-blocked", [
+                    'event_id' => $event->id,
+                    'users_blocked' => DB::table('profiles')
+                        ->where('event_id', $event->id)
+                        ->where('is_event_user', true)
+                        ->count()
+                ]);
+            }
+            
             Log::info("Event updated", ['id' => $event->id]);
             return response()->json($event->load(['eventType', 'school']));
         } catch (\Exception $e) {

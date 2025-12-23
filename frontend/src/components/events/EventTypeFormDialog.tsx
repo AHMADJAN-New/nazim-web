@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { showToast } from '@/lib/toast';
 import { eventTypesApi, schoolsApi } from '@/lib/api/client';
 import { createEventTypeSchema, type CreateEventTypeFormData } from '@/lib/validations/events';
 import type { EventType } from '@/types/events';
@@ -67,12 +67,12 @@ export function EventTypeFormDialog({
     mutationFn: (data: CreateEventTypeFormData) => eventTypesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-types'] });
-      toast.success('Event type created successfully');
+      showToast.success('toast.eventTypeCreated');
       reset();
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create event type');
+      showToast.error(error.message || 'toast.eventTypeCreateFailed');
     },
   });
 
@@ -81,11 +81,11 @@ export function EventTypeFormDialog({
       eventTypesApi.update(eventType!.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-types'] });
-      toast.success('Event type updated successfully');
+      showToast.success('toast.eventTypeUpdated');
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update event type');
+      showToast.error(error.message || 'toast.eventTypeUpdateFailed');
     },
   });
 

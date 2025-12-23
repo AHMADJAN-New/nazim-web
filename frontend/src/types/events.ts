@@ -316,6 +316,33 @@ export const GUEST_TYPE_LABELS_FA: Record<GuestType, string> = {
 };
 
 // Status Labels
+// Event User
+export interface EventUser {
+  id: string;
+  email: string;
+  full_name: string;
+  phone?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateEventUserRequest {
+  email: string;
+  full_name: string;
+  phone?: string | null;
+  password: string;
+  permissions: string[];
+}
+
+export interface UpdateEventUserRequest {
+  full_name?: string;
+  phone?: string | null;
+  password?: string;
+  is_active?: boolean;
+  permissions?: string[];
+}
+
 export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
   draft: 'Draft',
   published: 'Published',

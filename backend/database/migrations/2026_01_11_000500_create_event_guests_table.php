@@ -41,7 +41,7 @@ return new class extends Migration
 
             $table->foreign('school_id')
                 ->references('id')
-                ->on('schools')
+                ->on('school_branding')
                 ->onDelete('cascade');
 
             // Performance indexes for 10k+ guests

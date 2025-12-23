@@ -61,8 +61,11 @@ class EventGuest extends Model
             }
 
             // Generate qr_token if not provided
+            // Note: We generate it here even if id is not set yet, as it will be set by the UUID generation above
             if (empty($model->qr_token)) {
-                $model->qr_token = self::generateQrToken($model->event_id, $model->id);
+                // Use the id that was just generated, or generate a temporary one
+                $guestId = $model->id ?? Str::uuid();
+                $model->qr_token = self::generateQrToken($model->event_id, $guestId);
             }
         });
     }
