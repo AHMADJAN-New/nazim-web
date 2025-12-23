@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class Asset extends Model
 {
@@ -59,6 +60,68 @@ class Asset extends Model
                 $model->id = (string) Str::uuid();
             }
         });
+
+        // Update finance account balance when asset is created
+        static::created(function ($model) {
+            DB::transaction(function () use ($model) {
+                $model->updateRelatedBalances();
+            });
+        });
+
+        // Update finance account balance when asset is updated
+        // Check if any balance-affecting fields changed
+        static::updated(function ($model) {
+            // Only recalculate if fields that affect balance changed
+            $balanceAffectingFields = ['finance_account_id', 'purchase_price', 'total_copies', 'status', 'currency_id'];
+            $hasRelevantChange = false;
+            
+            foreach ($balanceAffectingFields as $field) {
+                if ($model->wasChanged($field)) {
+                    $hasRelevantChange = true;
+                    break;
+                }
+            }
+            
+            if ($hasRelevantChange) {
+                DB::transaction(function () use ($model) {
+                    $model->updateRelatedBalances();
+                });
+            }
+        });
+
+        // Update finance account balance when asset is deleted
+        static::deleted(function ($model) {
+            DB::transaction(function () use ($model) {
+                $model->updateRelatedBalances();
+            });
+        });
+    }
+
+    /**
+     * Update related balances (finance account)
+     * This method should be called within a transaction
+     */
+    public function updateRelatedBalances()
+    {
+        // Refresh relationships to get fresh data
+        $this->load(['financeAccount']);
+
+        // Update finance account balance if asset is linked to an account
+        if ($this->financeAccount) {
+            $this->financeAccount->recalculateBalance();
+        }
+
+        // Also update if finance_account_id changed (check original value)
+        if ($this->wasChanged('finance_account_id')) {
+            $originalAccountId = $this->getOriginal('finance_account_id');
+            if ($originalAccountId && $originalAccountId !== $this->finance_account_id) {
+                // Asset was moved to a different account, update old account too
+                $oldAccount = FinanceAccount::find($originalAccountId);
+                if ($oldAccount) {
+                    $oldAccount->recalculateBalance();
+                }
+            }
+        }
     }
 
     public function assignments()

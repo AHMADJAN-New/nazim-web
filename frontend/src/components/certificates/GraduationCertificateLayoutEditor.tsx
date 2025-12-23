@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GripVertical, Save, RotateCcw } from 'lucide-react';
 import type { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
@@ -373,11 +374,17 @@ export function GraduationCertificateLayoutEditor({
   const availableFonts = [
     { value: 'Arial', label: 'Arial' },
     { value: 'Roboto', label: 'Roboto' },
-    { value: 'Bahij Nassim', label: 'Bahij Nassim (Arabic/Pashto)' },
+    { value: 'Bahij Nassim', label: 'Bahij Nassim (Regular)' },
+    { value: 'Bahij Nassim-Bold', label: 'Bahij Nassim Bold' },
+    { value: 'Bahij Nassim-Regular', label: 'Bahij Nassim Regular' },
+    { value: 'Bahij Titr-Bold', label: 'Bahij Titr Bold' },
     { value: 'Times New Roman', label: 'Times New Roman' },
     { value: 'Courier New', label: 'Courier New' },
     { value: 'Georgia', label: 'Georgia' },
     { value: 'Verdana', label: 'Verdana' },
+    { value: 'Helvetica', label: 'Helvetica' },
+    { value: 'Tahoma', label: 'Tahoma' },
+    { value: 'Noto Sans Arabic', label: 'Noto Sans Arabic' },
   ];
 
   const updateFieldFont = (fieldId: string, property: 'fontSize' | 'fontFamily', value: number | string) => {
@@ -602,28 +609,33 @@ export function GraduationCertificateLayoutEditor({
 
                   <div className="space-y-2">
                     <Label className="text-xs">Font Family</Label>
-                    <Select
-                      value={config.fieldFonts?.[selectedField]?.fontFamily || 'global'}
-                      onValueChange={(value) => {
-                        if (value && value !== 'global') {
-                          updateFieldFont(selectedField, 'fontFamily', value);
-                        } else {
-                          clearFieldFont(selectedField, 'fontFamily');
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Use global font" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="global">Use Global Font</SelectItem>
+                    <div className="relative">
+                      <Input
+                        list={`font-family-options-${selectedField}`}
+                        value={config.fieldFonts?.[selectedField]?.fontFamily || 'global'}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value && value !== 'global') {
+                            updateFieldFont(selectedField, 'fontFamily', value);
+                          } else {
+                            clearFieldFont(selectedField, 'fontFamily');
+                          }
+                        }}
+                        placeholder="Type or select a font family"
+                        className="h-8 text-xs pr-10"
+                      />
+                      <datalist id={`font-family-options-${selectedField}`}>
+                        <option value="global">Use Global Font</option>
                         {availableFonts.map((font) => (
-                          <SelectItem key={font.value} value={font.value}>
+                          <option key={font.value} value={font.value}>
                             {font.label}
-                          </SelectItem>
+                          </option>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </datalist>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Type any font name or select from suggestions (includes Bahij fonts)
+                    </p>
                   </div>
 
                   <div className="space-y-2">

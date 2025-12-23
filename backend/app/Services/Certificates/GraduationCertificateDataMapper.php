@@ -33,8 +33,9 @@ class GraduationCertificateDataMapper
             : null;
 
         $verificationUrl = $context['verification_url'] ?? url('/verify/certificate/' . $certificate->verification_hash);
-        $qr = QrCode::format('png')->size(240)->generate($certificate->qr_payload ?: $verificationUrl);
-        $qrBase64 = 'data:image/png;base64,' . base64_encode($qr);
+        // Use SVG format instead of PNG to avoid requiring Imagick extension
+        $qr = QrCode::format('svg')->size(240)->generate($certificate->qr_payload ?: $verificationUrl);
+        $qrBase64 = 'data:image/svg+xml;base64,' . base64_encode($qr);
 
         // Format graduation date
         $graduationDate = '';

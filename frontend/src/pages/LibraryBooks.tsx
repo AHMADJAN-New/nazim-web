@@ -5,6 +5,8 @@ import { useLibraryCategories } from '@/hooks/useLibraryCategories';
 import { useStudentAdmissions } from '@/hooks/useStudentAdmissions';
 import { useStaff } from '@/hooks/useStaff';
 import { useProfile } from '@/hooks/useProfiles';
+import { useFinanceAccounts } from '@/hooks/useFinance';
+import { useCurrencies } from '@/hooks/useCurrencies';
 import type { LibraryBook, LibraryLoan } from '@/types/domain/library';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
@@ -58,13 +60,15 @@ const bookSchema = z.object({
     title: z.string().min(1, 'Title is required').max(255, 'Title must be 255 characters or less'),
     author: z.string().max(255, 'Author must be 255 characters or less').optional().nullable(),
     isbn: z.string().max(100, 'ISBN must be 100 characters or less').optional().nullable(),
-    book_number: z.string().max(100, 'Book number must be 100 characters or less').optional().nullable(),
-    category_id: z.string().uuid().optional().nullable(),
+    book_number: z.string().min(1, 'Book number is required').max(100, 'Book number must be 100 characters or less'),
+    category_id: z.string().uuid('Category is required'),
     volume: z.string().max(50, 'Volume must be 50 characters or less').optional().nullable(),
     description: z.string().optional().nullable(),
-    price: z.number().min(0, 'Price must be 0 or greater').default(0),
+    price: z.number().min(0.01, 'Price is required and must be greater than 0'),
     default_loan_days: z.number().int().min(1, 'Loan days must be at least 1').default(30),
     initial_copies: z.number().int().min(0, 'Initial copies must be 0 or greater').default(1),
+    currency_id: z.string().uuid('Currency is required'),
+    finance_account_id: z.string().uuid('Finance account is required'),
 });
 
 type BookFormData = z.infer<typeof bookSchema>;
@@ -105,6 +109,7 @@ export default function LibraryBooks() {
         handleSubmit,
         reset,
         control,
+        setValue,
         formState: { errors },
     } = useForm<BookFormData>({
         resolver: zodResolver(bookSchema),
@@ -112,8 +117,13 @@ export default function LibraryBooks() {
             price: 0,
             default_loan_days: 30,
             initial_copies: 1,
+            currency_id: null,
+            finance_account_id: null,
         },
     });
+
+    const { data: financeAccounts } = useFinanceAccounts();
+    const { data: currencies } = useCurrencies();
 
     // Filter books client-side (for category filter, search is handled server-side)
     const filteredBooks = useMemo(() => {
@@ -136,29 +146,33 @@ export default function LibraryBooks() {
         if (book) {
             reset({
                 title: book.title,
-                author: book.author || '',
-                isbn: book.isbn || '',
-                book_number: book.book_number || '',
-                category_id: book.category_id || '',
-                volume: book.volume || '',
-                description: book.description || '',
+                author: book.author || null,
+                isbn: book.isbn || null,
+                book_number: book.book_number || null,
+                category_id: book.category_id || null,
+                volume: book.volume || null,
+                description: book.description || null,
                 price: book.price || 0,
                 default_loan_days: book.default_loan_days || 30,
                 initial_copies: 0, // Don't pre-fill for edits
+                currency_id: book.currency_id || null,
+                finance_account_id: book.finance_account_id || null,
             });
             setSelectedBook(book);
         } else {
             reset({
                 title: '',
-                author: '',
-                isbn: '',
-                book_number: '',
-                category_id: '',
-                volume: '',
-                description: '',
+                author: null,
+                isbn: null,
+                book_number: null,
+                category_id: null,
+                volume: null,
+                description: null,
                 price: 0,
                 default_loan_days: 30,
                 initial_copies: 1,
+                currency_id: null,
+                finance_account_id: null,
             });
             setSelectedBook(null);
         }
@@ -170,21 +184,36 @@ export default function LibraryBooks() {
         setSelectedBook(null);
         reset({
             title: '',
-            author: '',
-            isbn: '',
-            book_number: '',
-            category_id: '',
-            volume: '',
-            description: '',
+            author: null,
+            isbn: null,
+            book_number: null,
+            category_id: null,
+            volume: null,
+            description: null,
             price: 0,
             default_loan_days: 30,
             initial_copies: 1,
+            currency_id: null,
+            finance_account_id: null,
         });
     };
 
     const onSubmit = (data: BookFormData) => {
+        // Convert empty strings to null for optional fields
+        const submitData = {
+            ...data,
+            currency_id: data.currency_id || null,
+            finance_account_id: data.finance_account_id || null,
+            author: data.author || null,
+            isbn: data.isbn || null,
+            book_number: data.book_number || null,
+            category_id: data.category_id || null,
+            volume: data.volume || null,
+            description: data.description || null,
+        };
+
         if (selectedBook) {
-            const { initial_copies, ...updateData } = data;
+            const { initial_copies, ...updateData } = submitData;
             updateBook.mutate(
                 {
                     id: selectedBook.id,
@@ -197,7 +226,7 @@ export default function LibraryBooks() {
                 }
             );
         } else {
-            createBook.mutate(data, {
+            createBook.mutate(submitData, {
                 onSuccess: () => {
                     handleCloseDialog();
                 },
@@ -543,11 +572,14 @@ export default function LibraryBooks() {
                                     )}
                                 </div>
                                 <div>
-                                    <Label htmlFor="book_number">{t('library.bookNumber')}</Label>
+                                    <Label htmlFor="book_number">
+                                        {t('library.bookNumber')} <span className="text-destructive">*</span>
+                                    </Label>
                                     <Input
                                         id="book_number"
                                         {...register('book_number')}
                                         placeholder={t('library.bookNumberPlaceholder')}
+                                        className={errors.book_number ? 'border-destructive' : ''}
                                     />
                                     {errors.book_number && (
                                         <p className="text-sm text-destructive mt-1">{errors.book_number.message}</p>
@@ -557,7 +589,9 @@ export default function LibraryBooks() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="category_id">{t('library.category')}</Label>
+                                    <Label htmlFor="category_id">
+                                        {t('library.category')} <span className="text-destructive">*</span>
+                                    </Label>
                                     <Controller
                                         control={control}
                                         name="category_id"
@@ -566,8 +600,8 @@ export default function LibraryBooks() {
                                                 value={field.value || ''} 
                                                 onValueChange={(value) => field.onChange(value || null)}
                                             >
-                                                <SelectTrigger id="category_id">
-                                                    <SelectValue placeholder={t('library.selectCategoryOptional')} />
+                                                <SelectTrigger id="category_id" className={errors.category_id ? 'border-destructive' : ''}>
+                                                    <SelectValue placeholder={t('library.selectCategory') || 'Select category'} />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {Array.isArray(categories) && categories.map((cat) => (
@@ -613,13 +647,16 @@ export default function LibraryBooks() {
 
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
-                                    <Label htmlFor="price">{t('library.price')}</Label>
+                                    <Label htmlFor="price">
+                                        {t('library.price')} <span className="text-destructive">*</span>
+                                    </Label>
                                     <Input
                                         id="price"
                                         type="number"
-                                        min={0}
+                                        min={0.01}
                                         step="0.01"
                                         {...register('price', { valueAsNumber: true })}
+                                        className={errors.price ? 'border-destructive' : ''}
                                     />
                                     {errors.price && (
                                         <p className="text-sm text-destructive mt-1">{errors.price.message}</p>
@@ -651,6 +688,82 @@ export default function LibraryBooks() {
                                         )}
                                     </div>
                                 )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label htmlFor="finance_account_id">
+                                        {t('finance.accounts.account') || 'Finance Account'} <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Controller
+                                        control={control}
+                                        name="finance_account_id"
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value ?? ''}
+                                                onValueChange={(value) => {
+                                                    const newValue = value || null;
+                                                    field.onChange(newValue);
+                                                    // Auto-select currency from account if account has currency
+                                                    if (value && financeAccounts) {
+                                                        const account = financeAccounts.find((acc) => acc.id === value);
+                                                        if (account?.currencyId) {
+                                                            setValue('currency_id', account.currencyId);
+                                                        } else {
+                                                            setValue('currency_id', null);
+                                                        }
+                                                    } else {
+                                                        // Clear currency if account is cleared
+                                                        setValue('currency_id', null);
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger className={errors.finance_account_id ? 'border-destructive' : ''}>
+                                                    <SelectValue placeholder={t('finance.selectAccount') || 'Select finance account'} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {financeAccounts?.map((account) => (
+                                                        <SelectItem key={account.id} value={account.id}>
+                                                            {account.name} {account.code ? `(${account.code})` : ''}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    {errors.finance_account_id && (
+                                        <p className="text-sm text-destructive mt-1">{errors.finance_account_id.message}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <Label htmlFor="currency_id">
+                                        {t('finance.currency') || 'Currency'} <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Controller
+                                        control={control}
+                                        name="currency_id"
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value ?? ''}
+                                                onValueChange={(value) => field.onChange(value || null)}
+                                            >
+                                                <SelectTrigger className={errors.currency_id ? 'border-destructive' : ''}>
+                                                    <SelectValue placeholder={t('finance.selectCurrency') || 'Select currency'} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {currencies?.map((currency) => (
+                                                        <SelectItem key={currency.id} value={currency.id}>
+                                                            {currency.code} - {currency.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    {errors.currency_id && (
+                                        <p className="text-sm text-destructive mt-1">{errors.currency_id.message}</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <DialogFooter>

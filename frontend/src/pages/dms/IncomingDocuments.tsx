@@ -28,10 +28,11 @@ import { DocumentNumberBadge } from "@/components/dms/DocumentNumberBadge";
 import { SecurityBadge } from "@/components/dms/SecurityBadge";
 import { ImageFileUploader } from "@/components/dms/ImageFileUploader";
 import { FileText, Upload, Search, Plus, X, Eye, File, Download, Image as ImageIcon, Maximize2, X as XIcon, Edit, Trash2, MoreHorizontal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { DEFAULT_PAGE_SIZE } from "@/types/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RichTextEditor } from "@/components/dms/RichTextEditor";
-import { formatDate, getShortDescription } from "@/lib/dateUtils";
+import { formatDate, formatDateForInput, getShortDescription } from "@/lib/dateUtils";
 import { Separator } from "@/components/ui/separator";
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 
@@ -468,6 +469,7 @@ export default function IncomingDocuments() {
     status: "",
     security_level_key: "",
     academic_year_id: "",
+    routing_department_id: "",
   });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -484,6 +486,14 @@ export default function IncomingDocuments() {
   // Get academic years
   const { data: academicYears } = useAcademicYears(profile?.organization_id);
   const { data: currentAcademicYear } = useCurrentAcademicYear(profile?.organization_id);
+  
+  // Get departments
+  const { data: departments = [] } = useQuery({
+    queryKey: ["dms", "departments"],
+    queryFn: () => dmsApi.departments.list(),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   // Filter out "all" values before sending to API
   const apiFilters = useMemo(() => {
@@ -676,16 +686,16 @@ export default function IncomingDocuments() {
       sender_org: doc.sender_org || "",
       sender_name: doc.sender_name || "",
       sender_address: doc.sender_address || "",
-      received_date: doc.received_date || "",
+      received_date: formatDateForInput(doc.received_date),
       description: doc.description || "",
       pages_count: doc.pages_count?.toString() || "",
       attachments_count: doc.attachments_count?.toString() || "0",
       is_manual_number: !!doc.manual_indoc_number,
       manual_indoc_number: doc.manual_indoc_number || "",
       external_doc_number: doc.external_doc_number || "",
-      external_doc_date: doc.external_doc_date || "",
+      external_doc_date: formatDateForInput(doc.external_doc_date),
       security_level_key: doc.security_level_key || "",
-      routing_department_id: doc.routing_department_id || "",
+      routing_department_id: doc.routing_department_id || "none",
       status: doc.status || "pending",
       notes: doc.notes || "",
       academic_year_id: doc.academic_year_id || currentAcademicYear?.id || "",
@@ -984,6 +994,25 @@ export default function IncomingDocuments() {
                   </Select>
                 </div>
                 <div className="space-y-2">
+                  <Label>Routing Department</Label>
+                  <Select
+                    value={newDoc.routing_department_id || "none"}
+                    onValueChange={(value) => setNewDoc((s) => ({ ...s, routing_department_id: value === "none" ? "" : value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label>Notes</Label>
                   <Input
                     value={newDoc.notes}
@@ -1001,6 +1030,7 @@ export default function IncomingDocuments() {
                   disabled={!readyToSave || createMutation.isPending}
                   onClick={() => createMutation.mutate({
                     ...newDoc,
+                    routing_department_id: newDoc.routing_department_id === "none" ? "" : newDoc.routing_department_id,
                     pages_count: newDoc.pages_count ? parseInt(newDoc.pages_count) : null,
                     attachments_count: newDoc.attachments_count ? parseInt(newDoc.attachments_count) : 0,
                     is_manual_number: newDoc.is_manual_number || false,
@@ -1019,6 +1049,246 @@ export default function IncomingDocuments() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Edit Document Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Incoming Document</DialogTitle>
+            <DialogDescription>
+              Update the incoming document information
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Basic Information</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Academic Year</Label>
+                  <Select
+                    value={newDoc.academic_year_id || currentAcademicYear?.id || ""}
+                    onValueChange={(value) => setNewDoc((s) => ({ ...s, academic_year_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select academic year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {academicYears?.map((year) => (
+                        <SelectItem key={year.id} value={year.id}>
+                          {year.name} {year.isCurrent ? "(Current)" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Received Date <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="date"
+                    value={newDoc.received_date}
+                    onChange={(e) => setNewDoc((s) => ({ ...s, received_date: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Subject <span className="text-destructive">*</span></Label>
+                <Input
+                  value={newDoc.subject}
+                  onChange={(e) => setNewDoc((s) => ({ ...s, subject: e.target.value }))}
+                  placeholder="Exam letter"
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Sender Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Sender Information</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Sender Name</Label>
+                  <Input
+                    value={newDoc.sender_name}
+                    onChange={(e) => setNewDoc((s) => ({ ...s, sender_name: e.target.value }))}
+                    placeholder="Sender name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sender Organization</Label>
+                  <Input
+                    value={newDoc.sender_org}
+                    onChange={(e) => setNewDoc((s) => ({ ...s, sender_org: e.target.value }))}
+                    placeholder="Organization name"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Sender Address</Label>
+                <Input
+                  value={newDoc.sender_address}
+                  onChange={(e) => setNewDoc((s) => ({ ...s, sender_address: e.target.value }))}
+                  placeholder="Full address"
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Document Details */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Document Details</h3>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <RichTextEditor
+                  value={newDoc.description || ""}
+                  onChange={(value) => setNewDoc((s) => ({ ...s, description: value }))}
+                  placeholder="Document description"
+                />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Pages Count</Label>
+                  <Input
+                    type="number"
+                    value={newDoc.pages_count}
+                    onChange={(e) => setNewDoc((s) => ({ ...s, pages_count: e.target.value }))}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Attachments Count</Label>
+                  <Input
+                    type="number"
+                    value={newDoc.attachments_count}
+                    onChange={(e) => setNewDoc((s) => ({ ...s, attachments_count: e.target.value }))}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Additional Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Additional Information</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>External Document Number</Label>
+                  <Input
+                    value={newDoc.external_doc_number}
+                    onChange={(e) => setNewDoc((s) => ({ ...s, external_doc_number: e.target.value }))}
+                    placeholder="External reference number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>External Document Date</Label>
+                  <Input
+                    type="date"
+                    value={newDoc.external_doc_date}
+                    onChange={(e) => setNewDoc((s) => ({ ...s, external_doc_date: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Security Level</Label>
+                <Select
+                  value={newDoc.security_level_key || "none"}
+                  onValueChange={(value) => setNewDoc((s) => ({ ...s, security_level_key: value === "none" ? "" : value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select security level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="public">Public</SelectItem>
+                    <SelectItem value="internal">Internal</SelectItem>
+                    <SelectItem value="confidential">Confidential</SelectItem>
+                    <SelectItem value="secret">Secret</SelectItem>
+                    <SelectItem value="top_secret">Top Secret</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Routing Department</Label>
+                <Select
+                  value={newDoc.routing_department_id || "none"}
+                  onValueChange={(value) => setNewDoc((s) => ({ ...s, routing_department_id: value === "none" ? "" : value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={newDoc.status}
+                  onValueChange={(value) => setNewDoc((s) => ({ ...s, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Input
+                  value={newDoc.notes}
+                  onChange={(e) => setNewDoc((s) => ({ ...s, notes: e.target.value }))}
+                  placeholder="Additional notes"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                className="flex-1"
+                disabled={!readyToSave || updateMutation.isPending}
+                onClick={() => {
+                  if (editDoc) {
+                    updateMutation.mutate({
+                      id: editDoc.id,
+                      payload: {
+                        ...newDoc,
+                        routing_department_id: newDoc.routing_department_id === "none" ? "" : newDoc.routing_department_id,
+                        pages_count: newDoc.pages_count ? parseInt(newDoc.pages_count) : null,
+                        attachments_count: newDoc.attachments_count ? parseInt(newDoc.attachments_count) : 0,
+                        is_manual_number: newDoc.is_manual_number || false,
+                      },
+                    });
+                  }
+                }}
+              >
+                {updateMutation.isPending ? "Updating..." : "Update Document"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleEditDialogClose(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Filters Card - Always Visible */}
       <Card>
@@ -1084,11 +1354,31 @@ export default function IncomingDocuments() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Department</Label>
+              <Select
+                value={filters.routing_department_id === "" ? "unassigned" : (filters.routing_department_id || "all")}
+                onValueChange={(value) => setFilters((s) => ({ ...s, routing_department_id: value === "all" || value === "unassigned" ? "" : value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All departments</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex gap-2 mt-4">
             <Button
               variant="outline"
-              onClick={() => setFilters({ subject: "", sender_org: "", status: "", security_level_key: "", academic_year_id: "" })}
+              onClick={() => setFilters({ subject: "", sender_org: "", status: "", security_level_key: "", academic_year_id: "", routing_department_id: "" })}
             >
               <X className="h-4 w-4 mr-2" />
               Clear Filters
@@ -1124,6 +1414,7 @@ export default function IncomingDocuments() {
                     <TableHead>External Doc</TableHead>
                     <TableHead>Pages</TableHead>
                     <TableHead>Security</TableHead>
+                    <TableHead>Department</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Received</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -1164,6 +1455,15 @@ export default function IncomingDocuments() {
                       </TableCell>
                       <TableCell>
                         <SecurityBadge level={doc.security_level_key} />
+                      </TableCell>
+                      <TableCell>
+                        {doc.routing_department_id ? (
+                          <Badge variant="outline">
+                            {departments.find(d => d.id === doc.routing_department_id)?.name || 'Unknown'}
+                          </Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <span className="capitalize">{doc.status}</span>

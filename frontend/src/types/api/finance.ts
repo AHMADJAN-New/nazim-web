@@ -247,12 +247,14 @@ export type ExpenseEntryUpdate = Partial<ExpenseEntryInsert>;
 export interface FinanceDashboard {
     summary: {
         total_balance: string;
+        total_cash_balance?: string;
         current_month_income: string;
         current_month_expense: string;
         net_this_month: string;
         active_projects: number;
         active_donors: number;
         total_assets_value: string;
+        total_library_books_value?: string;
     };
     account_balances: Array<{
         id: string;
@@ -280,6 +282,19 @@ export interface FinanceDashboard {
         currency_symbol: string;
     }>;
     assets_by_currency: Array<{
+        currency_id: string;
+        currency_code: string;
+        total_value: string;
+        converted_value: string;
+    }>;
+    library_books_by_account?: Array<{
+        account_id: string;
+        account_name: string;
+        total_value: string;
+        currency_code: string;
+        currency_symbol: string;
+    }>;
+    library_books_by_currency?: Array<{
         currency_id: string;
         currency_code: string;
         total_value: string;

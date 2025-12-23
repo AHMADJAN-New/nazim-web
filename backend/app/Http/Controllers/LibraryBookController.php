@@ -6,6 +6,7 @@ use App\Models\LibraryBook;
 use App\Models\LibraryCopy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class LibraryBookController extends Controller
 {
@@ -33,6 +34,15 @@ class LibraryBookController extends Controller
             },
             'category' => function ($builder) {
                 $builder->select('id', 'name', 'code');
+            },
+            'currency' => function ($builder) {
+                $builder->select('id', 'code', 'name', 'symbol');
+            },
+            'financeAccount' => function ($builder) {
+                $builder->select('id', 'name', 'code', 'currency_id')
+                    ->with(['currency' => function ($q) {
+                        $q->select('id', 'code', 'name', 'symbol');
+                    }]);
             },
         ])->withCount([
             'copies as total_copies' => function ($builder) {
@@ -71,14 +81,16 @@ class LibraryBookController extends Controller
             'title' => 'required|string|max:255',
             'author' => 'nullable|string|max:255',
             'isbn' => 'nullable|string|max:100',
-            'book_number' => 'nullable|string|max:100|unique:library_books,book_number',
+            'book_number' => 'required|string|max:100|unique:library_books,book_number',
             'category' => 'nullable|string|max:150',
-            'category_id' => 'nullable|uuid|exists:library_categories,id',
+            'category_id' => 'required|uuid|exists:library_categories,id',
             'volume' => 'nullable|string|max:50',
             'description' => 'nullable|string',
-            'price' => 'nullable|numeric|min:0',
+            'price' => 'required|numeric|min:0.01',
             'default_loan_days' => 'nullable|integer|min:1',
             'initial_copies' => 'nullable|integer|min:0',
+            'currency_id' => 'required|uuid|exists:currencies,id',
+            'finance_account_id' => 'required|uuid|exists:finance_accounts,id',
         ]);
 
         $user = $request->user();
@@ -96,6 +108,46 @@ class LibraryBookController extends Controller
             // Allow during migration
         }
 
+        // Validate and set currency_id and finance_account_id
+        if (isset($data['finance_account_id']) && $data['finance_account_id']) {
+            // Validate finance account belongs to organization
+            $account = DB::table('finance_accounts')
+                ->where('id', $data['finance_account_id'])
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$account) {
+                return response()->json(['error' => 'Finance account not found or does not belong to your organization'], 422);
+            }
+
+            // If currency_id not provided but account has currency, use account's currency
+            if (!isset($data['currency_id']) || !$data['currency_id']) {
+                if ($account->currency_id) {
+                    $data['currency_id'] = $account->currency_id;
+                }
+            }
+        }
+
+        // Validate currency_id belongs to organization
+        if (isset($data['currency_id']) && $data['currency_id']) {
+            $currency = DB::table('currencies')
+                ->where('id', $data['currency_id'])
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$currency) {
+                return response()->json(['error' => 'Currency not found or does not belong to your organization'], 422);
+            }
+        }
+
+        // Check if category_id column exists before trying to use it
+        $hasCategoryIdColumn = Schema::hasColumn('library_books', 'category_id');
+        if (!$hasCategoryIdColumn && isset($data['category_id'])) {
+            unset($data['category_id']);
+        }
+
         $book = LibraryBook::create(array_merge($data, [
             'organization_id' => $profile->organization_id,
             'price' => $data['price'] ?? 0,
@@ -111,14 +163,14 @@ class LibraryBookController extends Controller
             ]);
         }
 
-        return response()->json($book->load(['category'])->loadCount(['copies as total_copies', 'copies as available_copies' => function ($builder) {
+        return response()->json($book->load(['category', 'currency', 'financeAccount.currency'])->loadCount(['copies as total_copies', 'copies as available_copies' => function ($builder) {
             $builder->where('status', 'available');
         }]));
     }
 
     public function show(string $id)
     {
-        $book = LibraryBook::with(['copies', 'category'])->findOrFail($id);
+        $book = LibraryBook::with(['copies', 'category', 'currency', 'financeAccount.currency'])->findOrFail($id);
         return response()->json($book);
     }
 
@@ -138,18 +190,64 @@ class LibraryBookController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'author' => 'nullable|string|max:255',
             'isbn' => 'nullable|string|max:100',
-            'book_number' => 'nullable|string|max:100|unique:library_books,book_number,' . $id,
+            'book_number' => 'required|string|max:100|unique:library_books,book_number,' . $id,
             'category' => 'nullable|string|max:150',
-            'category_id' => 'nullable|uuid|exists:library_categories,id',
+            'category_id' => 'required|uuid|exists:library_categories,id',
             'volume' => 'nullable|string|max:50',
             'description' => 'nullable|string',
-            'price' => 'nullable|numeric|min:0',
+            'price' => 'required|numeric|min:0.01',
             'default_loan_days' => 'nullable|integer|min:1',
+            'currency_id' => 'required|uuid|exists:currencies,id',
+            'finance_account_id' => 'required|uuid|exists:finance_accounts,id',
         ]);
+
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if ($profile && $profile->organization_id) {
+            // Validate and set currency_id and finance_account_id
+            if (isset($data['finance_account_id']) && $data['finance_account_id']) {
+                // Validate finance account belongs to organization
+                $account = DB::table('finance_accounts')
+                    ->where('id', $data['finance_account_id'])
+                    ->where('organization_id', $profile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if (!$account) {
+                    return response()->json(['error' => 'Finance account not found or does not belong to your organization'], 422);
+                }
+
+                // If currency_id not provided but account has currency, use account's currency
+                if (!isset($data['currency_id']) || !$data['currency_id']) {
+                    if ($account->currency_id) {
+                        $data['currency_id'] = $account->currency_id;
+                    }
+                }
+            }
+
+            // Validate currency_id belongs to organization
+            if (isset($data['currency_id']) && $data['currency_id']) {
+                $currency = DB::table('currencies')
+                    ->where('id', $data['currency_id'])
+                    ->where('organization_id', $profile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if (!$currency) {
+                    return response()->json(['error' => 'Currency not found or does not belong to your organization'], 422);
+                }
+            }
+        }
+
+        // Check if category_id column exists before trying to update it
+        $hasCategoryIdColumn = Schema::hasColumn('library_books', 'category_id');
+        if (!$hasCategoryIdColumn && isset($data['category_id'])) {
+            unset($data['category_id']);
+        }
 
         $book->update($data);
 
-        return response()->json($book->fresh()->load(['category'])->loadCount(['copies as total_copies', 'copies as available_copies' => function ($builder) {
+        return response()->json($book->fresh()->load(['category', 'currency', 'financeAccount.currency'])->loadCount(['copies as total_copies', 'copies as available_copies' => function ($builder) {
             $builder->where('status', 'available');
         }]));
     }

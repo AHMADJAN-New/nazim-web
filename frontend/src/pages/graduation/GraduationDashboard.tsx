@@ -12,6 +12,7 @@ import { useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useSchools } from '@/hooks/useSchools';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useAuth } from '@/hooks/useAuth';
+import { formatDate } from '@/lib/dateUtils';
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {

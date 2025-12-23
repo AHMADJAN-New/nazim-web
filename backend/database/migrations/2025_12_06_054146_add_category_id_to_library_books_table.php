@@ -18,12 +18,30 @@ return new class extends Migration
 
         Schema::table('library_books', function (Blueprint $table) {
             // Add category_id column (nullable for backward compatibility)
-            $table->uuid('category_id')->nullable()->after('category');
-            $table->foreign('category_id')->references('id')->on('library_categories')->onDelete('set null');
-            
-            // Add index
-            $table->index('category_id');
+            // Check if column doesn't exist before adding (for future deployments)
+            if (!Schema::hasColumn('library_books', 'category_id')) {
+                $table->uuid('category_id')->nullable()->after('category');
+            }
         });
+
+        // Add foreign key constraint separately (check if it doesn't exist)
+        if (Schema::hasTable('library_books') && Schema::hasColumn('library_books', 'category_id')) {
+            try {
+                DB::statement('ALTER TABLE library_books ADD CONSTRAINT library_books_category_id_foreign FOREIGN KEY (category_id) REFERENCES library_categories(id) ON DELETE SET NULL');
+            } catch (\Exception $e) {
+                // Foreign key might already exist, ignore
+                if (strpos($e->getMessage(), 'already exists') === false && strpos($e->getMessage(), 'duplicate') === false) {
+                    throw $e;
+                }
+            }
+
+            // Add index if it doesn't exist
+            try {
+                DB::statement('CREATE INDEX IF NOT EXISTS idx_library_books_category_id ON library_books(category_id)');
+            } catch (\Exception $e) {
+                // Index might already exist, ignore
+            }
+        }
     }
 
     /**

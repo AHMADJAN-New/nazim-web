@@ -189,7 +189,19 @@ class DashboardController extends Controller
                 ->toArray();
 
             $assetIds = (clone $baseQuery)->pluck('id');
-            $totalValue = (float) ((clone $baseQuery)->sum('purchase_price') ?? 0);
+            
+            // Calculate total value: purchase_price × total_copies (at least 1 copy)
+            $assets = (clone $baseQuery)
+                ->whereNotNull('purchase_price')
+                ->where('purchase_price', '>', 0)
+                ->get();
+            
+            $totalValue = 0;
+            foreach ($assets as $asset) {
+                $price = (float) $asset->purchase_price;
+                $copies = max(1, (int) ($asset->total_copies ?? 1)); // At least 1 copy
+                $totalValue += $price * $copies;
+            }
 
             $maintenanceCost = 0;
             if ($assetIds->isNotEmpty()) {

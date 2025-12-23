@@ -37,22 +37,34 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { format } from 'date-fns';
-// Import pdfmake-arabic - handle both default and named exports
+// Import pdfmake for Arabic support - handle both default and named exports
 import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
 const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
-// Use regular pdfmake vfs_fonts (compatible with pdfmake-arabic)
+
+// Make pdfMake available globally for vfs_fonts
+if (typeof window !== 'undefined') {
+  (window as any).pdfMake = pdfMake;
+}
+
+// Use regular pdfmake vfs_fonts instead of pdfmake-arabic's (which has issues)
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import { useLanguage } from '@/hooks/useLanguage';
 
 // Set up fonts for Arabic/Pashto support
 try {
-  // Initialize VFS - regular pdfmake vfs_fonts exports vfs directly
+  // Initialize VFS using Object.assign to avoid read-only error
   if (pdfFonts && typeof pdfFonts === 'object') {
-    (pdfMake as any).vfs = pdfFonts;
-  } else if (pdfFonts && (pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
-    (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
+    // pdfmake's vfs_fonts exports the VFS directly
+    // Use Object.assign to merge VFS instead of direct assignment
+    if (!(pdfMake as any).vfs) {
+      (pdfMake as any).vfs = {};
+    }
+    Object.assign((pdfMake as any).vfs, pdfFonts);
   } else if (pdfFonts && (pdfFonts as any).vfs) {
-    (pdfMake as any).vfs = (pdfFonts as any).vfs;
+    if (!(pdfMake as any).vfs) {
+      (pdfMake as any).vfs = {};
+    }
+    Object.assign((pdfMake as any).vfs, (pdfFonts as any).vfs);
   }
 } catch (error) {
   if (import.meta.env.DEV) {

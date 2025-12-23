@@ -424,6 +424,19 @@ class DatabaseSeeder extends Seeder
                     'updated_at' => now(),
                 ]);
 
+                // Get highest clearance level for admin users
+                $clearanceLevelKey = null;
+                if ($userData['role'] === 'admin') {
+                    $topSecretLevel = DB::table('security_levels')
+                        ->where('organization_id', $organization->id)
+                        ->where('key', 'top_secret')
+                        ->where('active', true)
+                        ->first();
+                    if ($topSecretLevel) {
+                        $clearanceLevelKey = $topSecretLevel->key;
+                    }
+                }
+
                 // Create profile with correct organization_id
                 DB::table('profiles')->insert([
                     'id' => $userId,
@@ -431,6 +444,7 @@ class DatabaseSeeder extends Seeder
                     'full_name' => $userData['name'],
                     'role' => $userData['role'], // Keep for backward compatibility
                     'organization_id' => $organization->id, // CRITICAL: Always set organization_id
+                    'clearance_level_key' => $clearanceLevelKey, // Assign top_secret clearance to admins
                     'is_active' => true,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -442,6 +456,19 @@ class DatabaseSeeder extends Seeder
                 $profile = DB::table('profiles')->where('id', $userId)->first();
 
                 if (!$profile) {
+                    // Get highest clearance level for admin users
+                    $clearanceLevelKey = null;
+                    if ($userData['role'] === 'admin') {
+                        $topSecretLevel = DB::table('security_levels')
+                            ->where('organization_id', $organization->id)
+                            ->where('key', 'top_secret')
+                            ->where('active', true)
+                            ->first();
+                        if ($topSecretLevel) {
+                            $clearanceLevelKey = $topSecretLevel->key;
+                        }
+                    }
+
                     // Profile missing - create it
                     DB::table('profiles')->insert([
                         'id' => $userId,
@@ -449,22 +476,36 @@ class DatabaseSeeder extends Seeder
                         'full_name' => $userData['name'],
                         'role' => $userData['role'],
                         'organization_id' => $organization->id, // CRITICAL: Set organization_id
+                        'clearance_level_key' => $clearanceLevelKey, // Assign top_secret clearance to admins
                         'is_active' => true,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
                     $this->command->info("  ✓ Created missing profile for {$userData['email']}");
                 } else {
-                    // Profile exists - update organization_id if it's wrong or NULL
+                    // Profile exists - update organization_id and clearance if needed
+                    $updates = [];
                     if ($profile->organization_id !== $organization->id) {
+                        $updates['organization_id'] = $organization->id;
+                    }
+                    if ($userData['role'] === 'admin' && !$profile->clearance_level_key) {
+                        // Assign top_secret clearance to admin users who don't have it
+                        $topSecretLevel = DB::table('security_levels')
+                            ->where('organization_id', $organization->id)
+                            ->where('key', 'top_secret')
+                            ->where('active', true)
+                            ->first();
+                        if ($topSecretLevel) {
+                            $updates['clearance_level_key'] = $topSecretLevel->key;
+                        }
+                    }
+                    if (!empty($updates)) {
+                        $updates['role'] = $userData['role']; // Update role field for backward compatibility
+                        $updates['updated_at'] = now();
                         DB::table('profiles')
                             ->where('id', $userId)
-                            ->update([
-                                'organization_id' => $organization->id, // CRITICAL: Fix organization_id
-                                'role' => $userData['role'], // Update role field for backward compatibility
-                                'updated_at' => now(),
-                            ]);
-                        $this->command->info("  ✓ Updated profile organization_id for {$userData['email']}");
+                            ->update($updates);
+                        $this->command->info("  ✓ Updated profile for {$userData['email']}");
                     }
                 }
             }

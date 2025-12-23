@@ -59,6 +59,9 @@ export const CourseDashboard = lazy(() => import('@/pages/CourseDashboard'));
 export const CourseAttendance = lazy(() => import('@/pages/CourseAttendance'));
 export const CourseCertificates = lazy(() => import('@/pages/CourseCertificates'));
 export const CertificateTemplates = lazy(() => import('@/pages/CertificateTemplates'));
+export const IdCardTemplates = lazy(() => import('@/pages/IdCardTemplates'));
+export const IdCardAssignment = lazy(() => import('@/pages/IdCardAssignment'));
+export const IdCardExport = lazy(() => import('@/pages/IdCardExport'));
 export const GraduationDashboard = lazy(() => import('@/pages/graduation/GraduationDashboard'));
 export const GraduationBatchesPage = lazy(() => import('@/pages/graduation/GraduationBatchesPage'));
 export const GraduationBatchDetailPage = lazy(() => import('@/pages/graduation/GraduationBatchDetailPage'));
@@ -108,6 +111,7 @@ export const FeePaymentsPage = lazy(() => import('@/pages/fees/FeePaymentsPage')
 export const FeeExceptionsPage = lazy(() => import('@/pages/fees/FeeExceptionsPage'));
 export const FeeReportsPage = lazy(() => import('@/pages/fees/FeeReportsPage'));
 export const StudentFeeStatementPage = lazy(() => import('@/pages/fees/StudentFeeStatementPage'));
+export const VerifyCertificate = lazy(() => import('@/pages/VerifyCertificate'));
 
 // Document Management System
 export const DmsDashboard = lazy(() => import('@/pages/dms/DmsDashboard'));

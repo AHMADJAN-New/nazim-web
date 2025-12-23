@@ -30,8 +30,11 @@ class DocumentPdfService
                 try {
                     $browsershot = Browsershot::html($html)
                         ->format('A4')
-                        ->showBackground()
-                        ->margins(5, 5, 5, 5);
+                        ->showBackground() // Critical for letterheads and backgrounds
+                        ->waitUntilNetworkIdle() // Wait for all resources (including base64 images) to load
+                        ->timeout(120) // 2 minute timeout for complex documents with letterheads
+                        ->margins(5, 5, 5, 5)
+                        ->setDelay(3000); // Add 3 second delay to ensure PDF letterheads converted to images are fully loaded
 
                     if ($pageLayout === 'A4_landscape') {
                         $browsershot->landscape();

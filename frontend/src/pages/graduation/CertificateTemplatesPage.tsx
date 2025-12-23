@@ -19,7 +19,7 @@ import { CertificateLayoutConfig } from '@/hooks/useCertificateTemplates';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useSchools } from '@/hooks/useSchools';
 import { GraduationCertificateLayoutEditor } from '@/components/certificates/GraduationCertificateLayoutEditor';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Layout, Pencil, Trash2, Image } from 'lucide-react';
 import {
@@ -304,6 +304,9 @@ export default function CertificateTemplatesPage() {
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Layout: {selectedTemplate.name || selectedTemplate.title}</DialogTitle>
+              <DialogDescription>
+                Customize the layout, positioning, and styling of certificate elements. Drag elements to reposition them.
+              </DialogDescription>
             </DialogHeader>
             <GraduationCertificateLayoutEditor
               templateId={selectedTemplate.id}

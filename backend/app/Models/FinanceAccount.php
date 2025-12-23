@@ -109,6 +109,14 @@ class FinanceAccount extends Model
     }
 
     /**
+     * Get all library books linked to this account
+     */
+    public function libraryBooks()
+    {
+        return $this->hasMany(LibraryBook::class, 'finance_account_id');
+    }
+
+    /**
      * Scope to filter by organization
      */
     public function scopeForOrganization($query, $organizationId)
@@ -136,18 +144,47 @@ class FinanceAccount extends Model
             $totalExpense = $this->expenseEntries()->whereNull('deleted_at')->where('status', 'approved')->sum('amount');
             
             // Add assets value (simple sum without currency conversion)
-            $totalAssets = $this->assets()
+            // Assets can have multiple copies, so multiply price by total_copies
+            $totalAssets = 0;
+            $assets = $this->assets()
                 ->whereNull('deleted_at')
                 ->whereIn('status', ['available', 'assigned', 'maintenance'])
                 ->whereNotNull('purchase_price')
-                ->sum('purchase_price');
+                ->get();
             
-            $this->current_balance = $this->opening_balance + $totalIncome - $totalExpense + (float) $totalAssets;
+            foreach ($assets as $asset) {
+                $price = (float) $asset->purchase_price;
+                if ($price <= 0) {
+                    continue;
+                }
+                $copies = max(1, (int) ($asset->total_copies ?? 1)); // At least 1 copy
+                $totalAssets += $price * $copies;
+            }
+            
+            // Add library books value (price × total_copies)
+            $totalLibraryBooks = 0;
+            $libraryBooks = $this->libraryBooks()
+                ->whereNull('deleted_at')
+                ->where('price', '>', 0)
+                ->withCount(['copies as total_copies' => function ($builder) {
+                    $builder->whereNull('deleted_at');
+                }])
+                ->get();
+            
+            foreach ($libraryBooks as $book) {
+                $totalCopies = $book->total_copies ?? 0;
+                if ($totalCopies > 0) {
+                    $totalLibraryBooks += (float) $book->price * $totalCopies;
+                }
+            }
+            
+            $this->current_balance = $this->opening_balance + $totalIncome - $totalExpense + (float) $totalAssets + (float) $totalLibraryBooks;
         } else {
             // Convert all entries to account's currency
             $totalIncome = 0;
             $totalExpense = 0;
             $totalAssets = 0;
+            $totalLibraryBooks = 0;
             
             // Process income entries
             foreach ($this->incomeEntries()->whereNull('deleted_at')->get() as $entry) {
@@ -199,6 +236,10 @@ class FinanceAccount extends Model
                     continue;
                 }
                 
+                // Assets can have multiple copies, so multiply price by total_copies
+                $copies = max(1, (int) ($asset->total_copies ?? 1)); // At least 1 copy
+                $assetValue = $price * $copies;
+                
                 // Determine asset's currency
                 $assetCurrencyId = $asset->currency_id;
                 if (!$assetCurrencyId && $asset->financeAccount && $asset->financeAccount->currency_id) {
@@ -219,15 +260,61 @@ class FinanceAccount extends Model
                         $asset->purchase_date ? $asset->purchase_date->toDateString() : null
                     );
                     if ($rate !== null) {
-                        $price = $price * $rate;
+                        $assetValue = $assetValue * $rate;
                     }
-                    // If rate not found, use original price (graceful degradation)
+                    // If rate not found, use original value (graceful degradation)
                 }
                 
-                $totalAssets += $price;
+                $totalAssets += $assetValue;
             }
             
-            $this->current_balance = $this->opening_balance + $totalIncome - $totalExpense + $totalAssets;
+            // Process library books (convert to account's currency)
+            $libraryBooks = $this->libraryBooks()
+                ->whereNull('deleted_at')
+                ->where('price', '>', 0)
+                ->with(['currency', 'financeAccount.currency'])
+                ->withCount(['copies as total_copies' => function ($builder) {
+                    $builder->whereNull('deleted_at');
+                }])
+                ->get();
+            
+            foreach ($libraryBooks as $book) {
+                $totalCopies = $book->total_copies ?? 0;
+                if ($totalCopies <= 0) {
+                    continue;
+                }
+                
+                $bookValue = (float) $book->price * $totalCopies;
+                
+                // Determine book's currency
+                $bookCurrencyId = $book->currency_id;
+                if (!$bookCurrencyId && $book->financeAccount && $book->financeAccount->currency_id) {
+                    // Use account's currency if book doesn't have one
+                    $bookCurrencyId = $book->financeAccount->currency_id;
+                }
+                if (!$bookCurrencyId) {
+                    // If no currency found, use account currency as fallback
+                    $bookCurrencyId = $this->currency_id;
+                }
+                
+                // Convert to account's currency
+                if ($bookCurrencyId && $bookCurrencyId !== $this->currency_id) {
+                    $rate = ExchangeRate::getRate(
+                        $this->organization_id,
+                        $bookCurrencyId,
+                        $this->currency_id,
+                        $book->created_at ? $book->created_at->toDateString() : null
+                    );
+                    if ($rate !== null) {
+                        $bookValue = $bookValue * $rate;
+                    }
+                    // If rate not found, use original value (graceful degradation)
+                }
+                
+                $totalLibraryBooks += $bookValue;
+            }
+            
+            $this->current_balance = $this->opening_balance + $totalIncome - $totalExpense + $totalAssets + $totalLibraryBooks;
         }
         
         $this->save();

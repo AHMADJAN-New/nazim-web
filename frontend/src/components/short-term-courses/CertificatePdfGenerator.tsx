@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, Award, Eye, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Download, Award, Eye, Image as ImageIcon, Printer } from 'lucide-react';
 import {
   useCertificateTemplates,
   useGenerateCertificate,
@@ -32,27 +32,39 @@ import { format } from 'date-fns';
 // Import pdfmake for Arabic support - handle both default and named exports
 import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
 const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
-// Use regular pdfmake vfs_fonts (compatible with pdfmake-arabic)
+
+// Make pdfMake available globally for vfs_fonts
+if (typeof window !== 'undefined') {
+  (window as any).pdfMake = pdfMake;
+}
+
+// Use regular pdfmake vfs_fonts instead of pdfmake-arabic's (which has issues)
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 // Set up fonts for Arabic/Pashto support
 try {
-  // Initialize VFS - regular pdfmake vfs_fonts exports vfs directly
+  // Initialize VFS using Object.assign to avoid read-only error
   if (pdfFonts && typeof pdfFonts === 'object') {
-    (pdfMake as any).vfs = pdfFonts;
-  } else if (pdfFonts && (pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
-    (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
+    // pdfmake's vfs_fonts exports the VFS directly
+    // Use Object.assign to merge VFS instead of direct assignment
+    if (!(pdfMake as any).vfs) {
+      (pdfMake as any).vfs = {};
+    }
+    Object.assign((pdfMake as any).vfs, pdfFonts);
   } else if (pdfFonts && (pdfFonts as any).vfs) {
-    (pdfMake as any).vfs = (pdfFonts as any).vfs;
+    if (!(pdfMake as any).vfs) {
+      (pdfMake as any).vfs = {};
+    }
+    Object.assign((pdfMake as any).vfs, (pdfFonts as any).vfs);
   }
 
   // Register fonts properly - pdfmake-arabic includes Roboto by default
-  if (!pdfMake.fonts) {
-    pdfMake.fonts = {};
+  if (!(pdfMake as any).fonts) {
+    (pdfMake as any).fonts = {};
   }
 
   // Check what fonts are available in VFS
-  const vfs = pdfMake.vfs || {};
+  const vfs = (pdfMake as any).vfs || {};
   const vfsKeys = Object.keys(vfs);
 
   // Find Roboto font files in VFS
@@ -89,8 +101,8 @@ try {
   const robotoBoldItalic = findRobotoFont('bolditalic');
 
   // Register Roboto fonts (default pdfmake fonts, available in pdfmake-arabic)
-  if (!pdfMake.fonts!['Roboto']) {
-    pdfMake.fonts!['Roboto'] = {
+  if (!(pdfMake as any).fonts!['Roboto']) {
+    (pdfMake as any).fonts!['Roboto'] = {
       normal: robotoRegular,
       bold: robotoBold,
       italics: robotoItalic,
@@ -100,9 +112,9 @@ try {
 
   // Register Arial as an alias to Roboto (since Arial might be requested but not available)
   // Use the same font configuration as Roboto
-  if (!pdfMake.fonts!['Arial']) {
-    const robotoFont = pdfMake.fonts!['Roboto'];
-    pdfMake.fonts!['Arial'] = {
+  if (!(pdfMake as any).fonts!['Arial']) {
+    const robotoFont = (pdfMake as any).fonts!['Roboto'];
+    (pdfMake as any).fonts!['Arial'] = {
       normal: robotoFont.normal,
       bold: robotoFont.bold,
       italics: robotoFont.italics,
@@ -178,19 +190,19 @@ async function loadCustomFonts() {
       const boldBase64Data = arrayBufferToBase64(boldArrayBuffer);
       
       // Add fonts to VFS (Virtual File System) - required for pdfmake
-      if (!pdfMake.vfs) {
-        pdfMake.vfs = {};
+      if (!(pdfMake as any).vfs) {
+        (pdfMake as any).vfs = {};
       }
       
-      pdfMake.vfs['BahijNassim-Regular.ttf'] = regularBase64Data;
-      pdfMake.vfs['BahijNassim-Bold.ttf'] = boldBase64Data;
+      (pdfMake as any).vfs['BahijNassim-Regular.ttf'] = regularBase64Data;
+      (pdfMake as any).vfs['BahijNassim-Bold.ttf'] = boldBase64Data;
       
       // Register fonts with pdfmake (reference VFS paths)
-      if (!pdfMake.fonts) {
-        pdfMake.fonts = {};
+      if (!(pdfMake as any).fonts) {
+        (pdfMake as any).fonts = {};
       }
       
-      pdfMake.fonts['BahijNassim'] = {
+      (pdfMake as any).fonts['BahijNassim'] = {
         normal: 'BahijNassim-Regular.ttf',
         bold: 'BahijNassim-Bold.ttf',
       };
@@ -820,9 +832,9 @@ export function CertificatePdfGenerator({
 
     // Default font family
     let defaultFontFamily = 'Roboto';
-    if (isRtl && fontsLoaded && pdfMake.fonts?.['BahijNassim']) {
+    if (isRtl && fontsLoaded && (pdfMake as any).fonts?.['BahijNassim']) {
       defaultFontFamily = 'BahijNassim'; // Will use bold variant when bold: true is set
-    } else if (layout.fontFamily && (pdfMake.fonts?.[layout.fontFamily] || pdfMake.fonts?.['Arial'])) {
+    } else if (layout.fontFamily && ((pdfMake as any).fonts?.[layout.fontFamily] || (pdfMake as any).fonts?.['Arial'])) {
       defaultFontFamily = layout.fontFamily;
     }
     
@@ -840,11 +852,11 @@ export function CertificatePdfGenerator({
       if (fieldFont?.fontFamily) {
         const requestedFont = fieldFont.fontFamily;
         // Check if the font is available in pdfmake
-        if (pdfMake.fonts?.[requestedFont]) {
+        if ((pdfMake as any).fonts?.[requestedFont]) {
           fieldFontFamily = requestedFont;
-        } else if (requestedFont === 'Bahij Nassim' && pdfMake.fonts?.['BahijNassim']) {
+        } else if (requestedFont === 'Bahij Nassim' && (pdfMake as any).fonts?.['BahijNassim']) {
           fieldFontFamily = 'BahijNassim';
-        } else if (pdfMake.fonts?.['Roboto']) {
+        } else if ((pdfMake as any).fonts?.['Roboto']) {
           fieldFontFamily = 'Roboto'; // Fallback to Roboto
         }
       }
@@ -1362,6 +1374,59 @@ export function CertificatePdfGenerator({
               <ImageIcon className="h-4 w-4 mr-2" />
             )}
             Download Image
+          </Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              if (!selectedTemplateId || !certificateData) return;
+              setIsGenerating(true);
+              try {
+                // Generate certificate first if needed
+                await generateCertificate.mutateAsync({
+                  courseStudentId,
+                  templateId: selectedTemplateId,
+                });
+
+                // Get updated certificate data
+                const updatedData = await certificateTemplatesApi.getCertificateData(courseStudentId) as CertificateData;
+                const backgroundUrl = updatedData?.background_url || certificateData.background_url;
+                let backgroundImageBase64: string | null = null;
+                if (backgroundUrl) {
+                  backgroundImageBase64 = await convertImageToBase64(backgroundUrl);
+                }
+
+                // Generate PDF blob
+                const docDefinition = await buildPdfDocument(updatedData || certificateData, selectedTemplate!, backgroundImageBase64);
+                pdfMake.createPdf(docDefinition).getBlob((blob) => {
+                  // Open PDF in new window and print
+                  const url = URL.createObjectURL(blob);
+                  const printWindow = window.open(url, '_blank');
+                  if (printWindow) {
+                    printWindow.onload = () => {
+                      setTimeout(() => {
+                        printWindow.print();
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                      }, 500);
+                    };
+                  }
+                  setIsGenerating(false);
+                }, (error) => {
+                  console.error('[CertificatePdfGenerator] Print failed:', error);
+                  setIsGenerating(false);
+                });
+              } catch (error) {
+                console.error('[CertificatePdfGenerator] Print failed:', error);
+                setIsGenerating(false);
+              }
+            }}
+            disabled={!selectedTemplateId || isGenerating || dataLoading}
+          >
+            {isGenerating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Printer className="h-4 w-4 mr-2" />
+            )}
+            Print
           </Button>
           <Button
             onClick={() => handleGeneratePdf(true)}

@@ -629,6 +629,37 @@ export function TemplateForm({
     }
   }, [draggingBlockId, resizingBlockId, handleMouseMove, handleMouseUp]);
 
+  // Initialize rich text mode based on existing content (HTML-like)
+  useEffect(() => {
+    const initial = template?.body_text || "";
+    if (initial && /<\s*\/?\s*[a-zA-Z][^>]*>/.test(initial)) {
+      setUseRichText(true);
+    }
+  }, [template?.id]);
+
+  // When using blocks, keep body_text synced so preview/save uses the same data
+  useEffect(() => {
+    if (!useBlocks) return;
+    const joined = blocks.map((b) => b.text || "").join("\n\n");
+    setValue("body_text", joined, { shouldValidate: true, shouldDirty: true });
+  }, [blocks, setValue, useBlocks]);
+
+  // When toggling blocks on, initialize blocks from existing body text (split on blank lines)
+  useEffect(() => {
+    if (!useBlocks) return;
+    const current = (bodyText || "").trim();
+    if (!current) return;
+    if (blocks.length > 1) return;
+    if (blocks[0]?.text?.trim()) return;
+
+    const parts = current.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    if (parts.length <= 1) {
+      setBlocks([{ id: "block-1", text: current }]);
+      return;
+    }
+    setBlocks(parts.map((text, idx) => ({ id: `block-${idx + 1}`, text })));
+  }, [useBlocks, bodyText, blocks]);
+
   const updateBlockProperty = (blockId: string, property: keyof FieldPosition, value: any) => {
     const currentPosition = fieldPositions[blockId] || { x: 50, y: 50, fontSize: fontSize, fontFamily: fontFamily, textAlign: 'right', width: 40, height: 10 };
     setFieldPositions(prev => ({

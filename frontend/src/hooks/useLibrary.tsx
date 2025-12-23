@@ -113,6 +113,11 @@ export const useCreateLibraryBook = () => {
       showToast.success('toast.library.bookSaved');
       await qc.invalidateQueries({ queryKey: ['library-books'] });
       await qc.refetchQueries({ queryKey: ['library-books'] });
+      // Invalidate finance queries to refresh account balances and dashboard
+      await qc.invalidateQueries({ queryKey: ['finance-accounts'] });
+      await qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
+      await qc.refetchQueries({ queryKey: ['finance-accounts'] });
+      await qc.refetchQueries({ queryKey: ['finance-dashboard'] });
     },
     onError: () => showToast.error('toast.library.bookSaveFailed'),
   });
@@ -122,9 +127,15 @@ export const useUpdateLibraryBook = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => libraryBooksApi.update(id, data),
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success('toast.library.bookUpdated');
-      qc.invalidateQueries({ queryKey: ['library-books'] });
+      await qc.invalidateQueries({ queryKey: ['library-books'] });
+      await qc.refetchQueries({ queryKey: ['library-books'] });
+      // Invalidate finance queries to refresh account balances and dashboard
+      await qc.invalidateQueries({ queryKey: ['finance-accounts'] });
+      await qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
+      await qc.refetchQueries({ queryKey: ['finance-accounts'] });
+      await qc.refetchQueries({ queryKey: ['finance-dashboard'] });
     },
     onError: () => showToast.error('toast.library.bookUpdateFailed'),
   });
@@ -134,9 +145,15 @@ export const useDeleteLibraryBook = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => libraryBooksApi.remove(id),
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast.success('toast.library.bookRemoved');
-      qc.invalidateQueries({ queryKey: ['library-books'] });
+      await qc.invalidateQueries({ queryKey: ['library-books'] });
+      await qc.refetchQueries({ queryKey: ['library-books'] });
+      // Invalidate finance queries to refresh account balances and dashboard
+      await qc.invalidateQueries({ queryKey: ['finance-accounts'] });
+      await qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
+      await qc.refetchQueries({ queryKey: ['finance-accounts'] });
+      await qc.refetchQueries({ queryKey: ['finance-dashboard'] });
     },
     onError: () => showToast.error('toast.library.bookRemoveFailed'),
   });

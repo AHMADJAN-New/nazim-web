@@ -51,18 +51,16 @@ class DocumentRenderingService
         $repeatLetterhead = $template->repeat_letterhead_on_pages ?? true;
         $tablePayload = $options['table_payload'] ?? null;
         $forBrowser = $options['for_browser'] ?? false; // For browser preview vs PDF generation
-        $fontFamily = $template->font_family ?? 'Arial';
-        $fontSize = $template->font_size ?? 14;
-        $frontendUrl = $options['frontend_url'] ?? null; // Frontend URL passed from request
 
-        // Build CSS styles with font settings
-        $styles = $this->buildStyles($pageLayout, $forBrowser, $fontFamily, $fontSize, $frontendUrl);
+        // Build CSS styles
+        $styles = $this->buildStyles($pageLayout, $forBrowser);
 
         // Build letterhead background CSS
         $letterheadStyles = $this->buildLetterheadStyles($letterhead, $repeatLetterhead, $forBrowser);
 
-        // Build letterhead HTML element (for browser preview)
-        $letterheadHtml = $forBrowser ? $this->buildLetterheadHtml($letterhead) : '';
+        // Build letterhead HTML element (for both browser preview and PDF generation)
+        // PDF generation with Browsershot needs the HTML element for proper rendering
+        $letterheadHtml = $this->buildLetterheadHtml($letterhead, $forBrowser);
 
         // Build watermark HTML
         $watermarkHtml = $this->buildWatermarkHtml($watermark, $forBrowser);
@@ -72,7 +70,7 @@ class DocumentRenderingService
 
         // Build content HTML with positioning support
         $fieldPositions = $template->field_positions ?? [];
-        $contentHtml = $this->formatBodyTextWithPositions($bodyText, $fieldPositions, $fontFamily, $fontSize) . $tableHtml;
+        $contentHtml = $this->formatBodyTextWithPositions($bodyText, $fieldPositions) . $tableHtml;
         
         // Add wrapper class based on whether we have positioned blocks
         $hasPositionedBlocks = !empty($fieldPositions);
@@ -84,7 +82,7 @@ class DocumentRenderingService
         $cspMeta = '';
 
         $safeLayoutClass = preg_replace('/[^a-zA-Z0-9_-]/', '', $pageLayout) ?: 'A4_portrait';
-        return $this->buildHtmlDocument($styles, $letterheadStyles, $letterheadHtml, $watermarkHtml, $contentHtml, $cspMeta, $wrapperClass, $forBrowser, $safeLayoutClass, $frontendUrl);
+        return $this->buildHtmlDocument($styles, $letterheadStyles, $letterheadHtml, $watermarkHtml, $contentHtml, $cspMeta, $wrapperClass, $forBrowser, $safeLayoutClass);
     }
 
     /**
@@ -199,8 +197,7 @@ class DocumentRenderingService
         string $cspMeta = '',
         string $wrapperClass = 'content-wrapper',
         bool $forBrowser = false,
-        string $pageLayout = 'A4_portrait',
-        ?string $frontendUrl = null
+        string $pageLayout = 'A4_portrait'
     ): string {
         $bodyInner = $forBrowser
             ? <<<HTML
@@ -221,10 +218,6 @@ HTML
         {$contentHtml}
     </div>
 HTML;
-
-        // Note: We don't use <base> tag because:
-        // 1. CSP blocks base-uri for iframes with srcDoc
-        // 2. We're using absolute URLs for fonts anyway, so base tag isn't needed
 
         return <<<HTML
 <!DOCTYPE html>
@@ -274,55 +267,11 @@ HTML;
      * Build CSS styles for the document
      *
      * @param string $pageLayout
-     * @param bool $forBrowser
-     * @param string $fontFamily
-     * @param int $fontSize
      * @return string
      */
-    private function buildStyles(string $pageLayout, bool $forBrowser = false, string $fontFamily = 'Arial', int $fontSize = 14, ?string $frontendUrl = null): string
+    private function buildStyles(string $pageLayout, bool $forBrowser = false): string
     {
         $pageSize = $this->getPageSize($pageLayout);
-
-        // Font face declarations for custom fonts (needed in iframe preview)
-        // Use absolute URLs with proper encoding for spaces in filenames
-        $fontFaces = '';
-        if ($forBrowser) {
-            // Use provided frontend URL, or fall back to config/env
-            $fontFrontendUrl = $frontendUrl ?? config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173'));
-            $fontFrontendUrl = rtrim($fontFrontendUrl, '/');
-            
-            // URL encode font filenames (they contain spaces)
-            $titrBold = urlencode('Bahij Titr-Bold.woff');
-            $nassimRegular = urlencode('Bahij Nassim-Regular.woff');
-            $nassimBold = urlencode('Bahij Nassim-Bold.woff');
-            
-            $fontFaces = <<<CSS
-        /* Bahij Fonts - Local fonts for Arabic text */
-        @font-face {
-            font-family: 'Bahij Titr';
-            src: url('{$fontFrontendUrl}/fonts/{$titrBold}') format('woff');
-            font-weight: bold;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Bahij Nassim';
-            src: url('{$fontFrontendUrl}/fonts/{$nassimRegular}') format('woff');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Bahij Nassim';
-            src: url('{$fontFrontendUrl}/fonts/{$nassimBold}') format('woff');
-            font-weight: bold;
-            font-style: normal;
-            font-display: swap;
-        }
-CSS;
-        }
 
         $browserPreviewCss = '';
         if ($forBrowser) {
@@ -348,14 +297,29 @@ CSS;
         .page-layout-Letter_landscape { aspect-ratio: 11 / 8.5; }
 
         .page .content-wrapper {
+            position: relative;
             width: 100%;
             height: 100%;
             min-height: 100%;
             background: transparent !important;
+            z-index: 10 !important; /* Ensure content is above letterhead - use !important */
+            padding: 20px;
+            isolation: isolate; /* Create new stacking context */
         }
 
         .page .content-wrapper.positioned-content {
             padding: 0;
+        }
+        
+        /* Ensure text is visible and on top */
+        .page .content-wrapper p,
+        .page .content-wrapper div:not(.letterhead-background):not(.letterhead-header):not(.watermark),
+        .page .content-wrapper span,
+        .page .content-wrapper .rich-text,
+        .page .content-wrapper .positioned-text-block {
+            color: #000000 !important;
+            position: relative;
+            z-index: 11 !important;
         }
 
         .page .watermark {
@@ -374,43 +338,10 @@ CSS;
 CSS;
         }
 
-        // Font face declarations for custom fonts (needed in iframe preview)
-        $fontFaces = '';
-        if ($forBrowser) {
-            $fontFaces = <<<CSS
-        /* Bahij Fonts - Local fonts for Arabic text */
-        @font-face {
-            font-family: 'Bahij Titr';
-            src: url('/fonts/Bahij Titr-Bold.woff') format('woff');
-            font-weight: bold;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Bahij Nassim';
-            src: url('/fonts/Bahij Nassim-Regular.woff') format('woff');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Bahij Nassim';
-            src: url('/fonts/Bahij Nassim-Bold.woff') format('woff');
-            font-weight: bold;
-            font-style: normal;
-            font-display: swap;
-        }
-
-CSS;
-        }
-
         return <<<CSS
-        {$fontFaces}
         @page {
             size: {$pageSize};
-            margin: 25mm 20mm 20mm 20mm;
+            margin: 0; /* Remove margins - letterhead should cover full page */
         }
 
         * {
@@ -419,22 +350,42 @@ CSS;
             box-sizing: border-box;
         }
 
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
         body {
-            font-family: {$this->getFontFamilyCss($fontFamily)};
-            font-size: {$fontSize}px;
+            font-family: 'Arial', 'Helvetica', 'DejaVu Sans', 'Liberation Sans', sans-serif;
+            font-size: 14px;
             line-height: 1.8;
             color: #000;
             direction: rtl;
             text-align: right;
-            position: relative; /* Required for absolute positioning of text blocks */
+            position: relative; /* Required for absolute positioning of text blocks and letterhead */
             min-height: 100vh;
+            width: 100%;
         }
 
         .content-wrapper {
             position: relative;
-            z-index: 10; /* Above letterhead */
+            z-index: 10 !important; /* Above letterhead - use !important */
             min-height: 100vh;
             background: transparent !important; /* Don't cover letterhead - force transparent */
+            padding: 25mm 20mm 20mm 20mm; /* Add page margins to content area */
+            isolation: isolate; /* Create new stacking context */
+        }
+        
+        /* Ensure content text is visible and on top */
+        .content-wrapper p,
+        .content-wrapper div:not(.letterhead-background):not(.letterhead-header):not(.watermark),
+        .content-wrapper span,
+        .content-wrapper .rich-text {
+            color: #000000 !important;
+            position: relative;
+            z-index: 11 !important; /* Above letterhead */
         }
         
         /* Ensure positioned text blocks don't have solid backgrounds that cover letterhead */
@@ -551,6 +502,47 @@ CSS;
             max-width: 500px;
         }
 
+        /* Letterhead positioning for PDF generation */
+        /* Letterhead should cover the entire page area - positioned relative to body */
+        .letterhead-background,
+        .letterhead-header {
+            position: absolute; /* Absolute positioning relative to body */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 100vh;
+            z-index: 1 !important; /* Behind content - use !important to ensure it stays behind */
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .letterhead-background img,
+        .letterhead-header img,
+        .letterhead-background object,
+        .letterhead-header object {
+            width: 100%;
+            height: 100%;
+            min-height: 100vh;
+            display: block;
+            object-fit: cover;
+        }
+
+        .letterhead-header {
+            min-height: auto;
+            height: auto;
+            bottom: auto; /* Header only at top */
+        }
+
+        .letterhead-header img,
+        .letterhead-header object {
+            min-height: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
         {$browserPreviewCss}
 CSS;
     }
@@ -576,35 +568,11 @@ CSS;
 
         $css = '';
         
-        // @page rule only works for PDF generation, not for browser preview
-        // For browser preview, letterhead is rendered via HTML element (buildLetterheadHtml)
-        if (!$forBrowser) {
-            // For PDF generation, use base64 data URL (Browsershot doesn't allow file:// URLs)
-            try {
-                $fileContents = Storage::get($letterhead->file_path);
-                $base64 = base64_encode($fileContents);
-                $fileUrl = "data:{$mimeType};base64,{$base64}";
-            } catch (\Exception $e) {
-                \Log::error("Failed to base64 encode letterhead {$letterhead->id} for PDF generation: {$e->getMessage()}", [
-                    'letterhead_id' => $letterhead->id,
-                    'file_path' => $letterhead->file_path,
-                    'exception' => $e,
-                ]);
-                // Return empty CSS if encoding fails
-                return '';
-            }
-            $css .= <<<CSS
-        @page {
-            background: url('{$fileUrl}') no-repeat center top;
-            background-size: 100% auto;
-        }
-
-        body {
-            background: url('{$fileUrl}') {$backgroundRepeat} center top;
-            background-size: 100% auto;
-        }
-CSS;
-        } else {
+        // CRITICAL: Browsershot doesn't allow file:// URLs in CSS either
+        // Use base64 data URLs for both browser preview and PDF generation
+        // Since letterheads are rendered via HTML elements (buildLetterheadHtml), 
+        // we only need minimal CSS for browser preview
+        if ($forBrowser) {
             // For browser preview, use a different approach with letterhead container
             $css .= <<<CSS
         html, body {
@@ -621,9 +589,16 @@ CSS;
             inset: 0;
             width: 100%;
             height: 100%;
-            z-index: 1; /* Behind content but visible */
+            z-index: 1 !important; /* Behind content but visible - use !important to ensure it stays behind */
             pointer-events: none;
             overflow: hidden;
+        }
+        
+        /* Ensure letterhead children also stay behind */
+        .letterhead-background *,
+        .letterhead-header * {
+            z-index: 1 !important;
+            pointer-events: none;
         }
 
         .letterhead-background {
@@ -695,7 +670,7 @@ CSS;
      * @param Letterhead|null $letterhead
      * @return string
      */
-    private function buildLetterheadHtml(?Letterhead $letterhead): string
+    private function buildLetterheadHtml(?Letterhead $letterhead, bool $forBrowser = true): string
     {
         if (!$letterhead) {
             if (config('app.debug')) {
@@ -731,23 +706,46 @@ HTML;
 
         $mimeType = Storage::mimeType($letterhead->file_path);
         $isPdf = $mimeType === 'application/pdf';
+        
+        // Fallback MIME type detection based on file extension if Storage::mimeType() fails
+        if (!$mimeType || $mimeType === 'application/octet-stream') {
+            $extension = strtolower(pathinfo($letterhead->file_path, PATHINFO_EXTENSION));
+            $mimeTypeMap = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                'svg' => 'image/svg+xml',
+                'pdf' => 'application/pdf',
+            ];
+            $mimeType = $mimeTypeMap[$extension] ?? 'image/jpeg'; // Default to JPEG if unknown
+            $isPdf = $extension === 'pdf' || $mimeType === 'application/pdf';
+        }
+        
+        // CRITICAL: Browsershot doesn't allow file:// URLs in HTML for security reasons
+        // Always use base64 data URLs for both browser preview and PDF generation
         $dataUrl = '';
-
-        // FIXED: Base64 encode ALL letterhead types (images AND PDFs) for browser preview
-        // This fixes the iframe authentication issue - iframe cannot make authenticated requests
         try {
             $fileContents = Storage::get($letterhead->file_path);
+            if (empty($fileContents)) {
+                \Log::warning("Letterhead file is empty", [
+                    'letterhead_id' => $letterhead->id,
+                    'file_path' => $letterhead->file_path,
+                ]);
+                return '';
+            }
             $base64 = base64_encode($fileContents);
             $dataUrl = "data:{$mimeType};base64,{$base64}";
         } catch (\Exception $e) {
-            // CRITICAL: Never use URL fallback for browser preview - it will fail in iframe
-            // Log error and return empty string instead
-            \Log::error("Failed to base64 encode letterhead {$letterhead->id} for browser preview: {$e->getMessage()}", [
+            \Log::error("Failed to base64 encode letterhead {$letterhead->id}: {$e->getMessage()}", [
                 'letterhead_id' => $letterhead->id,
                 'file_path' => $letterhead->file_path,
+                'mime_type' => $mimeType,
+                'for_browser' => $forBrowser,
                 'exception' => $e,
             ]);
-            // Return empty string - better to show no letterhead than break authentication
+            // Return empty string - better to show no letterhead than break PDF generation
             return '';
         }
         
@@ -758,10 +756,10 @@ HTML;
         $class = $isBackground ? 'letterhead-background' : 'letterhead-header';
         $extraStyle = $isBackground ? 'min-height: 100%;' : '';
 
-        // For PDF letterheads in browser preview:
-        // Prefer rendering the PDF directly (same approach as the designer view).
-        // If Imagick is available, we can optionally convert the first page to an image.
-        if ($isPdf && $isBackground) {
+        // For PDF letterheads, try to convert to image using Imagick (works for both browser and PDF generation)
+        // This provides better rendering quality and avoids Browsershot's file:// URL restrictions
+        // Convert ALL PDF letterheads to images for better compatibility
+        if ($isPdf) {
             try {
                 $pdfPath = Storage::path($letterhead->file_path);
                 $imageData = null;
@@ -770,11 +768,22 @@ HTML;
                 if (extension_loaded('imagick')) {
                     try {
                         $imagick = new \Imagick();
-                        $imagick->setResolution(150, 150); // 150 DPI for good quality
+                        $imagick->setResolution(300, 300); // 300 DPI for high quality PDF generation
                         $imagick->readImage($pdfPath . '[0]'); // Read first page only [0]
                         $imagick->setImageFormat('png');
-                        $imagick->setImageCompressionQuality(90);
-                        $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE); // Remove alpha for better compatibility
+                        $imagick->setImageCompressionQuality(95); // Higher quality
+                        
+                        // For PDF generation, use white background and remove alpha
+                        // For browser preview, preserve transparency
+                        if (!$forBrowser) {
+                            $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE); // Remove alpha for PDFs
+                            $imagick->setImageBackgroundColor(new \ImagickPixel('white')); // White background for PDFs
+                            $imagick->setImageCompose(\Imagick::COMPOSITE_OVER);
+                            $imagick->setImageMatte(false);
+                        } else {
+                            $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_ACTIVATE); // Preserve alpha for browser
+                        }
+                        
                         $imageData = $imagick->getImageBlob();
                         $imagick->clear();
                         $imagick->destroy();
@@ -783,10 +792,20 @@ HTML;
                             $base64Image = base64_encode($imageData);
                             $imageDataUrl = "data:image/png;base64,{$base64Image}";
                             
+                            // Log success for debugging
+                            if (config('app.debug')) {
+                                \Log::debug("Successfully converted PDF letterhead to image", [
+                                    'letterhead_id' => $letterhead->id,
+                                    'image_size' => strlen($imageData),
+                                    'for_browser' => $forBrowser,
+                                ]);
+                            }
+                            
                             // Return image instead of placeholder
+                            $objectFit = $isBackground ? 'cover' : 'contain';
                             return <<<HTML
-        <div class="{$class}" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: hidden; background-color: #ffffff; {$extraStyle}">
-            <img src="{$imageDataUrl}" alt="Letterhead" style="width: 100%; height: 100%; object-fit: cover; display: block; min-height: 100%;" onerror="console.error('Letterhead image failed to load'); this.style.display='none';" />
+        <div class="{$class}" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1 !important; pointer-events: none; overflow: hidden; background-color: #ffffff; {$extraStyle}">
+            <img src="{$imageDataUrl}" alt="Letterhead" style="width: 100%; height: 100%; object-fit: {$objectFit}; display: block; min-height: 100vh; position: absolute; top: 0; left: 0;" />
         </div>
 HTML;
                         }
@@ -803,31 +822,168 @@ HTML;
                     ]);
                 }
             } catch (\Exception $e) {
-                \Log::warning("Failed to convert PDF letterhead to image for browser preview: {$e->getMessage()}", [
+                \Log::warning("Failed to convert PDF letterhead to image: {$e->getMessage()}", [
                     'letterhead_id' => $letterhead->id,
                     'file_path' => $letterhead->file_path,
+                    'for_browser' => $forBrowser,
                     'exception' => $e,
                 ]);
             }
             
-            // Fallback: render the PDF itself (designer-like behavior)
-            return <<<HTML
+            // Fallback for PDF letterheads:
+            // - For browser preview: Use object tag (works in iframes)
+            // - For PDF generation: Log error and return empty (Browsershot can't render PDF objects in generated PDFs)
+            if ($forBrowser) {
+                // Browser preview: Use object tag to embed PDF
+                return <<<HTML
         <div class="{$class}" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: hidden; background-color: #ffffff; {$extraStyle}">
-            <object class="letterhead-pdf" data="{$dataUrl}" type="application/pdf" style="width: 100%; height: 100%; display: block;">
-                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; background: #f8f8f8; color: #555; font-size: 12px; text-align: center;">
-                    PDF preview not supported in this browser. It will appear correctly in the generated PDF.
+            <object data="{$dataUrl}" type="application/pdf" style="width: 100%; height: 100%; display: block; opacity: 0.95;">
+                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; background: #f8f8f8; color: #555; font-size: 12px; text-align: center; border: 1px dashed #ccc;">
+                    <div>
+                        <p style="margin: 0 0 8px 0; font-weight: 500;">PDF Letterhead</p>
+                        <p style="margin: 0; font-size: 11px; opacity: 0.8;">PDF preview not supported in this browser. The letterhead will appear correctly in the generated PDF document.</p>
+                    </div>
                 </div>
             </object>
         </div>
 HTML;
-        }
-
-        // For image letterheads, use img tag with base64 data URL
-        // Add inline styles to ensure visibility
-        return <<<HTML
-        <div class="{$class}" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: hidden; background-color: #ffffff; {$extraStyle}">
-            <img src="{$dataUrl}" alt="Letterhead" style="width: 100%; height: 100%; object-fit: cover; display: block; min-height: 100%;" onerror="console.error('Letterhead image failed to load'); this.style.display='none';" />
+            } else {
+                // PDF generation: Without Imagick, try to convert PDF to image using Ghostscript
+                // If Ghostscript is not available, use object tag (Browsershot might render it)
+                $objectFit = $isBackground ? 'cover' : 'contain';
+                
+                // Try Ghostscript conversion first (if available)
+                $gsAvailable = false;
+                $imageDataUrl = null;
+                
+                try {
+                    // Check if Ghostscript is available
+                    // Try multiple methods to detect Ghostscript
+                    $gsCheck = @shell_exec('gs --version 2>&1');
+                    $gsPath = trim(@shell_exec('which gs') ?: @shell_exec('where gs') ?: '');
+                    
+                    // Check if gs command exists and returns a version (any version string means it's installed)
+                    $hasGs = false;
+                    if (!empty($gsCheck) && !str_contains($gsCheck, 'not found') && !str_contains($gsCheck, 'command not found')) {
+                        $hasGs = true;
+                    } elseif (!empty($gsPath) && file_exists($gsPath)) {
+                        $hasGs = true;
+                    }
+                    
+                    if ($hasGs) {
+                        $gsAvailable = true;
+                        
+                        // Convert PDF first page to PNG using Ghostscript
+                        $pdfPath = Storage::path($letterhead->file_path);
+                        $tempPngPath = sys_get_temp_dir() . '/' . Str::uuid()->toString() . '.png';
+                        
+                        // Use Ghostscript to convert PDF to PNG at 300 DPI
+                        $command = sprintf(
+                            'gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r300 -dFirstPage=1 -dLastPage=1 -sOutputFile="%s" "%s" 2>&1',
+                            escapeshellarg($tempPngPath),
+                            escapeshellarg($pdfPath)
+                        );
+                        
+                        $output = [];
+                        $returnVar = 0;
+                        @exec($command, $output, $returnVar);
+                        
+                        if ($returnVar === 0 && file_exists($tempPngPath) && filesize($tempPngPath) > 0) {
+                            $imageData = file_get_contents($tempPngPath);
+                            if ($imageData && strlen($imageData) > 0) {
+                                $base64Image = base64_encode($imageData);
+                                $imageDataUrl = "data:image/png;base64,{$base64Image}";
+                                
+                                // Clean up temp file
+                                @unlink($tempPngPath);
+                                
+                                \Log::info("Successfully converted PDF letterhead to image using Ghostscript", [
+                                    'letterhead_id' => $letterhead->id,
+                                    'image_size' => strlen($imageData),
+                                    'pdf_path' => $pdfPath,
+                                ]);
+                            } else {
+                                \Log::warning("Ghostscript conversion produced empty image", [
+                                    'letterhead_id' => $letterhead->id,
+                                    'temp_path' => $tempPngPath,
+                                    'command_output' => implode("\n", $output),
+                                ]);
+                                @unlink($tempPngPath);
+                            }
+                        } else {
+                            \Log::warning("Ghostscript conversion failed", [
+                                'letterhead_id' => $letterhead->id,
+                                'return_code' => $returnVar,
+                                'command_output' => implode("\n", $output),
+                                'temp_path_exists' => file_exists($tempPngPath),
+                            ]);
+                            if (file_exists($tempPngPath)) {
+                                @unlink($tempPngPath);
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Ghostscript conversion failed for letterhead {$letterhead->id}: {$e->getMessage()}", [
+                        'letterhead_id' => $letterhead->id,
+                    ]);
+                }
+                
+                // If Ghostscript conversion succeeded, use the image
+                if ($imageDataUrl) {
+                    return <<<HTML
+        <div class="{$class}" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1 !important; pointer-events: none; overflow: hidden; background-color: #ffffff; {$extraStyle}">
+            <img src="{$imageDataUrl}" alt="Letterhead" style="width: 100%; height: 100%; object-fit: {$objectFit}; display: block; min-height: 100vh; position: absolute; top: 0; left: 0;" />
         </div>
+HTML;
+                }
+                
+                // Fallback: Use embed tag with PDF data URL
+                // Note: Browsershot may not render PDF embeds properly without Imagick/Ghostscript
+                // This is a last resort - the letterhead may not appear
+                \Log::error("Imagick and Ghostscript not available for PDF letterhead conversion - letterhead may not render", [
+                    'letterhead_id' => $letterhead->id,
+                    'file_path' => $letterhead->file_path,
+                    'recommendation' => 'Install Imagick PHP extension (php-imagick) or Ghostscript (gs) for PDF letterhead support',
+                ]);
+                
+                // Use embed tag as last resort - Browsershot might render it, but likely won't work
+                // Show a visible placeholder so user knows letterhead should be there
+                $objectFit = $isBackground ? 'cover' : 'contain';
+                return <<<HTML
+        <div class="{$class}" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1 !important; pointer-events: none; overflow: hidden; background-color: #ffffff; {$extraStyle}">
+            <embed src="{$dataUrl}" type="application/pdf" style="width: 100%; height: 100%; min-height: 100vh; position: absolute; top: 0; left: 0; border: none; pointer-events: none;" />
+            <!-- Fallback: Show warning if PDF doesn't load -->
+            <div style="position: absolute; inset: 0; background: rgba(255, 255, 255, 0.95); display: flex; align-items: center; justify-content: center; color: #999; font-size: 11px; text-align: center; padding: 20px; z-index: 2;">
+                <div>
+                    <p style="margin: 0 0 8px 0; font-weight: 500;">⚠️ PDF Letterhead</p>
+                    <p style="margin: 0; font-size: 10px; opacity: 0.8;">Imagick or Ghostscript required for PDF letterhead rendering. Letterhead may not appear in generated PDF.</p>
+                </div>
+            </div>
+        </div>
+HTML;
+            }
+        }
+        
+        // For image letterheads, use CSS background-image with base64 data URL
+        // This works for both browser preview and PDF generation
+        $backgroundSize = $isBackground ? 'cover' : 'contain';
+        $backgroundPosition = $isBackground ? 'center center' : 'center top';
+        
+        // Log for debugging
+        if (config('app.debug')) {
+            \Log::debug("Rendering image letterhead", [
+                'letterhead_id' => $letterhead->id,
+                'is_background' => $isBackground,
+                'for_browser' => $forBrowser,
+                'data_url_length' => strlen($dataUrl),
+            ]);
+        }
+        
+        return <<<HTML
+        <div 
+            class="{$class}" 
+            style="position: absolute; inset: 0; width: 100%; height: 100%; min-height: 100vh; z-index: 1 !important; pointer-events: none; overflow: hidden; background-color: #ffffff; background-image: url('{$dataUrl}'); background-size: {$backgroundSize}; background-position: {$backgroundPosition}; background-repeat: no-repeat; {$extraStyle}"
+        ></div>
 HTML;
     }
 
@@ -844,21 +1000,21 @@ HTML;
             return '';
         }
 
-        // For both browser preview and PDF generation, embed image as base64
-        // Browsershot doesn't allow file:// URLs, so we must use data URLs for PDF generation too
+        // CRITICAL: Browsershot doesn't allow file:// URLs
+        // Always use base64 data URLs for both browser preview and PDF generation
         try {
             $fileContents = Storage::get($watermark->file_path);
             $mimeType = Storage::mimeType($watermark->file_path);
             $base64 = base64_encode($fileContents);
             $fileUrl = "data:{$mimeType};base64,{$base64}";
         } catch (\Exception $e) {
-            // Log error and return empty string instead
             \Log::error("Failed to base64 encode watermark {$watermark->id}: {$e->getMessage()}", [
                 'watermark_id' => $watermark->id,
                 'file_path' => $watermark->file_path,
+                'for_browser' => $forBrowser,
                 'exception' => $e,
             ]);
-            // Return empty string - better to show no watermark than break generation
+            // Return empty string - better to show no watermark than break PDF generation
             return '';
         }
 
@@ -875,19 +1031,16 @@ HTML;
      * @param string $bodyText
      * @return string
      */
-    private function formatBodyText(string $bodyText, string $fontFamily = 'Arial', int $fontSize = 14): string
+    private function formatBodyText(string $bodyText): string
     {
         $bodyText = trim($bodyText);
         if ($bodyText === '') {
             return '';
         }
 
-        $fontFamilyCss = $this->getFontFamilyCss($fontFamily);
-        $style = sprintf('font-family: %s; font-size: %dpx;', $fontFamilyCss, $fontSize);
-
         // Rich text (HTML) support
         if ($this->isLikelyHtml($bodyText)) {
-            return sprintf('<div class="rich-text" style="%s">%s</div>', $style, $this->sanitizeRichHtml($bodyText));
+            return '<div class="rich-text">' . $this->sanitizeRichHtml($bodyText) . '</div>';
         }
 
         // Convert line breaks to paragraphs
@@ -897,7 +1050,7 @@ HTML;
         foreach ($lines as $line) {
             $line = trim($line);
             if (!empty($line)) {
-                $paragraphs[] = sprintf('<p style="%s">%s</p>', $style, nl2br(e($line)));
+                $paragraphs[] = '<p>' . nl2br(e($line)) . '</p>';
             }
         }
 
@@ -913,11 +1066,11 @@ HTML;
      * @param array $fieldPositions Format: { "block-1": { "x": 50, "y": 30, "fontSize": 14, "fontFamily": "Arial" }, ... }
      * @return string
      */
-    private function formatBodyTextWithPositions(string $bodyText, array $fieldPositions, string $defaultFontFamily = 'Arial', int $defaultFontSize = 14): string
+    private function formatBodyTextWithPositions(string $bodyText, array $fieldPositions): string
     {
-        // If no positions defined, use default formatting with font settings
+        // If no positions defined, use default formatting
         if (empty($fieldPositions)) {
-            return $this->formatBodyText($bodyText, $defaultFontFamily, $defaultFontSize);
+            return $this->formatBodyText($bodyText);
         }
 
         // Parse body_text into blocks (separated by double newlines or block markers)
@@ -944,8 +1097,8 @@ HTML;
                 // Render with absolute positioning
                 $x = (float) $position['x']; // Percentage (0-100)
                 $y = (float) $position['y']; // Percentage (0-100)
-                $fontSize = isset($position['fontSize']) ? (int) $position['fontSize'] : $defaultFontSize;
-                $fontFamily = isset($position['fontFamily']) ? e($position['fontFamily']) : $defaultFontFamily;
+                $fontSize = isset($position['fontSize']) ? (int) $position['fontSize'] : 14;
+                $fontFamily = isset($position['fontFamily']) ? e($position['fontFamily']) : 'Arial';
                 $textAlign = isset($position['textAlign']) ? e($position['textAlign']) : 'right';
                 $color = isset($position['color']) ? e($position['color']) : '#000000';
                 $width = isset($position['width']) ? (float) $position['width'] : 40;
@@ -960,13 +1113,12 @@ HTML;
                 // Convert percentage to absolute positioning
                 // Position is relative to body (which has position: relative)
                 // Use left/top for absolute positioning with transform for centering
-                $fontFamilyCss = $this->getFontFamilyCss($fontFamily);
                 $style = sprintf(
                     'position: absolute; left: %.2f%%; top: %.2f%%; transform: translate(-50%%, -50%%); font-size: %dpx; font-family: %s; text-align: %s; color: %s; z-index: 10; %s %s %s box-sizing: border-box; overflow: hidden; background-color: transparent; padding: 0;',
                     $x,
                     $y,
                     $fontSize,
-                    $fontFamilyCss,
+                    $fontFamily,
                     $textAlign,
                     $color,
                     $widthStyle,
@@ -983,13 +1135,11 @@ HTML;
                     $formattedText
                 );
             } else {
-                // No position defined - use default formatting with template font settings
-                $fontFamilyCss = $this->getFontFamilyCss($defaultFontFamily);
-                $style = sprintf('font-family: %s; font-size: %dpx;', $fontFamilyCss, $defaultFontSize);
+                // No position defined - use default formatting
                 if ($this->isLikelyHtml($blockText)) {
-                    $positionedBlocks[] = sprintf('<div class="rich-text" style="%s">%s</div>', $style, $this->sanitizeRichHtml($blockText));
+                    $positionedBlocks[] = '<div class="rich-text">' . $this->sanitizeRichHtml($blockText) . '</div>';
                 } else {
-                    $positionedBlocks[] = sprintf('<p style="%s">%s</p>', $style, nl2br(e($blockText)));
+                    $positionedBlocks[] = '<p>' . nl2br(e($blockText)) . '</p>';
                 }
             }
 
@@ -1067,7 +1217,8 @@ HTML;
         $letterheadType = $letterhead->letterhead_type ?? 'background';
 
         if ($letterheadType === 'watermark') {
-            // Use base64 data URL instead of file:// (Browsershot doesn't allow file:// URLs)
+            // CRITICAL: Browsershot doesn't allow file:// URLs
+            // Use base64 data URL for legacy method as well
             try {
                 $fileContents = Storage::get($letterhead->file_path);
                 $mimeType = Storage::mimeType($letterhead->file_path);
@@ -1080,7 +1231,7 @@ HTML;
                     e($letterhead->name)
                 );
             } catch (\Exception $e) {
-                \Log::error("Failed to base64 encode letterhead {$letterhead->id} in processLetterheadFile: {$e->getMessage()}", [
+                \Log::error("Failed to base64 encode letterhead for legacy watermark: {$e->getMessage()}", [
                     'letterhead_id' => $letterhead->id,
                     'file_path' => $letterhead->file_path,
                     'exception' => $e,
@@ -1102,13 +1253,26 @@ HTML;
      */
     public function replaceTemplateVariables(string $text, array $variables): string
     {
+        // Convert all values to strings and handle null/empty values
+        $normalizedVariables = [];
         foreach ($variables as $key => $value) {
+            // Convert to string, handle null/empty
+            $normalizedValue = $value !== null && $value !== '' ? (string) $value : '';
+            $normalizedVariables[$key] = $normalizedValue;
+        }
+
+        // Replace known variables
+        foreach ($normalizedVariables as $key => $value) {
             // Replace {{variable}} patterns (with various spacing)
             $text = str_replace("{{$key}}", $value, $text);
             $text = str_replace("{{ {$key} }}", $value, $text);
             $text = str_replace("{{ {$key}}}", $value, $text);
             $text = str_replace("{{{$key} }}", $value, $text);
         }
+
+        // Replace any remaining {{variable}} patterns with empty string to prevent garbled text
+        // This regex matches {{variable}} with optional spaces
+        $text = preg_replace('/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/', '', $text);
 
         return $text;
     }
@@ -1188,22 +1352,5 @@ HTML;
 </body>
 </html>
 HTML;
-    }
-
-    /**
-     * Get CSS font-family string with fallbacks for the given font name
-     *
-     * @param string $fontFamily
-     * @return string
-     */
-    private function getFontFamilyCss(string $fontFamily): string
-    {
-        // Map font names to CSS with proper fallbacks
-        $fontMap = [
-            'Bahij Nassim' => '"Bahij Nassim", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif',
-            'Bahij Titr' => '"Bahij Titr", "Noto Sans Arabic", "Arial Unicode MS", "Tahoma", "Arial", sans-serif',
-        ];
-
-        return $fontMap[$fontFamily] ?? "'{$fontFamily}', 'Arial', 'Helvetica', 'DejaVu Sans', 'Liberation Sans', sans-serif";
     }
 }

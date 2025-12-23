@@ -30,6 +30,8 @@ import {
     BookOpen,
     MoreVertical,
     Package,
+    Minus,
+    Plus,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -42,7 +44,8 @@ import {
     type ChartConfig,
 } from '@/components/ui/chart';
 import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { Switch } from '@/components/ui/switch';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
 
@@ -56,6 +59,7 @@ export default function FinanceDashboard() {
     const { t } = useLanguage();
     const navigate = useNavigate();
     const { data: dashboard, isLoading, error } = useFinanceDashboard();
+    const [includeAssetsAndBooks, setIncludeAssetsAndBooks] = useState(true);
 
     // Calculate totals and percentages
     const incomeTotal = useMemo(() => {
@@ -148,25 +152,81 @@ export default function FinanceDashboard() {
 
             {/* Summary Cards Row */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-                {/* Total Balance */}
-                <Card className="relative overflow-visible">
+                {/* Total Balance - Enhanced with Toggle */}
+                <Card className="relative overflow-visible col-span-1 sm:col-span-2 lg:col-span-2">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
-                            {t('finance.totalBalance') || 'My Balance'}
+                            {t('finance.totalBalance') || 'Total Balance'}
                         </CardTitle>
                         <div className="p-2 rounded-lg bg-blue-500/10 flex-shrink-0">
                             <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                         </div>
                     </CardHeader>
-                    <CardContent className="pb-3">
-                        <div className="text-2xl sm:text-3xl font-bold mb-2 break-words">
-                            {formatCurrency(dashboard.summary.totalBalance)}
+                    <CardContent className="pb-3 space-y-4">
+                        {/* Main Total Display */}
+                        <div className="space-y-1">
+                            <div className="text-3xl sm:text-4xl font-bold break-words">
+                                {formatCurrency(
+                                    includeAssetsAndBooks 
+                                        ? dashboard.summary.totalBalance 
+                                        : (dashboard.summary.totalCashBalance ?? dashboard.summary.totalBalance - dashboard.summary.totalAssetsValue - (dashboard.totalLibraryBooksValue || 0))
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Switch
+                                    checked={includeAssetsAndBooks}
+                                    onCheckedChange={setIncludeAssetsAndBooks}
+                                    className="scale-75"
+                                />
+                                <span>
+                                    {includeAssetsAndBooks 
+                                        ? t('finance.includeAssetsAndBooks') || 'Including assets & books'
+                                        : t('finance.cashOnly') || 'Cash only'
+                                    }
+                                </span>
+                            </div>
                         </div>
-                        <div className="text-xs text-muted-foreground mb-2 break-words line-clamp-2">
-                            {t('finance.assetsIncludedInBalance') || 'Includes cash and assets value'}
+
+                        {/* Breakdown */}
+                        <div className="space-y-2 pt-2 border-t">
+                            <div className="flex items-center justify-between text-sm">
+                                <div className="flex items-center gap-2">
+                                    <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span className="text-muted-foreground">{t('finance.cashBalance') || 'Cash Balance'}</span>
+                                </div>
+                                <span className="font-medium">
+                                    {formatCurrency(dashboard.summary.totalCashBalance ?? dashboard.summary.totalBalance - dashboard.summary.totalAssetsValue - (dashboard.totalLibraryBooksValue || 0))}
+                                </span>
+                            </div>
+                            {dashboard.summary.totalAssetsValue > 0 && (
+                                <div className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <Package className="h-3.5 w-3.5 text-amber-600" />
+                                        <span className="text-muted-foreground">{t('finance.assets') || 'Assets'}</span>
+                                    </div>
+                                    <span className={`font-medium ${includeAssetsAndBooks ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                                        {includeAssetsAndBooks ? <Plus className="h-3 w-3 inline mr-1" /> : <Minus className="h-3 w-3 inline mr-1" />}
+                                        {formatCurrency(dashboard.summary.totalAssetsValue)}
+                                    </span>
+                                </div>
+                            )}
+                            {(dashboard.totalLibraryBooksValue || 0) > 0 && (
+                                <div className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+                                        <span className="text-muted-foreground">{t('finance.libraryBooks') || 'Library Books'}</span>
+                                    </div>
+                                    <span className={`font-medium ${includeAssetsAndBooks ? 'text-blue-600' : 'text-muted-foreground'}`}>
+                                        {includeAssetsAndBooks ? <Plus className="h-3 w-3 inline mr-1" /> : <Minus className="h-3 w-3 inline mr-1" />}
+                                        {formatCurrency(dashboard.totalLibraryBooksValue || 0)}
+                                    </span>
+                                </div>
+                            )}
                         </div>
-                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+
+                        {/* Trend Indicator */}
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm pt-2 border-t">
                             <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
                             <span className="text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
                                 {balanceChange.toFixed(1)}%
@@ -181,19 +241,10 @@ export default function FinanceDashboard() {
                             variant="outline" 
                             size="sm" 
                             className="w-full justify-start whitespace-normal sm:whitespace-nowrap"
-                            onClick={() => navigate('/finance/income')}
+                            onClick={() => navigate('/finance/accounts')}
                         >
-                            <ArrowUpRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
-                            <span className="text-left">{t('finance.addIncome') || 'Add Income'}</span>
-                        </Button>
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full justify-start whitespace-normal sm:whitespace-nowrap"
-                            onClick={() => navigate('/finance/expenses')}
-                        >
-                            <ArrowDownRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
-                            <span className="text-left">{t('finance.addExpense') || 'Add Expense'}</span>
+                            <ChevronRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                            <span className="text-left">{t('finance.viewAccounts') || 'View Accounts'}</span>
                         </Button>
                     </CardFooter>
                 </Card>
@@ -255,6 +306,40 @@ export default function FinanceDashboard() {
                         >
                             <ChevronRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
                             <span className="text-left">{t('finance.viewAssets') || 'View Assets'}</span>
+                        </Button>
+                    </CardFooter>
+                </Card>
+
+                {/* Library Books Value */}
+                <Card className="relative overflow-visible">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 pointer-events-none" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+                        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground break-words flex-1 min-w-0">
+                            {t('finance.totalLibraryBooksValue') || 'Total Library Books Value'}
+                        </CardTitle>
+                        <div className="p-2 rounded-lg bg-blue-500/10 flex-shrink-0">
+                            <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pb-3">
+                        <div className="text-2xl sm:text-3xl font-bold mb-2 text-blue-600 break-words">
+                            {formatCurrency(dashboard.totalLibraryBooksValue || dashboard.summary.totalLibraryBooksValue || 0)}
+                        </div>
+                        <div className="text-xs text-muted-foreground mb-2 break-words">
+                            {dashboard.libraryBooksByAccount && dashboard.libraryBooksByAccount.length > 0 && (
+                                <span>{dashboard.libraryBooksByAccount.length} {t('finance.account') || 'account(s)'}</span>
+                            )}
+                        </div>
+                    </CardContent>
+                    <CardFooter className="pt-3 pb-3">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full justify-start whitespace-normal sm:whitespace-nowrap"
+                            onClick={() => navigate('/library/books')}
+                        >
+                            <ChevronRight className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                            <span className="text-left">{t('finance.viewLibraryBooks') || 'View Library Books'}</span>
                         </Button>
                     </CardFooter>
                 </Card>
@@ -746,6 +831,69 @@ export default function FinanceDashboard() {
                         </CardContent>
                     </Card>
                 )}
+
+                {/* Library Books Breakdown */}
+                {(dashboard.libraryBooksByAccount && dashboard.libraryBooksByAccount.length > 0) || 
+                 (dashboard.libraryBooksByCurrency && dashboard.libraryBooksByCurrency.length > 0) ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">{t('finance.libraryBooksBreakdown') || 'Library Books Breakdown'}</CardTitle>
+                            <CardDescription>
+                                {t('finance.libraryBooksBreakdownDescription') || 'Library books value by account and currency'}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* Library Books by Account */}
+                            {dashboard.libraryBooksByAccount && dashboard.libraryBooksByAccount.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-semibold mb-3">
+                                        {t('finance.libraryBooksByAccount') || 'Library Books by Account'}
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {dashboard.libraryBooksByAccount.map((item) => (
+                                            <div key={item.accountId} className="flex items-center justify-between p-3 rounded-lg border">
+                                                <div>
+                                                    <div className="font-medium">{item.accountName}</div>
+                                                    <div className="text-xs text-muted-foreground">{item.currencyCode}</div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="font-semibold">{formatCurrency(item.totalValue)}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Library Books by Currency */}
+                            {dashboard.libraryBooksByCurrency && dashboard.libraryBooksByCurrency.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-semibold mb-3">
+                                        {t('finance.libraryBooksByCurrency') || 'Library Books by Currency'}
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {dashboard.libraryBooksByCurrency.map((item) => (
+                                            <div key={item.currencyId} className="flex items-center justify-between p-3 rounded-lg border">
+                                                <div>
+                                                    <div className="font-medium">{item.currencyCode}</div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {t('finance.originalValue') || 'Original'}: {formatCurrency(item.totalValue)}
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="font-semibold">{formatCurrency(item.convertedValue)}</div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {t('finance.converted') || 'Converted'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                ) : null}
             </div>
         </div>
     );

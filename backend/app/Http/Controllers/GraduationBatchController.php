@@ -298,6 +298,10 @@ class GraduationBatchController extends Controller
 
         $validated = $request->validate([
             'template_id' => 'required|uuid|exists:certificate_templates,id',
+            'starting_number' => 'nullable|integer|min:1',
+            'prefix' => 'nullable|string|max:20',
+            'certificate_type' => 'nullable|string|max:50',
+            'padding' => 'nullable|integer|min:1|max:10',
         ]);
 
         try {
@@ -306,7 +310,11 @@ class GraduationBatchController extends Controller
                 $validated['template_id'],
                 $profile->organization_id,
                 $schoolId,
-                (string) $user->id
+                (string) $user->id,
+                $validated['starting_number'] ?? null,
+                $validated['prefix'] ?? null,
+                $validated['certificate_type'] ?? null,
+                $validated['padding'] ?? null
             );
 
             return response()->json(['issued' => $certificates]);
