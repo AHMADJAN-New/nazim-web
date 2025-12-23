@@ -603,4 +603,43 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/dms/files', [DocumentFilesController::class, 'index']);
     Route::post('/dms/files', [DocumentFilesController::class, 'store']);
     Route::get('/dms/files/{id}/download', [DocumentFilesController::class, 'download']);
+
+    // ============================================
+    // Events & Guests Module
+    // ============================================
+
+    // Event Types (Form Designer)
+    Route::get('/event-types', [\App\Http\Controllers\EventTypeController::class, 'index']);
+    Route::post('/event-types', [\App\Http\Controllers\EventTypeController::class, 'store']);
+    Route::get('/event-types/{id}', [\App\Http\Controllers\EventTypeController::class, 'show']);
+    Route::put('/event-types/{id}', [\App\Http\Controllers\EventTypeController::class, 'update']);
+    Route::delete('/event-types/{id}', [\App\Http\Controllers\EventTypeController::class, 'destroy']);
+    Route::get('/event-types/{id}/fields', [\App\Http\Controllers\EventTypeController::class, 'getFields']);
+    Route::post('/event-types/{id}/fields', [\App\Http\Controllers\EventTypeController::class, 'saveFields']);
+
+    // Events
+    Route::get('/events', [\App\Http\Controllers\EventController::class, 'index']);
+    Route::post('/events', [\App\Http\Controllers\EventController::class, 'store']);
+    Route::get('/events/{id}', [\App\Http\Controllers\EventController::class, 'show']);
+    Route::put('/events/{id}', [\App\Http\Controllers\EventController::class, 'update']);
+    Route::delete('/events/{id}', [\App\Http\Controllers\EventController::class, 'destroy']);
+    Route::get('/events/{id}/stats', [\App\Http\Controllers\EventController::class, 'stats']);
+
+    // Event Guests
+    Route::get('/events/{eventId}/guests', [\App\Http\Controllers\EventGuestController::class, 'index']);
+    Route::get('/events/{eventId}/guests/lookup', [\App\Http\Controllers\EventGuestController::class, 'lookup']);
+    Route::post('/events/{eventId}/guests', [\App\Http\Controllers\EventGuestController::class, 'store']);
+    Route::post('/events/{eventId}/guests/import', [\App\Http\Controllers\EventGuestController::class, 'import']);
+    Route::get('/events/{eventId}/guests/{guestId}', [\App\Http\Controllers\EventGuestController::class, 'show']);
+    Route::put('/events/{eventId}/guests/{guestId}', [\App\Http\Controllers\EventGuestController::class, 'update']);
+    Route::delete('/events/{eventId}/guests/{guestId}', [\App\Http\Controllers\EventGuestController::class, 'destroy']);
+
+    // Guest Photo Upload
+    Route::post('/guests/{guestId}/photo', [\App\Http\Controllers\EventGuestController::class, 'uploadPhoto']);
+
+    // Event Check-in
+    Route::post('/events/{eventId}/checkin', [\App\Http\Controllers\EventCheckinController::class, 'checkin']);
+    Route::get('/events/{eventId}/checkin/history', [\App\Http\Controllers\EventCheckinController::class, 'history']);
+    Route::post('/events/{eventId}/checkin/lookup', [\App\Http\Controllers\EventCheckinController::class, 'lookupByToken']);
+    Route::delete('/events/{eventId}/checkin/{checkinId}', [\App\Http\Controllers\EventCheckinController::class, 'undoCheckin']);
 });

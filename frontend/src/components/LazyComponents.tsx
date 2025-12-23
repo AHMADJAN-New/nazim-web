@@ -126,6 +126,15 @@ export const ArchiveSearchPage = lazy(() => import('@/pages/dms/ArchiveSearch'))
 export const DmsReportsPage = lazy(() => import('@/pages/dms/DmsReports'));
 export const DmsSettingsPage = lazy(() => import('@/pages/dms/DmsSettings'));
 
+// Events Module
+export const EventTypesPage = lazy(() => import('@/pages/events/EventTypesPage'));
+export const EventsPage = lazy(() => import('@/pages/events/EventsPage'));
+export const EventDetailPage = lazy(() => import('@/pages/events/EventDetailPage'));
+export const GuestAddPage = lazy(() => import('@/pages/events/GuestAddPage'));
+export const GuestDetailPage = lazy(() => import('@/pages/events/GuestDetailPage'));
+export const GuestEditPage = lazy(() => import('@/pages/events/GuestEditPage'));
+export const CheckinPage = lazy(() => import('@/pages/events/CheckinPage'));
+
 // Re-export loading components for backward compatibility
 export { PageSkeleton, DashboardSkeleton } from '@/components/ui/loading';
 

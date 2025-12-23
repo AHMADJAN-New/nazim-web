@@ -117,6 +117,16 @@ const navigationItems: NavigationItem[] = [
       { title: "Reports", url: "/dms/reports", icon: BarChart3 },
       { title: "Settings", url: "/dms/settings", icon: Settings },
     ],
+  },
+  {
+    titleKey: "events",
+    icon: Calendar,
+    badge: { text: "New", variant: "default" },
+    roles: ["admin", "staff"],
+    children: [
+      { title: "All Events", url: "/events", icon: Calendar },
+      { title: "Event Types", url: "/events/types", icon: Settings },
+    ],
   }
 ];
 
