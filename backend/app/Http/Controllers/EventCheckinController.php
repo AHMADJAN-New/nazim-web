@@ -29,13 +29,22 @@ class EventCheckinController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('events.update')) {
+            if (!$user->hasPermissionTo('event_checkins.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        // Check if user is event-specific (locked to one event)
+        $isEventUser = $profile->is_event_user ?? false;
+        $userEventId = $profile->event_id ?? null;
+        
+        // Event-specific users can only access their assigned event
+        if ($isEventUser && $userEventId && $eventId !== $userEventId) {
+            return response()->json(['error' => 'Access denied. You can only access your assigned event.'], 403);
+        }
+        
         // Verify event
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
@@ -203,13 +212,22 @@ class EventCheckinController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('events.read')) {
+            if (!$user->hasPermissionTo('event_checkins.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        // Check if user is event-specific (locked to one event)
+        $isEventUser = $profile->is_event_user ?? false;
+        $userEventId = $profile->event_id ?? null;
+        
+        // Event-specific users can only access their assigned event
+        if ($isEventUser && $userEventId && $eventId !== $userEventId) {
+            return response()->json(['error' => 'Access denied. You can only access your assigned event.'], 403);
+        }
+        
         // Verify event
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
@@ -272,11 +290,28 @@ class EventCheckinController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        try {
+            if (!$user->hasPermissionTo('event_checkins.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         $validated = $request->validate([
             'qr_token' => 'required_without:guest_code|string',
             'guest_code' => 'required_without:qr_token|string',
         ]);
 
+        // Check if user is event-specific (locked to one event)
+        $isEventUser = $profile->is_event_user ?? false;
+        $userEventId = $profile->event_id ?? null;
+        
+        // Event-specific users can only access their assigned event
+        if ($isEventUser && $userEventId && $eventId !== $userEventId) {
+            return response()->json(['error' => 'Access denied. You can only access your assigned event.'], 403);
+        }
+        
         // Verify event
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
@@ -334,7 +369,7 @@ class EventCheckinController extends Controller
         }
 
         try {
-            if (!$user->hasPermissionTo('events.update')) {
+            if (!$user->hasPermissionTo('event_checkins.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
