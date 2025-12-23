@@ -1526,6 +1526,328 @@ Sidebar component
 - Default language is English (`'en'`)
 - Language switcher is available in both sidebar and header
 
+## Date Conversion & Calendar System
+
+**CRITICAL: The application supports multiple calendar systems with automatic conversion. ALL dates are stored as Gregorian in the database, but displayed in the user's preferred calendar.**
+
+### Supported Calendar Types
+- **Gregorian**: Standard Western calendar (default)
+- **Hijri Shamsi**: Solar/Persian calendar (used in Iran, Afghanistan)
+- **Hijri Qamari**: Lunar/Islamic calendar (used in Saudi Arabia and many Muslim countries)
+
+### Calendar Conversion Architecture
+
+#### Core Conversion Functions (`/src/lib/calendarConverter.ts`)
+
+**CRITICAL: Always use `convertToCalendar()` for date conversions. Never use direct calendar conversion functions unless absolutely necessary.**
+
+```typescript
+import { convertToCalendar } from '@/lib/calendarConverter';
+import type { CalendarType } from '@/lib/datePreferences';
+
+// Convert any date to the specified calendar
+const converted = convertToCalendar(date, 'hijri_qamari');
+// Returns: { year: 1445, month: 6, day: 15, calendar: 'hijri_qamari' }
+```
+
+#### Qamari Calendar Accuracy
+
+**CRITICAL: The Qamari calendar uses Umm al-Qura (most accurate) with fallbacks:**
+- **Primary**: `islamic-umalqura` (Umm al-Qura calendar, used in Saudi Arabia)
+- **Fallback 1**: `islamic-civil` (more widely supported)
+- **Fallback 2**: `islamic` (default Islamic calendar)
+
+The conversion function automatically tries these variants in order for maximum accuracy and compatibility.
+
+#### Date Validation Pattern
+
+**CRITICAL: ALL date formatting functions MUST validate Date objects before use:**
+
+```typescript
+export function formatDate(date: Date | string, locale: string = 'en-US'): string {
+  try {
+    // Ensure we have a valid Date object
+    let dateObj: Date;
+    if (date instanceof Date) {
+      dateObj = date;
+    } else if (typeof date === 'string') {
+      dateObj = new Date(date);
+    } else {
+      return 'Invalid Date';
+    }
+
+    // Check if dateObj is a valid Date instance
+    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+      return 'Invalid Date';
+    }
+
+    // ... rest of formatting logic
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid Date';
+  }
+}
+```
+
+**Key Rules:**
+- ✅ **ALWAYS** check if input is a `Date` instance
+- ✅ **ALWAYS** validate with `isNaN(dateObj.getTime())` after conversion
+- ✅ **ALWAYS** return `'Invalid Date'` for invalid inputs
+- ✅ **ALWAYS** handle both `Date` and `string` inputs
+- ❌ **NEVER** call Date methods without validation
+- ❌ **NEVER** assume input is always a valid Date
+
+#### Date Conversion Caching
+
+**CRITICAL: Date conversions are expensive. ALWAYS use caching for performance, especially in date pickers and calendar components.**
+
+```typescript
+// Cache for date conversions (Map-based)
+const conversionCache = new Map<string, { year: number; month: number; day: number; calendar: CalendarType }>();
+
+function getCachedConversion(date: Date, calendar: CalendarType) {
+  const cacheKey = `${date.getTime()}-${calendar}`;
+  if (conversionCache.has(cacheKey)) {
+    return conversionCache.get(cacheKey)!;
+  }
+  const converted = convertToCalendar(date, calendar);
+  conversionCache.set(cacheKey, converted);
+  
+  // Limit cache size to prevent memory leaks (keep last 1000 conversions)
+  if (conversionCache.size > 1000) {
+    const firstKey = conversionCache.keys().next().value;
+    conversionCache.delete(firstKey);
+  }
+  return converted;
+}
+```
+
+**Key Rules:**
+- ✅ **ALWAYS** use cache key format: `${date.getTime()}-${calendar}`
+- ✅ **ALWAYS** limit cache size (recommended: 1000 entries)
+- ✅ **ALWAYS** use `getTime()` for cache keys (not `toISOString()`)
+- ✅ **ALWAYS** implement cache eviction (FIFO or LRU)
+- ❌ **NEVER** cache without size limits (memory leak risk)
+
+### Date Formatting Functions (`/src/lib/calendarAdapter.ts`)
+
+**CRITICAL: Use these functions for ALL date display. They automatically use the user's calendar preference.**
+
+```typescript
+import { formatDate, formatDateTime, formatShortDate } from '@/lib/calendarAdapter';
+// OR (shimmed in utils.ts)
+import { formatDate, formatDateTime } from '@/lib/utils';
+
+// Format date (automatically uses user's calendar preference)
+const displayDate = formatDate(date); // "Rajab 15, 1445" or "July 15, 2024"
+
+// Format date with time
+const displayDateTime = formatDateTime(date); // "Rajab 15, 1445 3:30 PM"
+
+// Format short date
+const shortDate = formatShortDate(date); // "Rajab 15"
+```
+
+**Key Rules:**
+- ✅ **ALWAYS** use `formatDate()` / `formatDateTime()` from `calendarAdapter.ts` or `utils.ts`
+- ✅ **ALWAYS** validate Date objects before formatting (handled internally)
+- ✅ **ALWAYS** let the functions handle calendar conversion automatically
+- ❌ **NEVER** manually convert dates for display (use formatting functions)
+- ❌ **NEVER** use `toLocaleDateString()` directly (doesn't respect user preference)
+
+### Date Picker Components
+
+#### CalendarDatePicker (Standalone)
+
+**For non-form date inputs with direct state management:**
+
+```typescript
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+
+<CalendarDatePicker
+  date={value ? new Date(value) : undefined}
+  onDateChange={(date) => setValue(date ? date.toISOString().slice(0, 10) : '')}
+  placeholder="Select date"
+  disabled={isDisabled}
+  minDate={minDate}
+  maxDate={maxDate}
+/>
+```
+
+**Key Features:**
+- Displays dates in user's preferred calendar
+- Stores dates as Gregorian (for database compatibility)
+- Automatically converts between calendars
+- Includes "Today" button for quick selection
+- Caches date conversions for performance
+
+#### CalendarFormField (React Hook Form)
+
+**For react-hook-form integrated inputs:**
+
+```typescript
+import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { useForm } from 'react-hook-form';
+
+const { control } = useForm();
+
+<CalendarFormField
+  control={control}
+  name="start_date"
+  label="Start Date"
+  required
+/>
+```
+
+**Key Features:**
+- Integrates with React Hook Form
+- Automatic validation
+- Calendar-aware display
+- Stores as Gregorian in form data
+
+### Database Storage Pattern
+
+**CRITICAL: ALL dates MUST be stored as Gregorian in the database, regardless of display calendar.**
+
+```typescript
+// ✅ CORRECT: Store as Gregorian
+const payload = {
+  start_date: date.toISOString().slice(0, 10), // "2024-07-15" (Gregorian)
+  // ... other fields
+};
+
+// ❌ WRONG: Don't store converted calendar dates
+const payload = {
+  start_date: "1445-06-15", // Hijri Qamari - WRONG!
+};
+```
+
+**Key Rules:**
+- ✅ **ALWAYS** store dates as ISO strings (YYYY-MM-DD) in Gregorian
+- ✅ **ALWAYS** use `toISOString().slice(0, 10)` for date strings
+- ✅ **ALWAYS** convert to Date object: `new Date(dateString)`
+- ❌ **NEVER** store calendar-specific date formats
+- ❌ **NEVER** store dates in non-Gregorian calendars
+
+### Calendar State Management
+
+**The user's calendar preference is managed globally:**
+
+```typescript
+import { calendarState } from '@/lib/calendarState';
+
+// Get current calendar
+const currentCalendar = calendarState.get(); // 'gregorian' | 'hijri_shamsi' | 'hijri_qamari'
+
+// Subscribe to calendar changes
+useEffect(() => {
+  const unsubscribe = calendarState.subscribe((calendar) => {
+    // Handle calendar change
+  });
+  return unsubscribe;
+}, []);
+```
+
+**Key Rules:**
+- ✅ **ALWAYS** use `calendarState.get()` to get current calendar
+- ✅ **ALWAYS** subscribe to changes if component needs to react
+- ✅ **ALWAYS** unsubscribe in cleanup
+- ❌ **NEVER** hardcode calendar type
+- ❌ **NEVER** store calendar preference in component state (use global state)
+
+### Performance Best Practices
+
+**CRITICAL: Date conversions are expensive. Optimize with memoization and caching.**
+
+```typescript
+// ✅ CORRECT: Memoize converted dates
+const convertedDate = useMemo(() => {
+  return getCachedConversion(date, currentCalendar);
+}, [date, currentCalendar]);
+
+// ✅ CORRECT: Memoize formatted dates
+const formattedDate = useMemo(() => {
+  return formatDate(date);
+}, [date]); // formatDate internally uses calendarState
+
+// ❌ WRONG: Don't convert on every render
+const convertedDate = convertToCalendar(date, currentCalendar); // Recalculates every render!
+```
+
+**Key Rules:**
+- ✅ **ALWAYS** use `useMemo` for date conversions in components
+- ✅ **ALWAYS** use cached conversion functions
+- ✅ **ALWAYS** include calendar in memoization dependencies
+- ❌ **NEVER** convert dates in render without memoization
+- ❌ **NEVER** create new Date objects unnecessarily
+
+### Common Patterns
+
+#### Converting Form Date Strings to Date Objects
+
+```typescript
+// Form stores dates as strings (YYYY-MM-DD)
+const formData = {
+  start_date: "2024-07-15", // String from form
+};
+
+// Convert to Date for date picker
+const startDate = formData.start_date ? new Date(formData.start_date) : undefined;
+
+// Convert Date back to string for form submission
+const payload = {
+  start_date: startDate ? startDate.toISOString().slice(0, 10) : '',
+};
+```
+
+#### Displaying Dates in Tables
+
+```typescript
+// ✅ CORRECT: Use formatDate (automatically uses user's calendar)
+<TableCell>{formatDate(entry.date)}</TableCell>
+
+// ❌ WRONG: Don't use toLocaleDateString directly
+<TableCell>{entry.date.toLocaleDateString()}</TableCell>
+```
+
+#### Date Range Validation
+
+```typescript
+// Validate date ranges (always use Gregorian for comparison)
+const startDate = new Date(data.start_date);
+const endDate = new Date(data.end_date);
+
+if (endDate <= startDate) {
+  throw new Error('End date must be after start date');
+}
+```
+
+### Error Handling
+
+**CRITICAL: Always handle invalid dates gracefully:**
+
+```typescript
+try {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return 'Invalid Date';
+  }
+  return formatDate(date);
+} catch (error) {
+  console.error('Error formatting date:', error);
+  return 'Invalid Date';
+}
+```
+
+### Testing Calendar Conversion
+
+**When testing calendar features:**
+1. Test with all three calendar types (Gregorian, Shamsi, Qamari)
+2. Test date conversion accuracy (especially for Qamari)
+3. Test date picker with different calendars
+4. Test date formatting in different languages
+5. Test cache performance with many conversions
+
 ## Toast Notifications
 
 **CRITICAL: ALL toast messages MUST use the centralized `showToast` utility with translation keys. NEVER use `toast` directly from `sonner`.**
