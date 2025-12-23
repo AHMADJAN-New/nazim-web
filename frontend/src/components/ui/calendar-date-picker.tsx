@@ -8,6 +8,7 @@ import * as React from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/calendarAdapter';
@@ -74,6 +75,24 @@ interface CalendarDatePickerProps {
  * - Automatic conversion between calendars
  * - Drop-in replacement for existing date pickers
  */
+// Cache for date conversions to avoid recalculating
+const conversionCache = new Map<string, { year: number; month: number; day: number; calendar: CalendarType }>();
+
+function getCachedConversion(date: Date, calendar: CalendarType): { year: number; month: number; day: number; calendar: CalendarType } {
+  const cacheKey = `${date.getTime()}-${calendar}`;
+  if (conversionCache.has(cacheKey)) {
+    return conversionCache.get(cacheKey)!;
+  }
+  const converted = convertToCalendar(date, calendar);
+  conversionCache.set(cacheKey, converted);
+  // Limit cache size to prevent memory leaks (keep last 1000 conversions)
+  if (conversionCache.size > 1000) {
+    const firstKey = conversionCache.keys().next().value;
+    conversionCache.delete(firstKey);
+  }
+  return converted;
+}
+
 export function CalendarDatePicker({
   date,
   onDateChange,
@@ -103,9 +122,9 @@ export function CalendarDatePicker({
     return now;
   }, []);
 
-  // Convert today to the selected calendar
+  // Convert today to the selected calendar (cached)
   const todayConverted = React.useMemo(() => {
-    return convertToCalendar(today, currentCalendar);
+    return getCachedConversion(today, currentCalendar);
   }, [today, currentCalendar]);
 
   // Format the display value
@@ -123,12 +142,131 @@ export function CalendarDatePicker({
     setIsOpen(false);
   };
 
+  // Handle "Today" button click
+  const handleTodayClick = () => {
+    // Check if today is within min/max date constraints
+    if (minDate && today < minDate) return;
+    if (maxDate && today > maxDate) return;
+    
+    handleSelect(today);
+  };
+
+  // Check if today button should be disabled
+  const isTodayDisabled = React.useMemo(() => {
+    if (minDate && today < minDate) return true;
+    if (maxDate && today > maxDate) return true;
+    return false;
+  }, [today, minDate, maxDate]);
+
   // Update month when date changes externally
   React.useEffect(() => {
     if (date) {
       setMonth(date);
     }
   }, [date]);
+
+  // Hide the default labels that react-day-picker adds to dropdowns
+  React.useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        // Find and hide labels like ":Year" and ":Month"
+        const popover = document.querySelector('[role="dialog"]');
+        if (popover) {
+          const labels = popover.querySelectorAll('.rdp-caption_dropdowns > span, .rdp-caption_dropdowns > *:not(select):not(button)');
+          labels.forEach((label) => {
+            const text = label.textContent?.trim();
+            if (text === ':Year' || text === ':Month' || text?.includes(':')) {
+              (label as HTMLElement).style.display = 'none';
+            }
+          });
+        }
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  // Memoize month options to improve performance
+  // For Qamari calendar, month mapping changes with year, so we need to recalculate when year changes
+  const monthOptions = React.useMemo(() => {
+    if (currentCalendar === 'gregorian') {
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      return monthNames.map((name, idx) => ({ value: idx + 1, label: name }));
+    }
+
+    const monthNames = MONTH_NAMES[currentCalendar][language] || MONTH_NAMES[currentCalendar]['en'];
+    const currentYear = month instanceof Date ? month.getFullYear() : new Date().getFullYear();
+    const options: Array<{ value: number; label: string }> = [];
+
+    // For Qamari calendar, we need to use the current year because the month mapping changes each year
+    // For Shamsi, the mapping is more stable but we still use current year for accuracy
+    // Build a map of Gregorian month -> Calendar month name
+    const monthMap = new Map<number, string>();
+    const currentGregMonth = month instanceof Date ? month.getMonth() + 1 : new Date().getMonth() + 1;
+    const currentDay = month instanceof Date ? month.getDate() : new Date().getDate();
+    
+    // Check each Gregorian month to see which calendar month it corresponds to
+    for (let gMonth = 1; gMonth <= 12; gMonth++) {
+      // For the current Gregorian month, use the actual current day
+      // For other months, use day 15 to avoid edge cases at month boundaries
+      const testDay = (gMonth === currentGregMonth) ? currentDay : 15;
+      const testDate = new Date(currentYear, gMonth - 1, testDay);
+      const conv = getCachedConversion(testDate, currentCalendar);
+      const calendarMonthIdx = conv.month - 1; // Convert to 0-based index
+      
+      if (calendarMonthIdx >= 0 && calendarMonthIdx < monthNames.length) {
+        monthMap.set(gMonth, monthNames[calendarMonthIdx]);
+      }
+    }
+
+    // Convert map to array and sort by Gregorian month value
+    monthMap.forEach((label, value) => {
+      options.push({ value, label });
+    });
+    
+    // Sort by Gregorian month value to ensure correct order
+    options.sort((a, b) => a.value - b.value);
+
+    return options;
+  }, [currentCalendar, language, month instanceof Date ? month.getTime() : undefined]);
+
+  // Memoize year options to improve performance
+  const yearOptions = React.useMemo(() => {
+    if (currentCalendar === 'gregorian') {
+      const years: Array<{ value: number; label: number }> = [];
+      for (let year = 1900; year <= new Date().getFullYear() + 10; year++) {
+        years.push({ value: year, label: year });
+      }
+      return years;
+    }
+
+    // For non-Gregorian calendars, generate unique years
+    const yearsSet = new Set<number>();
+    for (let gYear = 1900; gYear <= new Date().getFullYear() + 10; gYear++) {
+      const testDate = new Date(gYear, 6, 15); // Use July 15 as a stable reference point
+      const conv = getCachedConversion(testDate, currentCalendar);
+      yearsSet.add(conv.year);
+    }
+    const uniqueYears = Array.from(yearsSet).sort((a, b) => a - b);
+
+    // Build year options mapping calendar years to Gregorian years
+    const options: Array<{ value: number; label: number }> = [];
+    uniqueYears.forEach((calendarYear) => {
+      // Find Gregorian year for this calendar year
+      for (let gYear = 1900; gYear <= new Date().getFullYear() + 10; gYear++) {
+        const testDate = new Date(gYear, 6, 15);
+        const conv = getCachedConversion(testDate, currentCalendar);
+        if (conv.year === calendarYear) {
+          options.push({ value: gYear, label: calendarYear });
+          break;
+        }
+      }
+    });
+
+    return options;
+  }, [currentCalendar]);
 
   // Get weekday names based on language
   // Week starts from Saturday, so we reorder: Sat, Sun, Mon, Tue, Wed, Thu, Fri
@@ -149,37 +287,34 @@ export function CalendarDatePicker({
 
   // Custom formatters for react-day-picker
   const formatters = React.useMemo(() => {
+    const baseFormatters = {
+      formatWeekdayName: (date: Date) => {
+        // Week starts from Saturday (6), so we need to map correctly
+        const dayIndex = date.getDay();
+        const weekdayIndex = dayIndex === 6 ? 0 : dayIndex + 1;
+        return weekdayNames[weekdayIndex] || weekdayNames[0];
+      },
+      // Hide labels for dropdown layout
+      formatMonthDropdown: () => '',
+      formatYearDropdown: () => '',
+    };
+
     if (currentCalendar === 'gregorian') {
       // For Gregorian, use default formatters but customize weekday names
-      return {
-        formatWeekdayName: (date: Date) => {
-          // Week starts from Saturday (6), so we need to map correctly
-          const dayIndex = date.getDay();
-          const weekdayIndex = dayIndex === 6 ? 0 : dayIndex + 1;
-          return weekdayNames[weekdayIndex] || weekdayNames[0];
-        },
-      };
+      return baseFormatters;
     }
 
     const monthNames = MONTH_NAMES[currentCalendar][language] || MONTH_NAMES[currentCalendar]['en'];
 
     return {
+      ...baseFormatters,
       formatCaption: (date: Date) => {
-        const converted = convertToCalendar(date, currentCalendar);
+        const converted = getCachedConversion(date, currentCalendar);
         return `${monthNames[converted.month - 1]} ${converted.year}`;
       },
       formatDay: (date: Date) => {
-        const converted = convertToCalendar(date, currentCalendar);
+        const converted = getCachedConversion(date, currentCalendar);
         return String(converted.day);
-      },
-      formatWeekdayName: (date: Date) => {
-        // Week starts from Saturday (6), so we need to map correctly
-        // date.getDay() returns: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
-        // weekdayNames array: [Sat, Sun, Mon, Tue, Wed, Thu, Fri]
-        const dayIndex = date.getDay();
-        // Map: 0->1 (Sun), 1->2 (Mon), 2->3 (Tue), 3->4 (Wed), 4->5 (Thu), 5->6 (Fri), 6->0 (Sat)
-        const weekdayIndex = dayIndex === 6 ? 0 : dayIndex + 1;
-        return weekdayNames[weekdayIndex] || weekdayNames[0];
       },
     };
   }, [currentCalendar, language, weekdayNames]);
@@ -202,7 +337,7 @@ export function CalendarDatePicker({
     return {
       ...baseModifiers,
       today: (date: Date) => {
-        const converted = convertToCalendar(date, currentCalendar);
+        const converted = getCachedConversion(date, currentCalendar);
         // Check if this date matches today in the converted calendar
         return (
           converted.year === todayConverted.year &&
@@ -236,7 +371,7 @@ export function CalendarDatePicker({
           {displayValue}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto min-w-[380px] overflow-hidden p-0" align="start">
+      <PopoverContent className="w-auto min-w-[380px] overflow-hidden p-0 [&_.rdp-caption_label]:hidden [&_.rdp-caption_dropdowns_*:not(select)]:hidden" align="start">
         <Calendar
           mode="single"
           selected={date}
@@ -256,121 +391,110 @@ export function CalendarDatePicker({
           toYear={new Date().getFullYear() + 10}
           month={month}
           onMonthChange={setMonth}
-          components={currentCalendar !== 'gregorian' ? {
-            Dropdown: (props: any) => {
-              const monthNames = MONTH_NAMES[currentCalendar][language] || MONTH_NAMES[currentCalendar]['en'];
+          classNames={{
+            caption: "flex justify-center pt-1 relative items-center gap-2",
+            caption_dropdowns: "flex gap-2 items-center justify-center [&_span]:hidden",
+            caption_label: "hidden",
+          }}
+          components={{
+            Caption: ({ displayMonth }: any) => {
+              // Custom caption that renders Select components directly
+              const currentMonth = month instanceof Date ? month : (date instanceof Date ? date : new Date());
+              const currentGregorianMonth = currentMonth.getMonth() + 1;
+              const currentGregorianYear = currentMonth.getFullYear();
               
-              // Handle month dropdown - react-day-picker v8 passes value as Gregorian month (1-12)
-              // Check if this is a month dropdown by examining props.value
-              const isMonthDropdown = 
-                props.name === 'month' || 
-                props.name === 'months' ||
-                (typeof props.value === 'number' && props.value >= 1 && props.value <= 12 && !props.name) ||
-                props['aria-label']?.toLowerCase().includes('month');
+              // For non-Gregorian calendars, show the actual calendar month name that the current date falls into
+              // Note: A Gregorian month can span parts of two calendar months, so we use the actual date's calendar month
+              let currentMonthLabel: string;
+              let selectValue: string;
               
-              if (isMonthDropdown) {
-                // props.value is the Gregorian month (1-12) from react-day-picker
-                const currentGregorianMonth = props.value || (month instanceof Date ? month.getMonth() + 1 : new Date().getMonth() + 1);
+              if (currentCalendar !== 'gregorian') {
+                // Convert the current date to the selected calendar to get the actual calendar month (cached)
+                const currentDateConverted = getCachedConversion(currentMonth, currentCalendar);
+                const monthNames = MONTH_NAMES[currentCalendar][language] || MONTH_NAMES[currentCalendar]['en'];
+                const calendarMonthName = monthNames[currentDateConverted.month - 1];
                 
-                return (
-                  <select
-                    {...props}
-                    value={currentGregorianMonth}
-                    onChange={(e) => {
-                      const selectedGregorianMonth = parseInt(e.target.value);
-                      // Update the month state
-                      const currentMonthDate = month instanceof Date ? month : (date instanceof Date ? date : new Date());
-                      const newMonth = new Date(currentMonthDate);
-                      newMonth.setMonth(selectedGregorianMonth - 1);
-                      setMonth(newMonth);
-                      // Call original onChange if provided
-                      if (props.onChange) {
-                        props.onChange(selectedGregorianMonth);
-                      }
-                    }}
-                    className="h-8 px-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary min-w-[140px]"
-                  >
-                    {monthNames.map((name, idx) => {
-                      // Find Gregorian month that corresponds to this calendar month
-                      for (let gMonth = 1; gMonth <= 12; gMonth++) {
-                        const testDate = new Date(2000, gMonth - 1, 15);
-                        const conv = convertToCalendar(testDate, currentCalendar);
-                        if (conv.month === idx + 1) {
-                          return (
-                            <option key={idx} value={gMonth}>
-                              {name}
-                            </option>
-                          );
-                        }
-                      }
-                      return null;
-                    })}
-                  </select>
-                );
+                // Use the current Gregorian month as the select value
+                // The monthOptions should now have the correct label for the current date
+                selectValue = String(currentGregorianMonth);
+                const currentMonthOption = monthOptions.find(opt => opt.value === currentGregorianMonth);
+                
+                // Use the option's label if it matches, otherwise use the actual calendar month name
+                if (currentMonthOption?.label === calendarMonthName) {
+                  currentMonthLabel = calendarMonthName;
+                } else {
+                  // The option might have a different label (from day 15), so use the actual calendar month name
+                  currentMonthLabel = calendarMonthName;
+                }
+              } else {
+                // For Gregorian, just use the Gregorian month
+                selectValue = String(currentGregorianMonth);
+                const currentMonthOption = monthOptions.find(opt => opt.value === currentGregorianMonth);
+                currentMonthLabel = currentMonthOption?.label || String(currentGregorianMonth);
               }
               
-              // Handle year dropdown - react-day-picker v8 passes value as Gregorian year
-              const isYearDropdown = 
-                props.name === 'years' || 
-                props.name === 'year' ||
-                (typeof props.value === 'number' && props.value >= 1900 && props.value <= 2100 && !props.name) ||
-                props['aria-label']?.toLowerCase().includes('year');
-              
-              if (isYearDropdown) {
-                // props.value is the Gregorian year from react-day-picker
-                const currentGregorianYear = props.value || (month instanceof Date ? month.getFullYear() : new Date().getFullYear());
-                
-                // Generate unique years in the converted calendar
-                const yearsSet = new Set<number>();
-                for (let gYear = 1900; gYear <= new Date().getFullYear() + 10; gYear++) {
-                  const testDate = new Date(gYear, 6, 15);
-                  const conv = convertToCalendar(testDate, currentCalendar);
-                  yearsSet.add(conv.year);
-                }
-                const uniqueYears = Array.from(yearsSet).sort((a, b) => a - b);
-                
-                return (
-                  <select
-                    {...props}
-                    value={currentGregorianYear}
-                    onChange={(e) => {
-                      const selectedGregorianYear = parseInt(e.target.value);
-                      // Update the month state
-                      const currentMonth = month instanceof Date ? month : (date instanceof Date ? date : new Date());
+              return (
+                <div className="flex justify-center pt-1 relative items-center gap-2">
+                  <Select
+                    value={String(currentGregorianYear)}
+                    onValueChange={(value) => {
+                      const selectedGregorianYear = parseInt(value);
                       const newMonth = new Date(currentMonth);
                       newMonth.setFullYear(selectedGregorianYear);
                       setMonth(newMonth);
-                      // Call original onChange if provided
-                      if (props.onChange) {
-                        props.onChange(selectedGregorianYear);
-                      }
                     }}
-                    className="h-8 px-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary min-w-[90px]"
                   >
-                    {uniqueYears.map((year) => {
-                      // Find Gregorian year for this calendar year
-                      for (let gYear = 1900; gYear <= new Date().getFullYear() + 10; gYear++) {
-                        const testDate = new Date(gYear, 6, 15);
-                        const conv = convertToCalendar(testDate, currentCalendar);
-                        if (conv.year === year) {
-                          return (
-                            <option key={year} value={gYear}>
-                              {year}
-                            </option>
-                          );
-                        }
-                      }
-                      return null;
-                    })}
-                  </select>
-                );
-              }
-              
-              // Default: return children to use default dropdown
-              return props.children;
+                    <SelectTrigger className="h-9 min-w-[90px] text-sm font-normal">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {yearOptions.map((option) => (
+                        <SelectItem key={option.value} value={String(option.value)}>
+                          {String(option.label)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select
+                    value={selectValue}
+                    onValueChange={(value) => {
+                      const selectedGregorianMonth = parseInt(value);
+                      const newMonth = new Date(currentMonth);
+                      newMonth.setMonth(selectedGregorianMonth - 1);
+                      setMonth(newMonth);
+                    }}
+                  >
+                    <SelectTrigger className="h-9 min-w-[140px] text-sm font-normal">
+                      <SelectValue>
+                        <span>{currentMonthLabel}</span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {monthOptions.map((option) => (
+                        <SelectItem key={option.value} value={String(option.value)}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
             },
-          } : undefined}
+          }}
         />
+        <div className="border-t p-2 flex justify-center">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleTodayClick}
+            disabled={isTodayDisabled}
+            className="h-8 text-xs"
+          >
+            {t('common.today') || 'Today'}
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );

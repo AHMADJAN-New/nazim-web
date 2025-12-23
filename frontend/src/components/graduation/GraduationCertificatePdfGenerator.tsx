@@ -21,16 +21,21 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Download, Award, Eye, Image as ImageIcon } from 'lucide-react';
 import { useCertificateTemplatesV2 } from '@/hooks/useGraduation';
 import { certificateTemplatesV2Api, issuedCertificatesApi } from '@/lib/api/client';
-// Import pdfmake for Arabic support
-import pdfMake from 'pdfmake-arabic/build/pdfmake';
-import * as pdfFonts from 'pdfmake-arabic/build/vfs_fonts';
+// Import pdfmake for Arabic support - handle both default and named exports
+import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
+const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
+// Use regular pdfmake vfs_fonts (compatible with pdfmake-arabic)
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 // Set up fonts for Arabic/Pashto support (same as CertificatePdfGenerator)
 try {
-  if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
-    pdfMake.vfs = pdfFonts.pdfMake.vfs;
+  // Initialize VFS - regular pdfmake vfs_fonts exports vfs directly
+  if (pdfFonts && typeof pdfFonts === 'object') {
+    (pdfMake as any).vfs = pdfFonts;
+  } else if (pdfFonts && (pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
+    (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
   } else if (pdfFonts && (pdfFonts as any).vfs) {
-    pdfMake.vfs = (pdfFonts as any).vfs;
+    (pdfMake as any).vfs = (pdfFonts as any).vfs;
   }
 
   if (!pdfMake.fonts) {

@@ -37,20 +37,27 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import pdfMake from 'pdfmake-arabic/build/pdfmake';
-import * as pdfFonts from 'pdfmake-arabic/build/vfs_fonts';
+// Import pdfmake-arabic - handle both default and named exports
+import * as pdfMakeModule from 'pdfmake-arabic/build/pdfmake';
+const pdfMake = (pdfMakeModule as any).default || pdfMakeModule;
+// Use regular pdfmake vfs_fonts (compatible with pdfmake-arabic)
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import { useLanguage } from '@/hooks/useLanguage';
 
 // Set up fonts for Arabic/Pashto support
 try {
-  // Initialize VFS
-  if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
-    pdfMake.vfs = pdfFonts.pdfMake.vfs;
+  // Initialize VFS - regular pdfmake vfs_fonts exports vfs directly
+  if (pdfFonts && typeof pdfFonts === 'object') {
+    (pdfMake as any).vfs = pdfFonts;
+  } else if (pdfFonts && (pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
+    (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
   } else if (pdfFonts && (pdfFonts as any).vfs) {
-    pdfMake.vfs = (pdfFonts as any).vfs;
+    (pdfMake as any).vfs = (pdfFonts as any).vfs;
   }
 } catch (error) {
-  console.warn('Failed to initialize pdfmake fonts:', error);
+  if (import.meta.env.DEV) {
+    console.warn('Failed to initialize pdfmake fonts:', error);
+  }
 }
 
 interface CourseStats {

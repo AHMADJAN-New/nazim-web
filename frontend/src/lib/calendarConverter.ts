@@ -36,20 +36,63 @@ export function hijriShamsiToGregorian(year: number, month: number, day: number)
 
 /**
  * Convert Gregorian date to Hijri Qamari (Lunar/Islamic)
- * Uses the Intl API with Islamic calendar
+ * Uses Umm al-Qura calendar (most accurate, used in Saudi Arabia)
+ * Falls back to islamic-civil if Umm al-Qura is not supported
  */
 export function gregorianToHijriQamari(date: Date): ConvertedDate {
-  // Create formatter for Islamic calendar
-  const formatter = new Intl.DateTimeFormat('en-u-ca-islamic', {
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-  });
+  // Try Umm al-Qura first (most accurate)
+  let formatter: Intl.DateTimeFormat;
+  let variant = 'islamic-umalqura';
+  
+  try {
+    formatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+    });
+    // Test if it works
+    formatter.formatToParts(date);
+  } catch (e) {
+    // Fallback to islamic-civil (more widely supported)
+    try {
+      variant = 'islamic-civil';
+      formatter = new Intl.DateTimeFormat('en-u-ca-islamic-civil', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+      });
+      formatter.formatToParts(date);
+    } catch (e2) {
+      // Final fallback to default islamic
+      variant = 'islamic';
+      formatter = new Intl.DateTimeFormat('en-u-ca-islamic', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+      });
+    }
+  }
 
   const parts = formatter.formatToParts(date);
-  const year = parseInt(parts.find((p) => p.type === 'year')?.value || '0');
-  const month = parseInt(parts.find((p) => p.type === 'month')?.value || '0');
-  const day = parseInt(parts.find((p) => p.type === 'day')?.value || '0');
+  const yearPart = parts.find((p) => p.type === 'year');
+  const monthPart = parts.find((p) => p.type === 'month');
+  const dayPart = parts.find((p) => p.type === 'day');
+
+  if (!yearPart || !monthPart || !dayPart) {
+    // If formatToParts doesn't work, try a different approach
+    throw new Error('Failed to parse Islamic calendar date parts');
+  }
+
+  const year = parseInt(yearPart.value || '0');
+  const month = parseInt(monthPart.value || '0');
+  const day = parseInt(dayPart.value || '0');
+
+  // Validate the result
+  if (isNaN(year) || isNaN(month) || isNaN(day) || year < 1 || month < 1 || month > 12 || day < 1 || day > 30) {
+    if (import.meta.env.DEV) {
+      console.warn(`[calendarConverter] Invalid Islamic date conversion for ${date.toISOString()}, variant: ${variant}`);
+    }
+  }
 
   return {
     year,

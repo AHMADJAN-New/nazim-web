@@ -278,7 +278,8 @@ export function StudentEducationalHistoryDialog({
               {t('students.educationalHistoryFormDescription') || 'Enter the educational history details'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit(handleSave)} className="space-y-4">
+          <FormProvider {...formMethods}>
+            <form onSubmit={handleSubmit(handleSave)} className="space-y-4">
             <div>
               <Label htmlFor="institution_name">{t('students.institutionName') || 'Institution Name'} *</Label>
               <Input
