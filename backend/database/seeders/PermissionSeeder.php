@@ -132,6 +132,11 @@ class PermissionSeeder extends Seeder
             'exams.papers' => ['read', 'create', 'update', 'delete'],
             // ID Cards
             'id_cards' => ['read', 'create', 'update', 'delete', 'export'],
+            // Events Module
+            'events' => ['read', 'create', 'update', 'delete'],
+            'event_types' => ['read', 'create', 'update', 'delete'],
+            'event_guests' => ['read', 'create', 'update', 'delete', 'import', 'checkin'],
+            'event_checkins' => ['read', 'create', 'update', 'delete'],
         ];
     }
 
@@ -181,6 +186,11 @@ class PermissionSeeder extends Seeder
                 'exams.questions.read', 'exams.papers.read',
                 // ID Cards - read, create, and export for staff
                 'id_cards.read', 'id_cards.create', 'id_cards.export',
+                // Events Module - full access for staff
+                'events.read', 'events.create', 'events.update', 'events.delete',
+                'event_types.read', 'event_types.create', 'event_types.update', 'event_types.delete',
+                'event_guests.read', 'event_guests.create', 'event_guests.update', 'event_guests.delete', 'event_guests.import', 'event_guests.checkin',
+                'event_checkins.read', 'event_checkins.create', 'event_checkins.update', 'event_checkins.delete',
             ],
             'teacher' => [
                 // Teachers can read and manage academic content

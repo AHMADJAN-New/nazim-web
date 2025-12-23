@@ -149,6 +149,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 14: Creating short-term courses...');
         $this->call(CourseSeeder::class);
 
+        // Step 15: Create event test users (check-in, add guest, both)
+        $this->command->info('Step 15: Creating event test users...');
+        $this->call(EventTestUsersSeeder::class);
+
         // Step 15: Enroll students in courses
         $this->command->info('Step 15: Enrolling students in courses...');
         $this->call(CourseStudentSeeder::class);

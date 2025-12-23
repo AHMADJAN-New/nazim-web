@@ -69,7 +69,7 @@ export const useLibraryBooks = (usePaginated?: boolean, search?: string) => {
         throw error;
       }
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!profile && !profileLoading && !isEventUser, // Disable for event users and wait for profile
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -173,14 +173,16 @@ export const useCreateLibraryCopy = () => {
 };
 
 export const useLibraryLoans = (openOnly?: boolean) => {
-  const { user } = useAuth();
+  const { user, profile, profileLoading } = useAuth();
+  const isEventUser = profile?.is_event_user === true;
+  
   return useQuery<LibraryLoan[]>({
     queryKey: ['library-loans', openOnly],
     queryFn: async () => {
       if (!user) return [];
       return libraryLoansApi.list({ open_only: openOnly });
     },
-    enabled: !!user,
+    enabled: !!user && !profileLoading && !isEventUser, // Disable for event users and wait for profile
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

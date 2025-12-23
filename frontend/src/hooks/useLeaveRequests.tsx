@@ -22,7 +22,8 @@ export type LeaveFilters = {
 };
 
 export const useLeaveRequests = (filters: LeaveFilters = {}) => {
-  const { user, profile } = useAuth();
+  const { user, profile, profileLoading } = useAuth();
+  const isEventUser = profile?.is_event_user === true;
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({ initialPage: 1, initialPageSize: 10 });
 
   const { data, isLoading, error } = useQuery<PaginatedResponse<LeaveRequest> | LeaveRequest[]>({
@@ -62,7 +63,7 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
       }
       return (response as LeaveApi.LeaveRequest[]).map(mapLeaveRequestApiToDomain);
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!profile && !profileLoading && !isEventUser, // Disable for event users and wait for profile
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,

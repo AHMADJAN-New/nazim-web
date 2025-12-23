@@ -3434,6 +3434,39 @@ export interface TranslationKeys {
     questionsReorderFailed: string;
     defaultTemplateSet: string;
     defaultTemplateSetFailed: string;
+    // Events
+    eventCreated: string;
+    eventUpdated: string;
+    eventDeleted: string;
+    eventCreateFailed: string;
+    eventUpdateFailed: string;
+    eventDeleteFailed: string;
+    eventTypeCreated: string;
+    eventTypeUpdated: string;
+    eventTypeDeleted: string;
+    eventTypeCreateFailed: string;
+    eventTypeUpdateFailed: string;
+    eventTypeDeleteFailed: string;
+    guestAdded: string;
+    guestUpdated: string;
+    guestDeleted: string;
+    guestAddFailed: string;
+    guestUpdateFailed: string;
+    guestDeleteFailed: string;
+    guestCheckedIn: string;
+    checkinFailed: string;
+    guestStatusUpdated: string;
+    guestStatusUpdateFailed: string;
+    fieldsSaved: string;
+    fieldsSaveFailed: string;
+    // Event Users
+    userCreated: string;
+    userUpdated: string;
+    userDeleted: string;
+    userCreateFailed: string;
+    userUpdateFailed: string;
+    userDeleteFailed: string;
+    fillAllFields: string;
   };
 
   // Finance Module

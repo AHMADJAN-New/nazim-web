@@ -202,8 +202,8 @@ export const sessionSecurity = {
 
     // Reset timeout on user activity
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    events.forEach(event => {
-      document.addEventListener(event, resetTimeout, true);
+    events.forEach(eventType => {
+      document.addEventListener(eventType, resetTimeout, true);
     });
 
     // Initial timeout
@@ -211,8 +211,8 @@ export const sessionSecurity = {
 
     return () => {
       clearTimeout(timeoutId);
-      events.forEach(event => {
-        document.removeEventListener(event, resetTimeout, true);
+      events.forEach(eventType => {
+        document.removeEventListener(eventType, resetTimeout, true);
       });
     };
   },

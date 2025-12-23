@@ -17,6 +17,8 @@ export function mapProfileApiToDomain(api: ProfileApi.Profile): Profile {
     avatarUrl: api.avatar_url,
     isActive: api.is_active,
     defaultSchoolId: api.default_school_id,
+    eventId: api.event_id ?? null,
+    isEventUser: api.is_event_user ?? false,
     createdAt: api.created_at ? new Date(api.created_at) : undefined,
     updatedAt: api.updated_at ? new Date(api.updated_at) : undefined,
     deletedAt: api.deleted_at ? new Date(api.deleted_at) : null,
@@ -36,6 +38,8 @@ export function mapProfileDomainToInsert(domain: Partial<Profile>): ProfileApi.P
     avatar_url: domain.avatarUrl || null,
     is_active: domain.isActive ?? true,
     default_school_id: domain.defaultSchoolId || null,
+    event_id: domain.eventId ?? null,
+    is_event_user: domain.isEventUser ?? false,
   };
 }
 
@@ -53,6 +57,8 @@ export function mapProfileDomainToUpdate(domain: Partial<Profile>): ProfileApi.P
   if (domain.avatarUrl !== undefined) update.avatar_url = domain.avatarUrl;
   if (domain.isActive !== undefined) update.is_active = domain.isActive;
   if (domain.defaultSchoolId !== undefined) update.default_school_id = domain.defaultSchoolId;
+  if (domain.eventId !== undefined) update.event_id = domain.eventId;
+  if (domain.isEventUser !== undefined) update.is_event_user = domain.isEventUser;
   
   return update;
 }

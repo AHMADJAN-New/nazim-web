@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useUserPermissions } from '@/hooks/usePermissions';
 import { authApi } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { getPostLoginRedirectPath } from '@/lib/redirectUtils';
 
 interface Organization {
   id: string;
@@ -19,6 +21,7 @@ export default function AuthPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user, refreshAuth } = useAuth();
+  const { data: permissions = [], isLoading: permissionsLoading } = useUserPermissions();
   const [authLoading, setAuthLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -33,11 +36,26 @@ export default function AuthPage() {
     organizationId: '',
   });
 
+  const { profile } = useAuth();
+
   useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
+    if (user && !permissionsLoading) {
+      // Get redirect path based on permissions and profile (async function)
+      getPostLoginRedirectPath(permissions, profile).then((redirectPath) => {
+        navigate(redirectPath, { replace: true });
+      }).catch((error) => {
+        // On error, default to dashboard (unless event user)
+        if (import.meta.env.DEV) {
+          console.error('Redirect error:', error);
+        }
+        if (profile?.is_event_user && profile?.event_id) {
+          navigate(`/events/${profile.event_id}`, { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+      });
     }
-  }, [user, navigate]);
+  }, [user, navigate, permissions, permissionsLoading, profile]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,13 +74,10 @@ export default function AuthPage() {
         // Refresh auth state (simplified - no unnecessary delays)
         await refreshAuth();
 
-        // Wait a bit more to ensure auth state is fully updated
-        await new Promise(resolve => setTimeout(resolve, 100));
-
         toast.success(t('auth.loggedInSuccessfully') || 'Logged in successfully!');
 
-        // Navigate to dashboard after auth is ready
-        navigate('/dashboard', { replace: true });
+        // Don't navigate here - let the useEffect handle redirect based on loaded permissions
+        // This ensures permissions are loaded before redirecting
       } else {
         if (import.meta.env.DEV) {
           console.warn('Sign in returned no user data');
