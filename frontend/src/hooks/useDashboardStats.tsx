@@ -34,11 +34,17 @@ export interface DashboardStats {
 }
 
 export const useDashboardStats = () => {
-  const { user } = useAuth();
+  const { user, profile: authProfile, profileLoading } = useAuth();
   const { data: profile } = useProfile();
+  
+  // Use profile from auth context if available, otherwise from query
+  const currentProfile = authProfile || profile;
+  
+  // CRITICAL: Event users should not fetch dashboard stats
+  const isEventUser = currentProfile?.is_event_user === true;
 
   const query = useQuery({
-    queryKey: ['dashboard-stats', profile?.organization_id],
+    queryKey: ['dashboard-stats', currentProfile?.organization_id],
     queryFn: async (): Promise<DashboardStats> => {
       if (!user || !profile) {
         return {
@@ -127,7 +133,7 @@ export const useDashboardStats = () => {
         }
       };
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!currentProfile && !profileLoading && !isEventUser, // Disable for event users and wait for profile
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     // Use refetchInterval instead of realtime subscriptions

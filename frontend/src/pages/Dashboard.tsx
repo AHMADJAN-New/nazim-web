@@ -69,13 +69,27 @@ import { useAssetStats, useAssets } from "@/hooks/useAssets";
 import { useLibraryBooks, useLibraryLoans } from "@/hooks/useLibrary";
 import { useLeaveRequests } from "@/hooks/useLeaveRequests";
 import { useAttendanceSessions } from "@/hooks/useAttendance";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 
 export default function Dashboard() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
+
+  // CRITICAL: Event users should not access dashboard - redirect to their event
+  useEffect(() => {
+    if (profile?.is_event_user && profile?.event_id) {
+      // Redirect to their assigned event immediately
+      navigate(`/events/${profile.event_id}`, { replace: true });
+      return;
+    }
+  }, [profile, navigate]);
+
+  // If event user, show loading while redirecting
+  if (profile?.is_event_user && profile?.event_id) {
+    return <LoadingSpinner text="Redirecting to event..." />;
+  }
   
   // Fetch real data from hooks
   const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();

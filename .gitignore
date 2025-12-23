@@ -15,6 +15,11 @@ dist-ssr
 .env.local
 .env
 
+# SSL certificates for development
+frontend/certs/
+*.pem
+*.key
+
 # Editor directories and files
 .idea
 .DS_Store

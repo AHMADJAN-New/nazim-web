@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import path from 'path'
+import fs from 'fs'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -43,7 +44,12 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: true,
+    host: true, // Allow access from network
+    https: {
+      // Use self-signed certificates for HTTPS (required for camera API on mobile)
+      key: fs.readFileSync(path.resolve(__dirname, 'certs/key.pem')),
+      cert: fs.readFileSync(path.resolve(__dirname, 'certs/cert.pem')),
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
