@@ -603,4 +603,14 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/dms/files', [DocumentFilesController::class, 'index']);
     Route::post('/dms/files', [DocumentFilesController::class, 'store']);
     Route::get('/dms/files/{id}/download', [DocumentFilesController::class, 'download']);
+
+    // ============================================
+    // Central Reporting System
+    // ============================================
+
+    Route::post('/reports/generate', [\App\Http\Controllers\ReportGenerationController::class, 'generate']);
+    Route::get('/reports', [\App\Http\Controllers\ReportGenerationController::class, 'index']);
+    Route::get('/reports/{id}/status', [\App\Http\Controllers\ReportGenerationController::class, 'status']);
+    Route::get('/reports/{id}/download', [\App\Http\Controllers\ReportGenerationController::class, 'download']);
+    Route::delete('/reports/{id}', [\App\Http\Controllers\ReportGenerationController::class, 'destroy']);
 });
