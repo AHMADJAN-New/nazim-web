@@ -490,9 +490,10 @@ class ReportGenerationController extends Controller
             'SCHOOL_PHONE' => ($branding && isset($branding['school_phone'])) ? $branding['school_phone'] : '+93 123 456 789',
             'SCHOOL_EMAIL' => ($branding && isset($branding['school_email'])) ? $branding['school_email'] : 'info@school.edu',
             'SCHOOL_WEBSITE' => ($branding && isset($branding['school_website'])) ? $branding['school_website'] : 'www.school.edu',
-            'PRIMARY_COLOR' => ($branding && isset($branding['primary_color']) && !empty($branding['primary_color'])) ? $branding['primary_color'] : '#0b0b56',
-            'SECONDARY_COLOR' => ($branding && isset($branding['secondary_color']) && !empty($branding['secondary_color'])) ? $branding['secondary_color'] : '#0056b3',
-            'ACCENT_COLOR' => ($branding && isset($branding['accent_color']) && !empty($branding['accent_color'])) ? $branding['accent_color'] : '#ff6b35',
+            // CRITICAL: Always use colors from branding, with fallback defaults
+            'PRIMARY_COLOR' => ($branding && !empty($branding['primary_color'])) ? $branding['primary_color'] : '#0b0b56',
+            'SECONDARY_COLOR' => ($branding && !empty($branding['secondary_color'])) ? $branding['secondary_color'] : '#0056b3',
+            'ACCENT_COLOR' => ($branding && !empty($branding['accent_color'])) ? $branding['accent_color'] : '#ff6b35',
             'FONT_FAMILY' => ($branding && isset($branding['font_family']) && !empty(trim($branding['font_family']))) ? trim($branding['font_family']) : 'Bahij Nassim',
             // CRITICAL: Use template font size from layout first, then branding fallback
             'FONT_SIZE' => $layout['font_size'] ?? (($branding && isset($branding['report_font_size']) && !empty(trim($branding['report_font_size']))) ? trim($branding['report_font_size']) : '12px'),

@@ -342,25 +342,30 @@ class BrandingCacheService
         $data['secondary_logo_position'] = $branding->secondary_logo_position ?? 'right';
         $data['ministry_logo_position'] = $branding->ministry_logo_position ?? 'right';
         
-        // Ensure colors and fonts are explicitly included (they should be in toArray() but ensure they're present)
-        if (!isset($data['primary_color']) || empty($data['primary_color'])) {
-            $data['primary_color'] = $branding->primary_color ?? '#0b0b56';
-        }
-        if (!isset($data['secondary_color']) || empty($data['secondary_color'])) {
-            $data['secondary_color'] = $branding->secondary_color ?? '#0056b3';
-        }
-        if (!isset($data['accent_color']) || empty($data['accent_color'])) {
-            $data['accent_color'] = $branding->accent_color ?? '#ff6b35';
-        }
-        if (!isset($data['font_family']) || empty($data['font_family'])) {
-            $data['font_family'] = $branding->font_family ?? 'Bahij Nassim';
-        }
-        if (!isset($data['report_font_size']) || empty($data['report_font_size'])) {
-            $data['report_font_size'] = $branding->report_font_size ?? '12px';
-        }
+        // CRITICAL: Always explicitly set colors and fonts from branding model
+        // This ensures they are always present even if toArray() doesn't include them
+        $data['primary_color'] = $branding->primary_color ?? ($data['primary_color'] ?? '#0b0b56');
+        $data['secondary_color'] = $branding->secondary_color ?? ($data['secondary_color'] ?? '#0056b3');
+        $data['accent_color'] = $branding->accent_color ?? ($data['accent_color'] ?? '#ff6b35');
+        $data['font_family'] = $branding->font_family ?? ($data['font_family'] ?? 'Bahij Nassim');
+        $data['report_font_size'] = $branding->report_font_size ?? ($data['report_font_size'] ?? '12px');
+        
+        // Also ensure school_name and other branding fields are present
+        $data['school_name'] = $branding->school_name ?? ($data['school_name'] ?? '');
+        $data['school_name_pashto'] = $branding->school_name_pashto ?? ($data['school_name_pashto'] ?? '');
+        $data['school_name_arabic'] = $branding->school_name_arabic ?? ($data['school_name_arabic'] ?? '');
+        $data['school_address'] = $branding->school_address ?? ($data['school_address'] ?? '');
+        $data['school_phone'] = $branding->school_phone ?? ($data['school_phone'] ?? '');
+        $data['school_email'] = $branding->school_email ?? ($data['school_email'] ?? '');
+        $data['school_website'] = $branding->school_website ?? ($data['school_website'] ?? '');
         
         \Log::debug("Logo visibility for branding {$branding->id}: show_primary={$data['show_primary_logo']}, show_secondary={$data['show_secondary_logo']}, show_ministry={$data['show_ministry_logo']}");
         \Log::debug("Branding colors and fonts for {$branding->id}: primary_color={$data['primary_color']}, secondary_color={$data['secondary_color']}, accent_color={$data['accent_color']}, font_family={$data['font_family']}, report_font_size={$data['report_font_size']}");
+        
+        // CRITICAL: Verify colors are explicitly set in the returned array
+        if (empty($data['primary_color']) || empty($data['secondary_color']) || empty($data['accent_color'])) {
+            \Log::warning("Colors missing in branding data for {$branding->id}: primary={$data['primary_color']}, secondary={$data['secondary_color']}, accent={$data['accent_color']}");
+        }
 
         return $data;
     }

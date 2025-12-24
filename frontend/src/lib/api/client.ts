@@ -674,6 +674,65 @@ export const schoolsApi = {
   },
 };
 
+export const watermarksApi = {
+  list: async (params: {
+    branding_id: string;
+  }) => {
+    return apiClient.get('/watermarks', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/watermarks/${id}`);
+  },
+
+  create: async (data: {
+    branding_id: string;
+    report_key?: string | null;
+    wm_type: 'text' | 'image';
+    text?: string | null;
+    font_family?: string | null;
+    color?: string;
+    opacity?: number;
+    rotation_deg?: number;
+    scale?: number;
+    position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    pos_x?: number;
+    pos_y?: number;
+    repeat_pattern?: 'none' | 'repeat' | 'repeat-x' | 'repeat-y';
+    sort_order?: number;
+    is_active?: boolean;
+    image_binary?: string; // Base64 encoded
+    image_mime?: string | null;
+  }) => {
+    return apiClient.post('/watermarks', data);
+  },
+
+  update: async (id: string, data: {
+    report_key?: string | null;
+    wm_type?: 'text' | 'image';
+    text?: string | null;
+    font_family?: string | null;
+    color?: string;
+    opacity?: number;
+    rotation_deg?: number;
+    scale?: number;
+    position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    pos_x?: number;
+    pos_y?: number;
+    repeat_pattern?: 'none' | 'repeat' | 'repeat-x' | 'repeat-y';
+    sort_order?: number;
+    is_active?: boolean;
+    image_binary?: string; // Base64 encoded
+    image_mime?: string | null;
+  }) => {
+    return apiClient.put(`/watermarks/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/watermarks/${id}`);
+  },
+};
+
 // Users API
 export const usersApi = {
   list: async (params?: {

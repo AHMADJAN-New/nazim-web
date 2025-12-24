@@ -444,6 +444,20 @@ class SchoolBrandingController extends Controller
         foreach ($fieldsToUpdate as $field) {
             if ($request->has($field)) {
                 $value = $request->input($field);
+                
+                // Special handling for color fields: convert empty strings to defaults
+                if (in_array($field, ['primary_color', 'secondary_color', 'accent_color'])) {
+                    if (empty($value) || trim($value) === '') {
+                        // Use defaults for empty color values
+                        $defaults = [
+                            'primary_color' => '#0b0b56',
+                            'secondary_color' => '#0056b3',
+                            'accent_color' => '#ff6b35',
+                        ];
+                        $value = $defaults[$field];
+                    }
+                }
+                
                 // Include the value if:
                 // 1. It's not null, OR
                 // 2. It's a nullable field (can be explicitly set to null)

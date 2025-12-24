@@ -193,6 +193,16 @@ class ReportService
             return $this->getDefaultBranding();
         }
 
+        // CRITICAL: Verify colors are present in branding data
+        if (empty($branding['primary_color']) || empty($branding['secondary_color']) || empty($branding['accent_color'])) {
+            \Log::warning("Colors missing in branding data for {$config->brandingId}, using defaults");
+            $branding['primary_color'] = $branding['primary_color'] ?? '#0b0b56';
+            $branding['secondary_color'] = $branding['secondary_color'] ?? '#0056b3';
+            $branding['accent_color'] = $branding['accent_color'] ?? '#ff6b35';
+        }
+        
+        \Log::debug("Loaded branding for {$config->brandingId}: primary_color={$branding['primary_color']}, secondary_color={$branding['secondary_color']}, accent_color={$branding['accent_color']}");
+
         return $branding;
     }
 
@@ -381,9 +391,10 @@ class ReportService
             'SCHOOL_PHONE' => $branding['school_phone'] ?? '',
             'SCHOOL_EMAIL' => $branding['school_email'] ?? '',
             'SCHOOL_WEBSITE' => $branding['school_website'] ?? '',
-            'PRIMARY_COLOR' => $branding['primary_color'] ?? '#0b0b56',
-            'SECONDARY_COLOR' => $branding['secondary_color'] ?? '#0056b3',
-            'ACCENT_COLOR' => $branding['accent_color'] ?? '#ff6b35',
+            // CRITICAL: Always use colors from branding, with fallback defaults
+            'PRIMARY_COLOR' => !empty($branding['primary_color']) ? $branding['primary_color'] : '#0b0b56',
+            'SECONDARY_COLOR' => !empty($branding['secondary_color']) ? $branding['secondary_color'] : '#0056b3',
+            'ACCENT_COLOR' => !empty($branding['accent_color']) ? $branding['accent_color'] : '#ff6b35',
             'FONT_FAMILY' => $branding['font_family'] ?? 'Bahij Nassim',
             // CRITICAL: Use template font size from layout first, then branding fallback
             'FONT_SIZE' => $layout['font_size'] ?? $branding['report_font_size'] ?? '12px',

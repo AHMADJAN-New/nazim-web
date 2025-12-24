@@ -2672,6 +2672,13 @@ export const ps: TranslationKeys = {
     disciplineRecordUpdateFailed: 'د نظم ریکارډ تازه کولو کې ناکامي',
     disciplineRecordDeleteFailed: 'د نظم ریکارډ پاکولو کې ناکامي',
     disciplineRecordResolveFailed: 'د نظم ریکارډ د حل شوي په توګه نښه کولو کې ناکامي',
+    // Watermarks
+    watermarkCreated: 'د اوبو نښه په بریالیتوب سره اضافه شوه',
+    watermarkCreateFailed: 'د اوبو نښه اضافه کولو کې ناکامي',
+    watermarkUpdated: 'د اوبو نښه په بریالیتوب سره تازه شوه',
+    watermarkUpdateFailed: 'د اوبو نښه تازه کولو کې ناکامي',
+    watermarkDeleted: 'د اوبو نښه په بریالیتوب سره پاکه شوه',
+    watermarkDeleteFailed: 'د اوبو نښه پاکولو کې ناکامي',
     // Asset Categories
     assetCategories: {
       created: 'د املاکو کټګوري په بریالیتوب سره اضافه شوه',

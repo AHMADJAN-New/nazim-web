@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSchools, useCreateSchool, useUpdateSchool, useDeleteSchool, type School } from '@/hooks/useSchools';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { WatermarkManagement } from './WatermarkManagement';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,7 +41,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Search, School as SchoolIcon, Shield, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, School as SchoolIcon, Shield, Eye, Droplet } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -56,9 +57,9 @@ const schoolSchema = z.object({
   school_email: z.string().email('Invalid email address').optional().or(z.literal('')),
   school_website: z.string().max(200, 'Website must be 200 characters or less').optional(),
   organization_id: z.string().uuid().optional(),
-  primary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
-  secondary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
-  accent_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
+  primary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional().or(z.literal('')),
+  secondary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional().or(z.literal('')),
+  accent_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional().or(z.literal('')),
   font_family: z.string().max(100, 'Font family must be 100 characters or less').optional(),
   report_font_size: z.string().max(10, 'Font size must be 10 characters or less').optional(),
   calendar_preference: z.string().max(50, 'Calendar preference must be 50 characters or less').optional(),
@@ -98,6 +99,7 @@ export function SchoolsManagement() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
+  const [selectedSchoolForWatermarks, setSelectedSchoolForWatermarks] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [organizationFilter, setOrganizationFilter] = useState<string>('all');
   const [primaryLogoFile, setPrimaryLogoFile] = useState<File | null>(null);
@@ -113,6 +115,7 @@ export function SchoolsManagement() {
     control,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<SchoolFormData>({
     resolver: zodResolver(schoolSchema),
@@ -164,9 +167,9 @@ export function SchoolsManagement() {
           school_email: school.schoolEmail || '',
           school_website: school.schoolWebsite || '',
           organization_id: school.organizationId,
-          primary_color: school.primaryColor,
-          secondary_color: school.secondaryColor,
-          accent_color: school.accentColor,
+          primary_color: school.primaryColor || '#0b0b56',
+          secondary_color: school.secondaryColor || '#0056b3',
+          accent_color: school.accentColor || '#ff6b35',
           font_family: school.fontFamily,
           report_font_size: school.reportFontSize || '12px',
           calendar_preference: school.calendarPreference,
@@ -177,9 +180,9 @@ export function SchoolsManagement() {
           show_primary_logo: school.showPrimaryLogo ?? true,
           show_secondary_logo: school.showSecondaryLogo ?? false,
           show_ministry_logo: school.showMinistryLogo ?? false,
-          primary_logo_position: school.primaryLogoPosition || 'left',
-          secondary_logo_position: school.secondaryLogoPosition || 'right',
-          ministry_logo_position: school.ministryLogoPosition || 'right',
+          primary_logo_position: (school.primaryLogoPosition as 'left' | 'right') || 'left',
+          secondary_logo_position: (school.secondaryLogoPosition as 'left' | 'right') || 'right',
+          ministry_logo_position: (school.ministryLogoPosition as 'left' | 'right') || 'right',
           is_active: school.isActive,
         });
         setSelectedSchool(schoolId);
@@ -215,7 +218,6 @@ export function SchoolsManagement() {
         secondary_color: '#0056b3',
         accent_color: '#ff6b35',
         font_family: 'Bahij Nassim',
-        report_font_size: '12px',
         report_font_size: '12px',
         calendar_preference: 'gregorian',
         primary_logo_usage: 'header',
@@ -299,9 +301,9 @@ export function SchoolsManagement() {
         schoolEmail: data.school_email || null,
         schoolWebsite: data.school_website || null,
         organizationId: data.organization_id || undefined,
-        primaryColor: data.primary_color || '#0b0b56',
-        secondaryColor: data.secondary_color || '#0056b3',
-        accentColor: data.accent_color || '#ff6b35',
+        primaryColor: (data.primary_color && data.primary_color.trim() !== '') ? data.primary_color : '#0b0b56',
+        secondaryColor: (data.secondary_color && data.secondary_color.trim() !== '') ? data.secondary_color : '#0056b3',
+        accentColor: (data.accent_color && data.accent_color.trim() !== '') ? data.accent_color : '#ff6b35',
         fontFamily: data.font_family || 'Bahij Nassim',
         reportFontSize: data.report_font_size || '12px',
         calendarPreference: data.calendar_preference || 'gregorian',
@@ -481,6 +483,19 @@ export function SchoolsManagement() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedSchoolForWatermarks(
+                                  selectedSchoolForWatermarks === school.id ? null : school.id
+                                );
+                              }}
+                              title={t('watermarks.manage') || 'Manage Watermarks'}
+                              className={selectedSchoolForWatermarks === school.id ? 'bg-muted' : ''}
+                            >
+                              <Droplet className="h-4 w-4" />
+                            </Button>
                             {hasUpdatePermission && (
                               <Button
                                 variant="ghost"
@@ -512,6 +527,14 @@ export function SchoolsManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Watermark Management Section */}
+      {selectedSchoolForWatermarks && (
+        <WatermarkManagement
+          brandingId={selectedSchoolForWatermarks}
+          brandingName={schools?.find((s) => s.id === selectedSchoolForWatermarks)?.schoolName || 'School'}
+        />
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -607,45 +630,84 @@ export function SchoolsManagement() {
                 <div className="grid gap-2">
                   <Label htmlFor="primary_color">{t('schools.primaryColor')}</Label>
                   <div className="flex gap-2">
-                    <Input
-                      id="primary_color"
-                      type="color"
-                      {...register('primary_color')}
-                      className="w-20 h-10"
-                    />
-                    <Input
-                      {...register('primary_color')}
-                      placeholder="#0b0b56"
+                    <Controller
+                      name="primary_color"
+                      control={control}
+                      render={({ field }) => (
+                        <>
+                          <Input
+                            id="primary_color"
+                            type="color"
+                            value={field.value || '#0b0b56'}
+                            onChange={(e) => field.onChange(e.target.value || '#0b0b56')}
+                            className="w-20 h-10"
+                          />
+                          <Input
+                            value={field.value || '#0b0b56'}
+                            onChange={(e) => {
+                              const value = e.target.value.trim();
+                              field.onChange(value || '#0b0b56');
+                            }}
+                            placeholder="#0b0b56"
+                          />
+                        </>
+                      )}
                     />
                   </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="secondary_color">{t('schools.secondaryColor')}</Label>
                   <div className="flex gap-2">
-                    <Input
-                      id="secondary_color"
-                      type="color"
-                      {...register('secondary_color')}
-                      className="w-20 h-10"
-                    />
-                    <Input
-                      {...register('secondary_color')}
-                      placeholder="#0056b3"
+                    <Controller
+                      name="secondary_color"
+                      control={control}
+                      render={({ field }) => (
+                        <>
+                          <Input
+                            id="secondary_color"
+                            type="color"
+                            value={field.value || '#0056b3'}
+                            onChange={(e) => field.onChange(e.target.value || '#0056b3')}
+                            className="w-20 h-10"
+                          />
+                          <Input
+                            value={field.value || '#0056b3'}
+                            onChange={(e) => {
+                              const value = e.target.value.trim();
+                              field.onChange(value || '#0056b3');
+                            }}
+                            placeholder="#0056b3"
+                          />
+                        </>
+                      )}
                     />
                   </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="accent_color">{t('schools.accentColor')}</Label>
                   <div className="flex gap-2">
-                    <Input
-                      id="accent_color"
-                      type="color"
-                      {...register('accent_color')}
-                      className="w-20 h-10"
-                    />
-                    <Input
-                      {...register('accent_color')}
-                      placeholder="#ff6b35"
+                    <Controller
+                      name="accent_color"
+                      control={control}
+                      render={({ field }) => (
+                        <>
+                          <Input
+                            id="accent_color"
+                            type="color"
+                            value={field.value || '#ff6b35'}
+                            onChange={(e) => field.onChange(e.target.value || '#ff6b35')}
+                            className="w-20 h-10"
+                          />
+                          <Input
+                            value={field.value || '#ff6b35'}
+                            onChange={(e) => {
+                              const value = e.target.value.trim();
+                              field.onChange(value || '#ff6b35');
+                            }}
+                            placeholder="#ff6b35"
+                          />
+                        </>
+                      )}
                     />
                   </div>
                 </div>
@@ -682,7 +744,7 @@ export function SchoolsManagement() {
                   value={watch('font_family') || ''}
                   onChange={(e) => {
                     // Allow custom font entry - this will override the Select value
-                    control.setValue('font_family', e.target.value);
+                    setValue('font_family', e.target.value);
                   }}
                 />
                 <p className="text-xs text-muted-foreground">{t('schools.fontFamilyHint')}</p>
@@ -930,7 +992,7 @@ export function SchoolsManagement() {
                                 onCheckedChange={(checked) => {
                                   // If enabling secondary and primary+ministry are both enabled, disable ministry
                                   if (checked && watch('show_primary_logo') && watch('show_ministry_logo')) {
-                                    control.setValue('show_ministry_logo', false);
+                                    setValue('show_ministry_logo', false);
                                   }
                                   field.onChange(checked);
                                 }}
@@ -981,7 +1043,7 @@ export function SchoolsManagement() {
                                 onCheckedChange={(checked) => {
                                   // If enabling ministry and primary+secondary are both enabled, disable secondary
                                   if (checked && watch('show_primary_logo') && watch('show_secondary_logo')) {
-                                    control.setValue('show_secondary_logo', false);
+                                    setValue('show_secondary_logo', false);
                                   }
                                   field.onChange(checked);
                                 }}

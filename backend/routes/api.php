@@ -138,6 +138,14 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     // Schools (school branding)
     Route::apiResource('schools', SchoolBrandingController::class);
 
+    // Watermarks (for school branding)
+    Route::get('/watermarks', [\App\Http\Controllers\WatermarkController::class, 'index']);
+    Route::post('/watermarks', [\App\Http\Controllers\WatermarkController::class, 'store']);
+    Route::get('/watermarks/{id}', [\App\Http\Controllers\WatermarkController::class, 'show']);
+    Route::put('/watermarks/{id}', [\App\Http\Controllers\WatermarkController::class, 'update']);
+    Route::patch('/watermarks/{id}', [\App\Http\Controllers\WatermarkController::class, 'update']);
+    Route::delete('/watermarks/{id}', [\App\Http\Controllers\WatermarkController::class, 'destroy']);
+
     // Permissions
     Route::get('/permissions', [PermissionController::class, 'index']);
     Route::post('/permissions', [PermissionController::class, 'store']);

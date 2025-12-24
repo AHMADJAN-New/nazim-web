@@ -3325,6 +3325,13 @@ export interface TranslationKeys {
     disciplineRecordAddFailed: string;
     disciplineRecordUpdateFailed: string;
     disciplineRecordDeleteFailed: string;
+    // Watermarks
+    watermarkCreated: string;
+    watermarkCreateFailed: string;
+    watermarkUpdated: string;
+    watermarkUpdateFailed: string;
+    watermarkDeleted: string;
+    watermarkDeleteFailed: string;
     disciplineRecordResolveFailed: string;
     // Asset Categories
     assetCategories: {
@@ -4217,4 +4224,57 @@ export interface TranslationKeys {
     notFound: string;
   };
 
+  // Watermarks
+  watermarks: {
+    title: string;
+    subtitle: string;
+    addWatermark: string;
+    addFirstWatermark: string;
+    editWatermark: string;
+    updateWatermarkInfo: string;
+    enterWatermarkDetails: string;
+    type: string;
+    content: string;
+    reportKey: string;
+    position: string;
+    status: string;
+    actions: string;
+    noWatermarks: string;
+    text: string;
+    image: string;
+    enterText: string;
+    fontFamily: string;
+    enterFontFamily: string;
+    color: string;
+    imageRequired: string;
+    enterReportKey: string;
+    reportKeyHint: string;
+    repeatPattern: string;
+    opacity: string;
+    rotation: string;
+    scale: string;
+    positionX: string;
+    positionY: string;
+    sortOrder: string;
+    active: string;
+    inactive: string;
+    cancel: string;
+    create: string;
+    update: string;
+    delete: string;
+    deleteConfirmTitle: string;
+    deleteConfirmDescription: string;
+    center: string;
+    topLeft: string;
+    topRight: string;
+    bottomLeft: string;
+    bottomRight: string;
+    none: string;
+    repeat: string;
+    repeatX: string;
+    repeatY: string;
+    allReports: string;
+    manage: string;
+  };
 }
+
