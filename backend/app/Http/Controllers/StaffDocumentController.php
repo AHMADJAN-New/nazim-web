@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Staff;
 use App\Models\StaffDocument;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +12,9 @@ use Illuminate\Support\Facades\Storage;
 
 class StaffDocumentController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
     /**
      * Display a listing of documents for a staff member
      */
@@ -102,15 +106,15 @@ class StaffDocumentController extends Controller
         ]);
 
         $file = $request->file('file');
-        $fileExt = $file->getClientOriginalExtension();
-        $fileName = time() . '.' . $fileExt;
-        
-        // Build path: {organization_id}/{school_id}/{staff_id}/documents/{document_type}/{filename}
-        $schoolPath = $staff->school_id ? "{$staff->school_id}/" : '';
-        $filePath = "{$staff->organization_id}/{$schoolPath}{$staff->id}/documents/{$request->document_type}/{$fileName}";
 
-        // Store file
-        $storedPath = $file->storeAs('staff-files', $filePath, 'public');
+        // Store document using FileStorageService (PRIVATE storage for staff documents)
+        $filePath = $this->fileStorageService->storeStaffDocument(
+            $file,
+            $staff->organization_id,
+            $staffId,
+            $staff->school_id,
+            $request->document_type
+        );
 
         // Create document record
         $document = StaffDocument::create([
@@ -121,17 +125,17 @@ class StaffDocumentController extends Controller
             'file_name' => $file->getClientOriginalName(),
             'file_path' => $filePath,
             'file_size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
+            'mime_type' => $this->fileStorageService->getMimeTypeFromExtension($file->getClientOriginalName()),
             'description' => $request->description ?? null,
             'uploaded_by' => $user->id,
         ]);
 
-        // Return public URL
-        $publicUrl = Storage::disk('public')->url($storedPath);
+        // Return download URL for private file
+        $downloadUrl = $this->fileStorageService->getPrivateDownloadUrl($filePath);
 
         return response()->json([
             'document' => $document,
-            'url' => $publicUrl,
+            'download_url' => $downloadUrl,
         ], 201);
     }
 
@@ -176,11 +180,13 @@ class StaffDocumentController extends Controller
             return response()->json(['error' => 'Cannot delete document from different organization'], 403);
         }
 
+        // Delete file from storage using FileStorageService
+        if ($document->file_path) {
+            $this->fileStorageService->deleteFile($document->file_path);
+        }
+
         // Soft delete
         $document->update(['deleted_at' => now()]);
-
-        // Optionally delete the file from storage
-        // Storage::disk('public')->delete($document->file_path);
 
         return response()->json(['message' => 'Document deleted successfully']);
     }

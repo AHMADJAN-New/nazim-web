@@ -81,6 +81,7 @@ use App\Http\Controllers\Dms\LetterheadsController;
 use App\Http\Controllers\Dms\LetterTemplatesController;
 use App\Http\Controllers\Dms\LetterTypesController;
 use App\Http\Controllers\Dms\OutgoingDocumentsController;
+use App\Http\Controllers\StorageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -109,6 +110,17 @@ Route::get('/stats/staff-count', [StatsController::class, 'staffCount']);
 
 // Protected routes
 Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
+    // Storage routes (private file access)
+    Route::get('/storage/download/{encodedPath}', [StorageController::class, 'download'])
+        ->where('encodedPath', '.*')
+        ->name('storage.download');
+    Route::get('/storage/force-download/{encodedPath}', [StorageController::class, 'forceDownload'])
+        ->where('encodedPath', '.*')
+        ->name('storage.force-download');
+    Route::get('/storage/info/{encodedPath}', [StorageController::class, 'info'])
+        ->where('encodedPath', '.*')
+        ->name('storage.info');
+
     // Auth routes
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/user', [AuthController::class, 'user']);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\StudentDocument;
 use App\Http\Requests\StoreStudentDocumentRequest;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,9 @@ use Illuminate\Support\Facades\Log;
 
 class StudentDocumentController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
     /**
      * Get accessible organization IDs for the current user
      */
@@ -135,12 +139,15 @@ class StudentDocumentController extends Controller
         }
 
         $file = $request->file('file');
-        $timestamp = time();
-        $sanitizedFileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
-        $filePath = "{$student->organization_id}/students/{$studentId}/documents/{$timestamp}_{$sanitizedFileName}";
 
-        // Store file
-        Storage::disk('local')->put($filePath, file_get_contents($file));
+        // Store file using FileStorageService (PRIVATE storage for student documents)
+        $filePath = $this->fileStorageService->storeStudentDocument(
+            $file,
+            $student->organization_id,
+            $studentId,
+            $student->school_id,
+            $request->document_type
+        );
 
         // Create document record
         $document = StudentDocument::create([
@@ -211,6 +218,11 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Cannot delete document from different organization'], 403);
         }
 
+        // Delete file from storage using FileStorageService
+        if ($document->file_path) {
+            $this->fileStorageService->deleteFile($document->file_path);
+        }
+
         // Soft delete
         $document->delete();
 
@@ -256,12 +268,14 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Cannot access document from different organization'], 403);
         }
 
-        if (!Storage::disk('local')->exists($document->file_path)) {
+        // Check if file exists using FileStorageService
+        if (!$this->fileStorageService->fileExists($document->file_path)) {
             return response()->json(['error' => 'File not found'], 404);
         }
 
-        $file = Storage::disk('local')->get($document->file_path);
-        $mimeType = $document->mime_type ?? Storage::disk('local')->mimeType($document->file_path);
+        // Get file content using FileStorageService
+        $file = $this->fileStorageService->getFile($document->file_path);
+        $mimeType = $document->mime_type ?? $this->fileStorageService->getMimeTypeFromExtension($document->file_path);
 
         return response($file, 200)
             ->header('Content-Type', $mimeType)

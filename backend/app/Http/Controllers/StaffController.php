@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Staff;
 use App\Models\StaffType;
 use App\Models\StaffDocument;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +13,9 @@ use Illuminate\Support\Facades\Storage;
 
 class StaffController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
     /**
      * Display a listing of staff
      */
@@ -783,12 +787,10 @@ class StaffController extends Controller
             return response()->json(['error' => 'Staff member not found'], 404);
         }
 
-        // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
         $orgIds = [$profile->organization_id];
 
         if (!in_array($staff->organization_id, $orgIds)) {
@@ -796,29 +798,39 @@ class StaffController extends Controller
         }
 
         $request->validate([
-            'file' => 'required|file|image|max:10240', // 10MB max
+            'file' => 'required|file|max:10240', // 10MB max
         ]);
 
         $file = $request->file('file');
-        $fileExt = $file->getClientOriginalExtension();
-        $fileName = time() . '.' . $fileExt;
-        
-        // Build path: {organization_id}/{school_id}/{staff_id}/picture/{filename}
-        $schoolPath = $staff->school_id ? "{$staff->school_id}/" : '';
-        $filePath = "{$staff->organization_id}/{$schoolPath}{$staff->id}/picture/{$fileName}";
 
-        // Store file
-        $storedPath = $file->storeAs('staff-files', $filePath, 'public');
+        // Validate image extension
+        if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
+            return response()->json(['error' => 'The file must be an image (jpg, jpeg, png, gif, or webp).'], 422);
+        }
 
-        // Update staff record with picture URL (store relative path)
-        $staff->update(['picture_url' => $fileName]);
+        // Delete old picture if exists
+        if ($staff->picture_url) {
+            // Try to delete old picture from public storage
+            $this->fileStorageService->deleteFile($staff->picture_url, $this->fileStorageService->getPublicDisk());
+        }
+
+        // Store picture using FileStorageService (PUBLIC storage for staff pictures)
+        $filePath = $this->fileStorageService->storeStaffPicturePublic(
+            $file,
+            $staff->organization_id,
+            $id,
+            $staff->school_id
+        );
+
+        // Update staff record with picture path
+        $staff->update(['picture_url' => $filePath]);
 
         // Return public URL
-        $publicUrl = Storage::disk('public')->url($storedPath);
+        $publicUrl = $this->fileStorageService->getPublicUrl($filePath);
 
         return response()->json([
             'url' => $publicUrl,
-            'path' => $fileName,
+            'path' => $filePath,
         ]);
     }
 
@@ -840,12 +852,10 @@ class StaffController extends Controller
             return response()->json(['error' => 'Staff member not found'], 404);
         }
 
-        // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
         $orgIds = [$profile->organization_id];
 
         if (!in_array($staff->organization_id, $orgIds)) {
@@ -859,15 +869,15 @@ class StaffController extends Controller
         ]);
 
         $file = $request->file('file');
-        $fileExt = $file->getClientOriginalExtension();
-        $fileName = time() . '.' . $fileExt;
-        
-        // Build path: {organization_id}/{school_id}/{staff_id}/documents/{document_type}/{filename}
-        $schoolPath = $staff->school_id ? "{$staff->school_id}/" : '';
-        $filePath = "{$staff->organization_id}/{$schoolPath}{$staff->id}/documents/{$request->document_type}/{$fileName}";
 
-        // Store file
-        $storedPath = $file->storeAs('staff-files', $filePath, 'public');
+        // Store document using FileStorageService (PRIVATE storage for staff documents)
+        $filePath = $this->fileStorageService->storeStaffDocument(
+            $file,
+            $staff->organization_id,
+            $id,
+            $staff->school_id,
+            $request->document_type
+        );
 
         // Create document record
         $document = StaffDocument::create([
@@ -878,17 +888,17 @@ class StaffController extends Controller
             'file_name' => $file->getClientOriginalName(),
             'file_path' => $filePath,
             'file_size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
+            'mime_type' => $this->fileStorageService->getMimeTypeFromExtension($file->getClientOriginalName()),
             'description' => $request->description ?? null,
             'uploaded_by' => $user->id,
         ]);
 
-        // Return public URL
-        $publicUrl = Storage::disk('public')->url($storedPath);
+        // Return download URL for private file
+        $downloadUrl = $this->fileStorageService->getPrivateDownloadUrl($filePath);
 
         return response()->json([
             'document' => $document,
-            'url' => $publicUrl,
+            'download_url' => $downloadUrl,
         ], 201);
     }
 }
