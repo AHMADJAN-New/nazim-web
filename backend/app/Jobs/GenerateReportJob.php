@@ -3,7 +3,9 @@
 namespace App\Jobs;
 
 use App\Models\ReportRun;
+use App\Models\ReportTemplate;
 use App\Services\Reports\BrandingCacheService;
+use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ExcelReportService;
 use App\Services\Reports\PdfReportService;
 use App\Services\Reports\ReportConfig;
@@ -49,7 +51,8 @@ class GenerateReportJob implements ShouldQueue
     public function handle(
         BrandingCacheService $brandingCache,
         PdfReportService $pdfService,
-        ExcelReportService $excelService
+        ExcelReportService $excelService,
+        DateConversionService $dateService
     ): void {
         $startTime = microtime(true);
 
@@ -73,7 +76,7 @@ class GenerateReportJob implements ShouldQueue
 
             // Generate the report using the service
             // We need to manually handle the generation since we already have a report run
-            $this->generateReport($reportRun, $config, $this->reportData, $brandingCache, $pdfService, $excelService, $startTime);
+            $this->generateReport($reportRun, $config, $this->reportData, $brandingCache, $pdfService, $excelService, $dateService, $startTime);
 
         } catch (\Exception $e) {
             $durationMs = (int) ((microtime(true) - $startTime) * 1000);
@@ -100,6 +103,7 @@ class GenerateReportJob implements ShouldQueue
         BrandingCacheService $brandingCache,
         PdfReportService $pdfService,
         ExcelReportService $excelService,
+        DateConversionService $dateService,
         float $startTime
     ): void {
         // Load branding data
@@ -108,7 +112,15 @@ class GenerateReportJob implements ShouldQueue
 
         // Load layout configuration
         $layout = $this->loadLayout($config, $brandingCache);
-        $reportRun->updateProgress(20, 'Loaded layout configuration');
+        $reportRun->updateProgress(15, 'Loaded layout configuration');
+
+        // Load ReportTemplate (custom header/footer) if specified
+        $reportTemplate = $this->loadReportTemplate($config);
+        $reportRun->updateProgress(20, 'Loaded report template');
+
+        // Merge report template settings with layout
+        $layout = $this->mergeReportTemplate($layout, $reportTemplate, $branding);
+        $reportRun->updateProgress(25, 'Merged template settings');
 
         // Load notes
         $notes = $this->loadNotes($config, $brandingCache);
@@ -119,7 +131,7 @@ class GenerateReportJob implements ShouldQueue
         $reportRun->updateProgress(40, 'Loaded watermark');
 
         // Build context for template
-        $context = $this->buildContext($config, $data, $branding, $layout, $notes, $watermark);
+        $context = $this->buildContext($config, $data, $branding, $layout, $notes, $watermark, $dateService);
         $reportRun->updateProgress(50, 'Built template context');
 
         // Generate the report
@@ -234,6 +246,95 @@ class GenerateReportJob implements ShouldQueue
     }
 
     /**
+     * Load ReportTemplate if specified
+     */
+    private function loadReportTemplate(ReportConfig $config): ?ReportTemplate
+    {
+        if (!$config->reportTemplateId) {
+            return null;
+        }
+
+        return ReportTemplate::where('id', $config->reportTemplateId)
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->first();
+    }
+
+    /**
+     * Merge ReportTemplate settings with layout
+     * ReportTemplate overrides take precedence
+     */
+    private function mergeReportTemplate(array $layout, ?ReportTemplate $template, array $branding): array
+    {
+        if (!$template) {
+            return $layout;
+        }
+
+        // Override header/footer HTML if provided by template
+        if ($template->header_html) {
+            $layout['header_html'] = $template->header_html;
+        }
+        if ($template->footer_html) {
+            $layout['footer_html'] = $template->footer_html;
+        }
+
+        // Override header/footer text if provided
+        if ($template->header_text) {
+            $layout['header_text'] = $template->header_text;
+        }
+        if ($template->header_text_position) {
+            $layout['header_text_position'] = $template->header_text_position;
+        }
+        if ($template->footer_text) {
+            $layout['footer_text'] = $template->footer_text;
+        }
+        if ($template->footer_text_position) {
+            $layout['footer_text_position'] = $template->footer_text_position;
+        }
+
+        // Override report settings if provided by template
+        // Use individual boolean fields directly (like school branding)
+        if ($template->show_primary_logo !== null) {
+            $layout['show_primary_logo'] = $template->show_primary_logo;
+        }
+        if ($template->show_secondary_logo !== null) {
+            $layout['show_secondary_logo'] = $template->show_secondary_logo;
+        }
+        if ($template->show_ministry_logo !== null) {
+            $layout['show_ministry_logo'] = $template->show_ministry_logo;
+        }
+        
+        // Override logo positions if provided by template
+        if ($template->primary_logo_position !== null) {
+            $layout['primary_logo_position'] = $template->primary_logo_position;
+        }
+        if ($template->secondary_logo_position !== null) {
+            $layout['secondary_logo_position'] = $template->secondary_logo_position;
+        }
+        if ($template->ministry_logo_position !== null) {
+            $layout['ministry_logo_position'] = $template->ministry_logo_position;
+        }
+
+        if ($template->show_page_numbers !== null) {
+            $layout['show_page_numbers'] = $template->show_page_numbers;
+        }
+
+        if ($template->show_generation_date !== null) {
+            $layout['show_generation_date'] = $template->show_generation_date;
+        }
+
+        if ($template->table_alternating_colors !== null) {
+            $layout['table_alternating_colors'] = $template->table_alternating_colors;
+        }
+
+        if ($template->report_font_size) {
+            $layout['font_size'] = $template->report_font_size;
+        }
+
+        return $layout;
+    }
+
+    /**
      * Build template context
      */
     private function buildContext(
@@ -242,7 +343,8 @@ class GenerateReportJob implements ShouldQueue
         array $branding,
         array $layout,
         array $notes,
-        ?array $watermark
+        ?array $watermark,
+        DateConversionService $dateService
     ): array {
         $columns = $data['columns'] ?? [];
         $rows = $data['rows'] ?? [];
@@ -267,7 +369,8 @@ class GenerateReportJob implements ShouldQueue
             'SECONDARY_COLOR' => $branding['secondary_color'] ?? '#0056b3',
             'ACCENT_COLOR' => $branding['accent_color'] ?? '#ff6b35',
             'FONT_FAMILY' => $branding['font_family'] ?? 'Bahij Nassim',
-            'FONT_SIZE' => $branding['report_font_size'] ?? '12px',
+            // CRITICAL: Use template font size from layout first, then branding fallback
+            'FONT_SIZE' => $layout['font_size'] ?? $branding['report_font_size'] ?? '12px',
 
             // Logos
             'PRIMARY_LOGO_URI' => $branding['primary_logo_uri'] ?? null,
@@ -289,10 +392,10 @@ class GenerateReportJob implements ShouldQueue
             'footer_html' => $layout['footer_html'] ?? null,
             'extra_css' => $layout['extra_css'] ?? null,
 
-            // Report settings
-            'table_alternating_colors' => $branding['table_alternating_colors'] ?? true,
-            'show_page_numbers' => $branding['show_page_numbers'] ?? true,
-            'show_generation_date' => $branding['show_generation_date'] ?? true,
+            // Report settings - CRITICAL: Use template settings from layout first, then branding fallback
+            'table_alternating_colors' => $layout['table_alternating_colors'] ?? $branding['table_alternating_colors'] ?? true,
+            'show_page_numbers' => $layout['show_page_numbers'] ?? $branding['show_page_numbers'] ?? true,
+            'show_generation_date' => $layout['show_generation_date'] ?? $branding['show_generation_date'] ?? true,
 
             // Report data
             'COLUMNS' => $columns,
@@ -309,16 +412,44 @@ class GenerateReportJob implements ShouldQueue
             // Watermark
             'WATERMARK' => $watermark,
 
-            // Date/time
-            'CURRENT_DATE' => now()->format('Y-m-d'),
+            // Date/time with calendar preference support
+            'CURRENT_DATE' => $dateService->formatDate(
+                now(),
+                $config->calendarPreference,
+                'full',
+                $config->language
+            ),
+            'CURRENT_DATE_NUMERIC' => $dateService->formatDate(
+                now(),
+                $config->calendarPreference,
+                'numeric',
+                $config->language
+            ),
+            'CURRENT_DATE_SHORT' => $dateService->formatDate(
+                now(),
+                $config->calendarPreference,
+                'short',
+                $config->language
+            ),
+            'CURRENT_DATE_GREGORIAN' => now()->format('Y-m-d'),
             'CURRENT_TIME' => now()->format('H:i'),
-            'CURRENT_DATETIME' => now()->format('Y-m-d H:i'),
+            'CURRENT_DATETIME' => $dateService->formatDate(
+                now(),
+                $config->calendarPreference,
+                'full',
+                $config->language
+            ) . ' ' . now()->format('H:i'),
+            'calendar_preference' => $config->calendarPreference,
+            'language' => $config->language,
 
             // Template
             'template_name' => $templateName,
 
             // Parameters
             'parameters' => $config->parameters,
+
+            // Date service for row data
+            'date_service' => $dateService,
         ];
     }
 

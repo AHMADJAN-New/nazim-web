@@ -1,6 +1,21 @@
 @extends('reports.base')
 
 @section('content')
+@php
+    $baseFontSize = isset($FONT_SIZE) && !empty($FONT_SIZE) ? intval(str_replace(['px', 'pt'], '', $FONT_SIZE)) : 12;
+@endphp
+<style>
+    /* A4 Portrait footer adjustments */
+    .report-footer .footer-row {
+        gap: 8px;
+    }
+    .report-footer .footer-left, 
+    .report-footer .footer-right, 
+    .report-footer .footer-center {
+        padding: 0 4px;
+        font-size: {{ ($baseFontSize * 0.7) }}px;
+    }
+</style>
     {{-- Watermark --}}
     @if(!empty($WATERMARK))
         <div class="watermark">
@@ -35,21 +50,27 @@
 
         {{-- Center content --}}
         <div class="header-center">
+            {{-- Header text above school name --}}
+            @if(!empty($header_text) && ($header_text_position ?? 'below_school_name') === 'above_school_name')
+                <div class="header-text" style="margin-bottom: 5px;">{{ $header_text }}</div>
+            @endif
+
             @if(!empty($SCHOOL_NAME_PASHTO))
                 <div class="school-name">{{ $SCHOOL_NAME_PASHTO }}</div>
             @elseif(!empty($SCHOOL_NAME))
                 <div class="school-name">{{ $SCHOOL_NAME }}</div>
             @endif
 
-            @if(!empty($HEADER_TEXT))
-                <div class="header-text" style="margin-top: 5px;">{{ $HEADER_TEXT }}</div>
+            {{-- Header text below school name (default) --}}
+            @if(!empty($header_text) && ($header_text_position ?? 'below_school_name') === 'below_school_name')
+                <div class="header-text" style="margin-top: 5px;">{{ $header_text }}</div>
             @endif
 
             @if(!empty($TABLE_TITLE))
                 <div class="report-title">{{ $TABLE_TITLE }}</div>
             @endif
 
-            {{-- Custom header HTML --}}
+            {{-- Custom header HTML (overrides header text if provided) --}}
             @if(!empty($header_html))
                 <div class="custom-header">{!! $header_html !!}</div>
             @endif
@@ -131,13 +152,25 @@
 
     {{-- Footer --}}
     <div class="report-footer">
+        {{-- Footer text (from template) --}}
+        @if(!empty($footer_text))
+            <div class="footer-text">{{ $footer_text }}</div>
+        @endif
+
+        {{-- First row: Contact info and date --}}
         <div class="footer-row">
             <div class="footer-left">
                 @if(!empty($SCHOOL_PHONE))
                     تلیفون: {{ $SCHOOL_PHONE }}
                 @endif
                 @if(!empty($SCHOOL_EMAIL))
-                    | ایمیل: {{ $SCHOOL_EMAIL }}
+                    @if(!empty($SCHOOL_PHONE)) | @endif
+                    ایمیل: {{ $SCHOOL_EMAIL }}
+                @endif
+            </div>
+            <div class="footer-center">
+                @if(!empty($SCHOOL_WEBSITE))
+                    {{ $SCHOOL_WEBSITE }}
                 @endif
             </div>
             <div class="footer-right">
@@ -147,18 +180,14 @@
             </div>
         </div>
 
-        @if(!empty($SCHOOL_WEBSITE) || !empty($SCHOOL_ADDRESS))
+        {{-- Second row: Address (if available) --}}
+        @if(!empty($SCHOOL_ADDRESS))
             <div class="footer-row">
-                <div class="footer-left">
-                    @if(!empty($SCHOOL_ADDRESS))
-                        {{ $SCHOOL_ADDRESS }}
-                    @endif
+                <div class="footer-left"></div>
+                <div class="footer-center">
+                    {{ $SCHOOL_ADDRESS }}
                 </div>
-                <div class="footer-right">
-                    @if(!empty($SCHOOL_WEBSITE))
-                        {{ $SCHOOL_WEBSITE }}
-                    @endif
-                </div>
+                <div class="footer-right"></div>
             </div>
         @endif
 

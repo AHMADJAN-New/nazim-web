@@ -324,6 +324,8 @@ class ReportGenerationController extends Controller
     {
         $templateName = $request->get('template_name', 'table_a4_portrait');
         $brandingId = $request->get('branding_id');
+        $reportTemplateId = $request->get('report_template_id');
+        $schoolId = $request->get('school_id'); // For getting default template if report_template_id not provided
 
         // Load branding if provided (no auth required for preview)
         // Force refresh cache if ?refresh=1 is in query string
@@ -364,6 +366,120 @@ class ReportGenerationController extends Controller
             }
         }
 
+        // Load ReportTemplate if provided
+        $reportTemplate = null;
+        $layout = [
+            'page_size' => 'A4',
+            'orientation' => 'portrait',
+            'margins' => '15mm 12mm 18mm 12mm',
+            'rtl' => true,
+            'show_primary_logo' => true,
+            'show_secondary_logo' => true,
+            'show_ministry_logo' => false,
+            'logo_height_px' => 60,
+            'header_height_px' => 100,
+            'header_layout_style' => 'three-column',
+        ];
+
+        if ($reportTemplateId) {
+            $reportTemplate = \App\Models\ReportTemplate::where('id', $reportTemplateId)
+                ->where('is_active', true)
+                ->whereNull('deleted_at')
+                ->first();
+        } elseif ($schoolId) {
+            // Try to get default template for the school
+            // First try general_report type, then any default template
+            $reportTemplate = \App\Models\ReportTemplate::where('school_id', $schoolId)
+                ->where('template_type', 'general_report')
+                ->where('is_active', true)
+                ->where('is_default', true)
+                ->whereNull('deleted_at')
+                ->first();
+            
+            // If no general_report default, try any default template for this school
+            if (!$reportTemplate) {
+                $reportTemplate = \App\Models\ReportTemplate::where('school_id', $schoolId)
+                    ->where('is_active', true)
+                    ->where('is_default', true)
+                    ->whereNull('deleted_at')
+                    ->first();
+            }
+            
+            // If still no default, try any active template for general_report
+            if (!$reportTemplate) {
+                $reportTemplate = \App\Models\ReportTemplate::where('school_id', $schoolId)
+                    ->where('template_type', 'general_report')
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+            }
+        }
+
+        // Merge report template settings if found
+        if ($reportTemplate) {
+            // Override header/footer HTML if provided by template
+            if ($reportTemplate->header_html) {
+                $layout['header_html'] = $reportTemplate->header_html;
+            }
+            if ($reportTemplate->footer_html) {
+                $layout['footer_html'] = $reportTemplate->footer_html;
+            }
+
+            // Override header/footer text if provided
+            if ($reportTemplate->header_text) {
+                $layout['header_text'] = $reportTemplate->header_text;
+            }
+            if ($reportTemplate->header_text_position) {
+                $layout['header_text_position'] = $reportTemplate->header_text_position;
+            }
+            if ($reportTemplate->footer_text) {
+                $layout['footer_text'] = $reportTemplate->footer_text;
+            }
+            if ($reportTemplate->footer_text_position) {
+                $layout['footer_text_position'] = $reportTemplate->footer_text_position;
+            }
+
+            // Override report settings if provided by template
+            // Use individual boolean fields directly (like school branding)
+            if ($reportTemplate->show_primary_logo !== null) {
+                $layout['show_primary_logo'] = $reportTemplate->show_primary_logo;
+            }
+            if ($reportTemplate->show_secondary_logo !== null) {
+                $layout['show_secondary_logo'] = $reportTemplate->show_secondary_logo;
+            }
+            if ($reportTemplate->show_ministry_logo !== null) {
+                $layout['show_ministry_logo'] = $reportTemplate->show_ministry_logo;
+            }
+            
+            // Override logo positions if provided by template
+            if ($reportTemplate->primary_logo_position !== null) {
+                $layout['primary_logo_position'] = $reportTemplate->primary_logo_position;
+            }
+            if ($reportTemplate->secondary_logo_position !== null) {
+                $layout['secondary_logo_position'] = $reportTemplate->secondary_logo_position;
+            }
+            if ($reportTemplate->ministry_logo_position !== null) {
+                $layout['ministry_logo_position'] = $reportTemplate->ministry_logo_position;
+            }
+
+            if ($reportTemplate->show_page_numbers !== null) {
+                $layout['show_page_numbers'] = $reportTemplate->show_page_numbers;
+            }
+
+            if ($reportTemplate->show_generation_date !== null) {
+                $layout['show_generation_date'] = $reportTemplate->show_generation_date;
+            }
+
+            if ($reportTemplate->table_alternating_colors !== null) {
+                $layout['table_alternating_colors'] = $reportTemplate->table_alternating_colors;
+            }
+
+            if ($reportTemplate->report_font_size) {
+                $layout['font_size'] = $reportTemplate->report_font_size;
+            }
+        }
+
         // Create mock context for preview (use real branding if available)
         $context = [
             // Branding (use real branding data if loaded)
@@ -378,7 +494,8 @@ class ReportGenerationController extends Controller
             'SECONDARY_COLOR' => ($branding && isset($branding['secondary_color']) && !empty($branding['secondary_color'])) ? $branding['secondary_color'] : '#0056b3',
             'ACCENT_COLOR' => ($branding && isset($branding['accent_color']) && !empty($branding['accent_color'])) ? $branding['accent_color'] : '#ff6b35',
             'FONT_FAMILY' => ($branding && isset($branding['font_family']) && !empty(trim($branding['font_family']))) ? trim($branding['font_family']) : 'Bahij Nassim',
-            'FONT_SIZE' => ($branding && isset($branding['report_font_size']) && !empty(trim($branding['report_font_size']))) ? trim($branding['report_font_size']) : '12px',
+            // CRITICAL: Use template font size from layout first, then branding fallback
+            'FONT_SIZE' => $layout['font_size'] ?? (($branding && isset($branding['report_font_size']) && !empty(trim($branding['report_font_size']))) ? trim($branding['report_font_size']) : '12px'),
             
             // Debug: Log what we're passing to template
             // Note: Remove this in production if not needed
@@ -393,16 +510,16 @@ class ReportGenerationController extends Controller
             'MINISTRY_LOGO_URI' => ($branding && isset($branding['ministry_logo_uri']) && !empty($branding['ministry_logo_uri'])) 
                 ? $branding['ministry_logo_uri'] 
                 : null,
-            // Use branding's logo visibility settings (already limited to max 2 logos)
-            'show_primary_logo' => ($branding && isset($branding['show_primary_logo'])) 
+            // Use template logo settings first, then branding fallback
+            'show_primary_logo' => $layout['show_primary_logo'] ?? (($branding && isset($branding['show_primary_logo'])) 
                 ? (bool)$branding['show_primary_logo'] 
-                : true,
-            'show_secondary_logo' => ($branding && isset($branding['show_secondary_logo'])) 
+                : true),
+            'show_secondary_logo' => $layout['show_secondary_logo'] ?? (($branding && isset($branding['show_secondary_logo'])) 
                 ? (bool)$branding['show_secondary_logo'] 
-                : false,
-            'show_ministry_logo' => ($branding && isset($branding['show_ministry_logo'])) 
+                : false),
+            'show_ministry_logo' => $layout['show_ministry_logo'] ?? (($branding && isset($branding['show_ministry_logo'])) 
                 ? (bool)$branding['show_ministry_logo'] 
-                : false,
+                : false),
             'primary_logo_position' => ($branding && isset($branding['primary_logo_position'])) 
                 ? $branding['primary_logo_position'] 
                 : 'left',
@@ -412,18 +529,27 @@ class ReportGenerationController extends Controller
             'ministry_logo_position' => ($branding && isset($branding['ministry_logo_position'])) 
                 ? $branding['ministry_logo_position'] 
                 : 'right',
-            'HEADER_TEXT' => ($branding && isset($branding['header_text']) && !empty($branding['header_text'])) 
+            // Header/footer text from template (overrides branding)
+            'header_text' => $layout['header_text'] ?? (($branding && isset($branding['header_text']) && !empty($branding['header_text'])) 
                 ? $branding['header_text'] 
-                : null,
+                : null),
+            'header_text_position' => $layout['header_text_position'] ?? 'below_school_name',
+            'footer_text' => $layout['footer_text'] ?? null,
+            'footer_text_position' => $layout['footer_text_position'] ?? 'footer',
 
-            // Layout
-            'page_size' => $request->get('page_size', 'A4'),
-            'orientation' => $request->get('orientation', 'portrait'),
-            'margins' => '15mm 12mm 18mm 12mm',
-            'rtl' => true,
-            'logo_height_px' => 90, // Larger logos for better visibility
-            'header_height_px' => 100,
-            'table_alternating_colors' => ($branding && isset($branding['table_alternating_colors'])) ? (bool)$branding['table_alternating_colors'] : true,
+            // Layout (from template or defaults)
+            'page_size' => $layout['page_size'] ?? $request->get('page_size', 'A4'),
+            'orientation' => $layout['orientation'] ?? $request->get('orientation', 'portrait'),
+            'margins' => $layout['margins'] ?? '15mm 12mm 18mm 12mm',
+            'rtl' => $layout['rtl'] ?? true,
+            'logo_height_px' => $layout['logo_height_px'] ?? 90, // Larger logos for better visibility
+            'header_height_px' => $layout['header_height_px'] ?? 100,
+            'header_layout_style' => $layout['header_layout_style'] ?? 'three-column',
+            'header_html' => $layout['header_html'] ?? null,
+            'footer_html' => $layout['footer_html'] ?? null,
+            'extra_css' => $layout['extra_css'] ?? null,
+            // Report settings - CRITICAL: Use template settings from layout first, then branding fallback
+            'table_alternating_colors' => $layout['table_alternating_colors'] ?? (($branding && isset($branding['table_alternating_colors'])) ? (bool)$branding['table_alternating_colors'] : true),
 
             // Report content
             'TABLE_TITLE' => $request->get('title', 'Sample Report Title'),
@@ -456,14 +582,9 @@ class ReportGenerationController extends Controller
             // Watermark
             'WATERMARK' => null,
 
-            // Page numbering
-            'show_page_numbers' => true,
-            'show_generation_date' => true,
-
-            // Custom HTML
-            'header_html' => null,
-            'footer_html' => null,
-            'extra_css' => null,
+            // Page numbering - CRITICAL: Use template settings from layout first, then defaults
+            'show_page_numbers' => $layout['show_page_numbers'] ?? true,
+            'show_generation_date' => $layout['show_generation_date'] ?? true,
         ];
 
         // Debug: Log what's being passed to template

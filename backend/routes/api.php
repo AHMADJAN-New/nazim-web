@@ -183,6 +183,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Report Templates
     Route::get('/report-templates/school/{schoolId}', [ReportTemplateController::class, 'bySchool']);
+    Route::get('/report-templates/default', [ReportTemplateController::class, 'getDefault']);
     Route::apiResource('report-templates', ReportTemplateController::class);
 
     // Staff Documents

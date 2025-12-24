@@ -299,25 +299,37 @@ class ReportService
         if ($template->header_text) {
             $layout['header_text'] = $template->header_text;
         }
+        if ($template->header_text_position) {
+            $layout['header_text_position'] = $template->header_text_position;
+        }
         if ($template->footer_text) {
             $layout['footer_text'] = $template->footer_text;
         }
+        if ($template->footer_text_position) {
+            $layout['footer_text_position'] = $template->footer_text_position;
+        }
 
         // Override report settings if provided by template
-        if ($template->report_logo_selection !== null) {
-            $layout['report_logo_selection'] = $template->report_logo_selection;
-
-            // Apply logo visibility based on selection
-            $logoSelection = $template->report_logo_selection;
-            $layout['show_primary_logo'] = in_array($logoSelection, ['primary', 'all']);
-            $layout['show_secondary_logo'] = in_array($logoSelection, ['secondary', 'all']);
-            $layout['show_ministry_logo'] = in_array($logoSelection, ['ministry', 'all']);
-
-            if ($logoSelection === 'none') {
-                $layout['show_primary_logo'] = false;
-                $layout['show_secondary_logo'] = false;
-                $layout['show_ministry_logo'] = false;
-            }
+        // Use individual boolean fields directly (like school branding)
+        if ($template->show_primary_logo !== null) {
+            $layout['show_primary_logo'] = $template->show_primary_logo;
+        }
+        if ($template->show_secondary_logo !== null) {
+            $layout['show_secondary_logo'] = $template->show_secondary_logo;
+        }
+        if ($template->show_ministry_logo !== null) {
+            $layout['show_ministry_logo'] = $template->show_ministry_logo;
+        }
+        
+        // Override logo positions if provided by template
+        if ($template->primary_logo_position !== null) {
+            $layout['primary_logo_position'] = $template->primary_logo_position;
+        }
+        if ($template->secondary_logo_position !== null) {
+            $layout['secondary_logo_position'] = $template->secondary_logo_position;
+        }
+        if ($template->ministry_logo_position !== null) {
+            $layout['ministry_logo_position'] = $template->ministry_logo_position;
         }
 
         if ($template->show_page_numbers !== null) {
@@ -373,7 +385,8 @@ class ReportService
             'SECONDARY_COLOR' => $branding['secondary_color'] ?? '#0056b3',
             'ACCENT_COLOR' => $branding['accent_color'] ?? '#ff6b35',
             'FONT_FAMILY' => $branding['font_family'] ?? 'Bahij Nassim',
-            'FONT_SIZE' => $branding['report_font_size'] ?? '12px',
+            // CRITICAL: Use template font size from layout first, then branding fallback
+            'FONT_SIZE' => $layout['font_size'] ?? $branding['report_font_size'] ?? '12px',
 
             // Logos
             'PRIMARY_LOGO_URI' => $branding['primary_logo_uri'] ?? null,
@@ -394,11 +407,15 @@ class ReportService
             'header_html' => $layout['header_html'] ?? null,
             'footer_html' => $layout['footer_html'] ?? null,
             'extra_css' => $layout['extra_css'] ?? null,
+            'header_text' => $layout['header_text'] ?? null,
+            'header_text_position' => $layout['header_text_position'] ?? 'below_school_name',
+            'footer_text' => $layout['footer_text'] ?? null,
+            'footer_text_position' => $layout['footer_text_position'] ?? 'footer',
 
-            // Report settings
-            'table_alternating_colors' => $branding['table_alternating_colors'] ?? true,
-            'show_page_numbers' => $branding['show_page_numbers'] ?? true,
-            'show_generation_date' => $branding['show_generation_date'] ?? true,
+            // Report settings - CRITICAL: Use template settings from layout first, then branding fallback
+            'table_alternating_colors' => $layout['table_alternating_colors'] ?? $branding['table_alternating_colors'] ?? true,
+            'show_page_numbers' => $layout['show_page_numbers'] ?? $branding['show_page_numbers'] ?? true,
+            'show_generation_date' => $layout['show_generation_date'] ?? $branding['show_generation_date'] ?? true,
 
             // Report data
             'COLUMNS' => $columns,

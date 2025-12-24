@@ -42,7 +42,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Search, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, FileText, ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -54,16 +54,31 @@ const reportTemplateSchema = z.object({
     template_type: z.string().min(1, 'Template type is required'),
     school_id: z.string().uuid('School is required'),
     header_text: z.string().optional(),
+    header_text_position: z.enum(['above_school_name', 'below_school_name']).optional(),
     footer_text: z.string().optional(),
+    footer_text_position: z.string().optional(),
     header_html: z.string().optional(),
     footer_html: z.string().optional(),
     report_logo_selection: z.string().optional(),
+    show_primary_logo: z.boolean().optional(),
+    show_secondary_logo: z.boolean().optional(),
+    show_ministry_logo: z.boolean().optional(),
+    primary_logo_position: z.enum(['left', 'right']).optional().nullable(),
+    secondary_logo_position: z.enum(['left', 'right']).optional().nullable(),
+    ministry_logo_position: z.enum(['left', 'right']).optional().nullable(),
     show_page_numbers: z.boolean().optional(),
     show_generation_date: z.boolean().optional(),
     table_alternating_colors: z.boolean().optional(),
     report_font_size: z.string().max(10, 'Font size must be 10 characters or less').optional(),
     is_default: z.boolean().optional(),
     is_active: z.boolean().optional(),
+}).refine((data) => {
+    // Max 2 logos can be enabled
+    const enabledCount = [data.show_primary_logo, data.show_secondary_logo, data.show_ministry_logo].filter(Boolean).length;
+    return enabledCount <= 2;
+}, {
+    message: 'Maximum 2 logos can be enabled at a time',
+    path: ['show_secondary_logo'], // Show error on secondary logo field
 });
 
 type ReportTemplateFormData = z.infer<typeof reportTemplateSchema>;
@@ -97,17 +112,28 @@ export function ReportTemplatesManagement() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+    const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+    const [previewSchoolId, setPreviewSchoolId] = useState<string | undefined>(undefined);
 
     const {
         register,
         handleSubmit,
         control,
         reset,
+        watch,
+        setValue,
         formState: { errors },
     } = useForm<ReportTemplateFormData>({
         resolver: zodResolver(reportTemplateSchema),
         defaultValues: {
-            report_logo_selection: 'primary',
+            report_logo_selection: 'none',
+            show_primary_logo: true,
+            show_secondary_logo: false,
+            show_ministry_logo: false,
+            primary_logo_position: 'left',
+            secondary_logo_position: 'right',
+            ministry_logo_position: 'right',
             show_page_numbers: true,
             show_generation_date: true,
             table_alternating_colors: true,
@@ -141,10 +167,18 @@ export function ReportTemplatesManagement() {
                     template_type: template.template_type,
                     school_id: template.school_id,
                     header_text: template.header_text || '',
+                    header_text_position: (template.header_text_position as 'above_school_name' | 'below_school_name') || 'below_school_name',
                     footer_text: template.footer_text || '',
+                    footer_text_position: template.footer_text_position || 'footer',
                     header_html: template.header_html || '',
                     footer_html: template.footer_html || '',
-                    report_logo_selection: template.report_logo_selection,
+                    report_logo_selection: template.report_logo_selection || 'none',
+                    show_primary_logo: template.show_primary_logo ?? true,
+                    show_secondary_logo: template.show_secondary_logo ?? false,
+                    show_ministry_logo: template.show_ministry_logo ?? false,
+                    primary_logo_position: (template.primary_logo_position as 'left' | 'right') || 'left',
+                    secondary_logo_position: (template.secondary_logo_position as 'left' | 'right') || 'right',
+                    ministry_logo_position: (template.ministry_logo_position as 'left' | 'right') || 'right',
                     show_page_numbers: template.show_page_numbers,
                     show_generation_date: template.show_generation_date,
                     table_alternating_colors: template.table_alternating_colors,
@@ -160,10 +194,18 @@ export function ReportTemplatesManagement() {
                 template_type: '',
                 school_id: selectedSchoolId || '',
                 header_text: '',
+                header_text_position: 'below_school_name',
                 footer_text: '',
+                footer_text_position: 'footer',
                 header_html: '',
                 footer_html: '',
-                report_logo_selection: 'primary',
+                report_logo_selection: 'none',
+                show_primary_logo: true,
+                show_secondary_logo: false,
+                show_ministry_logo: false,
+                primary_logo_position: 'left',
+                secondary_logo_position: 'right',
+                ministry_logo_position: 'right',
                 show_page_numbers: true,
                 show_generation_date: true,
                 table_alternating_colors: true,
@@ -344,6 +386,17 @@ export function ReportTemplatesManagement() {
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setPreviewTemplateId(template.id);
+                                                                setPreviewSchoolId(template.school_id);
+                                                            }}
+                                                            title={t('reportTemplates.previewTemplate') || 'Preview Template'}
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
                                                         {hasUpdatePermission && (
                                                             <Button
                                                                 variant="ghost"
@@ -453,64 +506,290 @@ export function ReportTemplatesManagement() {
                                     <p className="text-sm text-destructive">{errors.school_id.message}</p>
                                 )}
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="header_text">{t('reportTemplates.headerText')}</Label>
-                                <Textarea
-                                    id="header_text"
-                                    {...register('header_text')}
-                                    placeholder={t('reportTemplates.enterHeaderText')}
-                                    rows={3}
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="header_html">{t('reportTemplates.headerHtml')}</Label>
-                                <Textarea
-                                    id="header_html"
-                                    {...register('header_html')}
-                                    placeholder={t('reportTemplates.enterHeaderHtml')}
-                                    rows={5}
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="footer_text">{t('reportTemplates.footerText')}</Label>
-                                <Textarea
-                                    id="footer_text"
-                                    {...register('footer_text')}
-                                    placeholder={t('reportTemplates.enterFooterText')}
-                                    rows={3}
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="footer_html">{t('reportTemplates.footerHtml')}</Label>
-                                <Textarea
-                                    id="footer_html"
-                                    {...register('footer_html')}
-                                    placeholder={t('reportTemplates.enterFooterHtml')}
-                                    rows={5}
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            {/* Header Text Section */}
+                            <div className="grid gap-4 p-4 border rounded-lg bg-muted/30">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="report_logo_selection">{t('reportTemplates.reportLogoSelection')}</Label>
+                                    <Label htmlFor="header_text" className="text-base font-semibold">
+                                        {t('reportTemplates.headerText')}
+                                    </Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('reportTemplates.headerTextDescription') || 'Add a short note or message to display in the header area of your reports.'}
+                                    </p>
+                                    <Textarea
+                                        id="header_text"
+                                        {...register('header_text')}
+                                        placeholder={t('reportTemplates.enterHeaderText') || 'e.g., "Academic Year 2024-2025" or "Confidential Report"'}
+                                        rows={3}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="header_text_position">{t('reportTemplates.headerTextPosition') || 'Header Text Position'}</Label>
                                     <Controller
-                                        name="report_logo_selection"
+                                        name="header_text_position"
                                         control={control}
                                         render={({ field }) => (
-                                            <Select onValueChange={field.onChange} value={field.value || 'primary'}>
+                                            <Select onValueChange={field.onChange} value={field.value || 'below_school_name'}>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder={t('reportTemplates.selectLogo')} />
+                                                    <SelectValue placeholder={t('reportTemplates.selectHeaderPosition') || 'Select position'} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="primary">{t('reportTemplates.primaryLogo')}</SelectItem>
-                                                    <SelectItem value="secondary">{t('reportTemplates.secondaryLogo')}</SelectItem>
-                                                    <SelectItem value="ministry">{t('reportTemplates.ministryLogo')}</SelectItem>
-                                                    <SelectItem value="all">{t('reportTemplates.allLogos')}</SelectItem>
-                                                    <SelectItem value="none">{t('reportTemplates.noLogo')}</SelectItem>
+                                                    <SelectItem value="above_school_name">
+                                                        {t('reportTemplates.aboveSchoolName') || 'Above School Name'}
+                                                    </SelectItem>
+                                                    <SelectItem value="below_school_name">
+                                                        {t('reportTemplates.belowSchoolName') || 'Below School Name'}
+                                                    </SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         )}
                                     />
                                 </div>
+                            </div>
+
+                            {/* Footer Text Section */}
+                            <div className="grid gap-4 p-4 border rounded-lg bg-muted/30">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="footer_text" className="text-base font-semibold">
+                                        {t('reportTemplates.footerText')}
+                                    </Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('reportTemplates.footerTextDescription') || 'Add a short note or message to display in the footer area of your reports.'}
+                                    </p>
+                                    <Textarea
+                                        id="footer_text"
+                                        {...register('footer_text')}
+                                        placeholder={t('reportTemplates.enterFooterText') || 'e.g., "This report is confidential" or "Generated by Nazim School Management System"'}
+                                        rows={3}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Advanced Options (HTML) - Collapsible */}
+                            <div className="border rounded-lg">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                                    className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors"
+                                >
+                                    <div>
+                                        <Label className="text-base font-semibold cursor-pointer">
+                                            {t('reportTemplates.advancedOptions') || 'Advanced Options (HTML)'}
+                                        </Label>
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                            {t('reportTemplates.advancedOptionsDescription') || 'For advanced users: Custom HTML for header and footer (optional)'}
+                                        </p>
+                                    </div>
+                                    {showAdvancedOptions ? (
+                                        <ChevronUp className="h-5 w-5" />
+                                    ) : (
+                                        <ChevronDown className="h-5 w-5" />
+                                    )}
+                                </button>
+                                {showAdvancedOptions && (
+                                    <div className="p-4 space-y-4 border-t">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="header_html">{t('reportTemplates.headerHtml')}</Label>
+                                            <p className="text-xs text-muted-foreground">
+                                                {t('reportTemplates.headerHtmlDescription') || 'Custom HTML for header (overrides header text if provided)'}
+                                            </p>
+                                            <Textarea
+                                                id="header_html"
+                                                {...register('header_html')}
+                                                placeholder={t('reportTemplates.enterHeaderHtml') || '<div>Custom HTML here</div>'}
+                                                rows={5}
+                                                className="font-mono text-sm"
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="footer_html">{t('reportTemplates.footerHtml')}</Label>
+                                            <p className="text-xs text-muted-foreground">
+                                                {t('reportTemplates.footerHtmlDescription') || 'Custom HTML for footer (overrides footer text if provided)'}
+                                            </p>
+                                            <Textarea
+                                                id="footer_html"
+                                                {...register('footer_html')}
+                                                placeholder={t('reportTemplates.enterFooterHtml') || '<div>Custom HTML here</div>'}
+                                                rows={5}
+                                                className="font-mono text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Logo Selection Section - Same as SchoolsManagement */}
+                            <div className="border-t pt-4 mt-4">
+                                <Label className="text-base font-semibold mb-4 block">{t('reportTemplates.reportLogoSettings') || t('schools.reportLogoSettings')}</Label>
+                                <p className="text-sm text-muted-foreground mb-4">{t('reportTemplates.reportLogoSettingsDesc') || t('schools.reportLogoSettingsDesc')}</p>
+                                
+                                {(() => {
+                                    const enabledCount = [
+                                        watch('show_primary_logo'),
+                                        watch('show_secondary_logo'),
+                                        watch('show_ministry_logo'),
+                                    ].filter(Boolean).length;
+                                    return enabledCount >= 2 ? (
+                                        <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                                            {t('schools.maxLogosReached')}
+                                        </div>
+                                    ) : null;
+                                })()}
+                                
+                                <div className="grid gap-4">
+                                    {/* Primary Logo */}
+                                    <div className="grid gap-2 p-4 border rounded-lg">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Controller
+                                                    name="show_primary_logo"
+                                                    control={control}
+                                                    render={({ field }) => {
+                                                        const enabledCount = [
+                                                            watch('show_primary_logo'),
+                                                            watch('show_secondary_logo'),
+                                                            watch('show_ministry_logo'),
+                                                        ].filter(Boolean).length;
+                                                        const isMaxReached = enabledCount >= 2 && !field.value;
+                                                        return (
+                                                            <Switch
+                                                                checked={field.value ?? true}
+                                                                onCheckedChange={field.onChange}
+                                                                disabled={isMaxReached}
+                                                            />
+                                                        );
+                                                    }}
+                                                />
+                                                <Label htmlFor="show_primary_logo" className="font-medium">{t('reportTemplates.primaryLogo') || t('schools.primaryLogo')}</Label>
+                                            </div>
+                                            {watch('show_primary_logo') && (
+                                                <Controller
+                                                    name="primary_logo_position"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select onValueChange={field.onChange} value={field.value || 'left'}>
+                                                            <SelectTrigger className="w-32">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="left">{t('schools.left')}</SelectItem>
+                                                                <SelectItem value="right">{t('schools.right')}</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Secondary Logo */}
+                                    <div className="grid gap-2 p-4 border rounded-lg">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Controller
+                                                    name="show_secondary_logo"
+                                                    control={control}
+                                                    render={({ field }) => {
+                                                        const enabledCount = [
+                                                            watch('show_primary_logo'),
+                                                            watch('show_secondary_logo'),
+                                                            watch('show_ministry_logo'),
+                                                        ].filter(Boolean).length;
+                                                        const isMaxReached = enabledCount >= 2 && !field.value;
+                                                        return (
+                                                            <Switch
+                                                                checked={field.value ?? false}
+                                                                onCheckedChange={(checked) => {
+                                                                    // If enabling secondary and primary+ministry are both enabled, disable ministry
+                                                                    if (checked && watch('show_primary_logo') && watch('show_ministry_logo')) {
+                                                                        setValue('show_ministry_logo', false);
+                                                                    }
+                                                                    field.onChange(checked);
+                                                                }}
+                                                                disabled={isMaxReached}
+                                                            />
+                                                        );
+                                                    }}
+                                                />
+                                                <Label htmlFor="show_secondary_logo" className="font-medium">{t('reportTemplates.secondaryLogo') || t('schools.secondaryLogo')}</Label>
+                                            </div>
+                                            {watch('show_secondary_logo') && (
+                                                <Controller
+                                                    name="secondary_logo_position"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select onValueChange={field.onChange} value={field.value || 'right'}>
+                                                            <SelectTrigger className="w-32">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="left">{t('schools.left')}</SelectItem>
+                                                                <SelectItem value="right">{t('schools.right')}</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Ministry Logo */}
+                                    <div className="grid gap-2 p-4 border rounded-lg">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Controller
+                                                    name="show_ministry_logo"
+                                                    control={control}
+                                                    render={({ field }) => {
+                                                        const enabledCount = [
+                                                            watch('show_primary_logo'),
+                                                            watch('show_secondary_logo'),
+                                                            watch('show_ministry_logo'),
+                                                        ].filter(Boolean).length;
+                                                        const isMaxReached = enabledCount >= 2 && !field.value;
+                                                        return (
+                                                            <Switch
+                                                                checked={field.value ?? false}
+                                                                onCheckedChange={(checked) => {
+                                                                    // If enabling ministry and primary+secondary are both enabled, disable secondary
+                                                                    if (checked && watch('show_primary_logo') && watch('show_secondary_logo')) {
+                                                                        setValue('show_secondary_logo', false);
+                                                                    }
+                                                                    field.onChange(checked);
+                                                                }}
+                                                                disabled={isMaxReached}
+                                                            />
+                                                        );
+                                                    }}
+                                                />
+                                                <Label htmlFor="show_ministry_logo" className="font-medium">{t('reportTemplates.ministryLogo') || t('schools.ministryLogo')}</Label>
+                                            </div>
+                                            {watch('show_ministry_logo') && (
+                                                <Controller
+                                                    name="ministry_logo_position"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select onValueChange={field.onChange} value={field.value || 'right'}>
+                                                            <SelectTrigger className="w-32">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="left">{t('schools.left')}</SelectItem>
+                                                                <SelectItem value="right">{t('schools.right')}</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {errors.show_secondary_logo && (
+                                        <p className="text-sm text-destructive">{errors.show_secondary_logo.message}</p>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="report_font_size">{t('reportTemplates.reportFontSize')}</Label>
                                     <Input
@@ -620,6 +899,41 @@ export function ReportTemplatesManagement() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Preview Dialog */}
+            <Dialog open={!!previewTemplateId} onOpenChange={(open) => !open && setPreviewTemplateId(null)}>
+                <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>{t('reportTemplates.previewTemplate') || 'Preview Template'}</DialogTitle>
+                        <DialogDescription>
+                            {t('reportTemplates.previewDescription') || 'Preview how this template will look in reports'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-hidden">
+                        {previewTemplateId && previewSchoolId && (() => {
+                            // School ID is the branding_id (school_branding table)
+                            const brandingId = previewSchoolId;
+                            const apiBaseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
+                            // Remove /api suffix if present (preview endpoint is at /api/reports/preview/template)
+                            const baseUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl : `${apiBaseUrl}/api`;
+                            const previewUrl = `${baseUrl}/reports/preview/template?template_name=table_a4_portrait&branding_id=${brandingId}&report_template_id=${previewTemplateId}&school_id=${previewSchoolId}`;
+                            
+                            return (
+                                <iframe
+                                    src={previewUrl}
+                                    className="w-full h-full min-h-[600px] border rounded-lg"
+                                    title="Template Preview"
+                                />
+                            );
+                        })()}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setPreviewTemplateId(null)}>
+                            {t('reportTemplates.close') || 'Close'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

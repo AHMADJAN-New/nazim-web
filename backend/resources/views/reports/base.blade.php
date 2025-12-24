@@ -226,22 +226,56 @@
         .footer-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 3px;
+            align-items: center;
+            margin-bottom: 6px;
+            gap: 12px;
+            min-height: 20px;
         }
 
-        .footer-left, .footer-right {
-            max-width: 50%;
+        .footer-left, .footer-right, .footer-center {
+            flex: 1;
+            text-align: center;
+            padding: 0 6px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .footer-left {
+            text-align: {{ $rtl ?? true ? 'right' : 'left' }};
+        }
+
+        .footer-right {
+            text-align: {{ $rtl ?? true ? 'left' : 'right' }};
         }
 
         .footer-center {
             text-align: center;
+            flex: 1.2;
+            padding: 0 8px;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            font-size: {{ $FONT_SIZE ?? '12px' }};
+            color: #666;
+        }
+
+        .custom-footer {
+            text-align: center;
+            margin: 10px 0;
+            padding: 5px 0;
         }
 
         .system-note {
             text-align: center;
             font-size: {{ ($baseFontSize * 0.67) }}px;
             color: #999;
-            margin-top: 10px;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
         }
 
         /* Watermark */
