@@ -28,7 +28,8 @@ export interface AssetFilters {
 }
 
 export const useAssets = (filters?: AssetFilters, usePaginated?: boolean) => {
-  const { user } = useAuth();
+  const { user, profile, profileLoading } = useAuth();
+  const isEventUser = profile?.is_event_user === true;
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
     initialPage: 1,
     initialPageSize: 25,
@@ -84,7 +85,7 @@ export const useAssets = (filters?: AssetFilters, usePaginated?: boolean) => {
 
       return (apiAssets as AssetApi.Asset[]).map(mapAssetApiToDomain);
     },
-    enabled: !!user,
+    enabled: !!user && !profileLoading && !isEventUser, // Disable for event users and wait for profile
     staleTime: 5 * 60 * 1000,
   });
 
@@ -130,14 +131,16 @@ export const useAssetDetails = (assetId?: string) => {
 };
 
 export const useAssetStats = () => {
-  const { user } = useAuth();
+  const { user, profile, profileLoading } = useAuth();
+  const isEventUser = profile?.is_event_user === true;
+  
   return useQuery<AssetApi.AssetStats>({
     queryKey: ['asset-stats'],
     queryFn: async () => {
       if (!user) return { asset_count: 0, maintenance_cost_total: 0, status_counts: {}, total_purchase_value: 0 };
       return assetsApi.stats();
     },
-    enabled: !!user,
+    enabled: !!user && !profileLoading && !isEventUser, // Disable for event users and wait for profile
     staleTime: 5 * 60 * 1000,
   });
 };

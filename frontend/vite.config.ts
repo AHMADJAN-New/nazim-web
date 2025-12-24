@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import path from 'path'
+import fs from 'fs'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -43,7 +44,22 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: true,
+    host: true, // Allow access from network
+    // Only use HTTPS if certificate files exist (for dev server with camera API on mobile)
+    ...(function() {
+      const keyPath = path.resolve(__dirname, 'certs/key.pem');
+      const certPath = path.resolve(__dirname, 'certs/cert.pem');
+      
+      if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+        return {
+          https: {
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath),
+          },
+        };
+      }
+      return {};
+    })(),
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

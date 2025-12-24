@@ -3908,3 +3908,171 @@ export const studentIdCardsApi = {
       params: { format },
     }),
 };
+
+// ============================================
+// Events & Guests API
+// ============================================
+
+import type {
+  EventType,
+  Event,
+  EventGuest,
+  EventCheckin,
+  EventTypeField,
+  EventTypeFieldGroup,
+  EventStats,
+  CheckinResponse,
+  EventsQuery,
+  GuestsQuery,
+  CreateEventTypeRequest,
+  UpdateEventTypeRequest,
+  SaveFieldsRequest,
+  CreateEventRequest,
+  UpdateEventRequest,
+  CreateGuestRequest,
+  UpdateGuestRequest,
+  CheckinRequest,
+  EventUser,
+  CreateEventUserRequest,
+  UpdateEventUserRequest,
+} from '@/types/events';
+
+// Event Types API
+export const eventTypesApi = {
+  list: async (params?: { school_id?: string; is_active?: boolean; search?: string }) =>
+    apiClient.get<EventType[]>('/event-types', params),
+
+  get: async (id: string) =>
+    apiClient.get<EventType>(`/event-types/${id}`),
+
+  create: async (data: CreateEventTypeRequest) =>
+    apiClient.post<EventType>('/event-types', data),
+
+  update: async (id: string, data: UpdateEventTypeRequest) =>
+    apiClient.put<EventType>(`/event-types/${id}`, data),
+
+  delete: async (id: string) =>
+    apiClient.delete(`/event-types/${id}`),
+
+  // Form Designer
+  getFields: async (id: string) =>
+    apiClient.get<{ field_groups: EventTypeFieldGroup[]; fields: EventTypeField[] }>(`/event-types/${id}/fields`),
+
+  saveFields: async (id: string, data: SaveFieldsRequest) =>
+    apiClient.post<{ field_groups: EventTypeFieldGroup[]; fields: EventTypeField[] }>(`/event-types/${id}/fields`, data),
+};
+
+// Events API
+export const eventsApi = {
+  list: async (params?: EventsQuery) =>
+    apiClient.get<PaginatedResponse<Event>>('/events', params),
+
+  get: async (id: string) =>
+    apiClient.get<Event>(`/events/${id}`),
+
+  create: async (data: CreateEventRequest) =>
+    apiClient.post<Event>('/events', data),
+
+  update: async (id: string, data: UpdateEventRequest) =>
+    apiClient.put<Event>(`/events/${id}`, data),
+
+  delete: async (id: string) =>
+    apiClient.delete(`/events/${id}`),
+
+  getStats: async (id: string) =>
+    apiClient.get<EventStats>(`/events/${id}/stats`),
+};
+
+// Event Guests API
+export const eventGuestsApi = {
+  list: async (eventId: string, params?: GuestsQuery) =>
+    apiClient.get<PaginatedResponse<EventGuest>>(`/events/${eventId}/guests`, params),
+
+  lookup: async (eventId: string, query: string) =>
+    apiClient.get<EventGuest[]>(`/events/${eventId}/guests/lookup`, { q: query }),
+
+  get: async (eventId: string, guestId: string) =>
+    apiClient.get<EventGuest>(`/events/${eventId}/guests/${guestId}`),
+
+  create: async (eventId: string, data: CreateGuestRequest) =>
+    apiClient.post<EventGuest>(`/events/${eventId}/guests`, data),
+
+  update: async (eventId: string, guestId: string, data: UpdateGuestRequest) =>
+    apiClient.put<EventGuest>(`/events/${eventId}/guests/${guestId}`, data),
+
+  delete: async (eventId: string, guestId: string) =>
+    apiClient.delete(`/events/${eventId}/guests/${guestId}`),
+
+  uploadPhoto: async (guestId: string, file: File) => {
+    const formData = new FormData();
+    // Explicitly append file with name to ensure Android Chrome compatibility
+    formData.append('photo', file, file.name);
+    
+    if (import.meta.env.DEV) {
+      console.log('[uploadPhoto] Uploading file:', {
+        guestId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      });
+    }
+    
+    try {
+      const result = await apiClient.post<{ photo_url: string; photo_thumb_url: string }>(`/guests/${guestId}/photo`, formData, {
+        headers: {}, // Let browser set Content-Type with boundary (important for Android Chrome)
+      });
+      
+      if (import.meta.env.DEV) {
+        console.log('[uploadPhoto] Upload successful:', result);
+      }
+      
+      return result;
+    } catch (error: any) {
+      if (import.meta.env.DEV) {
+        console.error('[uploadPhoto] Upload failed:', error);
+        console.error('[uploadPhoto] Error details:', {
+          message: error?.message,
+          response: error?.response,
+          status: error?.status,
+        });
+      }
+      throw error;
+    }
+  },
+
+  import: async (eventId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post(`/events/${eventId}/guests/import`, formData);
+  },
+};
+
+// Event Check-in API
+export const eventCheckinApi = {
+  checkin: async (eventId: string, data: CheckinRequest) =>
+    apiClient.post<CheckinResponse>(`/events/${eventId}/checkin`, data),
+
+  lookup: async (eventId: string, data: { qr_token?: string; guest_code?: string }) =>
+    apiClient.post<{ found: boolean; guest?: EventGuest; error?: string }>(`/events/${eventId}/checkin/lookup`, data),
+
+  history: async (eventId: string, params?: { date?: string; page?: number; per_page?: number }) =>
+    apiClient.get<PaginatedResponse<EventCheckin>>(`/events/${eventId}/checkin/history`, params),
+
+  undo: async (eventId: string, checkinId: string) =>
+    apiClient.delete(`/events/${eventId}/checkin/${checkinId}`),
+};
+
+// Event Users API
+export const eventUsersApi = {
+  list: async (eventId: string) =>
+    apiClient.get<EventUser[]>(`/events/${eventId}/users`),
+
+  create: async (eventId: string, data: CreateEventUserRequest) =>
+    apiClient.post<EventUser>(`/events/${eventId}/users`, data),
+
+  update: async (eventId: string, userId: string, data: UpdateEventUserRequest) =>
+    apiClient.put(`/events/${eventId}/users/${userId}`, data),
+
+  delete: async (eventId: string, userId: string) =>
+    apiClient.delete(`/events/${eventId}/users/${userId}`),
+};

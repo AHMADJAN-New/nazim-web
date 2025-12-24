@@ -262,6 +262,17 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasDmsArchivePermission = useHasPermission('dms.archive.read');
   const hasDmsPermission = hasDmsIncomingPermission || hasDmsOutgoingPermission || hasDmsTemplatesPermission || hasDmsLetterheadsPermission || hasDmsLetterTypesPermission || hasDmsDepartmentsPermission || hasDmsReportsPermission || hasDmsSettingsPermission || hasDmsArchivePermission;
 
+  // Events permissions
+  const hasEventsPermission = useHasPermission('events.read');
+  const hasEventTypesPermission = useHasPermission('event_types.read');
+  const hasEventGuestsPermission = useHasPermission('event_guests.read');
+  const hasEventGuestsCreatePermission = useHasPermission('event_guests.create');
+  const hasEventCheckinsCreatePermission = useHasPermission('event_checkins.create');
+  const hasEventCheckinsReadPermission = useHasPermission('event_checkins.read');
+  const hasEventUpdatePermission = useHasPermission('events.update');
+  // Show events navigation if user has ANY event-related permission
+  const hasEventsNavigation = hasEventsPermission || hasEventTypesPermission || hasEventGuestsPermission || hasEventGuestsCreatePermission || hasEventCheckinsCreatePermission || hasEventCheckinsReadPermission || hasEventUpdatePermission;
+
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [navigationContext, setNavigationContext] = useState<NavigationContext>({
@@ -278,8 +289,53 @@ export const SmartSidebar = memo(function SmartSidebar() {
   const hasRolesPermission = useHasPermission('roles.read'); // Permission for roles management
   const hasAttendanceNavigation = hasAttendanceSessionsPermission || hasAttendanceReportsPermission;
 
+  // Check if user is event user (profile already declared above)
+  const isEventUser = profile?.is_event_user === true;
+
   // Context-aware navigation items - computed with useMemo to avoid hook order issues
   const allNavigationItems = useMemo((): NavigationItem[] => {
+    // CRITICAL: Event users should only see event-related navigation
+    if (isEventUser) {
+      const eventItems: NavigationItem[] = [];
+      
+      // Only add event-related items
+      if (hasEventsNavigation) {
+        eventItems.push({
+          titleKey: "events",
+          icon: Calendar,
+          badge: null,
+          priority: 1,
+          children: [
+            ...(hasEventsPermission ? [{
+              title: "All Events",
+              titleKey: "events.all",
+              url: "/events",
+              icon: Calendar,
+            }] : []),
+            ...(hasEventCheckinsCreatePermission ? [{
+              title: "Check-in",
+              titleKey: "events.checkin",
+              url: "/events",
+              icon: UserCheck,
+            }] : []),
+            ...(hasEventGuestsCreatePermission ? [{
+              title: "Add Guest",
+              titleKey: "events.addGuest",
+              url: "/events",
+              icon: UserPlus,
+            }] : []),
+          ],
+        });
+      }
+      
+      // For event users, return early with only event items
+      // No need to filter children - they're already filtered by permissions
+      return eventItems.map(item => ({
+        ...item,
+        visibleChildrenCount: item.children?.length || 0
+      }));
+    }
+
     const allItems: NavigationItem[] = [
       {
         titleKey: "dashboard",
@@ -878,6 +934,44 @@ export const SmartSidebar = memo(function SmartSidebar() {
           }] : []),
         ],
       }] : []),
+      ...(hasEventsNavigation ? [{
+        titleKey: "events",
+        icon: Calendar,
+        badge: null,
+        priority: 3.087,
+        children: [
+          ...(hasEventsPermission ? [{
+            title: "All Events",
+            titleKey: "events.all",
+            url: "/events",
+            icon: Calendar,
+          }] : []),
+          ...(hasEventCheckinsCreatePermission ? [{
+            title: "Check-in",
+            titleKey: "events.checkin",
+            url: "/events",
+            icon: UserCheck,
+          }] : []),
+          ...(hasEventGuestsCreatePermission ? [{
+            title: "Add Guest",
+            titleKey: "events.addGuest",
+            url: "/events",
+            icon: UserPlus,
+          }] : []),
+          ...(hasEventTypesPermission ? [{
+            title: "Event Types",
+            titleKey: "events.types",
+            url: "/events/types",
+            icon: Settings,
+          }] : []),
+          ...(hasEventUpdatePermission ? [{
+            title: "Event Users",
+            titleKey: "events.users",
+            url: "/events",
+            icon: Shield,
+          }] : []),
+        ],
+      }] : []),
       ...(hasAssetsPermission ? [{
         titleKey: "assets",
         icon: Boxes,
@@ -1076,9 +1170,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
     // Filter out menus if they have no visible children
     // Show menu only if user has permission for at least one child
     return itemsWithFilteredChildren.filter(item => {
-      // Dashboard always shows (no children)
+      // Dashboard should not show for event users
       if (item.titleKey === 'dashboard') {
-        return true;
+        return !isEventUser; // Hide dashboard for event users
       }
 
       // For menus with children, only show if there are visible children
@@ -1318,7 +1412,7 @@ export const SmartSidebar = memo(function SmartSidebar() {
                             <CollapsibleContent>
                               <SidebarMenu className={`${isRTL ? 'mr-4 border-r' : 'ml-4 border-l'} border-sidebar-border`}>
                                 {child.children.map((grandchild: NavigationChild) => (
-                                  <SidebarMenuItem key={grandchild.url || grandchild.titleKey || grandchild.title}>
+                                  <SidebarMenuItem key={grandchild.titleKey || grandchild.url || grandchild.title}>
                                     <SidebarMenuButton asChild>
                                       <NavLink
                                         to={grandchild.url || '#'}
@@ -1338,8 +1432,9 @@ export const SmartSidebar = memo(function SmartSidebar() {
                       );
                     }
                     // Regular child item with URL
+                    // Use titleKey as primary key to avoid duplicate keys when multiple items share the same URL
                     return (
-                      <SidebarMenuItem key={child.url || child.titleKey || child.title}>
+                      <SidebarMenuItem key={child.titleKey || child.url || child.title}>
                         <SidebarMenuButton asChild>
                           <NavLink
                             to={child.url || '#'}

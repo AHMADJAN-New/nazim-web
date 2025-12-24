@@ -10,6 +10,8 @@ export interface Profile {
   avatar_url: string | null;
   is_active: boolean;
   default_school_id: string | null;
+  event_id?: string | null;
+  is_event_user?: boolean;
   created_at?: string;
   updated_at?: string;
   deleted_at?: string | null;

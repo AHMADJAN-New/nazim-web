@@ -31,7 +31,8 @@ export type AttendanceFilters = {
 };
 
 export const useAttendanceSessions = (filters: AttendanceFilters = {}, usePaginated: boolean = true) => {
-  const { user, profile } = useAuth();
+  const { user, profile, profileLoading } = useAuth();
+  const isEventUser = profile?.is_event_user === true;
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
     initialPage: 1,
     initialPageSize: 10,
@@ -79,7 +80,7 @@ export const useAttendanceSessions = (filters: AttendanceFilters = {}, usePagina
 
       return (apiSessions as AttendanceApi.AttendanceSession[]).map(mapAttendanceSessionApiToDomain);
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!profile && !profileLoading && !isEventUser, // Disable for event users and wait for profile
     staleTime: 2 * 60 * 1000,
   });
 

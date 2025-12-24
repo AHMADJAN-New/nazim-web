@@ -13,7 +13,8 @@ import { useEffect } from 'react';
 export type { Room } from '@/types/domain/room';
 
 export const useRooms = (schoolId?: string, organizationId?: string, usePaginated?: boolean) => {
-  const { user, profile } = useAuth();
+  const { user, profile, profileLoading } = useAuth();
+  const isEventUser = profile?.is_event_user === true;
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
     initialPage: 1,
     initialPageSize: 25,
@@ -66,7 +67,7 @@ export const useRooms = (schoolId?: string, organizationId?: string, usePaginate
       // Map API models to domain models (non-paginated)
       return (apiRooms as RoomApi.Room[]).map(mapRoomApiToDomain);
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!profile && !profileLoading && !isEventUser, // Disable for event users and wait for profile
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,

@@ -12,6 +12,8 @@ export type Profile = {
   avatar_url: string | null;
   is_active: boolean;
   default_school_id: string | null;
+  event_id?: string | null;
+  is_event_user?: boolean;
 };
 
 interface User {

@@ -142,7 +142,8 @@ export const useDeleteOrganization = () => {
 };
 
 export const useCurrentOrganization = () => {
-  const { profile } = useAuth();
+  const { profile, profileLoading } = useAuth();
+  const isEventUser = profile?.is_event_user === true;
 
   return useQuery<Organization | null>({
     queryKey: ['current-organization', profile?.organization_id],
@@ -154,7 +155,7 @@ export const useCurrentOrganization = () => {
       const apiOrganization = await organizationsApi.get(profile.organization_id);
       return mapOrganizationApiToDomain(apiOrganization as OrganizationApi.Organization);
     },
-    enabled: !!profile && !!profile.organization_id,
+    enabled: !!profile && !!profile.organization_id && !profileLoading && !isEventUser, // Disable for event users and wait for profile
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,

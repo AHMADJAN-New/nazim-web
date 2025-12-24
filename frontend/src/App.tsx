@@ -118,6 +118,16 @@ import {
   ArchiveSearchPage,
   DmsReportsPage,
   DmsSettingsPage,
+  // Events Module
+  EventTypesPage,
+  EventsPage,
+  EventDetailPage,
+  GuestsPage,
+  GuestAddPage,
+  GuestDetailPage,
+  GuestEditPage,
+  CheckinPage,
+  EventUsersPage,
   // Finance Module
   FinanceDashboard,
   FinanceAccounts,
@@ -944,6 +954,70 @@ const App = () => (
                       <Suspense fallback={<PageSkeleton />}>
                         <DmsSettingsPage />
                       </Suspense>
+                    } />
+                    {/* Events Module Routes */}
+                    <Route path="/events" element={
+                      <PermissionRoute permission="events.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <EventsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/events/types" element={
+                      <PermissionRoute permission="event_types.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <EventTypesPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/events/:eventId" element={
+                      <PermissionRoute permission="events.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <EventDetailPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/events/:eventId/guests" element={
+                      <PermissionRoute permission="event_guests.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <GuestsPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/events/:eventId/guests/add" element={
+                      <PermissionRoute permission="event_guests.create">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <GuestAddPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/events/:eventId/guests/:guestId" element={
+                      <PermissionRoute permission="event_guests.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <GuestDetailPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/events/:eventId/guests/:guestId/edit" element={
+                      <PermissionRoute permission="event_guests.update">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <GuestEditPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/events/:eventId/checkin" element={
+                      <PermissionRoute permission="event_checkins.create">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <CheckinPage />
+                        </Suspense>
+                      </PermissionRoute>
+                    } />
+                    <Route path="/events/:eventId/users" element={
+                      <PermissionRoute permission="events.update">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <EventUsersPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     {/* Finance Module Routes */}
                     <Route path="/finance" element={
