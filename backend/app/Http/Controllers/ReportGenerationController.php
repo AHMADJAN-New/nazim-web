@@ -382,14 +382,16 @@ class ReportGenerationController extends Controller
         ];
 
         if ($reportTemplateId) {
-            $reportTemplate = \App\Models\ReportTemplate::where('id', $reportTemplateId)
+            $reportTemplate = \App\Models\ReportTemplate::with('watermark')
+                ->where('id', $reportTemplateId)
                 ->where('is_active', true)
                 ->whereNull('deleted_at')
                 ->first();
         } elseif ($schoolId) {
             // Try to get default template for the school
             // First try general_report type, then any default template
-            $reportTemplate = \App\Models\ReportTemplate::where('school_id', $schoolId)
+            $reportTemplate = \App\Models\ReportTemplate::with('watermark')
+                ->where('school_id', $schoolId)
                 ->where('template_type', 'general_report')
                 ->where('is_active', true)
                 ->where('is_default', true)
@@ -398,7 +400,8 @@ class ReportGenerationController extends Controller
             
             // If no general_report default, try any default template for this school
             if (!$reportTemplate) {
-                $reportTemplate = \App\Models\ReportTemplate::where('school_id', $schoolId)
+                $reportTemplate = \App\Models\ReportTemplate::with('watermark')
+                    ->where('school_id', $schoolId)
                     ->where('is_active', true)
                     ->where('is_default', true)
                     ->whereNull('deleted_at')
@@ -407,7 +410,8 @@ class ReportGenerationController extends Controller
             
             // If still no default, try any active template for general_report
             if (!$reportTemplate) {
-                $reportTemplate = \App\Models\ReportTemplate::where('school_id', $schoolId)
+                $reportTemplate = \App\Models\ReportTemplate::with('watermark')
+                    ->where('school_id', $schoolId)
                     ->where('template_type', 'general_report')
                     ->where('is_active', true)
                     ->whereNull('deleted_at')
@@ -477,6 +481,64 @@ class ReportGenerationController extends Controller
 
             if ($reportTemplate->report_font_size) {
                 $layout['font_size'] = $reportTemplate->report_font_size;
+            }
+        }
+
+        // Load watermark: Use template's watermark if set, otherwise use branding's default watermark
+        $watermark = null;
+        $noWatermarkSentinel = '00000000-0000-0000-0000-000000000000';
+        
+        // Check if template explicitly has no watermark (watermark_id is sentinel UUID)
+        $hasNoWatermark = $reportTemplate && $reportTemplate->watermark_id === $noWatermarkSentinel;
+        
+        // First, check if report template has a specific watermark assigned (and it's not sentinel UUID)
+        if ($reportTemplate && $reportTemplate->watermark_id && !$hasNoWatermark) {
+            try {
+                $templateWatermark = \App\Models\BrandingWatermark::where('id', $reportTemplate->watermark_id)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at')
+                    ->first();
+                
+                if ($templateWatermark) {
+                    $watermark = $templateWatermark->toArray();
+                    // Add image data URI if it's an image watermark
+                    if ($templateWatermark->isImage()) {
+                        $watermark['image_data_uri'] = $templateWatermark->getImageDataUri();
+                    }
+                    \Log::debug("Preview: Using template's assigned watermark", [
+                        'template_id' => $reportTemplate->id,
+                        'watermark_id' => $watermark['id'] ?? null,
+                        'wm_type' => $watermark['wm_type'] ?? null,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Preview: Could not load template watermark: " . $e->getMessage());
+            }
+        }
+        
+        // If template explicitly has no watermark, don't load any watermark
+        if ($hasNoWatermark) {
+            \Log::debug("Preview: Template explicitly has no watermark set");
+            $watermark = null;
+        }
+        // If no template watermark and not explicitly disabled, fall back to branding's default watermark
+        elseif (!$watermark && $brandingId) {
+            try {
+                $brandingCache = app(\App\Services\Reports\BrandingCacheService::class);
+                // Get default watermark for this branding (null report_key = default watermark)
+                $watermark = $brandingCache->getWatermark($brandingId, null);
+                
+                if ($watermark) {
+                    \Log::debug("Preview: Using branding's default watermark", [
+                        'branding_id' => $brandingId,
+                        'watermark_id' => $watermark['id'] ?? null,
+                        'wm_type' => $watermark['wm_type'] ?? null,
+                    ]);
+                } else {
+                    \Log::debug("Preview: No default watermark found for branding {$brandingId}");
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Preview: Could not load branding watermark: " . $e->getMessage());
             }
         }
 
@@ -552,6 +614,9 @@ class ReportGenerationController extends Controller
             // Report settings - CRITICAL: Use template settings from layout first, then branding fallback
             'table_alternating_colors' => $layout['table_alternating_colors'] ?? (($branding && isset($branding['table_alternating_colors'])) ? (bool)$branding['table_alternating_colors'] : true),
 
+            // Watermark (from branding)
+            'WATERMARK' => $watermark,
+            
             // Report content
             'TABLE_TITLE' => $request->get('title', 'Sample Report Title'),
             'template_name' => $templateName,
@@ -580,8 +645,8 @@ class ReportGenerationController extends Controller
             'NOTES_BODY' => [],
             'NOTES_FOOTER' => [],
 
-            // Watermark
-            'WATERMARK' => null,
+            // Watermark (loaded from branding above)
+            'WATERMARK' => $watermark,
 
             // Page numbering - CRITICAL: Use template settings from layout first, then defaults
             'show_page_numbers' => $layout['show_page_numbers'] ?? true,
@@ -625,6 +690,7 @@ class ReportGenerationController extends Controller
         \Log::debug("  - PRIMARY_COLOR: " . ($context['PRIMARY_COLOR'] ?? 'not set'));
         \Log::debug("  - SECONDARY_COLOR: " . ($context['SECONDARY_COLOR'] ?? 'not set'));
         \Log::debug("  - ACCENT_COLOR: " . ($context['ACCENT_COLOR'] ?? 'not set'));
+        \Log::debug("  - WATERMARK: " . (!empty($context['WATERMARK']) ? "exists (type: " . ($context['WATERMARK']['wm_type'] ?? 'unknown') . ", active: " . ($context['WATERMARK']['is_active'] ?? false ? 'true' : 'false') . ")" : "null/empty"));
 
         // Render the template as HTML
         $viewName = "reports.{$templateName}";

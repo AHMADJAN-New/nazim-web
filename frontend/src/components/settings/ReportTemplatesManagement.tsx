@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useReportTemplates, useCreateReportTemplate, useUpdateReportTemplate, useDeleteReportTemplate, type ReportTemplate, type CreateReportTemplateData } from '@/hooks/useReportTemplates';
 import { useSchools } from '@/hooks/useSchools';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { useWatermarks } from '@/hooks/useWatermarks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -70,6 +71,7 @@ const reportTemplateSchema = z.object({
     show_generation_date: z.boolean().optional(),
     table_alternating_colors: z.boolean().optional(),
     report_font_size: z.string().max(10, 'Font size must be 10 characters or less').optional(),
+    watermark_id: z.string().uuid().optional().nullable(),
     is_default: z.boolean().optional(),
     is_active: z.boolean().optional(),
 }).refine((data) => {
@@ -143,6 +145,11 @@ export function ReportTemplatesManagement() {
         },
     });
 
+    // Load watermarks for the selected school (branding_id = school_id)
+    // Must be after useForm hook so watch is available
+    const selectedSchoolIdForWatermarks = watch('school_id') || selectedSchoolId;
+    const { data: watermarks } = useWatermarks(selectedSchoolIdForWatermarks);
+
     // Set default school when schools load
     useEffect(() => {
         if (schools && schools.length > 0 && !selectedSchoolId) {
@@ -183,6 +190,7 @@ export function ReportTemplatesManagement() {
                     show_generation_date: template.show_generation_date,
                     table_alternating_colors: template.table_alternating_colors,
                     report_font_size: template.report_font_size,
+                    watermark_id: template.watermark_id === '00000000-0000-0000-0000-000000000000' ? '00000000-0000-0000-0000-000000000000' : (template.watermark_id || null),
                     is_default: template.is_default,
                     is_active: template.is_active,
                 });
@@ -210,6 +218,7 @@ export function ReportTemplatesManagement() {
                 show_generation_date: true,
                 table_alternating_colors: true,
                 report_font_size: '12px',
+                watermark_id: null,
                 is_default: false,
                 is_active: true,
             });
@@ -799,6 +808,66 @@ export function ReportTemplatesManagement() {
                                     />
                                 </div>
                             </div>
+
+                            {/* Watermark Selection */}
+                            <div className="grid gap-2">
+                                <Label htmlFor="watermark_id">{t('watermarks.title') || 'Watermark'} ({t('common.optional') || 'Optional'})</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    {t('reportTemplates.watermarkDescription') || 'Select a watermark to display on this report template. If not selected, the default watermark from branding will be used.'}
+                                </p>
+                                <Controller
+                                    name="watermark_id"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Select 
+                                            onValueChange={(value) => {
+                                                // Handle special values: 'none' = null (use default), 'no-watermark' = sentinel UUID (no watermark)
+                                                if (value === 'none') {
+                                                    field.onChange(null);
+                                                } else if (value === 'no-watermark') {
+                                                    // Use sentinel UUID '00000000-0000-0000-0000-000000000000' to indicate "no watermark"
+                                                    field.onChange('00000000-0000-0000-0000-000000000000');
+                                                } else {
+                                                    field.onChange(value);
+                                                }
+                                            }} 
+                                            value={
+                                                field.value === '00000000-0000-0000-0000-000000000000' ? 'no-watermark' : 
+                                                field.value || 'none'
+                                            }
+                                            disabled={!selectedSchoolIdForWatermarks}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder={t('reportTemplates.selectWatermark') || 'Select watermark (optional)'} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">
+                                                    {t('reportTemplates.useDefaultWatermark') || 'Use Default Watermark (from Branding)'}
+                                                </SelectItem>
+                                                <SelectItem value="no-watermark">
+                                                    {t('reportTemplates.noWatermark') || 'No Watermark'}
+                                                </SelectItem>
+                                                {watermarks?.filter(w => w.isActive).map((watermark) => (
+                                                    <SelectItem key={watermark.id} value={watermark.id}>
+                                                        {watermark.type === 'image' 
+                                                            ? `${t('watermarks.image') || 'Image'} - ${watermark.position || 'center'}`
+                                                            : `${t('watermarks.text') || 'Text'}: ${watermark.text || 'N/A'}`}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+                                {errors.watermark_id && (
+                                    <p className="text-sm text-destructive">{errors.watermark_id.message}</p>
+                                )}
+                                {!selectedSchoolIdForWatermarks && (
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('reportTemplates.selectSchoolFirst') || 'Please select a school first to see available watermarks'}
+                                    </p>
+                                )}
+                            </div>
+
                             <div className="space-y-2">
                                 <div className="flex items-center space-x-2">
                                     <Controller

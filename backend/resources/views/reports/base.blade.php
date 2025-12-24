@@ -112,8 +112,14 @@
         }
 
         .header-left, .header-right {
-            width: {{ $logo_height_px ?? 90 }}px;
+            min-width: {{ $logo_height_px ?? 90 }}px;
+            max-width: 150px;
+            width: auto;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
         }
 
         .header-center {
@@ -124,8 +130,11 @@
 
         .header-logo {
             max-height: {{ $logo_height_px ?? 90 }}px;
-            max-width: {{ $logo_height_px ?? 90 }}px;
+            max-width: 100%;
+            width: auto;
+            height: auto;
             object-fit: contain;
+            object-position: center;
         }
 
         .school-name {

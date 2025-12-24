@@ -44,7 +44,7 @@
                 }
             @endphp
             @foreach($leftLogos as $logo)
-                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="display: block; max-height: 90px; max-width: 90px; margin-bottom: 5px;">
+                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="display: block; max-height: 90px; max-width: 100%; width: auto; height: auto; object-fit: contain; object-position: center; margin-bottom: 5px;">
             @endforeach
         </div>
 
@@ -91,7 +91,7 @@
                 }
             @endphp
             @foreach($rightLogos as $logo)
-                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="display: block; max-height: 90px; max-width: 90px; margin-bottom: 5px;">
+                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="display: block; max-height: 90px; max-width: 100%; width: auto; height: auto; object-fit: contain; object-position: center; margin-bottom: 5px;">
             @endforeach
         </div>
     </div>

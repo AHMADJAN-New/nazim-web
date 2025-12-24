@@ -25,6 +25,7 @@ export interface ReportTemplate {
   show_generation_date: boolean;
   table_alternating_colors: boolean;
   report_font_size: string | null;
+  watermark_id: string | null;
   is_default: boolean;
   is_active: boolean;
   created_at: string;
@@ -53,6 +54,7 @@ export interface CreateReportTemplateData {
   show_generation_date?: boolean;
   table_alternating_colors?: boolean;
   report_font_size?: string | null;
+  watermark_id?: string | null;
   is_default?: boolean;
   is_active?: boolean;
 }

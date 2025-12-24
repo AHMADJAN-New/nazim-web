@@ -128,17 +128,8 @@ class WatermarkController extends Controller
             return response()->json(['error' => 'Branding not found'], 404);
         }
 
-        // Handle image binary if provided
-        $imageBinary = null;
-        if ($validated['wm_type'] === 'image' && !empty($validated['image_binary'])) {
-            $imageBinary = base64_decode($validated['image_binary'], true);
-            if ($imageBinary === false) {
-                return response()->json(['error' => 'Invalid base64 image data'], 400);
-            }
-        }
-
-        // Create watermark
-        $watermark = BrandingWatermark::create([
+        // Prepare data for watermark creation (excluding binary)
+        $watermarkData = [
             'organization_id' => $profile->organization_id,
             'branding_id' => $brandingId,
             'report_key' => $validated['report_key'] ?? null,
@@ -155,9 +146,37 @@ class WatermarkController extends Controller
             'repeat_pattern' => $validated['repeat_pattern'] ?? 'none',
             'sort_order' => $validated['sort_order'] ?? 0,
             'is_active' => $validated['is_active'] ?? true,
-            'image_binary' => $imageBinary,
             'image_mime' => $validated['image_mime'] ?? null,
-        ]);
+        ];
+
+        // Handle image binary separately using DB::raw (like SchoolBrandingController)
+        $binaryUpdates = [];
+        if ($validated['wm_type'] === 'image' && !empty($validated['image_binary'])) {
+            try {
+                $imageBinary = base64_decode($validated['image_binary'], true);
+                if ($imageBinary === false) {
+                    return response()->json(['error' => 'Invalid base64 image data'], 400);
+                }
+                // Use DB::raw with hex encoding for PostgreSQL BYTEA (same pattern as logos)
+                $binaryUpdates['image_binary'] = DB::raw("'\\x" . bin2hex($imageBinary) . "'::bytea");
+            } catch (\Exception $e) {
+                Log::error("Error decoding watermark image: " . $e->getMessage());
+                return response()->json(['error' => 'Failed to decode watermark image: ' . $e->getMessage()], 400);
+            }
+        }
+
+        // Create watermark (without binary first)
+        $watermark = BrandingWatermark::create($watermarkData);
+
+        // Update binary field separately if provided (using DB::raw to avoid UTF-8 issues)
+        if (!empty($binaryUpdates)) {
+            DB::table('branding_watermarks')
+                ->where('id', $watermark->id)
+                ->update($binaryUpdates);
+            
+            // Refresh the model to get updated data
+            $watermark->refresh();
+        }
 
         // Clear branding cache
         app(\App\Services\Reports\BrandingCacheService::class)->clearBrandingCache($brandingId);
@@ -259,68 +278,55 @@ class WatermarkController extends Controller
             'image_mime' => 'nullable|string|max:50',
         ]);
 
-        // Handle image binary if provided
+        // Separate binary updates from regular updates (to avoid UTF-8 encoding issues)
+        $regularUpdates = $validated;
+        $binaryUpdates = [];
+        
+        // Handle image binary separately using DB::raw (like SchoolBrandingController)
         if (isset($validated['image_binary']) && !empty($validated['image_binary'])) {
-            $imageBinary = base64_decode($validated['image_binary'], true);
-            if ($imageBinary === false) {
-                return response()->json(['error' => 'Invalid base64 image data'], 400);
+            try {
+                $imageBinary = base64_decode($validated['image_binary'], true);
+                if ($imageBinary === false) {
+                    return response()->json(['error' => 'Invalid base64 image data'], 400);
+                }
+                // Use DB::raw with hex encoding for PostgreSQL BYTEA (same pattern as logos)
+                $binaryUpdates['image_binary'] = DB::raw("'\\x" . bin2hex($imageBinary) . "'::bytea");
+            } catch (\Exception $e) {
+                Log::error("Error decoding watermark image: " . $e->getMessage());
+                return response()->json(['error' => 'Failed to decode watermark image: ' . $e->getMessage()], 400);
             }
-            $validated['image_binary'] = $imageBinary;
+            // Remove image_binary from regular updates (we'll handle it separately)
+            unset($regularUpdates['image_binary']);
         }
 
-        // Update watermark
+        // Update watermark (regular fields first)
         try {
-            $watermark->update($validated);
+            if (!empty($regularUpdates)) {
+                $watermark->update($regularUpdates);
+            }
         } catch (\Exception $e) {
             Log::error("Failed to update watermark: " . $e->getMessage());
             return response()->json(['error' => 'Failed to update watermark: ' . $e->getMessage()], 500);
         }
 
+        // Update binary field separately if provided (using DB::raw to avoid UTF-8 issues)
+        if (!empty($binaryUpdates)) {
+            DB::table('branding_watermarks')
+                ->where('id', $watermark->id)
+                ->update($binaryUpdates);
+            
+            // Refresh the model to get updated data
+            $watermark->refresh();
+        }
+
         // Clear branding cache
         app(\App\Services\Reports\BrandingCacheService::class)->clearBrandingCache($watermark->branding_id);
 
-        // Reload watermark to get fresh data (without binary to avoid serialization issues)
-        $watermark = BrandingWatermark::select([
-            'id', 'organization_id', 'branding_id', 'report_key', 'wm_type',
-            'text', 'font_family', 'color', 'opacity', 'rotation_deg', 'scale',
-            'position', 'pos_x', 'pos_y', 'repeat_pattern', 'sort_order', 'is_active',
-            'image_mime', 'created_at', 'updated_at', 'deleted_at'
-        ])
-        ->where('id', $id)
-        ->first();
-        
-        if (!$watermark) {
-            return response()->json(['error' => 'Watermark not found after update'], 404);
-        }
+        // Reload watermark to get fresh data (toArray() handles binary conversion automatically)
+        $watermark->refresh();
 
-        // Build response array manually
-        $data = $watermark->toArray();
-        
-        // Get image data URI separately using DB query (like BrandingCacheService does for logos)
-        if ($watermark->wm_type === 'image') {
-            try {
-                $imageData = DB::selectOne(
-                    "SELECT 
-                        CASE 
-                            WHEN image_binary IS NULL THEN NULL 
-                            ELSE encode(image_binary, 'base64') 
-                        END as image_base64,
-                        image_mime
-                    FROM branding_watermarks 
-                    WHERE id = ? AND deleted_at IS NULL",
-                    [$id]
-                );
-                
-                if ($imageData && !empty($imageData->image_base64)) {
-                    $mime = $imageData->image_mime ?? 'image/png';
-                    $data['image_data_uri'] = "data:{$mime};base64,{$imageData->image_base64}";
-                }
-            } catch (\Exception $e) {
-                Log::warning("Failed to get image data URI for watermark {$id}: " . $e->getMessage());
-            }
-        }
-
-        return response()->json($data);
+        // Use toArray() which handles binary conversion automatically (like SchoolBranding)
+        return response()->json($watermark->toArray());
     }
 
     /**

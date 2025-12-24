@@ -126,17 +126,27 @@ class BrandingCacheService
 
     /**
      * Get watermark for a report
+     * 
+     * @param string $brandingId The branding ID
+     * @param string|null $reportKey The report key (null for default watermark)
+     * @return array|null
      */
-    public function getWatermark(string $brandingId, string $reportKey): ?array
+    public function getWatermark(string $brandingId, ?string $reportKey = null): ?array
     {
-        $cacheKey = "branding.{$brandingId}.watermark.{$reportKey}";
+        // Use empty string for cache key if reportKey is null
+        $cacheKey = "branding.{$brandingId}.watermark." . ($reportKey ?? 'default');
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($brandingId, $reportKey) {
             $watermark = BrandingWatermark::where('branding_id', $brandingId)
                 ->where('is_active', true)
                 ->where(function ($q) use ($reportKey) {
-                    $q->where('report_key', $reportKey)
-                      ->orWhereNull('report_key');
+                    if ($reportKey !== null) {
+                        $q->where('report_key', $reportKey)
+                          ->orWhereNull('report_key');
+                    } else {
+                        // If reportKey is null, get default watermark (report_key is null)
+                        $q->whereNull('report_key');
+                    }
                 })
                 ->orderBy('sort_order')
                 ->first();

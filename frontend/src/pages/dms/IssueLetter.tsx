@@ -1160,7 +1160,7 @@ export default function IssueLetter() {
                 Close
               </Button>
             </div>
-          )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

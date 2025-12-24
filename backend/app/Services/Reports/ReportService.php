@@ -63,8 +63,8 @@ class ReportService
             $notes = $this->loadNotes($config, $branding);
             $reportRun->updateProgress(30, 'Loaded notes');
 
-            // Load watermark
-            $watermark = $this->loadWatermark($config, $branding);
+            // Load watermark (pass reportTemplate to check for template-specific watermark)
+            $watermark = $this->loadWatermark($config, $branding, $reportTemplate);
             $reportRun->updateProgress(40, 'Loaded watermark');
 
             // Build context for template
@@ -258,13 +258,45 @@ class ReportService
 
     /**
      * Load watermark configuration
+     * Priority: 1. Template's assigned watermark, 2. Branding's default watermark
+     * Special case: If template's watermark_id is sentinel UUID, no watermark is shown
      */
-    private function loadWatermark(ReportConfig $config, array $branding): ?array
+    private function loadWatermark(ReportConfig $config, array $branding, ?ReportTemplate $reportTemplate = null): ?array
     {
         if ($config->watermarkMode === 'none') {
             return null;
         }
 
+        $noWatermarkSentinel = '00000000-0000-0000-0000-000000000000';
+        
+        // Check if template explicitly has no watermark (watermark_id is sentinel UUID)
+        $hasNoWatermark = $reportTemplate && $reportTemplate->watermark_id === $noWatermarkSentinel;
+        if ($hasNoWatermark) {
+            return null; // Explicitly no watermark
+        }
+
+        // First, check if report template has a specific watermark assigned (and it's not sentinel UUID)
+        if ($reportTemplate && $reportTemplate->watermark_id && !$hasNoWatermark) {
+            try {
+                $templateWatermark = \App\Models\BrandingWatermark::where('id', $reportTemplate->watermark_id)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at')
+                    ->first();
+                
+                if ($templateWatermark) {
+                    $watermark = $templateWatermark->toArray();
+                    // Add image data URI if it's an image watermark
+                    if ($templateWatermark->isImage()) {
+                        $watermark['image_data_uri'] = $templateWatermark->getImageDataUri();
+                    }
+                    return $watermark;
+                }
+            } catch (\Exception $e) {
+                \Log::warning("Could not load template watermark: " . $e->getMessage());
+            }
+        }
+
+        // Fall back to branding's default watermark (or report-specific watermark)
         if (!$config->brandingId) {
             return null;
         }

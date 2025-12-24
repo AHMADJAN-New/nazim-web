@@ -156,7 +156,30 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Cannot create template for school in different organization'], 403);
         }
 
-        $template = ReportTemplate::create([
+        // Validate watermark belongs to the same school/branding
+        // Sentinel UUID '00000000-0000-0000-0000-000000000000' means "no watermark", null means "use default watermark"
+        $watermarkId = $request->watermark_id;
+        $noWatermarkSentinel = '00000000-0000-0000-0000-000000000000';
+        
+        if ($watermarkId === $noWatermarkSentinel) {
+            // Sentinel UUID = no watermark (explicitly disable)
+            $watermarkId = $noWatermarkSentinel;
+        } elseif ($watermarkId) {
+            // UUID = specific watermark, validate it exists and belongs to school
+            $watermark = \App\Models\BrandingWatermark::where('id', $watermarkId)
+                ->where('branding_id', $request->school_id)
+                ->whereNull('deleted_at')
+                ->first();
+            
+            if (!$watermark) {
+                return response()->json(['error' => 'Watermark not found or does not belong to this school'], 404);
+            }
+        } else {
+            // null = use default watermark
+            $watermarkId = null;
+        }
+
+        $templateData = [
             'organization_id' => $organizationId,
             'school_id' => $request->school_id,
             'template_name' => $request->template_name,
@@ -180,7 +203,12 @@ class ReportTemplateController extends Controller
             'report_font_size' => $request->report_font_size ?? null,
             'is_default' => $request->is_default ?? false,
             'is_active' => $request->is_active ?? true,
-        ]);
+        ];
+        
+        // Handle watermark_id (sentinel UUID allowed, no foreign key constraint)
+        $templateData['watermark_id'] = $watermarkId;
+        
+        $template = ReportTemplate::create($templateData);
 
         return response()->json($template, 201);
     }
@@ -277,7 +305,33 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Cannot change school_id'], 403);
         }
 
-        $template->update($request->only([
+        // Validate watermark if provided
+        // Sentinel UUID '00000000-0000-0000-0000-000000000000' means "no watermark", null means "use default watermark"
+        $watermarkId = null;
+        $noWatermarkSentinel = '00000000-0000-0000-0000-000000000000';
+        
+        if ($request->has('watermark_id')) {
+            $watermarkId = $request->watermark_id;
+            if ($watermarkId === $noWatermarkSentinel) {
+                // Sentinel UUID = no watermark (explicitly disable)
+                $watermarkId = $noWatermarkSentinel;
+            } elseif ($watermarkId) {
+                // UUID = specific watermark, validate it exists and belongs to school
+                $watermark = \App\Models\BrandingWatermark::where('id', $watermarkId)
+                    ->where('branding_id', $template->school_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+                
+                if (!$watermark) {
+                    return response()->json(['error' => 'Watermark not found or does not belong to this school'], 404);
+                }
+            } else {
+                // null = use default watermark
+                $watermarkId = null;
+            }
+        }
+
+        $updateData = $request->only([
             'template_name',
             'template_type',
             'header_text',
@@ -299,7 +353,14 @@ class ReportTemplateController extends Controller
             'report_font_size',
             'is_default',
             'is_active',
-        ]));
+        ]);
+        
+        // Handle watermark_id separately (sentinel UUID allowed, no foreign key constraint)
+        if ($request->has('watermark_id')) {
+            $updateData['watermark_id'] = $watermarkId;
+        }
+        
+        $template->update($updateData);
 
         return response()->json($template);
     }

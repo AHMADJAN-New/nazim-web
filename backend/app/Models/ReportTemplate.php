@@ -41,6 +41,7 @@ class ReportTemplate extends Model
         'show_generation_date',
         'table_alternating_colors',
         'report_font_size',
+        'watermark_id',
         'is_default',
         'is_active',
     ];
@@ -87,6 +88,14 @@ class ReportTemplate extends Model
     public function school()
     {
         return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    /**
+     * Get the watermark assigned to this template (if any)
+     */
+    public function watermark()
+    {
+        return $this->belongsTo(BrandingWatermark::class, 'watermark_id');
     }
 
     /**

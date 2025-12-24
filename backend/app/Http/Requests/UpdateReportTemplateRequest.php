@@ -78,6 +78,17 @@ class UpdateReportTemplateRequest extends FormRequest
             'show_generation_date' => 'boolean',
             'table_alternating_colors' => 'boolean',
             'report_font_size' => 'nullable|string|max:10',
+            'watermark_id' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    // Allow sentinel UUID for "no watermark", or valid UUID
+                    $noWatermarkSentinel = '00000000-0000-0000-0000-000000000000';
+                    if ($value && $value !== $noWatermarkSentinel && !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+                        $fail('The watermark_id must be a valid UUID or the sentinel UUID for "no watermark".');
+                    }
+                },
+            ],
             'is_default' => 'boolean',
             'is_active' => 'boolean',
             'organization_id' => 'sometimes|nullable|uuid|exists:organizations,id',

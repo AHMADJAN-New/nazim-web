@@ -32,7 +32,7 @@
     {{-- Header --}}
     <div class="report-header">
         {{-- Left side logos --}}
-        <div class="header-left" style="width: 100px;">
+        <div class="header-left">
             @php
                 $leftLogos = [];
                 if (($show_primary_logo ?? true) && !empty($PRIMARY_LOGO_URI) && ($primary_logo_position ?? 'left') === 'left') {
@@ -46,7 +46,7 @@
                 }
             @endphp
             @foreach($leftLogos as $logo)
-                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="display: block; max-height: 100px; max-width: 100px; margin-bottom: 5px;">
+                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="display: block; max-height: 100px; max-width: 100%; width: auto; height: auto; object-fit: contain; object-position: center; margin-bottom: 5px;">
             @endforeach
         </div>
 
@@ -79,7 +79,7 @@
         </div>
 
         {{-- Right side logos --}}
-        <div class="header-right" style="width: 100px;">
+        <div class="header-right">
             @php
                 $rightLogos = [];
                 if (($show_primary_logo ?? true) && !empty($PRIMARY_LOGO_URI) && ($primary_logo_position ?? 'left') === 'right') {
@@ -93,7 +93,7 @@
                 }
             @endphp
             @foreach($rightLogos as $logo)
-                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="display: block; max-height: 100px; max-width: 100px; margin-bottom: 5px;">
+                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="display: block; max-height: 100px; max-width: 100%; width: auto; height: auto; object-fit: contain; object-position: center; margin-bottom: 5px;">
             @endforeach
         </div>
     </div>
