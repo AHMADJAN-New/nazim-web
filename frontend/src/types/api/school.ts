@@ -18,15 +18,15 @@ export interface School {
     accent_color: string;
     font_family: string;
     report_font_size: string;
-    primary_logo_binary: Uint8Array | null;
+    primary_logo_binary: string | null; // Base64 encoded binary data
     primary_logo_mime_type: string | null;
     primary_logo_filename: string | null;
     primary_logo_size: number | null;
-    secondary_logo_binary: Uint8Array | null;
+    secondary_logo_binary: string | null; // Base64 encoded binary data
     secondary_logo_mime_type: string | null;
     secondary_logo_filename: string | null;
     secondary_logo_size: number | null;
-    ministry_logo_binary: Uint8Array | null;
+    ministry_logo_binary: string | null; // Base64 encoded binary data
     ministry_logo_mime_type: string | null;
     ministry_logo_filename: string | null;
     ministry_logo_size: number | null;
@@ -38,6 +38,12 @@ export interface School {
     show_page_numbers: boolean;
     show_generation_date: boolean;
     report_logo_selection: string;
+    show_primary_logo: boolean;
+    show_secondary_logo: boolean;
+    show_ministry_logo: boolean;
+    primary_logo_position: string;
+    secondary_logo_position: string | null;
+    ministry_logo_position: string | null;
     calendar_preference: string;
     is_active: boolean;
     created_at: string;

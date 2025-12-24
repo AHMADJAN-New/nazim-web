@@ -25,19 +25,32 @@ class ReportTemplate extends Model
         'template_name',
         'template_type',
         'header_text',
+        'header_text_position',
         'footer_text',
+        'footer_text_position',
         'header_html',
         'footer_html',
         'report_logo_selection',
+        'show_primary_logo',
+        'show_secondary_logo',
+        'show_ministry_logo',
+        'primary_logo_position',
+        'secondary_logo_position',
+        'ministry_logo_position',
         'show_page_numbers',
         'show_generation_date',
         'table_alternating_colors',
         'report_font_size',
+        'font_family',
+        'watermark_id',
         'is_default',
         'is_active',
     ];
 
     protected $casts = [
+        'show_primary_logo' => 'boolean',
+        'show_secondary_logo' => 'boolean',
+        'show_ministry_logo' => 'boolean',
         'show_page_numbers' => 'boolean',
         'show_generation_date' => 'boolean',
         'table_alternating_colors' => 'boolean',
@@ -76,6 +89,14 @@ class ReportTemplate extends Model
     public function school()
     {
         return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    /**
+     * Get the watermark assigned to this template (if any)
+     */
+    public function watermark()
+    {
+        return $this->belongsTo(BrandingWatermark::class, 'watermark_id');
     }
 
     /**

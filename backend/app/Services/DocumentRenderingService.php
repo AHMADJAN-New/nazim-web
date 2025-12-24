@@ -52,6 +52,19 @@ class DocumentRenderingService
         $tablePayload = $options['table_payload'] ?? null;
         $forBrowser = $options['for_browser'] ?? false; // For browser preview vs PDF generation
 
+        // Debug: Log watermark info (only in development)
+        if (config('app.debug')) {
+            \Log::debug('Document rendering watermark check', [
+                'template_id' => $template->id,
+                'watermark_id' => $template->watermark_id,
+                'has_watermark' => $watermark !== null,
+                'watermark_type' => $watermark ? get_class($watermark) : null,
+                'watermark_file_path' => $watermark instanceof \App\Models\Letterhead ? $watermark->file_path : null,
+                'watermark_wm_type' => $watermark instanceof \App\Models\BrandingWatermark ? $watermark->wm_type : null,
+                'for_browser' => $forBrowser,
+            ]);
+        }
+
         // Build CSS styles
         $styles = $this->buildStyles($pageLayout, $forBrowser);
 
@@ -64,6 +77,16 @@ class DocumentRenderingService
 
         // Build watermark HTML
         $watermarkHtml = $this->buildWatermarkHtml($watermark, $forBrowser);
+        
+        // Debug: Log watermark HTML generation (only in development)
+        if (config('app.debug')) {
+            \Log::debug('Watermark HTML generated', [
+                'template_id' => $template->id,
+                'watermark_html_length' => strlen($watermarkHtml),
+                'watermark_html_contains_img' => str_contains($watermarkHtml, '<img'),
+                'watermark_html_contains_data_url' => str_contains($watermarkHtml, 'data:image') || str_contains($watermarkHtml, 'data:application'),
+            ]);
+        }
 
         // Build table HTML if provided
         $tableHtml = $tablePayload ? $this->renderTablePayload($tablePayload) : '';
@@ -989,38 +1012,128 @@ HTML;
 
     /**
      * Build watermark HTML
+     * Supports both Letterhead (old DMS system) and BrandingWatermark (new reporting system)
      *
-     * @param Letterhead|null $watermark
+     * @param Letterhead|BrandingWatermark|null $watermark
      * @param bool $forBrowser Whether this is for browser preview (true) or PDF generation (false)
      * @return string
      */
-    private function buildWatermarkHtml(?Letterhead $watermark, bool $forBrowser = false): string
+    private function buildWatermarkHtml($watermark, bool $forBrowser = false): string
     {
-        if (!$watermark || !$watermark->file_path || !Storage::exists($watermark->file_path)) {
+        if (!$watermark) {
             return '';
         }
 
-        // CRITICAL: Browsershot doesn't allow file:// URLs
-        // Always use base64 data URLs for both browser preview and PDF generation
-        try {
-            $fileContents = Storage::get($watermark->file_path);
-            $mimeType = Storage::mimeType($watermark->file_path);
-            $base64 = base64_encode($fileContents);
-            $fileUrl = "data:{$mimeType};base64,{$base64}";
-        } catch (\Exception $e) {
-            \Log::error("Failed to base64 encode watermark {$watermark->id}: {$e->getMessage()}", [
-                'watermark_id' => $watermark->id,
-                'file_path' => $watermark->file_path,
-                'for_browser' => $forBrowser,
-                'exception' => $e,
-            ]);
-            // Return empty string - better to show no watermark than break PDF generation
+        $fileUrl = null;
+        $opacity = 0.08;
+        $rotation = 0;
+        $scale = 1.0;
+        $position = 'center';
+        $posX = 50.0;
+        $posY = 50.0;
+
+        // Check if it's a BrandingWatermark (new reporting system)
+        if ($watermark instanceof \App\Models\BrandingWatermark) {
+            // Only process image watermarks (text watermarks are handled differently)
+            if ($watermark->wm_type !== 'image' || !$watermark->isImage()) {
+                return '';
+            }
+
+            // Get image data URI from BrandingWatermark
+            $fileUrl = $watermark->getImageDataUri();
+            if (!$fileUrl) {
+                return '';
+            }
+
+            // Get styling properties from BrandingWatermark
+            $opacity = $watermark->opacity ?? 0.08;
+            $rotation = $watermark->rotation_deg ?? 0;
+            $scale = $watermark->scale ?? 1.0;
+            $position = $watermark->position ?? 'center';
+            $posX = $watermark->pos_x ?? 50.0;
+            $posY = $watermark->pos_y ?? 50.0;
+        }
+        // Check if it's a Letterhead (old DMS system)
+        elseif ($watermark instanceof \App\Models\Letterhead) {
+            if (!$watermark->file_path || !Storage::exists($watermark->file_path)) {
+                return '';
+            }
+
+            // CRITICAL: Browsershot doesn't allow file:// URLs
+            // Always use base64 data URLs for both browser preview and PDF generation
+            try {
+                $fileContents = Storage::get($watermark->file_path);
+                $mimeType = Storage::mimeType($watermark->file_path);
+                $base64 = base64_encode($fileContents);
+                $fileUrl = "data:{$mimeType};base64,{$base64}";
+            } catch (\Exception $e) {
+                \Log::error("Failed to base64 encode watermark {$watermark->id}: {$e->getMessage()}", [
+                    'watermark_id' => $watermark->id,
+                    'file_path' => $watermark->file_path,
+                    'for_browser' => $forBrowser,
+                    'exception' => $e,
+                ]);
+                // Return empty string - better to show no watermark than break PDF generation
+                return '';
+            }
+        } else {
+            // Unknown watermark type
             return '';
         }
+
+        if (!$fileUrl) {
+            return '';
+        }
+
+        // Build CSS transform for rotation and scale
+        $transforms = [];
+        if ($rotation != 0) {
+            $transforms[] = "rotate({$rotation}deg)";
+        }
+        if ($scale != 1.0) {
+            $transforms[] = "scale({$scale})";
+        }
+        $transform = !empty($transforms) ? implode(' ', $transforms) : 'none';
+
+        // Build CSS position based on position setting
+        $positionStyles = [];
+        switch ($position) {
+            case 'center':
+                $positionStyles[] = 'top: 50%';
+                $positionStyles[] = 'left: 50%';
+                $positionStyles[] = 'transform: translate(-50%, -50%) ' . ($transform !== 'none' ? $transform : '');
+                break;
+            case 'top-left':
+                $positionStyles[] = "top: {$posY}%";
+                $positionStyles[] = "left: {$posX}%";
+                $positionStyles[] = 'transform: ' . ($transform !== 'none' ? $transform : 'translate(-50%, -50%)');
+                break;
+            case 'top-right':
+                $positionStyles[] = "top: {$posY}%";
+                $positionStyles[] = "right: " . (100 - $posX) . "%";
+                $positionStyles[] = 'transform: ' . ($transform !== 'none' ? $transform : 'translate(50%, -50%)');
+                break;
+            case 'bottom-left':
+                $positionStyles[] = "bottom: " . (100 - $posY) . "%";
+                $positionStyles[] = "left: {$posX}%";
+                $positionStyles[] = 'transform: ' . ($transform !== 'none' ? $transform : 'translate(-50%, 50%)');
+                break;
+            case 'bottom-right':
+                $positionStyles[] = "bottom: " . (100 - $posY) . "%";
+                $positionStyles[] = "right: " . (100 - $posX) . "%";
+                $positionStyles[] = 'transform: ' . ($transform !== 'none' ? $transform : 'translate(50%, 50%)');
+                break;
+            default:
+                $positionStyles[] = 'top: 50%';
+                $positionStyles[] = 'left: 50%';
+                $positionStyles[] = 'transform: translate(-50%, -50%) ' . ($transform !== 'none' ? $transform : '');
+        }
+
+        $positionStyle = implode('; ', $positionStyles);
 
         return <<<HTML
-        <div class="watermark">
-            <img src="{$fileUrl}" alt="Watermark" />
+        <div class="watermark" style="position: fixed; {$positionStyle}; opacity: {$opacity}; z-index: 1; width: 60%; height: auto; pointer-events: none;">
+            <img src="{$fileUrl}" alt="Watermark" style="width: 100%; height: auto; max-width: 500px;" />
         </div>
 HTML;
     }

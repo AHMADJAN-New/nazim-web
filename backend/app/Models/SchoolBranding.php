@@ -55,6 +55,12 @@ class SchoolBranding extends Model
         'show_page_numbers',
         'show_generation_date',
         'report_logo_selection',
+        'show_primary_logo',
+        'show_secondary_logo',
+        'show_ministry_logo',
+        'primary_logo_position',
+        'secondary_logo_position',
+        'ministry_logo_position',
         'calendar_preference',
         'is_active',
     ];
@@ -64,6 +70,9 @@ class SchoolBranding extends Model
         'table_alternating_colors' => 'boolean',
         'show_page_numbers' => 'boolean',
         'show_generation_date' => 'boolean',
+        'show_primary_logo' => 'boolean',
+        'show_secondary_logo' => 'boolean',
+        'show_ministry_logo' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -89,6 +98,128 @@ class SchoolBranding extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organization_id');
+    }
+
+    /**
+     * Get all layouts for this branding
+     */
+    public function layouts()
+    {
+        return $this->hasMany(BrandingLayout::class, 'branding_id');
+    }
+
+    /**
+     * Get the default layout for this branding
+     */
+    public function defaultLayout()
+    {
+        return $this->hasOne(BrandingLayout::class, 'branding_id')
+            ->where('is_default', true)
+            ->where('is_active', true);
+    }
+
+    /**
+     * Get all notes for this branding
+     */
+    public function notes()
+    {
+        return $this->hasMany(BrandingNote::class, 'branding_id');
+    }
+
+    /**
+     * Get active notes for a specific location
+     */
+    public function activeNotes(string $location = null)
+    {
+        $query = $this->notes()->where('is_active', true);
+        if ($location) {
+            $query->where('location', $location);
+        }
+        return $query;
+    }
+
+    /**
+     * Get all watermarks for this branding
+     */
+    public function watermarks()
+    {
+        return $this->hasMany(BrandingWatermark::class, 'branding_id');
+    }
+
+    /**
+     * Get the default watermark for this branding
+     */
+    public function defaultWatermark()
+    {
+        return $this->hasOne(BrandingWatermark::class, 'branding_id')
+            ->where('is_default', true)
+            ->where('is_active', true);
+    }
+
+    /**
+     * Get all report runs for this branding
+     */
+    public function reportRuns()
+    {
+        return $this->hasMany(ReportRun::class, 'branding_id');
+    }
+
+    /**
+     * Convert binary logo to base64 when serializing to JSON
+     */
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * Convert binary fields to base64 when serializing to array/JSON
+     */
+    public function toArray()
+    {
+        $array = parent::toArray();
+
+        // Convert binary logo fields to base64 strings for JSON transmission
+        // PostgreSQL BYTEA columns need special handling
+        $logoFields = ['primary_logo_binary', 'secondary_logo_binary', 'ministry_logo_binary'];
+        
+        foreach ($logoFields as $field) {
+            try {
+                // Get the raw attribute value directly from the model
+                $rawValue = $this->getAttribute($field);
+                
+                if ($rawValue !== null && $rawValue !== '') {
+                    // PostgreSQL BYTEA is returned as a binary string
+                    if (is_string($rawValue)) {
+                        // Check if it's already base64 encoded (unlikely but possible)
+                        $decoded = @base64_decode($rawValue, true);
+                        if ($decoded !== false && base64_encode($decoded) === $rawValue) {
+                            // Already base64, keep as is
+                            $array[$field] = $rawValue;
+                        } else {
+                            // Encode binary string to base64
+                            $array[$field] = base64_encode($rawValue);
+                        }
+                    } elseif (is_resource($rawValue)) {
+                        // If it's a resource stream, read it
+                        rewind($rawValue);
+                        $binary = stream_get_contents($rawValue);
+                        $array[$field] = base64_encode($binary);
+                    } else {
+                        // Fallback: try to convert to string and encode
+                        $array[$field] = base64_encode((string)$rawValue);
+                    }
+                } else {
+                    $array[$field] = null;
+                }
+            } catch (\Exception $e) {
+                // If encoding fails, set to null to prevent JSON serialization errors
+                \Log::warning("Error encoding {$field} to base64: " . $e->getMessage() . " | Type: " . gettype($this->getAttribute($field)));
+                $array[$field] = null;
+            }
+        }
+
+        return $array;
     }
 }
 

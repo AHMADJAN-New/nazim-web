@@ -62,14 +62,33 @@ class UpdateReportTemplateRequest extends FormRequest
             'template_type' => 'sometimes|required|string|in:student_report,attendance_report,fee_report,exam_report,class_report,general_report',
             'school_id' => 'sometimes|required|uuid|exists:school_branding,id',
             'header_text' => 'nullable|string',
+            'header_text_position' => 'nullable|string|in:above_school_name,below_school_name',
             'footer_text' => 'nullable|string',
+            'footer_text_position' => 'nullable|string|in:footer',
             'header_html' => 'nullable|string',
             'footer_html' => 'nullable|string',
             'report_logo_selection' => 'nullable|string|max:50',
+            'show_primary_logo' => 'boolean',
+            'show_secondary_logo' => 'boolean',
+            'show_ministry_logo' => 'boolean',
+            'primary_logo_position' => 'nullable|string|in:left,right',
+            'secondary_logo_position' => 'nullable|string|in:left,right',
+            'ministry_logo_position' => 'nullable|string|in:left,right',
             'show_page_numbers' => 'boolean',
             'show_generation_date' => 'boolean',
             'table_alternating_colors' => 'boolean',
             'report_font_size' => 'nullable|string|max:10',
+            'watermark_id' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    // Allow sentinel UUID for "no watermark", or valid UUID
+                    $noWatermarkSentinel = '00000000-0000-0000-0000-000000000000';
+                    if ($value && $value !== $noWatermarkSentinel && !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+                        $fail('The watermark_id must be a valid UUID or the sentinel UUID for "no watermark".');
+                    }
+                },
+            ],
             'is_default' => 'boolean',
             'is_active' => 'boolean',
             'organization_id' => 'sometimes|nullable|uuid|exists:organizations,id',
