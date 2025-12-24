@@ -2113,7 +2113,23 @@ export const ps: TranslationKeys = {
     deleteConfirmDescription: 'دا کړنه بیرته راګرځیدونکې نه ده. دا به د ښوونځی دایمي پاک کړي',
     cancel: 'لغوه کړئ',
     delete: 'پاک کړئ',
-    loadingSchools: 'ښوونځي لوډیږي...'
+    loadingSchools: 'ښوونځي لوډیږي...',
+    logos: 'لوګو',
+    noLogoUploaded: 'هیڅ لوګو پورته شوی نه دی',
+    usage: 'کارول',
+    reportLogoSettings: 'د راپور لوګو تنظیمات',
+    reportLogoSettingsDesc: 'د راپورونو کې د ښکاره کیدو لپاره لوګو وټاکئ (اعظمي 2 لوګو) او د دوی موقعیت',
+    headerText: 'د سرلیک متن',
+    enterHeaderText: 'د ښوونځي د نوم لاندې د ښکاره کیدو لپاره متن ولیکئ',
+    headerTextDesc: 'دا متن به د راپورونو د سرلیکونو کې د ښوونځي د نوم لاندې ښکاره شي',
+    left: 'کیڼ',
+    right: 'ښی',
+    maxLogosReached: 'اعظمي 2 لوګو فعال شوي. د بل فعالولو لپاره یو غیر فعال کړئ.',
+    selectFont: 'د فونټ کورنۍ وټاکئ',
+    orEnterCustomFont: 'یا د فونټ نوم ولیکئ',
+    fontFamilyHint: 'د ښکته لیست څخه فونټ وټاکئ یا د فونټ نوم ولیکئ',
+    reportFontSizeHint: 'د راپورونو کې کارول شوی فونټ اندازه',
+    currentLogo: 'اوسنی لوګو'
   },
   // Roles Management
   roles: {

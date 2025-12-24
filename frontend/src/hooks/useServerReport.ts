@@ -164,6 +164,7 @@ export function useServerReport(): UseServerReportReturn {
         report_type: options.reportType,
         branding_id: options.brandingId,
         layout_id: options.layoutId,
+        report_template_id: options.reportTemplateId,
         template_name: options.templateName,
         title: options.title,
         watermark_mode: options.watermarkMode ?? 'default',

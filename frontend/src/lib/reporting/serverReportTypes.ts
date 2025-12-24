@@ -17,6 +17,7 @@ export interface GenerateReportRequest {
   report_type: ServerReportType;
   branding_id?: string | null;
   layout_id?: string | null;
+  report_template_id?: string | null;
   template_name?: string | null;
   title?: string;
   watermark_mode?: 'default' | 'pick' | 'none';
@@ -91,6 +92,7 @@ export interface ServerReportOptions<T extends Record<string, any>> {
   rows: T[];
   brandingId?: string;
   layoutId?: string;
+  reportTemplateId?: string;
   templateName?: string;
   watermarkMode?: 'default' | 'pick' | 'none';
   notesMode?: 'defaults' | 'custom' | 'none';

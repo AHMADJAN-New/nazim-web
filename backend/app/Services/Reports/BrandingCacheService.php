@@ -18,18 +18,30 @@ class BrandingCacheService
     /**
      * Get branding data with binary logos
      */
-    public function getBranding(string $brandingId): ?array
+    public function getBranding(string $brandingId, bool $forceRefresh = false): ?array
     {
         $cacheKey = "branding.{$brandingId}";
+
+        // If force refresh, clear cache first
+        if ($forceRefresh) {
+            Cache::forget($cacheKey);
+        }
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($brandingId) {
             $branding = SchoolBranding::find($brandingId);
 
             if (!$branding) {
+                \Log::warning("Branding not found: {$brandingId}");
                 return null;
             }
 
-            return $this->formatBranding($branding);
+            try {
+                return $this->formatBranding($branding);
+            } catch (\Exception $e) {
+                \Log::error("Error formatting branding {$brandingId}: " . $e->getMessage());
+                \Log::error("Stack trace: " . $e->getTraceAsString());
+                return null;
+            }
         });
     }
 
@@ -151,6 +163,10 @@ class BrandingCacheService
     {
         Cache::forget("branding.{$brandingId}");
         Cache::forget("branding.{$brandingId}.layout.default");
+        
+        // Clear notes and watermarks cache patterns
+        Cache::forget("branding.{$brandingId}.notes.*");
+        Cache::forget("branding.{$brandingId}.watermark.*");
 
         // Clear all notes and watermarks for this branding
         // Note: In production, you might want to use cache tags for more efficient clearing
@@ -178,33 +194,173 @@ class BrandingCacheService
      */
     private function formatBranding(SchoolBranding $branding): array
     {
+        // Get the array first (which will have base64 encoded logos from toArray())
         $data = $branding->toArray();
 
-        // Convert logo binaries to data URIs
-        if (!empty($branding->primary_logo_binary)) {
-            $mime = $branding->primary_logo_mime_type ?? 'image/png';
-            $base64 = base64_encode($branding->primary_logo_binary);
-            $data['primary_logo_uri'] = "data:{$mime};base64,{$base64}";
+        // Get raw binary data directly from database for logo URIs
+        // Use raw query with encode() function to get base64 directly from PostgreSQL
+        // Handle NULL values properly
+        try {
+            $logoData = \Illuminate\Support\Facades\DB::selectOne(
+                "SELECT 
+                    CASE 
+                        WHEN primary_logo_binary IS NULL THEN NULL 
+                        ELSE encode(primary_logo_binary, 'base64') 
+                    END as primary_logo_base64,
+                    CASE 
+                        WHEN secondary_logo_binary IS NULL THEN NULL 
+                        ELSE encode(secondary_logo_binary, 'base64') 
+                    END as secondary_logo_base64,
+                    CASE 
+                        WHEN ministry_logo_binary IS NULL THEN NULL 
+                        ELSE encode(ministry_logo_binary, 'base64') 
+                    END as ministry_logo_base64
+                FROM school_branding 
+                WHERE id = ?",
+                [$branding->id]
+            );
+            
+            if (!$logoData) {
+                \Log::warning("No logo data found for branding {$branding->id}");
+            } else {
+                \Log::debug("Logo data retrieved for branding {$branding->id}: " . 
+                    "primary=" . (!empty($logoData->primary_logo_base64) ? strlen($logoData->primary_logo_base64) . " chars" : "NULL") .
+                    ", secondary=" . (!empty($logoData->secondary_logo_base64) ? strlen($logoData->secondary_logo_base64) . " chars" : "NULL") .
+                    ", ministry=" . (!empty($logoData->ministry_logo_base64) ? strlen($logoData->ministry_logo_base64) . " chars" : "NULL")
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::error("Error querying logo data for branding {$branding->id}: " . $e->getMessage());
+            \Log::error("Stack trace: " . $e->getTraceAsString());
+            $logoData = null;
         }
 
-        if (!empty($branding->secondary_logo_binary)) {
-            $mime = $branding->secondary_logo_mime_type ?? 'image/png';
-            $base64 = base64_encode($branding->secondary_logo_binary);
-            $data['secondary_logo_uri'] = "data:{$mime};base64,{$base64}";
+        // Helper function to get base64 from query result
+        $getBase64 = function($base64String) {
+            if (empty($base64String)) {
+                return null;
+            }
+            // PostgreSQL encode() returns base64 string, use it directly
+            return trim($base64String);
+        };
+
+        // Compress logos for reports (reduce file size and improve performance)
+        $compressionService = app(\App\Services\Reports\LogoCompressionService::class);
+
+        // Primary logo
+        if ($logoData && !empty($logoData->primary_logo_base64)) {
+            $base64 = $getBase64($logoData->primary_logo_base64);
+            if ($base64) {
+                $mime = $branding->primary_logo_mime_type ?? 'image/png';
+                
+                // Compress logo for reports
+                $compressed = $compressionService->compressLogoFromBase64($base64, $mime);
+                if ($compressed) {
+                    $compressedBase64 = base64_encode($compressed['binary']);
+                    $compressedBase64 = preg_replace('/\s+/', '', $compressedBase64);
+                    $data['primary_logo_uri'] = "data:{$compressed['mime_type']};base64,{$compressedBase64}";
+                    \Log::debug("Primary logo compressed and URI created for branding {$branding->id}, compressed base64 length: " . strlen($compressedBase64));
+                } else {
+                    // Fallback to original if compression fails
+                    $base64 = preg_replace('/\s+/', '', $base64);
+                    $data['primary_logo_uri'] = "data:{$mime};base64,{$base64}";
+                    \Log::warning("Primary logo compression failed for branding {$branding->id}, using original");
+                }
+            } else {
+                \Log::warning("Primary logo base64 is empty for branding {$branding->id}");
+                $data['primary_logo_uri'] = null;
+            }
+        } else {
+            \Log::debug("No primary logo data found for branding {$branding->id}");
+            $data['primary_logo_uri'] = null;
         }
 
-        if (!empty($branding->ministry_logo_binary)) {
-            $mime = $branding->ministry_logo_mime_type ?? 'image/png';
-            $base64 = base64_encode($branding->ministry_logo_binary);
-            $data['ministry_logo_uri'] = "data:{$mime};base64,{$base64}";
+        // Secondary logo
+        if ($logoData && !empty($logoData->secondary_logo_base64)) {
+            $base64 = $getBase64($logoData->secondary_logo_base64);
+            if ($base64) {
+                $mime = $branding->secondary_logo_mime_type ?? 'image/png';
+                
+                // Compress logo for reports
+                $compressed = $compressionService->compressLogoFromBase64($base64, $mime);
+                if ($compressed) {
+                    $compressedBase64 = base64_encode($compressed['binary']);
+                    $compressedBase64 = preg_replace('/\s+/', '', $compressedBase64);
+                    $data['secondary_logo_uri'] = "data:{$compressed['mime_type']};base64,{$compressedBase64}";
+                    \Log::debug("Secondary logo compressed and URI created for branding {$branding->id}");
+                } else {
+                    // Fallback to original if compression fails
+                    $base64 = preg_replace('/\s+/', '', $base64);
+                    $data['secondary_logo_uri'] = "data:{$mime};base64,{$base64}";
+                    \Log::warning("Secondary logo compression failed for branding {$branding->id}, using original");
+                }
+            } else {
+                \Log::warning("Secondary logo base64 is empty for branding {$branding->id}");
+                $data['secondary_logo_uri'] = null;
+            }
+        } else {
+            \Log::debug("No secondary logo data found for branding {$branding->id}");
+            $data['secondary_logo_uri'] = null;
         }
 
-        // Parse report_logo_selection
-        $logoSelection = $branding->report_logo_selection ?? 'primary,secondary';
-        $logos = array_map('trim', explode(',', $logoSelection));
-        $data['show_primary_logo'] = in_array('primary', $logos);
-        $data['show_secondary_logo'] = in_array('secondary', $logos);
-        $data['show_ministry_logo'] = in_array('ministry', $logos);
+        // Ministry logo
+        if ($logoData && !empty($logoData->ministry_logo_base64)) {
+            $base64 = $getBase64($logoData->ministry_logo_base64);
+            if ($base64) {
+                $mime = $branding->ministry_logo_mime_type ?? 'image/png';
+                
+                // Compress logo for reports
+                $compressed = $compressionService->compressLogoFromBase64($base64, $mime);
+                if ($compressed) {
+                    $compressedBase64 = base64_encode($compressed['binary']);
+                    $compressedBase64 = preg_replace('/\s+/', '', $compressedBase64);
+                    $data['ministry_logo_uri'] = "data:{$compressed['mime_type']};base64,{$compressedBase64}";
+                    \Log::debug("Ministry logo compressed and URI created for branding {$branding->id}");
+                } else {
+                    // Fallback to original if compression fails
+                    $base64 = preg_replace('/\s+/', '', $base64);
+                    $data['ministry_logo_uri'] = "data:{$mime};base64,{$base64}";
+                    \Log::warning("Ministry logo compression failed for branding {$branding->id}, using original");
+                }
+            } else {
+                \Log::warning("Ministry logo base64 is empty for branding {$branding->id}");
+                $data['ministry_logo_uri'] = null;
+            }
+        } else {
+            \Log::debug("No ministry logo data found for branding {$branding->id}");
+            $data['ministry_logo_uri'] = null;
+        }
+
+        // Use new logo selection fields (show_primary_logo, show_secondary_logo, show_ministry_logo)
+        // These are set by the user in the UI and enforce max 2 logos
+        $data['show_primary_logo'] = ($branding->show_primary_logo ?? true) && !empty($data['primary_logo_uri']);
+        $data['show_secondary_logo'] = ($branding->show_secondary_logo ?? false) && !empty($data['secondary_logo_uri']);
+        $data['show_ministry_logo'] = ($branding->show_ministry_logo ?? false) && !empty($data['ministry_logo_uri']);
+        
+        // Add logo positioning
+        $data['primary_logo_position'] = $branding->primary_logo_position ?? 'left';
+        $data['secondary_logo_position'] = $branding->secondary_logo_position ?? 'right';
+        $data['ministry_logo_position'] = $branding->ministry_logo_position ?? 'right';
+        
+        // Ensure colors and fonts are explicitly included (they should be in toArray() but ensure they're present)
+        if (!isset($data['primary_color']) || empty($data['primary_color'])) {
+            $data['primary_color'] = $branding->primary_color ?? '#0b0b56';
+        }
+        if (!isset($data['secondary_color']) || empty($data['secondary_color'])) {
+            $data['secondary_color'] = $branding->secondary_color ?? '#0056b3';
+        }
+        if (!isset($data['accent_color']) || empty($data['accent_color'])) {
+            $data['accent_color'] = $branding->accent_color ?? '#ff6b35';
+        }
+        if (!isset($data['font_family']) || empty($data['font_family'])) {
+            $data['font_family'] = $branding->font_family ?? 'Bahij Nassim';
+        }
+        if (!isset($data['report_font_size']) || empty($data['report_font_size'])) {
+            $data['report_font_size'] = $branding->report_font_size ?? '12px';
+        }
+        
+        \Log::debug("Logo visibility for branding {$branding->id}: show_primary={$data['show_primary_logo']}, show_secondary={$data['show_secondary_logo']}, show_ministry={$data['show_ministry_logo']}");
+        \Log::debug("Branding colors and fonts for {$branding->id}: primary_color={$data['primary_color']}, secondary_color={$data['secondary_color']}, accent_color={$data['accent_color']}, font_family={$data['font_family']}, report_font_size={$data['report_font_size']}");
 
         return $data;
     }

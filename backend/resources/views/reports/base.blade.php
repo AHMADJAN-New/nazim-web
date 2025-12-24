@@ -17,13 +17,88 @@
             margin: {{ $margins ?? '15mm 12mm 18mm 12mm' }};
         }
 
+        @php
+            // Set up font family and size variables at the top for use throughout the template
+            $fontFamily = isset($FONT_FAMILY) && !empty(trim($FONT_FAMILY)) ? trim($FONT_FAMILY) : 'Bahij Nassim';
+            // Normalize font name (remove spaces for @font-face, keep spaces for CSS font-family)
+            $fontFamilyNormalized = str_replace(' ', '', $fontFamily); // "BahijNassim" for @font-face
+            // Escape and quote font name properly for CSS
+            $fontFamilyEscaped = str_replace("'", "\\'", $fontFamily);
+            $fontFamilyQuoted = "'" . $fontFamilyEscaped . "'";
+            // Parse font size to get numeric value for calculations
+            $baseFontSize = isset($FONT_SIZE) && !empty($FONT_SIZE) ? intval(str_replace(['px', 'pt'], '', $FONT_SIZE)) : 12;
+            
+            // Load Bahij Nassim fonts if the font family matches
+            $loadBahijNassim = in_array(strtolower($fontFamilyNormalized), ['bahijnassim', 'bahij nassim']) || 
+                              strtolower($fontFamily) === 'bahij nassim';
+        @endphp
+
+        @if($loadBahijNassim)
+        /* Bahij Nassim Font Faces */
+        @font-face {
+            font-family: "BahijNassim";
+            src: url("/fonts/Bahij Nassim-Regular.woff") format("woff"),
+                 url("/fonts/Bahij Nassim-Regular.ttf") format("truetype");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "BahijNassim";
+            src: url("/fonts/Bahij Nassim-Bold.woff") format("woff"),
+                 url("/fonts/Bahij Nassim-Bold.ttf") format("truetype");
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        @endif
+
         html, body {
-            font-family: '{{ $FONT_FAMILY ?? 'Bahij Nassim' }}', 'DejaVu Sans', Arial, sans-serif;
+            @if($loadBahijNassim)
+            font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif;
+            @else
+            font-family: {!! $fontFamilyQuoted !!}, 'DejaVu Sans', Arial, sans-serif;
+            @endif
             font-size: {{ $FONT_SIZE ?? '12px' }};
             line-height: 1.5;
             color: #333;
             direction: {{ $rtl ?? true ? 'rtl' : 'ltr' }};
             text-align: {{ $rtl ?? true ? 'right' : 'left' }};
+        }
+        
+        /* Apply font to all text elements */
+        * {
+            font-family: inherit;
+        }
+        
+        /* Ensure all text uses the specified font */
+        /* Apply font to ALL elements */
+        * {
+            @if($loadBahijNassim)
+            font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+            @else
+            font-family: {!! $fontFamilyQuoted !!}, 'DejaVu Sans', Arial, sans-serif !important;
+            @endif
+        }
+        
+        /* Specific elements with font size based on base font size */
+        body, p, div, span, td, th, h1, h2, h3, h4, h5, h6, .school-name, .report-title, .header-text, .data-table {
+            @if($loadBahijNassim)
+            font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+            @else
+            font-family: {!! $fontFamilyQuoted !!}, 'DejaVu Sans', Arial, sans-serif !important;
+            @endif
+        }
+        
+        /* Bold text should use bold font weight */
+        .school-name, .report-title, th, strong, b {
+            @if($loadBahijNassim)
+            font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
+            font-weight: 700 !important;
+            @else
+            font-weight: bold !important;
+            @endif
         }
 
         /* Header section */
@@ -37,7 +112,7 @@
         }
 
         .header-left, .header-right {
-            width: {{ $logo_height_px ?? 60 }}px;
+            width: {{ $logo_height_px ?? 90 }}px;
             text-align: center;
         }
 
@@ -48,28 +123,33 @@
         }
 
         .header-logo {
-            max-height: {{ $logo_height_px ?? 60 }}px;
-            max-width: {{ $logo_height_px ?? 60 }}px;
+            max-height: {{ $logo_height_px ?? 90 }}px;
+            max-width: {{ $logo_height_px ?? 90 }}px;
             object-fit: contain;
         }
 
         .school-name {
-            font-size: 18px;
+            font-size: {{ ($baseFontSize * 1.5) }}px;
             font-weight: bold;
             color: {{ $PRIMARY_COLOR ?? '#0b0b56' }};
             margin-bottom: 5px;
         }
 
         .report-title {
-            font-size: 14px;
+            font-size: {{ ($baseFontSize * 1.17) }}px;
             font-weight: 600;
             color: {{ $SECONDARY_COLOR ?? '#0056b3' }};
+        }
+        
+        .header-text {
+            font-size: {{ $FONT_SIZE ?? '12px' }};
+            color: #666;
         }
 
         /* Notes sections */
         .notes-section {
             margin: 10px 0;
-            font-size: 10px;
+            font-size: {{ ($baseFontSize * 0.83) }}px;
             color: #666;
         }
 
@@ -108,14 +188,14 @@
             padding: 8px 6px;
             border: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }};
             text-align: center;
-            font-size: 11px;
+            font-size: {{ $FONT_SIZE ?? '12px' }} !important;
         }
 
         .data-table td {
             padding: 6px 5px;
             border: 1px solid #ddd;
             text-align: center;
-            font-size: 10px;
+            font-size: {{ $FONT_SIZE ?? '12px' }} !important;
         }
 
         .data-table tr:nth-child(even) td {
@@ -139,7 +219,7 @@
             margin-top: 20px;
             padding-top: 10px;
             border-top: 1px solid #ddd;
-            font-size: 9px;
+            font-size: {{ ($baseFontSize * 0.75) }}px;
             color: #666;
         }
 
@@ -159,7 +239,7 @@
 
         .system-note {
             text-align: center;
-            font-size: 8px;
+            font-size: {{ ($baseFontSize * 0.67) }}px;
             color: #999;
             margin-top: 10px;
         }
@@ -176,7 +256,7 @@
         }
 
         .watermark-text {
-            font-size: 60px;
+            font-size: {{ ($baseFontSize * 5) }}px;
             color: {{ $WATERMARK['color'] ?? '#000000' }};
             font-family: {{ $WATERMARK['font_family'] ?? $FONT_FAMILY ?? 'Bahij Nassim' }};
         }

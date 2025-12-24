@@ -614,3 +614,6 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/reports/{id}/download', [\App\Http\Controllers\ReportGenerationController::class, 'download']);
     Route::delete('/reports/{id}', [\App\Http\Controllers\ReportGenerationController::class, 'destroy']);
 });
+
+// Preview route (no auth required for template preview)
+Route::get('/reports/preview/template', [\App\Http\Controllers\ReportGenerationController::class, 'previewTemplate']);

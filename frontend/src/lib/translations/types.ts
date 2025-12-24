@@ -2681,6 +2681,22 @@ export interface TranslationKeys {
     loadingSchools: string;
     delete: string;
     cancel: string;
+    logos: string;
+    noLogoUploaded: string;
+    usage: string;
+    reportLogoSettings: string;
+    reportLogoSettingsDesc: string;
+    headerText: string;
+    enterHeaderText: string;
+    headerTextDesc: string;
+    left: string;
+    right: string;
+    maxLogosReached: string;
+    selectFont: string;
+    orEnterCustomFont: string;
+    fontFamilyHint: string;
+    reportFontSizeHint: string;
+    currentLogo: string;
   };
 
   // Roles Management

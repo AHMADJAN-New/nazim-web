@@ -2112,7 +2112,23 @@ export const ar: TranslationKeys = {
     deleteConfirmDescription: 'لا يمكن التراجع عن هذا الإجراء. سيحذف هذا المدرسة بشكل دائم',
     cancel: 'إلغاء',
     delete: 'حذف',
-    loadingSchools: 'جاري تحميل المدارس...'
+    loadingSchools: 'جاري تحميل المدارس...',
+    logos: 'الشعارات',
+    noLogoUploaded: 'لم يتم تحميل أي شعار',
+    usage: 'الاستخدام',
+    reportLogoSettings: 'إعدادات شعار التقرير',
+    reportLogoSettingsDesc: 'اختر الشعارات المعروضة في التقارير (حد أقصى شعاران) ومواضعها',
+    headerText: 'نص الرأس',
+    enterHeaderText: 'أدخل النص المعروض أسفل اسم المدرسة',
+    headerTextDesc: 'سيظهر هذا النص أسفل اسم المدرسة في رؤوس التقارير',
+    left: 'يسار',
+    right: 'يمين',
+    maxLogosReached: 'تم تفعيل شعارين كحد أقصى. قم بتعطيل واحد لتفعيل آخر.',
+    selectFont: 'اختر عائلة الخط',
+    orEnterCustomFont: 'أو أدخل اسم خط مخصص',
+    fontFamilyHint: 'اختر خطًا من القائمة أو أدخل اسم خط مخصص',
+    reportFontSizeHint: 'حجم الخط المستخدم في التقارير المُنشأة',
+    currentLogo: 'الشعار الحالي'
   },
   // Roles Management
   roles: {

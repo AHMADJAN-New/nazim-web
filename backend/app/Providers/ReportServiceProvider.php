@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Reports\BrandingCacheService;
+use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ExcelReportService;
 use App\Services\Reports\PdfReportService;
 use App\Services\Reports\ReportService;
@@ -30,12 +31,18 @@ class ReportServiceProvider extends ServiceProvider
             return new ExcelReportService();
         });
 
+        // Register DateConversionService
+        $this->app->bind(DateConversionService::class, function ($app) {
+            return new DateConversionService();
+        });
+
         // Register ReportService
         $this->app->bind(ReportService::class, function ($app) {
             return new ReportService(
                 $app->make(BrandingCacheService::class),
                 $app->make(PdfReportService::class),
-                $app->make(ExcelReportService::class)
+                $app->make(ExcelReportService::class),
+                $app->make(DateConversionService::class)
             );
         });
     }

@@ -3513,4 +3513,509 @@ if (!$user->hasPermissionTo('classes.read')) {
 $permissions = $user->getAllPermissions();
 ```
 
+## Reporting System & Branding
+
+**CRITICAL: The application uses a unified PDF and Excel report generation system with branding, templates, watermarks, and calendar support.**
+
+### Overview
+
+The reporting system provides:
+- **PDF and Excel report generation** with async processing
+- **School branding integration** (logos, colors, fonts, watermarks)
+- **Multi-calendar support** (Gregorian, Jalali/Shamsi, Qamari/Hijri Qamari)
+- **Multi-language support** (Farsi, Pashto, Arabic, English)
+- **Template auto-selection** based on column count
+- **Custom ReportTemplates** for per-report-type customization
+
+### Database Tables
+
+| Table | Description |
+|-------|-------------|
+| `school_branding` | Main branding settings (logos stored as binary, colors, fonts) |
+| `branding_layouts` | Page layout configurations (A4 Portrait, A4 Landscape, A3 Landscape) |
+| `branding_notes` | Header/body/footer notes |
+| `branding_watermarks` | Text/image watermarks |
+| `report_templates` | Custom report templates per report type |
+| `report_runs` | Report generation history/logging |
+
+### School Branding - Logo Storage
+
+**CRITICAL: Logos are stored as BINARY data (BYTEA) in PostgreSQL, NOT as file paths.**
+
+#### Logo Storage Structure
+
+The `school_branding` table stores three logos as binary data:
+
+```php
+// Primary Logo
+$table->binary('primary_logo_binary')->nullable();        // BYTEA in PostgreSQL
+$table->string('primary_logo_mime_type', 100)->nullable(); // e.g., 'image/png'
+$table->string('primary_logo_filename', 255)->nullable();  // Original filename
+$table->integer('primary_logo_size')->nullable();           // File size in bytes
+
+// Secondary Logo (same structure)
+$table->binary('secondary_logo_binary')->nullable();
+$table->string('secondary_logo_mime_type', 100)->nullable();
+$table->string('secondary_logo_filename', 255)->nullable();
+$table->integer('secondary_logo_size')->nullable();
+
+// Ministry Logo (same structure)
+$table->binary('ministry_logo_binary')->nullable();
+$table->string('ministry_logo_mime_type', 100)->nullable();
+$table->string('ministry_logo_filename', 255)->nullable();
+$table->integer('ministry_logo_size')->nullable();
+```
+
+#### Logo Usage in Reports
+
+**CRITICAL: Always use binary logos first, fallback to file paths if needed.**
+
+```php
+// ✅ CORRECT: Use binary logo with base64 encoding
+if ($branding->primary_logo_binary && $branding->primary_logo_mime_type) {
+    $logoData = base64_encode($branding->primary_logo_binary);
+    $mimeType = $branding->primary_logo_mime_type;
+    return '<img src="data:' . htmlspecialchars($mimeType) . ';base64,' . $logoData . '" ...>';
+}
+
+// Fallback to file path (legacy support)
+if ($branding->logo_path && Storage::exists($branding->logo_path)) {
+    $logoData = base64_encode(Storage::get($branding->logo_path));
+    $mimeType = $this->guessMimeType($branding->logo_path);
+    return '<img src="data:' . htmlspecialchars($mimeType) . ';base64,' . $logoData . '" ...>';
+}
+```
+
+#### Logo Upload Pattern
+
+**When uploading logos to school_branding:**
+
+```php
+// Store logo as binary
+$branding->primary_logo_binary = file_get_contents($uploadedFile->getRealPath());
+$branding->primary_logo_mime_type = $uploadedFile->getMimeType();
+$branding->primary_logo_filename = $uploadedFile->getClientOriginalName();
+$branding->primary_logo_size = $uploadedFile->getSize();
+$branding->save();
+```
+
+**Key Rules:**
+- ✅ **ALWAYS** store logos as binary data in database
+- ✅ **ALWAYS** store MIME type, filename, and size for metadata
+- ✅ **ALWAYS** use base64 encoding when embedding in HTML (data URIs)
+- ✅ **ALWAYS** check binary exists before using file path fallback
+- ❌ **NEVER** store only file paths (use binary storage)
+- ❌ **NEVER** store logos in public storage without binary backup
+
+### Backend Report Generation
+
+#### ReportService Usage Pattern
+
+**CRITICAL: Always use ReportService for generating reports. Never generate PDFs/Excel directly.**
+
+```php
+use App\Services\Reports\ReportService;
+use App\Services\Reports\ReportConfig;
+
+// Inject the service
+public function __construct(private ReportService $reportService) {}
+
+// Generate a report
+public function generateStudentReport(Request $request)
+{
+    $user = $request->user();
+    $profile = DB::table('profiles')->where('id', $user->id)->first();
+    
+    if (!$profile || !$profile->organization_id) {
+        return response()->json(['error' => 'User must be assigned to an organization'], 403);
+    }
+
+    // Check permission
+    try {
+        if (!$user->hasPermissionTo('reports.generate')) {
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+    } catch (\Exception $e) {
+        \Log::warning("Permission check failed for reports.generate: " . $e->getMessage());
+        return response()->json(['error' => 'This action is unauthorized'], 403);
+    }
+
+    // Create report config
+    $config = ReportConfig::fromArray([
+        'report_key' => 'student_list',
+        'report_type' => 'pdf',  // or 'excel'
+        'branding_id' => $request->branding_id,
+        'report_template_id' => $request->template_id, // optional
+        'title' => 'Student List Report',
+        'calendar_preference' => $request->calendar_preference ?? 'jalali', // 'gregorian', 'jalali', 'qamari'
+        'language' => $request->language ?? 'ps', // 'fa', 'ps', 'ar', 'en'
+    ]);
+
+    // Prepare data
+    $data = [
+        'columns' => [
+            ['key' => 'name', 'label' => 'نوم'],
+            ['key' => 'class', 'label' => 'صنف'],
+            ['key' => 'enrollment_date', 'label' => 'د شمولیت نیټه'],
+        ],
+        'rows' => [
+            ['name' => 'احمد', 'class' => '10A', 'enrollment_date' => '2024-01-15'],
+            ['name' => 'محمد', 'class' => '10B', 'enrollment_date' => '2024-02-20'],
+        ],
+    ];
+
+    // Format dates using DateConversionService
+    $dateService = app(\App\Services\Reports\DateConversionService::class);
+    foreach ($data['rows'] as &$row) {
+        if (!empty($row['enrollment_date'])) {
+            $row['enrollment_date'] = $dateService->formatDate(
+                $row['enrollment_date'],
+                $config->calendar_preference,
+                'full',
+                $config->language
+            );
+        }
+    }
+
+    // Generate report (async by default)
+    $reportRun = $this->reportService->generateReport(
+        $config, 
+        $data, 
+        $profile->organization_id
+    );
+
+    return response()->json([
+        'id' => $reportRun->id,
+        'status' => $reportRun->status,
+        'message' => 'Report generation started',
+    ], 202);
+}
+```
+
+#### ReportConfig Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `report_key` | string | required | Unique identifier for report type |
+| `report_type` | string | `'pdf'` | `'pdf'` or `'excel'` |
+| `branding_id` | string | null | School branding UUID |
+| `layout_id` | string | null | Specific layout UUID |
+| `report_template_id` | string | null | ReportTemplate UUID for custom header/footer |
+| `template_name` | string | null | Blade template name (auto-selected if null) |
+| `title` | string | `''` | Report title |
+| `watermark_mode` | string | `'default'` | `'default'`, `'pick'`, `'none'` |
+| `notes_mode` | string | `'defaults'` | `'defaults'`, `'custom'`, `'none'` |
+| `calendar_preference` | string | `'jalali'` | `'gregorian'`, `'jalali'`, `'qamari'` |
+| `language` | string | `'fa'` | `'fa'`, `'ps'`, `'ar'`, `'en'` |
+
+#### Calendar Preferences in Reports
+
+| Value | Description | Example Output |
+|-------|-------------|----------------|
+| `gregorian` | Western calendar | `December 24, 2024` |
+| `jalali` / `shamsi` | Solar Hijri (Afghan/Iranian) | `۴ جدی ۱۴۰۳` |
+| `qamari` / `hijri_qamari` | Lunar Hijri (Islamic) | `۲۲ جمادی الثانی ۱۴۴۶ هـ` |
+
+#### Template Auto-Selection
+
+**CRITICAL: Templates are automatically selected based on column count. Don't manually specify unless necessary.**
+
+| Columns | Template | Page Size |
+|---------|----------|-----------|
+| 1-6 | `table_a4_portrait` | A4 Portrait |
+| 7-13 | `table_a4_landscape` | A4 Landscape |
+| 14+ | `table_a3_landscape` | A3 Landscape |
+
+#### Date Formatting in Reports
+
+**CRITICAL: Always use DateConversionService for formatting dates in report data.**
+
+```php
+use App\Services\Reports\DateConversionService;
+
+$dateService = app(DateConversionService::class);
+
+foreach ($rows as &$row) {
+    if (!empty($row['enrollment_date'])) {
+        $row['enrollment_date'] = $dateService->formatDate(
+            $row['enrollment_date'],      // Date string (YYYY-MM-DD)
+            'jalali',                      // Calendar preference
+            'full',                        // Format: 'full', 'numeric', 'short'
+            'ps'                           // Language: 'fa', 'ps', 'ar', 'en'
+        );
+    }
+}
+```
+
+**Available date variables in Blade templates:**
+- `CURRENT_DATE` - Full formatted date (e.g., `۴ جدی ۱۴۰۳`)
+- `CURRENT_DATE_NUMERIC` - Numeric format (e.g., `۱۴۰۳/۱۰/۰۴`)
+- `CURRENT_DATE_SHORT` - Short format (e.g., `۴ جدی ۱۴۰۳`)
+- `CURRENT_DATE_GREGORIAN` - Always Gregorian (e.g., `2024-12-24`)
+- `CURRENT_DATETIME` - Date + Time (e.g., `۴ جدی ۱۴۰۳ 14:30`)
+
+### Frontend Report Generation
+
+#### useServerReport Hook Pattern
+
+**CRITICAL: Always use the useServerReport hook for generating reports from the frontend.**
+
+```typescript
+import { useServerReport } from '@/hooks/useServerReport';
+
+function MyReportComponent() {
+  const { generateReport, status, progress, downloadUrl, isGenerating, error } = useServerReport();
+
+  const handleGenerate = async () => {
+    try {
+      await generateReport({
+        report_key: 'student_list',
+        report_type: 'pdf',
+        branding_id: selectedBrandingId,
+        report_template_id: selectedTemplateId, // optional
+        title: 'Student Report',
+        calendar_preference: 'jalali', // 'gregorian', 'jalali', 'qamari'
+        language: 'ps', // 'fa', 'ps', 'ar', 'en'
+        async: true, // Generate asynchronously
+        data: {
+          columns: [
+            { key: 'name', label: 'نوم' },
+            { key: 'class', label: 'صنف' },
+            { key: 'enrollment_date', label: 'د شمولیت نیټه' },
+          ],
+          rows: [
+            { name: 'احمد', class: '10A', enrollment_date: '2024-01-15' },
+            { name: 'محمد', class: '10B', enrollment_date: '2024-02-20' },
+          ],
+        },
+      });
+    } catch (error) {
+      console.error('Failed to generate report:', error);
+    }
+  };
+
+  return (
+    <div>
+      <Button onClick={handleGenerate} disabled={isGenerating}>
+        Generate Report
+      </Button>
+      {isGenerating && (
+        <div>
+          <p>Status: {status}</p>
+          <p>Progress: {progress}%</p>
+        </div>
+      )}
+      {downloadUrl && (
+        <a href={downloadUrl} download>
+          Download Report
+        </a>
+      )}
+      {error && <p className="text-destructive">{error}</p>}
+    </div>
+  );
+}
+```
+
+#### ReportProgressDialog Component
+
+**For better UX, use the ReportProgressDialog component:**
+
+```typescript
+import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
+import { useServerReport } from '@/hooks/useServerReport';
+
+function MyReportComponent() {
+  const { generateReport, status, progress, downloadUrl, isGenerating } = useServerReport();
+  const [showProgress, setShowProgress] = useState(false);
+
+  const handleGenerate = async () => {
+    setShowProgress(true);
+    await generateReport({ /* config */ });
+  };
+
+  return (
+    <>
+      <Button onClick={handleGenerate} disabled={isGenerating}>
+        Generate Report
+      </Button>
+      <ReportProgressDialog
+        open={showProgress}
+        onOpenChange={setShowProgress}
+        status={status}
+        progress={progress}
+        downloadUrl={downloadUrl}
+      />
+    </>
+  );
+}
+```
+
+### ReportTemplate System
+
+**ReportTemplates allow users to customize report appearance per report type.**
+
+#### Using ReportTemplates
+
+```php
+// In controller
+$config = ReportConfig::fromArray([
+    'report_key' => 'attendance_report',
+    'report_template_id' => $templateId, // UUID from report_templates table
+    'branding_id' => $brandingId,
+    // ... other config
+]);
+```
+
+#### ReportTemplate Overrides
+
+ReportTemplates can override:
+- Header/Footer HTML
+- Header/Footer text
+- Logo selection (primary, secondary, ministry, all, none)
+- Show page numbers
+- Show generation date
+- Table alternating colors
+- Font size
+
+**Key Rules:**
+- ✅ **ALWAYS** check if ReportTemplate exists before using
+- ✅ **ALWAYS** validate ReportTemplate belongs to user's organization
+- ✅ **ALWAYS** use ReportTemplate overrides when provided
+- ❌ **NEVER** bypass ReportTemplate settings if template_id is provided
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/reports/generate` | Generate a new report |
+| GET | `/api/reports/{id}/status` | Check report generation status |
+| GET | `/api/reports/{id}/download` | Download completed report |
+| GET | `/api/reports` | List all reports |
+| DELETE | `/api/reports/{id}` | Delete a report |
+
+### Cleanup Old Reports
+
+**CRITICAL: Reports are stored on disk. Clean up old reports regularly to prevent disk space issues.**
+
+#### Via Artisan Command
+
+```bash
+# Delete reports older than 7 days (default)
+php artisan reports:cleanup
+
+# Delete reports older than 30 days
+php artisan reports:cleanup --days=30
+
+# Dry run (show what would be deleted)
+php artisan reports:cleanup --dry-run
+
+# Only delete failed reports
+php artisan reports:cleanup --status=failed
+```
+
+#### Via Code
+
+```php
+$reportService->cleanupOldReports(7); // Delete reports older than 7 days
+```
+
+### Best Practices
+
+#### Backend Report Generation
+
+1. **ALWAYS** use `ReportService` (never generate PDFs/Excel directly)
+2. **ALWAYS** format dates using `DateConversionService` before passing to report
+3. **ALWAYS** use async generation for large reports (`async: true`)
+4. **ALWAYS** validate `branding_id` belongs to user's organization
+5. **ALWAYS** check permissions before generating reports
+6. **ALWAYS** let template auto-selection work (don't override unless necessary)
+7. **ALWAYS** use binary logos from `school_branding` table
+
+#### Frontend Report Generation
+
+1. **ALWAYS** use `useServerReport` hook
+2. **ALWAYS** show progress dialog for async reports
+3. **ALWAYS** handle errors gracefully
+4. **ALWAYS** provide download link when report is ready
+5. **ALWAYS** use proper calendar preference from user settings
+6. **ALWAYS** use proper language from user settings
+
+#### Logo Storage
+
+1. **ALWAYS** store logos as binary data in database
+2. **ALWAYS** store MIME type, filename, and size metadata
+3. **ALWAYS** use base64 encoding for data URIs in HTML
+4. **ALWAYS** check binary exists before using file path fallback
+5. **NEVER** store only file paths (use binary storage)
+6. **NEVER** store logos in public storage without binary backup
+
+### File Structure
+
+```
+backend/
+├── app/
+│   ├── Http/Controllers/
+│   │   └── ReportGenerationController.php
+│   ├── Jobs/
+│   │   └── GenerateReportJob.php
+│   ├── Models/
+│   │   ├── BrandingLayout.php
+│   │   ├── BrandingNote.php
+│   │   ├── BrandingWatermark.php
+│   │   ├── ReportRun.php
+│   │   ├── ReportTemplate.php
+│   │   └── SchoolBranding.php
+│   ├── Services/Reports/
+│   │   ├── BrandingCacheService.php
+│   │   ├── DateConversionService.php
+│   │   ├── ExcelReportService.php
+│   │   ├── PdfReportService.php
+│   │   ├── ReportConfig.php
+│   │   └── ReportService.php
+│   └── Console/Commands/
+│       └── CleanupOldReports.php
+└── resources/views/reports/
+    ├── base.blade.php
+    ├── table_a4_portrait.blade.php
+    ├── table_a4_landscape.blade.php
+    └── table_a3_landscape.blade.php
+
+frontend/
+├── src/
+│   ├── hooks/
+│   │   └── useServerReport.ts
+│   ├── components/reports/
+│   │   └── ReportProgressDialog.tsx
+│   └── lib/reporting/
+│       ├── serverReportTypes.ts
+│       └── index.ts
+```
+
+### Dependencies
+
+- **PhpSpreadsheet**: For Excel generation (already installed)
+- **Browsershot**: For PDF generation (requires Node.js/Puppeteer)
+- **Queue System**: For async report processing (requires `php artisan queue:work`)
+
+### Setup Checklist
+
+1. **Run migrations:**
+   ```bash
+   php artisan migrate
+   ```
+
+2. **Install PhpSpreadsheet** (if not already installed):
+   ```bash
+   composer install
+   ```
+
+3. **Ensure Browsershot requirements** (for PDF):
+   - Node.js installed
+   - Puppeteer/Chrome available
+
+4. **Configure queue worker** (for async reports):
+   ```bash
+   php artisan queue:work
+   ```
+
 Remember: This is a production application serving real educational institutions. Always prioritize security, performance, and user experience in your code. Always use translations for user-facing text, and ensure RTL support is properly implemented. The backend is now Laravel, so follow Laravel conventions and best practices.

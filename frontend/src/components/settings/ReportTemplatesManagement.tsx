@@ -75,13 +75,16 @@ const TEMPLATE_TYPES = [
     { value: 'fee_report', label: 'Fee Report' },
     { value: 'exam_report', label: 'Exam Report' },
     { value: 'class_report', label: 'Class Report' },
+    { value: 'buildings', label: 'Buildings Report' },
     { value: 'general_report', label: 'General Report' },
 ];
 
 export function ReportTemplatesManagement() {
     const { t } = useLanguage();
-    const hasCreatePermission = useHasPermission('reports.create');
-    const hasUpdatePermission = useHasPermission('reports.update');
+    // Allow users with reports.read to create templates (they can see the page)
+    const hasReportsPermission = useHasPermission('reports.read');
+    const hasCreatePermission = useHasPermission('reports.create') || hasReportsPermission;
+    const hasUpdatePermission = useHasPermission('reports.update') || hasReportsPermission;
     const hasDeletePermission = useHasPermission('reports.delete');
     const { data: schools } = useSchools();
     const [selectedSchoolId, setSelectedSchoolId] = useState<string | undefined>();
@@ -230,19 +233,19 @@ export function ReportTemplatesManagement() {
     }
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <CardTitle className="flex items-center gap-2">
-                                <FileText className="h-5 w-5" />
+                            <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
+                                <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
                                 {t('reportTemplates.title')}
                             </CardTitle>
-                            <CardDescription>{t('reportTemplates.subtitle')}</CardDescription>
+                            <CardDescription className="mt-1">{t('reportTemplates.subtitle')}</CardDescription>
                         </div>
                         {hasCreatePermission && (
-                            <Button onClick={() => handleOpenDialog()}>
+                            <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
                                 <Plus className="h-4 w-4 mr-2" />
                                 {t('reportTemplates.addTemplate')}
                             </Button>
@@ -250,77 +253,92 @@ export function ReportTemplatesManagement() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {/* School Filter */}
-                    <div className="mb-4">
-                        <Label>{t('reportTemplates.filterBySchool')}</Label>
-                        <Select value={selectedSchoolId || ''} onValueChange={setSelectedSchoolId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder={t('reportTemplates.selectSchool')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {schools?.map((school) => (
-                                    <SelectItem key={school.id} value={school.id}>
-                                        {school.schoolName}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    {/* Filters Section */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                        {/* School Filter */}
+                        <div>
+                            <Label className="mb-2 block">{t('reportTemplates.filterBySchool')}</Label>
+                            <Select value={selectedSchoolId || ''} onValueChange={setSelectedSchoolId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={t('reportTemplates.selectSchool')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {schools?.map((school) => (
+                                        <SelectItem key={school.id} value={school.id}>
+                                            {school.schoolName}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                    {/* Search */}
-                    <div className="mb-4">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder={t('reportTemplates.searchPlaceholder')}
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10"
-                            />
+                        {/* Search */}
+                        <div>
+                            <Label className="mb-2 block">{t('common.search')}</Label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder={t('reportTemplates.searchPlaceholder')}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-10"
+                                />
+                            </div>
                         </div>
                     </div>
 
                     {/* Templates Table */}
-                    <div className="rounded-md border">
+                    <div className="rounded-md border overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>{t('reportTemplates.templateName')}</TableHead>
-                                    <TableHead>{t('reportTemplates.type')}</TableHead>
-                                    <TableHead>{t('reportTemplates.school')}</TableHead>
-                                    <TableHead>{t('reportTemplates.default')}</TableHead>
-                                    <TableHead>{t('reportTemplates.status')}</TableHead>
-                                    <TableHead className="text-right">{t('reportTemplates.actions')}</TableHead>
+                                    <TableHead className="min-w-[200px]">{t('reportTemplates.templateName')}</TableHead>
+                                    <TableHead className="min-w-[120px]">{t('reportTemplates.type')}</TableHead>
+                                    <TableHead className="min-w-[150px] hidden sm:table-cell">{t('reportTemplates.school')}</TableHead>
+                                    <TableHead className="min-w-[100px]">{t('reportTemplates.default')}</TableHead>
+                                    <TableHead className="min-w-[100px]">{t('reportTemplates.status')}</TableHead>
+                                    <TableHead className="text-right min-w-[120px]">{t('reportTemplates.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredTemplates.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                            {searchQuery ? t('reportTemplates.noTemplatesFound') : t('reportTemplates.noTemplatesMessage')}
+                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <FileText className="h-12 w-12 text-muted-foreground/50" />
+                                                <p className="text-sm font-medium">
+                                                    {searchQuery ? t('reportTemplates.noTemplatesFound') : t('reportTemplates.noTemplatesMessage')}
+                                                </p>
+                                                {!searchQuery && hasCreatePermission && (
+                                                    <Button variant="outline" size="sm" onClick={() => handleOpenDialog()} className="mt-2">
+                                                        <Plus className="h-4 w-4 mr-2" />
+                                                        {t('reportTemplates.addTemplate')}
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
                                     filteredTemplates.map((template) => {
                                         const school = schools?.find(s => s.id === template.school_id);
                                         return (
-                                            <TableRow key={template.id}>
+                                            <TableRow key={template.id} className="hover:bg-muted/50">
                                                 <TableCell className="font-medium">{template.template_name}</TableCell>
                                                 <TableCell>
-                                                    <Badge variant="secondary">
+                                                    <Badge variant="secondary" className="text-xs">
                                                         {TEMPLATE_TYPES.find(tt => tt.value === template.template_type)?.label || template.template_type}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell>{school?.schoolName || t('reportTemplates.unknown')}</TableCell>
+                                                <TableCell className="hidden sm:table-cell">{school?.schoolName || t('reportTemplates.unknown')}</TableCell>
                                                 <TableCell>
                                                     {template.is_default ? (
-                                                        <Badge variant="default">{t('reportTemplates.default')}</Badge>
+                                                        <Badge variant="default" className="text-xs">{t('reportTemplates.default')}</Badge>
                                                     ) : (
-                                                        <span className="text-muted-foreground">-</span>
+                                                        <span className="text-muted-foreground text-sm">-</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant={template.is_active ? 'default' : 'secondary'}>
+                                                    <Badge variant={template.is_active ? 'default' : 'secondary'} className="text-xs">
                                                         {template.is_active ? t('reportTemplates.active') : t('reportTemplates.inactive')}
                                                     </Badge>
                                                 </TableCell>

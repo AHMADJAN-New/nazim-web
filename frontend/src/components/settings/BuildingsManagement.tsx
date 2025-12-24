@@ -5,7 +5,9 @@ import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useSchools, useSchool } from '@/hooks/useSchools';
 import { useReportTemplates } from '@/hooks/useReportTemplates';
-import { exportReport, type ReportDefinition } from '@/lib/reporting';
+import { useServerReport } from '@/hooks/useServerReport';
+import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
+import type { ReportDefinition } from '@/lib/reporting';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -162,6 +164,8 @@ export function BuildingsManagement() {
 
   const { data: school } = useSchool(effectiveSchoolId || '');
   const { data: templates } = useReportTemplates(effectiveSchoolId);
+  const { generateReport, status, progress, downloadUrl, isGenerating, error: reportError, downloadReport, reset: resetReport } = useServerReport();
+  const [showReportProgress, setShowReportProgress] = useState(false);
 
   // Auto-set school_id when schools load and user has default_school_id
   useEffect(() => {
@@ -314,7 +318,7 @@ export function BuildingsManagement() {
     return parts.length > 0 ? parts.join(' | ') : '';
   };
 
-  // Export handlers
+  // Export handlers using server-side reporting
   const handleExportPdf = async () => {
     if (!school) {
       toast.error(t('settings.buildings.exportErrorNoSchool'));
@@ -328,24 +332,54 @@ export function BuildingsManagement() {
 
     try {
       const reportData = transformBuildingsForExport(filteredBuildings);
-      const filtersSummary = buildFiltersSummary();
       const reportDefinition = getBuildingReportDefinition(t);
 
-      await exportReport({
-        format: 'pdf',
-        definition: reportDefinition,
-        rows: reportData,
-        school,
-        template: defaultTemplate,
-        filtersSummary,
-      });
+      // Show progress dialog
+      setShowReportProgress(true);
+      resetReport();
 
-      toast.success(t('settings.buildings.exportSuccessPdf'));
+      // Generate report using server-side reporting
+      await generateReport({
+        reportKey: 'buildings',
+        reportType: 'pdf',
+        title: reportDefinition.title,
+        columns: reportDefinition.columns.map(col => ({
+          key: col.key,
+          label: col.label,
+          width: col.width,
+          align: col.align,
+        })),
+        rows: reportData,
+        brandingId: school.branding_id || undefined, // Use school's branding if available
+        reportTemplateId: defaultTemplate?.id, // Pass report template ID if available
+        async: true,
+        onProgress: (progress, message) => {
+          if (import.meta.env.DEV) {
+            console.log(`Report progress: ${progress}% - ${message}`);
+          }
+        },
+        onComplete: (downloadUrl, fileName) => {
+          toast.success(t('settings.buildings.exportSuccessPdf'));
+          // Auto-download when complete
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setShowReportProgress(false);
+        },
+        onError: (error) => {
+          toast.error(error || t('settings.buildings.exportErrorPdf'));
+          setShowReportProgress(false);
+        },
+      });
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Export error:', error);
       }
       toast.error(error instanceof Error ? error.message : t('settings.buildings.exportErrorPdf'));
+      setShowReportProgress(false);
     }
   };
 
@@ -362,24 +396,54 @@ export function BuildingsManagement() {
 
     try {
       const reportData = transformBuildingsForExport(filteredBuildings);
-      const filtersSummary = buildFiltersSummary();
       const reportDefinition = getBuildingReportDefinition(t);
 
-      await exportReport({
-        format: 'excel',
-        definition: reportDefinition,
-        rows: reportData,
-        school,
-        template: defaultTemplate,
-        filtersSummary,
-      });
+      // Show progress dialog
+      setShowReportProgress(true);
+      resetReport();
 
-      toast.success(t('settings.buildings.exportSuccessExcel'));
+      // Generate report using server-side reporting
+      await generateReport({
+        reportKey: 'buildings',
+        reportType: 'excel',
+        title: reportDefinition.title,
+        columns: reportDefinition.columns.map(col => ({
+          key: col.key,
+          label: col.label,
+          width: col.width,
+          align: col.align,
+        })),
+        rows: reportData,
+        brandingId: school.branding_id || undefined, // Use school's branding if available
+        reportTemplateId: defaultTemplate?.id, // Pass report template ID if available
+        async: true,
+        onProgress: (progress, message) => {
+          if (import.meta.env.DEV) {
+            console.log(`Report progress: ${progress}% - ${message}`);
+          }
+        },
+        onComplete: (downloadUrl, fileName) => {
+          toast.success(t('settings.buildings.exportSuccessExcel'));
+          // Auto-download when complete
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setShowReportProgress(false);
+        },
+        onError: (error) => {
+          toast.error(error || t('settings.buildings.exportErrorExcel'));
+          setShowReportProgress(false);
+        },
+      });
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Export error:', error);
       }
       toast.error(error instanceof Error ? error.message : t('settings.buildings.exportErrorExcel'));
+      setShowReportProgress(false);
     }
   };
 
@@ -718,6 +782,17 @@ export function BuildingsManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Report Progress Dialog */}
+      <ReportProgressDialog
+        open={showReportProgress}
+        onOpenChange={setShowReportProgress}
+        status={status}
+        progress={progress}
+        downloadUrl={downloadUrl}
+        error={reportError}
+        onDownload={downloadReport}
+      />
     </div>
   );
 }

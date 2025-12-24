@@ -2316,7 +2316,23 @@ export const en: TranslationKeys = {
     deleteConfirmDescription: 'This action cannot be undone. This will permanently delete the school',
     cancel: 'Cancel',
     delete: 'Delete',
-    loadingSchools: 'Loading schools...'
+    loadingSchools: 'Loading schools...',
+    logos: 'Logos',
+    noLogoUploaded: 'No logo uploaded',
+    usage: 'Usage',
+    reportLogoSettings: 'Report Logo Settings',
+    reportLogoSettingsDesc: 'Select which logos to display in reports (maximum 2 logos) and their positions',
+    headerText: 'Header Text',
+    enterHeaderText: 'Enter text to display below school name',
+    headerTextDesc: 'This text will appear below the school name in report headers',
+    left: 'Left',
+    right: 'Right',
+    maxLogosReached: 'Maximum 2 logos enabled. Disable one to enable another.',
+    selectFont: 'Select font family',
+    orEnterCustomFont: 'Or enter custom font name',
+    fontFamilyHint: 'Select a font from the dropdown or enter a custom font name',
+    reportFontSizeHint: 'Font size used in generated reports',
+    currentLogo: 'Current logo'
   },
   // Roles Management
   roles: {

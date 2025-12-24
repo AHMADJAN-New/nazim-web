@@ -60,11 +60,26 @@ const schoolSchema = z.object({
   secondary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
   accent_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
   font_family: z.string().max(100, 'Font family must be 100 characters or less').optional(),
+  report_font_size: z.string().max(10, 'Font size must be 10 characters or less').optional(),
   calendar_preference: z.string().max(50, 'Calendar preference must be 50 characters or less').optional(),
   primary_logo_usage: z.string().max(50, 'Primary logo usage must be 50 characters or less').optional(),
   secondary_logo_usage: z.string().max(50, 'Secondary logo usage must be 50 characters or less').optional(),
   ministry_logo_usage: z.string().max(50, 'Ministry logo usage must be 50 characters or less').optional(),
+  header_text: z.string().max(500, 'Header text must be 500 characters or less').optional(),
+  show_primary_logo: z.boolean().optional(),
+  show_secondary_logo: z.boolean().optional(),
+  show_ministry_logo: z.boolean().optional(),
+  primary_logo_position: z.enum(['left', 'right']).optional(),
+  secondary_logo_position: z.enum(['left', 'right']).optional().nullable(),
+  ministry_logo_position: z.enum(['left', 'right']).optional().nullable(),
   is_active: z.boolean().optional(),
+}).refine((data) => {
+  // Max 2 logos can be enabled
+  const enabledCount = [data.show_primary_logo, data.show_secondary_logo, data.show_ministry_logo].filter(Boolean).length;
+  return enabledCount <= 2;
+}, {
+  message: 'Maximum 2 logos can be enabled at a time',
+  path: ['show_secondary_logo'], // Show error on secondary logo field
 });
 
 type SchoolFormData = z.infer<typeof schoolSchema>;
@@ -88,6 +103,9 @@ export function SchoolsManagement() {
   const [primaryLogoFile, setPrimaryLogoFile] = useState<File | null>(null);
   const [secondaryLogoFile, setSecondaryLogoFile] = useState<File | null>(null);
   const [ministryLogoFile, setMinistryLogoFile] = useState<File | null>(null);
+  const [existingPrimaryLogo, setExistingPrimaryLogo] = useState<{ binary: string; mimeType: string; filename: string } | null>(null);
+  const [existingSecondaryLogo, setExistingSecondaryLogo] = useState<{ binary: string; mimeType: string; filename: string } | null>(null);
+  const [existingMinistryLogo, setExistingMinistryLogo] = useState<{ binary: string; mimeType: string; filename: string } | null>(null);
 
   const {
     register,
@@ -107,6 +125,13 @@ export function SchoolsManagement() {
       primary_logo_usage: 'header',
       secondary_logo_usage: 'footer',
       ministry_logo_usage: 'header',
+      header_text: '',
+      show_primary_logo: true,
+      show_secondary_logo: false,
+      show_ministry_logo: false,
+      primary_logo_position: 'left',
+      secondary_logo_position: 'right',
+      ministry_logo_position: 'right',
       is_active: true,
     },
   });
@@ -143,13 +168,38 @@ export function SchoolsManagement() {
           secondary_color: school.secondaryColor,
           accent_color: school.accentColor,
           font_family: school.fontFamily,
+          report_font_size: school.reportFontSize || '12px',
           calendar_preference: school.calendarPreference,
           primary_logo_usage: school.primaryLogoUsage,
           secondary_logo_usage: school.secondaryLogoUsage,
           ministry_logo_usage: school.ministryLogoUsage,
+          header_text: school.headerText || '',
+          show_primary_logo: school.showPrimaryLogo ?? true,
+          show_secondary_logo: school.showSecondaryLogo ?? false,
+          show_ministry_logo: school.showMinistryLogo ?? false,
+          primary_logo_position: school.primaryLogoPosition || 'left',
+          secondary_logo_position: school.secondaryLogoPosition || 'right',
+          ministry_logo_position: school.ministryLogoPosition || 'right',
           is_active: school.isActive,
         });
         setSelectedSchool(schoolId);
+        
+        // Store existing logos for preview
+        setExistingPrimaryLogo(school.primaryLogoBinary && school.primaryLogoMimeType ? {
+          binary: school.primaryLogoBinary,
+          mimeType: school.primaryLogoMimeType,
+          filename: school.primaryLogoFilename || 'primary_logo.png',
+        } : null);
+        setExistingSecondaryLogo(school.secondaryLogoBinary && school.secondaryLogoMimeType ? {
+          binary: school.secondaryLogoBinary,
+          mimeType: school.secondaryLogoMimeType,
+          filename: school.secondaryLogoFilename || 'secondary_logo.png',
+        } : null);
+        setExistingMinistryLogo(school.ministryLogoBinary && school.ministryLogoMimeType ? {
+          binary: school.ministryLogoBinary,
+          mimeType: school.ministryLogoMimeType,
+          filename: school.ministryLogoFilename || 'ministry_logo.png',
+        } : null);
       }
     } else {
       reset({
@@ -165,10 +215,19 @@ export function SchoolsManagement() {
         secondary_color: '#0056b3',
         accent_color: '#ff6b35',
         font_family: 'Bahij Nassim',
+        report_font_size: '12px',
+        report_font_size: '12px',
         calendar_preference: 'gregorian',
         primary_logo_usage: 'header',
         secondary_logo_usage: 'footer',
         ministry_logo_usage: 'header',
+        header_text: '',
+        show_primary_logo: true,
+        show_secondary_logo: false,
+        show_ministry_logo: false,
+        primary_logo_position: 'left',
+        secondary_logo_position: 'right',
+        ministry_logo_position: 'right',
         is_active: true,
       });
       setSelectedSchool(null);
@@ -182,23 +241,39 @@ export function SchoolsManagement() {
     setPrimaryLogoFile(null);
     setSecondaryLogoFile(null);
     setMinistryLogoFile(null);
+    setExistingPrimaryLogo(null);
+    setExistingSecondaryLogo(null);
+    setExistingMinistryLogo(null);
     reset();
   };
 
-  const convertFileToBinary = async (file: File): Promise<{ binary: Uint8Array; mimeType: string; filename: string; size: number } | null> => {
+  const convertFileToBase64 = async (file: File): Promise<{ binary: string; mimeType: string; filename: string; size: number } | null> => {
     if (!file) return null;
 
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const arrayBuffer = e.target?.result as ArrayBuffer;
-        const uint8Array = new Uint8Array(arrayBuffer);
-        resolve({
-          binary: uint8Array,
-          mimeType: file.type,
-          filename: file.name,
-          size: file.size,
-        });
+        try {
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          // Convert ArrayBuffer to base64 string for JSON transmission
+          // Use chunked approach for large files to avoid stack overflow
+          const uint8Array = new Uint8Array(arrayBuffer);
+          let binaryString = '';
+          const chunkSize = 8192; // Process in chunks
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            binaryString += String.fromCharCode(...chunk);
+          }
+          const base64 = btoa(binaryString);
+          resolve({
+            binary: base64,
+            mimeType: file.type,
+            filename: file.name,
+            size: file.size,
+          });
+        } catch (error) {
+          reject(error);
+        }
       };
       reader.onerror = reject;
       reader.readAsArrayBuffer(file);
@@ -207,12 +282,14 @@ export function SchoolsManagement() {
 
   const onSubmit = async (data: SchoolFormData) => {
     try {
-      // Convert logo files to binary data
-      const primaryLogoData = primaryLogoFile ? await convertFileToBinary(primaryLogoFile) : null;
-      const secondaryLogoData = secondaryLogoFile ? await convertFileToBinary(secondaryLogoFile) : null;
-      const ministryLogoData = ministryLogoFile ? await convertFileToBinary(ministryLogoFile) : null;
+      // Convert logo files to base64 strings for JSON transmission
+      // If no new file is uploaded, keep existing logo (don't send anything)
+      const primaryLogoData = primaryLogoFile ? await convertFileToBase64(primaryLogoFile) : null;
+      const secondaryLogoData = secondaryLogoFile ? await convertFileToBase64(secondaryLogoFile) : null;
+      const ministryLogoData = ministryLogoFile ? await convertFileToBase64(ministryLogoFile) : null;
 
       // Convert form data (snake_case) to domain format (camelCase)
+      // Always include all form values to ensure nothing is lost
       const schoolData: Partial<School> = {
         schoolName: data.school_name,
         schoolNameArabic: data.school_name_arabic || null,
@@ -222,33 +299,43 @@ export function SchoolsManagement() {
         schoolEmail: data.school_email || null,
         schoolWebsite: data.school_website || null,
         organizationId: data.organization_id || undefined,
-        primaryColor: data.primary_color,
-        secondaryColor: data.secondary_color,
-        accentColor: data.accent_color,
-        fontFamily: data.font_family,
-        calendarPreference: data.calendar_preference,
-        primaryLogoUsage: data.primary_logo_usage,
-        secondaryLogoUsage: data.secondary_logo_usage,
-        ministryLogoUsage: data.ministry_logo_usage,
+        primaryColor: data.primary_color || '#0b0b56',
+        secondaryColor: data.secondary_color || '#0056b3',
+        accentColor: data.accent_color || '#ff6b35',
+        fontFamily: data.font_family || 'Bahij Nassim',
+        reportFontSize: data.report_font_size || '12px',
+        calendarPreference: data.calendar_preference || 'gregorian',
+        primaryLogoUsage: data.primary_logo_usage || 'header',
+        secondaryLogoUsage: data.secondary_logo_usage || 'none',
+        ministryLogoUsage: data.ministry_logo_usage || 'header',
+        headerText: data.header_text || null,
+        showPrimaryLogo: data.show_primary_logo ?? true,
+        showSecondaryLogo: data.show_secondary_logo ?? false,
+        showMinistryLogo: data.show_ministry_logo ?? false,
+        primaryLogoPosition: data.primary_logo_position || 'left',
+        secondaryLogoPosition: data.secondary_logo_position || null,
+        ministryLogoPosition: data.ministry_logo_position || null,
         isActive: data.is_active ?? true,
-        ...(primaryLogoData && {
+        // Only include logo data if a new file was uploaded
+        // If no new file, don't send logo fields (backend will keep existing logos)
+        ...(primaryLogoData ? {
           primaryLogoBinary: primaryLogoData.binary,
           primaryLogoMimeType: primaryLogoData.mimeType,
           primaryLogoFilename: primaryLogoData.filename,
           primaryLogoSize: primaryLogoData.size,
-        }),
-        ...(secondaryLogoData && {
+        } : {}),
+        ...(secondaryLogoData ? {
           secondaryLogoBinary: secondaryLogoData.binary,
           secondaryLogoMimeType: secondaryLogoData.mimeType,
           secondaryLogoFilename: secondaryLogoData.filename,
           secondaryLogoSize: secondaryLogoData.size,
-        }),
-        ...(ministryLogoData && {
+        } : {}),
+        ...(ministryLogoData ? {
           ministryLogoBinary: ministryLogoData.binary,
           ministryLogoMimeType: ministryLogoData.mimeType,
           ministryLogoFilename: ministryLogoData.filename,
           ministryLogoSize: ministryLogoData.size,
-        }),
+        } : {}),
       };
 
       if (selectedSchool) {
@@ -565,11 +652,66 @@ export function SchoolsManagement() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="font_family">{t('schools.fontFamily')}</Label>
-                <Input
-                  id="font_family"
-                  {...register('font_family')}
-                  placeholder="Bahij Nassim"
+                <Controller
+                  name="font_family"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value || 'Bahij Nassim'}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('schools.selectFont')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Bahij Nassim">Bahij Nassim</SelectItem>
+                        <SelectItem value="Arial">Arial</SelectItem>
+                        <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                        <SelectItem value="Courier New">Courier New</SelectItem>
+                        <SelectItem value="Verdana">Verdana</SelectItem>
+                        <SelectItem value="Georgia">Georgia</SelectItem>
+                        <SelectItem value="Tahoma">Tahoma</SelectItem>
+                        <SelectItem value="DejaVu Sans">DejaVu Sans</SelectItem>
+                        <SelectItem value="DejaVu Serif">DejaVu Serif</SelectItem>
+                        <SelectItem value="DejaVu Sans Mono">DejaVu Sans Mono</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
+                <Input
+                  id="font_family_custom"
+                  placeholder={t('schools.orEnterCustomFont')}
+                  className="mt-2"
+                  value={watch('font_family') || ''}
+                  onChange={(e) => {
+                    // Allow custom font entry - this will override the Select value
+                    control.setValue('font_family', e.target.value);
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">{t('schools.fontFamilyHint')}</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="report_font_size">{t('schools.reportFontSize')}</Label>
+                <Controller
+                  name="report_font_size"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value || '12px'}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10px">10px</SelectItem>
+                        <SelectItem value="11px">11px</SelectItem>
+                        <SelectItem value="12px">12px</SelectItem>
+                        <SelectItem value="13px">13px</SelectItem>
+                        <SelectItem value="14px">14px</SelectItem>
+                        <SelectItem value="15px">15px</SelectItem>
+                        <SelectItem value="16px">16px</SelectItem>
+                        <SelectItem value="18px">18px</SelectItem>
+                        <SelectItem value="20px">20px</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <p className="text-xs text-muted-foreground">{t('schools.reportFontSizeHint')}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
@@ -602,10 +744,32 @@ export function SchoolsManagement() {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       setPrimaryLogoFile(file || null);
+                      // Clear existing logo preview when new file is selected
+                      if (file) {
+                        setExistingPrimaryLogo(null);
+                      }
                     }}
                   />
                   {primaryLogoFile && (
-                    <p className="text-sm text-muted-foreground">{primaryLogoFile.name}</p>
+                    <div className="mt-2">
+                      <p className="text-sm text-muted-foreground mb-2">{primaryLogoFile.name}</p>
+                      <img
+                        src={URL.createObjectURL(primaryLogoFile)}
+                        alt="Primary Logo Preview"
+                        className="w-20 h-20 object-contain border rounded"
+                      />
+                    </div>
+                  )}
+                  {!primaryLogoFile && existingPrimaryLogo && (
+                    <div className="mt-2">
+                      <p className="text-sm text-muted-foreground mb-2">{existingPrimaryLogo.filename}</p>
+                      <img
+                        src={`data:${existingPrimaryLogo.mimeType};base64,${existingPrimaryLogo.binary}`}
+                        alt="Primary Logo"
+                        className="w-20 h-20 object-contain border rounded"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">{t('schools.currentLogo')}</p>
+                    </div>
                   )}
                 </div>
                 <div className="grid gap-2">
@@ -617,10 +781,31 @@ export function SchoolsManagement() {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       setSecondaryLogoFile(file || null);
+                      if (file) {
+                        setExistingSecondaryLogo(null);
+                      }
                     }}
                   />
                   {secondaryLogoFile && (
-                    <p className="text-sm text-muted-foreground">{secondaryLogoFile.name}</p>
+                    <div className="mt-2">
+                      <p className="text-sm text-muted-foreground mb-2">{secondaryLogoFile.name}</p>
+                      <img
+                        src={URL.createObjectURL(secondaryLogoFile)}
+                        alt="Secondary Logo Preview"
+                        className="w-20 h-20 object-contain border rounded"
+                      />
+                    </div>
+                  )}
+                  {!secondaryLogoFile && existingSecondaryLogo && (
+                    <div className="mt-2">
+                      <p className="text-sm text-muted-foreground mb-2">{existingSecondaryLogo.filename}</p>
+                      <img
+                        src={`data:${existingSecondaryLogo.mimeType};base64,${existingSecondaryLogo.binary}`}
+                        alt="Secondary Logo"
+                        className="w-20 h-20 object-contain border rounded"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">{t('schools.currentLogo')}</p>
+                    </div>
                   )}
                 </div>
                 <div className="grid gap-2">
@@ -632,13 +817,219 @@ export function SchoolsManagement() {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       setMinistryLogoFile(file || null);
+                      if (file) {
+                        setExistingMinistryLogo(null);
+                      }
                     }}
                   />
                   {ministryLogoFile && (
-                    <p className="text-sm text-muted-foreground">{ministryLogoFile.name}</p>
+                    <div className="mt-2">
+                      <p className="text-sm text-muted-foreground mb-2">{ministryLogoFile.name}</p>
+                      <img
+                        src={URL.createObjectURL(ministryLogoFile)}
+                        alt="Ministry Logo Preview"
+                        className="w-20 h-20 object-contain border rounded"
+                      />
+                    </div>
+                  )}
+                  {!ministryLogoFile && existingMinistryLogo && (
+                    <div className="mt-2">
+                      <p className="text-sm text-muted-foreground mb-2">{existingMinistryLogo.filename}</p>
+                      <img
+                        src={`data:${existingMinistryLogo.mimeType};base64,${existingMinistryLogo.binary}`}
+                        alt="Ministry Logo"
+                        className="w-20 h-20 object-contain border rounded"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">{t('schools.currentLogo')}</p>
+                    </div>
                   )}
                 </div>
               </div>
+              
+              {/* Logo Selection and Positioning Section */}
+              <div className="border-t pt-4 mt-4">
+                <Label className="text-base font-semibold mb-4 block">{t('schools.reportLogoSettings')}</Label>
+                <p className="text-sm text-muted-foreground mb-4">{t('schools.reportLogoSettingsDesc')}</p>
+                
+                {(() => {
+                  const enabledCount = [
+                    watch('show_primary_logo'),
+                    watch('show_secondary_logo'),
+                    watch('show_ministry_logo'),
+                  ].filter(Boolean).length;
+                  return enabledCount >= 2 ? (
+                    <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                      {t('schools.maxLogosReached')}
+                    </div>
+                  ) : null;
+                })()}
+                
+                <div className="grid gap-4">
+                  {/* Primary Logo */}
+                  <div className="grid gap-2 p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Controller
+                          name="show_primary_logo"
+                          control={control}
+                          render={({ field }) => {
+                            const enabledCount = [
+                              watch('show_primary_logo'),
+                              watch('show_secondary_logo'),
+                              watch('show_ministry_logo'),
+                            ].filter(Boolean).length;
+                            const isMaxReached = enabledCount >= 2 && !field.value;
+                            return (
+                              <Switch
+                                checked={field.value ?? true}
+                                onCheckedChange={field.onChange}
+                                disabled={isMaxReached}
+                              />
+                            );
+                          }}
+                        />
+                        <Label htmlFor="show_primary_logo" className="font-medium">{t('schools.primaryLogo')}</Label>
+                      </div>
+                      {watch('show_primary_logo') && (
+                        <Controller
+                          name="primary_logo_position"
+                          control={control}
+                          render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value || 'left'}>
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="left">{t('schools.left')}</SelectItem>
+                                <SelectItem value="right">{t('schools.right')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Secondary Logo */}
+                  <div className="grid gap-2 p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Controller
+                          name="show_secondary_logo"
+                          control={control}
+                          render={({ field }) => {
+                            const enabledCount = [
+                              watch('show_primary_logo'),
+                              watch('show_secondary_logo'),
+                              watch('show_ministry_logo'),
+                            ].filter(Boolean).length;
+                            const isMaxReached = enabledCount >= 2 && !field.value;
+                            return (
+                              <Switch
+                                checked={field.value ?? false}
+                                onCheckedChange={(checked) => {
+                                  // If enabling secondary and primary+ministry are both enabled, disable ministry
+                                  if (checked && watch('show_primary_logo') && watch('show_ministry_logo')) {
+                                    control.setValue('show_ministry_logo', false);
+                                  }
+                                  field.onChange(checked);
+                                }}
+                                disabled={isMaxReached}
+                              />
+                            );
+                          }}
+                        />
+                        <Label htmlFor="show_secondary_logo" className="font-medium">{t('schools.secondaryLogo')}</Label>
+                      </div>
+                      {watch('show_secondary_logo') && (
+                        <Controller
+                          name="secondary_logo_position"
+                          control={control}
+                          render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value || 'right'}>
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="left">{t('schools.left')}</SelectItem>
+                                <SelectItem value="right">{t('schools.right')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Ministry Logo */}
+                  <div className="grid gap-2 p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Controller
+                          name="show_ministry_logo"
+                          control={control}
+                          render={({ field }) => {
+                            const enabledCount = [
+                              watch('show_primary_logo'),
+                              watch('show_secondary_logo'),
+                              watch('show_ministry_logo'),
+                            ].filter(Boolean).length;
+                            const isMaxReached = enabledCount >= 2 && !field.value;
+                            return (
+                              <Switch
+                                checked={field.value ?? false}
+                                onCheckedChange={(checked) => {
+                                  // If enabling ministry and primary+secondary are both enabled, disable secondary
+                                  if (checked && watch('show_primary_logo') && watch('show_secondary_logo')) {
+                                    control.setValue('show_secondary_logo', false);
+                                  }
+                                  field.onChange(checked);
+                                }}
+                                disabled={isMaxReached}
+                              />
+                            );
+                          }}
+                        />
+                        <Label htmlFor="show_ministry_logo" className="font-medium">{t('schools.ministryLogo')}</Label>
+                      </div>
+                      {watch('show_ministry_logo') && (
+                        <Controller
+                          name="ministry_logo_position"
+                          control={control}
+                          render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value || 'right'}>
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="left">{t('schools.left')}</SelectItem>
+                                <SelectItem value="right">{t('schools.right')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  
+                  {errors.show_secondary_logo && (
+                    <p className="text-sm text-destructive">{errors.show_secondary_logo.message}</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Header Text */}
+              <div className="grid gap-2">
+                <Label htmlFor="header_text">{t('schools.headerText')}</Label>
+                <Input
+                  id="header_text"
+                  {...register('header_text')}
+                  placeholder={t('schools.enterHeaderText')}
+                  maxLength={500}
+                />
+                <p className="text-xs text-muted-foreground">{t('schools.headerTextDesc')}</p>
+              </div>
+              
               <div className="grid grid-cols-3 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="primary_logo_usage">{t('schools.primaryLogoUsage')}</Label>
@@ -829,6 +1220,105 @@ export function SchoolsManagement() {
                 <div>
                   <Label className="text-muted-foreground">{t('schools.reportFontSize')}</Label>
                   <p>{selectedSchoolData.reportFontSize}</p>
+                </div>
+              </div>
+              
+              {/* Logo Display Section */}
+              <div className="space-y-4">
+                <Label className="text-lg font-semibold">{t('schools.logos')}</Label>
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Primary Logo */}
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">{t('schools.primaryLogo')}</Label>
+                    {selectedSchoolData.primaryLogoBinary && selectedSchoolData.primaryLogoMimeType ? (
+                      <div className="border rounded-lg p-2 bg-muted/50">
+                        <img
+                          src={`data:${selectedSchoolData.primaryLogoMimeType};base64,${selectedSchoolData.primaryLogoBinary}`}
+                          alt={selectedSchoolData.primaryLogoFilename || 'Primary Logo'}
+                          className="w-full h-auto max-h-32 object-contain"
+                        />
+                        {selectedSchoolData.primaryLogoFilename && (
+                          <p className="text-xs text-muted-foreground mt-2 truncate">
+                            {selectedSchoolData.primaryLogoFilename}
+                          </p>
+                        )}
+                        {selectedSchoolData.primaryLogoSize && (
+                          <p className="text-xs text-muted-foreground">
+                            {(selectedSchoolData.primaryLogoSize / 1024).toFixed(2)} KB
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">{t('schools.noLogoUploaded')}</p>
+                    )}
+                    {selectedSchoolData.primaryLogoUsage && (
+                      <p className="text-xs text-muted-foreground">
+                        {t('schools.usage')}: {t(`schools.${selectedSchoolData.primaryLogoUsage}`)}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Secondary Logo */}
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">{t('schools.secondaryLogo')}</Label>
+                    {selectedSchoolData.secondaryLogoBinary && selectedSchoolData.secondaryLogoMimeType ? (
+                      <div className="border rounded-lg p-2 bg-muted/50">
+                        <img
+                          src={`data:${selectedSchoolData.secondaryLogoMimeType};base64,${selectedSchoolData.secondaryLogoBinary}`}
+                          alt={selectedSchoolData.secondaryLogoFilename || 'Secondary Logo'}
+                          className="w-full h-auto max-h-32 object-contain"
+                        />
+                        {selectedSchoolData.secondaryLogoFilename && (
+                          <p className="text-xs text-muted-foreground mt-2 truncate">
+                            {selectedSchoolData.secondaryLogoFilename}
+                          </p>
+                        )}
+                        {selectedSchoolData.secondaryLogoSize && (
+                          <p className="text-xs text-muted-foreground">
+                            {(selectedSchoolData.secondaryLogoSize / 1024).toFixed(2)} KB
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">{t('schools.noLogoUploaded')}</p>
+                    )}
+                    {selectedSchoolData.secondaryLogoUsage && (
+                      <p className="text-xs text-muted-foreground">
+                        {t('schools.usage')}: {t(`schools.${selectedSchoolData.secondaryLogoUsage}`)}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Ministry Logo */}
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">{t('schools.ministryLogo')}</Label>
+                    {selectedSchoolData.ministryLogoBinary && selectedSchoolData.ministryLogoMimeType ? (
+                      <div className="border rounded-lg p-2 bg-muted/50">
+                        <img
+                          src={`data:${selectedSchoolData.ministryLogoMimeType};base64,${selectedSchoolData.ministryLogoBinary}`}
+                          alt={selectedSchoolData.ministryLogoFilename || 'Ministry Logo'}
+                          className="w-full h-auto max-h-32 object-contain"
+                        />
+                        {selectedSchoolData.ministryLogoFilename && (
+                          <p className="text-xs text-muted-foreground mt-2 truncate">
+                            {selectedSchoolData.ministryLogoFilename}
+                          </p>
+                        )}
+                        {selectedSchoolData.ministryLogoSize && (
+                          <p className="text-xs text-muted-foreground">
+                            {(selectedSchoolData.ministryLogoSize / 1024).toFixed(2)} KB
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">{t('schools.noLogoUploaded')}</p>
+                    )}
+                    {selectedSchoolData.ministryLogoUsage && (
+                      <p className="text-xs text-muted-foreground">
+                        {t('schools.usage')}: {t(`schools.${selectedSchoolData.ministryLogoUsage}`)}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

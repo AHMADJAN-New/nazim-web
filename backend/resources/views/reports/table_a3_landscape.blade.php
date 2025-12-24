@@ -20,11 +20,23 @@
 
     {{-- Header --}}
     <div class="report-header">
-        {{-- Left logo --}}
-        <div class="header-left" style="width: 80px;">
-            @if(($show_primary_logo ?? true) && !empty($PRIMARY_LOGO_URI))
-                <img src="{{ $PRIMARY_LOGO_URI }}" alt="Primary Logo" class="header-logo" style="max-height: 70px; max-width: 70px;">
-            @endif
+        {{-- Left side logos --}}
+        <div class="header-left" style="width: 100px;">
+            @php
+                $leftLogos = [];
+                if (($show_primary_logo ?? true) && !empty($PRIMARY_LOGO_URI) && ($primary_logo_position ?? 'left') === 'left') {
+                    $leftLogos[] = ['uri' => $PRIMARY_LOGO_URI, 'alt' => 'Primary Logo'];
+                }
+                if (($show_secondary_logo ?? false) && !empty($SECONDARY_LOGO_URI) && ($secondary_logo_position ?? 'right') === 'left') {
+                    $leftLogos[] = ['uri' => $SECONDARY_LOGO_URI, 'alt' => 'Secondary Logo'];
+                }
+                if (($show_ministry_logo ?? false) && !empty($MINISTRY_LOGO_URI) && ($ministry_logo_position ?? 'right') === 'left') {
+                    $leftLogos[] = ['uri' => $MINISTRY_LOGO_URI, 'alt' => 'Ministry Logo'];
+                }
+            @endphp
+            @foreach($leftLogos as $logo)
+                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="display: block; max-height: 100px; max-width: 100px; margin-bottom: 5px;">
+            @endforeach
         </div>
 
         {{-- Center content --}}
@@ -33,6 +45,10 @@
                 <div class="school-name" style="font-size: 22px;">{{ $SCHOOL_NAME_PASHTO }}</div>
             @elseif(!empty($SCHOOL_NAME))
                 <div class="school-name" style="font-size: 22px;">{{ $SCHOOL_NAME }}</div>
+            @endif
+
+            @if(!empty($HEADER_TEXT))
+                <div class="header-text" style="margin-top: 5px;">{{ $HEADER_TEXT }}</div>
             @endif
 
             @if(!empty($TABLE_TITLE))
@@ -45,13 +61,23 @@
             @endif
         </div>
 
-        {{-- Right logo --}}
-        <div class="header-right" style="width: 80px;">
-            @if(($show_secondary_logo ?? true) && !empty($SECONDARY_LOGO_URI))
-                <img src="{{ $SECONDARY_LOGO_URI }}" alt="Secondary Logo" class="header-logo" style="max-height: 70px; max-width: 70px;">
-            @elseif(($show_ministry_logo ?? false) && !empty($MINISTRY_LOGO_URI))
-                <img src="{{ $MINISTRY_LOGO_URI }}" alt="Ministry Logo" class="header-logo" style="max-height: 70px; max-width: 70px;">
-            @endif
+        {{-- Right side logos --}}
+        <div class="header-right" style="width: 100px;">
+            @php
+                $rightLogos = [];
+                if (($show_primary_logo ?? true) && !empty($PRIMARY_LOGO_URI) && ($primary_logo_position ?? 'left') === 'right') {
+                    $rightLogos[] = ['uri' => $PRIMARY_LOGO_URI, 'alt' => 'Primary Logo'];
+                }
+                if (($show_secondary_logo ?? false) && !empty($SECONDARY_LOGO_URI) && ($secondary_logo_position ?? 'right') === 'right') {
+                    $rightLogos[] = ['uri' => $SECONDARY_LOGO_URI, 'alt' => 'Secondary Logo'];
+                }
+                if (($show_ministry_logo ?? false) && !empty($MINISTRY_LOGO_URI) && ($ministry_logo_position ?? 'right') === 'right') {
+                    $rightLogos[] = ['uri' => $MINISTRY_LOGO_URI, 'alt' => 'Ministry Logo'];
+                }
+            @endphp
+            @foreach($rightLogos as $logo)
+                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="display: block; max-height: 100px; max-width: 100px; margin-bottom: 5px;">
+            @endforeach
         </div>
     </div>
 

@@ -601,6 +601,18 @@ export const schoolsApi = {
     accent_color?: string;
     font_family?: string;
     report_font_size?: string;
+    primary_logo_binary?: string; // Base64 encoded
+    primary_logo_mime_type?: string;
+    primary_logo_filename?: string;
+    primary_logo_size?: number;
+    secondary_logo_binary?: string; // Base64 encoded
+    secondary_logo_mime_type?: string;
+    secondary_logo_filename?: string;
+    secondary_logo_size?: number;
+    ministry_logo_binary?: string; // Base64 encoded
+    ministry_logo_mime_type?: string;
+    ministry_logo_filename?: string;
+    ministry_logo_size?: number;
     primary_logo_usage?: string;
     secondary_logo_usage?: string;
     ministry_logo_usage?: string;
@@ -631,6 +643,18 @@ export const schoolsApi = {
     accent_color?: string;
     font_family?: string;
     report_font_size?: string;
+    primary_logo_binary?: string; // Base64 encoded
+    primary_logo_mime_type?: string;
+    primary_logo_filename?: string;
+    primary_logo_size?: number;
+    secondary_logo_binary?: string; // Base64 encoded
+    secondary_logo_mime_type?: string;
+    secondary_logo_filename?: string;
+    secondary_logo_size?: number;
+    ministry_logo_binary?: string; // Base64 encoded
+    ministry_logo_mime_type?: string;
+    ministry_logo_filename?: string;
+    ministry_logo_size?: number;
     primary_logo_usage?: string;
     secondary_logo_usage?: string;
     ministry_logo_usage?: string;

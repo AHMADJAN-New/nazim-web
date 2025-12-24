@@ -2113,7 +2113,23 @@ export const fa: TranslationKeys = {
     deleteConfirmDescription: 'این عمل قابل بازگشت نیست. این مدرسه را به طور دائمی حذف می‌کند',
     cancel: 'لغو',
     delete: 'حذف',
-    loadingSchools: 'در حال بارگذاری مدارس...'
+    loadingSchools: 'در حال بارگذاری مدارس...',
+    logos: 'لوگوها',
+    noLogoUploaded: 'هیچ لوگویی آپلود نشده است',
+    usage: 'استفاده',
+    reportLogoSettings: 'تنظیمات لوگوی گزارش',
+    reportLogoSettingsDesc: 'لوگوهای نمایش در گزارش‌ها را انتخاب کنید (حداکثر 2 لوگو) و موقعیت آن‌ها',
+    headerText: 'متن هدر',
+    enterHeaderText: 'متن نمایش زیر نام مدرسه را وارد کنید',
+    headerTextDesc: 'این متن در زیر نام مدرسه در هدرهای گزارش نمایش داده می‌شود',
+    left: 'چپ',
+    right: 'راست',
+    maxLogosReached: 'حداکثر 2 لوگو فعال است. برای فعال کردن دیگری، یکی را غیرفعال کنید.',
+    selectFont: 'انتخاب خانواده فونت',
+    orEnterCustomFont: 'یا نام فونت سفارشی را وارد کنید',
+    fontFamilyHint: 'یک فونت از لیست انتخاب کنید یا نام فونت سفارشی را وارد کنید',
+    reportFontSizeHint: 'اندازه فونت استفاده شده در گزارش‌های تولید شده',
+    currentLogo: 'لوگوی فعلی'
   },
   // Roles Management
   roles: {
