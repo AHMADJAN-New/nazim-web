@@ -90,5 +90,69 @@ class SchoolBranding extends Model
     {
         return $this->belongsTo(Organization::class, 'organization_id');
     }
+
+    /**
+     * Get all layouts for this branding
+     */
+    public function layouts()
+    {
+        return $this->hasMany(BrandingLayout::class, 'branding_id');
+    }
+
+    /**
+     * Get the default layout for this branding
+     */
+    public function defaultLayout()
+    {
+        return $this->hasOne(BrandingLayout::class, 'branding_id')
+            ->where('is_default', true)
+            ->where('is_active', true);
+    }
+
+    /**
+     * Get all notes for this branding
+     */
+    public function notes()
+    {
+        return $this->hasMany(BrandingNote::class, 'branding_id');
+    }
+
+    /**
+     * Get active notes for a specific location
+     */
+    public function activeNotes(string $location = null)
+    {
+        $query = $this->notes()->where('is_active', true);
+        if ($location) {
+            $query->where('location', $location);
+        }
+        return $query;
+    }
+
+    /**
+     * Get all watermarks for this branding
+     */
+    public function watermarks()
+    {
+        return $this->hasMany(BrandingWatermark::class, 'branding_id');
+    }
+
+    /**
+     * Get the default watermark for this branding
+     */
+    public function defaultWatermark()
+    {
+        return $this->hasOne(BrandingWatermark::class, 'branding_id')
+            ->where('is_default', true)
+            ->where('is_active', true);
+    }
+
+    /**
+     * Get all report runs for this branding
+     */
+    public function reportRuns()
+    {
+        return $this->hasMany(ReportRun::class, 'branding_id');
+    }
 }
 
