@@ -8,7 +8,8 @@ import { usePagination } from './usePagination';
 import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
 
 export const useLibraryBooks = (usePaginated?: boolean, search?: string) => {
-  const { user, profile } = useAuth();
+  const { user, profile, profileLoading } = useAuth();
+  const isEventUser = profile?.is_event_user ?? false;
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
     initialPage: 1,
     initialPageSize: 25,

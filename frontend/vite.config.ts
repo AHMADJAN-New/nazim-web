@@ -45,11 +45,21 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true, // Allow access from network
-    https: {
-      // Use self-signed certificates for HTTPS (required for camera API on mobile)
-      key: fs.readFileSync(path.resolve(__dirname, 'certs/key.pem')),
-      cert: fs.readFileSync(path.resolve(__dirname, 'certs/cert.pem')),
-    },
+    // Only use HTTPS if certificate files exist (for dev server with camera API on mobile)
+    ...(function() {
+      const keyPath = path.resolve(__dirname, 'certs/key.pem');
+      const certPath = path.resolve(__dirname, 'certs/cert.pem');
+      
+      if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+        return {
+          https: {
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath),
+          },
+        };
+      }
+      return {};
+    })(),
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
