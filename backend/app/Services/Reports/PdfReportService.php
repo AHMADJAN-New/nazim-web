@@ -51,7 +51,26 @@ class PdfReportService
             $viewName = 'reports.table_a4_portrait';
         }
 
-        return View::make($viewName, $context)->render();
+        // Log font settings being passed to template
+        \Log::debug("PdfReportService: Rendering HTML with font settings", [
+            'font_family' => $context['FONT_FAMILY'] ?? 'N/A',
+            'font_size' => $context['FONT_SIZE'] ?? 'N/A',
+            'template_name' => $viewName,
+        ]);
+
+        $html = View::make($viewName, $context)->render();
+        
+        // Log a snippet of the rendered HTML to verify fonts are included
+        if (config('app.debug')) {
+            $fontFaceSnippet = substr($html, strpos($html, '@font-face') ?: 0, 500);
+            \Log::debug("PdfReportService: Font-face snippet from rendered HTML", [
+                'has_font_face' => strpos($html, '@font-face') !== false,
+                'font_face_snippet' => $fontFaceSnippet ?: 'NOT FOUND',
+                'html_length' => strlen($html),
+            ]);
+        }
+        
+        return $html;
     }
 
     /**
@@ -87,7 +106,12 @@ class PdfReportService
                 'mm'
             )
             ->waitUntilNetworkIdle()
-            ->timeout(120);
+            ->timeout(120)
+            ->addChromiumArguments([
+                'no-sandbox',
+                'disable-setuid-sandbox',
+                'disable-web-security', // Allow loading fonts from data URLs
+            ]); // Required for Linux environments without proper sandbox support (no -- prefix, Browsershot adds it)
 
         // Set orientation
         if ($orientation === 'landscape') {
@@ -102,7 +126,21 @@ class PdfReportService
         }
 
         // Generate PDF
-        $browsershot->save($absolutePath);
+        try {
+            $browsershot->save($absolutePath);
+        } catch (\Exception $e) {
+            // Browsershot throws exceptions on failure - re-throw with context
+            throw new \RuntimeException(
+                "PDF generation failed: {$e->getMessage()}",
+                0,
+                $e
+            );
+        }
+
+        // Verify file was created
+        if (!file_exists($absolutePath)) {
+            throw new \RuntimeException("PDF file was not created at: {$absolutePath}");
+        }
 
         // Get file size
         $fileSize = filesize($absolutePath);

@@ -1,82 +1,3 @@
----
-name: Central Reporting System Migration
-overview: Migrate all existing reports to use the central reporting system (ReportService), implement missing backend reports, and enhance all reports with better features including branding, calendar support, and multi-language support.
-todos:
-  - id: phase1_student
-    content: "Migrate Student Reports (StudentReportController, StudentReport.tsx, StudentAdmissionsReport.tsx) to use ReportService with report_key: student_list and student_admissions"
-    status: pending
-  - id: phase1_staff
-    content: "Migrate Staff Reports (StaffReportController, StaffReport.tsx) to use ReportService with report_key: staff_list"
-    status: pending
-  - id: phase1_finance
-    content: "Migrate Finance Reports (FinanceReportController - 6 methods, FinanceReports.tsx) to use ReportService with report_keys: finance_dashboard, finance_daily_cashbook, finance_income_vs_expense, finance_project_summary, finance_donor_summary, finance_account_balances"
-    status: pending
-  - id: phase1_fee
-    content: "Migrate Fee Reports (FeeReportController - 4 methods, FeeReportsPage.tsx) to use ReportService with report_keys: fee_dashboard, fee_student_fees, fee_collection, fee_defaulters"
-    status: pending
-  - id: phase1_attendance
-    content: "Migrate Attendance Reports (AttendanceSessionController, AttendanceReports.tsx, AttendanceTotalsReports.tsx) to use ReportService with report_keys: attendance_daily, attendance_monthly, attendance_totals, attendance_trends"
-    status: pending
-  - id: phase2_exam
-    content: "Migrate Exam Reports (ExamReportController - 6 methods, all exam report pages) to use ReportService with report_keys: exam_overview, exam_summary, exam_class_marksheet, exam_student_report, exam_consolidated_marksheet, exam_class_subject_marksheet"
-    status: pending
-  - id: phase3_library
-    content: Create LibraryReportController with 5 report methods (inventory, circulation, overdue, category_distribution, popular_books) and update LibraryReports.tsx
-    status: pending
-  - id: phase3_leave
-    content: Create LeaveReportController with 4 report methods (requests_summary, balance, trends, approval_status) and update LeaveReports.tsx
-    status: pending
-  - id: phase3_asset
-    content: Create AssetReportController with 5 report methods (inventory, assignments, maintenance, depreciation, category_summary) and update AssetReports.tsx
-    status: pending
-  - id: phase3_hostel
-    content: Create HostelReportController with 4 report methods (occupancy, boarders, fees, maintenance) and update HostelReports.tsx
-    status: pending
-  - id: phase3_course
-    content: Create CourseReportController with 4 report methods (enrollment, attendance, completion, certificates) and update CourseStudentReports.tsx
-    status: pending
-  - id: phase4_class
-    content: Create ClassReportController and ClassReports.tsx page with 4 report types (list, performance, subject_assignments, timetable)
-    status: pending
-  - id: phase4_subject
-    content: Create SubjectReportController and SubjectReports.tsx page with 4 report types (list, class_assignments, teacher_assignments, performance)
-    status: pending
-  - id: phase4_timetable
-    content: Create TimetableReportController and TimetableReports.tsx page with 4 report types (class, teacher, room, conflicts)
-    status: pending
-  - id: phase4_certificate
-    content: Create CertificateReportController and CertificateReports.tsx page with 3 report types (issued, templates, verification)
-    status: pending
-  - id: phase4_idcard
-    content: Create IdCardReportController and IdCardReports.tsx page with 3 report types (assignments, status, printing_queue)
-    status: pending
-  - id: phase5_frontend
-    content: Update all report pages to use useServerReport hook, add report template selection, branding selection, calendar preference, language selector, format selector, and progress dialog
-    status: pending
-    dependencies:
-      - phase1_student
-      - phase1_staff
-      - phase1_finance
-      - phase1_fee
-      - phase1_attendance
-      - phase2_exam
-  - id: phase5_components
-    content: "Create shared report components: ReportFilters.tsx, ReportOptions.tsx, ReportPreview.tsx"
-    status: pending
-  - id: phase6_permissions
-    content: Add report permissions to PermissionSeeder for all report keys (reports.{report_key}.generate)
-    status: pending
-  - id: phase6_templates
-    content: Update ReportTemplatesManagement.tsx to include all new report keys as template types
-    status: pending
-  - id: phase6_testing
-    content: "Test all reports: unit tests, integration tests, permission tests, format tests (PDF/Excel), calendar tests, language tests, branding tests"
-    status: pending
-    dependencies:
-      - phase5_frontend
-      - phase5_components
----
-
 # Central Reporting System Migration Plan
 
 ## Overview
@@ -546,7 +467,89 @@ public function generateReport(Request $request)
     $reportRun = $this->reportService->generateReport(
         $config,
         ['columns' => $columns, 'rows' => $rows],
-        $profile->organization_id
+        $profile->organization_id[2025-12-24 17:49:26] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+        
+[2025-12-24 17:49:27] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:49:28] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:49:29] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:49:30] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:49:30] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:49:30] local.DEBUG: Download request received {"report_id":"d6b1338e-a9ed-4591-9400-4b8e7fa259d0","user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3"} 
+
+[2025-12-24 17:49:30] local.DEBUG: Checking report file {"report_id":"d6b1338e-a9ed-4591-9400-4b8e7fa259d0","output_path":"reports/Buildings_Report_2025-12-24_174928_fe210b06-672a-4f6e-ba54-65b939626b60.pdf","storage_exists":false,"file_exists":true,"absolute_path":"/home/nazim/projects/nazim-web/backend/storage/app/reports/Buildings_Report_2025-12-24_174928_fe210b06-672a-4f6e-ba54-65b939626b60.pdf"} 
+
+[2025-12-24 17:49:30] local.WARNING: Storage::get() returned empty content, trying direct file read {"report_id":"d6b1338e-a9ed-4591-9400-4b8e7fa259d0","output_path":"reports/Buildings_Report_2025-12-24_174928_fe210b06-672a-4f6e-ba54-65b939626b60.pdf"} 
+
+[2025-12-24 17:49:30] local.DEBUG: Serving report file {"report_id":"d6b1338e-a9ed-4591-9400-4b8e7fa259d0","file_name":"Buildings_Report_2025-12-24_174928_fe210b06-672a-4f6e-ba54-65b939626b60.pdf","file_size":169712,"mime_type":"application/pdf"} 
+
+[2025-12-24 17:51:30] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:31] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:32] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:33] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:34] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:34] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:34] local.DEBUG: Download request received {"report_id":"183e71ca-5984-4341-93d3-0987649f3350","user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3"} 
+
+[2025-12-24 17:51:34] local.DEBUG: Checking report file {"report_id":"183e71ca-5984-4341-93d3-0987649f3350","output_path":"reports/Buildings_Report_2025-12-24_175132_87a29ca5-0647-4595-aa4b-a14cd86af3af.pdf","storage_exists":false,"file_exists":true,"absolute_path":"/home/nazim/projects/nazim-web/backend/storage/app/reports/Buildings_Report_2025-12-24_175132_87a29ca5-0647-4595-aa4b-a14cd86af3af.pdf"} 
+
+[2025-12-24 17:51:34] local.WARNING: Storage::get() returned empty content, trying direct file read {"report_id":"183e71ca-5984-4341-93d3-0987649f3350","output_path":"reports/Buildings_Report_2025-12-24_175132_87a29ca5-0647-4595-aa4b-a14cd86af3af.pdf"} 
+
+[2025-12-24 17:51:34] local.DEBUG: Serving report file {"report_id":"183e71ca-5984-4341-93d3-0987649f3350","file_name":"Buildings_Report_2025-12-24_175132_87a29ca5-0647-4595-aa4b-a14cd86af3af.pdf","file_size":169554,"mime_type":"application/pdf"} 
+
+[2025-12-24 17:51:41] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:41] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:41] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:41] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:41] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:41] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:41] local.DEBUG: User has schools.access_all permission {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976","school_count":1} 
+
+[2025-12-24 17:51:41] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:42] local.DEBUG: User has schools.access_all permission {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976","school_count":1} 
+
+[2025-12-24 17:51:42] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:42] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:42] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:45] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:46] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:47] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:48] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:48] local.DEBUG: Organization context set {"user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3","user_email":"admin1@test.com","organization_id":"31bf32f6-a825-4cba-a70a-48ad90adc976"} 
+
+[2025-12-24 17:51:48] local.DEBUG: Download request received {"report_id":"cefc81a6-009b-4282-af48-4da679596d5b","user_id":"a3a2c784-ce31-4190-9d6e-1efab87044b3"} 
+
+[2025-12-24 17:51:48] local.DEBUG: Checking report file {"report_id":"cefc81a6-009b-4282-af48-4da679596d5b","output_path":"reports/Buildings_Report_2025-12-24_175145_64072da0-1a60-43c7-8712-f94da3390540.pdf","storage_exists":false,"file_exists":true,"absolute_path":"/home/nazim/projects/nazim-web/backend/storage/app/reports/Buildings_Report_2025-12-24_175145_64072da0-1a60-43c7-8712-f94da3390540.pdf"} 
+
+[2025-12-24 17:51:48] local.WARNING: Storage::get() returned empty content, trying direct file read {"report_id":"cefc81a6-009b-4282-af48-4da679596d5b","output_path":"reports/Buildings_Report_2025-12-24_175145_64072da0-1a60-43c7-8712-f94da3390540.pdf"} 
+
+[2025-12-24 17:51:48] local.DEBUG: Serving report file {"report_id":"cefc81a6-009b-4282-af48-4da679596d5b","file_name":"Buildings_Report_2025-12-24_175145_64072da0-1a60-43c7-8712-f94da3390540.pdf","file_size":169554,"mime_type":"application/pdf"} 
+
+
     );
     
     // 8. Return response
@@ -622,7 +625,3 @@ const handleGenerate = async () => {
 1. **Risk**: Breaking existing report functionality
 
 - **Mitigation**: Test thoroughly before deployment, have rollback plan
-
-2. **Risk**: Performance issues with large reports
-
-- **Mitigation**: Use async generation, add pagination for very large datasets

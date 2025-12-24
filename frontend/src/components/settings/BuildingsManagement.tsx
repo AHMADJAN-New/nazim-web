@@ -7,7 +7,7 @@ import { useSchools, useSchool } from '@/hooks/useSchools';
 import { useReportTemplates } from '@/hooks/useReportTemplates';
 import { useServerReport } from '@/hooks/useServerReport';
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
-import type { ReportDefinition } from '@/lib/reporting';
+import { showToast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,7 +47,6 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { toast } from 'sonner';
 
 const buildingSchema = z.object({
   building_name: z.string().min(1, 'Building name is required').max(100, 'Building name must be 100 characters or less'),
@@ -58,59 +57,13 @@ const buildingSchema = z.object({
 
 type BuildingFormData = z.infer<typeof buildingSchema>;
 
-// Building report row type with resolved names
+// Building report row type - dates should be ISO strings for backend formatting
 interface BuildingReportRow {
   building_name: string;
   school_name: string;
   organization_name?: string;
-  created_at: string;
+  created_at: string; // ISO date string - backend will format based on user's calendar preference
 }
-
-// Building report definition - Note: This is defined outside component to avoid recreation
-// Translations will be applied when the report is generated
-const getBuildingReportDefinition = (t: (key: string) => string): ReportDefinition<BuildingReportRow> => ({
-  id: 'buildings',
-  title: t('settings.buildings.reportTitle'),
-  fileName: 'buildings_report',
-  pageSize: 'A4',
-  orientation: 'portrait',
-  columns: [
-    {
-      key: 'building_name',
-      label: t('settings.buildings.reportBuildingName'),
-      width: 30,
-      pdfWidth: '*',
-      align: 'left',
-    },
-    {
-      key: 'school_name',
-      label: t('settings.buildings.reportSchoolName'),
-      width: 25,
-      pdfWidth: '*',
-      align: 'left',
-    },
-    {
-      key: 'organization_name',
-      label: t('settings.buildings.reportOrganization'),
-      width: 25,
-      pdfWidth: '*',
-      align: 'left',
-    },
-    {
-      key: 'created_at',
-      label: t('settings.buildings.reportCreatedAt'),
-      width: 20,
-      pdfWidth: 'auto',
-      align: 'left',
-    },
-  ],
-  tableStyle: {
-    headerFillColor: '#00004d',
-    headerTextColor: '#ffffff',
-    alternateRowColor: '#f9fafb',
-    useAlternateRowColors: true,
-  },
-});
 
 export function BuildingsManagement() {
   const { t } = useLanguage();
@@ -287,7 +240,7 @@ export function BuildingsManagement() {
     ) || templates.find((t) => t.template_type === 'buildings' && t.is_active) || null;
   }, [templates]);
 
-  // Transform buildings data for export
+  // Transform buildings data for export - pass dates as ISO strings for backend formatting
   const transformBuildingsForExport = (buildingsToTransform: Building[]): BuildingReportRow[] => {
     return buildingsToTransform.map((building: Building) => {
       const buildingSchool = schools?.find((s) => s.id === building.schoolId);
@@ -295,7 +248,11 @@ export function BuildingsManagement() {
       return {
         building_name: building.buildingName,
         school_name: buildingSchool?.schoolName || t('settings.buildings.unknownSchool'),
-        created_at: formatDate(building.createdAt),
+        organization_name: buildingSchool?.organization?.name,
+        // Pass date as ISO string - backend DateConversionService will format it based on user's calendar preference
+        created_at: building.createdAt instanceof Date 
+          ? building.createdAt.toISOString().slice(0, 10) 
+          : building.createdAt,
       };
     });
   };
@@ -318,59 +275,66 @@ export function BuildingsManagement() {
     return parts.length > 0 ? parts.join(' | ') : '';
   };
 
-  // Export handlers using server-side reporting
+  // Export handlers using central reporting system
   const handleExportPdf = async () => {
     if (!school) {
-      toast.error(t('settings.buildings.exportErrorNoSchool'));
+      showToast.error(t('settings.buildings.exportErrorNoSchool'));
       return;
     }
 
     if (!filteredBuildings || filteredBuildings.length === 0) {
-      toast.error(t('settings.buildings.exportErrorNoBuildings'));
+      showToast.error(t('settings.buildings.exportErrorNoBuildings'));
       return;
+    }
+
+    if (import.meta.env.DEV) {
+      console.log('[BuildingsManagement] Generating PDF report with branding:', {
+        schoolId: school.id,
+        schoolName: school.school_name,
+        brandingId: school.id,
+        hasTemplate: !!defaultTemplate,
+        templateId: defaultTemplate?.id,
+      });
     }
 
     try {
       const reportData = transformBuildingsForExport(filteredBuildings);
-      const reportDefinition = getBuildingReportDefinition(t);
 
       // Show progress dialog
       setShowReportProgress(true);
       resetReport();
 
-      // Generate report using server-side reporting
+      // Generate report using central reporting system
       await generateReport({
         reportKey: 'buildings',
         reportType: 'pdf',
-        title: reportDefinition.title,
-        columns: reportDefinition.columns.map(col => ({
-          key: col.key,
-          label: col.label,
-          width: col.width,
-          align: col.align,
-        })),
+        title: t('settings.buildings.reportTitle'),
+        columns: [
+          { key: 'building_name', label: t('settings.buildings.reportBuildingName'), align: 'left' },
+          { key: 'school_name', label: t('settings.buildings.reportSchoolName'), align: 'left' },
+          { key: 'organization_name', label: t('settings.buildings.reportOrganization'), align: 'left' },
+          { key: 'created_at', label: t('settings.buildings.reportCreatedAt'), align: 'left' },
+        ],
         rows: reportData,
-        brandingId: school.branding_id || undefined, // Use school's branding if available
-        reportTemplateId: defaultTemplate?.id, // Pass report template ID if available
+        brandingId: school.id, // School.id IS the branding_id (School = SchoolBranding)
+        reportTemplateId: defaultTemplate?.id,
         async: true,
         onProgress: (progress, message) => {
           if (import.meta.env.DEV) {
             console.log(`Report progress: ${progress}% - ${message}`);
           }
         },
-        onComplete: (downloadUrl, fileName) => {
-          toast.success(t('settings.buildings.exportSuccessPdf'));
-          // Auto-download when complete
-          const link = document.createElement('a');
-          link.href = downloadUrl;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        onComplete: () => {
+          showToast.success(t('settings.buildings.exportSuccessPdf'));
+          // Auto-download when complete using authenticated download
+          // Wait for state to be updated, then download
+          setTimeout(() => {
+            downloadReport();
+          }, 300);
           setShowReportProgress(false);
         },
         onError: (error) => {
-          toast.error(error || t('settings.buildings.exportErrorPdf'));
+          showToast.error(error || t('settings.buildings.exportErrorPdf'));
           setShowReportProgress(false);
         },
       });
@@ -378,63 +342,60 @@ export function BuildingsManagement() {
       if (import.meta.env.DEV) {
         console.error('Export error:', error);
       }
-      toast.error(error instanceof Error ? error.message : t('settings.buildings.exportErrorPdf'));
+      showToast.error(error instanceof Error ? error.message : t('settings.buildings.exportErrorPdf'));
       setShowReportProgress(false);
     }
   };
 
   const handleExportExcel = async () => {
     if (!school) {
-      toast.error(t('settings.buildings.exportErrorNoSchool'));
+      showToast.error(t('settings.buildings.exportErrorNoSchool'));
       return;
     }
 
     if (!filteredBuildings || filteredBuildings.length === 0) {
-      toast.error(t('settings.buildings.exportErrorNoBuildings'));
+      showToast.error(t('settings.buildings.exportErrorNoBuildings'));
       return;
     }
 
     try {
       const reportData = transformBuildingsForExport(filteredBuildings);
-      const reportDefinition = getBuildingReportDefinition(t);
 
       // Show progress dialog
       setShowReportProgress(true);
       resetReport();
 
-      // Generate report using server-side reporting
+      // Generate report using central reporting system
       await generateReport({
         reportKey: 'buildings',
         reportType: 'excel',
-        title: reportDefinition.title,
-        columns: reportDefinition.columns.map(col => ({
-          key: col.key,
-          label: col.label,
-          width: col.width,
-          align: col.align,
-        })),
+        title: t('settings.buildings.reportTitle'),
+        columns: [
+          { key: 'building_name', label: t('settings.buildings.reportBuildingName'), align: 'left' },
+          { key: 'school_name', label: t('settings.buildings.reportSchoolName'), align: 'left' },
+          { key: 'organization_name', label: t('settings.buildings.reportOrganization'), align: 'left' },
+          { key: 'created_at', label: t('settings.buildings.reportCreatedAt'), align: 'left' },
+        ],
         rows: reportData,
-        brandingId: school.branding_id || undefined, // Use school's branding if available
-        reportTemplateId: defaultTemplate?.id, // Pass report template ID if available
+        brandingId: school.id, // School.id IS the branding_id (School = SchoolBranding)
+        reportTemplateId: defaultTemplate?.id,
         async: true,
         onProgress: (progress, message) => {
           if (import.meta.env.DEV) {
             console.log(`Report progress: ${progress}% - ${message}`);
           }
         },
-        onComplete: (downloadUrl, fileName) => {
-          toast.success(t('settings.buildings.exportSuccessExcel'));
-          // Auto-download when complete
-          const link = document.createElement('a');
-          link.href = downloadUrl;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        onComplete: () => {
+          showToast.success(t('settings.buildings.exportSuccessExcel'));
+          // Auto-download when complete using authenticated download
+          // Wait for state to be updated, then download
+          setTimeout(() => {
+            downloadReport();
+          }, 300);
           setShowReportProgress(false);
         },
         onError: (error) => {
-          toast.error(error || t('settings.buildings.exportErrorExcel'));
+          showToast.error(error || t('settings.buildings.exportErrorExcel'));
           setShowReportProgress(false);
         },
       });
@@ -442,7 +403,7 @@ export function BuildingsManagement() {
       if (import.meta.env.DEV) {
         console.error('Export error:', error);
       }
-      toast.error(error instanceof Error ? error.message : t('settings.buildings.exportErrorExcel'));
+      showToast.error(error instanceof Error ? error.message : t('settings.buildings.exportErrorExcel'));
       setShowReportProgress(false);
     }
   };

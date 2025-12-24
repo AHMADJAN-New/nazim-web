@@ -20,13 +20,37 @@
         @php
             // Set up font family and size variables at the top for use throughout the template
             $fontFamily = isset($FONT_FAMILY) && !empty(trim($FONT_FAMILY)) ? trim($FONT_FAMILY) : 'Bahij Nassim';
+            $fontSize = isset($FONT_SIZE) && !empty($FONT_SIZE) ? trim($FONT_SIZE) : '12px';
+            
+            // Log font settings for debugging (only in development)
+            if (config('app.debug')) {
+                \Log::debug("Blade template: Font settings", [
+                    'FONT_FAMILY_var' => $FONT_FAMILY ?? 'NOT SET',
+                    'FONT_SIZE_var' => $FONT_SIZE ?? 'NOT SET',
+                    'fontFamily_processed' => $fontFamily,
+                    'fontSize_processed' => $fontSize,
+                ]);
+            }
+            
             // Normalize font name (remove spaces for @font-face, keep spaces for CSS font-family)
             $fontFamilyNormalized = str_replace(' ', '', $fontFamily); // "BahijNassim" for @font-face
             // Escape and quote font name properly for CSS
             $fontFamilyEscaped = str_replace("'", "\\'", $fontFamily);
             $fontFamilyQuoted = "'" . $fontFamilyEscaped . "'";
             // Parse font size to get numeric value for calculations
-            $baseFontSize = isset($FONT_SIZE) && !empty($FONT_SIZE) ? intval(str_replace(['px', 'pt'], '', $FONT_SIZE)) : 12;
+            $baseFontSize = intval(str_replace(['px', 'pt'], '', $fontSize));
+            
+            // Log for debugging
+            if (config('app.debug')) {
+                \Log::debug("Blade base template: Font processing", [
+                    'FONT_FAMILY_input' => $FONT_FAMILY ?? 'NOT SET',
+                    'FONT_SIZE_input' => $FONT_SIZE ?? 'NOT SET',
+                    'fontFamily_processed' => $fontFamily,
+                    'fontSize_processed' => $fontSize,
+                    'baseFontSize_calculated' => $baseFontSize,
+                    'loadBahijNassim' => $loadBahijNassim,
+                ]);
+            }
             
             // Load Bahij Nassim fonts if the font family matches
             $loadBahijNassim = in_array(strtolower($fontFamilyNormalized), ['bahijnassim', 'bahij nassim']) || 
@@ -35,45 +59,73 @@
 
         @if($loadBahijNassim)
         /* Bahij Nassim Font Faces */
+        @php
+            // CRITICAL: Browsershot needs fonts accessible via HTTP or base64
+            // Use base64 data URLs for fonts (same pattern as images/logos)
+            $fontBasePath = public_path('fonts');
+            $regularTtfPath = "{$fontBasePath}/Bahij Nassim-Regular.ttf";
+            $boldTtfPath = "{$fontBasePath}/Bahij Nassim-Bold.ttf";
+            
+            // Convert fonts to base64 data URLs (use TTF for better compatibility)
+            $regularTtfBase64 = null;
+            $boldTtfBase64 = null;
+            
+            if (file_exists($regularTtfPath)) {
+                $fontData = file_get_contents($regularTtfPath);
+                $base64 = base64_encode($fontData);
+                // Use application/font-sfnt MIME type for TTF (more compatible)
+                $regularTtfBase64 = "data:application/font-sfnt;charset=utf-8;base64,{$base64}";
+            }
+            if (file_exists($boldTtfPath)) {
+                $fontData = file_get_contents($boldTtfPath);
+                $base64 = base64_encode($fontData);
+                $boldTtfBase64 = "data:application/font-sfnt;charset=utf-8;base64,{$base64}";
+            }
+            
+            // Log for debugging
+            if (config('app.debug')) {
+                \Log::debug("Blade template: Font loading", [
+                    'regular_exists' => file_exists($regularTtfPath),
+                    'bold_exists' => file_exists($boldTtfPath),
+                    'regular_base64_length' => $regularTtfBase64 ? strlen($regularTtfBase64) : 0,
+                    'bold_base64_length' => $boldTtfBase64 ? strlen($boldTtfBase64) : 0,
+                ]);
+            }
+        @endphp
+        @if($regularTtfBase64)
         @font-face {
             font-family: "BahijNassim";
-            src: url("/fonts/Bahij Nassim-Regular.woff") format("woff"),
-                 url("/fonts/Bahij Nassim-Regular.ttf") format("truetype");
+            src: url("{{ $regularTtfBase64 }}") format("truetype");
             font-weight: 400;
             font-style: normal;
             font-display: swap;
         }
-
+        @endif
+        @if($boldTtfBase64)
         @font-face {
             font-family: "BahijNassim";
-            src: url("/fonts/Bahij Nassim-Bold.woff") format("woff"),
-                 url("/fonts/Bahij Nassim-Bold.ttf") format("truetype");
+            src: url("{{ $boldTtfBase64 }}") format("truetype");
             font-weight: 700;
             font-style: normal;
             font-display: swap;
         }
         @endif
+        @endif
 
         html, body {
             @if($loadBahijNassim)
-            font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif;
+            font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
             @else
-            font-family: {!! $fontFamilyQuoted !!}, 'DejaVu Sans', Arial, sans-serif;
+            font-family: {!! $fontFamilyQuoted !!}, 'DejaVu Sans', Arial, sans-serif !important;
             @endif
-            font-size: {{ $FONT_SIZE ?? '12px' }};
+            font-size: {{ $fontSize }} !important;
             line-height: 1.5;
             color: #333;
             direction: {{ $rtl ?? true ? 'rtl' : 'ltr' }};
             text-align: {{ $rtl ?? true ? 'right' : 'left' }};
         }
         
-        /* Apply font to all text elements */
-        * {
-            font-family: inherit;
-        }
-        
-        /* Ensure all text uses the specified font */
-        /* Apply font to ALL elements */
+        /* CRITICAL: Apply font to ALL elements with !important to override any defaults */
         * {
             @if($loadBahijNassim)
             font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
@@ -82,13 +134,14 @@
             @endif
         }
         
-        /* Specific elements with font size based on base font size */
+        /* Specific elements with font size - ensure font size is applied */
         body, p, div, span, td, th, h1, h2, h3, h4, h5, h6, .school-name, .report-title, .header-text, .data-table {
             @if($loadBahijNassim)
             font-family: "BahijNassim", 'DejaVu Sans', Arial, sans-serif !important;
             @else
             font-family: {!! $fontFamilyQuoted !!}, 'DejaVu Sans', Arial, sans-serif !important;
             @endif
+            font-size: {{ $fontSize }} !important;
         }
         
         /* Bold text should use bold font weight */
@@ -151,7 +204,7 @@
         }
         
         .header-text {
-            font-size: {{ $FONT_SIZE ?? '12px' }};
+            font-size: {{ $fontSize }};
             color: #666;
         }
 
@@ -197,14 +250,14 @@
             padding: 8px 6px;
             border: 1px solid {{ $PRIMARY_COLOR ?? '#0b0b56' }};
             text-align: center;
-            font-size: {{ $FONT_SIZE ?? '12px' }} !important;
+            font-size: {{ $fontSize }} !important;
         }
 
         .data-table td {
             padding: 6px 5px;
             border: 1px solid #ddd;
             text-align: center;
-            font-size: {{ $FONT_SIZE ?? '12px' }} !important;
+            font-size: {{ $fontSize }} !important;
         }
 
         .data-table tr:nth-child(even) td {
@@ -268,7 +321,7 @@
             text-align: center;
             margin-bottom: 10px;
             padding: 8px;
-            font-size: {{ $FONT_SIZE ?? '12px' }};
+            font-size: {{ $fontSize }};
             color: #666;
         }
 

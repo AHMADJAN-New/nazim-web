@@ -70,6 +70,18 @@ class ReportGenerationController extends Controller
         // Check if async is requested
         $async = $validated['async'] ?? false;
 
+        // Check if queue is available (for async processing)
+        // In development, default to sync unless explicitly using a queue driver
+        $queueDriver = config('queue.default', 'sync');
+        $queueConnection = config("queue.connections.{$queueDriver}.driver", 'sync');
+        $queueAvailable = $queueConnection !== 'sync';
+
+        // If async requested but queue not available, fall back to sync
+        if ($async && !$queueAvailable) {
+            \Log::info('Async report generation requested but queue not available (using sync driver), falling back to sync processing');
+            $async = false;
+        }
+
         if ($async) {
             // Create pending report run
             $reportRun = ReportRun::create([
@@ -89,15 +101,24 @@ class ReportGenerationController extends Controller
                 'progress' => 0,
             ]);
 
-            // Dispatch job
-            GenerateReportJob::dispatch($reportRun->id, $config->toArray(), $data);
+            try {
+                // Dispatch job
+                GenerateReportJob::dispatch($reportRun->id, $config->toArray(), $data);
 
-            return response()->json([
-                'success' => true,
-                'report_id' => $reportRun->id,
-                'status' => 'pending',
-                'message' => 'Report generation started',
-            ]);
+                return response()->json([
+                    'success' => true,
+                    'report_id' => $reportRun->id,
+                    'status' => 'pending',
+                    'message' => 'Report generation started',
+                ]);
+            } catch (\Exception $e) {
+                // If job dispatch fails, mark as failed and fall back to sync
+                \Log::error('Failed to dispatch report job: ' . $e->getMessage());
+                $reportRun->markFailed('Failed to dispatch job: ' . $e->getMessage(), 0);
+                
+                // Fall through to sync processing
+                $async = false;
+            }
         }
 
         // Synchronous generation
@@ -148,6 +169,17 @@ class ReportGenerationController extends Controller
             ], 403);
         }
 
+        // Check if report has been pending for too long (5 minutes)
+        // This handles cases where the queue worker isn't running
+        if ($reportRun->status === ReportRun::STATUS_PENDING) {
+            $pendingDuration = now()->diffInMinutes($reportRun->created_at);
+            if ($pendingDuration >= 5) {
+                // Mark as failed if pending for more than 5 minutes
+                $reportRun->markFailed('Report generation timed out. Queue worker may not be running.', 0);
+                \Log::warning("Report {$reportRun->id} has been pending for {$pendingDuration} minutes, marking as failed");
+            }
+        }
+
         return response()->json([
             'success' => true,
             'report_id' => $reportRun->id,
@@ -172,9 +204,15 @@ class ReportGenerationController extends Controller
      */
     public function download(string $id)
     {
+        \Log::debug('Download request received', [
+            'report_id' => $id,
+            'user_id' => Auth::id(),
+        ]);
+
         $reportRun = ReportRun::find($id);
 
         if (!$reportRun) {
+            \Log::warning('Report not found for download', ['report_id' => $id]);
             return response()->json([
                 'success' => false,
                 'error' => 'Report not found',
@@ -184,6 +222,11 @@ class ReportGenerationController extends Controller
         // Check authorization
         $profile = Auth::user()?->profile;
         if ($reportRun->organization_id && $reportRun->organization_id !== $profile?->organization_id) {
+            \Log::warning('Unauthorized download attempt', [
+                'report_id' => $id,
+                'report_org_id' => $reportRun->organization_id,
+                'user_org_id' => $profile?->organization_id,
+            ]);
             return response()->json([
                 'success' => false,
                 'error' => 'Unauthorized',
@@ -191,6 +234,10 @@ class ReportGenerationController extends Controller
         }
 
         if (!$reportRun->isCompleted()) {
+            \Log::warning('Report not completed for download', [
+                'report_id' => $id,
+                'status' => $reportRun->status,
+            ]);
             return response()->json([
                 'success' => false,
                 'error' => 'Report is not ready for download',
@@ -198,17 +245,100 @@ class ReportGenerationController extends Controller
             ], 400);
         }
 
-        if (!$reportRun->output_path || !Storage::exists($reportRun->output_path)) {
+        // Check if file exists using both Storage facade and direct file check
+        // Storage::exists() sometimes fails even when file exists, so we use direct file check as fallback
+        $fileExists = false;
+        $absolutePath = null;
+        
+        if ($reportRun->output_path) {
+            // Try Storage facade first
+            $fileExists = Storage::exists($reportRun->output_path);
+            
+            // If Storage::exists() returns false, try direct file check
+            if (!$fileExists) {
+                $absolutePath = storage_path('app/' . $reportRun->output_path);
+                $fileExists = file_exists($absolutePath);
+            }
+        }
+
+        \Log::debug('Checking report file', [
+            'report_id' => $id,
+            'output_path' => $reportRun->output_path,
+            'storage_exists' => $reportRun->output_path ? Storage::exists($reportRun->output_path) : false,
+            'file_exists' => $fileExists,
+            'absolute_path' => $absolutePath,
+        ]);
+
+        if (!$reportRun->output_path || !$fileExists) {
+            \Log::error('Report file not found', [
+                'report_id' => $id,
+                'output_path' => $reportRun->output_path,
+                'status' => $reportRun->status,
+                'file_name' => $reportRun->file_name,
+                'storage_exists' => $reportRun->output_path ? Storage::exists($reportRun->output_path) : false,
+                'file_exists' => $fileExists,
+                'absolute_path' => $absolutePath,
+            ]);
             return response()->json([
                 'success' => false,
                 'error' => 'Report file not found',
             ], 404);
         }
 
-        // Get file content
-        $content = Storage::get($reportRun->output_path);
+        // Get file content - use direct file read if Storage::get() fails or returns empty
+        $content = null;
+        try {
+            $content = Storage::get($reportRun->output_path);
+            // Storage::get() can return empty string even when file exists, so check content length
+            if (empty($content) || strlen($content) === 0) {
+                \Log::warning('Storage::get() returned empty content, trying direct file read', [
+                    'report_id' => $id,
+                    'output_path' => $reportRun->output_path,
+                ]);
+                $content = null; // Reset to trigger fallback
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Storage::get() failed, trying direct file read', [
+                'report_id' => $id,
+                'output_path' => $reportRun->output_path,
+                'error' => $e->getMessage(),
+            ]);
+            $content = null; // Reset to trigger fallback
+        }
+        
+        // Fallback to direct file read if Storage::get() failed or returned empty
+        if (!$content || strlen($content) === 0) {
+            if ($absolutePath && file_exists($absolutePath)) {
+                $content = file_get_contents($absolutePath);
+            } elseif ($reportRun->output_path) {
+                $absolutePath = storage_path('app/' . $reportRun->output_path);
+                if (file_exists($absolutePath)) {
+                    $content = file_get_contents($absolutePath);
+                }
+            }
+        }
+
+        if (!$content) {
+            \Log::error('Could not read report file content', [
+                'report_id' => $id,
+                'output_path' => $reportRun->output_path,
+                'absolute_path' => $absolutePath,
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Could not read report file',
+            ], 500);
+        }
+
         $mimeType = $reportRun->getMimeType();
         $fileName = $reportRun->file_name ?? "report.{$reportRun->getFileExtension()}";
+
+        \Log::debug('Serving report file', [
+            'report_id' => $id,
+            'file_name' => $fileName,
+            'file_size' => strlen($content),
+            'mime_type' => $mimeType,
+        ]);
 
         return response($content)
             ->header('Content-Type', $mimeType)

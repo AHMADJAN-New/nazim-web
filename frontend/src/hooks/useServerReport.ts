@@ -46,8 +46,10 @@ export function useServerReport(): UseServerReportReturn {
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollAttemptsRef = useRef(0);
   const onProgressRef = useRef<((progress: number, message?: string) => void) | undefined>();
-  const onCompleteRef = useRef<((downloadUrl: string, fileName: string) => void) | undefined>();
+  const onCompleteRef = useRef<(() => void) | undefined>();
   const onErrorRef = useRef<((error: string) => void) | undefined>();
+  const downloadUrlRef = useRef<string | null>(null);
+  const reportIdRef = useRef<string | null>(null);
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -83,6 +85,9 @@ export function useServerReport(): UseServerReportReturn {
         error: response.error_message || null,
       }));
 
+      // Update refs for download
+      downloadUrlRef.current = response.download_url || null;
+
       // Call progress callback
       if (onProgressRef.current && response.status === 'processing') {
         onProgressRef.current(response.progress);
@@ -93,10 +98,17 @@ export function useServerReport(): UseServerReportReturn {
         stopPolling();
         setState(prev => ({ ...prev, isGenerating: false }));
 
-        // Call complete callback
-        if (onCompleteRef.current && response.download_url && response.file_name) {
-          onCompleteRef.current(response.download_url, response.file_name);
-        }
+        // Update refs for download (ensure they're set before callback)
+        downloadUrlRef.current = response.download_url || null;
+        reportIdRef.current = response.report_id;
+
+        // Call complete callback after state is updated
+        // Use setTimeout to ensure state update is processed
+        setTimeout(() => {
+          if (onCompleteRef.current) {
+            onCompleteRef.current();
+          }
+        }, 100); // Increased delay to ensure state is fully updated
       } else if (response.status === 'failed') {
         stopPolling();
         setState(prev => ({
@@ -115,7 +127,30 @@ export function useServerReport(): UseServerReportReturn {
       pollAttemptsRef.current++;
       if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
         stopPolling();
-        const error = 'Report generation timed out';
+        const error = 'Report generation timed out. The queue worker may not be running. Please try again or contact support.';
+        setState(prev => ({
+          ...prev,
+          isGenerating: false,
+          error,
+        }));
+        if (onErrorRef.current) {
+          onErrorRef.current(error);
+        }
+        return; // Exit early to prevent further polling
+      }
+      
+      // If status is still pending after 30 seconds, warn user
+      if (pollAttemptsRef.current === 30 && response.status === 'pending') {
+        console.warn('Report has been pending for 30 seconds. Queue worker may not be running.');
+      }
+    } catch (err) {
+      console.error('Error polling report status:', err);
+      pollAttemptsRef.current++;
+      
+      // Stop polling after too many consecutive errors
+      if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
+        stopPolling();
+        const error = err instanceof Error ? err.message : 'Failed to check report status';
         setState(prev => ({
           ...prev,
           isGenerating: false,
@@ -125,9 +160,6 @@ export function useServerReport(): UseServerReportReturn {
           onErrorRef.current(error);
         }
       }
-    } catch (err) {
-      console.error('Error polling report status:', err);
-      // Don't stop polling on transient errors, just log them
     }
   }, [stopPolling]);
 
@@ -189,6 +221,9 @@ export function useServerReport(): UseServerReportReturn {
         status: response.status,
       }));
 
+      // Update ref for download
+      reportIdRef.current = response.report_id;
+
       // If sync and already completed, we're done
       if (response.status === 'completed' && response.download_url) {
         setState(prev => ({
@@ -199,8 +234,12 @@ export function useServerReport(): UseServerReportReturn {
           fileName: response.file_name || null,
         }));
 
-        if (options.onComplete && response.download_url && response.file_name) {
-          options.onComplete(response.download_url, response.file_name);
+        // Update refs for download
+        downloadUrlRef.current = response.download_url || null;
+        reportIdRef.current = response.report_id;
+
+        if (options.onComplete) {
+          options.onComplete();
         }
         return;
       }
@@ -223,17 +262,87 @@ export function useServerReport(): UseServerReportReturn {
     }
   }, [startPolling]);
 
-  const downloadReport = useCallback(() => {
-    if (state.downloadUrl) {
-      // Create a link and click it to download
+  const downloadReport = useCallback(async (retryCount = 0) => {
+    // Use refs to get the latest values (not dependent on state updates)
+    const currentDownloadUrl = downloadUrlRef.current;
+    const currentReportId = reportIdRef.current;
+
+    if (!currentDownloadUrl || !currentReportId) {
+      // If not ready, try again after a short delay (max 3 retries)
+      if (retryCount < 3) {
+        setTimeout(() => {
+          downloadReport(retryCount + 1);
+        }, 500);
+      } else {
+        setState(prev => ({ ...prev, error: 'Download URL not available' }));
+      }
+      return;
+    }
+
+    try {
+      // Extract the endpoint path from the full URL
+      // downloadUrl from backend is like: http://localhost:8000/api/reports/{id}/download
+      // API client baseUrl is /api, so we need: /reports/{id}/download
+      const url = new URL(currentDownloadUrl);
+      let endpoint = url.pathname;
+      
+      // Remove /api prefix if present (backend URL includes it, API client will add it back)
+      if (endpoint.startsWith('/api/')) {
+        endpoint = endpoint.substring(4); // Remove '/api' but keep the leading '/'
+      } else if (endpoint.startsWith('/api')) {
+        endpoint = endpoint.substring(4);
+      }
+      
+      // Ensure endpoint starts with /
+      if (!endpoint.startsWith('/')) {
+        endpoint = '/' + endpoint;
+      }
+
+      // Debug log in development
+      if (import.meta.env.DEV) {
+        console.log('[useServerReport] Downloading report:', {
+          originalUrl: currentDownloadUrl,
+          extractedEndpoint: endpoint,
+          reportId: currentReportId,
+          retryCount,
+        });
+      }
+
+      // Use API client's requestFile method (includes authentication automatically)
+      const { blob, filename } = await apiClient.requestFile(endpoint);
+
+      // Create a blob URL and download
+      const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = state.downloadUrl;
-      link.download = state.fileName || 'report';
+      link.href = blobUrl;
+      link.download = filename || state.fileName || 'report';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to download report';
+      
+      // If it's a 404 and we haven't retried too many times, try again
+      // The file might not be ready yet even though status is "completed"
+      if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+        if (retryCount < 5) {
+          if (import.meta.env.DEV) {
+            console.log(`[useServerReport] File not ready, retrying... (${retryCount + 1}/5)`);
+          }
+          setTimeout(() => {
+            downloadReport(retryCount + 1);
+          }, 1000 * (retryCount + 1)); // Exponential backoff
+          return;
+        }
+      }
+      
+      setState(prev => ({ ...prev, error: errorMessage }));
+      console.error('Download error:', error);
     }
-  }, [state.downloadUrl, state.fileName]);
+  }, [state.fileName]);
 
   const reset = useCallback(() => {
     stopPolling();

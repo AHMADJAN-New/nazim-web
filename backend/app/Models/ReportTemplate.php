@@ -41,6 +41,7 @@ class ReportTemplate extends Model
         'show_generation_date',
         'table_alternating_colors',
         'report_font_size',
+        'font_family',
         'watermark_id',
         'is_default',
         'is_active',

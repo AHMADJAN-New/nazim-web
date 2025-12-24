@@ -9,7 +9,6 @@ use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ExcelReportService;
 use App\Services\Reports\PdfReportService;
 use App\Services\Reports\ReportConfig;
-use App\Services\Reports\ReportService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -23,13 +22,9 @@ class GenerateReportJob implements ShouldQueue
 
     /**
      * The number of times the job may be attempted.
+     * Set to 1 to prevent retries (failures should be handled immediately)
      */
-    public int $tries = 3;
-
-    /**
-     * The number of seconds to wait before retrying the job.
-     */
-    public int $backoff = 30;
+    public int $tries = 1;
 
     /**
      * The number of seconds the job can run before timing out.
@@ -64,9 +59,6 @@ class GenerateReportJob implements ShouldQueue
             return;
         }
 
-        // Create the report service
-        $reportService = new ReportService($brandingCache, $pdfService, $excelService);
-
         try {
             // Mark as processing
             $reportRun->markProcessing();
@@ -88,8 +80,9 @@ class GenerateReportJob implements ShouldQueue
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // Re-throw to trigger retry
-            throw $e;
+            // Use fail() to properly mark the job as failed without retrying
+            // Since tries = 1, this won't retry anyway, but this ensures proper job failure handling
+            $this->fail($e);
         }
     }
 
@@ -133,6 +126,16 @@ class GenerateReportJob implements ShouldQueue
         // Build context for template
         $context = $this->buildContext($config, $data, $branding, $layout, $notes, $watermark, $dateService);
         $reportRun->updateProgress(50, 'Built template context');
+        
+        // Log final font settings being used
+        Log::debug("Report context font settings (Job)", [
+            'font_family' => $context['FONT_FAMILY'] ?? 'N/A',
+            'font_size' => $context['FONT_SIZE'] ?? 'N/A',
+            'template_font_family' => $layout['font_family'] ?? null,
+            'template_font_size' => $layout['font_size'] ?? null,
+            'branding_font_family' => $branding['font_family'] ?? null,
+            'branding_font_size' => $branding['report_font_size'] ?? null,
+        ]);
 
         // Generate the report
         if ($config->isPdf()) {
@@ -175,14 +178,24 @@ class GenerateReportJob implements ShouldQueue
     private function loadBranding(ReportConfig $config, BrandingCacheService $brandingCache): array
     {
         if (!$config->brandingId) {
+            Log::warning("No brandingId provided in config (Job), using default branding");
             return $this->getDefaultBranding();
         }
+
+        Log::debug("Loading branding for brandingId (Job): {$config->brandingId}");
 
         $branding = $brandingCache->getBranding($config->brandingId);
 
         if (!$branding) {
+            Log::warning("Branding not found for {$config->brandingId} (Job), using default branding");
             return $this->getDefaultBranding();
         }
+
+        Log::debug("Loaded branding (Job)", [
+            'school_name' => $branding['school_name'] ?? 'N/A',
+            'font_family' => $branding['font_family'] ?? 'N/A',
+            'report_font_size' => $branding['report_font_size'] ?? 'N/A',
+        ]);
 
         return $branding;
     }
@@ -331,6 +344,11 @@ class GenerateReportJob implements ShouldQueue
             $layout['font_size'] = $template->report_font_size;
         }
 
+        // Override font family if provided by template
+        if ($template->font_family) {
+            $layout['font_family'] = $template->font_family;
+        }
+
         return $layout;
     }
 
@@ -348,6 +366,9 @@ class GenerateReportJob implements ShouldQueue
     ): array {
         $columns = $data['columns'] ?? [];
         $rows = $data['rows'] ?? [];
+        
+        // Format date fields in rows based on user's calendar preference
+        $rows = $this->formatDateFieldsInRows($rows, $dateService, $config);
 
         // Auto-select template if not specified
         $templateName = $config->autoSelectTemplate(count($columns));
@@ -369,7 +390,8 @@ class GenerateReportJob implements ShouldQueue
             'PRIMARY_COLOR' => !empty($branding['primary_color']) ? $branding['primary_color'] : '#0b0b56',
             'SECONDARY_COLOR' => !empty($branding['secondary_color']) ? $branding['secondary_color'] : '#0056b3',
             'ACCENT_COLOR' => !empty($branding['accent_color']) ? $branding['accent_color'] : '#ff6b35',
-            'FONT_FAMILY' => $branding['font_family'] ?? 'Bahij Nassim',
+            // CRITICAL: Use template font family from layout first, then branding fallback
+            'FONT_FAMILY' => $layout['font_family'] ?? $branding['font_family'] ?? 'Bahij Nassim',
             // CRITICAL: Use template font size from layout first, then branding fallback
             'FONT_SIZE' => $layout['font_size'] ?? $branding['report_font_size'] ?? '12px',
 
@@ -521,5 +543,66 @@ class GenerateReportJob implements ShouldQueue
             'report_run_id' => $this->reportRunId,
             'error' => $exception->getMessage(),
         ]);
+    }
+    
+    /**
+     * Format date fields in report rows based on calendar preference
+     * Automatically detects date fields (ending with _at, _date, date) and formats them
+     */
+    private function formatDateFieldsInRows(array $rows, DateConversionService $dateService, ReportConfig $config): array
+    {
+        if (empty($rows)) {
+            return $rows;
+        }
+        
+        // Common date field patterns
+        $dateFieldPatterns = ['_at', '_date', 'date'];
+        
+        foreach ($rows as &$row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            
+            foreach ($row as $key => $value) {
+                // Check if this field looks like a date
+                $isDateField = false;
+                foreach ($dateFieldPatterns as $pattern) {
+                    if (str_ends_with(strtolower($key), $pattern)) {
+                        $isDateField = true;
+                        break;
+                    }
+                }
+                
+                if ($isDateField && !empty($value)) {
+                    try {
+                        // Try to parse the date value
+                        $dateValue = null;
+                        if (is_string($value)) {
+                            // Try to parse ISO date string (YYYY-MM-DD)
+                            if (preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
+                                $dateValue = \Carbon\Carbon::parse($value);
+                            }
+                        } elseif ($value instanceof \DateTime || $value instanceof \Carbon\Carbon) {
+                            $dateValue = \Carbon\Carbon::instance($value);
+                        }
+                        
+                        if ($dateValue) {
+                            // Format the date based on user's calendar preference
+                            $row[$key] = $dateService->formatDate(
+                                $dateValue,
+                                $config->calendarPreference,
+                                'full',
+                                $config->language
+                            );
+                        }
+                    } catch (\Exception $e) {
+                        // If date parsing fails, leave the value as-is
+                        \Log::debug("Failed to format date field {$key}: " . $e->getMessage());
+                    }
+                }
+            }
+        }
+        
+        return $rows;
     }
 }

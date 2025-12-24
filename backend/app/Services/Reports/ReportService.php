@@ -70,6 +70,16 @@ class ReportService
             // Build context for template
             $context = $this->buildContext($config, $data, $branding, $layout, $notes, $watermark);
             $reportRun->updateProgress(50, 'Built template context');
+            
+            // Log final font settings being used
+            \Log::debug("Report context font settings", [
+                'font_family' => $context['FONT_FAMILY'] ?? 'N/A',
+                'font_size' => $context['FONT_SIZE'] ?? 'N/A',
+                'template_font_family' => $layout['font_family'] ?? null,
+                'template_font_size' => $layout['font_size'] ?? null,
+                'branding_font_family' => $branding['font_family'] ?? null,
+                'branding_font_size' => $branding['report_font_size'] ?? null,
+            ]);
 
             // Generate the report
             if ($config->isPdf()) {
@@ -184,12 +194,16 @@ class ReportService
     private function loadBranding(ReportConfig $config): array
     {
         if (!$config->brandingId) {
+            \Log::warning("No brandingId provided in config, using default branding");
             return $this->getDefaultBranding();
         }
+
+        \Log::debug("Loading branding for brandingId: {$config->brandingId}");
 
         $branding = $this->brandingCache->getBranding($config->brandingId);
 
         if (!$branding) {
+            \Log::warning("Branding not found for {$config->brandingId}, using default branding");
             return $this->getDefaultBranding();
         }
 
@@ -201,7 +215,20 @@ class ReportService
             $branding['accent_color'] = $branding['accent_color'] ?? '#ff6b35';
         }
         
-        \Log::debug("Loaded branding for {$config->brandingId}: primary_color={$branding['primary_color']}, secondary_color={$branding['secondary_color']}, accent_color={$branding['accent_color']}");
+        \Log::debug("Loaded branding for {$config->brandingId}", [
+            'school_name' => $branding['school_name'] ?? 'N/A',
+            'primary_color' => $branding['primary_color'] ?? 'N/A',
+            'secondary_color' => $branding['secondary_color'] ?? 'N/A',
+            'accent_color' => $branding['accent_color'] ?? 'N/A',
+            'font_family' => $branding['font_family'] ?? 'N/A',
+            'report_font_size' => $branding['report_font_size'] ?? 'N/A',
+            'has_primary_logo' => !empty($branding['primary_logo_uri']),
+            'has_secondary_logo' => !empty($branding['secondary_logo_uri']),
+            'has_ministry_logo' => !empty($branding['ministry_logo_uri']),
+            'show_primary_logo' => $branding['show_primary_logo'] ?? false,
+            'show_secondary_logo' => $branding['show_secondary_logo'] ?? false,
+            'show_ministry_logo' => $branding['show_ministry_logo'] ?? false,
+        ]);
 
         return $branding;
     }
@@ -390,6 +417,11 @@ class ReportService
             $layout['font_size'] = $template->report_font_size;
         }
 
+        // Override font family if provided by template
+        if ($template->font_family) {
+            $layout['font_family'] = $template->font_family;
+        }
+
         return $layout;
     }
 
@@ -427,7 +459,8 @@ class ReportService
             'PRIMARY_COLOR' => !empty($branding['primary_color']) ? $branding['primary_color'] : '#0b0b56',
             'SECONDARY_COLOR' => !empty($branding['secondary_color']) ? $branding['secondary_color'] : '#0056b3',
             'ACCENT_COLOR' => !empty($branding['accent_color']) ? $branding['accent_color'] : '#ff6b35',
-            'FONT_FAMILY' => $branding['font_family'] ?? 'Bahij Nassim',
+            // CRITICAL: Use template font family from layout first, then branding fallback
+            'FONT_FAMILY' => $layout['font_family'] ?? $branding['font_family'] ?? 'Bahij Nassim',
             // CRITICAL: Use template font size from layout first, then branding fallback
             'FONT_SIZE' => $layout['font_size'] ?? $branding['report_font_size'] ?? '12px',
 

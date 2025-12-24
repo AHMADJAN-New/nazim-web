@@ -2,7 +2,17 @@
 
 @section('content')
 @php
+    // Use the processed font size from base template (already calculated)
+    // The base template sets $baseFontSize, but we need to recalculate if FONT_SIZE is set
     $baseFontSize = isset($FONT_SIZE) && !empty($FONT_SIZE) ? intval(str_replace(['px', 'pt'], '', $FONT_SIZE)) : 12;
+    
+    // Log for debugging
+    if (config('app.debug')) {
+        \Log::debug("Table template: Font size", [
+            'FONT_SIZE_var' => $FONT_SIZE ?? 'NOT SET',
+            'baseFontSize_calculated' => $baseFontSize,
+        ]);
+    }
 @endphp
 <style>
     /* A4 Portrait footer adjustments */
