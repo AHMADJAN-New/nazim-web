@@ -601,6 +601,18 @@ export const schoolsApi = {
     accent_color?: string;
     font_family?: string;
     report_font_size?: string;
+    primary_logo_binary?: string; // Base64 encoded
+    primary_logo_mime_type?: string;
+    primary_logo_filename?: string;
+    primary_logo_size?: number;
+    secondary_logo_binary?: string; // Base64 encoded
+    secondary_logo_mime_type?: string;
+    secondary_logo_filename?: string;
+    secondary_logo_size?: number;
+    ministry_logo_binary?: string; // Base64 encoded
+    ministry_logo_mime_type?: string;
+    ministry_logo_filename?: string;
+    ministry_logo_size?: number;
     primary_logo_usage?: string;
     secondary_logo_usage?: string;
     ministry_logo_usage?: string;
@@ -631,6 +643,18 @@ export const schoolsApi = {
     accent_color?: string;
     font_family?: string;
     report_font_size?: string;
+    primary_logo_binary?: string; // Base64 encoded
+    primary_logo_mime_type?: string;
+    primary_logo_filename?: string;
+    primary_logo_size?: number;
+    secondary_logo_binary?: string; // Base64 encoded
+    secondary_logo_mime_type?: string;
+    secondary_logo_filename?: string;
+    secondary_logo_size?: number;
+    ministry_logo_binary?: string; // Base64 encoded
+    ministry_logo_mime_type?: string;
+    ministry_logo_filename?: string;
+    ministry_logo_size?: number;
     primary_logo_usage?: string;
     secondary_logo_usage?: string;
     ministry_logo_usage?: string;
@@ -647,6 +671,65 @@ export const schoolsApi = {
 
   delete: async (id: string) => {
     return apiClient.delete(`/schools/${id}`);
+  },
+};
+
+export const watermarksApi = {
+  list: async (params: {
+    branding_id: string;
+  }) => {
+    return apiClient.get('/watermarks', params);
+  },
+
+  get: async (id: string) => {
+    return apiClient.get(`/watermarks/${id}`);
+  },
+
+  create: async (data: {
+    branding_id: string;
+    report_key?: string | null;
+    wm_type: 'text' | 'image';
+    text?: string | null;
+    font_family?: string | null;
+    color?: string;
+    opacity?: number;
+    rotation_deg?: number;
+    scale?: number;
+    position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    pos_x?: number;
+    pos_y?: number;
+    repeat_pattern?: 'none' | 'repeat' | 'repeat-x' | 'repeat-y';
+    sort_order?: number;
+    is_active?: boolean;
+    image_binary?: string; // Base64 encoded
+    image_mime?: string | null;
+  }) => {
+    return apiClient.post('/watermarks', data);
+  },
+
+  update: async (id: string, data: {
+    report_key?: string | null;
+    wm_type?: 'text' | 'image';
+    text?: string | null;
+    font_family?: string | null;
+    color?: string;
+    opacity?: number;
+    rotation_deg?: number;
+    scale?: number;
+    position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    pos_x?: number;
+    pos_y?: number;
+    repeat_pattern?: 'none' | 'repeat' | 'repeat-x' | 'repeat-y';
+    sort_order?: number;
+    is_active?: boolean;
+    image_binary?: string; // Base64 encoded
+    image_mime?: string | null;
+  }) => {
+    return apiClient.put(`/watermarks/${id}`, data);
+  },
+
+  delete: async (id: string) => {
+    return apiClient.delete(`/watermarks/${id}`);
   },
 };
 
@@ -1283,10 +1366,18 @@ export const reportTemplatesApi = {
     template_type: string;
     school_id: string;
     header_text?: string | null;
+    header_text_position?: string | null;
     footer_text?: string | null;
+    footer_text_position?: string | null;
     header_html?: string | null;
     footer_html?: string | null;
     report_logo_selection?: string | null;
+    show_primary_logo?: boolean;
+    show_secondary_logo?: boolean;
+    show_ministry_logo?: boolean;
+    primary_logo_position?: string | null;
+    secondary_logo_position?: string | null;
+    ministry_logo_position?: string | null;
     show_page_numbers?: boolean;
     show_generation_date?: boolean;
     table_alternating_colors?: boolean;
@@ -1302,10 +1393,18 @@ export const reportTemplatesApi = {
     template_type?: string;
     school_id?: string;
     header_text?: string | null;
+    header_text_position?: string | null;
     footer_text?: string | null;
+    footer_text_position?: string | null;
     header_html?: string | null;
     footer_html?: string | null;
     report_logo_selection?: string | null;
+    show_primary_logo?: boolean;
+    show_secondary_logo?: boolean;
+    show_ministry_logo?: boolean;
+    primary_logo_position?: string | null;
+    secondary_logo_position?: string | null;
+    ministry_logo_position?: string | null;
     show_page_numbers?: boolean;
     show_generation_date?: boolean;
     table_alternating_colors?: boolean;

@@ -819,8 +819,7 @@ export default function LibraryDistribution() {
                                 Assign Book
                             </Button>
                         </DialogFooter>
-                      </form>
-                    </FormProvider>
+                    </form>
                 </DialogContent>
             </Dialog>
 

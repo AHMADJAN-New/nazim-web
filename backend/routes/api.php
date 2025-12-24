@@ -138,6 +138,14 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     // Schools (school branding)
     Route::apiResource('schools', SchoolBrandingController::class);
 
+    // Watermarks (for school branding)
+    Route::get('/watermarks', [\App\Http\Controllers\WatermarkController::class, 'index']);
+    Route::post('/watermarks', [\App\Http\Controllers\WatermarkController::class, 'store']);
+    Route::get('/watermarks/{id}', [\App\Http\Controllers\WatermarkController::class, 'show']);
+    Route::put('/watermarks/{id}', [\App\Http\Controllers\WatermarkController::class, 'update']);
+    Route::patch('/watermarks/{id}', [\App\Http\Controllers\WatermarkController::class, 'update']);
+    Route::delete('/watermarks/{id}', [\App\Http\Controllers\WatermarkController::class, 'destroy']);
+
     // Permissions
     Route::get('/permissions', [PermissionController::class, 'index']);
     Route::post('/permissions', [PermissionController::class, 'store']);
@@ -183,6 +191,7 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
 
     // Report Templates
     Route::get('/report-templates/school/{schoolId}', [ReportTemplateController::class, 'bySchool']);
+    Route::get('/report-templates/default', [ReportTemplateController::class, 'getDefault']);
     Route::apiResource('report-templates', ReportTemplateController::class);
 
     // Staff Documents
@@ -605,6 +614,14 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/dms/files/{id}/download', [DocumentFilesController::class, 'download']);
 
     // ============================================
+    // Central Reporting System
+    // ============================================
+
+    Route::post('/reports/generate', [\App\Http\Controllers\ReportGenerationController::class, 'generate']);
+    Route::get('/reports', [\App\Http\Controllers\ReportGenerationController::class, 'index']);
+    Route::get('/reports/{id}/status', [\App\Http\Controllers\ReportGenerationController::class, 'status']);
+    Route::get('/reports/{id}/download', [\App\Http\Controllers\ReportGenerationController::class, 'download']);
+    Route::delete('/reports/{id}', [\App\Http\Controllers\ReportGenerationController::class, 'destroy']);
     // Events & Guests Module
     // ============================================
 
@@ -650,3 +667,6 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::put('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'update']);
     Route::delete('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'destroy']);
 });
+
+// Preview route (no auth required for template preview)
+Route::get('/reports/preview/template', [\App\Http\Controllers\ReportGenerationController::class, 'previewTemplate']);
