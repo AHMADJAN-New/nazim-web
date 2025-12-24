@@ -3,6 +3,7 @@
 namespace App\Services\Reports;
 
 use App\Models\ReportRun;
+use App\Models\ReportTemplate;
 use App\Models\SchoolBranding;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,7 @@ class ReportService
         private BrandingCacheService $brandingCache,
         private PdfReportService $pdfService,
         private ExcelReportService $excelService,
+        private DateConversionService $dateService,
     ) {}
 
     /**
@@ -47,7 +49,15 @@ class ReportService
 
             // Load layout configuration
             $layout = $this->loadLayout($config);
-            $reportRun->updateProgress(20, 'Loaded layout configuration');
+            $reportRun->updateProgress(15, 'Loaded layout configuration');
+
+            // Load ReportTemplate (custom header/footer) if specified
+            $reportTemplate = $this->loadReportTemplate($config);
+            $reportRun->updateProgress(20, 'Loaded report template');
+
+            // Merge report template settings with layout
+            $layout = $this->mergeReportTemplate($layout, $reportTemplate, $branding);
+            $reportRun->updateProgress(25, 'Merged template settings');
 
             // Load notes
             $notes = $this->loadNotes($config, $branding);
@@ -253,6 +263,83 @@ class ReportService
     }
 
     /**
+     * Load ReportTemplate if specified
+     */
+    private function loadReportTemplate(ReportConfig $config): ?ReportTemplate
+    {
+        if (!$config->reportTemplateId) {
+            return null;
+        }
+
+        return ReportTemplate::where('id', $config->reportTemplateId)
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->first();
+    }
+
+    /**
+     * Merge ReportTemplate settings with layout
+     * ReportTemplate overrides take precedence
+     */
+    private function mergeReportTemplate(array $layout, ?ReportTemplate $template, array $branding): array
+    {
+        if (!$template) {
+            return $layout;
+        }
+
+        // Override header/footer HTML if provided by template
+        if ($template->header_html) {
+            $layout['header_html'] = $template->header_html;
+        }
+        if ($template->footer_html) {
+            $layout['footer_html'] = $template->footer_html;
+        }
+
+        // Override header/footer text if provided
+        if ($template->header_text) {
+            $layout['header_text'] = $template->header_text;
+        }
+        if ($template->footer_text) {
+            $layout['footer_text'] = $template->footer_text;
+        }
+
+        // Override report settings if provided by template
+        if ($template->report_logo_selection !== null) {
+            $layout['report_logo_selection'] = $template->report_logo_selection;
+
+            // Apply logo visibility based on selection
+            $logoSelection = $template->report_logo_selection;
+            $layout['show_primary_logo'] = in_array($logoSelection, ['primary', 'all']);
+            $layout['show_secondary_logo'] = in_array($logoSelection, ['secondary', 'all']);
+            $layout['show_ministry_logo'] = in_array($logoSelection, ['ministry', 'all']);
+
+            if ($logoSelection === 'none') {
+                $layout['show_primary_logo'] = false;
+                $layout['show_secondary_logo'] = false;
+                $layout['show_ministry_logo'] = false;
+            }
+        }
+
+        if ($template->show_page_numbers !== null) {
+            $layout['show_page_numbers'] = $template->show_page_numbers;
+        }
+
+        if ($template->show_generation_date !== null) {
+            $layout['show_generation_date'] = $template->show_generation_date;
+        }
+
+        if ($template->table_alternating_colors !== null) {
+            $layout['table_alternating_colors'] = $template->table_alternating_colors;
+        }
+
+        if ($template->report_font_size) {
+            $layout['font_size'] = $template->report_font_size;
+        }
+
+        return $layout;
+    }
+
+    /**
      * Build template context
      */
     private function buildContext(
@@ -328,16 +415,44 @@ class ReportService
             // Watermark
             'WATERMARK' => $watermark,
 
-            // Date/time
-            'CURRENT_DATE' => now()->format('Y-m-d'),
+            // Date/time with calendar preference support
+            'CURRENT_DATE' => $this->dateService->formatDate(
+                now(),
+                $config->calendarPreference,
+                'full',
+                $config->language
+            ),
+            'CURRENT_DATE_NUMERIC' => $this->dateService->formatDate(
+                now(),
+                $config->calendarPreference,
+                'numeric',
+                $config->language
+            ),
+            'CURRENT_DATE_SHORT' => $this->dateService->formatDate(
+                now(),
+                $config->calendarPreference,
+                'short',
+                $config->language
+            ),
+            'CURRENT_DATE_GREGORIAN' => now()->format('Y-m-d'),
             'CURRENT_TIME' => now()->format('H:i'),
-            'CURRENT_DATETIME' => now()->format('Y-m-d H:i'),
+            'CURRENT_DATETIME' => $this->dateService->formatDate(
+                now(),
+                $config->calendarPreference,
+                'full',
+                $config->language
+            ) . ' ' . now()->format('H:i'),
+            'calendar_preference' => $config->calendarPreference,
+            'language' => $config->language,
 
             // Template
             'template_name' => $templateName,
 
             // Parameters
             'parameters' => $config->parameters,
+
+            // Date service for row data
+            'date_service' => $this->dateService,
         ];
     }
 
@@ -391,6 +506,42 @@ class ReportService
             'table_alternating_colors' => true,
             'show_page_numbers' => true,
             'show_generation_date' => true,
+            'calendar_preference' => 'jalali',
         ];
+    }
+
+    /**
+     * Format a date value according to the report's calendar preference
+     *
+     * @param mixed $date Date value (string, Carbon, DateTime)
+     * @param string $calendarPreference Calendar type
+     * @param string $format Date format (full, short, numeric)
+     * @param string $language Language code
+     * @return string Formatted date
+     */
+    public function formatDate($date, string $calendarPreference = 'jalali', string $format = 'full', string $language = 'fa'): string
+    {
+        if (empty($date)) {
+            return '';
+        }
+
+        try {
+            return $this->dateService->formatDate($date, $calendarPreference, $format, $language);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to format date', [
+                'date' => $date,
+                'calendar' => $calendarPreference,
+                'error' => $e->getMessage(),
+            ]);
+            return (string) $date;
+        }
+    }
+
+    /**
+     * Get the date service for external use
+     */
+    public function getDateService(): DateConversionService
+    {
+        return $this->dateService;
     }
 }

@@ -12,6 +12,7 @@ class ReportConfig
         public string $reportType = 'pdf', // pdf, excel
         public ?string $brandingId = null,
         public ?string $layoutId = null,
+        public ?string $reportTemplateId = null, // Reference to ReportTemplate for custom header/footer
         public ?string $templateName = null,
         public string $title = '',
         public string $watermarkMode = 'default', // default, pick, none
@@ -20,6 +21,8 @@ class ReportConfig
         public string $generatedBy = 'NazimWeb',
         public array $parameters = [],
         public array $columnConfig = [],
+        public string $calendarPreference = 'jalali', // gregorian, jalali/shamsi, qamari/hijri_qamari
+        public string $language = 'fa', // fa, ps, ar, en
     ) {}
 
     /**
@@ -32,6 +35,7 @@ class ReportConfig
             reportType: $data['report_type'] ?? 'pdf',
             brandingId: $data['branding_id'] ?? null,
             layoutId: $data['layout_id'] ?? null,
+            reportTemplateId: $data['report_template_id'] ?? null,
             templateName: $data['template_name'] ?? null,
             title: $data['title'] ?? '',
             watermarkMode: $data['watermark_mode'] ?? 'default',
@@ -40,6 +44,8 @@ class ReportConfig
             generatedBy: $data['generated_by'] ?? 'NazimWeb',
             parameters: $data['parameters'] ?? [],
             columnConfig: $data['column_config'] ?? [],
+            calendarPreference: $data['calendar_preference'] ?? 'jalali',
+            language: $data['language'] ?? 'fa',
         );
     }
 
@@ -53,6 +59,7 @@ class ReportConfig
             'report_type' => $this->reportType,
             'branding_id' => $this->brandingId,
             'layout_id' => $this->layoutId,
+            'report_template_id' => $this->reportTemplateId,
             'template_name' => $this->templateName,
             'title' => $this->title,
             'watermark_mode' => $this->watermarkMode,
@@ -61,6 +68,8 @@ class ReportConfig
             'generated_by' => $this->generatedBy,
             'parameters' => $this->parameters,
             'column_config' => $this->columnConfig,
+            'calendar_preference' => $this->calendarPreference,
+            'language' => $this->language,
         ];
     }
 
