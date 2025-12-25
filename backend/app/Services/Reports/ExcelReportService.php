@@ -12,6 +12,7 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
+use PhpOffice\PhpSpreadsheet\Worksheet\HeaderFooter;
 
 /**
  * Excel report generation service using PhpSpreadsheet
@@ -695,7 +696,7 @@ class ExcelReportService
      */
     private function addWatermarkText($sheet, array $watermark): void
     {
-        $pageSetup = $sheet->getPageSetup();
+        $headerFooter = $sheet->getHeaderFooter();
         
         $text = $watermark['text'] ?? '';
         $fontFamily = $watermark['font_family'] ?? 'Arial';
@@ -721,7 +722,8 @@ class ExcelReportService
         $headerText = $headerAlign . '&"' . $fontFamily . ',Regular"&K' . $colorHex . 
                      '&14' . htmlspecialchars($text, ENT_QUOTES);
         
-        $pageSetup->setHeader($headerText);
+        // Use setOddHeader() method from HeaderFooter class
+        $headerFooter->setOddHeader($headerText);
     }
 
     /**
@@ -803,13 +805,13 @@ class ExcelReportService
         $bottomInches = $margins['bottom'] / 25.4;
         $leftInches = $margins['left'] / 25.4;
         
-        $sheet->getPageMargins()
-            ->setTop($topInches)
-            ->setRight($rightInches)
-            ->setBottom($bottomInches)
-            ->setLeft($leftInches)
-            ->setHeader(0.3)
-            ->setFooter(0.3);
+        $pageMargins = $sheet->getPageMargins();
+        $pageMargins->setTop($topInches);
+        $pageMargins->setRight($rightInches);
+        $pageMargins->setBottom($bottomInches);
+        $pageMargins->setLeft($leftInches);
+        // Note: setHeader() and setFooter() don't exist on PageMargins
+        // Header/Footer spacing is set via HeaderFooter object if needed
 
         // Fit to page
         $pageSetup->setFitToPage(true);

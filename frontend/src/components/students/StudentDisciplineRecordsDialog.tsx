@@ -408,6 +408,7 @@ export function StudentDisciplineRecordsDialog({
               </Button>
             </DialogFooter>
             </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 

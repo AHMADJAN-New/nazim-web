@@ -90,7 +90,10 @@ export function useServerReport(): UseServerReportReturn {
 
       // Call progress callback
       if (onProgressRef.current && response.status === 'processing') {
-        onProgressRef.current(response.progress);
+        // Pass progress and optional message
+        // Backend doesn't provide progress_message yet, so we'll pass undefined
+        // The callback signature allows optional message parameter
+        onProgressRef.current(response.progress, undefined);
       }
 
       // Check if completed or failed

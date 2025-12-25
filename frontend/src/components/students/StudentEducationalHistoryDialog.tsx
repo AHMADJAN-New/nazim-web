@@ -373,6 +373,7 @@ export function StudentEducationalHistoryDialog({
               </Button>
             </DialogFooter>
             </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 

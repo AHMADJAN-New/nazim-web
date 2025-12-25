@@ -62,6 +62,7 @@ interface BuildingReportRow {
   building_name: string;
   school_name: string;
   organization_name?: string;
+  rooms_count?: number;
   created_at: string; // ISO date string - backend will format based on user's calendar preference
 }
 
@@ -249,6 +250,7 @@ export function BuildingsManagement() {
         building_name: building.buildingName,
         school_name: buildingSchool?.schoolName || t('settings.buildings.unknownSchool'),
         organization_name: buildingSchool?.organization?.name,
+        rooms_count: building.roomsCount ?? 0,
         // Pass date as ISO string - backend DateConversionService will format it based on user's calendar preference
         created_at: building.createdAt instanceof Date 
           ? building.createdAt.toISOString().slice(0, 10) 
@@ -313,6 +315,7 @@ export function BuildingsManagement() {
           { key: 'building_name', label: t('settings.buildings.reportBuildingName'), align: 'left' },
           { key: 'school_name', label: t('settings.buildings.reportSchoolName'), align: 'left' },
           { key: 'organization_name', label: t('settings.buildings.reportOrganization'), align: 'left' },
+          { key: 'rooms_count', label: t('settings.buildings.reportRoomsCount') || 'Rooms', align: 'left' },
           { key: 'created_at', label: t('settings.buildings.reportCreatedAt'), align: 'left' },
         ],
         rows: reportData,
@@ -321,7 +324,7 @@ export function BuildingsManagement() {
         async: true,
         onProgress: (progress, message) => {
           if (import.meta.env.DEV) {
-            console.log(`Report progress: ${progress}% - ${message}`);
+            console.log(`Report progress: ${progress}%${message ? ` - ${message}` : ''}`);
           }
         },
         onComplete: () => {
@@ -374,6 +377,7 @@ export function BuildingsManagement() {
           { key: 'building_name', label: t('settings.buildings.reportBuildingName'), align: 'left' },
           { key: 'school_name', label: t('settings.buildings.reportSchoolName'), align: 'left' },
           { key: 'organization_name', label: t('settings.buildings.reportOrganization'), align: 'left' },
+          { key: 'rooms_count', label: t('settings.buildings.reportRoomsCount') || 'Rooms', align: 'left' },
           { key: 'created_at', label: t('settings.buildings.reportCreatedAt'), align: 'left' },
         ],
         rows: reportData,
@@ -382,7 +386,7 @@ export function BuildingsManagement() {
         async: true,
         onProgress: (progress, message) => {
           if (import.meta.env.DEV) {
-            console.log(`Report progress: ${progress}% - ${message}`);
+            console.log(`Report progress: ${progress}%${message ? ` - ${message}` : ''}`);
           }
         },
         onComplete: () => {

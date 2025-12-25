@@ -40,6 +40,10 @@
             // Parse font size to get numeric value for calculations
             $baseFontSize = intval(str_replace(['px', 'pt'], '', $fontSize));
             
+            // Load Bahij Nassim fonts if the font family matches
+            $loadBahijNassim = in_array(strtolower($fontFamilyNormalized), ['bahijnassim', 'bahij nassim']) || 
+                              strtolower($fontFamily) === 'bahij nassim';
+            
             // Log for debugging
             if (config('app.debug')) {
                 \Log::debug("Blade base template: Font processing", [
@@ -51,10 +55,6 @@
                     'loadBahijNassim' => $loadBahijNassim,
                 ]);
             }
-            
-            // Load Bahij Nassim fonts if the font family matches
-            $loadBahijNassim = in_array(strtolower($fontFamilyNormalized), ['bahijnassim', 'bahij nassim']) || 
-                              strtolower($fontFamily) === 'bahij nassim';
         @endphp
 
         @if($loadBahijNassim)

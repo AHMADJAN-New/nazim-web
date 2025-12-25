@@ -820,6 +820,7 @@ export default function LibraryDistribution() {
                             </Button>
                         </DialogFooter>
                     </form>
+                    </FormProvider>
                 </DialogContent>
             </Dialog>
 
