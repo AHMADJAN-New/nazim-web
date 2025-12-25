@@ -42,33 +42,16 @@ class StaffController extends Controller
         // Get accessible organization IDs (user's organization only)
         $orgIds = [$profile->organization_id];
 
-        // Get accessible school IDs based on permission and default_school_id
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        // Strict school scoping: only current school from middleware context
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $query = Staff::with(['staffType', 'organization', 'school', 'profile'])
             ->whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds);
-
-        // Filter by accessible schools if staff table has school_id column
-        if (!empty($schoolIds)) {
-            // Only filter if school_id column exists and is not null
-            $query->where(function($q) use ($schoolIds) {
-                $q->whereIn('school_id', $schoolIds)
-                  ->orWhereNull('school_id'); // Include staff without school assignment
-            });
-        } else {
-            // If no accessible schools, return empty
-            return response()->json([]);
-        }
+            ->whereIn('organization_id', $orgIds)
+            ->where('school_id', $currentSchoolId);
 
         // Apply filters
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([]);
-            }
-        }
+        // NOTE: Ignore client-provided organization_id/school_id; everything is school-scoped.
 
         if ($request->has('staff_type_id') && $request->staff_type_id) {
             $query->where('staff_type_id', $request->staff_type_id);
@@ -78,14 +61,7 @@ class StaffController extends Controller
             $query->where('status', $request->status);
         }
 
-        // Validate school_id filter against accessible schools
-        if ($request->has('school_id') && $request->school_id) {
-            if (in_array($request->school_id, $schoolIds)) {
-                $query->where('school_id', $request->school_id);
-            } else {
-                return response()->json(['error' => 'School not accessible'], 403);
-            }
-        }
+        // school_id filter is ignored; current school enforced.
 
         if ($request->has('search') && $request->search) {
             $search = $request->search;
@@ -194,20 +170,18 @@ class StaffController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = request()->get('current_school_id');
+
         $staff = Staff::with(['staffType', 'organization', 'school', 'profile'])
             ->whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$staff) {
             return response()->json(['error' => 'Staff member not found'], 404);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        if (!in_array($staff->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Staff member not found'], 404);
-        }
+        // Org access is enforced by organization middleware + school scope.
 
         $staffArray = $staff->toArray();
         
@@ -240,21 +214,24 @@ class StaffController extends Controller
 
         $request->validate([
             'profile_id' => 'nullable|uuid|exists:profiles,id',
-            'organization_id' => 'required|uuid|exists:organizations,id',
+            // These are scope fields; accepted for backward compatibility but ignored.
+            'organization_id' => 'nullable|uuid|exists:organizations,id',
             'employee_id' => 'required|string|max:50',
             'staff_code' => [
                 'nullable',
                 'string',
                 'max:32',
-                function ($attribute, $value, $fail) use ($request) {
-                    if ($value && $request->organization_id) {
+                function ($attribute, $value, $fail) use ($request, $profile) {
+                    if ($value && $profile?->organization_id) {
+                        $schoolId = $request->get('current_school_id');
                         $exists = DB::table('staff')
                             ->where('staff_code', $value)
-                            ->where('organization_id', $request->organization_id)
+                            ->where('organization_id', $profile->organization_id)
+                            ->where('school_id', $schoolId)
                             ->whereNull('deleted_at')
                             ->exists();
                         if ($exists) {
-                            $fail('A staff member with this code already exists in this organization.');
+                            $fail('A staff member with this code already exists in this school.');
                         }
                     }
                 },
@@ -302,7 +279,7 @@ class StaffController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff.read')) {
+            if (!$user->hasPermissionTo('staff.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -310,16 +287,12 @@ class StaffController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        // Validate organization access
-        if (!in_array($request->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot create staff for a non-accessible organization'], 403);
-        }
+        $organizationId = $profile->organization_id;
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Validate employee_id uniqueness within organization
-        $existing = Staff::where('organization_id', $request->organization_id)
+        $existing = Staff::where('organization_id', $organizationId)
+            ->where('school_id', $currentSchoolId)
             ->where('employee_id', $request->employee_id)
             ->whereNull('deleted_at')
             ->first();
@@ -330,7 +303,8 @@ class StaffController extends Controller
 
         // Validate profile_id uniqueness within organization if provided
         if ($request->profile_id) {
-            $existingProfile = Staff::where('organization_id', $request->organization_id)
+            $existingProfile = Staff::where('organization_id', $organizationId)
+                ->where('school_id', $currentSchoolId)
                 ->where('profile_id', $request->profile_id)
                 ->whereNull('deleted_at')
                 ->first();
@@ -354,12 +328,13 @@ class StaffController extends Controller
 
         $staff = Staff::create([
             'profile_id' => $request->profile_id ?? null,
-            'organization_id' => $request->organization_id,
+            'organization_id' => $organizationId,
             'employee_id' => $request->employee_id,
             'staff_code' => $request->staff_code ?? null, // Will be auto-generated if null
             'staff_type' => $request->staff_type ?? 'teacher',
             'staff_type_id' => $staffTypeId,
-            'school_id' => $request->school_id ?? null,
+            // Force current school (never trust client input)
+            'school_id' => $currentSchoolId,
             'first_name' => $request->first_name,
             'father_name' => $request->father_name,
             'grandfather_name' => $request->grandfather_name ?? null,
@@ -424,7 +399,10 @@ class StaffController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $staff = Staff::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $staff = Staff::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$staff) {
             return response()->json(['error' => 'Staff member not found'], 404);
@@ -437,7 +415,7 @@ class StaffController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff.read')) {
+            if (!$user->hasPermissionTo('staff.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -445,13 +423,7 @@ class StaffController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        // Check organization access
-        if (!in_array($staff->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot update staff from different organization'], 403);
-        }
+        // Org access is enforced by organization middleware + school scope.
 
         $request->validate([
             'profile_id' => 'nullable|uuid|exists:profiles,id',
@@ -555,7 +527,7 @@ class StaffController extends Controller
             'staff_code',
             'staff_type',
             'staff_type_id',
-            'school_id',
+            // school_id is scope and cannot be updated via this endpoint
             'first_name',
             'father_name',
             'grandfather_name',
@@ -591,6 +563,7 @@ class StaffController extends Controller
 
         $updateData['updated_by'] = $user->id;
 
+        unset($updateData['school_id'], $updateData['organization_id']);
         $staff->update($updateData);
         $staff->load(['staffType', 'organization', 'school', 'profile']);
 
@@ -621,7 +594,10 @@ class StaffController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $staff = Staff::whereNull('deleted_at')->find($id);
+        $currentSchoolId = request()->get('current_school_id');
+        $staff = Staff::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$staff) {
             return response()->json(['error' => 'Staff member not found'], 404);
@@ -643,12 +619,7 @@ class StaffController extends Controller
         }
 
         // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        // Check organization access
-        if (!in_array($staff->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot delete staff from different organization'], 403);
-        }
+        // Org access is enforced by organization middleware + school scope.
 
         // Soft delete
         $staff->delete();
@@ -695,29 +666,10 @@ class StaffController extends Controller
             ]);
         }
 
-        $query = Staff::whereNull('deleted_at')->whereIn('organization_id', $orgIds);
-
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([
-                    'total' => 0,
-                    'active' => 0,
-                    'inactive' => 0,
-                    'on_leave' => 0,
-                    'terminated' => 0,
-                    'suspended' => 0,
-                    'by_type' => [
-                        'teacher' => 0,
-                        'admin' => 0,
-                        'accountant' => 0,
-                        'librarian' => 0,
-                        'other' => 0,
-                    ],
-                ]);
-            }
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $query = Staff::whereNull('deleted_at')
+            ->whereIn('organization_id', $orgIds)
+            ->where('school_id', $currentSchoolId);
 
         // Get teacher type ID
         $teacherType = StaffType::where('code', 'teacher')
@@ -777,7 +729,10 @@ class StaffController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $staff = Staff::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $staff = Staff::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$staff) {
             return response()->json(['error' => 'Staff member not found'], 404);
@@ -788,12 +743,7 @@ class StaffController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        if (!in_array($staff->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot upload picture for staff from different organization'], 403);
-        }
+        // Org access is enforced by organization middleware + school scope.
 
         $request->validate([
             'file' => 'required|file|image|max:10240', // 10MB max
@@ -803,9 +753,8 @@ class StaffController extends Controller
         $fileExt = $file->getClientOriginalExtension();
         $fileName = time() . '.' . $fileExt;
         
-        // Build path: {organization_id}/{school_id}/{staff_id}/picture/{filename}
-        $schoolPath = $staff->school_id ? "{$staff->school_id}/" : '';
-        $filePath = "{$staff->organization_id}/{$schoolPath}{$staff->id}/picture/{$fileName}";
+        // Build path: {organization_id}/{school_id}/staff/{staff_id}/picture/{filename}
+        $filePath = "{$staff->organization_id}/{$staff->school_id}/staff/{$staff->id}/picture/{$fileName}";
 
         // Store file
         $storedPath = $file->storeAs('staff-files', $filePath, 'public');
@@ -834,7 +783,10 @@ class StaffController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $staff = Staff::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $staff = Staff::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$staff) {
             return response()->json(['error' => 'Staff member not found'], 404);
@@ -845,12 +797,7 @@ class StaffController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        if (!in_array($staff->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot upload document for staff from different organization'], 403);
-        }
+        // Org access is enforced by organization middleware + school scope.
 
         $request->validate([
             'file' => 'required|file|max:10240', // 10MB max
@@ -862,9 +809,8 @@ class StaffController extends Controller
         $fileExt = $file->getClientOriginalExtension();
         $fileName = time() . '.' . $fileExt;
         
-        // Build path: {organization_id}/{school_id}/{staff_id}/documents/{document_type}/{filename}
-        $schoolPath = $staff->school_id ? "{$staff->school_id}/" : '';
-        $filePath = "{$staff->organization_id}/{$schoolPath}{$staff->id}/documents/{$request->document_type}/{$fileName}";
+        // Build path: {organization_id}/{school_id}/staff/{staff_id}/documents/{document_type}/{filename}
+        $filePath = "{$staff->organization_id}/{$staff->school_id}/staff/{$staff->id}/documents/{$request->document_type}/{$fileName}";
 
         // Store file
         $storedPath = $file->storeAs('staff-files', $filePath, 'public');

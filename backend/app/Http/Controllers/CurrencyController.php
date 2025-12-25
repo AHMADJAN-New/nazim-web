@@ -40,8 +40,11 @@ class CurrencyController extends Controller
                 'is_base' => 'nullable|boolean',
             ]);
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $query = Currency::whereNull('deleted_at')
-                ->where('organization_id', $profile->organization_id);
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId);
 
             if (isset($validated['is_active'])) {
                 $query->where('is_active', filter_var($validated['is_active'], FILTER_VALIDATE_BOOLEAN));
@@ -91,6 +94,8 @@ class CurrencyController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $validated = $request->validate([
                 'code' => [
                     'required',
@@ -98,7 +103,9 @@ class CurrencyController extends Controller
                     'size:3',
                     'uppercase',
                     Rule::unique('currencies')->where(function ($query) use ($profile) {
-                        return $query->where('organization_id', $profile->organization_id)->whereNull('deleted_at');
+                        return $query->where('organization_id', $profile->organization_id)
+                            ->where('school_id', request()->get('current_school_id'))
+                            ->whereNull('deleted_at');
                     })
                 ],
                 'name' => 'required|string|max:100',
@@ -108,8 +115,17 @@ class CurrencyController extends Controller
                 'is_active' => 'nullable|boolean',
             ]);
 
+            // If setting as base, unset others for the same school
+            if (($validated['is_base'] ?? false) === true) {
+                Currency::where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
+                    ->whereNull('deleted_at')
+                    ->update(['is_base' => false]);
+            }
+
             $currency = Currency::create([
                 'organization_id' => $profile->organization_id,
+                'school_id' => $currentSchoolId,
                 'code' => strtoupper($validated['code']),
                 'name' => trim($validated['name']),
                 'symbol' => $validated['symbol'] ?? null,
@@ -155,8 +171,11 @@ class CurrencyController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = request()->get('current_school_id');
+
             $currency = Currency::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($id);
 
             if (!$currency) {
@@ -195,8 +214,11 @@ class CurrencyController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $currency = Currency::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($id);
 
             if (!$currency) {
@@ -210,7 +232,9 @@ class CurrencyController extends Controller
                     'size:3',
                     'uppercase',
                     Rule::unique('currencies')->where(function ($query) use ($profile) {
-                        return $query->where('organization_id', $profile->organization_id)->whereNull('deleted_at');
+                        return $query->where('organization_id', $profile->organization_id)
+                            ->where('school_id', request()->get('current_school_id'))
+                            ->whereNull('deleted_at');
                     })->ignore($id)
                 ],
                 'name' => 'sometimes|string|max:100',
@@ -226,6 +250,15 @@ class CurrencyController extends Controller
 
             if (isset($validated['name'])) {
                 $validated['name'] = trim($validated['name']);
+            }
+
+            // If setting as base, unset others for the same school
+            if (isset($validated['is_base']) && $validated['is_base'] === true) {
+                Currency::where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
+                    ->where('id', '!=', $id)
+                    ->whereNull('deleted_at')
+                    ->update(['is_base' => false]);
             }
 
             $currency->update($validated);
@@ -267,8 +300,11 @@ class CurrencyController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = request()->get('current_school_id');
+
             $currency = Currency::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($id);
 
             if (!$currency) {

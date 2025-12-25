@@ -21,6 +21,7 @@ class ClassModel extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'name',
         'code',
         'grade_level',
@@ -58,6 +59,14 @@ class ClassModel extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organization_id');
+    }
+
+    /**
+     * Get the school that owns the class
+     */
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 
     /**

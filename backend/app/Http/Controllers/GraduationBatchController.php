@@ -34,10 +34,10 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Allow school_id from request, fallback to default_school_id
-        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
+        // Strict school scoping: school context comes from middleware (profile.default_school_id)
+        $schoolId = $request->get('current_school_id');
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
+            return response()->json(['error' => 'School context is required'], 403);
         }
 
         $query = GraduationBatch::query()
@@ -104,7 +104,8 @@ class GraduationBatchController extends Controller
         }
 
         $validated = $request->validate([
-            'school_id' => 'required|uuid|exists:school_branding,id',
+            // Accepted for backward compatibility but ignored (school is derived from middleware context)
+            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'academic_year_id' => 'required|uuid|exists:academic_years,id',
             'class_id' => 'required|uuid|exists:classes,id',
             'exam_id' => 'nullable|uuid|exists:exams,id', // Keep for backward compatibility
@@ -147,17 +148,14 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Allow school_id from request, fallback to default_school_id
-        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
-
-        // First try to find batch with school_id filter if provided
-        $query = GraduationBatch::where('organization_id', $profile->organization_id);
-        
-        if ($schoolId) {
-            $query->where('school_id', $schoolId);
+        // Strict school scoping: only current school from middleware context
+        $schoolId = $request->get('current_school_id');
+        if (!$schoolId) {
+            return response()->json(['error' => 'School context is required'], 403);
         }
 
-        $batch = $query
+        $batch = GraduationBatch::where('organization_id', $profile->organization_id)
+            ->where('school_id', $schoolId)
             ->with([
                 'students.student',
                 'academicYear:id,name',
@@ -171,25 +169,6 @@ class GraduationBatchController extends Controller
                 }
             ])
             ->find($id);
-
-        // If not found with school_id filter, try without it (batch might be from different school in same org)
-        if (!$batch && $schoolId) {
-            $batch = GraduationBatch::where('organization_id', $profile->organization_id)
-                ->where('id', $id)
-                ->with([
-                    'students.student',
-                    'academicYear:id,name',
-                    'class:id,name',
-                    'exam:id,name',
-                    'school:id,school_name',
-                    'fromClass:id,name',
-                    'toClass:id,name',
-                    'exams' => function ($query) {
-                        $query->with('examType:id,name');
-                    }
-                ])
-                ->first();
-        }
 
         if (!$batch) {
             return response()->json(['error' => 'Graduation batch not found'], 404);
@@ -221,9 +200,51 @@ class GraduationBatchController extends Controller
         }
 
         // Allow school_id from request, fallback to default_school_id
-        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
+        $schoolId = $request->get('current_school_id');
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
+            return response()->json(['error' => 'School context is required'], 403);
+        }
+
+        // Validate referenced rows belong to current school (school-scoped system)
+        $orgId = $profile->organization_id;
+        $academicYearOk = DB::table('academic_years')
+            ->where('id', $validated['academic_year_id'])
+            ->where('organization_id', $orgId)
+            ->where('school_id', $schoolId)
+            ->whereNull('deleted_at')
+            ->exists();
+        if (!$academicYearOk) {
+            return response()->json(['error' => 'Academic year not found in this school'], 403);
+        }
+
+        $classOk = DB::table('classes')
+            ->where('id', $validated['class_id'])
+            ->where('organization_id', $orgId)
+            ->where('school_id', $schoolId)
+            ->whereNull('deleted_at')
+            ->exists();
+        if (!$classOk) {
+            return response()->json(['error' => 'Class not found in this school'], 403);
+        }
+
+        $examIdsToCheck = [];
+        if (!empty($validated['exam_id'])) {
+            $examIdsToCheck[] = $validated['exam_id'];
+        }
+        if (!empty($validated['exam_ids']) && is_array($validated['exam_ids'])) {
+            $examIdsToCheck = array_merge($examIdsToCheck, $validated['exam_ids']);
+        }
+        $examIdsToCheck = array_values(array_unique(array_filter($examIdsToCheck)));
+        if (!empty($examIdsToCheck)) {
+            $count = DB::table('exams')
+                ->whereIn('id', $examIdsToCheck)
+                ->where('organization_id', $orgId)
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at')
+                ->count();
+            if ($count !== count($examIdsToCheck)) {
+                return response()->json(['error' => 'One or more exams do not belong to this school'], 403);
+            }
         }
 
         try {
@@ -255,10 +276,9 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Allow school_id from request, fallback to default_school_id
-        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
+        $schoolId = $request->get('current_school_id');
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
+            return response()->json(['error' => 'School context is required'], 403);
         }
 
         try {
@@ -290,10 +310,9 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Allow school_id from request, fallback to default_school_id
-        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
+        $schoolId = $request->get('current_school_id');
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
+            return response()->json(['error' => 'School context is required'], 403);
         }
 
         $validated = $request->validate([
@@ -338,10 +357,9 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Allow school_id from request, fallback to default_school_id
-        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
+        $schoolId = $request->get('current_school_id');
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
+            return response()->json(['error' => 'School context is required'], 403);
         }
 
         $batch = GraduationBatch::where('organization_id', $profile->organization_id)
@@ -397,10 +415,9 @@ class GraduationBatchController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Allow school_id from request, fallback to default_school_id
-        $schoolId = $request->get('school_id') ?? $profile->default_school_id;
+        $schoolId = $request->get('current_school_id');
         if (!$schoolId) {
-            return response()->json(['error' => 'No default school assigned to user and no school_id provided'], 403);
+            return response()->json(['error' => 'School context is required'], 403);
         }
 
         $batch = GraduationBatch::where('organization_id', $profile->organization_id)

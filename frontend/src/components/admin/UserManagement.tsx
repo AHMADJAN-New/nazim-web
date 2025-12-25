@@ -49,8 +49,9 @@ import { Plus, Pencil, Trash2, Search, UserCog, Download, KeyRound } from 'lucid
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
+import { showToast } from '@/lib/toast';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const userSchema = z.object({
   full_name: z.string().min(1, 'Full name is required').max(255, 'Full name must be 255 characters or less'),
@@ -66,6 +67,7 @@ const userSchema = z.object({
 type UserFormData = z.infer<typeof userSchema>;
 
 export function UserManagement() {
+  const { t } = useLanguage();
   const hasCreatePermission = useHasPermission('users.create');
   const hasUpdatePermission = useHasPermission('users.update');
   const hasDeletePermission = useHasPermission('users.delete');
@@ -173,7 +175,7 @@ export function UserManagement() {
 
   const handleResetPassword = async () => {
     if (!selectedUser || !newPassword) {
-      toast.error('Please enter a new password');
+      showToast.error(t('toast.passwordResetFailed'));
       return;
     }
     try {
@@ -204,7 +206,7 @@ export function UserManagement() {
         await updateUser.mutateAsync(updateData);
       } else {
         if (!data.password) {
-          toast.error('Password is required for new users');
+          showToast.error(t('toast.userCreateFailed'));
           return;
         }
         // Map form data (snake_case) to domain types (camelCase)
@@ -239,7 +241,7 @@ export function UserManagement() {
 
   const handleExport = () => {
     if (!users || users.length === 0) {
-      toast.error('No users to export');
+      showToast.error(t('toast.error'));
       return;
     }
 
@@ -262,7 +264,7 @@ export function UserManagement() {
     a.download = `users-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    toast.success('Users exported successfully');
+    showToast.success(t('toast.success'));
   };
 
   // Debug: Log users data if in development (only when data changes, not on every render)

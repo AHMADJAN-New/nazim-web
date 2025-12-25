@@ -21,6 +21,7 @@ class AcademicYear extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'name',
         'start_date',
         'end_date',
@@ -55,6 +56,7 @@ class AcademicYear extends Model
         static::updating(function ($model) {
             if ($model->isDirty('is_current') && $model->is_current === true) {
                 static::where('organization_id', $model->organization_id)
+                    ->where('school_id', $model->school_id)
                     ->where('id', '!=', $model->id)
                     ->whereNull('deleted_at')
                     ->update(['is_current' => false]);
@@ -68,6 +70,14 @@ class AcademicYear extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organization_id');
+    }
+
+    /**
+     * Get the school that owns the academic year
+     */
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 
     /**

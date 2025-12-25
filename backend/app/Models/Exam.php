@@ -37,6 +37,7 @@ class Exam extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'academic_year_id',
         'exam_type_id',
         'name',
@@ -76,6 +77,11 @@ class Exam extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organization_id');
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 
     public function academicYear()

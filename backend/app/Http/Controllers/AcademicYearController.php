@@ -34,6 +34,8 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             // Check permission WITH organization context
             try {
                 if (!$user->hasPermissionTo('academic_years.read')) {
@@ -44,15 +46,16 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
-            // Get accessible organization IDs (user's organization only)
-            $orgIds = [$profile->organization_id];
-
-            $query = AcademicYear::whereNull('deleted_at');
+            $query = AcademicYear::whereNull('deleted_at')
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId);
 
             // If academic_year_id is provided, return that specific year
             // This handles the case where frontend mistakenly uses academic_year_id as a filter
             if (!empty($validated['academic_year_id'])) {
                 $academicYear = AcademicYear::whereNull('deleted_at')
+                    ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->where('id', $validated['academic_year_id'])
                     ->first();
 
@@ -60,36 +63,10 @@ class AcademicYearController extends Controller
                     return response()->json(['error' => 'Academic year not found'], 404);
                 }
 
-                // Check organization access (all users)
-                if ($academicYear->organization_id !== null && $academicYear->organization_id !== $profile->organization_id) {
-                    return response()->json(['error' => 'Academic year not found'], 404);
-                }
-
                 return response()->json([$academicYear]); // Return as array for consistency
             }
 
-            // Filter by organization (include global years where organization_id IS NULL)
-            if (!empty($validated['organization_id'])) {
-                if (in_array($validated['organization_id'], $orgIds)) {
-                    $query->where(function ($q) use ($validated) {
-                        $q->where('organization_id', $validated['organization_id'])
-                          ->orWhereNull('organization_id'); // Include global years
-                    });
-                } else {
-                    return response()->json([]);
-                }
-            } else {
-                // Show user's org years + global years
-                if (!empty($orgIds)) {
-                    $query->where(function ($q) use ($orgIds) {
-                        $q->whereIn('organization_id', $orgIds)
-                          ->orWhereNull('organization_id'); // Include global years
-                    });
-                } else {
-                    // No org access, only show global years
-                    $query->whereNull('organization_id');
-                }
-            }
+            // NOTE: ignore client-provided organization_id; academic years are school-scoped.
 
             // Filter by is_current if provided
             if (isset($validated['is_current']) && $validated['is_current'] !== null) {
@@ -138,7 +115,7 @@ class AcademicYearController extends Controller
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.read')) {
+                if (!$user->hasPermissionTo('academic_years.create')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
@@ -146,17 +123,12 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
-            // Get organization_id - use provided or user's org
-            $organizationId = $request->organization_id ?? $profile->organization_id;
-
-            // Validate organization access (all users)
-            if ($organizationId !== $profile->organization_id) {
-                return response()->json(['error' => 'Cannot create academic year for different organization'], 403);
-            }
+            $organizationId = $profile->organization_id;
+            $currentSchoolId = $this->getCurrentSchoolId($request);
 
             $validated = $request->validate([
-                'name' => ['required', 'string', 'max:100', Rule::unique('academic_years')->where(function ($query) use ($organizationId) {
-                    return $query->where('organization_id', $organizationId)->whereNull('deleted_at');
+                'name' => ['required', 'string', 'max:100', Rule::unique('academic_years')->where(function ($query) use ($organizationId, $currentSchoolId) {
+                    return $query->where('organization_id', $organizationId)->where('school_id', $currentSchoolId)->whereNull('deleted_at');
                 })],
                 'start_date' => 'required|date',
                 'end_date' => 'required|date|after:start_date',
@@ -168,6 +140,7 @@ class AcademicYearController extends Controller
             // If setting as current, unset others for the same organization
             if ($validated['is_current'] ?? false) {
                 AcademicYear::where('organization_id', $organizationId)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->update(['is_current' => false]);
             }
@@ -180,6 +153,7 @@ class AcademicYearController extends Controller
                 'description' => $validated['description'] ?? null,
                 'status' => $validated['status'] ?? 'active',
                 'organization_id' => $organizationId,
+                'school_id' => $currentSchoolId,
             ]);
 
             return response()->json($academicYear, 201);
@@ -235,8 +209,8 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'Academic year not found'], 404);
             }
 
-            // Check organization access (all users)
-            if ($academicYear->organization_id !== null && $academicYear->organization_id !== $profile->organization_id) {
+            $currentSchoolId = request()->get('current_school_id');
+            if ($academicYear->organization_id !== $profile->organization_id || $academicYear->school_id !== $currentSchoolId) {
                 return response()->json(['error' => 'Academic year not found'], 404);
             }
 
@@ -274,7 +248,7 @@ class AcademicYearController extends Controller
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.read')) {
+                if (!$user->hasPermissionTo('academic_years.update')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
@@ -288,32 +262,31 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'Academic year not found'], 404);
             }
 
-            // Validate organization access (all users)
-            if ($academicYear->organization_id !== null && $academicYear->organization_id !== $profile->organization_id) {
-                return response()->json(['error' => 'Cannot update academic year from different organization'], 403);
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+            if ($academicYear->organization_id !== $profile->organization_id || $academicYear->school_id !== $currentSchoolId) {
+                return response()->json(['error' => 'Cannot update academic year from different school'], 403);
             }
 
-            // Prevent organization_id changes (all users)
-            if ($request->has('organization_id')) {
-                return response()->json(['error' => 'Cannot change organization_id'], 403);
+            // Prevent scope changes (all users)
+            if ($request->has('organization_id') || $request->has('school_id')) {
+                return response()->json(['error' => 'Cannot change scope fields'], 403);
             }
 
             $validated = $request->validate([
                 'name' => ['sometimes', 'string', 'max:100', Rule::unique('academic_years')->where(function ($query) use ($academicYear) {
-                    return $query->where('organization_id', $academicYear->organization_id)->whereNull('deleted_at');
+                    return $query->where('organization_id', $academicYear->organization_id)->where('school_id', $academicYear->school_id)->whereNull('deleted_at');
                 })->ignore($id)],
                 'start_date' => 'sometimes|date',
                 'end_date' => 'sometimes|date|after:start_date',
                 'is_current' => 'nullable|boolean',
                 'description' => 'nullable|string|max:500',
                 'status' => 'nullable|string|max:50',
-                'organization_id' => 'nullable|uuid|exists:organizations,id',
             ]);
 
             // If setting as current, unset others for the same organization
             if (isset($validated['is_current']) && $validated['is_current'] === true) {
-                $orgId = $validated['organization_id'] ?? $academicYear->organization_id;
-                AcademicYear::where('organization_id', $orgId)
+                AcademicYear::where('organization_id', $academicYear->organization_id)
+                    ->where('school_id', $academicYear->school_id)
                     ->where('id', '!=', $id)
                     ->whereNull('deleted_at')
                     ->update(['is_current' => false]);
@@ -366,7 +339,7 @@ class AcademicYearController extends Controller
 
             // Check permission WITH organization context
             try {
-                if (!$user->hasPermissionTo('academic_years.read')) {
+                if (!$user->hasPermissionTo('academic_years.delete')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
                 }
             } catch (\Exception $e) {
@@ -380,13 +353,9 @@ class AcademicYearController extends Controller
                 return response()->json(['error' => 'Academic year not found'], 404);
             }
 
-            // Validate organization access (all users)
-            // Note: Global years (organization_id = NULL) cannot be deleted by regular users
-            if ($academicYear->organization_id === null) {
-                return response()->json(['error' => 'Cannot delete global academic years'], 403);
-            }
-            if ($academicYear->organization_id !== $profile->organization_id) {
-                return response()->json(['error' => 'Cannot delete academic year from different organization'], 403);
+            $currentSchoolId = request()->get('current_school_id');
+            if ($academicYear->organization_id !== $profile->organization_id || $academicYear->school_id !== $currentSchoolId) {
+                return response()->json(['error' => 'Cannot delete academic year from different school'], 403);
             }
 
             // Prevent deletion of current year
@@ -396,7 +365,7 @@ class AcademicYearController extends Controller
 
             $academicYear->delete(); // Soft delete
 
-            return response()->json(['message' => 'Academic year deleted successfully'], 200);
+            return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('AcademicYearController@destroy error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),

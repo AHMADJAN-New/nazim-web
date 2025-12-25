@@ -27,6 +27,8 @@ class LibraryBookController extends Controller
             // Allow if permission not present during migration
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $query = LibraryBook::with([
             'copies' => function ($builder) {
                 $builder->whereNull('deleted_at')
@@ -52,7 +54,8 @@ class LibraryBookController extends Controller
                 $builder->where('status', 'available')
                     ->whereNull('deleted_at');
             },
-        ])->where('organization_id', $profile->organization_id);
+        ])->where('organization_id', $profile->organization_id)
+          ->where('school_id', $currentSchoolId);
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -81,7 +84,7 @@ class LibraryBookController extends Controller
             'title' => 'required|string|max:255',
             'author' => 'nullable|string|max:255',
             'isbn' => 'nullable|string|max:100',
-            'book_number' => 'required|string|max:100|unique:library_books,book_number',
+            'book_number' => 'required|string|max:100',
             'category' => 'nullable|string|max:150',
             'category_id' => 'required|uuid|exists:library_categories,id',
             'volume' => 'nullable|string|max:50',
@@ -108,12 +111,26 @@ class LibraryBookController extends Controller
             // Allow during migration
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        // Enforce uniqueness of book_number within the school
+        $bookNumberExists = DB::table('library_books')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('book_number', $data['book_number'])
+            ->whereNull('deleted_at')
+            ->exists();
+        if ($bookNumberExists) {
+            return response()->json(['error' => 'Book number already exists in this school'], 422);
+        }
+
         // Validate and set currency_id and finance_account_id
         if (isset($data['finance_account_id']) && $data['finance_account_id']) {
             // Validate finance account belongs to organization
             $account = DB::table('finance_accounts')
                 ->where('id', $data['finance_account_id'])
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->first();
 
@@ -134,6 +151,7 @@ class LibraryBookController extends Controller
             $currency = DB::table('currencies')
                 ->where('id', $data['currency_id'])
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->first();
 
@@ -150,6 +168,7 @@ class LibraryBookController extends Controller
 
         $book = LibraryBook::create(array_merge($data, [
             'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
             'price' => $data['price'] ?? 0,
             'default_loan_days' => $data['default_loan_days'] ?? 30,
         ]));
@@ -160,6 +179,7 @@ class LibraryBookController extends Controller
                 'book_id' => $book->id,
                 'copy_code' => $book->isbn ? $book->isbn . '-' . ($i + 1) : null,
                 'status' => 'available',
+                'school_id' => $currentSchoolId,
             ]);
         }
 
@@ -170,14 +190,28 @@ class LibraryBookController extends Controller
 
     public function show(string $id)
     {
-        $book = LibraryBook::with(['copies', 'category', 'currency', 'financeAccount.currency'])->findOrFail($id);
+        $user = request()->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $currentSchoolId = request()->get('current_school_id');
+
+        $book = LibraryBook::with(['copies', 'category', 'currency', 'financeAccount.currency'])
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->findOrFail($id);
         return response()->json($book);
     }
 
     public function update(Request $request, string $id)
     {
-        $book = LibraryBook::findOrFail($id);
         $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        $book = LibraryBook::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->findOrFail($id);
 
         try {
             if (!$user->hasPermissionTo('library_books.update')) {
@@ -190,7 +224,7 @@ class LibraryBookController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'author' => 'nullable|string|max:255',
             'isbn' => 'nullable|string|max:100',
-            'book_number' => 'required|string|max:100|unique:library_books,book_number,' . $id,
+            'book_number' => 'required|string|max:100',
             'category' => 'nullable|string|max:150',
             'category_id' => 'required|uuid|exists:library_categories,id',
             'volume' => 'nullable|string|max:50',
@@ -201,15 +235,26 @@ class LibraryBookController extends Controller
             'finance_account_id' => 'required|uuid|exists:finance_accounts,id',
         ]);
 
-        $profile = DB::table('profiles')->where('id', $user->id)->first();
-
         if ($profile && $profile->organization_id) {
+            // Enforce uniqueness of book_number within school
+            $bookNumberExists = DB::table('library_books')
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->where('book_number', $data['book_number'])
+                ->where('id', '!=', $id)
+                ->whereNull('deleted_at')
+                ->exists();
+            if ($bookNumberExists) {
+                return response()->json(['error' => 'Book number already exists in this school'], 422);
+            }
+
             // Validate and set currency_id and finance_account_id
             if (isset($data['finance_account_id']) && $data['finance_account_id']) {
                 // Validate finance account belongs to organization
                 $account = DB::table('finance_accounts')
                     ->where('id', $data['finance_account_id'])
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
 
@@ -230,6 +275,7 @@ class LibraryBookController extends Controller
                 $currency = DB::table('currencies')
                     ->where('id', $data['currency_id'])
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
 
@@ -254,8 +300,14 @@ class LibraryBookController extends Controller
 
     public function destroy(Request $request, string $id)
     {
-        $book = LibraryBook::findOrFail($id);
         $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        $book = LibraryBook::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->findOrFail($id);
 
         try {
             if (!$user->hasPermissionTo('library_books.delete')) {
@@ -266,6 +318,6 @@ class LibraryBookController extends Controller
 
         $book->delete();
 
-        return response()->json(['message' => 'Book removed']);
+        return response()->noContent();
     }
 }

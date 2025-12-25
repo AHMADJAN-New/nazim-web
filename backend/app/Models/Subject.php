@@ -21,6 +21,7 @@ class Subject extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'name',
         'code',
         'description',
@@ -54,6 +55,14 @@ class Subject extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organization_id');
+    }
+
+    /**
+     * Get the school that owns the subject
+     */
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 
     /**

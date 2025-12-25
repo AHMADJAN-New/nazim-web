@@ -152,6 +152,7 @@ import {
 } from "@/components/LazyComponents";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PermissionRoute } from "@/components/PermissionRoute";
+import { AnyPermissionRoute } from "@/components/AnyPermissionRoute";
 import { HostelPermissionGuard } from "@/components/HostelPermissionGuard";
 
 // Optimized QueryClient with better caching and performance settings
@@ -901,59 +902,81 @@ const App = () => (
                     } />
                     {/* Document Management System Routes */}
                     <Route path="/dms/dashboard" element={
-                      <Suspense fallback={<DashboardSkeleton />}>
-                        <DmsDashboard />
-                      </Suspense>
+                      <AnyPermissionRoute permissions={['dms.incoming.read', 'dms.outgoing.read']}>
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <DmsDashboard />
+                        </Suspense>
+                      </AnyPermissionRoute>
                     } />
                     <Route path="/dms/incoming" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <IncomingDocuments />
-                      </Suspense>
+                      <PermissionRoute permission="dms.incoming.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <IncomingDocuments />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/dms/outgoing" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <OutgoingDocuments />
-                      </Suspense>
+                      <PermissionRoute permission="dms.outgoing.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <OutgoingDocuments />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/dms/issue-letter" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <IssueLetter />
-                      </Suspense>
+                      <PermissionRoute permission="dms.outgoing.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <IssueLetter />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/dms/templates" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <TemplatesPage />
-                      </Suspense>
+                      <PermissionRoute permission="dms.templates.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <TemplatesPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/dms/letterheads" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <LetterheadsPage />
-                      </Suspense>
+                      <PermissionRoute permission="dms.letterheads.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <LetterheadsPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/dms/letter-types" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <LetterTypesPage />
-                      </Suspense>
+                      <PermissionRoute permission="dms.letter_types.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <LetterTypesPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/dms/departments" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <DepartmentsPage />
-                      </Suspense>
+                      <PermissionRoute permission="dms.departments.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <DepartmentsPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/dms/archive" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <ArchiveSearchPage />
-                      </Suspense>
+                      <PermissionRoute permission="dms.archive.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ArchiveSearchPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/dms/reports" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <DmsReportsPage />
-                      </Suspense>
+                      <PermissionRoute permission="dms.reports.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <DmsReportsPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     <Route path="/dms/settings" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <DmsSettingsPage />
-                      </Suspense>
+                      <PermissionRoute permission="dms.settings.read">
+                        <Suspense fallback={<PageSkeleton />}>
+                          <DmsSettingsPage />
+                        </Suspense>
+                      </PermissionRoute>
                     } />
                     {/* Events Module Routes */}
                     <Route path="/events" element={

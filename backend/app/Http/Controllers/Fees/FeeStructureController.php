@@ -42,8 +42,11 @@ class FeeStructureController extends Controller
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $query = FeeStructure::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->with(['academicYear', 'classModel', 'classAcademicYear', 'currency']);
 
         if (!empty($validated['academic_year_id'])) {
@@ -97,6 +100,7 @@ class FeeStructureController extends Controller
 
         $validated = $request->validated();
         $validated['organization_id'] = $profile->organization_id;
+        $validated['school_id'] = $this->getCurrentSchoolId($request);
 
         $structure = FeeStructure::create($validated);
 
@@ -120,8 +124,11 @@ class FeeStructureController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = request()->get('current_school_id');
+
         $structure = FeeStructure::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->with(['academicYear', 'classModel', 'classAcademicYear', 'currency'])
             ->find($id);
 
@@ -149,8 +156,11 @@ class FeeStructureController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $structure = FeeStructure::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$structure) {
@@ -179,8 +189,11 @@ class FeeStructureController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = request()->get('current_school_id');
+
         $structure = FeeStructure::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$structure) {

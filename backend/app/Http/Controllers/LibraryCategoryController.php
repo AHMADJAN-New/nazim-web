@@ -37,20 +37,11 @@ class LibraryCategoryController extends Controller
             Log::info("Permission check for library_categories.read: " . $e->getMessage() . " - Allowing access during migration");
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $query = LibraryCategory::whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds);
-
-        // Filter by organization_id if provided
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([]);
-            }
-        }
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         $categories = $query->orderBy('display_order')->orderBy('name')->get();
 
@@ -84,15 +75,13 @@ class LibraryCategoryController extends Controller
             Log::info("Permission check for library_categories.read: " . $e->getMessage() . " - Allowing access during migration");
         }
 
-        $category = LibraryCategory::whereNull('deleted_at')->find($id);
+        $currentSchoolId = request()->get('current_school_id');
+        $category = LibraryCategory::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$category) {
-            return response()->json(['error' => 'Category not found'], 404);
-        }
-
-        // Check organization access
-        $orgIds = [$profile->organization_id];
-        if (!in_array($category->organization_id, $orgIds)) {
             return response()->json(['error' => 'Category not found'], 404);
         }
 
@@ -112,7 +101,7 @@ class LibraryCategoryController extends Controller
         }
 
         $request->validate([
-            'organization_id' => 'nullable|uuid|exists:organizations,id',
+            'organization_id' => 'nullable|uuid|exists:organizations,id', // ignored
             'name' => 'required|string|max:100',
             'code' => 'nullable|string|max:50',
             'description' => 'nullable|string',
@@ -135,21 +124,14 @@ class LibraryCategoryController extends Controller
             Log::info("Permission check for library_categories.create: " . $e->getMessage() . " - Allowing access during migration");
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        // Determine organization_id
-        $organizationId = $request->organization_id ?? $profile->organization_id;
-        
-        // All users can only create categories for their organization
-        if ($organizationId !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot create category for a non-accessible organization'], 403);
-        }
+        $organizationId = $profile->organization_id;
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Validate code uniqueness if provided
         if ($request->has('code') && $request->code) {
             $existing = LibraryCategory::where('code', $request->code)
                 ->where('organization_id', $organizationId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->first();
 
@@ -160,6 +142,7 @@ class LibraryCategoryController extends Controller
 
         $category = LibraryCategory::create([
             'organization_id' => $organizationId,
+            'school_id' => $currentSchoolId,
             'name' => $request->name,
             'code' => $request->code ?? null,
             'description' => $request->description ?? null,
@@ -182,7 +165,11 @@ class LibraryCategoryController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $category = LibraryCategory::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $category = LibraryCategory::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$category) {
             return response()->json(['error' => 'Category not found'], 404);
@@ -203,13 +190,7 @@ class LibraryCategoryController extends Controller
             Log::info("Permission check for library_categories.update: " . $e->getMessage() . " - Allowing access during migration");
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        // Check organization access
-        if (!in_array($category->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot update category from different organization'], 403);
-        }
+        // Org access enforced by query.
 
         $request->validate([
             'name' => 'sometimes|string|max:100',
@@ -223,6 +204,7 @@ class LibraryCategoryController extends Controller
         if ($request->has('code') && $request->code !== $category->code) {
             $existing = LibraryCategory::where('code', $request->code)
                 ->where('organization_id', $category->organization_id)
+                ->where('school_id', $category->school_id)
                 ->where('id', '!=', $id)
                 ->whereNull('deleted_at')
                 ->first();
@@ -255,7 +237,11 @@ class LibraryCategoryController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $category = LibraryCategory::whereNull('deleted_at')->find($id);
+        $currentSchoolId = request()->get('current_school_id');
+        $category = LibraryCategory::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$category) {
             return response()->json(['error' => 'Category not found'], 404);
@@ -276,17 +262,12 @@ class LibraryCategoryController extends Controller
             Log::info("Permission check for library_categories.delete: " . $e->getMessage() . " - Allowing access during migration");
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        // Check organization access
-        if (!in_array($category->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot delete category from different organization'], 403);
-        }
+        // Org access enforced by query.
 
         // Check if any books are using this category
         $booksCount = DB::table('library_books')
             ->where('category_id', $id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->count();
 
@@ -294,6 +275,7 @@ class LibraryCategoryController extends Controller
         if ($booksCount > 0) {
             DB::table('library_books')
                 ->where('category_id', $id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->update(['category_id' => null]);
         }

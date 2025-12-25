@@ -44,12 +44,25 @@ class ReportGenerationController extends Controller
         // Get organization from authenticated user
         $profile = Auth::user()?->profile;
         $organizationId = $profile?->organization_id;
+        $currentSchoolId = $request->get('current_school_id');
+
+        if (!$organizationId) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+        if (!$currentSchoolId) {
+            return response()->json(['error' => 'School context is required'], 403);
+        }
+
+        // Enforce school scoping: branding_id is the school id (school_branding)
+        if (!empty($validated['branding_id']) && $validated['branding_id'] !== $currentSchoolId) {
+            return response()->json(['error' => 'Cannot generate report for a different school'], 403);
+        }
 
         // Create config
         $config = ReportConfig::fromArray([
             'report_key' => $validated['report_key'],
             'report_type' => $validated['report_type'],
-            'branding_id' => $validated['branding_id'] ?? null,
+            'branding_id' => $validated['branding_id'] ?? $currentSchoolId,
             'layout_id' => $validated['layout_id'] ?? null,
             'report_template_id' => $validated['report_template_id'] ?? null,
             'template_name' => $validated['template_name'] ?? null,
