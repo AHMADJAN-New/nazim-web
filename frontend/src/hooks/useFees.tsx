@@ -128,7 +128,7 @@ export const useFeeStructures = (
 
       return structures;
     },
-    enabled: !!user && !!profile && !!profile.default_school_id,
+    enabled: !!user && !!profile,
     staleTime: FIVE_MINUTES,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -646,7 +646,7 @@ export const useFeePayments = (
 
       return payments;
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!profile && !!profile.default_school_id,
     staleTime: FIVE_MINUTES,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -1081,7 +1081,6 @@ export const useFeeReportDashboard = (filters?: {
       const params = {
         academic_year_id: filters?.academicYearId,
         class_academic_year_id: filters?.classAcademicYearId,
-        school_id: filters?.schoolId,
       };
 
       const data = await feeReportsApi.dashboard(params);
@@ -1122,7 +1121,6 @@ export const useStudentFees = (filters?: {
       const params = {
         academic_year_id: filters?.academicYearId,
         class_academic_year_id: filters?.classAcademicYearId,
-        school_id: filters?.schoolId,
         status: filters?.status,
         search: filters?.search,
         page: filters?.page,
@@ -1171,7 +1169,6 @@ export const useFeeDefaulters = (filters?: {
       const params = {
         academic_year_id: filters?.academicYearId,
         class_academic_year_id: filters?.classAcademicYearId,
-        school_id: filters?.schoolId,
         min_amount: filters?.minAmount,
       };
 
@@ -1210,7 +1207,6 @@ export const useFeeCollectionReport = (filters?: {
       const params = {
         academic_year_id: filters?.academicYearId,
         class_academic_year_id: filters?.classAcademicYearId,
-        school_id: filters?.schoolId,
         start_date: filters?.startDate,
         end_date: filters?.endDate,
       };

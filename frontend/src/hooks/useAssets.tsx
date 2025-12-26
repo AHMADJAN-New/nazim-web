@@ -38,8 +38,9 @@ export const useAssets = (filters?: AssetFilters, usePaginated?: boolean) => {
   const { data, isLoading, error } = useQuery<Asset[] | PaginatedResponse<AssetApi.Asset>>({
     queryKey: [
       'assets',
+      profile?.organization_id ?? null,
+      profile?.default_school_id ?? null,
       filters?.status,
-      filters?.schoolId,
       filters?.buildingId,
       filters?.roomId,
       filters?.search,
@@ -53,7 +54,7 @@ export const useAssets = (filters?: AssetFilters, usePaginated?: boolean) => {
       if (filters?.status) {
         params.status = filters.status;
       }
-      if (filters?.schoolId) params.school_id = filters.schoolId;
+      // Strict school scoping: do not allow client-selected school_id.
       if (filters?.buildingId) params.building_id = filters.buildingId;
       if (filters?.roomId) params.room_id = filters.roomId;
       if (filters?.search) params.search = filters.search;
@@ -118,9 +119,9 @@ export const useAssets = (filters?: AssetFilters, usePaginated?: boolean) => {
 };
 
 export const useAssetDetails = (assetId?: string) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   return useQuery<Asset | null>({
-    queryKey: ['assets', assetId],
+    queryKey: ['assets', assetId, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !assetId) return null;
       const apiAsset = await assetsApi.get(assetId);
@@ -135,7 +136,7 @@ export const useAssetStats = () => {
   const isEventUser = profile?.is_event_user === true;
   
   return useQuery<AssetApi.AssetStats>({
-    queryKey: ['asset-stats'],
+    queryKey: ['asset-stats', profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user) return { asset_count: 0, maintenance_cost_total: 0, status_counts: {}, total_purchase_value: 0 };
       return assetsApi.stats();
@@ -239,9 +240,9 @@ export const useAssignAsset = () => {
 };
 
 export const useAssetAssignments = (assetId?: string) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   return useQuery<AssetApi.AssetAssignment[]>({
-    queryKey: ['asset-assignments', assetId],
+    queryKey: ['asset-assignments', assetId, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !assetId) return [];
       return assetsApi.listAssignments(assetId);
@@ -318,9 +319,9 @@ export const useRemoveAssignment = () => {
 };
 
 export const useAssetMaintenance = (assetId?: string) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   return useQuery<AssetApi.AssetMaintenanceRecord[]>({
-    queryKey: ['asset-maintenance', assetId],
+    queryKey: ['asset-maintenance', assetId, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !assetId) return [];
       return assetsApi.listMaintenance(assetId);
@@ -381,9 +382,9 @@ export const useRemoveMaintenance = () => {
 };
 
 export const useAssetHistory = (assetId?: string) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   return useQuery<AssetApi.AssetHistory[]>({
-    queryKey: ['asset-history', assetId],
+    queryKey: ['asset-history', assetId, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !assetId) return [];
       return assetsApi.history(assetId);
@@ -431,7 +432,7 @@ export const useAssetsDashboard = () => {
   const { assets = [] } = useAssets(undefined, false);
 
   return useQuery<AssetsDashboard | null>({
-    queryKey: ['assets-dashboard', profile?.organization_id],
+    queryKey: ['assets-dashboard', profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile?.organization_id || !stats) return null;
 

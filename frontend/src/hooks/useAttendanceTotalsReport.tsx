@@ -29,13 +29,13 @@ export const useAttendanceTotalsReport = (
 
       const params: Record<string, string | string[] | undefined> = {
         organization_id: normalizedFilters.organizationId,
-        school_id: normalizedFilters.schoolId,
         academic_year_id: normalizedFilters.academicYearId,
         class_id: normalizedFilters.classId,
         status: normalizedFilters.status,
         date_from: normalizedFilters.dateFrom,
         date_to: normalizedFilters.dateTo,
       };
+      // Strict school scoping: do not allow client-selected school_id.
 
       if (normalizedFilters.classIds && normalizedFilters.classIds.length > 0) {
         params.class_ids = normalizedFilters.classIds;

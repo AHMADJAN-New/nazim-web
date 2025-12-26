@@ -168,7 +168,7 @@ export const useClassSubjectsForMultipleClasses = (classAcademicYearIds: string[
     const { user, profile } = useAuth();
 
     return useQuery<ClassSubject[]>({
-        queryKey: ['class-subjects-multiple', classAcademicYearIds.sort().join(','), organizationId || profile?.organization_id],
+        queryKey: ['class-subjects-multiple', classAcademicYearIds.sort().join(','), organizationId || profile?.organization_id, profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile || classAcademicYearIds.length === 0) return [];
 
@@ -219,7 +219,7 @@ export const useSubjectHistory = (subjectId: string) => {
     const { user, profile } = useAuth();
 
     return useQuery<ClassSubject[]>({
-        queryKey: ['subject-history', subjectId],
+        queryKey: ['subject-history', subjectId, profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile || !subjectId) return [];
 
@@ -740,7 +740,7 @@ export const useClassSubjectTemplates = (classId?: string, organizationId?: stri
     const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
     return useQuery({
-        queryKey: ['class-subject-templates', classId, organizationId, orgIds.join(',')],
+        queryKey: ['class-subject-templates', classId, organizationId, orgIds.join(','), profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile) {
                 throw new Error('User not authenticated');

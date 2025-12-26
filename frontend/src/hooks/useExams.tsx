@@ -46,7 +46,7 @@ export const useExams = (organizationId?: string) => {
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery<Exam[]>({
-    queryKey: ['exams', organizationId || profile?.organization_id, orgIds.join(',')],
+    queryKey: ['exams', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || orgsLoading) return [];
       try {
@@ -103,7 +103,7 @@ export const useExam = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<Exam | null>({
-    queryKey: ['exam', examId, profile?.organization_id],
+    queryKey: ['exam', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       try {
@@ -204,7 +204,7 @@ export const useExamClasses = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamClass[]>({
-    queryKey: ['exam-classes', examId, profile?.organization_id],
+    queryKey: ['exam-classes', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const apiExamClasses = await examClassesApi.list({ exam_id: examId });

@@ -239,8 +239,11 @@ export const useCreateTeacherSubjectAssignment = () => {
             }
 
             // Create assignment via Laravel API
+            // Strict school scoping: do not allow client-selected school_id.
+            // The backend derives school from current school context.
+            const { school_id: _ignoredSchoolId, organization_id: _ignoredOrgId, ...rest } = assignmentData;
             const assignment = await teacherSubjectAssignmentsApi.create({
-                ...assignmentData,
+                ...rest,
                 organization_id: organizationId,
             });
 

@@ -15,7 +15,7 @@ export const useScheduleSlots = (organizationId?: string, academicYearId?: strin
     const { data: profile } = useProfile();
 
     return useQuery<ScheduleSlot[]>({
-        queryKey: ['schedule-slots', organizationId || profile?.organization_id, academicYearId],
+        queryKey: ['schedule-slots', organizationId || profile?.organization_id, academicYearId, profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile) return [];
 
@@ -40,7 +40,7 @@ export const useScheduleSlot = (id: string) => {
     const { data: profile } = useProfile();
 
     return useQuery<ScheduleSlot | null>({
-        queryKey: ['schedule-slot', id],
+        queryKey: ['schedule-slot', id, profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile || !id) return null;
 

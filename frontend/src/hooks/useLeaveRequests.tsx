@@ -33,7 +33,6 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
       const params: Record<string, any> = {
         student_id: filters.studentId,
         class_id: filters.classId,
-        school_id: filters.schoolId,
         status: filters.status,
         month: filters.month,
         year: filters.year,
@@ -42,6 +41,7 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
         page,
         per_page: pageSize,
       };
+      // Strict school scoping: do not allow client-selected school_id.
       const response = await leaveRequestsApi.list(params);
       if (response && typeof response === 'object' && 'data' in response && 'current_page' in response) {
         const paginated = response as any;

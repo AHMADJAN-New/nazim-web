@@ -39,7 +39,14 @@ export const useAttendanceSessions = (filters: AttendanceFilters = {}, usePagina
   });
 
   const { data, isLoading, error } = useQuery<AttendanceSession[] | PaginatedResponse<AttendanceApi.AttendanceSession>>({
-    queryKey: ['attendance-sessions', profile?.organization_id ?? null, filters, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+    queryKey: [
+      'attendance-sessions',
+      profile?.organization_id ?? null,
+      profile?.default_school_id ?? null,
+      filters,
+      usePaginated ? page : undefined,
+      usePaginated ? pageSize : undefined,
+    ],
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -49,8 +56,8 @@ export const useAttendanceSessions = (filters: AttendanceFilters = {}, usePagina
         status: filters.status,
         date_from: filters.dateFrom,
         date_to: filters.dateTo,
-        school_id: filters.schoolId,
       };
+      // Strict school scoping: do not allow client-selected school_id.
 
       if (usePaginated) {
         params.page = page;
@@ -115,7 +122,7 @@ export const useAttendanceSessions = (filters: AttendanceFilters = {}, usePagina
 export const useAttendanceSession = (id?: string) => {
   const { user, profile } = useAuth();
   const { data, isLoading, error, refetch } = useQuery<AttendanceSession | undefined>({
-    queryKey: ['attendance-session', id, profile?.organization_id ?? null],
+    queryKey: ['attendance-session', id, profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !id) return undefined;
       const apiSession = await attendanceSessionsApi.get(id);

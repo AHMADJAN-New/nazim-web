@@ -16,7 +16,7 @@ export const useWatermarks = (brandingId: string | null | undefined) => {
   const { t } = useLanguage();
 
   return useQuery<Watermark[]>({
-    queryKey: ['watermarks', brandingId, profile?.organization_id],
+    queryKey: ['watermarks', brandingId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !brandingId) return [];
 
@@ -39,7 +39,7 @@ export const useWatermark = (watermarkId: string | null | undefined) => {
   const { user, profile } = useAuth();
 
   return useQuery<Watermark>({
-    queryKey: ['watermark', watermarkId],
+    queryKey: ['watermark', watermarkId, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !watermarkId) {
         throw new Error('Watermark ID is required');

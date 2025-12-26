@@ -96,7 +96,7 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean) => 
         throw error;
       }
     },
-    enabled: !!user && !!profile && !!profile.default_school_id,
+    enabled: !!user && !!profile,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -215,12 +215,11 @@ export const useStudentStats = (organizationId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<StudentApi.StudentStats>({
-    queryKey: ['student-stats', organizationId ?? profile?.organization_id ?? null],
+    queryKey: ['student-stats', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) {
         return { total: 0, male: 0, female: 0, orphans: 0, feePending: 0 };
       }
-
       const effectiveOrgId = organizationId || profile.organization_id;
       const stats = await studentsApi.stats({
         organization_id: effectiveOrgId || undefined,
@@ -243,7 +242,7 @@ export const useStudentDocuments = (studentId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<StudentApi.StudentDocument[]>({
-    queryKey: ['student-documents', studentId],
+    queryKey: ['student-documents', studentId, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !studentId) {
         return [];
@@ -329,7 +328,7 @@ export const useStudentEducationalHistory = (studentId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<StudentApi.StudentEducationalHistory[]>({
-    queryKey: ['student-educational-history', studentId],
+    queryKey: ['student-educational-history', studentId, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !studentId) {
         return [];
@@ -355,7 +354,6 @@ export const useCreateStudentEducationalHistory = () => {
 
       const history = await studentEducationalHistoryApi.create(payload.student_id, {
         institution_name: payload.institution_name,
-        school_id: payload.school_id,
         academic_year: payload.academic_year,
         grade_level: payload.grade_level,
         start_date: payload.start_date,
@@ -430,7 +428,7 @@ export const useStudentDisciplineRecords = (studentId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<StudentApi.StudentDisciplineRecord[]>({
-    queryKey: ['student-discipline-records', studentId],
+    queryKey: ['student-discipline-records', studentId, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !studentId) {
         return [];
@@ -457,7 +455,6 @@ export const useCreateStudentDisciplineRecord = () => {
       const record = await studentDisciplineRecordsApi.create(payload.student_id, {
         incident_date: payload.incident_date,
         incident_type: payload.incident_type,
-        school_id: payload.school_id,
         description: payload.description,
         severity: payload.severity,
         action_taken: payload.action_taken,

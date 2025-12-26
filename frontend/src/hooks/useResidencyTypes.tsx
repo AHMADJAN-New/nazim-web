@@ -39,7 +39,7 @@ export const useResidencyTypes = (organizationId?: string) => {
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery({
-    queryKey: ['residency-types', organizationId || profile?.organization_id, orgIds.join(',')],
+    queryKey: ['residency-types', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || orgsLoading) return [];
 

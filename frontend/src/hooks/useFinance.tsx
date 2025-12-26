@@ -99,7 +99,6 @@ export const useFinanceAccounts = (params?: { schoolId?: string; type?: string; 
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await financeAccountsApi.list({
-                school_id: params?.schoolId,
                 type: params?.type,
                 is_active: params?.isActive,
             });
@@ -182,7 +181,6 @@ export const useIncomeCategories = (params?: { schoolId?: string; isActive?: boo
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await incomeCategoriesApi.list({
-                school_id: params?.schoolId,
                 is_active: params?.isActive,
             });
             return (data as FinanceApi.IncomeCategory[]).map(mapIncomeCategoryApiToDomain);
@@ -264,7 +262,6 @@ export const useExpenseCategories = (params?: { schoolId?: string; isActive?: bo
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await expenseCategoriesApi.list({
-                school_id: params?.schoolId,
                 is_active: params?.isActive,
             });
             return (data as FinanceApi.ExpenseCategory[]).map(mapExpenseCategoryApiToDomain);
@@ -346,7 +343,6 @@ export const useFinanceProjects = (params?: { schoolId?: string; status?: string
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await financeProjectsApi.list({
-                school_id: params?.schoolId,
                 status: params?.status,
                 is_active: params?.isActive,
             });
@@ -526,7 +522,6 @@ export const useIncomeEntries = (params?: {
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await incomeEntriesApi.list({
-                school_id: params?.schoolId,
                 account_id: params?.accountId,
                 income_category_id: params?.incomeCategoryId,
                 project_id: params?.projectId,
@@ -635,7 +630,6 @@ export const useExpenseEntries = (params?: {
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await expenseEntriesApi.list({
-                school_id: params?.schoolId,
                 account_id: params?.accountId,
                 expense_category_id: params?.expenseCategoryId,
                 project_id: params?.projectId,
@@ -867,7 +861,6 @@ export const useIncomeVsExpenseReport = (startDate: string, endDate: string, sch
             const data = await financeReportsApi.incomeVsExpense({
                 start_date: startDate,
                 end_date: endDate,
-                school_id: schoolId,
             });
             return mapIncomeVsExpenseReportApiToDomain(data as FinanceApi.IncomeVsExpenseReport);
         },
