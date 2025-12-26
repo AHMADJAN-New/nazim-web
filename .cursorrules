@@ -221,24 +221,104 @@ await apiClient.organizations.delete(id);
 ### Query Patterns
 ```typescript
 // Use TanStack Query for data fetching with Laravel API
+// CRITICAL: queryKey MUST include both organization_id AND default_school_id
 const { data, isLoading, error } = useQuery({
-  queryKey: ['students', organizationId, page, search],
-  queryFn: () => apiClient.students.list({ organizationId, page, search }),
+  queryKey: ['students', profile?.organization_id, profile?.default_school_id ?? null, page, search],
+  queryFn: () => apiClient.students.list({ 
+    organization_id: profile.organization_id,
+    school_id: profile.default_school_id,
+    page, 
+    search 
+  }),
   staleTime: 5 * 60 * 1000, // 5 minutes
-  enabled: !!organizationId, // Only fetch when organizationId is available
+  enabled: !!profile?.organization_id && !!profile?.default_school_id, // Only fetch when both are available
 });
 ```
 
 ## Multi-Tenancy Architecture
 
-**CRITICAL: This is a multi-tenant SaaS application. ALL code must follow organization isolation patterns.**
+**CRITICAL: This is a multi-tenant SaaS application. ALL code must follow organization AND school isolation patterns.**
 
 ### Core Principles
 - **Every tenant table MUST have `organization_id` column**
+- **Every tenant table MUST have `school_id` column** (for school-scoped resources)
 - **RLS policies MUST enforce organization isolation**
-- **Frontend hooks MUST filter by organization_id**
+- **Frontend hooks MUST filter by both `organization_id` AND `default_school_id`**
 - **Storage paths MUST include organization_id**
 - **All users MUST belong to an organization (organization_id is required)**
+- **All users MUST have a default school (default_school_id is required for school-scoped operations)**
+
+### School-Level Isolation
+
+**CRITICAL: In addition to organization-level isolation, the application enforces school-level isolation. Each organization can have multiple schools, and users are scoped to their default school.**
+
+#### Key Requirements
+- **All school-scoped resources MUST include `school_id` column**
+- **Frontend query keys MUST include `profile?.default_school_id`**
+- **API calls MUST pass `school_id` parameter**
+- **Backend controllers MUST use `getCurrentSchoolId()` method**
+- **Backend queries MUST filter by both `organization_id` AND `school_id`**
+
+#### Frontend Query Key Pattern
+```typescript
+// ✅ CORRECT: Include both organization_id and default_school_id
+queryKey: ['resource-name', profile?.organization_id, profile?.default_school_id ?? null, ...otherKeys]
+
+// ❌ WRONG: Missing default_school_id
+queryKey: ['resource-name', profile?.organization_id, ...otherKeys]
+```
+
+#### Frontend API Call Pattern
+```typescript
+// ✅ CORRECT: Pass both organization_id and school_id
+const data = await apiClient.resource.list({
+  organization_id: profile.organization_id,
+  school_id: profile.default_school_id,
+});
+
+// ❌ WRONG: Missing school_id
+const data = await apiClient.resource.list({
+  organization_id: profile.organization_id,
+});
+```
+
+#### Backend Controller Pattern
+```php
+// ✅ CORRECT: Use getCurrentSchoolId() and filter by both
+public function index(Request $request)
+{
+    $user = $request->user();
+    $profile = DB::table('profiles')->where('id', $user->id)->first();
+    
+    if (!$profile || !$profile->organization_id) {
+        return response()->json(['error' => 'User must be assigned to an organization'], 403);
+    }
+    
+    // Get current school from middleware context
+    $currentSchoolId = $this->getCurrentSchoolId($request);
+    
+    $query = YourModel::whereNull('deleted_at')
+        ->where('organization_id', $profile->organization_id)
+        ->where('school_id', $currentSchoolId);
+    
+    // ... rest of controller logic
+}
+```
+
+#### Backend getCurrentSchoolId() Method
+All controllers extend the base `Controller` class which provides:
+```php
+protected function getCurrentSchoolId(Request $request): string
+{
+    $schoolId = $request->get('current_school_id');
+    if (!is_string($schoolId) || $schoolId === '') {
+        abort(403, 'School context is required');
+    }
+    return $schoolId;
+}
+```
+
+**Note**: The `current_school_id` is injected by the `school.context` middleware. Controllers should NEVER trust client-provided `school_id` parameters.
 
 ### Database Schema - Multi-Tenancy
 
@@ -346,43 +426,49 @@ export interface YourResource {
   // other fields...
 }
 
-// ALWAYS filter by user's organization
+// ALWAYS filter by user's organization AND school
 export const useYourResources = () => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
 
   return useQuery({
-    queryKey: ['your-resources', profile?.organization_id],
+    // CRITICAL: queryKey MUST include both organization_id AND default_school_id
+    queryKey: ['your-resources', profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
-      if (!user || !profile || !profile.organization_id) return [];
+      if (!user || !profile || !profile.organization_id || !profile.default_school_id) return [];
 
-      // Users can only see their organization's data
-      return await apiClient.yourResources.list({ organizationId: profile.organization_id });
+      // Users can only see their organization's and school's data
+      return await apiClient.yourResources.list({ 
+        organization_id: profile.organization_id,
+        school_id: profile.default_school_id,
+      });
     },
-    enabled: !!user && !!profile && !!profile.organization_id,
+    enabled: !!user && !!profile && !!profile.organization_id && !!profile.default_school_id,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 };
 
-// ALWAYS validate organization_id in mutations
+// ALWAYS validate organization_id AND school_id in mutations
 export const useCreateYourResource = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { data: profile } = useProfile();
 
   return useMutation({
-    mutationFn: async (resourceData: { /* fields */; organization_id?: string }) => {
-      if (!user || !profile || !profile.organization_id) {
-        throw new Error('User must be assigned to an organization');
+    mutationFn: async (resourceData: { /* fields */; organization_id?: string; school_id?: string }) => {
+      if (!user || !profile || !profile.organization_id || !profile.default_school_id) {
+        throw new Error('User must be assigned to an organization and school');
       }
 
-      // Always use user's organization_id (ignore provided organization_id for security)
+      // Always use user's organization_id and school_id (ignore provided values for security)
       const organizationId = profile.organization_id;
+      const schoolId = profile.default_school_id;
 
       return await apiClient.yourResources.create({
         ...resourceData,
         organization_id: organizationId,
+        school_id: schoolId,
       });
     },
     onSuccess: () => {
@@ -1333,37 +1419,61 @@ it('should require organization_id for all operations', async () => {
 
 **ALWAYS verify:**
 - [ ] Table has `organization_id` column
+- [ ] Table has `school_id` column (for school-scoped resources)
 - [ ] `organization_id` has foreign key to `organizations` table
+- [ ] `school_id` has foreign key to `school_branding` table (for school-scoped resources)
 - [ ] Index created on `organization_id`
+- [ ] Index created on `school_id` (for school-scoped resources)
 - [ ] RLS enabled on table
 - [ ] Laravel middleware validates `organization_id` in controllers
+- [ ] Laravel controllers use `getCurrentSchoolId()` method (NEVER trust client-provided `school_id`)
+- [ ] Frontend hook query key includes `profile?.default_school_id`
 - [ ] Frontend hook filters by `organization_id`
+- [ ] Frontend API calls pass both `organization_id` and `school_id`
 - [ ] Mutations validate `organization_id` matches user's organization
+- [ ] Mutations validate `school_id` matches user's default school
 - [ ] Storage paths include `organization_id`
 - [ ] Laravel controllers enforce organization isolation
+- [ ] Laravel controllers enforce school isolation (filter by `school_id`)
 - [ ] All users have `organization_id` (no NULL values)
+- [ ] All users have `default_school_id` (for school-scoped operations)
 - [ ] Users can only access their own organization's data
+- [ ] Users can only access their own school's data
 
 ### Common Mistakes to Avoid
 
 ❌ **DON'T:**
 - Create tables without `organization_id`
+- Create school-scoped tables without `school_id`
 - Allow NULL values for `organization_id` in tenant tables
+- Allow NULL values for `school_id` in school-scoped tables
 - Query without organization filtering
+- Query without school filtering (for school-scoped resources)
 - Allow organization_id changes (users cannot change their organization)
+- Trust client-provided `school_id` (always use `getCurrentSchoolId()`)
 - Store files without organization_id in path
 - Trust client-side organization_id validation only
 - Create users without assigning them to an organization
+- Create query keys without `default_school_id` (for school-scoped resources)
+- Make API calls without passing `school_id` (for school-scoped resources)
 
 ✅ **DO:**
 - Always add `organization_id` to tenant tables (NOT NULL)
+- Always add `school_id` to school-scoped tables (NOT NULL)
 - Always enforce organization_id in Laravel middleware and controllers
-- Always filter queries by organization_id
+- Always enforce school_id in Laravel controllers using `getCurrentSchoolId()`
+- Always filter queries by both `organization_id` AND `school_id`
+- Always include `profile?.default_school_id` in frontend query keys
+- Always pass both `organization_id` and `school_id` in API calls
 - Always validate organization_id in mutations (must match user's organization)
+- Always validate school_id in mutations (must match user's default school)
 - Always include organization_id in storage paths
 - Always test organization isolation
+- Always test school isolation
 - Always require organization_id when creating users
+- Always require default_school_id for school-scoped operations
 - Always validate organization_id server-side (never trust client-side only)
+- Always validate school_id server-side using `getCurrentSchoolId()` (never trust client-provided)
 
 ## UI/UX Guidelines
 
@@ -3208,7 +3318,9 @@ const { t, isRTL, language } = useLanguage();
 - Always use migrations for schema changes
 - Use descriptive migration names: `YYYY_MM_DD_HHMMSS_description.php`
 - Include `organization_id` in tenant table migrations
+- Include `school_id` in school-scoped table migrations
 - Create indexes on `organization_id` for performance
+- Create indexes on `school_id` for performance (for school-scoped resources)
 - **REQUIRED: ALWAYS use UUIDs for primary keys**
   ```php
   $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
@@ -3234,7 +3346,9 @@ return response()->json([
 ### Authentication Middleware
 - Use `auth:sanctum` middleware for protected routes
 - Use `EnsureOrganizationAccess` middleware for organization-scoped routes
+- Use `school.context` middleware for school-scoped routes (injects `current_school_id` into request)
 - Validate organization_id in controllers, not just middleware
+- **CRITICAL: Always use `getCurrentSchoolId($request)` in controllers - NEVER trust client-provided `school_id`**
 
 ### Permission Checking (Spatie)
 
@@ -3267,6 +3381,14 @@ public function index(Request $request)
         \Log::warning("Permission check failed for your_resource.read: " . $e->getMessage());
         return response()->json(['error' => 'This action is unauthorized'], 403);
     }
+
+    // CRITICAL: Get current school from middleware context (NEVER trust client-provided school_id)
+    $currentSchoolId = $this->getCurrentSchoolId($request);
+
+    // Filter by both organization_id AND school_id
+    $query = YourModel::whereNull('deleted_at')
+        ->where('organization_id', $profile->organization_id)
+        ->where('school_id', $currentSchoolId);
 
     // ... rest of controller logic
 }

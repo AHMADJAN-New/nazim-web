@@ -27,7 +27,7 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({ initialPage: 1, initialPageSize: 10 });
 
   const { data, isLoading, error } = useQuery<PaginatedResponse<LeaveRequest> | LeaveRequest[]>({
-    queryKey: ['leave-requests', profile?.organization_id ?? null, filters, page, pageSize],
+    queryKey: ['leave-requests', profile?.organization_id ?? null, profile?.default_school_id ?? null, filters, page, pageSize],
     queryFn: async () => {
       if (!user || !profile) return [] as LeaveRequest[];
       const params: Record<string, any> = {
@@ -93,7 +93,7 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
 export const useLeaveRequest = (id?: string) => {
   const { user, profile } = useAuth();
   const { data, isLoading, error, refetch } = useQuery<LeaveRequest | undefined>({
-    queryKey: ['leave-request', id, profile?.organization_id ?? null],
+    queryKey: ['leave-request', id, profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !id) return undefined;
       const response = await leaveRequestsApi.get(id);

@@ -33,7 +33,12 @@ export const useStudentDuplicateCheck = () => {
             if (!user || !profile) return [];
 
             // Fetch duplicate check results from Laravel API
-            const results = await studentsApi.checkDuplicates(payload);
+            // Backend automatically scopes by organization_id and school_id via middleware
+            const results = await studentsApi.checkDuplicates({
+                ...payload,
+                organization_id: profile.organization_id,
+                school_id: profile.default_school_id,
+            });
             return results as DuplicateRecord[];
         },
     });

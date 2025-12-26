@@ -35,7 +35,7 @@ export const useStudentAdmissions = (
   const filterKey = filters ? JSON.stringify(filters) : undefined;
 
   const { data, isLoading, error } = useQuery<StudentAdmission[] | PaginatedResponse<StudentAdmissionApi.StudentAdmission>>({
-    queryKey: ['student-admissions', organizationId ?? profile?.organization_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined, filterKey],
+    queryKey: ['student-admissions', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined, filterKey],
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -256,7 +256,7 @@ export const useAdmissionStats = (organizationId?: string) => {
   const { user, profile } = useAuth();
 
   const { data: stats, isLoading } = useQuery<AdmissionStats>({
-    queryKey: ['student-admissions-stats', organizationId ?? profile?.organization_id ?? null],
+    queryKey: ['student-admissions-stats', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) {
         return { total: 0, active: 0, pending: 0, boarders: 0 };

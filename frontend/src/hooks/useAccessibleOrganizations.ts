@@ -6,7 +6,7 @@ export const useAccessibleOrganizations = () => {
   const { user, profile, loading } = useAuth();
 
   const query = useQuery({
-    queryKey: ['accessible-organizations', user?.id, profile?.organization_id, profile?.role],
+    queryKey: ['accessible-organizations', user?.id, profile?.organization_id, profile?.default_school_id ?? null, profile?.role],
     queryFn: async () => {
       if (!user || !profile) {
         return {

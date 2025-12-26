@@ -14,7 +14,7 @@ export const useGrades = (organizationId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<Grade[]>({
-    queryKey: ['grades', organizationId || profile?.organization_id],
+    queryKey: ['grades', organizationId || profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) return [];
 

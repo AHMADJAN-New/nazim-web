@@ -14,7 +14,7 @@ export const usePermissions = () => {
   const { profile } = useAuth();
 
   return useQuery<Permission[]>({
-    queryKey: ['permissions', profile?.organization_id],
+    queryKey: ['permissions', profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       // Laravel API automatically filters permissions by user's organization
       // Returns: global permissions (organization_id = NULL) + user's org permissions
@@ -39,7 +39,7 @@ export const useRolePermissions = (role: string) => {
   const { profile } = useAuth();
 
   return useQuery({
-    queryKey: ['role-permissions', role, profile?.organization_id],
+    queryKey: ['role-permissions', role, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!role || !profile?.organization_id) return { role, permissions: [] };
 
@@ -66,7 +66,7 @@ export const useRoles = () => {
   const { profile } = useAuth();
 
   return useQuery<Role[]>({
-    queryKey: ['roles', profile?.organization_id],
+    queryKey: ['roles', profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       const roles = await rolesApi.list();
       return (roles as Role[]);
@@ -197,7 +197,7 @@ export const useUserPermissions = () => {
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery({
-    queryKey: ['user-permissions', profile?.organization_id, profile?.id, orgIds.join(',')],
+    queryKey: ['user-permissions', profile?.organization_id, profile?.default_school_id ?? null, profile?.id, orgIds.join(',')],
     queryFn: async () => {
       // Require organization_id - backend enforces this
       if (!profile?.organization_id) return [];
@@ -451,7 +451,7 @@ export const useUserPermissionsForUser = (userId: string) => {
   const { data: allPermissions } = usePermissions();
 
   return useQuery({
-    queryKey: ['user-permissions-for-user', userId, profile?.organization_id],
+    queryKey: ['user-permissions-for-user', userId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!userId) {
         return { userPermissions: [], rolePermissions: [], allPermissions: [] };
@@ -660,7 +660,7 @@ export const useUserRoles = (userId: string) => {
   const { profile } = useAuth();
 
   return useQuery({
-    queryKey: ['user-roles', userId, profile?.organization_id],
+    queryKey: ['user-roles', userId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!userId || !profile?.organization_id) {
         return { user_id: userId, roles: [] };

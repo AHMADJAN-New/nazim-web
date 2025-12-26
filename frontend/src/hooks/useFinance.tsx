@@ -95,7 +95,7 @@ export const useFinanceAccounts = (params?: { schoolId?: string; type?: string; 
     const { user, profile } = useAuth();
 
     return useQuery<FinanceAccount[]>({
-        queryKey: ['finance-accounts', profile?.organization_id, params],
+        queryKey: ['finance-accounts', profile?.organization_id, profile?.default_school_id ?? null, params],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await financeAccountsApi.list({
@@ -177,7 +177,7 @@ export const useIncomeCategories = (params?: { schoolId?: string; isActive?: boo
     const { user, profile } = useAuth();
 
     return useQuery<IncomeCategory[]>({
-        queryKey: ['income-categories', profile?.organization_id, params],
+        queryKey: ['income-categories', profile?.organization_id, profile?.default_school_id ?? null, params],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await incomeCategoriesApi.list({
@@ -258,7 +258,7 @@ export const useExpenseCategories = (params?: { schoolId?: string; isActive?: bo
     const { user, profile } = useAuth();
 
     return useQuery<ExpenseCategory[]>({
-        queryKey: ['expense-categories', profile?.organization_id, params],
+        queryKey: ['expense-categories', profile?.organization_id, profile?.default_school_id ?? null, params],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await expenseCategoriesApi.list({
@@ -339,7 +339,7 @@ export const useFinanceProjects = (params?: { schoolId?: string; status?: string
     const { user, profile } = useAuth();
 
     return useQuery<FinanceProject[]>({
-        queryKey: ['finance-projects', profile?.organization_id, params],
+        queryKey: ['finance-projects', profile?.organization_id, profile?.default_school_id ?? null, params],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await financeProjectsApi.list({
@@ -424,7 +424,7 @@ export const useDonors = (params?: { type?: string; isActive?: boolean; search?:
     const { user, profile } = useAuth();
 
     return useQuery<Donor[]>({
-        queryKey: ['donors', profile?.organization_id, params],
+        queryKey: ['donors', profile?.organization_id, profile?.default_school_id ?? null, params],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await donorsApi.list({
@@ -518,7 +518,7 @@ export const useIncomeEntries = (params?: {
     const { user, profile } = useAuth();
 
     return useQuery<IncomeEntry[]>({
-        queryKey: ['income-entries', profile?.organization_id, params],
+        queryKey: ['income-entries', profile?.organization_id, profile?.default_school_id ?? null, params],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await incomeEntriesApi.list({
@@ -626,7 +626,7 @@ export const useExpenseEntries = (params?: {
     const { user, profile } = useAuth();
 
     return useQuery<ExpenseEntry[]>({
-        queryKey: ['expense-entries', profile?.organization_id, params],
+        queryKey: ['expense-entries', profile?.organization_id, profile?.default_school_id ?? null, params],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await expenseEntriesApi.list({
@@ -823,7 +823,7 @@ export const useFinanceDashboard = () => {
     const { user, profile } = useAuth();
 
     return useQuery<FinanceDashboard | null>({
-        queryKey: ['finance-dashboard', profile?.organization_id],
+        queryKey: ['finance-dashboard', profile?.organization_id, profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return null;
             const data = await financeReportsApi.dashboard();
@@ -839,7 +839,7 @@ export const useDailyCashbook = (date: string, accountId?: string) => {
     const { user, profile } = useAuth();
 
     return useQuery<DailyCashbook | null>({
-        queryKey: ['daily-cashbook', profile?.organization_id, date, accountId],
+        queryKey: ['daily-cashbook', profile?.organization_id, profile?.default_school_id ?? null, date, accountId],
         queryFn: async () => {
             if (!user || !profile?.organization_id || !date) return null;
             const data = await financeReportsApi.dailyCashbook({ date, account_id: accountId });
@@ -855,7 +855,7 @@ export const useIncomeVsExpenseReport = (startDate: string, endDate: string, sch
     const { user, profile } = useAuth();
 
     return useQuery<IncomeVsExpenseReport | null>({
-        queryKey: ['income-vs-expense-report', profile?.organization_id, startDate, endDate, schoolId],
+        queryKey: ['income-vs-expense-report', profile?.organization_id, profile?.default_school_id ?? null, startDate, endDate, schoolId],
         queryFn: async () => {
             if (!user || !profile?.organization_id || !startDate || !endDate) return null;
             const data = await financeReportsApi.incomeVsExpense({
@@ -874,7 +874,7 @@ export const useProjectSummaryReport = (status?: string) => {
     const { user, profile } = useAuth();
 
     return useQuery<ProjectSummaryReport | null>({
-        queryKey: ['project-summary-report', profile?.organization_id, status],
+        queryKey: ['project-summary-report', profile?.organization_id, profile?.default_school_id ?? null, status],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return null;
             const data = await financeReportsApi.projectSummary({ status });
@@ -890,7 +890,7 @@ export const useDonorSummaryReport = (startDate?: string, endDate?: string) => {
     const { user, profile } = useAuth();
 
     return useQuery<DonorSummaryReport | null>({
-        queryKey: ['donor-summary-report', profile?.organization_id, startDate, endDate],
+        queryKey: ['donor-summary-report', profile?.organization_id, profile?.default_school_id ?? null, startDate, endDate],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return null;
             const data = await financeReportsApi.donorSummary({
@@ -909,7 +909,7 @@ export const useAccountBalancesReport = () => {
     const { user, profile } = useAuth();
 
     return useQuery<AccountBalancesReport | null>({
-        queryKey: ['account-balances-report', profile?.organization_id],
+        queryKey: ['account-balances-report', profile?.organization_id, profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return null;
             const data = await financeReportsApi.accountBalances();

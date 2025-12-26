@@ -250,7 +250,7 @@ export const useScanAttendance = (sessionId?: string) => {
 export const useAttendanceRoster = (classIds?: string[], academicYearId?: string) => {
   const { user, profile } = useAuth();
   return useQuery({
-    queryKey: ['attendance-roster', classIds?.join(','), academicYearId, profile?.organization_id ?? null],
+    queryKey: ['attendance-roster', classIds?.join(','), academicYearId, profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !classIds || classIds.length === 0) return [];
       return attendanceSessionsApi.roster({ class_ids: classIds, academic_year_id: academicYearId });
@@ -262,7 +262,7 @@ export const useAttendanceRoster = (classIds?: string[], academicYearId?: string
 export const useAttendanceScanFeed = (sessionId?: string, limit: number = 25, enabled: boolean = true) => {
   const { user, profile } = useAuth();
   return useQuery<AttendanceRecord[]>({
-    queryKey: ['attendance-scan-feed', sessionId, limit, profile?.organization_id ?? null],
+    queryKey: ['attendance-scan-feed', sessionId, limit, profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !sessionId) return [];
       const feed = await attendanceSessionsApi.scanFeed(sessionId, { limit });

@@ -12,7 +12,7 @@ export const useHostelOverview = (organizationId?: string) => {
   const isEventUser = currentProfile?.is_event_user === true;
 
   return useQuery<HostelOverview>({
-    queryKey: ['hostel-overview', organizationId || currentProfile?.organization_id],
+    queryKey: ['hostel-overview', organizationId || currentProfile?.organization_id, currentProfile?.default_school_id ?? null],
     queryFn: async () => {
       const orgId = organizationId || currentProfile?.organization_id || undefined;
       const payload = await hostelApi.overview({ organization_id: orgId });

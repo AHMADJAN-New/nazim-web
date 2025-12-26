@@ -1558,8 +1558,8 @@ export const studentsApi = {
     return apiClient.get('/students/stats', params);
   },
 
-  autocomplete: async () => {
-    return apiClient.get('/students/autocomplete');
+  autocomplete: async (params?: { organization_id?: string; school_id?: string }) => {
+    return apiClient.get('/students/autocomplete', params);
   },
 
   checkDuplicates: async (data: {

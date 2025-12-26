@@ -101,7 +101,7 @@ export const useTeacherSubjectAssignments = (organizationId?: string, teacherId?
     });
 
     const { data, isLoading, error } = useQuery<TeacherSubjectAssignment[] | PaginatedResponse<any>>({
-        queryKey: ['teacher-subject-assignments', organizationId || profile?.organization_id, teacherId, academicYearId, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+        queryKey: ['teacher-subject-assignments', organizationId || profile?.organization_id, profile?.default_school_id ?? null, teacherId, academicYearId, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
         queryFn: async () => {
             if (!user || !profile) return [];
 

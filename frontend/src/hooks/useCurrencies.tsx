@@ -41,7 +41,7 @@ export const useCurrencies = (params?: { isActive?: boolean; isBase?: boolean })
     const { user, profile } = useAuth();
 
     return useQuery<Currency[]>({
-        queryKey: ['currencies', profile?.organization_id, params],
+        queryKey: ['currencies', profile?.organization_id, profile?.default_school_id ?? null, params],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await currenciesApi.list({
@@ -119,7 +119,7 @@ export const useCurrency = (id: string) => {
     const { user, profile } = useAuth();
 
     return useQuery<Currency | null>({
-        queryKey: ['currency', id, profile?.organization_id],
+        queryKey: ['currency', id, profile?.organization_id, profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile?.organization_id || !id) return null;
             const data = await currenciesApi.get(id);
@@ -144,7 +144,7 @@ export const useExchangeRates = (params?: {
     const { user, profile } = useAuth();
 
     return useQuery<ExchangeRate[]>({
-        queryKey: ['exchange-rates', profile?.organization_id, params],
+        queryKey: ['exchange-rates', profile?.organization_id, profile?.default_school_id ?? null, params],
         queryFn: async () => {
             if (!user || !profile?.organization_id) return [];
             const data = await exchangeRatesApi.list({
@@ -224,7 +224,7 @@ export const useExchangeRate = (id: string) => {
     const { user, profile } = useAuth();
 
     return useQuery<ExchangeRate | null>({
-        queryKey: ['exchange-rate', id, profile?.organization_id],
+        queryKey: ['exchange-rate', id, profile?.organization_id, profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile?.organization_id || !id) return null;
             const data = await exchangeRatesApi.get(id);
