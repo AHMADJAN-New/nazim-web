@@ -23,11 +23,14 @@ class ResidencyTypeController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        // Touch school.context (residency_types are still org-scoped lookup data)
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        unset($currentSchoolId);
 
         // Get accessible organization IDs (user's organization only)
         $orgIds = [$profile->organization_id];
@@ -40,17 +43,7 @@ class ResidencyTypeController extends Controller
               ->orWhereIn('organization_id', $orgIds);
         });
 
-        // Filter by organization_id if provided
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where(function ($q) use ($request) {
-                    $q->whereNull('organization_id')
-                      ->orWhere('organization_id', $request->organization_id);
-                });
-            } else {
-                return response()->json([]);
-            }
-        }
+        // Client-provided organization_id is ignored; organization is derived from profile.
 
         $residencyTypes = $query->orderBy('name', 'asc')->get();
 
@@ -69,11 +62,14 @@ class ResidencyTypeController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        // Touch school.context (residency_types are still org-scoped lookup data)
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        unset($currentSchoolId);
 
         // Check permission WITH organization context
         try {
@@ -85,11 +81,8 @@ class ResidencyTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        // Determine organization_id
-        $organizationId = $request->organization_id ?? $profile->organization_id;
+        // Determine organization_id (strict)
+        $organizationId = $profile->organization_id;
         
         // All users can only create types for their organization
         if ($organizationId !== $profile->organization_id) {
@@ -110,26 +103,23 @@ class ResidencyTypeController extends Controller
     /**
      * Display the specified residency type
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-
-        $residencyType = ResidencyType::whereNull('deleted_at')->find($id);
-
-        if (!$residencyType) {
-            return response()->json(['error' => 'Residency type not found'], 404);
-        }
-
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        // Touch school.context (residency_types are still org-scoped lookup data)
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        unset($currentSchoolId);
 
         // Check permission WITH organization context
         try {
@@ -139,6 +129,12 @@ class ResidencyTypeController extends Controller
         } catch (\Exception $e) {
             Log::warning("Permission check failed for residency_types.read: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $residencyType = ResidencyType::whereNull('deleted_at')->find($id);
+
+        if (!$residencyType) {
+            return response()->json(['error' => 'Residency type not found'], 404);
         }
 
         // Get accessible organization IDs (user's organization only)
@@ -169,9 +165,13 @@ class ResidencyTypeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Touch school.context (residency_types are still org-scoped lookup data)
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        unset($currentSchoolId);
+
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('residency_types.create')) {
+            if (!$user->hasPermissionTo('residency_types.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -198,10 +198,7 @@ class ResidencyTypeController extends Controller
             return response()->json(['error' => 'Cannot update residency type from different organization'], 403);
         }
 
-        // Prevent organization_id changes (all users)
-        if ($request->has('organization_id') && $request->organization_id !== $residencyType->organization_id) {
-            return response()->json(['error' => 'Cannot change organization_id'], 403);
-        }
+        // organization_id is scope and cannot be changed via this endpoint
 
         $residencyType->update($request->only([
             'name',
@@ -216,26 +213,22 @@ class ResidencyTypeController extends Controller
     /**
      * Remove the specified residency type (soft delete)
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-
-        $residencyType = ResidencyType::whereNull('deleted_at')->find($id);
-
-        if (!$residencyType) {
-            return response()->json(['error' => 'Residency type not found'], 404);
-        }
-
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        // Touch school.context (residency_types are still org-scoped lookup data)
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Check permission WITH organization context
         try {
@@ -245,6 +238,12 @@ class ResidencyTypeController extends Controller
         } catch (\Exception $e) {
             Log::warning("Permission check failed for residency_types.delete: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $residencyType = ResidencyType::whereNull('deleted_at')->find($id);
+
+        if (!$residencyType) {
+            return response()->json(['error' => 'Residency type not found'], 404);
         }
 
         // Get accessible organization IDs (user's organization only)
@@ -260,12 +259,16 @@ class ResidencyTypeController extends Controller
         // Check if residency type is in use (e.g., by student_admissions)
         $inUse = DB::table('student_admissions')
             ->where('residency_type_id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->exists();
 
         if ($inUse) {
             return response()->json(['error' => 'This residency type is in use and cannot be deleted'], 409);
         }
+
+        unset($currentSchoolId);
 
         // Soft delete
         $residencyType->delete();

@@ -104,8 +104,6 @@ class GraduationBatchController extends Controller
         }
 
         $validated = $request->validate([
-            // Accepted for backward compatibility but ignored (school is derived from middleware context)
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'academic_year_id' => 'required|uuid|exists:academic_years,id',
             'class_id' => 'required|uuid|exists:classes,id',
             'exam_id' => 'nullable|uuid|exists:exams,id', // Keep for backward compatibility
@@ -123,8 +121,10 @@ class GraduationBatchController extends Controller
         ]);
 
         try {
+            $schoolId = $this->getCurrentSchoolId($request);
             $batch = $this->batchService->createBatch(array_merge($validated, [
                 'organization_id' => $profile->organization_id,
+                'school_id' => $schoolId,
             ]), (string) $user->id);
 
             return response()->json($batch, 201);

@@ -35,7 +35,9 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $query = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         // Filter by type (e.g., 'graduation', 'course')
@@ -43,10 +45,7 @@ class CertificateTemplateController extends Controller
             $query->where('type', $request->input('type'));
         }
 
-        // Filter by school_id (for graduation certificates)
-        if ($request->filled('school_id')) {
-            $query->where('school_id', $request->input('school_id'));
-        }
+        // Client-provided school_id is ignored; current school is enforced.
 
         // Filter by course_id (for short-term course certificates)
         if ($request->filled('course_id')) {
@@ -77,13 +76,13 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'background_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max
             'layout_config' => 'nullable|json',
             'type' => 'nullable|string|in:graduation,course',
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'course_id' => 'nullable|uuid|exists:short_term_courses,id',
             'is_default' => 'nullable|in:0,1,true,false',
             'is_active' => 'nullable|in:0,1,true,false',
@@ -102,12 +101,17 @@ class CertificateTemplateController extends Controller
             ], 422);
         }
 
-        // Validate school_id is not set when type is 'course'
-        if ($type === 'course' && !empty($validated['school_id'])) {
-            return response()->json([
-                'error' => 'The school_id field cannot be set when type is course.',
-                'errors' => ['school_id' => ['Course certificates cannot be assigned to schools.']]
-            ], 422);
+        // Strict school scoping: all certificate templates are school-scoped (including course templates)
+        if (!empty($validated['course_id'])) {
+            $courseOk = DB::table('short_term_courses')
+                ->where('id', $validated['course_id'])
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->exists();
+            if (!$courseOk) {
+                return response()->json(['error' => 'Course not found for this school'], 422);
+            }
         }
 
         // Convert string booleans to actual booleans
@@ -191,7 +195,7 @@ class CertificateTemplateController extends Controller
         $template = CertificateTemplate::create([
             'organization_id' => $profile->organization_id,
             'type' => $type,
-            'school_id' => $validated['school_id'] ?? null,
+            'school_id' => $currentSchoolId,
             'course_id' => $validated['course_id'] ?? null,
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
@@ -215,6 +219,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -242,7 +247,9 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -256,7 +263,6 @@ class CertificateTemplateController extends Controller
             'background_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
             'layout_config' => 'nullable|json',
             'type' => 'nullable|string|in:graduation,course',
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'course_id' => 'nullable|uuid|exists:short_term_courses,id',
             'is_default' => 'nullable|in:0,1,true,false',
             'is_active' => 'nullable|in:0,1,true,false',
@@ -275,12 +281,17 @@ class CertificateTemplateController extends Controller
             ], 422);
         }
 
-        // Validate school_id is not set when type is 'course'
-        if ($type === 'course' && !empty($validated['school_id'])) {
-            return response()->json([
-                'error' => 'The school_id field cannot be set when type is course.',
-                'errors' => ['school_id' => ['Course certificates cannot be assigned to schools.']]
-            ], 422);
+        // Strict school scoping
+        if (array_key_exists('course_id', $validated) && !empty($validated['course_id'])) {
+            $courseOk = DB::table('short_term_courses')
+                ->where('id', $validated['course_id'])
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->exists();
+            if (!$courseOk) {
+                return response()->json(['error' => 'Course not found for this school'], 422);
+            }
         }
 
         // Convert string booleans to actual booleans
@@ -359,9 +370,11 @@ class CertificateTemplateController extends Controller
         }
         unset($validated['background_image']);
 
+        unset($validated['school_id'], $validated['organization_id']);
         // If this is marked as default, unset other defaults
         if (!empty($validated['is_default']) && !$template->is_default) {
             CertificateTemplate::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('id', '!=', $id)
                 ->where('is_default', true)
                 ->update(['is_default' => false]);
@@ -395,6 +408,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -430,6 +444,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -464,7 +479,9 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -474,6 +491,7 @@ class CertificateTemplateController extends Controller
 
         // Unset other defaults
         CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', '!=', $id)
             ->where('is_default', true)
             ->update(['is_default' => false]);
@@ -500,7 +518,9 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->with(['course'])
             ->find($courseStudentId);
@@ -514,6 +534,7 @@ class CertificateTemplateController extends Controller
         ]);
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('is_active', true)
             ->whereNull('deleted_at')
             ->find($validated['template_id']);
@@ -571,7 +592,9 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->with(['course', 'certificateTemplate'])
             ->find($courseStudentId);
@@ -584,6 +607,7 @@ class CertificateTemplateController extends Controller
         if (!$template) {
             // Get default template
             $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('is_default', true)
                 ->where('is_active', true)
                 ->whereNull('deleted_at')

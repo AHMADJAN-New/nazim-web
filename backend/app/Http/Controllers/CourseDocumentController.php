@@ -26,6 +26,8 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_documents.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -36,6 +38,7 @@ class CourseDocumentController extends Controller
         }
 
         $query = CourseDocument::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         if ($request->filled('course_id')) {
@@ -62,6 +65,8 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_documents.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -81,6 +86,7 @@ class CourseDocumentController extends Controller
 
         // Verify course belongs to organization
         $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($validated['course_id']);
 
@@ -91,13 +97,14 @@ class CourseDocumentController extends Controller
         $file = $request->file('file');
         $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
         $path = $file->storeAs(
-            'course-documents/' . $profile->organization_id . '/' . $validated['course_id'],
+            'course-documents/' . $profile->organization_id . '/' . $currentSchoolId . '/' . $validated['course_id'],
             $fileName,
             'local'
         );
 
         $document = CourseDocument::create([
             'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
             'course_id' => $validated['course_id'],
             'course_student_id' => $validated['course_student_id'] ?? null,
             'document_type' => $validated['document_type'],
@@ -122,7 +129,10 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $document = CourseDocument::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -142,7 +152,10 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $document = CourseDocument::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -170,6 +183,8 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_documents.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -179,6 +194,7 @@ class CourseDocumentController extends Controller
         }
 
         $document = CourseDocument::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 

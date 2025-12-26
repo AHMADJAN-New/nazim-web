@@ -25,6 +25,8 @@ class EventUserController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('events.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -36,6 +38,7 @@ class EventUserController extends Controller
         // Verify event
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -47,6 +50,8 @@ class EventUserController extends Controller
         $eventUsers = DB::table('profiles')
             ->where('event_id', $eventId)
             ->where('is_event_user', true)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->select([
                 'id',
@@ -75,6 +80,8 @@ class EventUserController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('events.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -86,6 +93,7 @@ class EventUserController extends Controller
         // Verify event
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -123,6 +131,7 @@ class EventUserController extends Controller
                 'full_name' => $validated['full_name'],
                 'phone' => $validated['phone'] ?? null,
                 'organization_id' => $profile->organization_id,
+                'school_id' => $currentSchoolId,
                 'event_id' => $eventId,
                 'is_event_user' => true,
                 'is_active' => true,
@@ -187,6 +196,8 @@ class EventUserController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('events.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -200,6 +211,8 @@ class EventUserController extends Controller
             ->where('id', $userId)
             ->where('event_id', $eventId)
             ->where('is_event_user', true)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->first();
 
         if (!$eventUser) {
@@ -299,6 +312,8 @@ class EventUserController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('events.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -312,6 +327,8 @@ class EventUserController extends Controller
             ->where('id', $userId)
             ->where('event_id', $eventId)
             ->where('is_event_user', true)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->first();
 
         if (!$eventUser) {

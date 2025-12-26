@@ -23,6 +23,8 @@ class ClassSubjectTemplateController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -38,8 +40,6 @@ class ClassSubjectTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $orgIds = [$profile->organization_id];
-
         // Load relationships
         $query = ClassSubjectTemplate::with(['subject', 'class'])
             ->whereNull('deleted_at');
@@ -49,17 +49,9 @@ class ClassSubjectTemplateController extends Controller
             $query->where('class_id', $request->class_id);
         }
 
-        // Filter by organization
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([]);
-            }
-        } else {
-            // If no organization_id provided, filter by user's organization
-            $query->where('organization_id', $profile->organization_id);
-        }
+        // Strict scoping: organization + school from context
+        $query->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         try {
             $templates = $query->orderBy('created_at', 'desc')->get();
@@ -87,6 +79,8 @@ class ClassSubjectTemplateController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
@@ -104,29 +98,28 @@ class ClassSubjectTemplateController extends Controller
         $validated = $request->validate([
             'class_id' => 'required|uuid|exists:classes,id',
             'subject_id' => 'required|uuid|exists:subjects,id',
-            'organization_id' => 'nullable|uuid|exists:organizations,id',
             'is_required' => 'boolean',
             'credits' => 'nullable|integer|min:0',
             'hours_per_week' => 'nullable|integer|min:0|max:40',
         ]);
 
-        // Get class to determine organization
+        // Get class (must be in current org + school)
         /** @var ClassModel|null $class */
-        $class = ClassModel::find($validated['class_id']);
+        $class = ClassModel::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($validated['class_id']);
         if (!$class) {
             return response()->json(['error' => 'Class not found'], 404);
         }
 
-        $organizationId = $validated['organization_id'] ?? $class->organization_id ?? $profile->organization_id;
-
-        // Validate organization access
-        if ($organizationId !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot assign subject to class from different organization'], 403);
-        }
+        $organizationId = $profile->organization_id;
 
         // Check for duplicate
         $existing = ClassSubjectTemplate::where('class_id', $validated['class_id'])
             ->where('subject_id', $validated['subject_id'])
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -138,6 +131,7 @@ class ClassSubjectTemplateController extends Controller
             'class_id' => $validated['class_id'],
             'subject_id' => $validated['subject_id'],
             'organization_id' => $organizationId,
+            'school_id' => $currentSchoolId,
             'is_required' => $validated['is_required'] ?? true,
             'credits' => $validated['credits'] ?? null,
             'hours_per_week' => $validated['hours_per_week'] ?? null,
@@ -160,6 +154,8 @@ class ClassSubjectTemplateController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
@@ -176,15 +172,12 @@ class ClassSubjectTemplateController extends Controller
 
         $template = ClassSubjectTemplate::with(['subject', 'class'])
             ->whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$template) {
             return response()->json(['error' => 'Class subject template not found'], 404);
-        }
-
-        // Check organization access
-        if ($template->organization_id !== $profile->organization_id) {
-            return response()->json(['error' => 'Access denied to this class subject template'], 403);
         }
 
         return response()->json($template);
@@ -202,6 +195,8 @@ class ClassSubjectTemplateController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
@@ -216,15 +211,13 @@ class ClassSubjectTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $template = ClassSubjectTemplate::whereNull('deleted_at')->find($id);
+        $template = ClassSubjectTemplate::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$template) {
             return response()->json(['error' => 'Class subject template not found'], 404);
-        }
-
-        // Check organization access
-        if ($template->organization_id !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot update class subject template from different organization'], 403);
         }
 
         $validated = $request->validate([
@@ -252,6 +245,8 @@ class ClassSubjectTemplateController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
@@ -266,19 +261,17 @@ class ClassSubjectTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $template = ClassSubjectTemplate::whereNull('deleted_at')->find($id);
+        $template = ClassSubjectTemplate::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$template) {
             return response()->json(['error' => 'Class subject template not found'], 404);
         }
 
-        // Check organization access
-        if ($template->organization_id !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot delete class subject template from different organization'], 403);
-        }
-
         $template->delete();
 
-        return response()->json(['message' => 'Class subject template removed successfully']);
+        return response()->noContent();
     }
 }

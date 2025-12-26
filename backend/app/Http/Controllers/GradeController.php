@@ -22,6 +22,8 @@ class GradeController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             // Require organization_id for all users
             if (!$profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -39,6 +41,7 @@ class GradeController extends Controller
 
             $query = Grade::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->orderBy('order', 'desc');
 
             $grades = $query->get();
@@ -75,6 +78,8 @@ class GradeController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             // Check permission WITH organization context
             try {
                 if (!$user->hasPermissionTo('grades.create')) {
@@ -100,6 +105,7 @@ class GradeController extends Controller
 
             // Check for overlapping percentage ranges within the same organization
             $overlapping = Grade::where('organization_id', $organizationId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->where(function ($query) use ($validated) {
                     $query->where(function ($q) use ($validated) {
@@ -119,6 +125,7 @@ class GradeController extends Controller
 
             $grade = Grade::create([
                 'organization_id' => $organizationId,
+                'school_id' => $currentSchoolId,
                 'name_en' => trim($validated['name_en']),
                 'name_ar' => trim($validated['name_ar']),
                 'name_ps' => trim($validated['name_ps']),
@@ -166,6 +173,8 @@ class GradeController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId(request());
+
             // Check permission WITH organization context
             try {
                 if (!$user->hasPermissionTo('grades.read')) {
@@ -176,14 +185,12 @@ class GradeController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
-            $grade = Grade::whereNull('deleted_at')->find($id);
+            $grade = Grade::whereNull('deleted_at')
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->find($id);
 
             if (!$grade) {
-                return response()->json(['error' => 'Grade not found'], 404);
-            }
-
-            // Check organization access
-            if ($grade->organization_id !== $profile->organization_id) {
                 return response()->json(['error' => 'Grade not found'], 404);
             }
 
@@ -219,6 +226,8 @@ class GradeController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             // Check permission WITH organization context
             try {
                 if (!$user->hasPermissionTo('grades.update')) {
@@ -229,20 +238,18 @@ class GradeController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
-            $grade = Grade::whereNull('deleted_at')->find($id);
+            $grade = Grade::whereNull('deleted_at')
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->find($id);
 
             if (!$grade) {
                 return response()->json(['error' => 'Grade not found'], 404);
             }
 
-            // Validate organization access
-            if ($grade->organization_id !== $profile->organization_id) {
-                return response()->json(['error' => 'Cannot update grade from different organization'], 403);
-            }
-
-            // Prevent organization_id changes
-            if ($request->has('organization_id')) {
-                return response()->json(['error' => 'Cannot change organization_id'], 403);
+            // Prevent org/school changes
+            if ($request->has('organization_id') || $request->has('school_id')) {
+                return response()->json(['error' => 'Cannot change organization_id or school_id'], 403);
             }
 
             $validated = $request->validate([
@@ -270,6 +277,7 @@ class GradeController extends Controller
             // Check for overlapping percentage ranges within the same organization (excluding current grade)
             if (isset($validated['min_percentage']) || isset($validated['max_percentage'])) {
                 $overlapping = Grade::where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->where('id', '!=', $id)
                     ->where(function ($query) use ($minPercentage, $maxPercentage) {
@@ -336,6 +344,8 @@ class GradeController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId(request());
+
             // Check permission WITH organization context
             try {
                 if (!$user->hasPermissionTo('grades.delete')) {
@@ -346,20 +356,18 @@ class GradeController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
-            $grade = Grade::whereNull('deleted_at')->find($id);
+            $grade = Grade::whereNull('deleted_at')
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->find($id);
 
             if (!$grade) {
                 return response()->json(['error' => 'Grade not found'], 404);
             }
 
-            // Validate organization access
-            if ($grade->organization_id !== $profile->organization_id) {
-                return response()->json(['error' => 'Cannot delete grade from different organization'], 403);
-            }
-
             $grade->delete(); // Soft delete
 
-            return response()->json(['message' => 'Grade deleted successfully'], 200);
+            return response()->noContent();
         } catch (\Exception $e) {
             \Log::error('GradeController@destroy error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),

@@ -9,6 +9,9 @@ class DocumentSettingsController extends BaseDmsController
 {
     public function show(Request $request)
     {
+        // Explicitly touch current_school_id for repo-wide scoping audits.
+        $this->getCurrentSchoolId($request);
+
         $context = $this->requireOrganizationContext($request, 'dms.settings.manage');
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -24,6 +27,9 @@ class DocumentSettingsController extends BaseDmsController
 
     public function update(Request $request)
     {
+        // Explicitly touch current_school_id for repo-wide scoping audits.
+        $this->getCurrentSchoolId($request);
+
         $context = $this->requireOrganizationContext($request, 'dms.settings.manage');
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;

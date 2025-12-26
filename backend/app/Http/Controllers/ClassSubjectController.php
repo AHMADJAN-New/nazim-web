@@ -23,6 +23,8 @@ class ClassSubjectController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -37,8 +39,6 @@ class ClassSubjectController extends Controller
             Log::warning("Permission check failed for subjects.read: " . $e->getMessage());
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
-
-        $orgIds = [$profile->organization_id];
 
         // Load relationships - use array syntax for 'class' since it's a reserved keyword
         $query = ClassSubject::with([
@@ -61,17 +61,9 @@ class ClassSubjectController extends Controller
             $query->where('subject_id', $request->subject_id);
         }
 
-        // Filter by organization
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([]);
-            }
-        } else {
-            // If no organization_id provided, filter by user's organization
-            $query->where('organization_id', $profile->organization_id);
-        }
+        // Strict scoping: organization + school from context
+        $query->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         try {
             $classSubjects = $query->orderBy('created_at', 'desc')->get();
@@ -106,6 +98,8 @@ class ClassSubjectController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
@@ -131,22 +125,22 @@ class ClassSubjectController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        // Get class academic year to determine organization
-        $classAcademicYear = ClassAcademicYear::find($validated['class_academic_year_id']);
+        // Get class academic year (must be in current org + school)
+        $classAcademicYear = ClassAcademicYear::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($validated['class_academic_year_id']);
         if (!$classAcademicYear) {
             return response()->json(['error' => 'Class academic year not found'], 404);
         }
 
-        $organizationId = $classAcademicYear->organization_id ?? $profile->organization_id;
-
-        // Validate organization access
-        if ($organizationId !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot assign subject to class from different organization'], 403);
-        }
+        $organizationId = $profile->organization_id;
 
         // Check for duplicate
         $existing = ClassSubject::where('class_academic_year_id', $validated['class_academic_year_id'])
             ->where('subject_id', $validated['subject_id'])
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -162,6 +156,7 @@ class ClassSubjectController extends Controller
             'class_academic_year_id' => $validated['class_academic_year_id'],
             'subject_id' => $validated['subject_id'],
             'organization_id' => $organizationId,
+            'school_id' => $currentSchoolId,
             'teacher_id' => $teacherId,
             'room_id' => $roomId,
             'credits' => $validated['credits'] ?? null,
@@ -194,6 +189,8 @@ class ClassSubjectController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
@@ -217,15 +214,12 @@ class ClassSubjectController extends Controller
             'room'
         ])
             ->whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$classSubject) {
             return response()->json(['error' => 'Class subject not found'], 404);
-        }
-
-        // Check organization access
-        if ($classSubject->organization_id !== $profile->organization_id) {
-            return response()->json(['error' => 'Access denied to this class subject'], 403);
         }
 
         return response()->json($classSubject);
@@ -243,6 +237,8 @@ class ClassSubjectController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
@@ -257,15 +253,13 @@ class ClassSubjectController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $classSubject = ClassSubject::whereNull('deleted_at')->find($id);
+        $classSubject = ClassSubject::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$classSubject) {
             return response()->json(['error' => 'Class subject not found'], 404);
-        }
-
-        // Check organization access
-        if ($classSubject->organization_id !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot update class subject from different organization'], 403);
         }
 
         $validated = $request->validate([
@@ -311,6 +305,8 @@ class ClassSubjectController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
@@ -325,19 +321,17 @@ class ClassSubjectController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $classSubject = ClassSubject::whereNull('deleted_at')->find($id);
+        $classSubject = ClassSubject::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$classSubject) {
             return response()->json(['error' => 'Class subject not found'], 404);
         }
 
-        // Check organization access
-        if ($classSubject->organization_id !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot delete class subject from different organization'], 403);
-        }
-
         $classSubject->delete();
 
-        return response()->json(['message' => 'Class subject removed successfully']);
+        return response()->noContent();
     }
 }

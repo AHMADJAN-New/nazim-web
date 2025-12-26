@@ -42,14 +42,15 @@ class FeeReportController extends Controller
             $validated = $request->validate([
                 'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
                 'class_academic_year_id' => 'nullable|uuid|exists:class_academic_years,id',
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
             ]);
 
             $orgId = $profile->organization_id;
+            $currentSchoolId = $this->getCurrentSchoolId($request);
 
             // Build base query for assignments
             $baseQuery = FeeAssignment::whereNull('deleted_at')
                 ->where('organization_id', $orgId);
+            $baseQuery->where('school_id', $currentSchoolId);
 
             if (!empty($validated['academic_year_id'])) {
                 $baseQuery->where('academic_year_id', $validated['academic_year_id']);
@@ -59,17 +60,13 @@ class FeeReportController extends Controller
                 $baseQuery->where('class_academic_year_id', $validated['class_academic_year_id']);
             }
 
-            if (!empty($validated['school_id'])) {
-                $baseQuery->where('school_id', $validated['school_id']);
-            }
-
             // Summary statistics
             $summary = DB::table('fee_assignments')
                 ->whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->when(!empty($validated['academic_year_id']), fn($q) => $q->where('academic_year_id', $validated['academic_year_id']))
                 ->when(!empty($validated['class_academic_year_id']), fn($q) => $q->where('class_academic_year_id', $validated['class_academic_year_id']))
-                ->when(!empty($validated['school_id']), fn($q) => $q->where('school_id', $validated['school_id']))
                 ->selectRaw('
                     COUNT(*) as total_assignments,
                     COUNT(DISTINCT student_id) as total_students,
@@ -88,8 +85,8 @@ class FeeReportController extends Controller
             $byClass = DB::table('fee_assignments')
                 ->whereNull('fee_assignments.deleted_at')
                 ->where('fee_assignments.organization_id', $orgId)
+                ->where('fee_assignments.school_id', $currentSchoolId)
                 ->when(!empty($validated['academic_year_id']), fn($q) => $q->where('fee_assignments.academic_year_id', $validated['academic_year_id']))
-                ->when(!empty($validated['school_id']), fn($q) => $q->where('fee_assignments.school_id', $validated['school_id']))
                 ->leftJoin('class_academic_years', 'fee_assignments.class_academic_year_id', '=', 'class_academic_years.id')
                 ->leftJoin('classes', 'class_academic_years.class_id', '=', 'classes.id')
                 ->whereNotNull('classes.id') // Only include assignments with valid classes
@@ -114,9 +111,9 @@ class FeeReportController extends Controller
             $byStructure = DB::table('fee_assignments')
                 ->whereNull('fee_assignments.deleted_at')
                 ->where('fee_assignments.organization_id', $orgId)
+                ->where('fee_assignments.school_id', $currentSchoolId)
                 ->when(!empty($validated['academic_year_id']), fn($q) => $q->where('fee_assignments.academic_year_id', $validated['academic_year_id']))
                 ->when(!empty($validated['class_academic_year_id']), fn($q) => $q->where('fee_assignments.class_academic_year_id', $validated['class_academic_year_id']))
-                ->when(!empty($validated['school_id']), fn($q) => $q->where('fee_assignments.school_id', $validated['school_id']))
                 ->leftJoin('fee_structures', 'fee_assignments.fee_structure_id', '=', 'fee_structures.id')
                 ->groupBy('fee_assignments.fee_structure_id', 'fee_structures.name', 'fee_structures.fee_type')
                 ->selectRaw('
@@ -134,6 +131,7 @@ class FeeReportController extends Controller
             // Recent payments
             $recentPayments = FeePayment::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->with(['student:id,full_name,admission_no', 'feeAssignment.feeStructure:id,name'])
                 ->orderBy('payment_date', 'desc')
                 ->limit(10)
@@ -158,9 +156,10 @@ class FeeReportController extends Controller
                 ->where('fee_exceptions.is_active', true)
                 ->join('fee_assignments', 'fee_exceptions.fee_assignment_id', '=', 'fee_assignments.id')
                 ->whereNull('fee_assignments.deleted_at')
+                ->where('fee_assignments.school_id', $currentSchoolId)
                 ->when(!empty($validated['academic_year_id']), fn($q) => $q->where('fee_assignments.academic_year_id', $validated['academic_year_id']))
                 ->when(!empty($validated['class_academic_year_id']), fn($q) => $q->where('fee_assignments.class_academic_year_id', $validated['class_academic_year_id']))
-                ->when(!empty($validated['school_id']), fn($q) => $q->where('fee_assignments.school_id', $validated['school_id']));
+                ;
 
             $exceptionTotal = (float) (clone $exceptionBaseQuery)->sum('fee_exceptions.exception_amount');
             $exceptionCount = (int) (clone $exceptionBaseQuery)->count();
@@ -168,9 +167,10 @@ class FeeReportController extends Controller
             // Get total original amount (before exceptions) from assignments
             $originalTotalQuery = FeeAssignment::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->when(!empty($validated['academic_year_id']), fn($q) => $q->where('academic_year_id', $validated['academic_year_id']))
                 ->when(!empty($validated['class_academic_year_id']), fn($q) => $q->where('class_academic_year_id', $validated['class_academic_year_id']))
-                ->when(!empty($validated['school_id']), fn($q) => $q->where('school_id', $validated['school_id']));
+                ;
 
             $originalTotal = (float) $originalTotalQuery->sum('original_amount') ?: (float) $summary->total_assigned;
             $adjustedTotal = (float) $summary->total_assigned;
@@ -183,9 +183,9 @@ class FeeReportController extends Controller
                 ->where('fee_exceptions.is_active', true)
                 ->join('fee_assignments', 'fee_exceptions.fee_assignment_id', '=', 'fee_assignments.id')
                 ->whereNull('fee_assignments.deleted_at')
+                ->where('fee_assignments.school_id', $currentSchoolId)
                 ->when(!empty($validated['academic_year_id']), fn($q) => $q->where('fee_assignments.academic_year_id', $validated['academic_year_id']))
                 ->when(!empty($validated['class_academic_year_id']), fn($q) => $q->where('fee_assignments.class_academic_year_id', $validated['class_academic_year_id']))
-                ->when(!empty($validated['school_id']), fn($q) => $q->where('fee_assignments.school_id', $validated['school_id']))
                 ->groupBy('fee_exceptions.exception_type')
                 ->selectRaw('
                     fee_exceptions.exception_type,
@@ -292,7 +292,6 @@ class FeeReportController extends Controller
             $validated = $request->validate([
                 'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
                 'class_academic_year_id' => 'nullable|uuid|exists:class_academic_years,id',
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'status' => 'nullable|in:pending,partial,paid,overdue,waived,cancelled',
                 'search' => 'nullable|string|max:100',
                 'page' => 'nullable|integer|min:1',
@@ -300,6 +299,7 @@ class FeeReportController extends Controller
             ]);
 
             $orgId = $profile->organization_id;
+            $currentSchoolId = $this->getCurrentSchoolId($request);
             $page = $validated['page'] ?? 1;
             $perPage = $validated['per_page'] ?? 25;
 
@@ -307,6 +307,7 @@ class FeeReportController extends Controller
             $query = DB::table('students')
                 ->whereNull('students.deleted_at')
                 ->where('students.organization_id', $orgId)
+                ->where('students.school_id', $currentSchoolId)
                 ->join('fee_assignments', function($join) {
                     $join->on('students.id', '=', 'fee_assignments.student_id')
                         ->whereNull('fee_assignments.deleted_at');
@@ -316,7 +317,7 @@ class FeeReportController extends Controller
                 ->leftJoin('classes', 'class_academic_years.class_id', '=', 'classes.id')
                 ->when(!empty($validated['academic_year_id']), fn($q) => $q->where('fee_assignments.academic_year_id', $validated['academic_year_id']))
                 ->when(!empty($validated['class_academic_year_id']), fn($q) => $q->where('fee_assignments.class_academic_year_id', $validated['class_academic_year_id']))
-                ->when(!empty($validated['school_id']), fn($q) => $q->where('fee_assignments.school_id', $validated['school_id']))
+                ->where('fee_assignments.school_id', $currentSchoolId)
                 ->when(!empty($validated['search']), function($q) use ($validated) {
                     $search = '%' . $validated['search'] . '%';
                     $q->where(function($sub) use ($search) {
@@ -411,20 +412,20 @@ class FeeReportController extends Controller
             $validated = $request->validate([
                 'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
                 'class_academic_year_id' => 'nullable|uuid|exists:class_academic_years,id',
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'start_date' => 'nullable|date',
                 'end_date' => 'nullable|date|after_or_equal:start_date',
             ]);
 
             $orgId = $profile->organization_id;
+            $currentSchoolId = $this->getCurrentSchoolId($request);
 
             // Payment collection over time (by month)
             $monthlyCollection = DB::table('fee_payments')
                 ->whereNull('fee_payments.deleted_at')
                 ->where('fee_payments.organization_id', $orgId)
+                ->where('fee_payments.school_id', $currentSchoolId)
                 ->when(!empty($validated['start_date']), fn($q) => $q->where('fee_payments.payment_date', '>=', $validated['start_date']))
                 ->when(!empty($validated['end_date']), fn($q) => $q->where('fee_payments.payment_date', '<=', $validated['end_date']))
-                ->when(!empty($validated['school_id']), fn($q) => $q->where('fee_payments.school_id', $validated['school_id']))
                 ->selectRaw("
                     DATE_TRUNC('month', payment_date) as month,
                     COUNT(*) as payment_count,
@@ -439,9 +440,9 @@ class FeeReportController extends Controller
             $byMethod = DB::table('fee_payments')
                 ->whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->when(!empty($validated['start_date']), fn($q) => $q->where('payment_date', '>=', $validated['start_date']))
                 ->when(!empty($validated['end_date']), fn($q) => $q->where('payment_date', '<=', $validated['end_date']))
-                ->when(!empty($validated['school_id']), fn($q) => $q->where('school_id', $validated['school_id']))
                 ->groupBy('payment_method')
                 ->selectRaw('
                     payment_method,
@@ -458,8 +459,8 @@ class FeeReportController extends Controller
             $dailyCollection = DB::table('fee_payments')
                 ->whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereBetween('payment_date', [$startOfMonth, $endOfMonth])
-                ->when(!empty($validated['school_id']), fn($q) => $q->where('school_id', $validated['school_id']))
                 ->selectRaw("
                     payment_date::date as date,
                     COUNT(*) as payment_count,
@@ -504,21 +505,22 @@ class FeeReportController extends Controller
             $validated = $request->validate([
                 'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
                 'class_academic_year_id' => 'nullable|uuid|exists:class_academic_years,id',
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'min_amount' => 'nullable|numeric|min:0',
             ]);
 
             $orgId = $profile->organization_id;
+            $currentSchoolId = $this->getCurrentSchoolId($request);
 
             $defaulters = DB::table('fee_assignments')
                 ->whereNull('fee_assignments.deleted_at')
                 ->where('fee_assignments.organization_id', $orgId)
+                ->where('fee_assignments.school_id', $currentSchoolId)
                 ->whereIn('fee_assignments.status', ['pending', 'partial', 'overdue'])
                 ->where('fee_assignments.remaining_amount', '>', 0)
                 ->when(!empty($validated['academic_year_id']), fn($q) => $q->where('fee_assignments.academic_year_id', $validated['academic_year_id']))
                 ->when(!empty($validated['class_academic_year_id']), fn($q) => $q->where('fee_assignments.class_academic_year_id', $validated['class_academic_year_id']))
-                ->when(!empty($validated['school_id']), fn($q) => $q->where('fee_assignments.school_id', $validated['school_id']))
                 ->join('students', 'fee_assignments.student_id', '=', 'students.id')
+                ->where('students.school_id', $currentSchoolId)
                 ->leftJoin('class_academic_years', 'fee_assignments.class_academic_year_id', '=', 'class_academic_years.id')
                 ->leftJoin('classes', 'class_academic_years.class_id', '=', 'classes.id')
                 ->leftJoin('fee_structures', 'fee_assignments.fee_structure_id', '=', 'fee_structures.id')

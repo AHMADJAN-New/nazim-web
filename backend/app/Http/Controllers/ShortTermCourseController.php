@@ -25,6 +25,8 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('short_term_courses.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -35,6 +37,7 @@ class ShortTermCourseController extends Controller
         }
 
         $query = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         if ($request->filled('status')) {
@@ -74,6 +77,8 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('short_term_courses.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -85,6 +90,7 @@ class ShortTermCourseController extends Controller
 
         $validated = $request->validated();
         $validated['organization_id'] = $profile->organization_id;
+        $validated['school_id'] = $currentSchoolId;
         $validated['created_by'] = (string) $user->id;
         $validated['status'] = $validated['status'] ?? 'draft';
 
@@ -102,6 +108,8 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('short_term_courses.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -112,6 +120,7 @@ class ShortTermCourseController extends Controller
         }
 
         $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -134,6 +143,8 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('short_term_courses.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -144,6 +155,7 @@ class ShortTermCourseController extends Controller
         }
 
         $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -151,7 +163,9 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'Course not found'], 404);
         }
 
-        $course->update($request->validated());
+        $payload = $request->validated();
+        unset($payload['organization_id'], $payload['school_id']);
+        $course->update($payload);
 
         return response()->json($course);
     }
@@ -165,6 +179,8 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('short_term_courses.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -175,6 +191,7 @@ class ShortTermCourseController extends Controller
         }
 
         $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -196,6 +213,8 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('short_term_courses.close')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -206,6 +225,7 @@ class ShortTermCourseController extends Controller
         }
 
         $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -231,6 +251,8 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('short_term_courses.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -241,6 +263,7 @@ class ShortTermCourseController extends Controller
         }
 
         $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -262,6 +285,8 @@ class ShortTermCourseController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('short_term_courses.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -272,6 +297,7 @@ class ShortTermCourseController extends Controller
         }
 
         $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 

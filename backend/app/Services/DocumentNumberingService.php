@@ -130,14 +130,13 @@ class DocumentNumberingService
 
     private function defaultPrefix(string $docType, string $organizationId, ?string $schoolId): string
     {
+        if (!$schoolId) {
+            return $docType === 'incoming' ? 'IN' : 'OUT';
+        }
+
+        // Strict school scoping: document settings are always school-scoped
         $settings = DocumentSetting::where('organization_id', $organizationId)
-            ->where(function ($q) use ($schoolId) {
-                $q->whereNull('school_id');
-                if ($schoolId) {
-                    $q->orWhere('school_id', $schoolId);
-                }
-            })
-            ->orderByRaw('CASE WHEN school_id IS NULL THEN 1 ELSE 0 END')
+            ->where('school_id', $schoolId)
             ->first();
 
         if ($settings) {

@@ -37,6 +37,8 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -53,18 +55,17 @@ class StudentDocumentController extends Controller
         }
 
         // Check student exists and user has access
-        $student = Student::whereNull('deleted_at')->find($studentId);
+        $student = Student::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($studentId);
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Student not found'], 404);
-        }
-
         $documents = StudentDocument::where('student_id', $studentId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -107,6 +108,8 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -114,7 +117,7 @@ class StudentDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_documents.read')) {
+            if (!$user->hasPermissionTo('student_documents.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -123,21 +126,18 @@ class StudentDocumentController extends Controller
         }
 
         // Check student exists and user has access
-        $student = Student::whereNull('deleted_at')->find($studentId);
+        $student = Student::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($studentId);
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
-        }
-
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot add document to student from different organization'], 403);
         }
 
         $file = $request->file('file');
         $timestamp = time();
         $sanitizedFileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
-        $filePath = "{$student->organization_id}/students/{$studentId}/documents/{$timestamp}_{$sanitizedFileName}";
+        $filePath = "{$student->organization_id}/{$currentSchoolId}/students/{$studentId}/documents/{$timestamp}_{$sanitizedFileName}";
 
         // Store file
         Storage::disk('local')->put($filePath, file_get_contents($file));
@@ -145,8 +145,8 @@ class StudentDocumentController extends Controller
         // Create document record
         $document = StudentDocument::create([
             'student_id' => $studentId,
-            'organization_id' => $student->organization_id,
-            'school_id' => $student->school_id,
+            'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
             'document_type' => $request->document_type,
             'file_name' => $file->getClientOriginalName(),
             'file_path' => $filePath,
@@ -184,6 +184,8 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -191,7 +193,7 @@ class StudentDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_documents.read')) {
+            if (!$user->hasPermissionTo('student_documents.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -199,22 +201,19 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $document = StudentDocument::whereNull('deleted_at')->find($id);
+        $document = StudentDocument::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$document) {
             return response()->json(['error' => 'Document not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($document->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot delete document from different organization'], 403);
-        }
-
         // Soft delete
         $document->delete();
 
-        return response()->json(['message' => 'Document deleted successfully']);
+        return response()->noContent();
     }
 
     /**
@@ -228,6 +227,8 @@ class StudentDocumentController extends Controller
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
+
+        $currentSchoolId = $this->getCurrentSchoolId(request());
 
         // Require organization_id for all users
         if (!$profile->organization_id) {
@@ -244,16 +245,13 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $document = StudentDocument::whereNull('deleted_at')->find($id);
+        $document = StudentDocument::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$document) {
             return response()->json(['error' => 'Document not found'], 404);
-        }
-
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($document->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot access document from different organization'], 403);
         }
 
         if (!Storage::disk('local')->exists($document->file_path)) {

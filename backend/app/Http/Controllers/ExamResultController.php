@@ -28,6 +28,8 @@ class ExamResultController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -43,8 +45,23 @@ class ExamResultController extends Controller
             'examStudent.studentAdmission.student',
         ])->whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id);
+        $query->where('school_id', $currentSchoolId);
+
+        // Strict school scoping via parent exam
+        $query->whereHas('exam', function ($q) use ($currentSchoolId) {
+            $q->where('school_id', $currentSchoolId)->whereNull('deleted_at');
+        });
 
         if ($request->filled('exam_id')) {
+            // Verify exam is in current school
+            $exam = Exam::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->where('id', $request->exam_id)
+                ->whereNull('deleted_at')
+                ->first();
+            if (!$exam) {
+                return response()->json(['error' => 'Exam not found'], 404);
+            }
             $query->where('exam_id', $request->exam_id);
         }
 
@@ -77,6 +94,8 @@ class ExamResultController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.enter_marks')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -97,6 +116,7 @@ class ExamResultController extends Controller
 
         // Verify exam belongs to organization and check status
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $validated['exam_id'])
             ->whereNull('deleted_at')
             ->first();
@@ -165,6 +185,9 @@ class ExamResultController extends Controller
         // Check if result already exists
         $existingResult = ExamResult::where('exam_subject_id', $validated['exam_subject_id'])
             ->where('exam_student_id', $validated['exam_student_id'])
+            ->where('exam_id', $validated['exam_id'])
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -195,6 +218,7 @@ class ExamResultController extends Controller
             'is_absent' => $validated['is_absent'] ?? false,
             'remarks' => $validated['remarks'] ?? null,
             'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
         ]);
 
         $result->load([
@@ -222,6 +246,8 @@ class ExamResultController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.enter_marks')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -243,6 +269,7 @@ class ExamResultController extends Controller
 
         // Verify exam and check status
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $validated['exam_id'])
             ->whereNull('deleted_at')
             ->first();
@@ -314,6 +341,9 @@ class ExamResultController extends Controller
                 // Check if result already exists
                 $existingResult = ExamResult::where('exam_subject_id', $validated['exam_subject_id'])
                     ->where('exam_student_id', $resultData['exam_student_id'])
+                    ->where('exam_id', $validated['exam_id'])
+                    ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
 
@@ -334,6 +364,7 @@ class ExamResultController extends Controller
                         'is_absent' => $isAbsent,
                         'remarks' => $resultData['remarks'] ?? null,
                         'organization_id' => $profile->organization_id,
+                        'school_id' => $currentSchoolId,
                     ]);
                     $created[] = $result->id;
                 }
@@ -373,6 +404,8 @@ class ExamResultController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.enter_marks')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -383,6 +416,7 @@ class ExamResultController extends Controller
         }
 
         $result = ExamResult::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->whereNull('deleted_at')
             ->first();
@@ -392,7 +426,11 @@ class ExamResultController extends Controller
         }
 
         // Check exam status
-        $exam = Exam::find($result->exam_id);
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('id', $result->exam_id)
+            ->whereNull('deleted_at')
+            ->first();
         if ($exam && $exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot modify marks for a completed or archived exam',
@@ -407,7 +445,11 @@ class ExamResultController extends Controller
         ]);
 
         // Validate marks against total marks
-        $examSubject = ExamSubject::find($result->exam_subject_id);
+        $examSubject = ExamSubject::where('organization_id', $profile->organization_id)
+            ->where('exam_id', $result->exam_id)
+            ->where('id', $result->exam_subject_id)
+            ->whereNull('deleted_at')
+            ->first();
         $isAbsent = $validated['is_absent'] ?? $result->is_absent;
         $marksObtained = $validated['marks_obtained'] ?? null;
 
@@ -440,9 +482,9 @@ class ExamResultController extends Controller
     /**
      * Delete an exam result
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
@@ -452,6 +494,8 @@ class ExamResultController extends Controller
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
             if (!$user->hasPermissionTo('exams.enter_marks')) {
@@ -463,6 +507,7 @@ class ExamResultController extends Controller
         }
 
         $result = ExamResult::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->whereNull('deleted_at')
             ->first();
@@ -472,7 +517,11 @@ class ExamResultController extends Controller
         }
 
         // Check exam status
-        $exam = Exam::find($result->exam_id);
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('id', $result->exam_id)
+            ->whereNull('deleted_at')
+            ->first();
         if ($exam && $exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot delete marks for a completed or archived exam',
@@ -501,6 +550,8 @@ class ExamResultController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -511,6 +562,7 @@ class ExamResultController extends Controller
         }
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -533,11 +585,15 @@ class ExamResultController extends Controller
         foreach ($examSubjects as $examSubject) {
             // Count enrolled students for this exam class
             $enrolledCount = ExamStudent::where('exam_class_id', $examSubject->exam_class_id)
+                ->where('organization_id', $profile->organization_id)
+                ->where('exam_id', $examId)
                 ->whereNull('deleted_at')
                 ->count();
 
             // Count results entered for this subject
             $resultsCount = ExamResult::where('exam_subject_id', $examSubject->id)
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->count();
 

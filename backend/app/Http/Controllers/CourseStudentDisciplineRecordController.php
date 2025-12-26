@@ -26,6 +26,8 @@ class CourseStudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_student_discipline_records.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -36,6 +38,7 @@ class CourseStudentDisciplineRecordController extends Controller
         }
 
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($courseStudentId);
 
@@ -44,6 +47,7 @@ class CourseStudentDisciplineRecordController extends Controller
         }
 
         $records = CourseStudentDisciplineRecord::where('course_student_id', $student->id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->orderBy('incident_date', 'desc')
             ->get();
@@ -60,6 +64,8 @@ class CourseStudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_student_discipline_records.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -70,6 +76,7 @@ class CourseStudentDisciplineRecordController extends Controller
         }
 
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($courseStudentId);
 
@@ -80,6 +87,7 @@ class CourseStudentDisciplineRecordController extends Controller
         $validated = $request->validated();
         $validated['course_student_id'] = $student->id;
         $validated['organization_id'] = $student->organization_id;
+        $validated['school_id'] = $currentSchoolId;
         $validated['course_id'] = $student->course_id;
         $validated['created_by'] = (string) $user->id;
 
@@ -97,6 +105,8 @@ class CourseStudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_student_discipline_records.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -107,13 +117,16 @@ class CourseStudentDisciplineRecordController extends Controller
         }
 
         $record = CourseStudentDisciplineRecord::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$record || $record->organization_id !== $profile->organization_id) {
             return response()->json(['error' => 'Record not found'], 404);
         }
 
-        $record->update($request->validated());
+        $payload = $request->validated();
+        unset($payload['organization_id'], $payload['school_id']);
+        $record->update($payload);
 
         return response()->json($record);
     }
@@ -127,6 +140,8 @@ class CourseStudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_student_discipline_records.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -137,6 +152,7 @@ class CourseStudentDisciplineRecordController extends Controller
         }
 
         $record = CourseStudentDisciplineRecord::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$record || $record->organization_id !== $profile->organization_id) {
@@ -157,6 +173,8 @@ class CourseStudentDisciplineRecordController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_student_discipline_records.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -167,6 +185,7 @@ class CourseStudentDisciplineRecordController extends Controller
         }
 
         $record = CourseStudentDisciplineRecord::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$record || $record->organization_id !== $profile->organization_id) {

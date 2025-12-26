@@ -25,6 +25,8 @@ class FeeExceptionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('fees.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -51,6 +53,11 @@ class FeeExceptionController extends Controller
                 'student',
                 'approvedBy',
             ]);
+
+        // Strict school scoping via fee assignment (fee_exceptions table has no school_id column)
+        $query->whereHas('feeAssignment', function ($q) use ($currentSchoolId) {
+            $q->where('school_id', $currentSchoolId);
+        });
 
         // Filter by academic year through fee assignment
         if (!empty($validated['academic_year_id'])) {
@@ -100,6 +107,8 @@ class FeeExceptionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('fees.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -123,6 +132,13 @@ class FeeExceptionController extends Controller
             return response()->json(['error' => 'Fee exception not found'], 404);
         }
 
+        if (!$exception->relationLoaded('feeAssignment')) {
+            $exception->load('feeAssignment');
+        }
+        if (!$exception->feeAssignment || $exception->feeAssignment->school_id !== $currentSchoolId) {
+            return response()->json(['error' => 'Fee exception not found'], 404);
+        }
+
         return response()->json($exception);
     }
 
@@ -139,6 +155,8 @@ class FeeExceptionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('fees.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -152,6 +170,7 @@ class FeeExceptionController extends Controller
 
         $assignment = FeeAssignment::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($validated['fee_assignment_id']);
 
         if (!$assignment) {
@@ -211,6 +230,8 @@ class FeeExceptionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('fees.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -234,6 +255,7 @@ class FeeExceptionController extends Controller
         if (isset($validated['fee_assignment_id'])) {
             $assignment = FeeAssignment::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($validated['fee_assignment_id']);
 
             if (!$assignment) {
@@ -269,6 +291,8 @@ class FeeExceptionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('fees.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -283,6 +307,14 @@ class FeeExceptionController extends Controller
             ->find($id);
 
         if (!$exception) {
+            return response()->json(['error' => 'Fee exception not found'], 404);
+        }
+
+        $assignment = FeeAssignment::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($exception->fee_assignment_id);
+        if (!$assignment) {
             return response()->json(['error' => 'Fee exception not found'], 404);
         }
 

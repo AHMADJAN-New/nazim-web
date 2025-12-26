@@ -32,6 +32,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -43,6 +45,7 @@ class ExamAttendanceController extends Controller
 
         // Verify exam belongs to organization
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -59,6 +62,7 @@ class ExamAttendanceController extends Controller
         ])
             ->whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('exam_id', $examId);
 
         // Optional filters
@@ -106,6 +110,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -117,6 +123,7 @@ class ExamAttendanceController extends Controller
 
         // Verify exam belongs to organization
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -143,6 +150,7 @@ class ExamAttendanceController extends Controller
         ])
             ->whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('exam_id', $examId)
             ->where('exam_class_id', $classId)
             ->orderBy('created_at', 'desc')
@@ -168,6 +176,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -181,6 +191,7 @@ class ExamAttendanceController extends Controller
         $examTime = ExamTime::where('id', $examTimeId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -191,6 +202,7 @@ class ExamAttendanceController extends Controller
         $attendances = ExamAttendance::with(['student'])
             ->whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('exam_time_id', $examTimeId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -216,6 +228,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.manage_attendance') && !$user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -230,6 +244,7 @@ class ExamAttendanceController extends Controller
             ->where('id', $examTimeId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -242,12 +257,14 @@ class ExamAttendanceController extends Controller
             ->where('exam_id', $examId)
             ->where('exam_class_id', $examTime->exam_class_id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
         // Get existing attendance records for this timeslot
         $existingAttendance = ExamAttendance::where('exam_time_id', $examTimeId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get()
             ->keyBy('student_id');
@@ -319,6 +336,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.manage_attendance')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -340,6 +359,7 @@ class ExamAttendanceController extends Controller
 
         // Verify exam belongs to organization
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -362,6 +382,7 @@ class ExamAttendanceController extends Controller
             ->where('id', $validated['exam_time_id'])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -373,6 +394,7 @@ class ExamAttendanceController extends Controller
         $enrolledStudentIds = ExamStudent::where('exam_id', $examId)
             ->where('exam_class_id', $examTime->exam_class_id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->with('studentAdmission')
             ->get()
@@ -398,6 +420,7 @@ class ExamAttendanceController extends Controller
 
                 // Check for existing attendance record
                 $existing = ExamAttendance::where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->where('exam_time_id', $examTime->id)
                     ->where('student_id', $attendanceData['student_id'])
                     ->whereNull('deleted_at')
@@ -416,6 +439,7 @@ class ExamAttendanceController extends Controller
                     // Create new record
                     ExamAttendance::create([
                         'organization_id' => $profile->organization_id,
+                        'school_id' => $currentSchoolId,
                         'exam_id' => $examId,
                         'exam_time_id' => $examTime->id,
                         'exam_class_id' => $examTime->exam_class_id,
@@ -463,6 +487,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.manage_attendance')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -479,6 +505,11 @@ class ExamAttendanceController extends Controller
             ->first();
 
         if (!$attendance) {
+            return response()->json(['error' => 'Attendance record not found'], 404);
+        }
+
+        // Strict school scoping via parent exam
+        if ($attendance->exam?->school_id !== $currentSchoolId) {
             return response()->json(['error' => 'Attendance record not found'], 404);
         }
 
@@ -519,6 +550,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.manage_attendance')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -535,6 +568,11 @@ class ExamAttendanceController extends Controller
             ->first();
 
         if (!$attendance) {
+            return response()->json(['error' => 'Attendance record not found'], 404);
+        }
+
+        // Strict school scoping via parent exam
+        if ($attendance->exam?->school_id !== $currentSchoolId) {
             return response()->json(['error' => 'Attendance record not found'], 404);
         }
 
@@ -569,6 +607,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -581,6 +621,7 @@ class ExamAttendanceController extends Controller
         // Verify exam
         $exam = Exam::with(['examClasses.classAcademicYear.class', 'examSubjects.subject'])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -592,12 +633,14 @@ class ExamAttendanceController extends Controller
         // Get total enrolled students
         $totalEnrolled = ExamStudent::where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->count();
 
         // Get attendance summary
         $attendanceCounts = ExamAttendance::where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->select('status', DB::raw('count(*) as count'))
             ->groupBy('status')
@@ -710,6 +753,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -721,6 +766,7 @@ class ExamAttendanceController extends Controller
 
         // Verify exam
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -732,6 +778,7 @@ class ExamAttendanceController extends Controller
         // Verify student
         $student = Student::where('id', $studentId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->first();
 
         if (!$student) {
@@ -747,6 +794,7 @@ class ExamAttendanceController extends Controller
             ->where('exam_id', $examId)
             ->where('student_id', $studentId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'asc')
             ->get();
@@ -814,6 +862,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -828,6 +878,7 @@ class ExamAttendanceController extends Controller
             ->where('id', $examTimeId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -839,12 +890,14 @@ class ExamAttendanceController extends Controller
         $enrolledCount = ExamStudent::where('exam_id', $examId)
             ->where('exam_class_id', $examTime->exam_class_id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->count();
 
         // Get attendance counts
         $attendanceCounts = ExamAttendance::where('exam_time_id', $examTimeId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->select('status', DB::raw('count(*) as count'))
             ->groupBy('status')
@@ -910,6 +963,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.manage_attendance')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -928,6 +983,7 @@ class ExamAttendanceController extends Controller
 
         // Verify exam belongs to organization
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -950,6 +1006,7 @@ class ExamAttendanceController extends Controller
             ->where('id', $validated['exam_time_id'])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -965,6 +1022,7 @@ class ExamAttendanceController extends Controller
             ->where('exam_id', $examId)
             ->where('exam_class_id', $examTime->exam_class_id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('exam_roll_number', $rollNumber)
             ->whereNull('deleted_at')
             ->first();
@@ -973,6 +1031,7 @@ class ExamAttendanceController extends Controller
             // Fallback: try to find by student code or admission number if roll number not found
             $searchTerm = $rollNumber;
             $student = Student::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where(function ($q) use ($searchTerm) {
                     $q->where('student_code', $searchTerm)
                         ->orWhere('admission_no', $searchTerm)
@@ -990,6 +1049,7 @@ class ExamAttendanceController extends Controller
                 ->where('exam_id', $examId)
                 ->where('exam_class_id', $examTime->exam_class_id)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereHas('studentAdmission', function ($query) use ($student) {
                     $query->where('student_id', $student->id);
                 })
@@ -1011,10 +1071,12 @@ class ExamAttendanceController extends Controller
         $attendance = ExamAttendance::updateOrCreate(
             [
                 'organization_id' => $profile->organization_id,
+                'school_id' => $currentSchoolId,
                 'exam_time_id' => $examTime->id,
                 'student_id' => $student->id,
             ],
             [
+                'school_id' => $currentSchoolId,
                 'exam_id' => $examId,
                 'exam_class_id' => $examTime->exam_class_id,
                 'exam_subject_id' => $examTime->exam_subject_id,
@@ -1054,6 +1116,8 @@ class ExamAttendanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.view_attendance_reports')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -1065,6 +1129,7 @@ class ExamAttendanceController extends Controller
 
         // Verify exam belongs to organization
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -1077,6 +1142,7 @@ class ExamAttendanceController extends Controller
         $examTime = ExamTime::where('id', $examTimeId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -1090,6 +1156,7 @@ class ExamAttendanceController extends Controller
         // Get recent attendance records for this timeslot, ordered by checked_in_at or created_at
         $scans = ExamAttendance::with(['student:id,full_name,father_name,admission_no,card_number,student_code'])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('exam_time_id', $examTimeId)
             ->whereNull('deleted_at')
             ->orderBy('checked_in_at', 'desc')
@@ -1098,9 +1165,10 @@ class ExamAttendanceController extends Controller
             ->get();
 
         // Add roll numbers and ensure student data is properly included
-        $scansWithRollNumbers = $scans->map(function ($scan) use ($examId) {
+        $scansWithRollNumbers = $scans->map(function ($scan) use ($examId, $profile) {
             $examStudent = ExamStudent::where('exam_id', $examId)
                 ->where('exam_class_id', $scan->exam_class_id)
+                ->where('organization_id', $profile->organization_id)
                 ->whereHas('studentAdmission', function ($query) use ($scan) {
                     $query->where('student_id', $scan->student_id);
                 })

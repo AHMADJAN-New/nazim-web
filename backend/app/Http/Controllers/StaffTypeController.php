@@ -26,6 +26,20 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Touch school.context (staff_types are still org-scoped lookup data)
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        unset($currentSchoolId);
+
+        // Permission check
+        try {
+            if (!$user->hasPermissionTo('staff_types.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for staff_types.read: " . $e->getMessage());
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
         // Get accessible organization IDs (user's organization only)
         $orgIds = [$profile->organization_id];
 
@@ -37,17 +51,7 @@ class StaffTypeController extends Controller
               ->orWhereIn('organization_id', $orgIds);
         });
 
-        // Filter by organization_id if provided
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where(function ($q) use ($request) {
-                    $q->whereNull('organization_id')
-                      ->orWhere('organization_id', $request->organization_id);
-                });
-            } else {
-                return response()->json([]);
-            }
-        }
+        // Client-provided organization_id is ignored; organization is derived from profile.
 
         $staffTypes = $query->orderBy('display_order')->orderBy('name')->get();
 
@@ -57,9 +61,9 @@ class StaffTypeController extends Controller
     /**
      * Display the specified staff type
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
@@ -70,6 +74,10 @@ class StaffTypeController extends Controller
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        // Touch school.context (staff_types are still org-scoped lookup data)
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        unset($currentSchoolId);
 
         // Check permission WITH organization context
         try {
@@ -109,7 +117,6 @@ class StaffTypeController extends Controller
         }
 
         $request->validate([
-            'organization_id' => 'nullable|uuid|exists:organizations,id',
             'name' => 'required|string|max:100',
             'code' => 'required|string|max:50',
             'description' => 'nullable|string',
@@ -122,9 +129,13 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Touch school.context (staff_types are still org-scoped lookup data)
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        unset($currentSchoolId);
+
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_types.read')) {
+            if (!$user->hasPermissionTo('staff_types.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -132,11 +143,8 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
         // Determine organization_id
-        $organizationId = $request->organization_id ?? $profile->organization_id;
+        $organizationId = $profile->organization_id;
         
         // All users can only create types for their organization
         if ($organizationId !== $profile->organization_id) {
@@ -194,9 +202,13 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Touch school.context (staff_types are still org-scoped lookup data)
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        unset($currentSchoolId);
+
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_types.read')) {
+            if (!$user->hasPermissionTo('staff_types.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -253,9 +265,9 @@ class StaffTypeController extends Controller
     /**
      * Remove the specified staff type (soft delete)
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
@@ -273,9 +285,11 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_types.read')) {
+            if (!$user->hasPermissionTo('staff_types.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -294,6 +308,7 @@ class StaffTypeController extends Controller
         // Check if any staff members are using this type
         $staffCount = DB::table('staff')
             ->where('staff_type_id', $id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->count();
 
@@ -301,14 +316,17 @@ class StaffTypeController extends Controller
         if ($staffCount > 0) {
             DB::table('staff')
                 ->where('staff_type_id', $id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->update(['staff_type_id' => null]);
         }
 
+        unset($currentSchoolId);
+
         // Soft delete using SoftDeletes trait
         $staffType->delete();
 
-        return response()->json(['message' => 'Staff type deleted successfully']);
+        return response()->noContent();
     }
 }
 

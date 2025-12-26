@@ -28,6 +28,8 @@ class ExamTimeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -39,6 +41,7 @@ class ExamTimeController extends Controller
 
         // Verify exam exists and belongs to organization
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -54,6 +57,7 @@ class ExamTimeController extends Controller
                 'invigilator'
             ])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('exam_id', $examId)
             ->whereNull('deleted_at');
 
@@ -93,6 +97,8 @@ class ExamTimeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.manage_timetable')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -104,6 +110,7 @@ class ExamTimeController extends Controller
 
         // Verify exam exists and belongs to organization
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -173,6 +180,7 @@ class ExamTimeController extends Controller
         // Check for room conflicts if room is specified
         if (!empty($validated['room_id'])) {
             $roomConflict = ExamTime::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('room_id', $validated['room_id'])
                 ->whereDate('date', $validated['date'])
                 ->whereNull('deleted_at')
@@ -198,6 +206,7 @@ class ExamTimeController extends Controller
 
         // Check for duplicate subject scheduling on same date/time
         $duplicateSubject = ExamTime::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('exam_subject_id', $validated['exam_subject_id'])
             ->whereDate('date', $validated['date'])
             ->where('start_time', $validated['start_time'])
@@ -212,6 +221,7 @@ class ExamTimeController extends Controller
 
         $examTime = ExamTime::create([
             'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
             'exam_id' => $examId,
             'exam_class_id' => $validated['exam_class_id'],
             'exam_subject_id' => $validated['exam_subject_id'],
@@ -250,6 +260,8 @@ class ExamTimeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.manage_timetable')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -260,6 +272,7 @@ class ExamTimeController extends Controller
         }
 
         $examTime = ExamTime::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->whereNull('deleted_at')
             ->first();
@@ -316,6 +329,7 @@ class ExamTimeController extends Controller
         $newRoomId = array_key_exists('room_id', $validated) ? $validated['room_id'] : $examTime->room_id;
         if ($newRoomId) {
             $roomConflict = ExamTime::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('room_id', $newRoomId)
                 ->whereDate('date', $newDate)
                 ->where('id', '!=', $id)
@@ -356,9 +370,9 @@ class ExamTimeController extends Controller
     /**
      * Delete an exam time slot
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
@@ -368,6 +382,8 @@ class ExamTimeController extends Controller
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
             if (!$user->hasPermissionTo('exams.manage_timetable')) {
@@ -379,6 +395,7 @@ class ExamTimeController extends Controller
         }
 
         $examTime = ExamTime::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->whereNull('deleted_at')
             ->first();
@@ -422,6 +439,8 @@ class ExamTimeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.manage_timetable')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -432,6 +451,7 @@ class ExamTimeController extends Controller
         }
 
         $examTime = ExamTime::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->whereNull('deleted_at')
             ->first();

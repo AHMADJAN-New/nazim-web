@@ -28,6 +28,8 @@ class ExamStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -43,6 +45,11 @@ class ExamStudentController extends Controller
             'studentAdmission.student'
         ])->whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id);
+
+        // Strict school scoping via parent exam
+        $query->whereHas('exam', function ($q) use ($currentSchoolId) {
+            $q->where('school_id', $currentSchoolId)->whereNull('deleted_at');
+        });
 
         if ($request->filled('exam_id')) {
             $query->where('exam_id', $request->exam_id);
@@ -73,6 +80,8 @@ class ExamStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.enroll_students')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -90,6 +99,7 @@ class ExamStudentController extends Controller
 
         // Verify exam belongs to organization
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $validated['exam_id'])
             ->whereNull('deleted_at')
             ->first();
@@ -120,6 +130,7 @@ class ExamStudentController extends Controller
         // Verify student admission belongs to organization
         $studentAdmission = StudentAdmission::where('id', $validated['student_admission_id'])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -139,6 +150,8 @@ class ExamStudentController extends Controller
         // Check if student is already enrolled in this exam
         $existing = ExamStudent::where('exam_id', $validated['exam_id'])
             ->where('student_admission_id', $validated['student_admission_id'])
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -151,6 +164,7 @@ class ExamStudentController extends Controller
             'exam_class_id' => $validated['exam_class_id'],
             'student_admission_id' => $validated['student_admission_id'],
             'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
         ]);
 
         $examStudent->load([
@@ -178,6 +192,8 @@ class ExamStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.enroll_students')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -194,6 +210,7 @@ class ExamStudentController extends Controller
 
         // Verify exam belongs to organization
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $validated['exam_id'])
             ->whereNull('deleted_at')
             ->first();
@@ -225,6 +242,7 @@ class ExamStudentController extends Controller
         // Get all active student admissions for this class academic year
         $studentAdmissions = StudentAdmission::where('class_academic_year_id', $examClass->class_academic_year_id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->where('enrollment_status', 'active') // Only enroll active students
             ->get();
@@ -246,6 +264,8 @@ class ExamStudentController extends Controller
                 // Check if student is already enrolled
                 $existing = ExamStudent::where('exam_id', $validated['exam_id'])
                     ->where('student_admission_id', $admission->id)
+                    ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
 
@@ -263,6 +283,7 @@ class ExamStudentController extends Controller
                         'exam_class_id' => $validated['exam_class_id'],
                         'student_admission_id' => $admission->id,
                         'organization_id' => $profile->organization_id,
+                        'school_id' => $currentSchoolId,
                     ]);
 
                     $enrolled[] = $examStudent->id;
@@ -309,6 +330,8 @@ class ExamStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.enroll_students')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -320,6 +343,7 @@ class ExamStudentController extends Controller
 
         // Verify exam belongs to organization
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -359,6 +383,7 @@ class ExamStudentController extends Controller
                 // Get all active student admissions for this class academic year
                 $studentAdmissions = StudentAdmission::where('class_academic_year_id', $examClass->class_academic_year_id)
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->where('enrollment_status', 'active')
                     ->get();
@@ -371,6 +396,8 @@ class ExamStudentController extends Controller
                     // Check if student is already enrolled
                     $existing = ExamStudent::where('exam_id', $examId)
                         ->where('student_admission_id', $admission->id)
+                        ->where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
                         ->whereNull('deleted_at')
                         ->first();
 
@@ -385,6 +412,7 @@ class ExamStudentController extends Controller
                             'exam_class_id' => $examClass->id,
                             'student_admission_id' => $admission->id,
                             'organization_id' => $profile->organization_id,
+                            'school_id' => $currentSchoolId,
                         ]);
                         $enrolled++;
                     } catch (\Exception $e) {
@@ -426,9 +454,9 @@ class ExamStudentController extends Controller
     /**
      * Remove a student from an exam
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
@@ -438,6 +466,8 @@ class ExamStudentController extends Controller
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         try {
             if (!$user->hasPermissionTo('exams.enroll_students')) {
@@ -451,6 +481,9 @@ class ExamStudentController extends Controller
         $examStudent = ExamStudent::where('organization_id', $profile->organization_id)
             ->where('id', $id)
             ->whereNull('deleted_at')
+            ->whereHas('exam', function ($q) use ($currentSchoolId) {
+                $q->where('school_id', $currentSchoolId)->whereNull('deleted_at');
+            })
             ->first();
 
         if (!$examStudent) {
@@ -458,7 +491,11 @@ class ExamStudentController extends Controller
         }
 
         // Verify exam allows modifications
-        $exam = Exam::find($examStudent->exam_id);
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('id', $examStudent->exam_id)
+            ->whereNull('deleted_at')
+            ->first();
         if ($exam && $exam->isConfigurationLocked()) {
             return response()->json([
                 'error' => 'Cannot remove students from a completed or archived exam',
@@ -500,6 +537,8 @@ class ExamStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -510,6 +549,7 @@ class ExamStudentController extends Controller
         }
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -532,12 +572,15 @@ class ExamStudentController extends Controller
         foreach ($examClasses as $examClass) {
             // Count enrolled students
             $enrolledCount = ExamStudent::where('exam_class_id', $examClass->id)
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->count();
 
             // Count available students in this class
             $availableCount = StudentAdmission::where('class_academic_year_id', $examClass->class_academic_year_id)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->where('enrollment_status', 'active')
                 ->count();

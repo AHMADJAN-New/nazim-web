@@ -39,20 +39,20 @@ class DashboardController extends Controller
 
         $orgId = $profile->organization_id;
 
-        // Get accessible school IDs (if needed for filtering)
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        // Strict school scoping: only current school from middleware context
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Fetch all statistics in parallel for better performance
         $stats = [
-            'students' => $this->getStudentStats($orgId, $schoolIds),
-            'staff' => $this->getStaffStats($orgId, $schoolIds),
-            'classes' => $this->getClassStats($orgId),
-            'rooms' => $this->getRoomStats($orgId),
-            'buildings' => $this->getBuildingStats($orgId),
-            'assets' => $this->getAssetStats($orgId, $schoolIds),
-            'books' => $this->getBookStats($orgId),
-            'leave_requests' => $this->getLeaveRequestStats($orgId),
-            'attendance' => $this->getAttendanceStats($orgId),
+            'students' => $this->getStudentStats($orgId, $currentSchoolId),
+            'staff' => $this->getStaffStats($orgId, $currentSchoolId),
+            'classes' => $this->getClassStats($orgId, $currentSchoolId),
+            'rooms' => $this->getRoomStats($orgId, $currentSchoolId),
+            'buildings' => $this->getBuildingStats($orgId, $currentSchoolId),
+            'assets' => $this->getAssetStats($orgId, $currentSchoolId),
+            'books' => $this->getBookStats($orgId, $currentSchoolId),
+            'leave_requests' => $this->getLeaveRequestStats($orgId, $currentSchoolId),
+            'attendance' => $this->getAttendanceStats($orgId, $currentSchoolId),
             'hostel' => $this->getHostelStats($orgId),
         ];
 
@@ -62,15 +62,12 @@ class DashboardController extends Controller
     /**
      * Get student statistics
      */
-    private function getStudentStats($orgId, $schoolIds)
+    private function getStudentStats($orgId, string $currentSchoolId)
     {
         try {
             $query = Student::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at');
-
-            if (!empty($schoolIds)) {
-                $query->whereIn('school_id', $schoolIds);
-            }
 
             $total = $query->count();
             $male = (clone $query)->where('gender', 'male')->count();
@@ -90,15 +87,12 @@ class DashboardController extends Controller
     /**
      * Get staff statistics
      */
-    private function getStaffStats($orgId, $schoolIds)
+    private function getStaffStats($orgId, string $currentSchoolId)
     {
         try {
             $query = Staff::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at');
-
-            if (!empty($schoolIds)) {
-                $query->whereIn('school_id', $schoolIds);
-            }
 
             return [
                 'total' => $query->count(),
@@ -112,10 +106,11 @@ class DashboardController extends Controller
     /**
      * Get class statistics
      */
-    private function getClassStats($orgId)
+    private function getClassStats($orgId, string $currentSchoolId)
     {
         try {
             $total = ClassModel::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->count();
 
@@ -131,10 +126,11 @@ class DashboardController extends Controller
     /**
      * Get room statistics
      */
-    private function getRoomStats($orgId)
+    private function getRoomStats($orgId, string $currentSchoolId)
     {
         try {
             $total = Room::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->count();
 
@@ -150,10 +146,11 @@ class DashboardController extends Controller
     /**
      * Get building statistics
      */
-    private function getBuildingStats($orgId)
+    private function getBuildingStats($orgId, string $currentSchoolId)
     {
         try {
             $total = Building::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->count();
 
@@ -169,18 +166,12 @@ class DashboardController extends Controller
     /**
      * Get asset statistics
      */
-    private function getAssetStats($orgId, $schoolIds)
+    private function getAssetStats($orgId, string $currentSchoolId)
     {
         try {
             $baseQuery = Asset::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at');
-
-            if (!empty($schoolIds)) {
-                $baseQuery->where(function ($q) use ($schoolIds) {
-                    $q->whereNull('school_id')
-                        ->orWhereIn('school_id', $schoolIds);
-                });
-            }
 
             $statusCounts = (clone $baseQuery)
                 ->select('status', DB::raw('count(*) as total'))
@@ -230,10 +221,11 @@ class DashboardController extends Controller
     /**
      * Get book statistics
      */
-    private function getBookStats($orgId)
+    private function getBookStats($orgId, string $currentSchoolId)
     {
         try {
             $totalBooks = LibraryBook::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->count();
 
@@ -242,6 +234,7 @@ class DashboardController extends Controller
             $totalCopies = DB::table('library_copies')
                 ->join('library_books', 'library_copies.book_id', '=', 'library_books.id')
                 ->where('library_books.organization_id', $orgId)
+                ->where('library_books.school_id', $currentSchoolId)
                 ->whereNull('library_copies.deleted_at')
                 ->whereNull('library_books.deleted_at')
                 ->count();
@@ -249,6 +242,7 @@ class DashboardController extends Controller
             $availableCopies = DB::table('library_copies')
                 ->join('library_books', 'library_copies.book_id', '=', 'library_books.id')
                 ->where('library_books.organization_id', $orgId)
+                ->where('library_books.school_id', $currentSchoolId)
                 ->where('library_copies.status', 'available')
                 ->whereNull('library_copies.deleted_at')
                 ->whereNull('library_books.deleted_at')
@@ -276,10 +270,11 @@ class DashboardController extends Controller
     /**
      * Get leave request statistics
      */
-    private function getLeaveRequestStats($orgId)
+    private function getLeaveRequestStats($orgId, string $currentSchoolId)
     {
         try {
             $query = LeaveRequest::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at');
 
             $total = $query->count();
@@ -307,13 +302,14 @@ class DashboardController extends Controller
     /**
      * Get attendance statistics
      */
-    private function getAttendanceStats($orgId)
+    private function getAttendanceStats($orgId, string $currentSchoolId)
     {
         try {
             $today = now()->toDateString();
 
             // Get today's attendance sessions
             $todaySessions = AttendanceSession::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereDate('session_date', $today)
                 ->whereNull('deleted_at')
                 ->get();
@@ -346,6 +342,7 @@ class DashboardController extends Controller
             for ($i = 6; $i >= 0; $i--) {
                 $date = now()->subDays($i)->toDateString();
                 $daySessions = AttendanceSession::where('organization_id', $orgId)
+                    ->where('school_id', $currentSchoolId)
                     ->whereDate('session_date', $date)
                     ->whereNull('deleted_at')
                     ->get();

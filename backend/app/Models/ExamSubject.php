@@ -24,6 +24,7 @@ class ExamSubject extends Model
         'class_subject_id',
         'subject_id',
         'organization_id',
+        'school_id',
         'total_marks',
         'passing_marks',
         'scheduled_at',
