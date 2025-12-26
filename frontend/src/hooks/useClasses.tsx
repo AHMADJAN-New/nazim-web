@@ -28,7 +28,13 @@ export const useClasses = (organizationId?: string, usePaginated?: boolean) => {
     });
 
     const { data, isLoading, error } = useQuery<Class[] | PaginatedResponse<ClassApi.Class>>({
-        queryKey: ['classes', organizationId || profile?.organization_id, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+        queryKey: [
+            'classes',
+            organizationId || profile?.organization_id,
+            profile?.default_school_id ?? null,
+            usePaginated ? page : undefined,
+            usePaginated ? pageSize : undefined,
+        ],
         queryFn: async () => {
             if (!user || !profile) return [];
 
@@ -70,7 +76,7 @@ export const useClasses = (organizationId?: string, usePaginated?: boolean) => {
             // Map API models to domain models (non-paginated)
             return (apiClasses as ClassApi.Class[]).map(mapClassApiToDomain);
         },
-        enabled: !!user && !!profile && !profileLoading && !isEventUser, // Disable for event users and wait for profile
+        enabled: !!user && !!profile && !!profile.default_school_id && !profileLoading && !isEventUser, // Disable for event users and wait for profile
         staleTime: 5 * 60 * 1000, // 5 minutes
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
@@ -110,7 +116,7 @@ export const useClassAcademicYears = (academicYearId?: string, organizationId?: 
     const { user, profile } = useAuth();
 
     return useQuery<ClassAcademicYear[]>({
-        queryKey: ['class-academic-years', academicYearId, organizationId || profile?.organization_id],
+        queryKey: ['class-academic-years', academicYearId, organizationId || profile?.organization_id, profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile || !academicYearId) return [];
 
@@ -138,7 +144,7 @@ export const useClassAcademicYears = (academicYearId?: string, organizationId?: 
                 return [];
             }
         },
-        enabled: !!user && !!profile && !!academicYearId,
+        enabled: !!user && !!profile && !!profile.default_school_id && !!academicYearId,
         staleTime: 5 * 60 * 1000, // 5 minutes
         refetchOnWindowFocus: false, // REQUIRED: Performance optimization
         refetchOnReconnect: false, // REQUIRED: Performance optimization
@@ -150,7 +156,7 @@ export const useClassHistory = (classId: string) => {
     const { user, profile } = useAuth();
 
     return useQuery<ClassAcademicYear[]>({
-        queryKey: ['class-history', classId],
+        queryKey: ['class-history', classId, profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile || !classId) return [];
 
@@ -159,7 +165,7 @@ export const useClassHistory = (classId: string) => {
             // Map API models to domain models
             return (apiClassYears as ClassApi.ClassAcademicYear[]).map(mapClassAcademicYearApiToDomain);
         },
-        enabled: !!user && !!profile && !!classId,
+        enabled: !!user && !!profile && !!profile.default_school_id && !!classId,
         staleTime: 5 * 60 * 1000, // 5 minutes
         refetchOnWindowFocus: false, // REQUIRED: Performance optimization
         refetchOnReconnect: false, // REQUIRED: Performance optimization

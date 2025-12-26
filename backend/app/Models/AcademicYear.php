@@ -89,17 +89,15 @@ class AcademicYear extends Model
     }
 
     /**
-     * Scope to filter by organization (including global years)
+     * Scope to filter by organization.
+     * Note: Academic years are strictly school-scoped (no global rows).
      */
     public function scopeForOrganization($query, $organizationId)
     {
-        if ($organizationId === null) {
-            return $query->whereNull('organization_id');
+        if (!$organizationId) {
+            return $query->whereRaw('1=0');
         }
-        return $query->where(function ($q) use ($organizationId) {
-            $q->where('organization_id', $organizationId)
-              ->orWhereNull('organization_id'); // Include global years
-        });
+        return $query->where('organization_id', $organizationId);
     }
 
     /**

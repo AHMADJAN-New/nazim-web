@@ -32,7 +32,14 @@ export const useStaff = (organizationId?: string, usePaginated?: boolean) => {
   });
 
   const { data, isLoading, error, refetch } = useQuery<Staff[] | PaginatedResponse<StaffApi.Staff>>({
-    queryKey: ['staff', orgId, orgIds.join(','), usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+    queryKey: [
+      'staff',
+      orgId,
+      orgIds.join(','),
+      profile?.default_school_id ?? null,
+      usePaginated ? page : undefined,
+      usePaginated ? pageSize : undefined,
+    ],
     queryFn: async () => {
       if (!user || !profile) return [];
       if (orgsLoading) return [];
@@ -87,7 +94,7 @@ export const useStaff = (organizationId?: string, usePaginated?: boolean) => {
       // Map API models to domain models (non-paginated)
       return (apiStaff as StaffApi.Staff[]).map(mapStaffApiToDomain);
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!profile && !!profile.default_school_id,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -127,8 +134,9 @@ export const useStaff = (organizationId?: string, usePaginated?: boolean) => {
 
 // Hook to fetch a single staff member
 export const useStaffMember = (staffId: string) => {
+  const { profile } = useAuth();
   return useQuery<Staff>({
-    queryKey: ['staff', staffId],
+    queryKey: ['staff', staffId, profile?.default_school_id ?? null],
     queryFn: async () => {
       const apiStaff = await staffApi.get(staffId);
       return mapStaffApiToDomain(apiStaff as StaffApi.Staff);
@@ -136,6 +144,7 @@ export const useStaffMember = (staffId: string) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false, // REQUIRED: Performance optimization
     refetchOnReconnect: false, // REQUIRED: Performance optimization
+    enabled: !!profile?.default_school_id,
   });
 };
 

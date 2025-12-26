@@ -36,7 +36,13 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean) => 
   });
 
   const { data, isLoading, error } = useQuery<Student[] | PaginatedResponse<StudentApi.Student>>({
-    queryKey: ['students', organizationId ?? profile?.organization_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+    queryKey: [
+      'students',
+      organizationId ?? profile?.organization_id ?? null,
+      profile?.default_school_id ?? null,
+      usePaginated ? page : undefined,
+      usePaginated ? pageSize : undefined,
+    ],
     queryFn: async () => {
       if (!user || !profile) {
         return [];
@@ -90,7 +96,7 @@ export const useStudents = (organizationId?: string, usePaginated?: boolean) => 
         throw error;
       }
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!profile && !!profile.default_school_id,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,

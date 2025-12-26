@@ -32,7 +32,14 @@ export const useSubjects = (organizationId?: string, usePaginated?: boolean) => 
     });
 
     const { data, isLoading, error } = useQuery<Subject[] | PaginatedResponse<SubjectApi.Subject>>({
-        queryKey: ['subjects', organizationId || profile?.organization_id, orgIds.join(','), usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+        queryKey: [
+            'subjects',
+            organizationId || profile?.organization_id,
+            orgIds.join(','),
+            profile?.default_school_id ?? null,
+            usePaginated ? page : undefined,
+            usePaginated ? pageSize : undefined,
+        ],
         queryFn: async () => {
             if (!user || !profile || orgsLoading) return [];
 
@@ -76,7 +83,7 @@ export const useSubjects = (organizationId?: string, usePaginated?: boolean) => 
             // Map API models to domain models (non-paginated)
             return (apiSubjects as SubjectApi.Subject[]).map(mapSubjectApiToDomain);
         },
-        enabled: !!user && !!profile,
+        enabled: !!user && !!profile && !!profile.default_school_id,
         staleTime: 5 * 60 * 1000, // 5 minutes
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
@@ -117,7 +124,7 @@ export const useClassSubjects = (classAcademicYearId?: string, organizationId?: 
     const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
     return useQuery<ClassSubject[]>({
-        queryKey: ['class-subjects', classAcademicYearId, organizationId || profile?.organization_id, orgIds.join(',')],
+        queryKey: ['class-subjects', classAcademicYearId, organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
         queryFn: async () => {
             if (!user || !profile || !classAcademicYearId || orgsLoading) return [];
 
@@ -149,7 +156,7 @@ export const useClassSubjects = (classAcademicYearId?: string, organizationId?: 
 
             return classSubjects;
         },
-        enabled: !!user && !!profile && !!classAcademicYearId,
+        enabled: !!user && !!profile && !!profile.default_school_id && !!classAcademicYearId,
         staleTime: 5 * 60 * 1000, // 5 minutes
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
