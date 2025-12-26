@@ -15,7 +15,7 @@ class DocumentReportsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $orgId = $profile->organization_id;
         $startOfWeek = now()->startOfWeek();
@@ -23,17 +23,19 @@ class DocumentReportsController extends BaseDmsController
 
         return [
             'incoming' => [
-                'week' => IncomingDocument::where('organization_id', $orgId)->whereDate('received_date', '>=', $startOfWeek)->count(),
-                'month' => IncomingDocument::where('organization_id', $orgId)->whereDate('received_date', '>=', $startOfMonth)->count(),
+                'week' => IncomingDocument::where('organization_id', $orgId)->where('school_id', $currentSchoolId)->whereDate('received_date', '>=', $startOfWeek)->count(),
+                'month' => IncomingDocument::where('organization_id', $orgId)->where('school_id', $currentSchoolId)->whereDate('received_date', '>=', $startOfMonth)->count(),
             ],
             'outgoing' => [
-                'week' => OutgoingDocument::where('organization_id', $orgId)->whereDate('issue_date', '>=', $startOfWeek)->count(),
-                'month' => OutgoingDocument::where('organization_id', $orgId)->whereDate('issue_date', '>=', $startOfMonth)->count(),
+                'week' => OutgoingDocument::where('organization_id', $orgId)->where('school_id', $currentSchoolId)->whereDate('issue_date', '>=', $startOfWeek)->count(),
+                'month' => OutgoingDocument::where('organization_id', $orgId)->where('school_id', $currentSchoolId)->whereDate('issue_date', '>=', $startOfMonth)->count(),
             ],
             'pending_routed' => IncomingDocument::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereIn('status', ['pending', 'under_review'])
                 ->count(),
             'confidential_plus' => IncomingDocument::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereIn('security_level_key', ['confidential', 'secret', 'top_secret'])
                 ->count(),
         ];
@@ -45,27 +47,31 @@ class DocumentReportsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $orgId = $profile->organization_id;
 
         $incomingByDepartment = IncomingDocument::select('routing_department_id', DB::raw('count(*) as total'))
             ->where('organization_id', $orgId)
+            ->where('school_id', $currentSchoolId)
             ->groupBy('routing_department_id')
             ->get();
 
         $outgoingByTemplate = OutgoingDocument::select(DB::raw("coalesce(outdoc_prefix, 'OUT') as template"), DB::raw('count(*) as total'))
             ->where('organization_id', $orgId)
+            ->where('school_id', $currentSchoolId)
             ->groupBy('template')
             ->get();
 
         $securityBreakdown = IncomingDocument::select('security_level_key', DB::raw('count(*) as total'))
             ->where('organization_id', $orgId)
+            ->where('school_id', $currentSchoolId)
             ->groupBy('security_level_key')
             ->get();
 
         $aging = IncomingDocument::select(DB::raw('status'), DB::raw('avg(extract(epoch from (now() - created_at))/86400) as average_days'))
             ->where('organization_id', $orgId)
+            ->where('school_id', $currentSchoolId)
             ->groupBy('status')
             ->get();
 

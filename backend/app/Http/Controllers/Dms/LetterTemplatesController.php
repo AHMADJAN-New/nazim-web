@@ -33,9 +33,10 @@ class LetterTemplatesController extends BaseDmsController
             return $context;
         }
         $this->authorize('viewAny', LetterTemplate::class);
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $query = LetterTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->with(['letterhead', 'watermark']);
 
         if ($request->filled('category')) {
@@ -66,7 +67,7 @@ class LetterTemplatesController extends BaseDmsController
             return $context;
         }
         $this->authorize('create', LetterTemplate::class);
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -84,10 +85,10 @@ class LetterTemplatesController extends BaseDmsController
             'repeat_letterhead_on_pages' => ['boolean'],
             'is_mass_template' => ['boolean'],
             'active' => ['boolean'],
-            'school_id' => ['nullable', 'uuid'],
         ]);
 
         $data['organization_id'] = $profile->organization_id;
+        $data['school_id'] = $currentSchoolId;
 
         $template = LetterTemplate::create($data);
 
@@ -100,10 +101,11 @@ class LetterTemplatesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $template = LetterTemplate::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $this->authorize('update', $template);
@@ -138,10 +140,11 @@ class LetterTemplatesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $template = LetterTemplate::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->with(['letterhead', 'watermark'])
             ->firstOrFail();
 
@@ -156,16 +159,19 @@ class LetterTemplatesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $template = LetterTemplate::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $this->authorize('delete', $template);
 
         // Check if template is in use
         $inUse = \App\Models\OutgoingDocument::where('template_id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->exists();
 
         if ($inUse) {
@@ -184,10 +190,11 @@ class LetterTemplatesController extends BaseDmsController
             return $context;
         }
         $this->authorize('create', LetterTemplate::class);
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $original = LetterTemplate::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $this->authorize('view', $original);
@@ -199,6 +206,7 @@ class LetterTemplatesController extends BaseDmsController
         $newTemplate = $original->replicate();
         $newTemplate->name = $data['name'] ?? $original->name . ' (Copy)';
         $newTemplate->active = false; // Duplicates are inactive by default
+        $newTemplate->school_id = $currentSchoolId;
         $newTemplate->save();
 
         return response()->json($newTemplate->load(['letterhead', 'watermark']), 201);
@@ -210,10 +218,11 @@ class LetterTemplatesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $template = LetterTemplate::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->with(['letterhead', 'watermark'])
             ->firstOrFail();
 
@@ -301,10 +310,11 @@ class LetterTemplatesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $template = LetterTemplate::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->with(['letterhead', 'watermark'])
             ->firstOrFail();
 
@@ -396,7 +406,7 @@ class LetterTemplatesController extends BaseDmsController
             return $context;
         }
         $this->authorize('viewAny', LetterTemplate::class);
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $data = $request->validate([
             'template' => ['required', 'array'],
@@ -418,6 +428,7 @@ class LetterTemplatesController extends BaseDmsController
 
         $template = new LetterTemplate();
         $template->organization_id = $profile->organization_id;
+        $template->school_id = $currentSchoolId;
         $template->category = $templatePayload['category'];
         $template->body_text = $templatePayload['body_text'] ?? '';
         $template->letterhead_id = $templatePayload['letterhead_id'] ?? null;
@@ -429,14 +440,18 @@ class LetterTemplatesController extends BaseDmsController
         $template->table_structure = $templatePayload['table_structure'] ?? null;
 
         if (!empty($template->letterhead_id)) {
-            $letterhead = Letterhead::where('organization_id', $profile->organization_id)->find($template->letterhead_id);
+            $letterhead = Letterhead::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->find($template->letterhead_id);
             if ($letterhead) {
                 $template->setRelation('letterhead', $letterhead);
             }
         }
 
         if (!empty($template->watermark_id)) {
-            $watermark = Letterhead::where('organization_id', $profile->organization_id)->find($template->watermark_id);
+            $watermark = Letterhead::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->find($template->watermark_id);
             if ($watermark) {
                 $template->setRelation('watermark', $watermark);
             }

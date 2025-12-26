@@ -37,13 +37,11 @@ class EventTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $query = EventType::whereNull('deleted_at')
-            ->where('organization_id', $profile->organization_id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
-        // Filter by school_id if provided
-        if ($request->has('school_id') && $request->school_id) {
-            $query->where('school_id', $request->school_id);
-        }
+        $query = EventType::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         // Filter by is_active
         if ($request->has('is_active')) {
@@ -85,17 +83,18 @@ class EventTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $validated = $request->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string',
-            'school_id' => 'required|uuid|exists:school_branding,id',
             'is_active' => 'boolean',
         ]);
 
         try {
             $eventType = EventType::create([
                 'organization_id' => $profile->organization_id,
-                'school_id' => $validated['school_id'],
+                'school_id' => $currentSchoolId,
                 'name' => $validated['name'],
                 'description' => $validated['description'] ?? null,
                 'is_active' => $validated['is_active'] ?? true,
@@ -134,9 +133,12 @@ class EventTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $eventType = EventType::with(['fieldGroups', 'fields'])
             ->where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -171,8 +173,11 @@ class EventTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $eventType = EventType::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -183,7 +188,6 @@ class EventTypeController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:100',
             'description' => 'nullable|string',
-            'school_id' => 'sometimes|required|uuid|exists:school_branding,id',
             'is_active' => 'boolean',
         ]);
 
@@ -221,8 +225,11 @@ class EventTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $eventType = EventType::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -233,7 +240,7 @@ class EventTypeController extends Controller
         try {
             $eventType->delete();
             Log::info("Event type deleted", ['id' => $id]);
-            return response()->json(['message' => 'Event type deleted successfully']);
+            return response()->noContent();
         } catch (\Exception $e) {
             Log::error("Failed to delete event type: " . $e->getMessage());
             return response()->json(['error' => 'Failed to delete event type'], 500);
@@ -260,8 +267,11 @@ class EventTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $eventType = EventType::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -303,8 +313,11 @@ class EventTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $eventType = EventType::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 

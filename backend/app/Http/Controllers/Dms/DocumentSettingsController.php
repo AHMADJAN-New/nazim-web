@@ -13,10 +13,10 @@ class DocumentSettingsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $settings = DocumentSetting::firstOrCreate(
-            ['organization_id' => $profile->organization_id, 'school_id' => $request->input('school_id')]
+            ['organization_id' => $profile->organization_id, 'school_id' => $currentSchoolId]
         );
 
         return $settings;
@@ -28,18 +28,17 @@ class DocumentSettingsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $data = $request->validate([
             'incoming_prefix' => ['nullable', 'string', 'max:20'],
             'outgoing_prefix' => ['nullable', 'string', 'max:20'],
             'year_mode' => ['nullable', 'string'],
             'reset_yearly' => ['boolean'],
-            'school_id' => ['nullable', 'uuid'],
         ]);
 
         $settings = DocumentSetting::firstOrCreate(
-            ['organization_id' => $profile->organization_id, 'school_id' => $data['school_id'] ?? null]
+            ['organization_id' => $profile->organization_id, 'school_id' => $currentSchoolId]
         );
 
         $settings->fill($data);

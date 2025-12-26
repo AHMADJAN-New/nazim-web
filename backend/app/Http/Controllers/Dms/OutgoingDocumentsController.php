@@ -35,16 +35,11 @@ class OutgoingDocumentsController extends BaseDmsController
             return $context;
         }
         $this->authorize('viewAny', OutgoingDocument::class);
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $query = OutgoingDocument::query()
-            ->where('organization_id', $profile->organization_id);
-
-        if (!empty($schoolIds)) {
-            $query->where(function ($q) use ($schoolIds) {
-                $q->whereIn('school_id', $schoolIds)->orWhereNull('school_id');
-            });
-        }
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         if ($request->filled('subject')) {
             $query->where('subject', 'ilike', '%' . $request->subject . '%');
@@ -99,7 +94,7 @@ class OutgoingDocumentsController extends BaseDmsController
             return $context;
         }
         $this->authorize('create', OutgoingDocument::class);
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $validationRules = [
             'security_level_key' => ['nullable', 'string'],
@@ -123,7 +118,6 @@ class OutgoingDocumentsController extends BaseDmsController
             'table_payload' => ['nullable', 'array'],
             'is_manual_number' => ['boolean'],
             'manual_outdoc_number' => ['nullable', 'string'],
-            'school_id' => ['nullable', 'uuid'],
         ];
 
         // Only validate academic_year_id if column exists
@@ -132,14 +126,11 @@ class OutgoingDocumentsController extends BaseDmsController
         }
 
         $data = $request->validate($validationRules);
-
-        if ($response = $this->ensureSchoolAccess($data['school_id'] ?? null, $schoolIds)) {
-            return $response;
-        }
+        $data['school_id'] = $currentSchoolId;
 
         if (!$request->boolean('is_manual_number')) {
             $settings = DocumentSetting::firstOrCreate(
-                ['organization_id' => $profile->organization_id, 'school_id' => $data['school_id'] ?? null],
+                ['organization_id' => $profile->organization_id, 'school_id' => $currentSchoolId],
                 []
             );
 
@@ -148,6 +139,7 @@ class OutgoingDocumentsController extends BaseDmsController
             if (!empty($data['academic_year_id']) && Schema::hasColumn('outgoing_documents', 'academic_year_id')) {
                 $academicYear = \App\Models\AcademicYear::where('id', $data['academic_year_id'])
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->first();
             }
 
@@ -157,7 +149,7 @@ class OutgoingDocumentsController extends BaseDmsController
             );
             $sequence = $this->numberingService->generateOutgoingNumber(
                 $profile->organization_id,
-                $data['school_id'] ?? null,
+                $currentSchoolId,
                 $settings->outgoing_prefix ?? 'OUT',
                 $yearKey
             );
@@ -201,6 +193,7 @@ class OutgoingDocumentsController extends BaseDmsController
         // Only set if column exists (migration may not have run yet)
         if (empty($data['academic_year_id']) && Schema::hasColumn('outgoing_documents', 'academic_year_id')) {
             $currentAcademicYear = \App\Models\AcademicYear::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('is_current', true)
                 ->whereNull('deleted_at')
                 ->first();
@@ -231,10 +224,11 @@ class OutgoingDocumentsController extends BaseDmsController
                 return $context;
             }
         }
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $doc = OutgoingDocument::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         // Check if user has either read OR create permission
@@ -243,10 +237,6 @@ class OutgoingDocumentsController extends BaseDmsController
         
         if (!$hasReadPermission && !$hasCreatePermission) {
             return response()->json(['error' => 'You do not have permission to view outgoing documents. You need either "Read Outgoing Documents" or "Create Outgoing Documents" permission.'], 403);
-        }
-
-        if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
-            return $response;
         }
 
         // Check if user created this document (users can always view documents they created)
@@ -278,17 +268,14 @@ class OutgoingDocumentsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $doc = OutgoingDocument::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $this->authorize('update', $doc);
-
-        if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
-            return $response;
-        }
 
         $data = $request->validate([
             'security_level_key' => ['nullable', 'string'],
@@ -308,10 +295,6 @@ class OutgoingDocumentsController extends BaseDmsController
             'announcement_scope' => ['nullable', 'array'],
             'table_payload' => ['nullable', 'array'],
         ]);
-
-        if ($response = $this->ensureSchoolAccess($data['school_id'] ?? $doc->school_id, $schoolIds)) {
-            return $response;
-        }
 
         $doc->fill($data);
 
@@ -348,11 +331,12 @@ class OutgoingDocumentsController extends BaseDmsController
                 return $context;
             }
         }
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $doc = OutgoingDocument::with(['template.letterhead', 'template.watermark', 'letterhead'])
             ->where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         // Check if user has either read OR create permission
@@ -379,10 +363,6 @@ class OutgoingDocumentsController extends BaseDmsController
             if (!$this->securityGateService->canView($user, $doc->security_level_key, $profile->organization_id)) {
                 return response()->json(['error' => 'Insufficient security clearance to view this document'], 403);
             }
-        }
-
-        if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
-            return $response;
         }
 
         $pdfPath = $doc->pdf_path;

@@ -21,6 +21,7 @@ class TeacherTimetablePreference extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'academic_year_id',
         'teacher_id',
         'schedule_slot_ids',
@@ -56,6 +57,14 @@ class TeacherTimetablePreference extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organization_id');
+    }
+
+    /**
+     * Get the school that owns the preference
+     */
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 
     /**

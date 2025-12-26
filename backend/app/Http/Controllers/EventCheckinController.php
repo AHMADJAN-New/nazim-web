@@ -36,6 +36,8 @@ class EventCheckinController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Check if user is event-specific (locked to one event)
         $isEventUser = $profile->is_event_user ?? false;
         $userEventId = $profile->event_id ?? null;
@@ -48,6 +50,7 @@ class EventCheckinController extends Controller
         // Verify event
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -73,6 +76,8 @@ class EventCheckinController extends Controller
 
         // Find guest by QR token or guest code
         $query = EventGuest::where('event_id', $eventId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         if (!empty($validated['qr_token'])) {
@@ -219,6 +224,8 @@ class EventCheckinController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Check if user is event-specific (locked to one event)
         $isEventUser = $profile->is_event_user ?? false;
         $userEventId = $profile->event_id ?? null;
@@ -231,6 +238,7 @@ class EventCheckinController extends Controller
         // Verify event
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -298,6 +306,8 @@ class EventCheckinController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $validated = $request->validate([
             'qr_token' => 'required_without:guest_code|string',
             'guest_code' => 'required_without:qr_token|string',
@@ -315,6 +325,7 @@ class EventCheckinController extends Controller
         // Verify event
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -323,6 +334,8 @@ class EventCheckinController extends Controller
         }
 
         $query = EventGuest::where('event_id', $eventId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         if (!empty($validated['qr_token'])) {
@@ -376,6 +389,8 @@ class EventCheckinController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $checkin = EventCheckin::where('id', $checkinId)
             ->where('event_id', $eventId)
             ->first();
@@ -387,6 +402,7 @@ class EventCheckinController extends Controller
         // Verify event belongs to org
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 

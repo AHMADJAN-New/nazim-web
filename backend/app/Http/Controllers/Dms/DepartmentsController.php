@@ -15,9 +15,10 @@ class DepartmentsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         return Department::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->orderBy('name')
             ->get();
     }
@@ -28,10 +29,11 @@ class DepartmentsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $department = Department::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         return $department;
@@ -43,14 +45,14 @@ class DepartmentsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'school_id' => ['nullable', 'uuid'],
         ]);
 
         $data['organization_id'] = $profile->organization_id;
+        $data['school_id'] = $currentSchoolId;
 
         $department = Department::create($data);
 
@@ -63,15 +65,15 @@ class DepartmentsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $department = Department::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'school_id' => ['nullable', 'uuid'],
         ]);
 
         $department->update($data);
@@ -85,10 +87,11 @@ class DepartmentsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $department = Department::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         // Check if department is in use
@@ -110,11 +113,12 @@ class DepartmentsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $stats = DB::table('departments')
             ->leftJoin('incoming_documents', 'departments.id', '=', 'incoming_documents.routing_department_id')
             ->where('departments.organization_id', $profile->organization_id)
+            ->where('departments.school_id', $currentSchoolId)
             ->select(
                 'departments.id',
                 'departments.name',

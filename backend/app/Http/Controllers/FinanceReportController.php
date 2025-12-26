@@ -45,6 +45,7 @@ class FinanceReportController extends Controller
             }
 
             $orgId = $profile->organization_id;
+            $currentSchoolId = $this->getCurrentSchoolId($request);
 
             // Get target currency for conversion (optional)
             $validated = $request->validate([
@@ -55,6 +56,7 @@ class FinanceReportController extends Controller
             // Get base currency if no target specified
             if (!$targetCurrencyId) {
                 $baseCurrency = Currency::where('organization_id', $orgId)
+                    ->where('school_id', $currentSchoolId)
                     ->where('is_base', true)
                     ->where('is_active', true)
                     ->first();
@@ -70,6 +72,7 @@ class FinanceReportController extends Controller
             // Recalculate balances to include assets before calculating totals
             $accounts = FinanceAccount::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->where('is_active', true)
                 ->get();
             
@@ -84,7 +87,7 @@ class FinanceReportController extends Controller
                 foreach ($account->incomeEntries()->whereNull('deleted_at')->get() as $entry) {
                     $amount = (float) $entry->amount;
                     if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $entry->date);
+                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
                     }
                     $cashIncome += $amount;
                 }
@@ -93,14 +96,14 @@ class FinanceReportController extends Controller
                 foreach ($account->expenseEntries()->whereNull('deleted_at')->where('status', 'approved')->get() as $entry) {
                     $amount = (float) $entry->amount;
                     if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $entry->date);
+                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
                     }
                     $cashExpense += $amount;
                 }
                 
                 $openingBalance = (float) $account->opening_balance;
                 if ($targetCurrencyId && $account->currency_id && $account->currency_id !== $targetCurrencyId) {
-                    $openingBalance = $this->convertAmount($openingBalance, $account->currency_id, $targetCurrencyId, $orgId);
+                    $openingBalance = $this->convertAmount($openingBalance, $account->currency_id, $targetCurrencyId, $orgId, $currentSchoolId);
                 }
                 
                 $cashBalance = $openingBalance + $cashIncome - $cashExpense;
@@ -111,7 +114,7 @@ class FinanceReportController extends Controller
                 
                 $balance = (float) $account->current_balance;
                 if ($targetCurrencyId && $account->currency_id && $account->currency_id !== $targetCurrencyId) {
-                    $balance = $this->convertAmount($balance, $account->currency_id, $targetCurrencyId, $orgId);
+                    $balance = $this->convertAmount($balance, $account->currency_id, $targetCurrencyId, $orgId, $currentSchoolId);
                 }
                 $totalBalance += $balance;
             }
@@ -119,6 +122,7 @@ class FinanceReportController extends Controller
             // Current month income (with currency conversion)
             $incomeEntries = IncomeEntry::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
                 ->get();
             
@@ -126,7 +130,7 @@ class FinanceReportController extends Controller
             foreach ($incomeEntries as $entry) {
                 $amount = (float) $entry->amount;
                 if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                    $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $entry->date);
+                    $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
                 }
                 $currentMonthIncome += $amount;
             }
@@ -134,6 +138,7 @@ class FinanceReportController extends Controller
             // Current month expense (with currency conversion)
             $expenseEntries = ExpenseEntry::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->where('status', 'approved')
                 ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
                 ->get();
@@ -142,7 +147,7 @@ class FinanceReportController extends Controller
             foreach ($expenseEntries as $entry) {
                 $amount = (float) $entry->amount;
                 if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                    $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $entry->date);
+                    $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
                 }
                 $currentMonthExpense += $amount;
             }
@@ -151,16 +156,17 @@ class FinanceReportController extends Controller
             // Recalculate balances to include assets before displaying
             $accountBalances = FinanceAccount::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get()
-                ->map(function ($account) use ($targetCurrencyId, $orgId) {
+                ->map(function ($account) use ($targetCurrencyId, $orgId, $currentSchoolId) {
                     // Recalculate balance to include assets
                     $account->recalculateBalance();
                     
                     $balance = (float) $account->current_balance;
                     if ($targetCurrencyId && $account->currency_id && $account->currency_id !== $targetCurrencyId) {
-                        $balance = $this->convertAmount($balance, $account->currency_id, $targetCurrencyId, $orgId);
+                        $balance = $this->convertAmount($balance, $account->currency_id, $targetCurrencyId, $orgId, $currentSchoolId);
                     }
                     return [
                         'id' => $account->id,
@@ -173,19 +179,21 @@ class FinanceReportController extends Controller
             // Income by category (current month) - with currency conversion
             $incomeByCategoryRaw = IncomeEntry::whereNull('income_entries.deleted_at')
                 ->where('income_entries.organization_id', $orgId)
+                ->where('income_entries.school_id', $currentSchoolId)
                 ->whereBetween('income_entries.date', [$currentMonthStart, $currentMonthEnd])
                 ->join('income_categories', 'income_entries.income_category_id', '=', 'income_categories.id')
                 ->where('income_categories.organization_id', $orgId)
+                ->where('income_categories.school_id', $currentSchoolId)
                 ->whereNull('income_categories.deleted_at')
                 ->select('income_categories.id', 'income_categories.name', 'income_entries.amount', 'income_entries.currency_id', 'income_entries.date')
                 ->get();
             
-            $incomeByCategory = $incomeByCategoryRaw->groupBy('id')->map(function ($group) use ($targetCurrencyId, $orgId) {
+            $incomeByCategory = $incomeByCategoryRaw->groupBy('id')->map(function ($group) use ($targetCurrencyId, $orgId, $currentSchoolId) {
                 $total = 0;
                 foreach ($group as $entry) {
                     $amount = (float) $entry->amount;
                     if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $entry->date);
+                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
                     }
                     $total += $amount;
                 }
@@ -199,20 +207,22 @@ class FinanceReportController extends Controller
             // Expense by category (current month) - with currency conversion
             $expenseByCategoryRaw = ExpenseEntry::whereNull('expense_entries.deleted_at')
                 ->where('expense_entries.organization_id', $orgId)
+                ->where('expense_entries.school_id', $currentSchoolId)
                 ->where('expense_entries.status', 'approved')
                 ->whereBetween('expense_entries.date', [$currentMonthStart, $currentMonthEnd])
                 ->join('expense_categories', 'expense_entries.expense_category_id', '=', 'expense_categories.id')
                 ->where('expense_categories.organization_id', $orgId)
+                ->where('expense_categories.school_id', $currentSchoolId)
                 ->whereNull('expense_categories.deleted_at')
                 ->select('expense_categories.id', 'expense_categories.name', 'expense_entries.amount', 'expense_entries.currency_id', 'expense_entries.date')
                 ->get();
             
-            $expenseByCategory = $expenseByCategoryRaw->groupBy('id')->map(function ($group) use ($targetCurrencyId, $orgId) {
+            $expenseByCategory = $expenseByCategoryRaw->groupBy('id')->map(function ($group) use ($targetCurrencyId, $orgId, $currentSchoolId) {
                 $total = 0;
                 foreach ($group as $entry) {
                     $amount = (float) $entry->amount;
                     if ($targetCurrencyId && $entry->currency_id && $entry->currency_id !== $targetCurrencyId) {
-                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $entry->date);
+                        $amount = $this->convertAmount($amount, $entry->currency_id, $targetCurrencyId, $orgId, $currentSchoolId, $entry->date);
                     }
                     $total += $amount;
                 }
@@ -226,6 +236,7 @@ class FinanceReportController extends Controller
             // Active projects count
             $activeProjects = FinanceProject::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->where('is_active', true)
                 ->where('status', 'active')
                 ->count();
@@ -233,6 +244,7 @@ class FinanceReportController extends Controller
             // Active donors count
             $activeDonors = Donor::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->where('is_active', true)
                 ->count();
 
@@ -240,6 +252,7 @@ class FinanceReportController extends Controller
             // Only include assets that are linked to finance accounts (for balance calculation)
             $assets = Asset::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereIn('status', ['available', 'assigned', 'maintenance'])
                 ->whereNotNull('purchase_price')
                 ->whereNotNull('finance_account_id') // Only assets linked to accounts
@@ -279,6 +292,7 @@ class FinanceReportController extends Controller
                         $assetCurrencyId,
                         $targetCurrencyId,
                         $orgId,
+                        $currentSchoolId,
                         $asset->purchase_date ? $asset->purchase_date->toDateString() : null
                     );
                 }
@@ -328,6 +342,7 @@ class FinanceReportController extends Controller
             // Only include books that are linked to finance accounts (for balance calculation)
             $libraryBooks = LibraryBook::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->where('price', '>', 0)
                 ->whereNotNull('finance_account_id') // Only books linked to accounts
                 ->with(['currency', 'financeAccount.currency'])
@@ -367,6 +382,7 @@ class FinanceReportController extends Controller
                         $bookCurrencyId,
                         $targetCurrencyId,
                         $orgId,
+                        $currentSchoolId,
                         $book->created_at ? $book->created_at->toDateString() : null
                     );
                 }
@@ -420,6 +436,7 @@ class FinanceReportController extends Controller
             // Recent income entries
             $recentIncome = IncomeEntry::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->with(['incomeCategory', 'donor'])
                 ->orderBy('date', 'desc')
                 ->limit(5)
@@ -428,6 +445,7 @@ class FinanceReportController extends Controller
             // Recent expense entries
             $recentExpenses = ExpenseEntry::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->where('status', 'approved')
                 ->with(['expenseCategory'])
                 ->orderBy('date', 'desc')
@@ -489,11 +507,13 @@ class FinanceReportController extends Controller
             ]);
 
             $orgId = $profile->organization_id;
+            $currentSchoolId = $this->getCurrentSchoolId($request);
             $date = $validated['date'];
 
             // Build query for accounts
             $accountQuery = FinanceAccount::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->where('is_active', true);
 
             if (!empty($validated['account_id'])) {
@@ -508,12 +528,14 @@ class FinanceReportController extends Controller
                 // Opening = account opening_balance + all income before date - all expenses before date
                 $incomeBefore = IncomeEntry::whereNull('deleted_at')
                     ->where('organization_id', $orgId)
+                    ->where('school_id', $currentSchoolId)
                     ->where('account_id', $account->id)
                     ->where('date', '<', $date)
                     ->sum('amount');
 
                 $expenseBefore = ExpenseEntry::whereNull('deleted_at')
                     ->where('organization_id', $orgId)
+                    ->where('school_id', $currentSchoolId)
                     ->where('account_id', $account->id)
                     ->where('status', 'approved')
                     ->where('date', '<', $date)
@@ -524,6 +546,7 @@ class FinanceReportController extends Controller
                 // Get day's income
                 $dayIncome = IncomeEntry::whereNull('deleted_at')
                     ->where('organization_id', $orgId)
+                    ->where('school_id', $currentSchoolId)
                     ->where('account_id', $account->id)
                     ->where('date', $date)
                     ->with(['incomeCategory', 'donor'])
@@ -534,6 +557,7 @@ class FinanceReportController extends Controller
                 // Get day's expenses
                 $dayExpenses = ExpenseEntry::whereNull('deleted_at')
                     ->where('organization_id', $orgId)
+                    ->where('school_id', $currentSchoolId)
                     ->where('account_id', $account->id)
                     ->where('status', 'approved')
                     ->where('date', $date)
@@ -598,19 +622,16 @@ class FinanceReportController extends Controller
             $validated = $request->validate([
                 'start_date' => 'required|date',
                 'end_date' => 'required|date|after_or_equal:start_date',
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
             ]);
 
             $orgId = $profile->organization_id;
+            $currentSchoolId = $this->getCurrentSchoolId($request);
 
             // Income by category
             $incomeQuery = IncomeEntry::whereNull('income_entries.deleted_at')
                 ->where('income_entries.organization_id', $orgId)
+                ->where('income_entries.school_id', $currentSchoolId)
                 ->whereBetween('income_entries.date', [$validated['start_date'], $validated['end_date']]);
-
-            if (!empty($validated['school_id'])) {
-                $incomeQuery->where('income_entries.school_id', $validated['school_id']);
-            }
 
             $incomeByCategory = $incomeQuery
                 ->join('income_categories', 'income_entries.income_category_id', '=', 'income_categories.id')
@@ -631,12 +652,9 @@ class FinanceReportController extends Controller
             // Expense by category
             $expenseQuery = ExpenseEntry::whereNull('expense_entries.deleted_at')
                 ->where('expense_entries.organization_id', $orgId)
+                ->where('expense_entries.school_id', $currentSchoolId)
                 ->where('expense_entries.status', 'approved')
                 ->whereBetween('expense_entries.date', [$validated['start_date'], $validated['end_date']]);
-
-            if (!empty($validated['school_id'])) {
-                $expenseQuery->where('expense_entries.school_id', $validated['school_id']);
-            }
 
             $expenseByCategory = $expenseQuery
                 ->join('expense_categories', 'expense_entries.expense_category_id', '=', 'expense_categories.id')
@@ -704,9 +722,11 @@ class FinanceReportController extends Controller
             ]);
 
             $orgId = $profile->organization_id;
+            $currentSchoolId = $this->getCurrentSchoolId($request);
 
             $query = FinanceProject::whereNull('deleted_at')
-                ->where('organization_id', $orgId);
+                ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId);
 
             if (!empty($validated['status'])) {
                 $query->where('status', $validated['status']);
@@ -717,8 +737,8 @@ class FinanceReportController extends Controller
             $projectSummaries = [];
             foreach ($projects as $project) {
                 // Recalculate totals
-                $totalIncome = $project->incomeEntries()->whereNull('deleted_at')->sum('amount');
-                $totalExpense = $project->expenseEntries()->whereNull('deleted_at')->where('status', 'approved')->sum('amount');
+                $totalIncome = $project->incomeEntries()->whereNull('deleted_at')->where('school_id', $currentSchoolId)->sum('amount');
+                $totalExpense = $project->expenseEntries()->whereNull('deleted_at')->where('school_id', $currentSchoolId)->where('status', 'approved')->sum('amount');
 
                 $projectSummaries[] = [
                     'project' => $project,
@@ -771,16 +791,18 @@ class FinanceReportController extends Controller
             ]);
 
             $orgId = $profile->organization_id;
+            $currentSchoolId = $this->getCurrentSchoolId($request);
 
             $query = Donor::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->where('is_active', true);
 
             $donors = $query->orderBy('name')->get();
 
             $donorSummaries = [];
             foreach ($donors as $donor) {
-                $incomeQuery = $donor->incomeEntries()->whereNull('deleted_at');
+                $incomeQuery = $donor->incomeEntries()->whereNull('deleted_at')->where('school_id', $currentSchoolId);
 
                 if (!empty($validated['start_date']) && !empty($validated['end_date'])) {
                     $incomeQuery->whereBetween('date', [$validated['start_date'], $validated['end_date']]);
@@ -842,9 +864,11 @@ class FinanceReportController extends Controller
             }
 
             $orgId = $profile->organization_id;
+            $currentSchoolId = $this->getCurrentSchoolId($request);
 
             $accounts = FinanceAccount::whereNull('deleted_at')
                 ->where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->orderBy('name')
                 ->get();
 
@@ -855,8 +879,8 @@ class FinanceReportController extends Controller
                 // Recalculate balance
                 $account->recalculateBalance();
 
-                $totalIncome = $account->incomeEntries()->whereNull('deleted_at')->sum('amount');
-                $totalExpense = $account->expenseEntries()->whereNull('deleted_at')->where('status', 'approved')->sum('amount');
+                $totalIncome = $account->incomeEntries()->whereNull('deleted_at')->where('school_id', $currentSchoolId)->sum('amount');
+                $totalExpense = $account->expenseEntries()->whereNull('deleted_at')->where('school_id', $currentSchoolId)->where('status', 'approved')->sum('amount');
 
                 $accountSummaries[] = [
                     'account' => $account,
@@ -884,7 +908,7 @@ class FinanceReportController extends Controller
     /**
      * Convert amount from one currency to another
      */
-    private function convertAmount($amount, $fromCurrencyId, $toCurrencyId, $organizationId, $date = null)
+    private function convertAmount($amount, $fromCurrencyId, $toCurrencyId, $organizationId, $schoolId, $date = null)
     {
         if (!$fromCurrencyId || !$toCurrencyId || $fromCurrencyId === $toCurrencyId) {
             return (float) $amount;
@@ -902,7 +926,7 @@ class FinanceReportController extends Controller
             }
         }
 
-        $rate = ExchangeRate::getRate($organizationId, $fromCurrencyId, $toCurrencyId, $dateString);
+        $rate = ExchangeRate::getRate($organizationId, $schoolId, $fromCurrencyId, $toCurrencyId, $dateString);
 
         if ($rate === null) {
             // If no rate found, return original amount (no conversion)
