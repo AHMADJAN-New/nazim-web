@@ -42,24 +42,14 @@ class RoomController extends Controller
         // Get accessible organization IDs (user's organization only)
         $orgIds = [$profile->organization_id];
 
-        // Get accessible school IDs based on permission and default_school_id
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-
-        if (empty($schoolIds)) {
-            return response()->json([]);
-        }
+        // Strict school scoping
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $schoolIds = [$currentSchoolId];
 
         $query = Room::whereNull('deleted_at')
             ->whereIn('school_id', $schoolIds);
 
-        // Filter by school_id if provided
-        if ($request->has('school_id') && $request->school_id) {
-            if (in_array($request->school_id, $schoolIds)) {
-                $query->where('school_id', $request->school_id);
-            } else {
-                return response()->json([]);
-            }
-    }
+        // Client-provided school_id is ignored; current school is enforced.
 
         // Filter by building_id if provided - validate building belongs to accessible school
         if ($request->has('building_id') && $request->building_id) {
@@ -81,19 +71,7 @@ class RoomController extends Controller
             $query->where('building_id', $request->building_id);
         }
 
-        // Filter by organization_id if provided
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $orgSchoolIds = DB::table('school_branding')
-                    ->where('organization_id', $request->organization_id)
-                    ->whereNull('deleted_at')
-                    ->pluck('id')
-                    ->toArray();
-                $query->whereIn('school_id', $orgSchoolIds);
-            } else {
-                return response()->json([]);
-            }
-        }
+        // Client-provided organization_id is ignored; organization is derived from profile.
 
         // Support pagination if page and per_page parameters are provided
         if ($request->has('page') || $request->has('per_page')) {
@@ -217,12 +195,8 @@ class RoomController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible school IDs based on permission and default_school_id
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-
-        if (empty($schoolIds)) {
-            return response()->json(['error' => 'No accessible schools'], 403);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $schoolIds = [$currentSchoolId];
 
         // Get building to verify school and get school_id
         $building = DB::table('buildings')
@@ -327,12 +301,8 @@ class RoomController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible school IDs based on permission and default_school_id
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-
-        if (empty($schoolIds)) {
-            return response()->json(['error' => 'No accessible schools'], 403);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+        $schoolIds = [$currentSchoolId];
 
         $room = Room::whereNull('deleted_at')->find($id);
 
@@ -433,12 +403,8 @@ class RoomController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible school IDs based on permission and default_school_id
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-
-        if (empty($schoolIds)) {
-            return response()->json(['error' => 'No accessible schools'], 403);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $schoolIds = [$currentSchoolId];
 
         $room = Room::whereNull('deleted_at')->find($id);
 
@@ -591,12 +557,8 @@ class RoomController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible school IDs based on permission and default_school_id
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-
-        if (empty($schoolIds)) {
-            return response()->json(['error' => 'No accessible schools'], 403);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+        $schoolIds = [$currentSchoolId];
 
         $room = Room::whereNull('deleted_at')->find($id);
 

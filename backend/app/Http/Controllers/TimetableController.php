@@ -26,6 +26,8 @@ class TimetableController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
                 try {
                 if (!$user->hasPermissionTo('timetables.read')) {
                     return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -41,9 +43,6 @@ class TimetableController extends Controller
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
-            // Get accessible organization IDs (user's organization only)
-            $orgIds = [$profile->organization_id];
-
             $query = GeneratedTimetable::whereNull('deleted_at');
 
             // Try to eager load relationships, but don't fail if they don't exist
@@ -55,35 +54,13 @@ class TimetableController extends Controller
                 Log::warning("Failed to eager load relationships for timetables: " . $e->getMessage());
             }
 
-            // Filter by organization
-            if ($request->has('organization_id') && $request->organization_id) {
-                if (in_array($request->organization_id, $orgIds) || empty($orgIds)) {
-                    $query->where(function ($q) use ($request) {
-                        $q->where('organization_id', $request->organization_id)
-                          ->orWhereNull('organization_id'); // Include global timetables
-                    });
-                } else {
-                    return response()->json([]);
-                }
-            } else {
-                // Show user's org timetables + global timetables
-                if (!empty($orgIds)) {
-                    $query->where(function ($q) use ($orgIds) {
-                        $q->whereIn('organization_id', $orgIds)
-                          ->orWhereNull('organization_id'); // Include global timetables
-                    });
-                } else {
-                    // No org access, only show global timetables
-                    $query->whereNull('organization_id');
-                }
-            }
+            // Strict scoping: org + school from context
+            $query->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId);
 
             // Filter by academic_year_id if provided
             if ($request->has('academic_year_id') && $request->academic_year_id) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('academic_year_id', $request->academic_year_id)
-                      ->orWhereNull('academic_year_id'); // Include global timetables
-                });
+                $query->where('academic_year_id', $request->academic_year_id);
             }
 
             $timetables = $query->orderBy('created_at', 'desc')->get();
@@ -205,6 +182,8 @@ class TimetableController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -220,12 +199,21 @@ class TimetableController extends Controller
 
         $validated = $request->validated();
 
-        // Get organization_id - use provided or user's org
-        $organizationId = $validated['organization_id'] ?? $profile->organization_id;
+        // Strict scoping: ignore client-provided organization_id / school_id
+        $organizationId = $profile->organization_id;
+        unset($validated['organization_id'], $validated['school_id']);
 
-        // Validate organization access (all users)
-        if ($organizationId !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot create timetable for different organization'], 403);
+        // Validate academic year belongs to current org + school if provided
+        if (!empty($validated['academic_year_id'])) {
+            $exists = DB::table('academic_years')
+                ->where('id', $validated['academic_year_id'])
+                ->where('organization_id', $organizationId)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->exists();
+            if (!$exists) {
+                return response()->json(['error' => 'Academic year not found'], 404);
+            }
         }
 
         DB::beginTransaction();
@@ -237,7 +225,7 @@ class TimetableController extends Controller
                 'description' => $validated['description'] ?? null,
                 'organization_id' => $organizationId,
                 'academic_year_id' => $validated['academic_year_id'] ?? null,
-                'school_id' => $validated['school_id'] ?? null,
+                'school_id' => $currentSchoolId,
                 'is_active' => $validated['is_active'] ?? true,
                 'created_by' => $user->id,
             ]);
@@ -248,6 +236,7 @@ class TimetableController extends Controller
                 $entries[] = [
                     'id' => (string) \Illuminate\Support\Str::uuid(),
                     'organization_id' => $organizationId,
+                    'school_id' => $currentSchoolId,
                     'timetable_id' => $timetable->id,
                     'class_academic_year_id' => $entryData['class_academic_year_id'],
                     'subject_id' => $entryData['subject_id'],
@@ -340,6 +329,8 @@ class TimetableController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -357,20 +348,19 @@ class TimetableController extends Controller
         // instead of UUIDs, which causes PostgreSQL type mismatch errors
         $timetable = GeneratedTimetable::whereNull('deleted_at')
             ->with(['academicYear', 'school'])
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$timetable) {
             return response()->json(['error' => 'Timetable not found'], 404);
         }
 
-        // Check organization access (all users)
-        if ($timetable->organization_id !== $profile->organization_id && $timetable->organization_id !== null) {
-            return response()->json(['error' => 'Access denied to this timetable'], 403);
-        }
-
         // Load entries with relationships
         $entries = TimetableEntry::whereNull('deleted_at')
             ->where('timetable_id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->with([
                 'classAcademicYear.class',
                 'classAcademicYear.academicYear',
@@ -465,6 +455,8 @@ class TimetableController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -478,22 +470,31 @@ class TimetableController extends Controller
             Log::warning("Permission check failed for timetables.update - allowing access: " . $e->getMessage());
         }
 
-        $timetable = GeneratedTimetable::whereNull('deleted_at')->find($id);
+        $timetable = GeneratedTimetable::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$timetable) {
             return response()->json(['error' => 'Timetable not found'], 404);
         }
 
-        // Check organization access (all users)
-        if ($timetable->organization_id !== $profile->organization_id && $timetable->organization_id !== null) {
-            return response()->json(['error' => 'Cannot update timetable from different organization'], 403);
-        }
-
         $validated = $request->validated();
 
-        // Prevent organization_id changes (all users)
-        if (isset($validated['organization_id'])) {
-            unset($validated['organization_id']);
+        // Prevent org/school changes (strict scoping)
+        unset($validated['organization_id'], $validated['school_id']);
+
+        // Validate academic year belongs to current org + school if provided
+        if (array_key_exists('academic_year_id', $validated) && !empty($validated['academic_year_id'])) {
+            $exists = DB::table('academic_years')
+                ->where('id', $validated['academic_year_id'])
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->exists();
+            if (!$exists) {
+                return response()->json(['error' => 'Academic year not found'], 404);
+            }
         }
 
         // Update only provided fields
@@ -508,9 +509,6 @@ class TimetableController extends Controller
         }
         if (isset($validated['academic_year_id'])) {
             $timetable->academic_year_id = $validated['academic_year_id'];
-        }
-        if (isset($validated['school_id'])) {
-            $timetable->school_id = $validated['school_id'];
         }
         if (isset($validated['is_active'])) {
             $timetable->is_active = $validated['is_active'];
@@ -557,6 +555,8 @@ class TimetableController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -570,20 +570,18 @@ class TimetableController extends Controller
             Log::warning("Permission check failed for timetables.delete - allowing access: " . $e->getMessage());
         }
 
-        $timetable = GeneratedTimetable::whereNull('deleted_at')->find($id);
+        $timetable = GeneratedTimetable::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$timetable) {
             return response()->json(['error' => 'Timetable not found'], 404);
         }
 
-        // Check organization access (all users)
-        if ($timetable->organization_id !== $profile->organization_id && $timetable->organization_id !== null) {
-            return response()->json(['error' => 'Cannot delete timetable from different organization'], 403);
-        }
-
         $timetable->delete();
 
-        return response()->json(['message' => 'Timetable deleted successfully'], 200);
+        return response()->noContent();
     }
 
     /**
@@ -597,6 +595,8 @@ class TimetableController extends Controller
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
+
+        $currentSchoolId = $this->getCurrentSchoolId(request());
 
         // Require organization_id for all users
         if (!$profile->organization_id) {
@@ -612,18 +612,18 @@ class TimetableController extends Controller
         }
 
         // Verify timetable exists and user has access
-        $timetable = GeneratedTimetable::whereNull('deleted_at')->find($id);
+        $timetable = GeneratedTimetable::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
         if (!$timetable) {
             return response()->json(['error' => 'Timetable not found'], 404);
         }
 
-        // Check organization access (all users)
-        if ($timetable->organization_id !== $profile->organization_id && $timetable->organization_id !== null) {
-            return response()->json(['error' => 'Access denied to this timetable'], 403);
-        }
-
         $entries = TimetableEntry::whereNull('deleted_at')
             ->where('timetable_id', $id)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->with([
                 'classAcademicYear.class',
                 'classAcademicYear.academicYear',

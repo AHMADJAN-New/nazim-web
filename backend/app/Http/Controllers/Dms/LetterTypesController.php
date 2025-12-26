@@ -13,9 +13,10 @@ class LetterTypesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
-        $query = LetterType::where('organization_id', $profile->organization_id);
+        $query = LetterType::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         if ($request->filled('active')) {
             $query->where('active', $request->boolean('active'));
@@ -41,18 +42,18 @@ class LetterTypesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $data = $request->validate([
             'key' => ['required', 'string', 'max:50', 'regex:/^[a-z0-9_]+$/'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'active' => ['boolean'],
-            'school_id' => ['nullable', 'uuid'],
         ]);
 
         // Check if key already exists for this organization
         $exists = LetterType::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('key', $data['key'])
             ->exists();
 
@@ -61,6 +62,7 @@ class LetterTypesController extends BaseDmsController
         }
 
         $data['organization_id'] = $profile->organization_id;
+        $data['school_id'] = $currentSchoolId;
 
         $letterType = LetterType::create($data);
 
@@ -73,10 +75,11 @@ class LetterTypesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $letterType = LetterType::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         return response()->json($letterType);
@@ -88,10 +91,11 @@ class LetterTypesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $letterType = LetterType::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $data = $request->validate([
@@ -99,12 +103,12 @@ class LetterTypesController extends BaseDmsController
             'name' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'active' => ['boolean'],
-            'school_id' => ['nullable', 'uuid'],
         ]);
 
         // If key is being updated, check if it already exists
         if (isset($data['key']) && $data['key'] !== $letterType->key) {
             $exists = LetterType::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('key', $data['key'])
                 ->where('id', '!=', $id)
                 ->exists();
@@ -125,16 +129,18 @@ class LetterTypesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $letterType = LetterType::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         // Check if letter type is in use
         $inUse = \DB::table('letter_templates')
             ->where('letter_type', $letterType->key)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->exists();
 
         if ($inUse) {
@@ -144,6 +150,7 @@ class LetterTypesController extends BaseDmsController
         $inUse = \DB::table('letterheads')
             ->where('letter_type', $letterType->key)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->exists();
 
         if ($inUse) {

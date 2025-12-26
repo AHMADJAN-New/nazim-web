@@ -18,15 +18,15 @@ export interface School {
     accentColor: string;
     fontFamily: string;
     reportFontSize: string;
-    primaryLogoBinary: Uint8Array | null;
+    primaryLogoBinary: string | null; // Base64 encoded binary data
     primaryLogoMimeType: string | null;
     primaryLogoFilename: string | null;
     primaryLogoSize: number | null;
-    secondaryLogoBinary: Uint8Array | null;
+    secondaryLogoBinary: string | null; // Base64 encoded binary data
     secondaryLogoMimeType: string | null;
     secondaryLogoFilename: string | null;
     secondaryLogoSize: number | null;
-    ministryLogoBinary: Uint8Array | null;
+    ministryLogoBinary: string | null; // Base64 encoded binary data
     ministryLogoMimeType: string | null;
     ministryLogoFilename: string | null;
     ministryLogoSize: number | null;
@@ -38,6 +38,12 @@ export interface School {
     showPageNumbers: boolean;
     showGenerationDate: boolean;
     reportLogoSelection: string;
+    showPrimaryLogo: boolean;
+    showSecondaryLogo: boolean;
+    showMinistryLogo: boolean;
+    primaryLogoPosition: string;
+    secondaryLogoPosition: string | null;
+    ministryLogoPosition: string | null;
     calendarPreference: string;
     isActive: boolean;
     createdAt: Date;

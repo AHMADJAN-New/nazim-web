@@ -21,7 +21,7 @@ export const useBuildings = (schoolId?: string, organizationId?: string, usePagi
   });
 
   const { data, isLoading, error } = useQuery<Building[] | PaginatedResponse<BuildingApi.Building>>({
-    queryKey: ['buildings', schoolId, organizationId || profile?.organization_id, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+    queryKey: ['buildings', schoolId, organizationId || profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
     queryFn: async () => {
       if (!user || !profile) return [];
 

@@ -20,6 +20,7 @@ class ExamTime extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'exam_id',
         'exam_class_id',
         'exam_subject_id',

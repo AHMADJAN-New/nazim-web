@@ -25,7 +25,8 @@ class UpdateSubjectRequest extends FormRequest
         $subjectId = $this->route('subject');
         $user = $this->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
-        $organizationId = $this->input('organization_id', $profile->organization_id ?? null);
+        $organizationId = $profile->organization_id ?? null;
+        $schoolId = $this->input('current_school_id');
 
         return [
             'name' => 'sometimes|required|string|max:100',
@@ -34,28 +35,25 @@ class UpdateSubjectRequest extends FormRequest
                 'required',
                 'string',
                 'max:50',
-                function ($attribute, $value, $fail) use ($organizationId, $subjectId) {
+                function ($attribute, $value, $fail) use ($organizationId, $schoolId, $subjectId) {
+                    if (!$organizationId || !$schoolId) {
+                        $fail('Invalid organization or school context.');
+                        return;
+                    }
                     $exists = DB::table('subjects')
                         ->where('code', strtoupper(trim($value)))
                         ->where('id', '!=', $subjectId)
-                        ->where(function ($q) use ($organizationId) {
-                            if ($organizationId) {
-                                $q->where('organization_id', $organizationId)
-                                  ->orWhereNull('organization_id');
-                            } else {
-                                $q->whereNull('organization_id');
-                            }
-                        })
+                        ->where('organization_id', $organizationId)
+                        ->where('school_id', $schoolId)
                         ->whereNull('deleted_at')
                         ->exists();
                     if ($exists) {
-                        $fail('A subject with this code already exists.');
+                        $fail('A subject with this code already exists in this school.');
                     }
                 },
             ],
             'description' => 'nullable|string',
             'is_active' => 'nullable|boolean',
-            'organization_id' => 'sometimes|nullable|uuid|exists:organizations,id',
         ];
     }
 

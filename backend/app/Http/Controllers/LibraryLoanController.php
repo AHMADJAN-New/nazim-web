@@ -27,6 +27,8 @@ class LibraryLoanController extends Controller
         } catch (\Exception $e) {
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $query = LibraryLoan::with([
             'book' => function ($builder) {
                 $builder->with('category');
@@ -34,6 +36,7 @@ class LibraryLoanController extends Controller
             'copy'
         ])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->orderByDesc('loan_date');
 
         if ($request->boolean('open_only')) {
@@ -77,13 +80,24 @@ class LibraryLoanController extends Controller
         } catch (\Exception $e) {
         }
 
-        $copy = LibraryCopy::findOrFail($data['book_copy_id']);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $copy = LibraryCopy::where('school_id', $currentSchoolId)->findOrFail($data['book_copy_id']);
         if ($copy->status !== 'available') {
             return response()->json(['error' => 'Copy not available'], 422);
         }
 
+        // Validate book belongs to current school
+        $book = LibraryBook::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->find($data['book_id']);
+        if (!$book) {
+            return response()->json(['error' => 'Book not found'], 404);
+        }
+
         $loan = LibraryLoan::create([
             'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
             'book_id' => $data['book_id'],
             'book_copy_id' => $data['book_copy_id'],
             'student_id' => $data['student_id'] ?? null,
@@ -124,8 +138,10 @@ class LibraryLoanController extends Controller
             return response()->json(['error' => 'Invalid loan ID format'], 400);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $loan = LibraryLoan::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->first();
 
         if (!$loan) {
@@ -179,6 +195,7 @@ class LibraryLoanController extends Controller
         $days = (int)($request->get('days') ?? 7);
         $date = Carbon::now()->addDays($days)->toDateString();
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $loans = LibraryLoan::with([
             'book' => function ($builder) {
                 $builder->with('category');
@@ -186,6 +203,7 @@ class LibraryLoanController extends Controller
             'copy'
         ])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('returned_at')
             ->whereDate('due_date', '<=', $date)
             ->orderBy('due_date')

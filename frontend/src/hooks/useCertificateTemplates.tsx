@@ -104,7 +104,7 @@ export const useCertificateTemplates = (activeOnly?: boolean, filters?: { type?:
       const params: any = {};
       if (activeOnly) params.active_only = 'true';
       if (filters?.type) params.type = filters.type;
-      if (filters?.school_id) params.school_id = filters.school_id;
+      // Strict school scoping: do not allow client-selected school_id.
       const templates = await certificateTemplatesApi.list(params);
       return templates as CertificateTemplate[];
     },
@@ -148,7 +148,7 @@ export const useCreateCertificateTemplate = () => {
       if (data.background_image) formData.append('background_image', data.background_image);
       if (data.layout_config) formData.append('layout_config', JSON.stringify(data.layout_config));
       if (data.course_id) formData.append('course_id', data.course_id);
-      if (data.school_id) formData.append('school_id', data.school_id);
+      // Strict school scoping: server derives school from context.
       if (data.type) formData.append('type', data.type);
       if (data.is_default !== undefined) formData.append('is_default', data.is_default ? '1' : '0');
       if (data.is_active !== undefined) formData.append('is_active', data.is_active ? '1' : '0');
@@ -194,7 +194,7 @@ export const useUpdateCertificateTemplate = () => {
       if (data.background_image) formData.append('background_image', data.background_image);
       if (data.layout_config) formData.append('layout_config', JSON.stringify(data.layout_config));
       if (data.course_id !== undefined) formData.append('course_id', data.course_id || '');
-      if (data.school_id !== undefined) formData.append('school_id', data.school_id || '');
+      // Strict school scoping: server derives school from context.
       if (data.type) formData.append('type', data.type);
       if (data.is_default !== undefined) formData.append('is_default', data.is_default ? '1' : '0');
       if (data.is_active !== undefined) formData.append('is_active', data.is_active ? '1' : '0');

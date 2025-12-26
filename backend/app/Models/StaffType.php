@@ -21,6 +21,7 @@ class StaffType extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'name',
         'code',
         'description',

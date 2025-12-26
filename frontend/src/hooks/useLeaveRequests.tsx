@@ -27,13 +27,12 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
   const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({ initialPage: 1, initialPageSize: 10 });
 
   const { data, isLoading, error } = useQuery<PaginatedResponse<LeaveRequest> | LeaveRequest[]>({
-    queryKey: ['leave-requests', profile?.organization_id ?? null, filters, page, pageSize],
+    queryKey: ['leave-requests', profile?.organization_id ?? null, profile?.default_school_id ?? null, filters, page, pageSize],
     queryFn: async () => {
       if (!user || !profile) return [] as LeaveRequest[];
       const params: Record<string, any> = {
         student_id: filters.studentId,
         class_id: filters.classId,
-        school_id: filters.schoolId,
         status: filters.status,
         month: filters.month,
         year: filters.year,
@@ -42,6 +41,7 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
         page,
         per_page: pageSize,
       };
+      // Strict school scoping: do not allow client-selected school_id.
       const response = await leaveRequestsApi.list(params);
       if (response && typeof response === 'object' && 'data' in response && 'current_page' in response) {
         const paginated = response as any;
@@ -93,7 +93,7 @@ export const useLeaveRequests = (filters: LeaveFilters = {}) => {
 export const useLeaveRequest = (id?: string) => {
   const { user, profile } = useAuth();
   const { data, isLoading, error, refetch } = useQuery<LeaveRequest | undefined>({
-    queryKey: ['leave-request', id, profile?.organization_id ?? null],
+    queryKey: ['leave-request', id, profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !id) return undefined;
       const response = await leaveRequestsApi.get(id);

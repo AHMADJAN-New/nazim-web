@@ -192,6 +192,7 @@ class FinanceAccount extends Model
                 if ($entry->currency_id && $entry->currency_id !== $this->currency_id) {
                     $rate = ExchangeRate::getRate(
                         $this->organization_id,
+                        $this->school_id,
                         $entry->currency_id,
                         $this->currency_id,
                         $entry->date ? $entry->date->toDateString() : null
@@ -210,6 +211,7 @@ class FinanceAccount extends Model
                 if ($entry->currency_id && $entry->currency_id !== $this->currency_id) {
                     $rate = ExchangeRate::getRate(
                         $this->organization_id,
+                        $this->school_id,
                         $entry->currency_id,
                         $this->currency_id,
                         $entry->date ? $entry->date->toDateString() : null
@@ -255,6 +257,7 @@ class FinanceAccount extends Model
                 if ($assetCurrencyId && $assetCurrencyId !== $this->currency_id) {
                     $rate = ExchangeRate::getRate(
                         $this->organization_id,
+                        $this->school_id,
                         $assetCurrencyId,
                         $this->currency_id,
                         $asset->purchase_date ? $asset->purchase_date->toDateString() : null
@@ -301,6 +304,7 @@ class FinanceAccount extends Model
                 if ($bookCurrencyId && $bookCurrencyId !== $this->currency_id) {
                     $rate = ExchangeRate::getRate(
                         $this->organization_id,
+                        $this->school_id,
                         $bookCurrencyId,
                         $this->currency_id,
                         $book->created_at ? $book->created_at->toDateString() : null

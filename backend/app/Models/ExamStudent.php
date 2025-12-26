@@ -23,6 +23,7 @@ class ExamStudent extends Model
         'exam_class_id',
         'student_admission_id',
         'organization_id',
+        'school_id',
         'exam_roll_number',
         'exam_secret_number',
     ];

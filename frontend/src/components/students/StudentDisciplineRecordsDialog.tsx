@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { useForm, Controller, FormProvider } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -98,6 +98,14 @@ export function StudentDisciplineRecordsDialog({
     },
   });
 
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = formMethods;
+
   const resetForm = () => {
     reset({
       incident_date: '',
@@ -147,8 +155,8 @@ export function StudentDisciplineRecordsDialog({
     } else {
       await createRecord.mutateAsync({
         student_id: student.id,
-        organization_id: student.organization_id,
-        school_id: student.school_id,
+        organization_id: student.organizationId,
+        school_id: student.schoolId,
         incident_date: data.incident_date,
         incident_type: data.incident_type,
         description: data.description || null,
@@ -195,7 +203,7 @@ export function StudentDisciplineRecordsDialog({
               {t('students.disciplineRecords') || 'Discipline Records'}
             </DialogTitle>
             <DialogDescription>
-              {t('students.disciplineRecordsDescription') || 'View and manage discipline records for'} {student.full_name}
+              {t('students.disciplineRecordsDescription') || 'View and manage discipline records for'} {student.fullName}
             </DialogDescription>
           </DialogHeader>
 

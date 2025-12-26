@@ -19,6 +19,7 @@ class LibraryBook extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'currency_id',
         'finance_account_id',
         'title',
@@ -127,5 +128,10 @@ class LibraryBook extends Model
     public function financeAccount()
     {
         return $this->belongsTo(FinanceAccount::class, 'finance_account_id');
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 }

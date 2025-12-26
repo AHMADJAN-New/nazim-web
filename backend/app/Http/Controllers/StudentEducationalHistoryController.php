@@ -37,6 +37,8 @@ class StudentEducationalHistoryController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -53,18 +55,17 @@ class StudentEducationalHistoryController extends Controller
         }
 
         // Check student exists and user has access
-        $student = Student::whereNull('deleted_at')->find($studentId);
+        $student = Student::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($studentId);
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Student not found'], 404);
-        }
-
         $history = StudentEducationalHistory::where('student_id', $studentId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->orderBy('start_date', 'desc')
             ->get();
@@ -114,7 +115,7 @@ class StudentEducationalHistoryController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_educational_history.read')) {
+            if (!$user->hasPermissionTo('student_educational_history.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -122,22 +123,21 @@ class StudentEducationalHistoryController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Check student exists and user has access
-        $student = Student::whereNull('deleted_at')->find($studentId);
+        $student = Student::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($studentId);
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot add history to student from different organization'], 403);
-        }
-
         $validated = $request->validated();
         $validated['student_id'] = $studentId;
-        $validated['organization_id'] = $student->organization_id;
-        $validated['school_id'] = $validated['school_id'] ?? $student->school_id;
+        $validated['organization_id'] = $profile->organization_id;
+        $validated['school_id'] = $currentSchoolId;
         $validated['created_by'] = $user->id;
 
         $history = StudentEducationalHistory::create($validated);
@@ -177,7 +177,7 @@ class StudentEducationalHistoryController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_educational_history.read')) {
+            if (!$user->hasPermissionTo('student_educational_history.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -185,20 +185,19 @@ class StudentEducationalHistoryController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $history = StudentEducationalHistory::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        $history = StudentEducationalHistory::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$history) {
             return response()->json(['error' => 'Educational history not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($history->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot update history from different organization'], 403);
-        }
-
         $validated = $request->validated();
-        unset($validated['organization_id']);
+        unset($validated['organization_id'], $validated['school_id'], $validated['student_id'], $validated['created_by']);
 
         $history->update($validated);
 
@@ -237,7 +236,7 @@ class StudentEducationalHistoryController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_educational_history.read')) {
+            if (!$user->hasPermissionTo('student_educational_history.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -245,21 +244,20 @@ class StudentEducationalHistoryController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $history = StudentEducationalHistory::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
+        $history = StudentEducationalHistory::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$history) {
             return response()->json(['error' => 'Educational history not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($history->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot delete history from different organization'], 403);
-        }
-
         $history->delete();
 
-        return response()->json(['message' => 'Educational history deleted successfully']);
+        return response()->noContent();
     }
 }
 

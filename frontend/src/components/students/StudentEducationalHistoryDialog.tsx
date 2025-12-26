@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -141,8 +141,8 @@ export function StudentEducationalHistoryDialog({
     } else {
       await createHistory.mutateAsync({
         student_id: student.id,
-        organization_id: student.organization_id,
-        school_id: student.school_id,
+        organization_id: student.organizationId,
+        school_id: student.schoolId,
         institution_name: data.institution_name,
         academic_year: data.academic_year || null,
         grade_level: data.grade_level || null,
@@ -181,7 +181,7 @@ export function StudentEducationalHistoryDialog({
               {t('students.educationalHistory') || 'Educational History'}
             </DialogTitle>
             <DialogDescription>
-              {t('students.educationalHistoryDescription') || 'View and manage educational history for'} {student.full_name}
+              {t('students.educationalHistoryDescription') || 'View and manage educational history for'} {student.fullName}
             </DialogDescription>
           </DialogHeader>
 

@@ -27,6 +27,7 @@ class ExamResult extends Model
         'is_absent',
         'remarks',
         'organization_id',
+        'school_id',
     ];
 
     protected $casts = [

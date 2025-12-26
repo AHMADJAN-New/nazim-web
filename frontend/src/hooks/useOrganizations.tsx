@@ -146,7 +146,7 @@ export const useCurrentOrganization = () => {
   const isEventUser = profile?.is_event_user === true;
 
   return useQuery<Organization | null>({
-    queryKey: ['current-organization', profile?.organization_id],
+    queryKey: ['current-organization', profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!profile || !profile.organization_id) {
         return null; // Super admin or no organization

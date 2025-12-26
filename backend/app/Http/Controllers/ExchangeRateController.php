@@ -42,8 +42,11 @@ class ExchangeRateController extends Controller
                 'is_active' => 'nullable|boolean',
             ]);
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $query = ExchangeRate::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->with(['fromCurrency', 'toCurrency']);
 
             if (!empty($validated['from_currency_id'])) {
@@ -111,12 +114,16 @@ class ExchangeRateController extends Controller
                 'is_active' => 'nullable|boolean',
             ]);
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             // Verify both currencies belong to the organization
             $fromCurrency = Currency::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->find($validated['from_currency_id']);
 
             $toCurrency = Currency::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->find($validated['to_currency_id']);
 
@@ -126,6 +133,7 @@ class ExchangeRateController extends Controller
 
             // Check for duplicate rate on same date
             $existing = ExchangeRate::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('from_currency_id', $validated['from_currency_id'])
                 ->where('to_currency_id', $validated['to_currency_id'])
                 ->where('effective_date', $validated['effective_date'])
@@ -138,6 +146,7 @@ class ExchangeRateController extends Controller
 
             $rate = ExchangeRate::create([
                 'organization_id' => $profile->organization_id,
+                'school_id' => $currentSchoolId,
                 'from_currency_id' => $validated['from_currency_id'],
                 'to_currency_id' => $validated['to_currency_id'],
                 'rate' => $validated['rate'],
@@ -187,6 +196,7 @@ class ExchangeRateController extends Controller
 
             $rate = ExchangeRate::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', request()->get('current_school_id'))
                 ->with(['fromCurrency', 'toCurrency'])
                 ->find($id);
 
@@ -226,8 +236,11 @@ class ExchangeRateController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $rate = ExchangeRate::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($id);
 
             if (!$rate) {
@@ -249,10 +262,12 @@ class ExchangeRateController extends Controller
                 $toCurrencyId = $validated['to_currency_id'] ?? $rate->to_currency_id;
 
                 $fromCurrency = Currency::where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->find($fromCurrencyId);
 
                 $toCurrency = Currency::where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->find($toCurrencyId);
 
@@ -268,6 +283,7 @@ class ExchangeRateController extends Controller
                 $toCurrencyId = $validated['to_currency_id'] ?? $rate->to_currency_id;
 
                 $existing = ExchangeRate::where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->where('from_currency_id', $fromCurrencyId)
                     ->where('to_currency_id', $toCurrencyId)
                     ->where('effective_date', $effectiveDate)
@@ -322,6 +338,7 @@ class ExchangeRateController extends Controller
 
             $rate = ExchangeRate::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', request()->get('current_school_id'))
                 ->find($id);
 
             if (!$rate) {
@@ -361,9 +378,12 @@ class ExchangeRateController extends Controller
                 'date' => 'nullable|date',
             ]);
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $date = $validated['date'] ?? now()->toDateString();
             $rate = ExchangeRate::getRate(
                 $profile->organization_id,
+                $currentSchoolId,
                 $validated['from_currency_id'],
                 $validated['to_currency_id'],
                 $date

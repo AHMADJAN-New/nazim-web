@@ -26,6 +26,8 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_attendance.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -36,6 +38,7 @@ class CourseAttendanceSessionController extends Controller
         }
 
         $query = CourseAttendanceSession::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->with(['course:id,name', 'records']);
 
@@ -75,6 +78,8 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_attendance.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -94,6 +99,7 @@ class CourseAttendanceSessionController extends Controller
 
         // Verify course belongs to organization
         $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($validated['course_id']);
 
@@ -102,6 +108,7 @@ class CourseAttendanceSessionController extends Controller
         }
 
         $validated['organization_id'] = $profile->organization_id;
+        $validated['school_id'] = $currentSchoolId;
         $validated['created_by'] = (string) $user->id;
 
         $session = CourseAttendanceSession::create($validated);
@@ -120,6 +127,8 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_attendance.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -129,6 +138,7 @@ class CourseAttendanceSessionController extends Controller
         }
 
         $session = CourseAttendanceSession::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->with(['course:id,name,instructor_name', 'records.courseStudent:id,full_name,admission_no,card_number'])
             ->find($id);
@@ -151,6 +161,8 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_attendance.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -160,6 +172,7 @@ class CourseAttendanceSessionController extends Controller
         }
 
         $session = CourseAttendanceSession::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -190,6 +203,8 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_attendance.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -199,6 +214,7 @@ class CourseAttendanceSessionController extends Controller
         }
 
         $session = CourseAttendanceSession::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -220,6 +236,8 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_attendance.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -235,6 +253,7 @@ class CourseAttendanceSessionController extends Controller
 
         // Verify course belongs to user's organization
         $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($request->course_id);
 
@@ -243,6 +262,7 @@ class CourseAttendanceSessionController extends Controller
         }
 
         $students = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('course_id', $request->course_id)
             ->where('completion_status', 'enrolled')
             ->whereNull('deleted_at')
@@ -262,6 +282,8 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_attendance.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -271,6 +293,7 @@ class CourseAttendanceSessionController extends Controller
         }
 
         $session = CourseAttendanceSession::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -295,6 +318,7 @@ class CourseAttendanceSessionController extends Controller
                 ],
                 [
                     'organization_id' => $profile->organization_id,
+                    'school_id' => $currentSchoolId,
                     'course_id' => $session->course_id,
                     'status' => $record['status'],
                     'entry_method' => 'manual',
@@ -317,6 +341,8 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_attendance.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -326,6 +352,7 @@ class CourseAttendanceSessionController extends Controller
         }
 
         $session = CourseAttendanceSession::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -347,6 +374,7 @@ class CourseAttendanceSessionController extends Controller
 
         // Find student by card_number or admission_no
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('course_id', $session->course_id)
             ->where('completion_status', 'enrolled')
             ->whereNull('deleted_at')
@@ -367,6 +395,7 @@ class CourseAttendanceSessionController extends Controller
             ],
             [
                 'organization_id' => $profile->organization_id,
+                'school_id' => $currentSchoolId,
                 'course_id' => $session->course_id,
                 'status' => $status,
                 'entry_method' => 'barcode',
@@ -389,7 +418,10 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $session = CourseAttendanceSession::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -402,6 +434,7 @@ class CourseAttendanceSessionController extends Controller
         $scans = CourseAttendanceRecord::where('attendance_session_id', $session->id)
             ->where('entry_method', 'barcode')
             ->whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
             ->with('courseStudent:id,full_name,admission_no,card_number,picture_path')
             ->orderBy('marked_at', 'desc')
             ->limit($limit)
@@ -419,6 +452,8 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_attendance.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -428,6 +463,7 @@ class CourseAttendanceSessionController extends Controller
         }
 
         $session = CourseAttendanceSession::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -451,6 +487,8 @@ class CourseAttendanceSessionController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $request->validate([
             'course_id' => 'required|uuid|exists:short_term_courses,id',
             'date_from' => 'nullable|date',
@@ -458,6 +496,7 @@ class CourseAttendanceSessionController extends Controller
         ]);
 
         $query = CourseAttendanceRecord::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('course_id', $request->course_id)
             ->whereNull('deleted_at')
             ->with(['courseStudent:id,full_name,admission_no', 'session:id,session_date']);

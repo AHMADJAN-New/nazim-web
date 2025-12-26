@@ -46,7 +46,7 @@ export const useExams = (organizationId?: string) => {
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery<Exam[]>({
-    queryKey: ['exams', organizationId || profile?.organization_id, orgIds.join(',')],
+    queryKey: ['exams', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || orgsLoading) return [];
       try {
@@ -103,7 +103,7 @@ export const useExam = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<Exam | null>({
-    queryKey: ['exam', examId, profile?.organization_id],
+    queryKey: ['exam', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       try {
@@ -204,7 +204,7 @@ export const useExamClasses = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamClass[]>({
-    queryKey: ['exam-classes', examId, profile?.organization_id],
+    queryKey: ['exam-classes', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const apiExamClasses = await examClassesApi.list({ exam_id: examId });
@@ -256,7 +256,7 @@ export const useExamSubjects = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamSubject[]>({
-    queryKey: ['exam-subjects', examId, examClassId, profile?.organization_id],
+    queryKey: ['exam-subjects', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const params: { exam_id: string; exam_class_id?: string } = { exam_id: examId };
@@ -338,7 +338,7 @@ export const useExamTimes = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamTime[]>({
-    queryKey: ['exam-times', examId, examClassId, profile?.organization_id],
+    queryKey: ['exam-times', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const params: { exam_class_id?: string } = {};
@@ -427,7 +427,7 @@ export const useExamReport = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamReport>({
-    queryKey: ['exam-report', examId, profile?.organization_id],
+    queryKey: ['exam-report', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) throw new Error('Missing exam');
       const report = await examsApi.report(examId);
@@ -444,7 +444,7 @@ export const useExamSummaryReport = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamSummaryReport>({
-    queryKey: ['exam-summary-report', examId, profile?.organization_id],
+    queryKey: ['exam-summary-report', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) throw new Error('Missing exam');
       const report = await examsApi.summaryReport(examId);
@@ -461,7 +461,7 @@ export const useExamClassReport = (examId?: string, classId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ClassMarkSheetReport>({
-    queryKey: ['exam-class-report', examId, classId, profile?.organization_id],
+    queryKey: ['exam-class-report', examId, classId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId || !classId) throw new Error('Missing exam or class');
       const report = await examsApi.classReport(examId, classId);
@@ -478,7 +478,7 @@ export const useExamStudentReport = (examId?: string, studentId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<StudentResultReport>({
-    queryKey: ['exam-student-report', examId, studentId, profile?.organization_id],
+    queryKey: ['exam-student-report', examId, studentId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId || !studentId) throw new Error('Missing exam or student');
       const report = await examsApi.studentReport(examId, studentId);
@@ -495,7 +495,7 @@ export const useEnrollmentStats = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<EnrollmentStats>({
-    queryKey: ['enrollment-stats', examId, profile?.organization_id],
+    queryKey: ['enrollment-stats', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) throw new Error('Missing exam');
       const stats = await examsApi.enrollmentStats(examId);
@@ -512,7 +512,7 @@ export const useMarksProgress = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<MarksProgress>({
-    queryKey: ['marks-progress', examId, profile?.organization_id],
+    queryKey: ['marks-progress', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) throw new Error('Missing exam');
       const progress = await examsApi.marksProgress(examId);
@@ -531,7 +531,7 @@ export const useExamStudents = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery({
-    queryKey: ['exam-students', examId, examClassId, profile?.organization_id],
+    queryKey: ['exam-students', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) return [];
       const params: { exam_id?: string; exam_class_id?: string } = {};
@@ -639,7 +639,7 @@ export const useExamResults = (examId?: string, examSubjectId?: string, examStud
   const { user, profile } = useAuth();
 
   return useQuery({
-    queryKey: ['exam-results', examId, examSubjectId, examStudentId, profile?.organization_id],
+    queryKey: ['exam-results', examId, examSubjectId, examStudentId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) return [];
       const params: { exam_id?: string; exam_subject_id?: string; exam_student_id?: string } = {};
@@ -770,7 +770,7 @@ export const useExamAttendance = (
   const { user, profile } = useAuth();
 
   return useQuery<ExamAttendance[]>({
-    queryKey: ['exam-attendance', examId, filters, profile?.organization_id],
+    queryKey: ['exam-attendance', examId, filters, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const params: Record<string, string | undefined> = {};
@@ -793,7 +793,7 @@ export const useExamAttendanceSummary = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamAttendanceSummary | null>({
-    queryKey: ['exam-attendance-summary', examId, profile?.organization_id],
+    queryKey: ['exam-attendance-summary', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       const apiSummary = await examAttendanceApi.summary(examId);
@@ -809,7 +809,7 @@ export const useTimeslotStudents = (examId?: string, examTimeId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<TimeslotStudentsResponse | null>({
-    queryKey: ['timeslot-students', examId, examTimeId, profile?.organization_id],
+    queryKey: ['timeslot-students', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId || !examTimeId) return null;
       const apiResponse = await examAttendanceApi.getTimeslotStudents(examId, examTimeId);
@@ -825,7 +825,7 @@ export const useTimeslotAttendanceSummary = (examId?: string, examTimeId?: strin
   const { user, profile } = useAuth();
 
   return useQuery<TimeslotAttendanceSummary | null>({
-    queryKey: ['timeslot-attendance-summary', examId, examTimeId, profile?.organization_id],
+    queryKey: ['timeslot-attendance-summary', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId || !examTimeId) return null;
       const apiSummary = await examAttendanceApi.timeslotSummary(examId, examTimeId);
@@ -841,7 +841,7 @@ export const useStudentAttendanceReport = (examId?: string, studentId?: string) 
   const { user, profile } = useAuth();
 
   return useQuery<StudentAttendanceReport | null>({
-    queryKey: ['student-attendance-report', examId, studentId, profile?.organization_id],
+    queryKey: ['student-attendance-report', examId, studentId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId || !studentId) return null;
       const apiReport = await examAttendanceApi.studentReport(examId, studentId);
@@ -945,7 +945,7 @@ export const useExamAttendanceScanFeed = (examId?: string, examTimeId?: string, 
   const { user, profile } = useAuth();
 
   return useQuery<ExamAttendance[]>({
-    queryKey: ['exam-attendance-scan-feed', examId, examTimeId, profile?.organization_id],
+    queryKey: ['exam-attendance-scan-feed', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId || !examTimeId) return [];
       const scans = await examAttendanceApi.scanFeed(examId, examTimeId, { limit });

@@ -21,6 +21,7 @@ class TeacherTimetablePreference extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'academic_year_id',
         'teacher_id',
         'schedule_slot_ids',
@@ -59,6 +60,14 @@ class TeacherTimetablePreference extends Model
     }
 
     /**
+     * Get the school that owns the preference
+     */
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    /**
      * Get the academic year for this preference
      */
     public function academicYear()
@@ -79,13 +88,10 @@ class TeacherTimetablePreference extends Model
      */
     public function scopeForOrganization($query, $organizationId)
     {
-        if ($organizationId === null) {
-            return $query->whereNull('organization_id');
+        if (!$organizationId) {
+            return $query->whereRaw('1=0');
         }
-        return $query->where(function ($q) use ($organizationId) {
-            $q->where('organization_id', $organizationId)
-              ->orWhereNull('organization_id');
-        });
+        return $query->where('organization_id', $organizationId);
     }
 
     /**

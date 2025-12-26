@@ -36,18 +36,16 @@ class FinanceAccountController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $validated = $request->validate([
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'type' => 'nullable|in:cash,fund',
                 'is_active' => 'nullable|boolean',
             ]);
 
             $query = FinanceAccount::whereNull('deleted_at')
-                ->where('organization_id', $profile->organization_id);
-
-            if (!empty($validated['school_id'])) {
-                $query->where('school_id', $validated['school_id']);
-            }
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId);
 
             if (!empty($validated['type'])) {
                 $query->where('type', $validated['type']);
@@ -102,14 +100,17 @@ class FinanceAccountController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'code' => ['nullable', 'string', 'max:50', Rule::unique('finance_accounts')->where(function ($query) use ($profile) {
-                    return $query->where('organization_id', $profile->organization_id)->whereNull('deleted_at');
+                'code' => ['nullable', 'string', 'max:50', Rule::unique('finance_accounts')->where(function ($query) use ($profile, $currentSchoolId) {
+                    return $query->where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
+                        ->whereNull('deleted_at');
                 })],
                 'type' => 'nullable|in:cash,fund',
                 'currency_id' => 'nullable|uuid|exists:currencies,id',
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'description' => 'nullable|string',
                 'opening_balance' => 'nullable|numeric|min:0',
                 'is_active' => 'nullable|boolean',
@@ -118,6 +119,7 @@ class FinanceAccountController extends Controller
             // Verify currency belongs to organization if provided
             if (!empty($validated['currency_id'])) {
                 $currency = Currency::where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->find($validated['currency_id']);
 
@@ -128,7 +130,7 @@ class FinanceAccountController extends Controller
 
             $account = FinanceAccount::create([
                 'organization_id' => $profile->organization_id,
-                'school_id' => $validated['school_id'] ?? null,
+                'school_id' => $currentSchoolId,
                 'currency_id' => $validated['currency_id'] ?? null,
                 'name' => trim($validated['name']),
                 'code' => $validated['code'] ?? null,
@@ -178,8 +180,11 @@ class FinanceAccountController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId(request());
+
             $account = FinanceAccount::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->with('currency')
                 ->find($id);
 
@@ -222,8 +227,11 @@ class FinanceAccountController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $account = FinanceAccount::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($id);
 
             if (!$account) {
@@ -232,12 +240,13 @@ class FinanceAccountController extends Controller
 
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
-                'code' => ['nullable', 'string', 'max:50', Rule::unique('finance_accounts')->where(function ($query) use ($profile) {
-                    return $query->where('organization_id', $profile->organization_id)->whereNull('deleted_at');
+                'code' => ['nullable', 'string', 'max:50', Rule::unique('finance_accounts')->where(function ($query) use ($profile, $currentSchoolId) {
+                    return $query->where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
+                        ->whereNull('deleted_at');
                 })->ignore($id)],
                 'type' => 'nullable|in:cash,fund',
                 'currency_id' => 'nullable|uuid|exists:currencies,id',
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'description' => 'nullable|string',
                 'opening_balance' => 'nullable|numeric|min:0',
                 'is_active' => 'nullable|boolean',
@@ -246,6 +255,7 @@ class FinanceAccountController extends Controller
             // Verify currency belongs to organization if being updated
             if (isset($validated['currency_id'])) {
                 $currency = Currency::where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->find($validated['currency_id']);
 
@@ -308,8 +318,11 @@ class FinanceAccountController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId(request());
+
             $account = FinanceAccount::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($id);
 
             if (!$account) {

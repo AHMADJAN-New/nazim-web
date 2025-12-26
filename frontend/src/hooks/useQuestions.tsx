@@ -38,7 +38,7 @@ export const useQuestions = (filters?: QuestionFilters, usePaginated?: boolean) 
   });
 
   const { data, isLoading, error } = useQuery<QuestionPaginatedResponse | PaginatedResponse<QuestionApi.Question>>({
-    queryKey: ['questions', profile?.organization_id, filters, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+    queryKey: ['questions', profile?.organization_id, profile?.default_school_id ?? null, filters, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
     queryFn: async () => {
       if (!user || !profile) {
         if (usePaginated) {
@@ -158,7 +158,7 @@ export const useQuestion = (questionId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<Question | null>({
-    queryKey: ['question', questionId, profile?.organization_id],
+    queryKey: ['question', questionId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !questionId) return null;
 

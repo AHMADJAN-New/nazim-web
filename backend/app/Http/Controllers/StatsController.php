@@ -10,8 +10,9 @@ class StatsController extends Controller
 {
     /**
      * Get students count
+     * Scoped to user's organization and school if authenticated
      */
-    public function studentsCount()
+    public function studentsCount(Request $request)
     {
         try {
             // Check if table exists before querying
@@ -19,9 +20,26 @@ class StatsController extends Controller
                 return response()->json(['count' => 0]);
             }
 
-            $count = DB::table('students')
-                ->whereNull('deleted_at')
-                ->count();
+            $query = DB::table('students')->whereNull('deleted_at');
+
+            // If user is authenticated, scope by organization and school
+            if ($request->user()) {
+                $profile = DB::table('profiles')->where('id', $request->user()->id)->first();
+                
+                if ($profile && $profile->organization_id) {
+                    $query->where('organization_id', $profile->organization_id);
+                    
+                    // Scope by school if available
+                    $currentSchoolId = $request->get('current_school_id');
+                    if ($currentSchoolId) {
+                        $query->where('school_id', $currentSchoolId);
+                    } elseif ($profile->default_school_id) {
+                        $query->where('school_id', $profile->default_school_id);
+                    }
+                }
+            }
+
+            $count = $query->count();
 
             return response()->json(['count' => $count]);
         } catch (\Exception $e) {
@@ -32,8 +50,9 @@ class StatsController extends Controller
 
     /**
      * Get staff count
+     * Scoped to user's organization and school if authenticated
      */
-    public function staffCount()
+    public function staffCount(Request $request)
     {
         try {
             // Check if table exists before querying
@@ -41,9 +60,26 @@ class StatsController extends Controller
                 return response()->json(['count' => 0]);
             }
 
-            $count = DB::table('staff')
-                ->whereNull('deleted_at')
-                ->count();
+            $query = DB::table('staff')->whereNull('deleted_at');
+
+            // If user is authenticated, scope by organization and school
+            if ($request->user()) {
+                $profile = DB::table('profiles')->where('id', $request->user()->id)->first();
+                
+                if ($profile && $profile->organization_id) {
+                    $query->where('organization_id', $profile->organization_id);
+                    
+                    // Scope by school if available
+                    $currentSchoolId = $request->get('current_school_id');
+                    if ($currentSchoolId) {
+                        $query->where('school_id', $currentSchoolId);
+                    } elseif ($profile->default_school_id) {
+                        $query->where('school_id', $profile->default_school_id);
+                    }
+                }
+            }
+
+            $count = $query->count();
 
             return response()->json(['count' => $count]);
         } catch (\Exception $e) {

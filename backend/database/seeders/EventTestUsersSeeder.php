@@ -42,6 +42,13 @@ class EventTestUsersSeeder extends Seeder
             $this->command->info("Created test organization: {$orgId}");
         }
 
+        // Pick a default school for this organization (required for strict school context)
+        $defaultSchoolId = DB::table('school_branding')
+            ->where('organization_id', $organization->id)
+            ->whereNull('deleted_at')
+            ->orderBy('created_at', 'asc')
+            ->value('id');
+
         // Get permission IDs (they should be global, organization_id = NULL)
         $checkinPermission = Permission::where('name', 'event_checkins.create')
             ->whereNull('organization_id')
@@ -84,6 +91,7 @@ class EventTestUsersSeeder extends Seeder
             'Check-in User',
             'password123',
             $organization->id,
+            $defaultSchoolId,
             [
                 $eventReadPermission->id,
                 $checkinReadPermission->id,
@@ -97,6 +105,7 @@ class EventTestUsersSeeder extends Seeder
             'Guest User',
             'password123',
             $organization->id,
+            $defaultSchoolId,
             [
                 $eventReadPermission->id,
                 $guestReadPermission->id,
@@ -110,6 +119,7 @@ class EventTestUsersSeeder extends Seeder
             'Both Permissions User',
             'password123',
             $organization->id,
+            $defaultSchoolId,
             [
                 $eventReadPermission->id,
                 $checkinReadPermission->id,
@@ -135,6 +145,7 @@ class EventTestUsersSeeder extends Seeder
         string $name,
         string $password,
         string $organizationId,
+        ?string $defaultSchoolId,
         array $permissionIds
     ): void {
         // Check if user already exists
@@ -162,6 +173,7 @@ class EventTestUsersSeeder extends Seeder
                 'email' => $email,
                 'full_name' => $name,
                 'organization_id' => $organizationId,
+                'default_school_id' => $defaultSchoolId,
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -174,6 +186,7 @@ class EventTestUsersSeeder extends Seeder
                 ->where('id', $userId)
                 ->update([
                     'organization_id' => $organizationId,
+                    'default_school_id' => $defaultSchoolId,
                     'updated_at' => now(),
                 ]);
             $this->command->info("  ✓ Updated existing user: {$email}");

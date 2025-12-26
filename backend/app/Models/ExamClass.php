@@ -22,6 +22,7 @@ class ExamClass extends Model
         'exam_id',
         'class_academic_year_id',
         'organization_id',
+        'school_id',
     ];
 
     protected $casts = [

@@ -26,7 +26,7 @@ export const useExamPaperTemplateFiles = (params?: UseExamPaperTemplateFilesPara
   const { t } = useLanguage();
 
   return useQuery<ExamPaperTemplateFile[]>({
-    queryKey: ['exam-paper-template-files', profile?.organization_id, params?.language, params?.isActive, params?.isDefault],
+    queryKey: ['exam-paper-template-files', profile?.organization_id, profile?.default_school_id ?? null, params?.language, params?.isActive, params?.isDefault],
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) {
         if (import.meta.env.DEV) {
@@ -63,7 +63,7 @@ export const useExamPaperTemplateFile = (id: string | null) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamPaperTemplateFile | null>({
-    queryKey: ['exam-paper-template-file', id, profile?.organization_id],
+    queryKey: ['exam-paper-template-file', id, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id || !id) {
         return null;

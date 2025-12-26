@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class AttendanceSessionController extends Controller
@@ -34,16 +35,12 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (empty($schoolIds)) {
-            return response()->json([]);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $query = AttendanceSession::with(['classModel', 'classes', 'school'])
             ->where('organization_id', $profile->organization_id)
-            ->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            });
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at');
 
         if ($request->filled('class_id')) {
             $query->where('class_id', $request->input('class_id'));
@@ -98,12 +95,8 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if ($request->filled('school_id') && !in_array($request->school_id, $schoolIds, true)) {
-            return response()->json(['error' => 'School not accessible'], 403);
-        }
-
         $validated = $request->validated();
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Determine class IDs: use class_ids array if provided, otherwise use class_id (backward compatibility)
         $classIds = !empty($validated['class_ids']) ? $validated['class_ids'] : 
@@ -116,19 +109,21 @@ class AttendanceSessionController extends Controller
         // Validate all classes belong to the organization
         $classes = ClassModel::whereIn('id', $classIds)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
             ->get();
 
         if ($classes->count() !== count($classIds)) {
-            return response()->json(['error' => 'One or more classes not found for this organization'], 404);
+            return response()->json(['error' => 'One or more classes not found for this school'], 404);
         }
 
         // Use first class_id for backward compatibility (can be null if using only class_ids)
         $primaryClassId = $classIds[0] ?? null;
 
-        $session = DB::transaction(function () use ($validated, $profile, $user, $primaryClassId, $classIds) {
+        $session = DB::transaction(function () use ($validated, $profile, $user, $primaryClassId, $classIds, $currentSchoolId) {
             $session = AttendanceSession::create([
                 'organization_id' => $profile->organization_id,
-                'school_id' => $validated['school_id'] ?? null,
+                'school_id' => $currentSchoolId,
                 'class_id' => $primaryClassId, // Keep for backward compatibility
                 'academic_year_id' => $validated['academic_year_id'] ?? null,
                 'session_date' => Carbon::parse($validated['session_date'])->toDateString(),
@@ -139,18 +134,22 @@ class AttendanceSessionController extends Controller
             ]);
 
             // Attach all classes via pivot table
-            $session->classes()->attach($classIds, [
+            $pivot = [
                 'organization_id' => $profile->organization_id,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
+            ];
+            if (Schema::hasColumn('attendance_session_classes', 'school_id')) {
+                $pivot['school_id'] = $currentSchoolId;
+            }
+            $session->classes()->attach($classIds, $pivot);
 
             if (!empty($validated['records'])) {
                 foreach ($validated['records'] as $record) {
                     AttendanceRecord::create([
                         'attendance_session_id' => $session->id,
                         'organization_id' => $profile->organization_id,
-                        'school_id' => $validated['school_id'] ?? null,
+                        'school_id' => $currentSchoolId,
                         'student_id' => $record['student_id'],
                         'status' => $record['status'],
                         'entry_method' => $validated['method'],
@@ -185,16 +184,15 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId(request());
         $session = AttendanceSession::with([
             'classModel',
             'classes', // Load all classes for multi-class sessions
             'school',
             'records.student',
         ])->where('organization_id', $profile->organization_id)
-            ->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            })
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
             ->find($id);
 
         if (!$session) {
@@ -227,14 +225,10 @@ class AttendanceSessionController extends Controller
             'remarks' => 'nullable|string',
         ]);
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (empty($schoolIds)) {
-            return response()->json(['error' => 'User has no accessible schools'], 403);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $session = AttendanceSession::where('organization_id', $profile->organization_id)
-            ->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            })
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
             ->find($id);
 
         if (!$session) {
@@ -268,15 +262,11 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (empty($schoolIds)) {
-            return response()->json(['error' => 'User has no accessible schools'], 403);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId(request());
 
         $session = AttendanceSession::where('organization_id', $profile->organization_id)
-            ->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            })
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
             ->find($id);
 
         if (!$session) {
@@ -313,14 +303,10 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (empty($schoolIds)) {
-            return response()->json(['error' => 'User has no accessible schools'], 403);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $session = AttendanceSession::where('organization_id', $profile->organization_id)
-            ->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            })
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
             ->find($id);
 
         if (!$session) {
@@ -334,6 +320,7 @@ class AttendanceSessionController extends Controller
             ->whereIn('student_id', $studentIds)
             ->where('class_id', $session->class_id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->pluck('student_id')
             ->toArray();
@@ -400,11 +387,10 @@ class AttendanceSessionController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $session = AttendanceSession::where('organization_id', $profile->organization_id)
-            ->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            })
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
             ->find($id);
 
         if (!$session) {
@@ -421,6 +407,7 @@ class AttendanceSessionController extends Controller
         // Search by card_number, admission_no, or student_code
         $student = DB::table('students')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->where(function ($q) use ($searchTerm) {
                 $q->where('card_number', $searchTerm)
@@ -437,6 +424,7 @@ class AttendanceSessionController extends Controller
             ->where('student_id', $student->id)
             ->where('class_id', $session->class_id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->exists();
 
@@ -488,11 +476,10 @@ class AttendanceSessionController extends Controller
         $limit = (int) $request->integer('limit', 25);
         $limit = $limit > 100 ? 100 : $limit;
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $session = AttendanceSession::where('organization_id', $profile->organization_id)
-            ->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            })
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
             ->find($id);
 
         if (!$session) {
@@ -544,30 +531,27 @@ class AttendanceSessionController extends Controller
         // Validate all classes belong to the organization
         $classes = ClassModel::whereIn('id', $classIds)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
+            ->whereNull('deleted_at')
             ->get();
 
         if ($classes->count() !== count($classIds)) {
             return response()->json(['error' => 'One or more classes not found for this organization'], 404);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (empty($schoolIds)) {
-            return response()->json([]);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Get students from all classes
         $students = DB::table('student_admissions as sa')
             ->join('students as s', 'sa.student_id', '=', 's.id')
             ->whereIn('sa.class_id', $classIds)
             ->where('sa.organization_id', $profile->organization_id)
+            ->where('sa.school_id', $currentSchoolId)
             ->when($request->filled('academic_year_id'), function ($q) use ($request) {
                 $q->where('sa.academic_year_id', $request->input('academic_year_id'));
             })
             ->whereNull('sa.deleted_at')
             ->whereNull('s.deleted_at')
-            ->where(function ($q) use ($schoolIds) {
-                $q->whereNull('sa.school_id')->orWhereIn('sa.school_id', $schoolIds);
-            })
             ->select(
                 's.id',
                 's.full_name',
@@ -608,7 +592,6 @@ class AttendanceSessionController extends Controller
             'class_id' => 'nullable|uuid|exists:classes,id',
             'class_ids' => 'nullable|array|min:1',
             'class_ids.*' => 'required|uuid|exists:classes,id',
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after_or_equal:date_from',
@@ -617,18 +600,14 @@ class AttendanceSessionController extends Controller
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (empty($schoolIds)) {
-            return response()->json(['data' => [], 'total' => 0, 'current_page' => 1, 'per_page' => 25, 'last_page' => 1]);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $query = AttendanceRecord::with(['student:id,full_name,admission_no,card_number,student_code', 'session.classModel', 'session.classes', 'session.school'])
             ->where('attendance_records.organization_id', $profile->organization_id)
+            ->where('attendance_records.school_id', $currentSchoolId)
             ->whereNull('attendance_records.deleted_at')
-            ->whereHas('session', function ($q) use ($schoolIds) {
-                $q->where(function ($sq) use ($schoolIds) {
-                    $sq->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-                })->whereNull('deleted_at');
+            ->whereHas('session', function ($q) {
+                $q->whereNull('deleted_at');
             });
 
         if ($request->filled('student_id')) {
@@ -648,10 +627,6 @@ class AttendanceSessionController extends Controller
                     $cq->whereIn('classes.id', $classIds);
                 })->orWhereIn('class_id', $classIds);
             });
-        }
-
-        if ($request->filled('school_id')) {
-            $query->where('attendance_records.school_id', $request->input('school_id'));
         }
 
         if ($request->filled('academic_year_id')) {
@@ -731,21 +706,13 @@ class AttendanceSessionController extends Controller
             'class_id' => 'nullable|uuid|exists:classes,id',
             'class_ids' => 'nullable|array|min:1',
             'class_ids.*' => 'required|uuid|exists:classes,id',
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'academic_year_id' => 'nullable|uuid|exists:academic_years,id',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after_or_equal:date_from',
             'status' => 'nullable|string|in:present,absent,late,excused,sick,leave',
         ]);
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (empty($schoolIds)) {
-            return response()->json($this->buildEmptyTotalsReport());
-        }
-
-        if ($request->filled('school_id') && !in_array($request->input('school_id'), $schoolIds, true)) {
-            return response()->json(['error' => 'School not accessible'], 403);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $classIds = [];
         if (!empty($validated['class_ids'])) {
@@ -761,34 +728,27 @@ class AttendanceSessionController extends Controller
             $validClassCount = DB::table('classes')
                 ->whereIn('id', $classIds)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->count();
 
             if ($validClassCount !== count($classIds)) {
-                return response()->json(['error' => 'One or more classes not found for this organization'], 404);
+                return response()->json(['error' => 'One or more classes not found for this school'], 404);
             }
         }
 
         $recordQuery = AttendanceRecord::query()
             ->join('attendance_sessions as s', 's.id', '=', 'attendance_records.attendance_session_id')
             ->where('attendance_records.organization_id', $profile->organization_id)
+            ->where('attendance_records.school_id', $currentSchoolId)
             ->whereNull('attendance_records.deleted_at')
             ->whereNull('s.deleted_at')
-            ->where(function ($q) use ($schoolIds) {
-                $q->whereNull('s.school_id')->orWhereIn('s.school_id', $schoolIds);
-            });
+            ->where('s.school_id', $currentSchoolId);
 
         $sessionQuery = AttendanceSession::query()
             ->where('attendance_sessions.organization_id', $profile->organization_id)
             ->whereNull('attendance_sessions.deleted_at')
-            ->where(function ($q) use ($schoolIds) {
-                $q->whereNull('attendance_sessions.school_id')->orWhereIn('attendance_sessions.school_id', $schoolIds);
-            });
-
-        if ($request->filled('school_id')) {
-            $recordQuery->where('s.school_id', $request->input('school_id'));
-            $sessionQuery->where('attendance_sessions.school_id', $request->input('school_id'));
-        }
+            ->where('attendance_sessions.school_id', $currentSchoolId);
 
         if ($request->filled('academic_year_id')) {
             $recordQuery->where('s.academic_year_id', $request->input('academic_year_id'));

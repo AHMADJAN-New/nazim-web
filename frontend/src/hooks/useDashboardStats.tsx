@@ -44,7 +44,7 @@ export const useDashboardStats = () => {
   const isEventUser = currentProfile?.is_event_user === true;
 
   const query = useQuery({
-    queryKey: ['dashboard-stats', currentProfile?.organization_id],
+    queryKey: ['dashboard-stats', currentProfile?.organization_id, currentProfile?.default_school_id ?? null],
     queryFn: async (): Promise<DashboardStats> => {
       if (!user || !profile) {
         return {

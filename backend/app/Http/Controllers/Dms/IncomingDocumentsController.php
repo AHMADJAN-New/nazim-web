@@ -25,17 +25,12 @@ class IncomingDocumentsController extends BaseDmsController
             return $context;
         }
         $this->authorize('viewAny', IncomingDocument::class);
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $query = IncomingDocument::query()
             ->with(['routingDepartment', 'academicYear'])
-            ->where('organization_id', $profile->organization_id);
-
-        if (!empty($schoolIds)) {
-            $query->where(function ($q) use ($schoolIds) {
-                $q->whereIn('school_id', $schoolIds)->orWhereNull('school_id');
-            });
-        }
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         // Filters
         if ($request->filled('subject')) {
@@ -95,7 +90,7 @@ class IncomingDocumentsController extends BaseDmsController
             return $context;
         }
         $this->authorize('create', IncomingDocument::class);
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $validationRules = [
             'security_level_key' => ['nullable', 'string'],
@@ -116,7 +111,6 @@ class IncomingDocumentsController extends BaseDmsController
             'notes' => ['nullable', 'string'],
             'is_manual_number' => ['boolean'],
             'manual_indoc_number' => ['nullable', 'string'],
-            'school_id' => ['nullable', 'uuid'],
         ];
 
         // Only validate academic_year_id if column exists
@@ -125,14 +119,11 @@ class IncomingDocumentsController extends BaseDmsController
         }
 
         $data = $request->validate($validationRules);
-
-        if ($response = $this->ensureSchoolAccess($data['school_id'] ?? null, $schoolIds)) {
-            return $response;
-        }
+        $data['school_id'] = $currentSchoolId;
 
         if (!$request->boolean('is_manual_number')) {
             $settings = DocumentSetting::firstOrCreate(
-                ['organization_id' => $profile->organization_id, 'school_id' => $data['school_id'] ?? null],
+                ['organization_id' => $profile->organization_id, 'school_id' => $currentSchoolId],
                 []
             );
             
@@ -141,6 +132,7 @@ class IncomingDocumentsController extends BaseDmsController
             if (!empty($data['academic_year_id']) && \Schema::hasColumn('incoming_documents', 'academic_year_id')) {
                 $academicYear = \App\Models\AcademicYear::where('id', $data['academic_year_id'])
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->first();
             }
             
@@ -150,7 +142,7 @@ class IncomingDocumentsController extends BaseDmsController
             );
             $sequence = $this->numberingService->generateIncomingNumber(
                 $profile->organization_id,
-                $data['school_id'] ?? null,
+                $currentSchoolId,
                 $settings->incoming_prefix ?? 'IN',
                 $yearKey
             );
@@ -166,6 +158,7 @@ class IncomingDocumentsController extends BaseDmsController
         // Only set if column exists (migration may not have run yet)
         if (empty($data['academic_year_id']) && \Schema::hasColumn('incoming_documents', 'academic_year_id')) {
             $currentAcademicYear = \App\Models\AcademicYear::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('is_current', true)
                 ->whereNull('deleted_at')
                 ->first();
@@ -191,15 +184,12 @@ class IncomingDocumentsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $doc = IncomingDocument::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
-
-        if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
-            return $response;
-        }
 
         $this->authorize('view', $doc);
 
@@ -221,15 +211,12 @@ class IncomingDocumentsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $doc = IncomingDocument::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
-
-        if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
-            return $response;
-        }
 
         $this->authorize('update', $doc);
 
@@ -245,10 +232,6 @@ class IncomingDocumentsController extends BaseDmsController
             'status' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
         ]);
-
-        if ($response = $this->ensureSchoolAccess($doc->school_id, $schoolIds)) {
-            return $response;
-        }
 
         $doc->fill($data);
         $doc->updated_by = $user->id;

@@ -41,7 +41,7 @@ class AssetController extends Controller
             ]);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $orgId = $profile->organization_id;
 
         $hasCopiesTable = Schema::hasTable('asset_copies');
@@ -93,22 +93,12 @@ class AssetController extends Controller
 
         $query->withSum('maintenanceRecords as maintenance_cost_total', 'cost')
             ->where('organization_id', $orgId)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
-
-        if (!empty($schoolIds)) {
-            $query->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')
-                    ->orWhereIn('school_id', $schoolIds);
-            });
-        }
 
         if ($request->filled('status')) {
             $statuses = is_array($request->status) ? $request->status : [$request->status];
             $query->whereIn('status', $statuses);
-        }
-
-        if ($request->filled('school_id') && in_array($request->school_id, $schoolIds, true)) {
-            $query->where('school_id', $request->school_id);
         }
 
         if ($request->filled('building_id')) {
@@ -171,6 +161,9 @@ class AssetController extends Controller
 
         $data = $request->validated();
         $data['organization_id'] = $profile->organization_id;
+        // Strict school scoping: force school_id from middleware, never trust client input
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $data['school_id'] = $currentSchoolId;
 
         // Validate and set currency_id and finance_account_id
         if (isset($data['finance_account_id']) && $data['finance_account_id']) {
@@ -178,11 +171,12 @@ class AssetController extends Controller
             $account = DB::table('finance_accounts')
                 ->where('id', $data['finance_account_id'])
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->first();
 
             if (!$account) {
-                return response()->json(['error' => 'Finance account not found or does not belong to your organization'], 422);
+                return response()->json(['error' => 'Finance account not found for this school'], 422);
             }
 
             // If currency_id not provided but account has currency, use account's currency
@@ -198,20 +192,16 @@ class AssetController extends Controller
             $currency = DB::table('currencies')
                 ->where('id', $data['currency_id'])
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->first();
 
             if (!$currency) {
-                return response()->json(['error' => 'Currency not found or does not belong to your organization'], 422);
+                return response()->json(['error' => 'Currency not found for this school'], 422);
             }
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (!empty($schoolIds) && isset($data['school_id']) && $data['school_id'] && !in_array($data['school_id'], $schoolIds, true)) {
-            return response()->json(['error' => 'School not accessible for this user'], 403);
-        }
-
-        $locationValidation = $this->validateLocationWithDetails($data, $profile->organization_id);
+        $locationValidation = $this->validateLocationWithDetails($data, $profile->organization_id, $currentSchoolId);
         if (!$locationValidation['valid']) {
             return response()->json(['error' => $locationValidation['message'] ?? 'Invalid building or room for organization'], 422);
         }
@@ -219,11 +209,12 @@ class AssetController extends Controller
         $assetTagExists = DB::table('assets')
             ->where('asset_tag', $data['asset_tag'])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->exists();
 
         if ($assetTagExists) {
-            return response()->json(['error' => 'Asset tag must be unique per organization'], 422);
+            return response()->json(['error' => 'Asset tag must be unique per school'], 422);
         }
 
         // Get total_copies from request, default to 1
@@ -242,20 +233,26 @@ class AssetController extends Controller
             $copies = [];
             for ($i = 1; $i <= $totalCopies; $i++) {
                 $copyCode = $totalCopies > 1 ? $data['asset_tag'] . '-' . str_pad((string) $i, 3, '0', STR_PAD_LEFT) : null;
-                $copies[] = AssetCopy::create([
+                $copyPayload = [
                     'asset_id' => $asset->id,
                     'organization_id' => $profile->organization_id,
+                    'school_id' => $currentSchoolId,
                     'copy_code' => $copyCode,
                     'status' => 'available',
                     'acquired_at' => $data['purchase_date'] ?? now()->toDateString(),
-                ]);
+                ];
+                // Backward compatibility if schema isn't migrated yet
+                if (!Schema::hasColumn('asset_copies', 'school_id')) {
+                    unset($copyPayload['school_id']);
+                }
+                $copies[] = AssetCopy::create($copyPayload);
             }
         }
 
         // Automatically set initial status based on copies
         self::updateAssetStatus($asset, $profile->organization_id);
 
-        self::recordHistory($asset->id, $profile->organization_id, 'created', 'Asset created', [
+        self::recordHistory($asset->id, $profile->organization_id, $currentSchoolId, 'created', 'Asset created', [
             'created_by' => $user->id,
             'total_copies' => $totalCopies,
         ]);
@@ -293,7 +290,7 @@ class AssetController extends Controller
             ]);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $hasCopiesTable = Schema::hasTable('asset_copies');
         $hasTotalCopiesColumn = Schema::hasColumn('assets', 'total_copies');
@@ -339,15 +336,12 @@ class AssetController extends Controller
         }
 
         $asset = $query->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->first();
 
         if (!$asset) {
             return response()->json(['error' => 'Asset not found'], 404);
-        }
-
-        if (!empty($schoolIds) && $asset->school_id && !in_array($asset->school_id, $schoolIds, true)) {
-            return response()->json(['error' => 'This asset is not accessible'], 403);
         }
 
         return response()->json($asset);
@@ -378,8 +372,9 @@ class AssetController extends Controller
             ]);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->first();
 
@@ -387,11 +382,9 @@ class AssetController extends Controller
             return response()->json(['error' => 'Asset not found'], 404);
         }
 
-        if (!empty($schoolIds) && $asset->school_id && !in_array($asset->school_id, $schoolIds, true)) {
-            return response()->json(['error' => 'This asset is not accessible'], 403);
-        }
-
         $data = $request->validated();
+        // Prevent cross-school moves
+        unset($data['school_id'], $data['organization_id']);
 
         // Validate and set currency_id and finance_account_id
         if (isset($data['finance_account_id']) && $data['finance_account_id']) {
@@ -399,11 +392,12 @@ class AssetController extends Controller
             $account = DB::table('finance_accounts')
                 ->where('id', $data['finance_account_id'])
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->first();
 
             if (!$account) {
-                return response()->json(['error' => 'Finance account not found or does not belong to your organization'], 422);
+                return response()->json(['error' => 'Finance account not found for this school'], 422);
             }
 
             // If currency_id not provided but account has currency, use account's currency
@@ -419,11 +413,12 @@ class AssetController extends Controller
             $currency = DB::table('currencies')
                 ->where('id', $data['currency_id'])
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->first();
 
             if (!$currency) {
-                return response()->json(['error' => 'Currency not found or does not belong to your organization'], 422);
+                return response()->json(['error' => 'Currency not found for this school'], 422);
             }
         }
 
@@ -431,16 +426,17 @@ class AssetController extends Controller
             $assetTagExists = DB::table('assets')
                 ->where('asset_tag', $data['asset_tag'])
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('id', '!=', $asset->id)
                 ->whereNull('deleted_at')
                 ->exists();
 
             if ($assetTagExists) {
-                return response()->json(['error' => 'Asset tag must be unique per organization'], 422);
+                return response()->json(['error' => 'Asset tag must be unique per school'], 422);
             }
         }
 
-        $locationValidation = $this->validateLocationWithDetails($data, $profile->organization_id);
+        $locationValidation = $this->validateLocationWithDetails($data, $profile->organization_id, $currentSchoolId);
         if (!$locationValidation['valid']) {
             return response()->json(['error' => $locationValidation['message'] ?? 'Invalid building or room for organization'], 422);
         }
@@ -454,7 +450,7 @@ class AssetController extends Controller
 
         $changes = array_keys($asset->getChanges());
         if (!empty($changes)) {
-            self::recordHistory($asset->id, $profile->organization_id, 'updated', 'Asset updated', [
+        self::recordHistory($asset->id, $profile->organization_id, $currentSchoolId, 'updated', 'Asset updated', [
                 'changed_fields' => $changes,
                 'updated_by' => $user->id,
                 'before' => array_intersect_key($original, array_flip($changes)),
@@ -490,7 +486,9 @@ class AssetController extends Controller
             ]);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->first();
 
@@ -500,11 +498,11 @@ class AssetController extends Controller
 
         $asset->delete();
 
-        self::recordHistory($asset->id, $profile->organization_id, 'deleted', 'Asset archived', [
+        self::recordHistory($asset->id, $profile->organization_id, $currentSchoolId, 'deleted', 'Asset archived', [
             'deleted_by' => $user->id,
         ]);
 
-        return response()->json(['message' => 'Asset deleted']);
+        return response()->noContent();
     }
 
     public function stats(Request $request)
@@ -533,15 +531,10 @@ class AssetController extends Controller
         }
 
         $orgId = $profile->organization_id;
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
-        $baseQuery = Asset::where('organization_id', $orgId);
-        if (!empty($schoolIds)) {
-            $baseQuery->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')
-                    ->orWhereIn('school_id', $schoolIds);
-            });
-        }
+        $baseQuery = Asset::where('organization_id', $orgId)
+            ->where('school_id', $currentSchoolId);
 
         $statusCounts = (clone $baseQuery)
             ->select('status', DB::raw('count(*) as total'))
@@ -566,6 +559,7 @@ class AssetController extends Controller
         $maintenanceCost = 0;
         if ($assetIds->isNotEmpty()) {
             $maintenanceCost = (float) AssetMaintenanceRecord::where('organization_id', $orgId)
+                ->where('school_id', $currentSchoolId)
                 ->whereIn('asset_id', $assetIds)
                 ->sum('cost');
         }
@@ -621,7 +615,9 @@ class AssetController extends Controller
             setPermissionsTeamId($profile->organization_id);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->first();
 
@@ -631,6 +627,9 @@ class AssetController extends Controller
 
         $history = AssetHistory::where('asset_id', $asset->id)
             ->where('organization_id', $profile->organization_id)
+            ->when(Schema::hasColumn('asset_histories', 'school_id'), function ($q) use ($currentSchoolId) {
+                $q->where('school_id', $currentSchoolId);
+            })
             ->orderByDesc('created_at')
             ->get();
 
@@ -662,7 +661,9 @@ class AssetController extends Controller
             ]);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->first();
 
@@ -672,6 +673,9 @@ class AssetController extends Controller
 
         $query = AssetAssignment::where('asset_id', $id)
             ->where('organization_id', $profile->organization_id);
+        if (Schema::hasColumn('asset_assignments', 'school_id')) {
+            $query->where('school_id', $currentSchoolId);
+        }
 
         if (Schema::hasTable('asset_copies') && Schema::hasColumn('asset_assignments', 'asset_copy_id')) {
             $query->with(['assetCopy']);
@@ -691,7 +695,9 @@ class AssetController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->first();
 
@@ -717,7 +723,7 @@ class AssetController extends Controller
 
         $data = $request->validated();
 
-        if (!$this->validateAssignee($data['assigned_to_type'], $data['assigned_to_id'] ?? null, $profile->organization_id)) {
+        if (!$this->validateAssignee($data['assigned_to_type'], $data['assigned_to_id'] ?? null, $profile->organization_id, $currentSchoolId)) {
             return response()->json(['error' => 'Assignee is not valid for this organization'], 422);
         }
 
@@ -728,6 +734,9 @@ class AssetController extends Controller
             // Find an available copy to assign
             $availableCopy = AssetCopy::where('asset_id', $id)
                 ->where('organization_id', $profile->organization_id)
+                ->when(Schema::hasColumn('asset_copies', 'school_id'), function ($q) use ($currentSchoolId) {
+                    $q->where('school_id', $currentSchoolId);
+                })
                 ->where('status', 'available')
                 ->whereNull('deleted_at')
                 ->first();
@@ -736,17 +745,22 @@ class AssetController extends Controller
                 return response()->json(['error' => 'No available copies to assign'], 422);
             }
 
-            $assignment = AssetAssignment::create([
+            $assignmentPayload = [
                 'asset_id' => $id,
                 'asset_copy_id' => $availableCopy->id,
                 'organization_id' => $profile->organization_id,
+                'school_id' => $currentSchoolId,
                 'assigned_to_type' => $data['assigned_to_type'],
                 'assigned_to_id' => $data['assigned_to_id'] ?? null,
                 'assigned_on' => $data['assigned_on'] ?? now()->toDateString(),
                 'expected_return_date' => $data['expected_return_date'] ?? null,
                 'status' => 'active',
                 'notes' => $data['notes'] ?? null,
-            ]);
+            ];
+            if (!Schema::hasColumn('asset_assignments', 'school_id')) {
+                unset($assignmentPayload['school_id']);
+            }
+            $assignment = AssetAssignment::create($assignmentPayload);
 
             // Update copy status
             $availableCopy->status = 'assigned';
@@ -756,22 +770,27 @@ class AssetController extends Controller
             self::updateAssetStatus($asset, $profile->organization_id);
         } else {
             // Fallback: assign asset directly (old behavior)
-            $assignment = AssetAssignment::create([
+            $assignmentPayload = [
                 'asset_id' => $id,
                 'organization_id' => $profile->organization_id,
+                'school_id' => $currentSchoolId,
                 'assigned_to_type' => $data['assigned_to_type'],
                 'assigned_to_id' => $data['assigned_to_id'] ?? null,
                 'assigned_on' => $data['assigned_on'] ?? now()->toDateString(),
                 'expected_return_date' => $data['expected_return_date'] ?? null,
                 'status' => 'active',
                 'notes' => $data['notes'] ?? null,
-            ]);
+            ];
+            if (!Schema::hasColumn('asset_assignments', 'school_id')) {
+                unset($assignmentPayload['school_id']);
+            }
+            $assignment = AssetAssignment::create($assignmentPayload);
 
             $asset->status = 'assigned';
             $asset->save();
         }
 
-        self::recordHistory($asset->id, $profile->organization_id, 'assigned', 'Asset assigned', [
+        self::recordHistory($asset->id, $profile->organization_id, $currentSchoolId, 'assigned', 'Asset assigned', [
             'assigned_to_type' => $data['assigned_to_type'],
             'assigned_to_id' => $data['assigned_to_id'] ?? null,
             'assigned_by' => $user->id,
@@ -791,7 +810,7 @@ class AssetController extends Controller
         return response()->json($assignment->refresh(), 201);
     }
 
-    private function validateAssignee(string $type, ?string $id, string $organizationId): bool
+    private function validateAssignee(string $type, ?string $id, string $organizationId, string $currentSchoolId): bool
     {
         if ($type === 'other') {
             return true;
@@ -805,6 +824,7 @@ class AssetController extends Controller
             return DB::table('staff')
                 ->where('id', $id)
                 ->where('organization_id', $organizationId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->exists();
         }
@@ -813,6 +833,7 @@ class AssetController extends Controller
             return DB::table('students')
                 ->where('id', $id)
                 ->where('organization_id', $organizationId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->exists();
         }
@@ -823,45 +844,39 @@ class AssetController extends Controller
                 return false;
             }
 
-            return DB::table('school_branding')
-                ->where('id', $room->school_id)
-                ->where('organization_id', $organizationId)
-                ->whereNull('deleted_at')
-                ->exists();
+            return $room->school_id === $currentSchoolId;
         }
 
         return false;
     }
 
-    private function validateLocation(array $data, string $organizationId): bool
+    private function validateLocation(array $data, string $organizationId, string $currentSchoolId): bool
     {
-        $result = $this->validateLocationWithDetails($data, $organizationId);
+        $result = $this->validateLocationWithDetails($data, $organizationId, $currentSchoolId);
         return $result['valid'];
     }
 
-    private function validateLocationWithDetails(array $data, string $organizationId): array
+    private function validateLocationWithDetails(array $data, string $organizationId, string $currentSchoolId): array
     {
         // Normalize empty strings to null
         $buildingId = !empty($data['building_id']) && $data['building_id'] !== 'none' ? $data['building_id'] : null;
         $roomId = !empty($data['room_id']) && $data['room_id'] !== 'none' ? $data['room_id'] : null;
-        $schoolId = !empty($data['school_id']) && $data['school_id'] !== 'none' ? $data['school_id'] : null;
+        // Strict school scoping: ignore any school_id in payload; use middleware-derived value
+        $schoolId = $currentSchoolId;
 
         // If all are null, that's valid (asset not assigned to any location)
         if (!$buildingId && !$roomId && !$schoolId) {
             return ['valid' => true];
         }
 
-        // Validate school_id if provided
-        if ($schoolId) {
-            $schoolExists = DB::table('school_branding')
-                ->where('id', $schoolId)
-                ->where('organization_id', $organizationId)
-                ->whereNull('deleted_at')
-                ->exists();
-
-            if (!$schoolExists) {
-                return ['valid' => false, 'message' => 'Selected school does not belong to your organization'];
-            }
+        // Validate school exists in org (schoolId is always present here)
+        $schoolExists = DB::table('school_branding')
+            ->where('id', $schoolId)
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->exists();
+        if (!$schoolExists) {
+            return ['valid' => false, 'message' => 'School context is invalid for this organization'];
         }
 
         // Validate building_id if provided
@@ -877,34 +892,11 @@ class AssetController extends Controller
 
             // If building has a school_id, validate it belongs to organization
             if ($building->school_id) {
-                $belongsToOrg = DB::table('school_branding')
-                    ->where('id', $building->school_id)
-                    ->where('organization_id', $organizationId)
-                    ->whereNull('deleted_at')
-                    ->exists();
-
-                if (!$belongsToOrg) {
-                    return ['valid' => false, 'message' => 'Selected building does not belong to your organization'];
-                }
-
-                // If school_id is also provided, they must match
-                if ($schoolId && $schoolId !== $building->school_id) {
+                if ($schoolId !== $building->school_id) {
                     return ['valid' => false, 'message' => 'Selected building does not belong to the selected school'];
                 }
             } else {
-                // Building without school_id - check if building belongs to organization via organization_id
-                // (if buildings table has organization_id column)
-                if (Schema::hasColumn('buildings', 'organization_id')) {
-                    $belongsToOrg = DB::table('buildings')
-                        ->where('id', $buildingId)
-                        ->where('organization_id', $organizationId)
-                        ->whereNull('deleted_at')
-                        ->exists();
-
-                    if (!$belongsToOrg) {
-                        return ['valid' => false, 'message' => 'Selected building does not belong to your organization'];
-                    }
-                }
+                return ['valid' => false, 'message' => 'Selected building is not assigned to a school'];
             }
         }
 
@@ -929,38 +921,11 @@ class AssetController extends Controller
 
             // If room has a school_id, validate it belongs to organization
             if ($room->school_id) {
-                $belongsToOrg = DB::table('school_branding')
-                    ->where('id', $room->school_id)
-                    ->where('organization_id', $organizationId)
-                    ->whereNull('deleted_at')
-                    ->exists();
-
-                if (!$belongsToOrg) {
-                    return ['valid' => false, 'message' => 'Selected room does not belong to your organization'];
-                }
-
-                // If school_id is also provided, they must match
-                if ($schoolId && $schoolId !== $room->school_id) {
+                if ($schoolId !== $room->school_id) {
                     return ['valid' => false, 'message' => 'Selected room does not belong to the selected school'];
                 }
-            } else if ($room->building_id) {
-                // Room without school_id but has building_id - validate building belongs to org
-                $building = DB::table('buildings')
-                    ->where('id', $room->building_id)
-                    ->whereNull('deleted_at')
-                    ->first();
-
-                if ($building && $building->school_id) {
-                    $belongsToOrg = DB::table('school_branding')
-                        ->where('id', $building->school_id)
-                        ->where('organization_id', $organizationId)
-                        ->whereNull('deleted_at')
-                        ->exists();
-
-                    if (!$belongsToOrg) {
-                        return ['valid' => false, 'message' => 'Selected room does not belong to your organization'];
-                    }
-                }
+            } else {
+                return ['valid' => false, 'message' => 'Selected room is not assigned to a school'];
             }
         }
 
@@ -1045,20 +1010,26 @@ class AssetController extends Controller
         return false;
     }
 
-    public static function recordHistory(string $assetId, string $organizationId, string $eventType, string $description, array $metadata = []): void
+    public static function recordHistory(string $assetId, string $organizationId, string $schoolId, string $eventType, string $description, array $metadata = []): void
     {
         try {
-            AssetHistory::create([
+            $payload = [
                 'asset_id' => $assetId,
                 'organization_id' => $organizationId,
+                'school_id' => $schoolId,
                 'event_type' => $eventType,
                 'description' => $description,
                 'metadata' => $metadata,
-            ]);
+            ];
+            if (!Schema::hasColumn('asset_histories', 'school_id')) {
+                unset($payload['school_id']);
+            }
+            AssetHistory::create($payload);
         } catch (\Exception $e) {
             \Log::warning('Failed to record asset history', [
                 'asset_id' => $assetId,
                 'organization_id' => $organizationId,
+                'school_id' => $schoolId,
                 'event_type' => $eventType,
                 'error' => $e->getMessage(),
             ]);

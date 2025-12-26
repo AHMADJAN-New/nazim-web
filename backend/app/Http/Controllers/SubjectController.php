@@ -38,33 +38,10 @@ class SubjectController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        $query = Subject::whereNull('deleted_at');
-
-        // Filter by organization (include global subjects where organization_id IS NULL)
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds) || empty($orgIds)) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('organization_id', $request->organization_id)
-                      ->orWhereNull('organization_id'); // Include global subjects
-                });
-            } else {
-                return response()->json([]);
-            }
-        } else {
-            // Show user's org subjects + global subjects
-            if (!empty($orgIds)) {
-                $query->where(function ($q) use ($orgIds) {
-                    $q->whereIn('organization_id', $orgIds)
-                      ->orWhereNull('organization_id'); // Include global subjects
-                });
-            } else {
-                // No org access, only show global subjects
-                $query->whereNull('organization_id');
-            }
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $query = Subject::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         // Support pagination if page and per_page parameters are provided
         if ($request->has('page') || $request->has('per_page')) {
@@ -106,7 +83,7 @@ class SubjectController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.read')) {
+            if (!$user->hasPermissionTo('subjects.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -115,14 +92,8 @@ class SubjectController extends Controller
         }
 
         $validated = $request->validated();
-
-        // Get organization_id - use provided or user's org
-        $organizationId = $validated['organization_id'] ?? $profile->organization_id;
-
-        // Validate organization access (all users)
-        if ($organizationId !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot create subject for different organization'], 403);
-        }
+        $organizationId = $profile->organization_id;
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $subject = Subject::create([
             'name' => trim($validated['name']),
@@ -130,6 +101,7 @@ class SubjectController extends Controller
             'description' => $validated['description'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
             'organization_id' => $organizationId,
+            'school_id' => $currentSchoolId,
         ]);
 
         return response()->json($subject, 201);
@@ -138,9 +110,9 @@ class SubjectController extends Controller
     /**
      * Display the specified subject
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
@@ -162,16 +134,17 @@ class SubjectController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $subject = Subject::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $subject = Subject::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$subject) {
             return response()->json(['error' => 'Subject not found'], 404);
         }
 
-        // Check organization access (all users)
-        if ($subject->organization_id !== $profile->organization_id && $subject->organization_id !== null) {
-            return response()->json(['error' => 'Access denied to this subject'], 403);
-        }
+        // Org access enforced by query.
 
         return response()->json($subject);
     }
@@ -195,7 +168,7 @@ class SubjectController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.read')) {
+            if (!$user->hasPermissionTo('subjects.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -203,15 +176,14 @@ class SubjectController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $subject = Subject::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $subject = Subject::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$subject) {
             return response()->json(['error' => 'Subject not found'], 404);
-        }
-
-        // Check organization access (all users)
-        if ($subject->organization_id !== $profile->organization_id && $subject->organization_id !== null) {
-            return response()->json(['error' => 'Cannot update subject from different organization'], 403);
         }
 
         $validated = $request->validated();
@@ -219,6 +191,9 @@ class SubjectController extends Controller
         // Prevent organization_id changes (all users)
         if (isset($validated['organization_id'])) {
             unset($validated['organization_id']);
+        }
+        if (isset($validated['school_id'])) {
+            unset($validated['school_id']);
         }
 
         // Update only provided fields
@@ -260,7 +235,7 @@ class SubjectController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.read')) {
+            if (!$user->hasPermissionTo('subjects.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -268,20 +243,19 @@ class SubjectController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $subject = Subject::whereNull('deleted_at')->find($id);
+        $currentSchoolId = request()->get('current_school_id');
+        $subject = Subject::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$subject) {
             return response()->json(['error' => 'Subject not found'], 404);
         }
 
-        // Check organization access (all users)
-        if ($subject->organization_id !== $profile->organization_id && $subject->organization_id !== null) {
-            return response()->json(['error' => 'Cannot delete subject from different organization'], 403);
-        }
-
         $subject->delete();
 
-        return response()->json(['message' => 'Subject deleted successfully'], 200);
+        return response()->noContent();
     }
 }
 

@@ -21,6 +21,7 @@ class AssetAssignment extends Model
         'asset_id',
         'asset_copy_id',
         'organization_id',
+        'school_id',
         'assigned_to_type',
         'assigned_to_id',
         'assigned_on',
@@ -57,5 +58,10 @@ class AssetAssignment extends Model
     public function assetCopy()
     {
         return $this->belongsTo(AssetCopy::class, 'asset_copy_id');
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 }

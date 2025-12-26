@@ -41,9 +41,12 @@ class EventGuestController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Verify event belongs to user's organization
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -57,6 +60,8 @@ class EventGuestController extends Controller
                 'invite_count', 'arrived_count', 'status', 'photo_path', 'qr_token', 'created_at'
             ])
             ->where('event_id', $eventId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         // Search by name, phone, or guest_code
@@ -132,6 +137,7 @@ class EventGuestController extends Controller
         // Verify event
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->first();
 
@@ -149,6 +155,8 @@ class EventGuestController extends Controller
                 'invite_count', 'arrived_count', 'status', 'photo_path'
             ])
             ->where('event_id', $eventId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->where(function ($q) use ($search) {
                 $q->where('full_name', 'ilike', "%{$search}%")
@@ -195,6 +203,8 @@ class EventGuestController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Check if user is event-specific (locked to one event)
         $isEventUser = $profile->is_event_user ?? false;
         $userEventId = $profile->event_id ?? null;
@@ -207,6 +217,7 @@ class EventGuestController extends Controller
         // Verify event
         $event = Event::where('id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -300,12 +311,15 @@ class EventGuestController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $guest = EventGuest::with(['fieldValues.field', 'checkins' => function($q) {
                 $q->orderBy('scanned_at', 'desc')->limit(10);
             }, 'checkins.user:id,email'])
             ->where('id', $guestId)
             ->where('event_id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -369,9 +383,12 @@ class EventGuestController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $guest = EventGuest::where('id', $guestId)
             ->where('event_id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -451,9 +468,12 @@ class EventGuestController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $guest = EventGuest::where('id', $guestId)
             ->where('event_id', $eventId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -464,7 +484,7 @@ class EventGuestController extends Controller
         try {
             $guest->delete();
             Log::info("Guest deleted", ['id' => $guestId]);
-            return response()->json(['message' => 'Guest deleted successfully']);
+            return response()->noContent();
         } catch (\Exception $e) {
             Log::error("Failed to delete guest: " . $e->getMessage());
             return response()->json(['error' => 'Failed to delete guest'], 500);
@@ -504,8 +524,11 @@ class EventGuestController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $guest = EventGuest::where('id', $guestId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -1032,8 +1055,11 @@ class EventGuestController extends Controller
                 abort(403, 'This action is unauthorized');
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $guest = EventGuest::where('id', $guestId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->first();
 

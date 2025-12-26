@@ -393,6 +393,3 @@ For image-based ZIP exports, convert PDF to image:
 
 1. `backend/app/Http/Controllers/Certificates/IssuedCertificateController.php`
 2. `backend/routes/api.php`
-3. `frontend/src/lib/api/client.ts`
-4. `frontend/src/hooks/useGraduation.tsx` (or new `useIssuedCertificates.tsx`)
-5. `frontend/src/App.tsx`

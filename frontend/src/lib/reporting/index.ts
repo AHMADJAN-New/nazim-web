@@ -20,6 +20,10 @@ export interface ExportReportOptions<T extends AnyRow> {
   filtersSummary?: string; // e.g. "Year: 1404 | Building: Main Campus"
 }
 
+/**
+ * Export report using client-side generation (pdfmake/xlsx)
+ * For server-side generation with better branding support, use useServerReport hook
+ */
 export async function exportReport<T extends AnyRow>({
   format,
   definition,
@@ -48,6 +52,10 @@ export async function exportReport<T extends AnyRow>({
   }
 }
 
+// Export types
 export * from './types';
+
+// Export server-side report types
+export * from './serverReportTypes';
 
 

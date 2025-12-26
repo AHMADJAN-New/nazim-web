@@ -45,14 +45,9 @@ class StudentAdmissionController extends Controller
             return response()->json([]);
         }
 
-        // Get accessible school IDs based on permission and default_school_id
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-
-        // Filter by accessible schools
-        if (empty($schoolIds)) {
-            // If no accessible schools, return empty
-            return response()->json([]);
-        }
+        // Strict school scoping
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $schoolIds = [$currentSchoolId];
 
         $query = StudentAdmission::with([
             'student:id,full_name,admission_no,student_code,gender,admission_year,guardian_phone,guardian_name,card_number,father_name,picture_path',
@@ -68,14 +63,7 @@ class StudentAdmissionController extends Controller
             ->whereIn('organization_id', $orgIds)
             ->whereIn('school_id', $schoolIds);
 
-        // Apply filters
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([]);
-            }
-        }
+        // Apply filters (organization and school scope are enforced by middleware/profile)
 
         if ($request->has('student_id') && $request->student_id) {
             $query->where('student_id', $request->student_id);
@@ -101,14 +89,7 @@ class StudentAdmissionController extends Controller
             $query->where('residency_type_id', $request->residency_type_id);
         }
 
-        // Validate school_id filter against accessible schools
-        if ($request->has('school_id') && $request->school_id) {
-            if (in_array($request->school_id, $schoolIds)) {
-                $query->where('school_id', $request->school_id);
-            } else {
-                return response()->json(['error' => 'School not accessible'], 403);
-            }
-        }
+        // Client-provided school_id is ignored; current school is enforced.
 
         // Support pagination if page and per_page parameters are provided
         if ($request->has('page') || $request->has('per_page')) {
@@ -210,17 +191,17 @@ class StudentAdmissionController extends Controller
         }
 
         $orgIds = $this->getAccessibleOrgIds($profile);
+        $organizationId = $profile->organization_id;
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
-        // Get student to determine organization
-        $student = Student::whereNull('deleted_at')->find($request->student_id);
+        // Get student (strict org + school scoping)
+        $student = Student::where('id', $request->student_id)
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
         if (!$student) {
-            return response()->json(['error' => 'Student not found'], 404);
-        }
-
-        // Determine organization_id from student or request
-        $organizationId = $request->organization_id ?? $student->organization_id ?? $profile->organization_id;
-        if (!$organizationId) {
-            return response()->json(['error' => 'Organization ID is required'], 422);
+            return response()->json(['error' => 'Student not found for this school'], 404);
         }
 
         // Validate organization access
@@ -228,23 +209,17 @@ class StudentAdmissionController extends Controller
             return response()->json(['error' => 'Cannot create admission for this organization'], 403);
         }
 
-        // Validate student belongs to organization
-        if ($student->organization_id !== $organizationId) {
-            return response()->json(['error' => 'Student organization mismatch'], 422);
-        }
-
         $validated = $request->validated();
+        // Force scope fields (never trust client input)
         $validated['organization_id'] = $organizationId;
+        $validated['school_id'] = $currentSchoolId;
 
         // Set defaults
         $validated['admission_date'] = $validated['admission_date'] ?? now()->toDateString();
         $validated['enrollment_status'] = $validated['enrollment_status'] ?? 'admitted';
         $validated['is_boarder'] = $validated['is_boarder'] ?? false;
 
-        // Get school_id from student if not provided
-        if (!isset($validated['school_id']) && $student->school_id) {
-            $validated['school_id'] = $student->school_id;
-        }
+        // school_id is forced by middleware context
 
         $admission = StudentAdmission::create($validated);
 
@@ -423,15 +398,14 @@ class StudentAdmissionController extends Controller
         }
 
         $orgIds = $this->getAccessibleOrgIds($profile);
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $schoolIds = [$currentSchoolId];
 
         if (empty($orgIds) || empty($schoolIds)) {
             return response()->json($this->buildEmptyReport());
         }
 
         $validator = Validator::make($request->all(), [
-            'organization_id' => 'nullable|string',
-            'school_id' => 'nullable|string',
             'academic_year_id' => 'nullable|string',
             'class_id' => 'nullable|string',
             'enrollment_status' => 'nullable|string',
@@ -468,22 +442,7 @@ class StudentAdmissionController extends Controller
             ->whereNull('student_admissions.deleted_at')
             ->whereIn('student_admissions.organization_id', $orgIds)
             ->whereIn('student_admissions.school_id', $schoolIds);
-
-        if (!empty($filters['organization_id'])) {
-            if (in_array($filters['organization_id'], $orgIds, true)) {
-                $query->where('student_admissions.organization_id', $filters['organization_id']);
-            } else {
-                return response()->json($this->buildEmptyReport());
-            }
-        }
-
-        if (!empty($filters['school_id'])) {
-            if (in_array($filters['school_id'], $schoolIds, true)) {
-                $query->where('student_admissions.school_id', $filters['school_id']);
-            } else {
-                return response()->json(['error' => 'School not accessible'], 403);
-            }
-        }
+        // organization_id / school_id filters are ignored; scope is enforced by middleware/profile.
 
         if (!empty($filters['academic_year_id'])) {
             $query->where('student_admissions.academic_year_id', $filters['academic_year_id']);
@@ -647,22 +606,10 @@ class StudentAdmissionController extends Controller
             ]);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $query = StudentAdmission::whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds);
-
-        // Apply organization filter if provided
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([
-                    'total' => 0,
-                    'active' => 0,
-                    'pending' => 0,
-                    'boarders' => 0,
-                ]);
-            }
-        }
+            ->whereIn('organization_id', $orgIds)
+            ->where('school_id', $currentSchoolId);
 
         $total = (clone $query)->count();
         $active = (clone $query)->where('enrollment_status', 'active')->count();

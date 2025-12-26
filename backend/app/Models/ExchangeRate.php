@@ -21,6 +21,7 @@ class ExchangeRate extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'from_currency_id',
         'to_currency_id',
         'rate',
@@ -104,7 +105,7 @@ class ExchangeRate extends Model
     /**
      * Get the most recent active rate between two currencies
      */
-    public static function getRate($organizationId, $fromCurrencyId, $toCurrencyId, $date = null, $visited = [])
+    public static function getRate($organizationId, $schoolId, $fromCurrencyId, $toCurrencyId, $date = null, $visited = [])
     {
         $date = $date ?? now()->toDateString();
 
@@ -122,6 +123,7 @@ class ExchangeRate extends Model
 
         // Direct rate
         $rate = static::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
             ->where('from_currency_id', $fromCurrencyId)
             ->where('to_currency_id', $toCurrencyId)
             ->where('effective_date', '<=', $date)
@@ -136,6 +138,7 @@ class ExchangeRate extends Model
 
         // Reverse rate (1 / reverse_rate)
         $reverseRate = static::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
             ->where('from_currency_id', $toCurrencyId)
             ->where('to_currency_id', $fromCurrencyId)
             ->where('effective_date', '<=', $date)
@@ -150,6 +153,7 @@ class ExchangeRate extends Model
 
         // Try to find rate through base currency (only if neither currency is the base)
         $baseCurrency = Currency::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
             ->where('is_base', true)
             ->where('is_active', true)
             ->whereNull('deleted_at')
@@ -157,8 +161,8 @@ class ExchangeRate extends Model
 
         if ($baseCurrency && $fromCurrencyId !== $baseCurrency->id && $toCurrencyId !== $baseCurrency->id) {
             // Only try base currency conversion if neither currency is the base
-            $fromToBase = static::getRate($organizationId, $fromCurrencyId, $baseCurrency->id, $date, $visited);
-            $baseToTo = static::getRate($organizationId, $baseCurrency->id, $toCurrencyId, $date, $visited);
+            $fromToBase = static::getRate($organizationId, $schoolId, $fromCurrencyId, $baseCurrency->id, $date, $visited);
+            $baseToTo = static::getRate($organizationId, $schoolId, $baseCurrency->id, $toCurrencyId, $date, $visited);
 
             if ($fromToBase !== null && $baseToTo !== null) {
                 return $fromToBase * $baseToTo;

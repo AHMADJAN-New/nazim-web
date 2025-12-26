@@ -43,12 +43,10 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $query = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
-
-        if ($request->filled('school_id')) {
-            $query->where('school_id', $request->input('school_id'));
-        }
 
         if ($request->filled('active_only') && $request->active_only === 'true') {
             $query->where('is_active', true);
@@ -79,6 +77,7 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -87,7 +86,6 @@ class IdCardTemplateController extends Controller
             'layout_config_front' => 'nullable|json',
             'layout_config_back' => 'nullable|json',
             'card_size' => 'nullable|string|in:CR80',
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'is_default' => 'nullable|in:0,1,true,false',
             'is_active' => 'nullable|in:0,1,true,false',
         ]);
@@ -176,6 +174,7 @@ class IdCardTemplateController extends Controller
                     ], 422);
                 }
 
+<<<<<<< HEAD
                 // Store using FileStorageService (PRIVATE storage for ID card templates)
                 $backgroundPathBack = $this->fileStorageService->storeIdCardTemplateBackground(
                     $file,
@@ -198,13 +197,14 @@ class IdCardTemplateController extends Controller
         // If this is marked as default, unset other defaults
         if (!empty($validated['is_default'])) {
             IdCardTemplate::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('is_default', true)
                 ->update(['is_default' => false]);
         }
 
         $template = IdCardTemplate::create([
             'organization_id' => $profile->organization_id,
-            'school_id' => $validated['school_id'] ?? null,
+            'school_id' => $currentSchoolId,
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'background_image_path_front' => $backgroundPathFront,
@@ -243,7 +243,9 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -276,7 +278,9 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -292,7 +296,6 @@ class IdCardTemplateController extends Controller
             'layout_config_front' => 'nullable|json',
             'layout_config_back' => 'nullable|json',
             'card_size' => 'nullable|string|in:CR80',
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'is_default' => 'nullable|in:0,1,true,false',
             'is_active' => 'nullable|in:0,1,true,false',
         ]);
@@ -347,6 +350,7 @@ class IdCardTemplateController extends Controller
                     ], 422);
                 }
 
+<<<<<<< HEAD
                 // Store using FileStorageService (PRIVATE storage for ID card templates)
                 $validated['background_image_path_front'] = $this->fileStorageService->storeIdCardTemplateBackground(
                     $file,
@@ -392,6 +396,7 @@ class IdCardTemplateController extends Controller
                     ], 422);
                 }
 
+<<<<<<< HEAD
                 // Store using FileStorageService (PRIVATE storage for ID card templates)
                 $validated['background_image_path_back'] = $this->fileStorageService->storeIdCardTemplateBackground(
                     $file,
@@ -415,6 +420,7 @@ class IdCardTemplateController extends Controller
         // If this is marked as default, unset other defaults
         if (!empty($validated['is_default']) && !$template->is_default) {
             IdCardTemplate::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('id', '!=', $id)
                 ->where('is_default', true)
                 ->update(['is_default' => false]);
@@ -449,7 +455,9 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -497,7 +505,9 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'Invalid side. Must be "front" or "back".'], 422);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -544,7 +554,9 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -554,6 +566,7 @@ class IdCardTemplateController extends Controller
 
         // Unset other defaults
         IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', '!=', $id)
             ->where('is_default', true)
             ->update(['is_default' => false]);

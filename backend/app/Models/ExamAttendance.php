@@ -32,6 +32,7 @@ class ExamAttendance extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'exam_id',
         'exam_time_id',
         'exam_class_id',

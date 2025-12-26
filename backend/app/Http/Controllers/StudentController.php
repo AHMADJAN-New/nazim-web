@@ -70,37 +70,16 @@ class StudentController extends Controller
             return response()->json([]);
         }
 
-        // Get accessible school IDs based on permission and default_school_id
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-
-        // Filter by accessible schools
-        if (empty($schoolIds)) {
-            // If no accessible schools, return empty
-            return response()->json([]);
-        }
+        // Strict school scoping: only current school from middleware context
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $query = Student::with(['organization', 'school'])
             ->whereNull('deleted_at')
             ->whereIn('organization_id', $orgIds)
-            ->whereIn('school_id', $schoolIds);
+            ->where('school_id', $currentSchoolId);
 
-        // Apply filters
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([]);
-            }
-        }
-
-        // Validate school_id filter against accessible schools
-        if ($request->has('school_id') && $request->school_id) {
-            if (in_array($request->school_id, $schoolIds)) {
-                $query->where('school_id', $request->school_id);
-            } else {
-                return response()->json(['error' => 'School not accessible'], 403);
-            }
-        }
+        // NOTE: We intentionally ignore client-provided organization_id/school_id filters.
+        // Everything except permissions is school-scoped, and school context comes from profile.default_school_id.
 
         if ($request->has('student_status') && $request->student_status) {
             $query->where('student_status', $request->student_status);
@@ -153,9 +132,9 @@ class StudentController extends Controller
     /**
      * Display the specified student
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
@@ -187,17 +166,14 @@ class StudentController extends Controller
 
         $student = Student::with(['organization', 'school'])
             ->whereNull('deleted_at')
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->find($id);
 
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Student not found'], 404);
-        }
+        // Org access is implicitly enforced by organization middleware + school scope.
 
         return response()->json($student);
     }
@@ -239,11 +215,8 @@ class StudentController extends Controller
 
         $orgIds = $this->getAccessibleOrgIds($profile);
 
-        // Determine organization_id
-        $organizationId = $request->organization_id ?? $profile->organization_id;
-        if (!$organizationId) {
-            return response()->json(['error' => 'Organization ID is required'], 422);
-        }
+        $organizationId = $profile->organization_id;
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Validate organization access
         if (!in_array($organizationId, $orgIds)) {
@@ -251,7 +224,9 @@ class StudentController extends Controller
         }
 
         $validated = $request->validated();
+        // Force scope (never trust client input)
         $validated['organization_id'] = $organizationId;
+        $validated['school_id'] = $currentSchoolId;
 
         // Set defaults
         $validated['is_orphan'] = $validated['is_orphan'] ?? false;
@@ -300,7 +275,11 @@ class StudentController extends Controller
             ], 403);
         }
 
-        $student = Student::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        $student = Student::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
@@ -308,9 +287,7 @@ class StudentController extends Controller
 
         $orgIds = $this->getAccessibleOrgIds($profile);
 
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot update student from different organization'], 403);
-        }
+        // Org access is enforced by organization middleware + current school scope.
 
         $validated = $request->validated();
 
@@ -329,8 +306,8 @@ class StudentController extends Controller
             'current_data' => $currentData,
         ]);
 
-        // Remove organization_id from update data to prevent changes
-        unset($validated['organization_id']);
+        // Prevent scope changes
+        unset($validated['organization_id'], $validated['school_id']);
 
         // Filter out empty strings for required fields - convert to null or skip
         // admission_no should not be empty - if it is, don't update it
@@ -437,21 +414,20 @@ class StudentController extends Controller
             ], 403);
         }
 
-        $student = Student::whereNull('deleted_at')->find($id);
+        $currentSchoolId = request()->get('current_school_id');
+        $student = Student::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot delete student from different organization'], 403);
-        }
+        // Org access is enforced by organization middleware + school scope.
 
         $student->delete();
 
-        return response()->json(['message' => 'Student deleted successfully']);
+        return response()->noContent();
     }
 
     /**
@@ -478,23 +454,11 @@ class StudentController extends Controller
             ]);
         }
 
-        $query = Student::whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
-        // Apply organization filter if provided
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([
-                    'total' => 0,
-                    'male' => 0,
-                    'female' => 0,
-                    'orphans' => 0,
-                    'feePending' => 0,
-                ]);
-            }
-        }
+        $query = Student::whereNull('deleted_at')
+            ->whereIn('organization_id', $orgIds)
+            ->where('school_id', $currentSchoolId);
 
         $total = (clone $query)->count();
         $male = (clone $query)->where('gender', 'male')->count();
@@ -528,17 +492,16 @@ class StudentController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
-            $student = Student::whereNull('deleted_at')->find($id);
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+            $student = Student::whereNull('deleted_at')
+                ->where('school_id', $currentSchoolId)
+                ->find($id);
 
             if (!$student) {
                 return response()->json(['error' => 'Student not found'], 404);
             }
 
-            $orgIds = $this->getAccessibleOrgIds($profile);
-
-            if (!in_array($student->organization_id, $orgIds)) {
-                return response()->json(['error' => 'Cannot update student from different organization'], 403);
-            }
+            // Org access is enforced by organization middleware + school scope.
 
             if (!$request->hasFile('file')) {
                 return response()->json(['error' => 'No file provided'], 422);
@@ -647,17 +610,16 @@ class StudentController extends Controller
                 ], 403);
             }
 
-            $student = Student::whereNull('deleted_at')->find($id);
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+            $student = Student::whereNull('deleted_at')
+                ->where('school_id', $currentSchoolId)
+                ->find($id);
 
             if (!$student) {
                 abort(404, 'Student not found');
             }
 
-            $orgIds = $this->getAccessibleOrgIds($profile);
-
-            if (!in_array($student->organization_id, $orgIds)) {
-                abort(403, 'Cannot access student from different organization');
-            }
+            // Org access is enforced by organization middleware + school scope.
 
             if (!$student->picture_path) {
                 Log::info('Student picture requested but no picture_path', ['student_id' => $id]);
@@ -733,8 +695,10 @@ class StudentController extends Controller
             ]);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $query = Student::whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds);
+            ->whereIn('organization_id', $orgIds)
+            ->where('school_id', $currentSchoolId);
 
         // Get distinct values for each field
         $names = (clone $query)->whereNotNull('full_name')->where('full_name', '!=', '')->distinct()->pluck('full_name')->sort()->values()->toArray();
@@ -802,8 +766,11 @@ class StudentController extends Controller
                 return response()->json([]);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $baseQuery = Student::whereNull('deleted_at')
                 ->whereIn('organization_id', $orgIds)
+                ->where('school_id', $currentSchoolId)
                 ->select('id', 'full_name', 'father_name', 'tazkira_number', 'guardian_tazkira', 'card_number', 'admission_no', 'orig_province', 'admission_year', 'created_at');
 
             // Exact: name + father_name

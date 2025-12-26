@@ -33,14 +33,10 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $query = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
-
-        if ($request->filled('school_id')) {
-            $query->where(function ($q) use ($request) {
-                $q->whereNull('school_id')->orWhere('school_id', $request->input('school_id'));
-            });
-        }
 
         if ($request->filled('type')) {
             $query->where('type', $request->input('type'));
@@ -62,8 +58,8 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $validated = $request->validate([
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'type' => 'required|string|in:graduation,promotion,completion,merit,appreciation',
             'title' => 'required|string|max:255',
             'body_html' => 'nullable|string',
@@ -78,20 +74,11 @@ class CertificateTemplateController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
-        // If school_id is provided, verify it belongs to the user's organization
-        $schoolId = $validated['school_id'] ?? $profile->default_school_id;
-        if ($schoolId) {
-            $schoolBelongsToOrg = DB::table('school_branding')
-                ->where('id', $schoolId)
-                ->where('organization_id', $profile->organization_id)
-                ->exists();
-            if (!$schoolBelongsToOrg) {
-                return response()->json(['error' => 'School does not belong to your organization'], 403);
-            }
-        }
+        $schoolId = $currentSchoolId;
 
         $backgroundPath = null;
         if ($request->hasFile('background_image')) {
+<<<<<<< HEAD
             $file = $request->file('background_image');
 
             // Validate image extension using FileStorageService
@@ -157,6 +144,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -165,7 +153,6 @@ class CertificateTemplateController extends Controller
         }
 
         $validated = $request->validate([
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'type' => 'nullable|string|in:graduation,promotion,completion,merit,appreciation',
             'title' => 'nullable|string|max:255',
             'body_html' => 'nullable|string',
@@ -191,6 +178,7 @@ class CertificateTemplateController extends Controller
                         'errors' => ['background_image' => ['Invalid file type.']]
                     ], 422);
                 }
+<<<<<<< HEAD
 
                 // Delete old background if exists using FileStorageService
                 if ($template->background_image_path) {
@@ -241,6 +229,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -265,6 +254,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -292,6 +282,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -332,6 +323,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 

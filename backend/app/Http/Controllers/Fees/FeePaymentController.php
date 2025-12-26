@@ -25,6 +25,8 @@ class FeePaymentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('fees.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -45,6 +47,7 @@ class FeePaymentController extends Controller
 
         $query = FeePayment::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->with(['feeAssignment', 'student', 'account', 'incomeEntry', 'currency']);
 
         if (!empty($validated['fee_assignment_id'])) {
@@ -87,6 +90,8 @@ class FeePaymentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('fees.payments.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -99,6 +104,7 @@ class FeePaymentController extends Controller
 
         $assignment = FeeAssignment::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($validated['fee_assignment_id']);
 
         if (!$assignment) {
@@ -111,6 +117,7 @@ class FeePaymentController extends Controller
 
         $account = FinanceAccount::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($validated['account_id']);
 
         if (!$account) {
@@ -120,6 +127,7 @@ class FeePaymentController extends Controller
         // Enforce organization context
         $payload = array_merge($validated, [
             'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
         ]);
 
         $payment = FeePayment::create($payload);

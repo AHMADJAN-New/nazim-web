@@ -50,10 +50,9 @@ class ReportTemplateController extends Controller
             return response()->json([]);
         }
 
-        // Filter by school_id if provided
-        if ($request->has('school_id') && $request->school_id) {
-            $query->where('school_id', $request->school_id);
-        }
+        // Strict school scoping
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $query->where('school_id', $currentSchoolId);
 
         $templates = $query->orderBy('created_at', 'desc')->get();
 
@@ -91,6 +90,10 @@ class ReportTemplateController extends Controller
         $orgIds = [$profile->organization_id];
 
         // Verify school belongs to accessible organization
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+        if ($schoolId !== $currentSchoolId) {
+            return response()->json(['error' => 'Access denied to this school'], 403);
+        }
         $school = DB::table('school_branding')
             ->where('id', $schoolId)
             ->whereNull('deleted_at')
@@ -141,10 +144,11 @@ class ReportTemplateController extends Controller
 
         // Determine organization_id (use user's organization)
         $organizationId = $profile->organization_id;
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Verify school belongs to user's organization
         $school = DB::table('school_branding')
-            ->where('id', $request->school_id)
+            ->where('id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -156,23 +160,59 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Cannot create template for school in different organization'], 403);
         }
 
-        $template = ReportTemplate::create([
+        // Validate watermark belongs to the same school/branding
+        // Sentinel UUID '00000000-0000-0000-0000-000000000000' means "no watermark", null means "use default watermark"
+        $watermarkId = $request->watermark_id;
+        $noWatermarkSentinel = '00000000-0000-0000-0000-000000000000';
+        
+        if ($watermarkId === $noWatermarkSentinel) {
+            // Sentinel UUID = no watermark (explicitly disable)
+            $watermarkId = $noWatermarkSentinel;
+        } elseif ($watermarkId) {
+            // UUID = specific watermark, validate it exists and belongs to school
+            $watermark = \App\Models\BrandingWatermark::where('id', $watermarkId)
+                ->where('branding_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->first();
+            
+            if (!$watermark) {
+                return response()->json(['error' => 'Watermark not found or does not belong to this school'], 404);
+            }
+        } else {
+            // null = use default watermark
+            $watermarkId = null;
+        }
+
+        $templateData = [
             'organization_id' => $organizationId,
-            'school_id' => $request->school_id,
+            'school_id' => $currentSchoolId,
             'template_name' => $request->template_name,
             'template_type' => $request->template_type,
             'header_text' => $request->header_text ?? null,
+            'header_text_position' => $request->header_text_position ?? 'below_school_name',
             'footer_text' => $request->footer_text ?? null,
+            'footer_text_position' => $request->footer_text_position ?? 'footer',
             'header_html' => $request->header_html ?? null,
             'footer_html' => $request->footer_html ?? null,
             'report_logo_selection' => $request->report_logo_selection ?? null,
+            'show_primary_logo' => $request->show_primary_logo ?? true,
+            'show_secondary_logo' => $request->show_secondary_logo ?? false,
+            'show_ministry_logo' => $request->show_ministry_logo ?? false,
+            'primary_logo_position' => $request->primary_logo_position ?? 'left',
+            'secondary_logo_position' => $request->secondary_logo_position ?? null,
+            'ministry_logo_position' => $request->ministry_logo_position ?? null,
             'show_page_numbers' => $request->show_page_numbers ?? true,
             'show_generation_date' => $request->show_generation_date ?? true,
             'table_alternating_colors' => $request->table_alternating_colors ?? true,
             'report_font_size' => $request->report_font_size ?? null,
             'is_default' => $request->is_default ?? false,
             'is_active' => $request->is_active ?? true,
-        ]);
+        ];
+        
+        // Handle watermark_id (sentinel UUID allowed, no foreign key constraint)
+        $templateData['watermark_id'] = $watermarkId;
+        
+        $template = ReportTemplate::create($templateData);
 
         return response()->json($template, 201);
     }
@@ -260,30 +300,111 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Cannot update report template from different organization'], 403);
         }
 
-        // Prevent organization_id and school_id changes
-        if ($request->has('organization_id') && $request->organization_id !== $template->organization_id) {
-            return response()->json(['error' => 'Cannot change organization_id'], 403);
+        // organization_id and school_id are scope fields and cannot be changed via this endpoint
+
+        // Validate watermark if provided
+        // Sentinel UUID '00000000-0000-0000-0000-000000000000' means "no watermark", null means "use default watermark"
+        $watermarkId = null;
+        $noWatermarkSentinel = '00000000-0000-0000-0000-000000000000';
+        
+        if ($request->has('watermark_id')) {
+            $watermarkId = $request->watermark_id;
+            if ($watermarkId === $noWatermarkSentinel) {
+                // Sentinel UUID = no watermark (explicitly disable)
+                $watermarkId = $noWatermarkSentinel;
+            } elseif ($watermarkId) {
+                // UUID = specific watermark, validate it exists and belongs to school
+                $watermark = \App\Models\BrandingWatermark::where('id', $watermarkId)
+                    ->where('branding_id', $template->school_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+                
+                if (!$watermark) {
+                    return response()->json(['error' => 'Watermark not found or does not belong to this school'], 404);
+                }
+            } else {
+                // null = use default watermark
+                $watermarkId = null;
+            }
         }
 
-        if ($request->has('school_id') && $request->school_id !== $template->school_id) {
-            return response()->json(['error' => 'Cannot change school_id'], 403);
-        }
-
-        $template->update($request->only([
+        $updateData = $request->only([
             'template_name',
             'template_type',
             'header_text',
+            'header_text_position',
             'footer_text',
+            'footer_text_position',
             'header_html',
             'footer_html',
             'report_logo_selection',
+            'show_primary_logo',
+            'show_secondary_logo',
+            'show_ministry_logo',
+            'primary_logo_position',
+            'secondary_logo_position',
+            'ministry_logo_position',
             'show_page_numbers',
             'show_generation_date',
             'table_alternating_colors',
             'report_font_size',
             'is_default',
             'is_active',
-        ]));
+        ]);
+        
+        // Handle watermark_id separately (sentinel UUID allowed, no foreign key constraint)
+        if ($request->has('watermark_id')) {
+            $updateData['watermark_id'] = $watermarkId;
+        }
+        
+        $template->update($updateData);
+
+        return response()->json($template);
+    }
+
+    /**
+     * Get default template for a report type and school
+     * GET /api/report-templates/default?school_id={id}&template_type={type}
+     */
+    public function getDefault(Request $request)
+    {
+        $user = request()->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (!$profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        // Require organization_id for all users
+        if (!$profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        try {
+            if (!$user->hasPermissionTo('reports.read')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Permission check failed for reports.read - allowing access: " . $e->getMessage());
+        }
+
+        $request->validate([
+            'template_type' => 'required|string|max:100',
+        ]);
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        // Get default template for this school and report type
+        $template = ReportTemplate::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
+            ->where('template_type', $request->template_type)
+            ->where('is_active', true)
+            ->where('is_default', true)
+            ->first();
+
+        if (!$template) {
+            return response()->json(null);
+        }
 
         return response()->json($template);
     }

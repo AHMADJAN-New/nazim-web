@@ -17,7 +17,7 @@ export const useSchools = (organizationId?: string) => {
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery<School[]>({
-    queryKey: ['schools', organizationId || profile?.organization_id, orgIds.join(',')],
+    queryKey: ['schools', organizationId || profile?.organization_id, profile?.default_school_id ?? null, orgIds.join(',')],
     queryFn: async () => {
       if (!user || !profile || orgsLoading) return [];
 

@@ -21,6 +21,7 @@ class Currency extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'code',
         'name',
         'symbol',
@@ -51,10 +52,11 @@ class Currency extends Model
             }
         });
 
-        // Ensure only one base currency per organization
+        // Ensure only one base currency per school
         static::saving(function ($model) {
             if ($model->is_base) {
                 static::where('organization_id', $model->organization_id)
+                    ->where('school_id', $model->school_id)
                     ->where('id', '!=', $model->id)
                     ->update(['is_base' => false]);
             }
@@ -67,6 +69,11 @@ class Currency extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organization_id');
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 
     /**

@@ -52,6 +52,7 @@ export const useFeeStructures = (
     queryKey: [
       'fee-structures',
       profile?.organization_id,
+      profile?.default_school_id ?? null,
       filters,
       usePaginated ? page : undefined,
       usePaginated ? pageSize : undefined,
@@ -251,6 +252,7 @@ export const useFeeAssignments = (
     queryKey: [
       'fee-assignments',
       profile?.organization_id,
+      profile?.default_school_id ?? null,
       filters,
       usePaginated ? page : undefined,
       usePaginated ? pageSize : undefined,
@@ -575,6 +577,7 @@ export const useFeePayments = (
     queryKey: [
       'fee-payments',
       profile?.organization_id,
+      profile?.default_school_id ?? null,
       filters,
       usePaginated ? page : undefined,
       usePaginated ? pageSize : undefined,
@@ -643,7 +646,7 @@ export const useFeePayments = (
 
       return payments;
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!profile && !!profile.default_school_id,
     staleTime: FIVE_MINUTES,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -719,7 +722,7 @@ export const useFeeExceptions = (filters?: {
   const { user, profile } = useAuth();
 
   return useQuery<FeeException[]>({
-    queryKey: ['fee-exceptions', profile?.organization_id, filters],
+    queryKey: ['fee-exceptions', profile?.organization_id, profile?.default_school_id ?? null, filters],
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) {
         if (import.meta.env.DEV) {
@@ -1069,7 +1072,7 @@ export const useFeeReportDashboard = (filters?: {
   const { user, profile } = useAuth();
 
   return useQuery<FeeReportDashboard>({
-    queryKey: ['fee-report-dashboard', profile?.organization_id, filters],
+    queryKey: ['fee-report-dashboard', profile?.organization_id, profile?.default_school_id ?? null, filters],
     queryFn: async () => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
@@ -1078,7 +1081,6 @@ export const useFeeReportDashboard = (filters?: {
       const params = {
         academic_year_id: filters?.academicYearId,
         class_academic_year_id: filters?.classAcademicYearId,
-        school_id: filters?.schoolId,
       };
 
       const data = await feeReportsApi.dashboard(params);
@@ -1110,7 +1112,7 @@ export const useStudentFees = (filters?: {
       lastPage: number;
     };
   }>({
-    queryKey: ['student-fees', profile?.organization_id, filters],
+    queryKey: ['student-fees', profile?.organization_id, profile?.default_school_id ?? null, filters],
     queryFn: async () => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
@@ -1119,7 +1121,6 @@ export const useStudentFees = (filters?: {
       const params = {
         academic_year_id: filters?.academicYearId,
         class_academic_year_id: filters?.classAcademicYearId,
-        school_id: filters?.schoolId,
         status: filters?.status,
         search: filters?.search,
         page: filters?.page,
@@ -1159,7 +1160,7 @@ export const useFeeDefaulters = (filters?: {
     };
     defaulters: FeeDefaulter[];
   }>({
-    queryKey: ['fee-defaulters', profile?.organization_id, filters],
+    queryKey: ['fee-defaulters', profile?.organization_id, profile?.default_school_id ?? null, filters],
     queryFn: async () => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
@@ -1168,7 +1169,6 @@ export const useFeeDefaulters = (filters?: {
       const params = {
         academic_year_id: filters?.academicYearId,
         class_academic_year_id: filters?.classAcademicYearId,
-        school_id: filters?.schoolId,
         min_amount: filters?.minAmount,
       };
 
@@ -1198,7 +1198,7 @@ export const useFeeCollectionReport = (filters?: {
   const { user, profile } = useAuth();
 
   return useQuery({
-    queryKey: ['fee-collection-report', profile?.organization_id, filters],
+    queryKey: ['fee-collection-report', profile?.organization_id, profile?.default_school_id ?? null, filters],
     queryFn: async () => {
       if (!user || !profile) {
         throw new Error('User not authenticated');
@@ -1207,7 +1207,6 @@ export const useFeeCollectionReport = (filters?: {
       const params = {
         academic_year_id: filters?.academicYearId,
         class_academic_year_id: filters?.classAcademicYearId,
-        school_id: filters?.schoolId,
         start_date: filters?.startDate,
         end_date: filters?.endDate,
       };

@@ -24,6 +24,8 @@ class ExamClassController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -36,6 +38,9 @@ class ExamClassController extends Controller
         $query = ExamClass::with(['classAcademicYear.class', 'classAcademicYear.academicYear'])
             ->whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id);
+        $query->whereHas('exam', function ($q) use ($currentSchoolId) {
+            $q->where('school_id', $currentSchoolId);
+        });
 
         if ($request->filled('exam_id')) {
             $query->where('exam_id', $request->exam_id);
@@ -59,6 +64,8 @@ class ExamClassController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -74,6 +81,7 @@ class ExamClassController extends Controller
         ]);
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $validated['exam_id'])
             ->first();
 
@@ -81,8 +89,11 @@ class ExamClassController extends Controller
             return response()->json(['error' => 'Exam not found'], 404);
         }
 
-        $classAcademicYear = ClassAcademicYear::find($validated['class_academic_year_id']);
-        if (!$classAcademicYear || $classAcademicYear->organization_id !== $profile->organization_id) {
+        $classAcademicYear = ClassAcademicYear::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($validated['class_academic_year_id']);
+        if (!$classAcademicYear) {
             return response()->json(['error' => 'Class academic year not found in your organization'], 403);
         }
 
@@ -103,6 +114,7 @@ class ExamClassController extends Controller
             'exam_id' => $exam->id,
             'class_academic_year_id' => $validated['class_academic_year_id'],
             'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
         ]);
 
         $examClass->load(['classAcademicYear.class', 'classAcademicYear.academicYear']);
@@ -123,6 +135,8 @@ class ExamClassController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         try {
             if (!$user->hasPermissionTo('exams.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -141,8 +155,17 @@ class ExamClassController extends Controller
             return response()->json(['error' => 'Exam class not found'], 404);
         }
 
+        $schoolOk = Exam::where('id', $examClass->exam_id)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->exists();
+        if (!$schoolOk) {
+            return response()->json(['error' => 'Exam class not found'], 404);
+        }
+
         $examClass->delete();
 
-        return response()->json(['message' => 'Class removed from exam']);
+        return response()->noContent();
     }
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useNavigate } from "react-router-dom";
-import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages } from "lucide-react";
+import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, School } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +15,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useSchools } from "@/hooks/useSchools";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authApi } from "@/lib/api/client";
+import { showToast } from "@/lib/toast";
 
 interface UserProfile {
   full_name: string;
@@ -33,7 +44,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] }: AppHeaderProps) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, profile: authProfile, refreshAuth } = useAuth();
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,8 +52,25 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const [currentLanguage, setCurrentLanguage] = useState("en");
   // Use React Query hook for notifications (properly cached)
   const { data: notifications = [] } = useNotifications();
-  
-  const { profile: authProfile } = useAuth();
+
+  const queryClient = useQueryClient();
+  const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
+
+  const updateMySchool = useMutation({
+    mutationFn: async (schoolId: string) => {
+      // Update current user's default_school_id (backend validates org membership)
+      await authApi.updateProfile({ default_school_id: schoolId });
+    },
+    onSuccess: async () => {
+      // Force reload AuthContext profile and refresh all cached data
+      await refreshAuth();
+      await queryClient.invalidateQueries();
+      showToast.success(t("toast.profileUpdated"));
+    },
+    onError: (error: any) => {
+      showToast.error(error?.message || t("toast.profileUpdateFailed"));
+    },
+  });
   
   // Map auth profile to UserProfile format
   const profile: UserProfile | null = authProfile ? {
@@ -112,6 +140,36 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
         {/* Right Section - Actions & Profile */}
         <div className="flex items-center gap-2">
+          {/* School Switcher (school-scoped data) */}
+          {schools.length > 0 && (
+            <Select
+              value={authProfile?.default_school_id ?? 'none'}
+              onValueChange={(value) => {
+                if (value && value !== 'none' && value !== authProfile?.default_school_id) {
+                  updateMySchool.mutate(value);
+                }
+              }}
+              disabled={updateMySchool.isPending || schools.length <= 1}
+            >
+              <SelectTrigger className="hidden md:flex w-[200px]">
+                <School className="h-4 w-4 mr-2" />
+                <SelectValue placeholder={t("common.selectSchool")} />
+              </SelectTrigger>
+              <SelectContent>
+                {!authProfile?.default_school_id && (
+                  <SelectItem value="none" disabled>
+                    {t("common.selectSchool")}
+                  </SelectItem>
+                )}
+                {schools.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.schoolName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           {/* Language Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

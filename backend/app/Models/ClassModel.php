@@ -21,6 +21,7 @@ class ClassModel extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'name',
         'code',
         'grade_level',
@@ -61,6 +62,14 @@ class ClassModel extends Model
     }
 
     /**
+     * Get the school that owns the class
+     */
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    /**
      * Get all class academic year instances
      */
     public function classAcademicYears()
@@ -73,24 +82,10 @@ class ClassModel extends Model
      */
     public function scopeForOrganization($query, $organizationId)
     {
-        if ($organizationId === null) {
-            return $query->whereNull('organization_id');
+        if (!$organizationId) {
+            return $query->whereRaw('1=0');
         }
         return $query->where('organization_id', $organizationId);
-    }
-
-    /**
-     * Scope to include global classes (organization_id IS NULL)
-     */
-    public function scopeWithGlobal($query, $organizationId)
-    {
-        if ($organizationId === null) {
-            return $query->whereNull('organization_id');
-        }
-        return $query->where(function ($q) use ($organizationId) {
-            $q->where('organization_id', $organizationId)
-              ->orWhereNull('organization_id');
-        });
     }
 
     /**
