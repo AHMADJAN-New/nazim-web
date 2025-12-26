@@ -136,6 +136,7 @@ class ExamAttendanceController extends Controller
         $examClass = ExamClass::where('id', $classId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -501,6 +502,7 @@ class ExamAttendanceController extends Controller
         $attendance = ExamAttendance::with('exam')
             ->where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -564,6 +566,7 @@ class ExamAttendanceController extends Controller
         $attendance = ExamAttendance::with('exam')
             ->where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -653,6 +656,7 @@ class ExamAttendanceController extends Controller
         // Get breakdown by class
         $classSummary = ExamAttendance::where('exam_attendances.exam_id', $examId)
             ->where('exam_attendances.organization_id', $profile->organization_id)
+            ->where('exam_attendances.school_id', $currentSchoolId)
             ->whereNull('exam_attendances.deleted_at')
             ->join('exam_classes', 'exam_attendances.exam_class_id', '=', 'exam_classes.id')
             ->join('class_academic_years', 'exam_classes.class_academic_year_id', '=', 'class_academic_years.id')
@@ -688,6 +692,7 @@ class ExamAttendanceController extends Controller
         // Get breakdown by subject
         $subjectSummary = ExamAttendance::where('exam_attendances.exam_id', $examId)
             ->where('exam_attendances.organization_id', $profile->organization_id)
+            ->where('exam_attendances.school_id', $currentSchoolId)
             ->whereNull('exam_attendances.deleted_at')
             ->join('exam_subjects', 'exam_attendances.exam_subject_id', '=', 'exam_subjects.id')
             ->join('subjects', 'exam_subjects.subject_id', '=', 'subjects.id')
@@ -1165,10 +1170,11 @@ class ExamAttendanceController extends Controller
             ->get();
 
         // Add roll numbers and ensure student data is properly included
-        $scansWithRollNumbers = $scans->map(function ($scan) use ($examId, $profile) {
+        $scansWithRollNumbers = $scans->map(function ($scan) use ($examId, $profile, $currentSchoolId) {
             $examStudent = ExamStudent::where('exam_id', $examId)
                 ->where('exam_class_id', $scan->exam_class_id)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereHas('studentAdmission', function ($query) use ($scan) {
                     $query->where('student_id', $scan->student_id);
                 })

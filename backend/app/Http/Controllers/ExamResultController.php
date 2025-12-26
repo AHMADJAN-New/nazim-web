@@ -147,6 +147,7 @@ class ExamResultController extends Controller
         $examSubject = ExamSubject::where('id', $validated['exam_subject_id'])
             ->where('exam_id', $validated['exam_id'])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -159,6 +160,7 @@ class ExamResultController extends Controller
             ->where('id', $validated['exam_student_id'])
             ->where('exam_id', $validated['exam_id'])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -289,6 +291,7 @@ class ExamResultController extends Controller
         $examSubject = ExamSubject::where('id', $validated['exam_subject_id'])
             ->where('exam_id', $validated['exam_id'])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -308,6 +311,7 @@ class ExamResultController extends Controller
                     ->where('id', $resultData['exam_student_id'])
                     ->where('exam_id', $validated['exam_id'])
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
 
@@ -446,6 +450,7 @@ class ExamResultController extends Controller
 
         // Validate marks against total marks
         $examSubject = ExamSubject::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('exam_id', $result->exam_id)
             ->where('id', $result->exam_subject_id)
             ->whereNull('deleted_at')
@@ -575,6 +580,7 @@ class ExamResultController extends Controller
         $examSubjects = ExamSubject::with(['subject', 'examClass.classAcademicYear.class'])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 

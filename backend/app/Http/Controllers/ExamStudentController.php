@@ -120,6 +120,7 @@ class ExamStudentController extends Controller
         $examClass = ExamClass::where('id', $validated['exam_class_id'])
             ->where('exam_id', $validated['exam_id'])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -232,6 +233,7 @@ class ExamStudentController extends Controller
             ->where('id', $validated['exam_class_id'])
             ->where('exam_id', $validated['exam_id'])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -363,6 +365,7 @@ class ExamStudentController extends Controller
         // Get all exam classes for this exam
         $examClasses = ExamClass::where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
@@ -561,6 +564,7 @@ class ExamStudentController extends Controller
         // Get exam classes with counts
         $examClasses = ExamClass::where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->with('classAcademicYear.class')
             ->get();

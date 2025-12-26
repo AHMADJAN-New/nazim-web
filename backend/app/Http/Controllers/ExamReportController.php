@@ -59,6 +59,7 @@ class ExamReportController extends Controller
             'examSubjects.classSubject.subject',
         ])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('exam_id', $examId)
             ->whereNull('deleted_at')
             ->get();
@@ -168,24 +169,28 @@ class ExamReportController extends Controller
             // Get class count
             $classCount = ExamClass::where('exam_id', $examId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->count();
 
             // Get subject count
             $subjectCount = ExamSubject::where('exam_id', $examId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->count();
 
             // Get enrolled student count
             $enrolledStudents = ExamStudent::where('exam_id', $examId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->count();
 
             // Get results statistics
             $resultStats = ExamResult::where('exam_id', $examId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->selectRaw('
                     COUNT(*) as total_results,
@@ -226,12 +231,14 @@ class ExamReportController extends Controller
         try {
             $examStudents = ExamStudent::where('exam_id', $examId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->get();
 
             // Get all exam subjects for this exam, grouped by class
             $allExamSubjects = ExamSubject::where('exam_id', $examId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->get()
                 ->groupBy('exam_class_id');
@@ -253,6 +260,8 @@ class ExamReportController extends Controller
                 foreach ($studentSubjects as $examSubject) {
                     $result = ExamResult::where('exam_student_id', $examStudent->id)
                         ->where('exam_subject_id', $examSubject->id)
+                        ->where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
                         ->whereNull('deleted_at')
                         ->first();
 
@@ -298,6 +307,7 @@ class ExamReportController extends Controller
         try {
             $avgMarks = ExamResult::where('exam_id', $examId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->where('is_absent', false)
                 ->whereNotNull('marks_obtained')
@@ -311,6 +321,7 @@ class ExamReportController extends Controller
         try {
             $marksDistribution = ExamResult::where('exam_id', $examId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->where('is_absent', false)
                 ->whereNotNull('marks_obtained')
@@ -428,6 +439,7 @@ class ExamReportController extends Controller
             ->where('id', $classId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -440,6 +452,7 @@ class ExamReportController extends Controller
             ->where('exam_class_id', $classId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
@@ -448,12 +461,14 @@ class ExamReportController extends Controller
             ->where('exam_class_id', $classId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
         // Get all results for this class
         $results = ExamResult::where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereIn('exam_student_id', $examStudents->pluck('id'))
             ->whereNull('deleted_at')
             ->get()
@@ -587,6 +602,7 @@ class ExamReportController extends Controller
             ->where('id', $studentId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -599,6 +615,7 @@ class ExamReportController extends Controller
             ->where('exam_student_id', $studentId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
@@ -607,6 +624,7 @@ class ExamReportController extends Controller
             ->where('exam_class_id', $examStudent->exam_class_id)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
@@ -747,6 +765,7 @@ class ExamReportController extends Controller
             ->where('id', $classId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -759,6 +778,7 @@ class ExamReportController extends Controller
             ->where('exam_class_id', $classId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
@@ -767,12 +787,14 @@ class ExamReportController extends Controller
             ->where('exam_class_id', $classId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
         // Get all results for this class
         $results = ExamResult::where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereIn('exam_student_id', $examStudents->pluck('id'))
             ->whereNull('deleted_at')
             ->get()
@@ -947,6 +969,7 @@ class ExamReportController extends Controller
             ->where('id', $classId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -960,6 +983,7 @@ class ExamReportController extends Controller
             ->where('exam_class_id', $classId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -972,6 +996,7 @@ class ExamReportController extends Controller
             ->where('exam_class_id', $classId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
@@ -979,6 +1004,7 @@ class ExamReportController extends Controller
         $results = ExamResult::where('exam_id', $examId)
             ->where('exam_subject_id', $subjectId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereIn('exam_student_id', $examStudents->pluck('id'))
             ->whereNull('deleted_at')
             ->get()

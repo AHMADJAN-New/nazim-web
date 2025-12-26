@@ -24,7 +24,8 @@ class StoreResidencyTypeRequest extends FormRequest
     {
         $user = $this->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
-        $organizationId = $this->input('organization_id', $profile->organization_id ?? null);
+        $organizationId = $profile->organization_id ?? null;
+        $currentSchoolId = $this->get('current_school_id');
 
         return [
             'name' => 'required|string|max:100',
@@ -32,20 +33,22 @@ class StoreResidencyTypeRequest extends FormRequest
                 'required',
                 'string',
                 'max:50',
-                function ($attribute, $value, $fail) use ($organizationId) {
+                function ($attribute, $value, $fail) use ($organizationId, $currentSchoolId) {
                     $trimmedCode = strtolower(trim($value));
                     $exists = DB::table('residency_types')
                         ->where('code', $trimmedCode)
                         ->where('organization_id', $organizationId)
+                        ->where('school_id', $currentSchoolId)
                         ->whereNull('deleted_at')
                         ->exists();
                     if ($exists) {
-                        $fail('A residency type with this code already exists for this organization.');
+                        $fail('A residency type with this code already exists for this school.');
                     }
                 },
             ],
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            // Scope is derived from user profile + school.context middleware.
             'organization_id' => 'nullable|uuid|exists:organizations,id',
         ];
     }

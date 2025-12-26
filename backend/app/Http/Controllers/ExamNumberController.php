@@ -59,6 +59,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         if ($request->filled('exam_class_id')) {
@@ -206,6 +207,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         // Filter by scope
@@ -327,6 +329,7 @@ class ExamNumberController extends Controller
                 $examStudent = ExamStudent::where('id', $item['exam_student_id'])
                     ->where('exam_id', $examId)
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
 
@@ -412,6 +415,7 @@ class ExamNumberController extends Controller
         $examStudent = ExamStudent::where('id', $examStudentId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -532,6 +536,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         if ($validated['scope'] === 'class' && !empty($validated['exam_class_id'])) {
@@ -648,6 +653,7 @@ class ExamNumberController extends Controller
                 $examStudent = ExamStudent::where('id', $item['exam_student_id'])
                     ->where('exam_id', $examId)
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
 
@@ -732,6 +738,7 @@ class ExamNumberController extends Controller
         $examStudent = ExamStudent::where('id', $examStudentId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -801,6 +808,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('exam_secret_number', $secretNumber)
             ->whereNull('deleted_at')
             ->first();
@@ -870,6 +878,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->whereNotNull('exam_roll_number');
 
@@ -959,6 +968,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->whereNotNull('exam_roll_number');
 
@@ -1081,6 +1091,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->whereNotNull('exam_secret_number');
 
@@ -1105,6 +1116,7 @@ class ExamNumberController extends Controller
                     ->where('id', $subjectId)
                     ->where('exam_id', $examId)
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
 

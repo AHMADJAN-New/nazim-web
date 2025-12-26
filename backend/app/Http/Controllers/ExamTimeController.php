@@ -142,6 +142,7 @@ class ExamTimeController extends Controller
         $examClass = ExamClass::where('id', $validated['exam_class_id'])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -154,6 +155,7 @@ class ExamTimeController extends Controller
             ->where('exam_id', $examId)
             ->where('exam_class_id', $validated['exam_class_id'])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 

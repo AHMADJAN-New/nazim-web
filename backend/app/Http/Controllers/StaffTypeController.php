@@ -26,9 +26,8 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Touch school.context (staff_types are still org-scoped lookup data)
+        // Strict school scoping
         $currentSchoolId = $this->getCurrentSchoolId($request);
-        unset($currentSchoolId);
 
         // Permission check
         try {
@@ -40,20 +39,12 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        $query = StaffType::whereNull('deleted_at');
-
-        // Filter: show global types (organization_id = null) + organization-specific types
-        $query->where(function ($q) use ($orgIds) {
-            $q->whereNull('organization_id')
-              ->orWhereIn('organization_id', $orgIds);
-        });
-
-        // Client-provided organization_id is ignored; organization is derived from profile.
-
-        $staffTypes = $query->orderBy('display_order')->orderBy('name')->get();
+        $staffTypes = StaffType::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->orderBy('display_order')
+            ->orderBy('name')
+            ->get();
 
         return response()->json($staffTypes);
     }
@@ -75,9 +66,8 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Touch school.context (staff_types are still org-scoped lookup data)
+        // Strict school scoping
         $currentSchoolId = $this->getCurrentSchoolId($request);
-        unset($currentSchoolId);
 
         // Check permission WITH organization context
         try {
@@ -89,15 +79,12 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $staffType = StaffType::whereNull('deleted_at')->find($id);
+        $staffType = StaffType::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$staffType) {
-            return response()->json(['error' => 'Staff type not found'], 404);
-        }
-
-        // Check organization access (allow global types)
-        $orgIds = [$profile->organization_id];
-        if ($staffType->organization_id !== null && !in_array($staffType->organization_id, $orgIds)) {
             return response()->json(['error' => 'Staff type not found'], 404);
         }
 
@@ -129,9 +116,8 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Touch school.context (staff_types are still org-scoped lookup data)
+        // Strict school scoping
         $currentSchoolId = $this->getCurrentSchoolId($request);
-        unset($currentSchoolId);
 
         // Check permission WITH organization context
         try {
@@ -143,23 +129,10 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Determine organization_id
-        $organizationId = $profile->organization_id;
-        
-        // All users can only create types for their organization
-        if ($organizationId !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot create staff type for a non-accessible organization'], 403);
-        }
-
         // Validate code uniqueness
         $existing = StaffType::where('code', $request->code)
-            ->where(function ($q) use ($organizationId) {
-                if ($organizationId === null) {
-                    $q->whereNull('organization_id');
-                } else {
-                    $q->where('organization_id', $organizationId);
-                }
-            })
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -168,7 +141,8 @@ class StaffTypeController extends Controller
         }
 
         $staffType = StaffType::create([
-            'organization_id' => $organizationId,
+            'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
             'name' => $request->name,
             'code' => $request->code,
             'description' => $request->description ?? null,
@@ -191,20 +165,13 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $staffType = StaffType::whereNull('deleted_at')->find($id);
-
-        if (!$staffType) {
-            return response()->json(['error' => 'Staff type not found'], 404);
-        }
-
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Touch school.context (staff_types are still org-scoped lookup data)
+        // Strict school scoping
         $currentSchoolId = $this->getCurrentSchoolId($request);
-        unset($currentSchoolId);
 
         // Check permission WITH organization context
         try {
@@ -216,12 +183,13 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
+        $staffType = StaffType::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
-        // Check organization access (all users)
-        if ($staffType->organization_id !== null && !in_array($staffType->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot update staff type from different organization'], 403);
+        if (!$staffType) {
+            return response()->json(['error' => 'Staff type not found'], 404);
         }
 
         $request->validate([
@@ -235,13 +203,8 @@ class StaffTypeController extends Controller
         // Validate code uniqueness if being changed
         if ($request->has('code') && $request->code !== $staffType->code) {
             $existing = StaffType::where('code', $request->code)
-                ->where(function ($q) use ($staffType) {
-                    if ($staffType->organization_id === null) {
-                        $q->whereNull('organization_id');
-                    } else {
-                        $q->where('organization_id', $staffType->organization_id);
-                    }
-                })
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('id', '!=', $id)
                 ->whereNull('deleted_at')
                 ->first();
@@ -274,12 +237,6 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $staffType = StaffType::whereNull('deleted_at')->find($id);
-
-        if (!$staffType) {
-            return response()->json(['error' => 'Staff type not found'], 404);
-        }
-
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -297,17 +254,19 @@ class StaffTypeController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
+        $staffType = StaffType::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
-        // Check organization access (all users)
-        if ($staffType->organization_id !== null && !in_array($staffType->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot delete staff type from different organization'], 403);
+        if (!$staffType) {
+            return response()->json(['error' => 'Staff type not found'], 404);
         }
 
         // Check if any staff members are using this type
         $staffCount = DB::table('staff')
             ->where('staff_type_id', $id)
+            ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->count();
@@ -316,12 +275,11 @@ class StaffTypeController extends Controller
         if ($staffCount > 0) {
             DB::table('staff')
                 ->where('staff_type_id', $id)
+                ->where('organization_id', $profile->organization_id)
                 ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->update(['staff_type_id' => null]);
         }
-
-        unset($currentSchoolId);
 
         // Soft delete using SoftDeletes trait
         $staffType->delete();
