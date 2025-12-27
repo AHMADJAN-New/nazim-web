@@ -14,6 +14,17 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   // schools_access_all comes from the profile API response
   const hasSchoolsAccessAll = (profile as any)?.schools_access_all ?? false;
   
+  // Store has_schools_access_all in localStorage for API client to check
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (hasSchoolsAccessAll) {
+        localStorage.setItem('has_schools_access_all', 'true');
+      } else {
+        localStorage.removeItem('has_schools_access_all');
+      }
+    }
+  }, [hasSchoolsAccessAll]);
+  
   // Initialize selected school from localStorage or default_school_id
   const [selectedSchoolId, setSelectedSchoolIdState] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
@@ -23,15 +34,19 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     return profile?.default_school_id ?? null;
   });
 
-  // Update selected school when profile changes (if user doesn't have schools_access_all, use default)
+  // Update selected school when profile changes
   useEffect(() => {
-    if (!hasSchoolsAccessAll && profile?.default_school_id) {
-      setSelectedSchoolIdState(profile.default_school_id);
-    } else if (hasSchoolsAccessAll && profile?.default_school_id && !selectedSchoolId) {
-      // If user has access all but no selected school, use default
-      setSelectedSchoolIdState(profile.default_school_id);
+    if (profile?.default_school_id) {
+      if (!hasSchoolsAccessAll) {
+        // Users without schools_access_all must use their default school
+        setSelectedSchoolIdState(profile.default_school_id);
+      } else if (!selectedSchoolId) {
+        // Users with schools_access_all: if no school selected, use default
+        setSelectedSchoolIdState(profile.default_school_id);
+      }
+      // If user has schools_access_all and already has a selected school, keep it
     }
-  }, [profile?.default_school_id, hasSchoolsAccessAll, selectedSchoolId]);
+  }, [profile?.default_school_id, hasSchoolsAccessAll]);
 
   const setSelectedSchoolId = (schoolId: string | null) => {
     setSelectedSchoolIdState(schoolId);

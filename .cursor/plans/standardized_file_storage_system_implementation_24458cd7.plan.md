@@ -4,78 +4,78 @@ overview: Implement a centralized FileStorageService with consistent folder stru
 todos:
   - id: create-file-storage-service
     content: Create FileStorageService class with all storage methods (students, staff, courses, DMS, events, templates, reports) and public/private disk separation
-    status: pending
+    status: completed
   - id: create-storage-controller
     content: Create StorageController with download method for private files, including organization access validation
-    status: pending
+    status: completed
   - id: add-storage-download-route
     content: Add storage download route in api.php for private file access with authentication
-    status: pending
+    status: completed
     dependencies:
       - create-storage-controller
   - id: update-student-controller
     content: Update StudentController uploadPicture() and getPicture() to use FileStorageService
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
   - id: update-student-document-controller
     content: Update StudentDocumentController store(), download(), destroy() to use FileStorageService
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
   - id: update-staff-controller
     content: Update StaffController uploadPicture() (public) and uploadDocument() (private) to use FileStorageService
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
   - id: update-staff-document-controller
     content: Update StaffDocumentController store(), download(), destroy() to use FileStorageService
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
   - id: update-course-document-controller
     content: Update CourseDocumentController store(), download(), destroy() to use FileStorageService
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
   - id: update-dms-document-files-controller
     content: Update DocumentFilesController store() and download() to use FileStorageService with school scope
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
   - id: update-id-card-template-controller
     content: Update IdCardTemplateController store(), update(), getBackgroundImage(), destroy() to use FileStorageService
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
   - id: update-certificate-template-controller
     content: Update CertificateTemplateController store(), update(), getBackgroundImage(), destroy() to use FileStorageService
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
   - id: update-report-services
     content: Update PdfReportService and ExcelReportService saveToFile() methods to use FileStorageService
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
   - id: create-file-migration-service
     content: Create FileMigrationService with path mapping and migration logic for existing files
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
   - id: create-migration-command
     content: Create MigrateFileStorage artisan command with dry-run, resource filtering, and organization filtering options
-    status: pending
+    status: completed
     dependencies:
       - create-file-migration-service
   - id: write-unit-tests
     content: Write unit tests for FileStorageService covering all methods and edge cases
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
   - id: write-integration-tests
     content: Write integration tests for file upload/download flows for all resource types
-    status: pending
+    status: completed
     dependencies:
       - create-file-storage-service
       - create-storage-controller
@@ -92,12 +92,12 @@ todos:
       - update-certificate-template-controller
   - id: cleanup-old-code
     content: "Remove old Storage:: calls, move_uploaded_file() usage, and unused path building logic from controllers"
-    status: pending
+    status: completed
     dependencies:
       - run-migration
   - id: update-documentation
     content: Update .cursorrules and API documentation with FileStorageService usage patterns and examples
-    status: pending
+    status: completed
     dependencies:
       - cleanup-old-code
 ---

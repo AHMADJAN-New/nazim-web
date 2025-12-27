@@ -76,6 +76,9 @@ class CertificateTemplateController extends Controller
 
         $schoolId = $currentSchoolId;
 
+        // Generate template ID first so we can use it in file paths
+        $templateId = (string) \Illuminate\Support\Str::uuid();
+
         $backgroundPath = null;
         if ($request->hasFile('background_image')) {
             $file = $request->file('background_image');
@@ -92,7 +95,8 @@ class CertificateTemplateController extends Controller
             $backgroundPath = $this->fileStorageService->storeCertificateTemplateBackground(
                 $file,
                 $profile->organization_id,
-                $schoolId
+                $schoolId,
+                $templateId
             );
         }
 
@@ -108,6 +112,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::create([
+            'id' => $templateId,
             'organization_id' => $profile->organization_id,
             'school_id' => $schoolId,
             'type' => $validated['type'],
@@ -187,7 +192,8 @@ class CertificateTemplateController extends Controller
                 $validated['background_image_path'] = $this->fileStorageService->storeCertificateTemplateBackground(
                     $file,
                     $profile->organization_id,
-                    $template->school_id
+                    $template->school_id,
+                    $template->id
                 );
             } catch (\Exception $e) {
                 Log::error('Certificate template background upload failed', ['error' => $e->getMessage()]);

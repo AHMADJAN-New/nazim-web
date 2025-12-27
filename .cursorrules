@@ -996,58 +996,201 @@ const isPermissionDeletable = (permission: Permission): boolean => {
 
 ### Storage - Multi-Tenancy Pattern
 
-#### Storage Path Structure (Laravel Storage)
-```typescript
-// ALWAYS include organization_id in storage paths
-// Path format: {organization_id}/{resource_id}/{file_type}/{file_name}
+**CRITICAL: ALL file storage operations MUST use the centralized FileStorageService. NEVER use direct Storage:: calls or move_uploaded_file().**
 
-export const useUploadFile = () => {
-  return useMutation({
-    mutationFn: async ({ 
-      resourceId, 
-      organizationId, 
-      file, 
-      fileType 
-    }: { 
-      resourceId: string;
+#### FileStorageService - Centralized File Storage
 
-organizationId: string;
+**Location**: `backend/app/Services/Storage/FileStorageService.php`
 
-file: File;
+**Purpose**: Provides consistent, standardized file storage with:
+- Consistent folder structure: `organizations/{org_id}/schools/{school_id}/resource_type/...`
+- Public/Private disk separation (public for direct URLs, private for sensitive files)
+- School-scoped organization (DMS and events under school scope)
+- UUID-based file naming
+- Type-safe methods for each resource type
 
-fileType: string;
-
-}) => { const fileExt = file.name.split('.').pop();
-
-const fileName = `${resourceId}/${fileType}/${Date.now()}.${fileExt}`;
-
-const filePath = `${organizationId}/${fileName}`;
-/
-/
-ALWAYS prefix with organization_id
-
-/
-/
-Upload via Laravel API endpoint const formData = new FormData ();
-
-formData.append ('file', file);
-
-formData.append ('path', filePath);
-
-const result = await apiClient.files.upload (formData);
-
-return result.path;
-
-}, });
-
-};
+#### Standardized Folder Structure
 
 ```
+storage/app/
+├── private/                    # Private files (sensitive, requires auth)
+│   └── organizations/
+│       └── {organization_id}/
+│           └── schools/
+│               └── {school_id}/
+│                   ├── students/{student_id}/
+│                   │   ├── pictures/
+│                   │   └── documents/{document_type}/
+│                   ├── staff/{staff_id}/
+│                   │   └── documents/{document_type}/
+│                   ├── courses/{course_id}/
+│                   │   └── documents/{document_type}/
+│                   ├── dms/{document_type}/{document_id}/files/
+│                   ├── events/{event_id}/
+│                   │   ├── attachments/
+│                   │   └── photos/
+│                   ├── templates/
+│                   │   ├── id-cards/{template_id}/
+│                   │   └── certificates/{template_id}/
+│                   └── reports/{report_key}/
+│
+└── public/                     # Public files (direct URL access)
+    └── organizations/
+        └── {organization_id}/
+            └── schools/
+                └── {school_id}/
+                    ├── staff/{staff_id}/pictures/
+                    ├── events/{event_id}/
+                    │   ├── banners/
+                    │   └── thumbnails/
+                    └── shared/{resource_type}/
+```
 
-#### Laravel Storage Configuration
-- Use Laravel's Storage facade (`Storage::disk('local')` or `Storage::disk('s3')`)
-- Organization isolation enforced in Laravel controllers/middleware
-- Storage paths validated server-side to ensure organization_id matches user's organization
+#### Public vs Private Decision Matrix
+
+| Resource Type | File Category | Disk | Reason |
+|--------------|---------------|------|--------|
+| Students | Pictures | Private | Sensitive data |
+| Students | Documents | Private | Sensitive data |
+| Staff | Pictures | Public | Display in UI, non-sensitive |
+| Staff | Documents | Private | Sensitive data |
+| Courses | Documents | Private | May contain sensitive info |
+| DMS | All files | Private | Sensitive documents |
+| Events | Attachments | Private | May contain sensitive info |
+| Events | Photos | Private | May contain sensitive info |
+| Events | Banners | Public | Public display |
+| Events | Thumbnails | Public | Public display |
+| Templates | Backgrounds | Private | Internal use |
+| Reports | All | Private | Sensitive data |
+
+#### Backend Controller Pattern
+
+**CRITICAL: ALWAYS use FileStorageService in controllers. NEVER use direct Storage:: calls.**
+
+```php
+use App\Services\Storage\FileStorageService;
+
+class YourController extends Controller
+{
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
+
+    public function uploadFile(Request $request, string $id)
+    {
+        // ... validation and permission checks ...
+        
+        $file = $request->file('file');
+        
+        // Store file using FileStorageService
+        $filePath = $this->fileStorageService->storeYourResourceFile(
+            $file,
+            $resource->organization_id,
+            $resource->id,
+            $resource->school_id
+        );
+        
+        // Update resource with file path
+        $resource->update(['file_path' => $filePath]);
+        
+        // Get URL (public or private download URL)
+        $url = $this->fileStorageService->getPrivateDownloadUrl($filePath);
+        // OR for public files:
+        // $url = $this->fileStorageService->getPublicUrl($filePath);
+        
+        return response()->json(['path' => $filePath, 'url' => $url]);
+    }
+
+    public function downloadFile(Request $request, string $id)
+    {
+        // ... validation ...
+        
+        $resource = YourResource::find($id);
+        
+        // Download using FileStorageService
+        return $this->fileStorageService->downloadFile(
+            $resource->file_path,
+            $resource->file_name
+        );
+    }
+
+    public function deleteFile(Request $request, string $id)
+    {
+        // ... validation ...
+        
+        $resource = YourResource::find($id);
+        
+        // Delete file using FileStorageService
+        if ($resource->file_path) {
+            $this->fileStorageService->deleteFile($resource->file_path);
+        }
+        
+        $resource->delete();
+        
+        return response()->noContent();
+    }
+}
+```
+
+#### Available FileStorageService Methods
+
+**Student Files:**
+- `storeStudentPicture($file, $orgId, $studentId, $schoolId)` - PRIVATE
+- `storeStudentDocument($file, $orgId, $studentId, $schoolId, $docType)` - PRIVATE
+
+**Staff Files:**
+- `storeStaffPicturePublic($file, $orgId, $staffId, $schoolId)` - PUBLIC
+- `storeStaffDocument($file, $orgId, $staffId, $schoolId, $docType)` - PRIVATE
+
+**Course Files:**
+- `storeCourseDocument($file, $orgId, $courseId, $schoolId, $docType)` - PRIVATE
+
+**DMS Files (School-Scoped):**
+- `storeDmsFile($file, $orgId, $schoolId, $docType, $docId)` - PRIVATE
+
+**Event Files (School-Scoped):**
+- `storeEventAttachment($file, $orgId, $eventId, $schoolId)` - PRIVATE
+- `storeEventPhoto($file, $orgId, $eventId, $schoolId)` - PRIVATE
+- `storeEventBannerPublic($file, $orgId, $eventId, $schoolId)` - PUBLIC
+- `storeEventThumbnailPublic($file, $orgId, $eventId, $schoolId)` - PUBLIC
+
+**Template Files:**
+- `storeIdCardTemplateBackground($file, $orgId, $schoolId, $templateId, $side)` - PRIVATE
+- `storeCertificateTemplateBackground($file, $orgId, $schoolId, $templateId)` - PRIVATE
+
+**Report Files:**
+- `storeReport($content, $filename, $orgId, $schoolId, $reportKey)` - PRIVATE
+
+**File Operations:**
+- `deleteFile($path, $disk)` - Delete a file
+- `fileExists($path, $disk)` - Check if file exists
+- `getFile($path, $disk)` - Get file contents
+- `getPublicUrl($path)` - Get public URL (for public files)
+- `getPrivateDownloadUrl($path)` - Get download route (for private files)
+- `downloadFile($path, $filename, $disk)` - Download file response
+- `getFileSize($path, $disk)` - Get file size
+- `getMimeType($path, $disk)` - Get MIME type
+
+#### School ID Handling
+
+- **Always include school_id in path** when available
+- **Handle null school_id** gracefully (organization-level files)
+- **Extract school_id from resource** (student, staff, course, etc.)
+- **Validate school belongs to organization** before storage
+
+#### Key Rules
+
+- ✅ **ALWAYS** use FileStorageService for all file operations
+- ✅ **ALWAYS** use public disk for files that need direct URL access (staff pictures, event banners)
+- ✅ **ALWAYS** use private disk for sensitive files (student documents, staff documents, DMS files)
+- ✅ **ALWAYS** include organization_id and school_id in paths
+- ✅ **ALWAYS** use UUID-based file naming (handled automatically by service)
+- ✅ **ALWAYS** validate organization access before file operations
+- ❌ **NEVER** use direct `Storage::disk()` calls in controllers
+- ❌ **NEVER** use `move_uploaded_file()` directly
+- ❌ **NEVER** use `storage_path()` for file storage
+- ❌ **NEVER** hardcode file paths
+- ❌ **NEVER** store files without organization_id and school_id in path
 
 ### Helper Functions - Multi-Tenancy
 

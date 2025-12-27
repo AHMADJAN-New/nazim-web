@@ -2,6 +2,7 @@
 
 namespace App\Services\Reports;
 
+use App\Services\Storage\FileStorageService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
@@ -12,18 +13,26 @@ use Spatie\Browsershot\Browsershot;
  */
 class PdfReportService
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
+
     /**
      * Generate PDF report
      *
      * @param ReportConfig $config Report configuration
      * @param array $context Template context
      * @param callable|null $progressCallback Progress callback
+     * @param string|null $organizationId Organization ID for file storage
+     * @param string|null $schoolId School ID for file storage
      * @return array Result with path, filename, and size
      */
     public function generate(
         ReportConfig $config,
         array $context,
-        ?callable $progressCallback = null
+        ?callable $progressCallback = null,
+        ?string $organizationId = null,
+        ?string $schoolId = null
     ): array {
         $this->reportProgress($progressCallback, 0, 'Starting PDF generation');
 
@@ -32,7 +41,7 @@ class PdfReportService
         $this->reportProgress($progressCallback, 30, 'HTML rendered');
 
         // Generate PDF file
-        $result = $this->generatePdf($html, $context, $config);
+        $result = $this->generatePdf($html, $context, $config, $organizationId, $schoolId);
         $this->reportProgress($progressCallback, 100, 'PDF generated');
 
         return $result;
@@ -76,18 +85,14 @@ class PdfReportService
     /**
      * Generate PDF from HTML using Browsershot
      */
-    private function generatePdf(string $html, array $context, ReportConfig $config): array
+    private function generatePdf(string $html, array $context, ReportConfig $config, ?string $organizationId = null, ?string $schoolId = null): array
     {
-        // Create temporary directory if needed
-        $tempDir = storage_path('app/reports');
-        if (!is_dir($tempDir)) {
-            mkdir($tempDir, 0755, true);
-        }
-
         // Generate unique filename
         $filename = $this->generateFilename($config);
-        $relativePath = "reports/{$filename}";
-        $absolutePath = storage_path("app/{$relativePath}");
+        
+        // Create temporary file for Browsershot (it needs a file path)
+        $tempDir = sys_get_temp_dir();
+        $tempPath = $tempDir . '/' . $filename;
 
         // Get page settings
         $pageSize = $context['page_size'] ?? 'A4';
@@ -125,9 +130,9 @@ class PdfReportService
             $browsershot->showBrowserHeaderAndFooter();
         }
 
-        // Generate PDF
+        // Generate PDF to temp file
         try {
-            $browsershot->save($absolutePath);
+            $browsershot->save($tempPath);
         } catch (\Exception $e) {
             // Browsershot throws exceptions on failure - re-throw with context
             throw new \RuntimeException(
@@ -138,15 +143,38 @@ class PdfReportService
         }
 
         // Verify file was created
-        if (!file_exists($absolutePath)) {
-            throw new \RuntimeException("PDF file was not created at: {$absolutePath}");
+        if (!file_exists($tempPath)) {
+            throw new \RuntimeException("PDF file was not created at: {$tempPath}");
         }
 
-        // Get file size
-        $fileSize = filesize($absolutePath);
+        // Read PDF content
+        $pdfContent = file_get_contents($tempPath);
+        $fileSize = filesize($tempPath);
+
+        // Store using FileStorageService if organization and school IDs are provided
+        if ($organizationId && $schoolId) {
+            $storagePath = $this->fileStorageService->storeReport(
+                $pdfContent,
+                $filename,
+                $organizationId,
+                $schoolId,
+                $config->reportKey ?? 'general'
+            );
+        } else {
+            // Fallback to old storage method for backward compatibility
+            $storageDir = storage_path('app/reports');
+            if (!is_dir($storageDir)) {
+                mkdir($storageDir, 0755, true);
+            }
+            $storagePath = "reports/{$filename}";
+            Storage::disk('local')->put($storagePath, $pdfContent);
+        }
+
+        // Clean up temp file
+        @unlink($tempPath);
 
         return [
-            'path' => $relativePath,
+            'path' => $storagePath,
             'filename' => $filename,
             'size' => $fileSize,
         ];

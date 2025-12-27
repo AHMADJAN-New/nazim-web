@@ -2,6 +2,7 @@
 
 namespace App\Services\Reports;
 
+use App\Services\Storage\FileStorageService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -33,18 +34,26 @@ use PhpOffice\PhpSpreadsheet\Worksheet\HeaderFooter;
  */
 class ExcelReportService
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
+
     /**
      * Generate Excel report
      *
      * @param ReportConfig $config Report configuration
      * @param array $context Template context
      * @param callable|null $progressCallback Progress callback
+     * @param string|null $organizationId Organization ID for file storage
+     * @param string|null $schoolId School ID for file storage
      * @return array Result with path, filename, and size
      */
     public function generate(
         ReportConfig $config,
         array $context,
-        ?callable $progressCallback = null
+        ?callable $progressCallback = null,
+        ?string $organizationId = null,
+        ?string $schoolId = null
     ): array {
         $this->reportProgress($progressCallback, 0, 'Starting Excel generation');
 
@@ -102,7 +111,7 @@ class ExcelReportService
         $this->reportProgress($progressCallback, 95, 'Watermark added');
 
         // Save to file
-        $result = $this->saveToFile($spreadsheet, $config);
+        $result = $this->saveToFile($spreadsheet, $config, $organizationId, $schoolId);
         $this->reportProgress($progressCallback, 100, 'Excel file saved');
 
         return $result;
@@ -822,28 +831,49 @@ class ExcelReportService
     /**
      * Save spreadsheet to file
      */
-    private function saveToFile(Spreadsheet $spreadsheet, ReportConfig $config): array
+    private function saveToFile(Spreadsheet $spreadsheet, ReportConfig $config, ?string $organizationId = null, ?string $schoolId = null): array
     {
-        // Create directory if needed
-        $tempDir = storage_path('app/reports');
-        if (!is_dir($tempDir)) {
-            mkdir($tempDir, 0755, true);
-        }
-
         // Generate unique filename
         $filename = $this->generateFilename($config);
-        $relativePath = "reports/{$filename}";
-        $absolutePath = storage_path("app/{$relativePath}");
 
-        // Save file
+        // Create temp file for PhpSpreadsheet (it needs a file path)
+        $tempDir = sys_get_temp_dir();
+        $tempPath = $tempDir . '/' . $filename;
+
+        // Save file to temp location
         $writer = new Xlsx($spreadsheet);
-        $writer->save($absolutePath);
+        $writer->save($tempPath);
 
         // Get file size
-        $fileSize = filesize($absolutePath);
+        $fileSize = filesize($tempPath);
+
+        // Read file content
+        $fileContent = file_get_contents($tempPath);
+
+        // Store using FileStorageService if organization and school IDs are provided
+        if ($organizationId && $schoolId) {
+            $storagePath = $this->fileStorageService->storeReport(
+                $fileContent,
+                $filename,
+                $organizationId,
+                $schoolId,
+                $config->reportKey ?? 'general'
+            );
+        } else {
+            // Fallback to old storage method for backward compatibility
+            $storageDir = storage_path('app/reports');
+            if (!is_dir($storageDir)) {
+                mkdir($storageDir, 0755, true);
+            }
+            $storagePath = "reports/{$filename}";
+            Storage::disk('local')->put($storagePath, $fileContent);
+        }
+
+        // Clean up temp file
+        @unlink($tempPath);
 
         return [
-            'path' => $relativePath,
+            'path' => $storagePath,
             'filename' => $filename,
             'size' => $fileSize,
         ];

@@ -213,11 +213,12 @@ class FileStorageService
         UploadedFile $file,
         string $organizationId,
         ?string $schoolId = null,
+        string $templateId,
         string $side = 'front'
     ): string {
-        $path = $this->buildPath($organizationId, $schoolId, self::PATH_TEMPLATES, 'id-cards');
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_TEMPLATES, 'id-cards', $templateId);
         $extension = strtolower($file->getClientOriginalExtension());
-        $filename = Str::uuid() . "_{$side}.{$extension}";
+        $filename = "background_{$side}.{$extension}";
 
         return Storage::disk(self::DISK_PRIVATE)->putFileAs($path, $file, $filename);
     }
@@ -228,10 +229,14 @@ class FileStorageService
     public function storeCertificateTemplateBackground(
         UploadedFile $file,
         string $organizationId,
-        ?string $schoolId = null
+        ?string $schoolId = null,
+        string $templateId
     ): string {
-        $path = $this->buildPath($organizationId, $schoolId, self::PATH_TEMPLATES, 'certificates');
-        return $this->storeFile($file, $path, self::DISK_PRIVATE);
+        $path = $this->buildPath($organizationId, $schoolId, self::PATH_TEMPLATES, 'certificates', $templateId);
+        $extension = strtolower($file->getClientOriginalExtension());
+        $filename = "background.{$extension}";
+        
+        return Storage::disk(self::DISK_PRIVATE)->putFileAs($path, $file, $filename);
     }
 
     // ==============================================

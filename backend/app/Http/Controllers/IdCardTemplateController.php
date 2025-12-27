@@ -115,6 +115,9 @@ class IdCardTemplateController extends Controller
             }
         }
 
+        // Generate template ID first so we can use it in file paths
+        $templateId = (string) Str::uuid();
+
         $backgroundPathFront = null;
         if ($request->hasFile('background_image_front')) {
             try {
@@ -140,6 +143,7 @@ class IdCardTemplateController extends Controller
                     $file,
                     $profile->organization_id,
                     $validated['school_id'] ?? null,
+                    $templateId,
                     'front'
                 );
             } catch (\Exception $e) {
@@ -179,6 +183,7 @@ class IdCardTemplateController extends Controller
                     $file,
                     $profile->organization_id,
                     $validated['school_id'] ?? null,
+                    $templateId,
                     'back'
                 );
             } catch (\Exception $e) {
@@ -202,6 +207,7 @@ class IdCardTemplateController extends Controller
         }
 
         $template = IdCardTemplate::create([
+            'id' => $templateId,
             'organization_id' => $profile->organization_id,
             'school_id' => $currentSchoolId,
             'name' => $validated['name'],
@@ -354,6 +360,7 @@ class IdCardTemplateController extends Controller
                     $file,
                     $profile->organization_id,
                     $template->school_id,
+                    $template->id,
                     'front'
                 );
             } catch (\Exception $e) {
@@ -399,6 +406,7 @@ class IdCardTemplateController extends Controller
                     $file,
                     $profile->organization_id,
                     $template->school_id,
+                    $template->id,
                     'back'
                 );
             } catch (\Exception $e) {

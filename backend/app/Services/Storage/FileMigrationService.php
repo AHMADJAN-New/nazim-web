@@ -2,16 +2,17 @@
 
 namespace App\Services\Storage;
 
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
  * File Migration Service
- *
- * Migrates existing files from old path structure to new standardized structure.
- * Handles path mapping and database record updates.
+ * 
+ * Migrates existing files from old storage structure to new standardized structure:
+ * Old: {org_id}/students/{id}/pictures/{file}
+ * New: organizations/{org_id}/schools/{school_id}/students/{id}/pictures/{uuid}.{ext}
  */
 class FileMigrationService
 {
@@ -20,551 +21,514 @@ class FileMigrationService
     ) {}
 
     /**
-     * Migrate all file types
+     * Migrate all files for an organization
      */
-    public function migrateAll(bool $dryRun = false): array
+    public function migrateOrganization(string $organizationId, bool $dryRun = false): array
     {
         $results = [
-            'students' => $this->migrateStudentFiles($dryRun),
-            'staff' => $this->migrateStaffFiles($dryRun),
-            'courses' => $this->migrateCourseDocuments($dryRun),
-            'dms' => $this->migrateDmsFiles($dryRun),
-            'id_card_templates' => $this->migrateIdCardTemplates($dryRun),
-            'certificate_templates' => $this->migrateCertificateTemplates($dryRun),
+            'students' => $this->migrateStudentFiles($organizationId, $dryRun),
+            'staff' => $this->migrateStaffFiles($organizationId, $dryRun),
+            'courses' => $this->migrateCourseFiles($organizationId, $dryRun),
+            'dms' => $this->migrateDmsFiles($organizationId, $dryRun),
+            'templates' => $this->migrateTemplateFiles($organizationId, $dryRun),
+            'reports' => $this->migrateReportFiles($organizationId, $dryRun),
         ];
 
         return $results;
     }
 
     /**
-     * Migrate student pictures and documents
+     * Migrate student files
      */
-    public function migrateStudentFiles(bool $dryRun = false, ?string $organizationId = null): array
+    public function migrateStudentFiles(string $organizationId, bool $dryRun = false): array
     {
         $migrated = 0;
-        $failed = 0;
+        $errors = 0;
         $skipped = 0;
-        $errors = [];
 
-        $query = DB::table('students')->whereNull('deleted_at');
-        if ($organizationId) {
-            $query->where('organization_id', $organizationId);
-        }
-
-        $students = $query->get();
+        // Find all students with picture_path
+        $students = DB::table('students')
+            ->where('organization_id', $organizationId)
+            ->whereNotNull('picture_path')
+            ->whereNull('deleted_at')
+            ->get();
 
         foreach ($students as $student) {
-            // Migrate picture
-            if ($student->picture_path) {
-                $result = $this->migrateFile(
-                    $student->picture_path,
-                    'students',
-                    $student->id,
-                    'pictures',
-                    $student->organization_id,
-                    $student->school_id,
-                    $dryRun
-                );
-
-                if ($result['status'] === 'migrated') {
-                    if (!$dryRun) {
-                        DB::table('students')
-                            ->where('id', $student->id)
-                            ->update(['picture_path' => $result['new_path']]);
-                    }
-                    $migrated++;
-                } elseif ($result['status'] === 'skipped') {
+            try {
+                $oldPath = $student->picture_path;
+                
+                // Skip if already in new format
+                if (str_starts_with($oldPath, 'organizations/')) {
                     $skipped++;
-                } else {
-                    $failed++;
-                    $errors[] = "Student {$student->id}: {$result['error']}";
+                    continue;
                 }
-            }
-        }
 
-        // Migrate student documents
-        $query = DB::table('student_documents')->whereNull('deleted_at');
-        if ($organizationId) {
-            $query->where('organization_id', $organizationId);
-        }
-
-        $documents = $query->get();
-
-        foreach ($documents as $doc) {
-            if ($doc->file_path) {
-                $result = $this->migrateFile(
-                    $doc->file_path,
-                    'students',
-                    $doc->student_id,
-                    'documents/' . ($doc->document_type ?? 'general'),
-                    $doc->organization_id,
-                    $doc->school_id,
-                    $dryRun
-                );
-
-                if ($result['status'] === 'migrated') {
-                    if (!$dryRun) {
-                        DB::table('student_documents')
-                            ->where('id', $doc->id)
-                            ->update(['file_path' => $result['new_path']]);
-                    }
-                    $migrated++;
-                } elseif ($result['status'] === 'skipped') {
+                // Check if file exists
+                if (!Storage::disk('local')->exists($oldPath)) {
+                    Log::warning("Student picture file not found", [
+                        'student_id' => $student->id,
+                        'old_path' => $oldPath,
+                    ]);
                     $skipped++;
-                } else {
-                    $failed++;
-                    $errors[] = "StudentDocument {$doc->id}: {$result['error']}";
+                    continue;
                 }
+
+                if (!$dryRun) {
+                    // Read file content
+                    $fileContent = Storage::disk('local')->get($oldPath);
+                    
+                    // Determine extension from old path
+                    $extension = pathinfo($oldPath, PATHINFO_EXTENSION);
+                    $newFilename = Str::uuid() . '.' . $extension;
+                    
+                    // Build new path
+                    $newPath = $this->buildPath(
+                        $organizationId,
+                        $student->school_id,
+                        'students',
+                        $student->id,
+                        'pictures'
+                    );
+                    $newFullPath = $newPath . '/' . $newFilename;
+
+                    // Store in new location
+                    Storage::disk('local')->put($newFullPath, $fileContent);
+
+                    // Update database
+                    DB::table('students')
+                        ->where('id', $student->id)
+                        ->update(['picture_path' => $newFullPath]);
+
+                    // Delete old file (optional - can be done later)
+                    // Storage::disk('local')->delete($oldPath);
+                }
+
+                $migrated++;
+            } catch (\Exception $e) {
+                Log::error("Failed to migrate student picture", [
+                    'student_id' => $student->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $errors++;
             }
         }
 
         return [
             'migrated' => $migrated,
-            'failed' => $failed,
-            'skipped' => $skipped,
             'errors' => $errors,
+            'skipped' => $skipped,
         ];
     }
 
     /**
-     * Migrate staff pictures and documents
+     * Migrate staff files
      */
-    public function migrateStaffFiles(bool $dryRun = false, ?string $organizationId = null): array
+    public function migrateStaffFiles(string $organizationId, bool $dryRun = false): array
     {
         $migrated = 0;
-        $failed = 0;
+        $errors = 0;
         $skipped = 0;
-        $errors = [];
 
-        $query = DB::table('staff')->whereNull('deleted_at');
-        if ($organizationId) {
-            $query->where('organization_id', $organizationId);
-        }
+        // Find all staff with picture_url (public disk)
+        $staff = DB::table('staff')
+            ->where('organization_id', $organizationId)
+            ->whereNotNull('picture_url')
+            ->whereNull('deleted_at')
+            ->get();
 
-        $staffMembers = $query->get();
-
-        foreach ($staffMembers as $staff) {
-            // Migrate picture (to public disk)
-            if ($staff->picture_url) {
-                $result = $this->migrateFile(
-                    $staff->picture_url,
-                    'staff',
-                    $staff->id,
-                    'pictures',
-                    $staff->organization_id,
-                    $staff->school_id,
-                    $dryRun,
-                    'public'
-                );
-
-                if ($result['status'] === 'migrated') {
-                    if (!$dryRun) {
-                        DB::table('staff')
-                            ->where('id', $staff->id)
-                            ->update(['picture_url' => $result['new_path']]);
-                    }
-                    $migrated++;
-                } elseif ($result['status'] === 'skipped') {
+        foreach ($staff as $staffMember) {
+            try {
+                $oldPath = 'staff-files/' . $organizationId . '/' . ($staffMember->school_id ? $staffMember->school_id . '/' : '') . $staffMember->id . '/picture/' . $staffMember->picture_url;
+                
+                // Skip if already in new format
+                if (str_starts_with($oldPath, 'organizations/')) {
                     $skipped++;
-                } else {
-                    $failed++;
-                    $errors[] = "Staff {$staff->id}: {$result['error']}";
+                    continue;
                 }
-            }
-        }
 
-        // Migrate staff documents
-        $query = DB::table('staff_documents')->whereNull('deleted_at');
-        if ($organizationId) {
-            $query->where('organization_id', $organizationId);
-        }
-
-        $documents = $query->get();
-
-        foreach ($documents as $doc) {
-            if ($doc->file_path) {
-                $result = $this->migrateFile(
-                    $doc->file_path,
-                    'staff',
-                    $doc->staff_id,
-                    'documents/' . ($doc->document_type ?? 'general'),
-                    $doc->organization_id,
-                    $doc->school_id,
-                    $dryRun
-                );
-
-                if ($result['status'] === 'migrated') {
-                    if (!$dryRun) {
-                        DB::table('staff_documents')
-                            ->where('id', $doc->id)
-                            ->update(['file_path' => $result['new_path']]);
-                    }
-                    $migrated++;
-                } elseif ($result['status'] === 'skipped') {
+                // Check if file exists on public disk
+                if (!Storage::disk('public')->exists($oldPath)) {
+                    Log::warning("Staff picture file not found", [
+                        'staff_id' => $staffMember->id,
+                        'old_path' => $oldPath,
+                    ]);
                     $skipped++;
-                } else {
-                    $failed++;
-                    $errors[] = "StaffDocument {$doc->id}: {$result['error']}";
+                    continue;
                 }
+
+                if (!$dryRun) {
+                    // Read file content
+                    $fileContent = Storage::disk('public')->get($oldPath);
+                    
+                    // Determine extension
+                    $extension = pathinfo($staffMember->picture_url, PATHINFO_EXTENSION);
+                    $newFilename = Str::uuid() . '.' . $extension;
+                    
+                    // Build new path (public disk for staff pictures)
+                    $newPath = "organizations/{$organizationId}/schools/{$staffMember->school_id}/staff/{$staffMember->id}/pictures";
+                    $newFullPath = $newPath . '/' . $newFilename;
+
+                    // Store in new location (public disk)
+                    Storage::disk('public')->put($newFullPath, $fileContent);
+
+                    // Update database
+                    DB::table('staff')
+                        ->where('id', $staffMember->id)
+                        ->update(['picture_url' => $newFilename]);
+                }
+
+                $migrated++;
+            } catch (\Exception $e) {
+                Log::error("Failed to migrate staff picture", [
+                    'staff_id' => $staffMember->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $errors++;
             }
         }
 
         return [
             'migrated' => $migrated,
-            'failed' => $failed,
-            'skipped' => $skipped,
             'errors' => $errors,
+            'skipped' => $skipped,
         ];
     }
 
     /**
-     * Migrate course documents
+     * Migrate course document files
      */
-    public function migrateCourseDocuments(bool $dryRun = false, ?string $organizationId = null): array
+    public function migrateCourseFiles(string $organizationId, bool $dryRun = false): array
     {
         $migrated = 0;
-        $failed = 0;
+        $errors = 0;
         $skipped = 0;
-        $errors = [];
 
-        $query = DB::table('course_documents')->whereNull('deleted_at');
-        if ($organizationId) {
-            $query->where('organization_id', $organizationId);
-        }
+        $documents = DB::table('course_documents')
+            ->where('organization_id', $organizationId)
+            ->whereNotNull('file_path')
+            ->whereNull('deleted_at')
+            ->get();
 
-        $documents = $query->get();
-
-        foreach ($documents as $doc) {
-            if ($doc->file_path) {
-                // Get school_id from course if available
-                $course = DB::table('short_term_courses')
-                    ->where('id', $doc->course_id)
-                    ->first();
-
-                $result = $this->migrateFile(
-                    $doc->file_path,
-                    'courses',
-                    $doc->course_id,
-                    $doc->document_type ?? 'documents',
-                    $doc->organization_id,
-                    $course->school_id ?? null,
-                    $dryRun
-                );
-
-                if ($result['status'] === 'migrated') {
-                    if (!$dryRun) {
-                        DB::table('course_documents')
-                            ->where('id', $doc->id)
-                            ->update(['file_path' => $result['new_path']]);
-                    }
-                    $migrated++;
-                } elseif ($result['status'] === 'skipped') {
+        foreach ($documents as $document) {
+            try {
+                $oldPath = $document->file_path;
+                
+                // Skip if already in new format
+                if (str_starts_with($oldPath, 'organizations/')) {
                     $skipped++;
-                } else {
-                    $failed++;
-                    $errors[] = "CourseDocument {$doc->id}: {$result['error']}";
+                    continue;
                 }
+
+                // Check if file exists
+                if (!Storage::disk('local')->exists($oldPath)) {
+                    $skipped++;
+                    continue;
+                }
+
+                if (!$dryRun) {
+                    $fileContent = Storage::disk('local')->get($oldPath);
+                    $extension = pathinfo($oldPath, PATHINFO_EXTENSION);
+                    $newFilename = Str::uuid() . '.' . $extension;
+                    
+                    // Get course to find school_id
+                    $course = DB::table('short_term_courses')
+                        ->where('id', $document->course_id)
+                        ->first();
+                    
+                    $newPath = "organizations/{$organizationId}/schools/{$course->school_id}/courses/{$document->course_id}/documents/{$document->document_type}";
+                    $newFullPath = $newPath . '/' . $newFilename;
+
+                    Storage::disk('local')->put($newFullPath, $fileContent);
+
+                    DB::table('course_documents')
+                        ->where('id', $document->id)
+                        ->update(['file_path' => $newFullPath]);
+                }
+
+                $migrated++;
+            } catch (\Exception $e) {
+                Log::error("Failed to migrate course document", [
+                    'document_id' => $document->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $errors++;
             }
         }
 
         return [
             'migrated' => $migrated,
-            'failed' => $failed,
-            'skipped' => $skipped,
             'errors' => $errors,
+            'skipped' => $skipped,
         ];
     }
 
     /**
-     * Migrate DMS document files
+     * Migrate DMS files
      */
-    public function migrateDmsFiles(bool $dryRun = false, ?string $organizationId = null): array
+    public function migrateDmsFiles(string $organizationId, bool $dryRun = false): array
     {
         $migrated = 0;
-        $failed = 0;
+        $errors = 0;
         $skipped = 0;
-        $errors = [];
 
-        $query = DB::table('document_files');
-        if ($organizationId) {
-            $query->where('organization_id', $organizationId);
-        }
-
-        $files = $query->get();
+        $files = DB::table('document_files')
+            ->where('organization_id', $organizationId)
+            ->whereNotNull('storage_path')
+            ->get();
 
         foreach ($files as $file) {
-            if ($file->storage_path) {
-                $result = $this->migrateFile(
-                    $file->storage_path,
-                    'dms',
-                    $file->owner_type . '/' . $file->owner_id,
-                    'files',
-                    $file->organization_id,
-                    $file->school_id,
-                    $dryRun
-                );
-
-                if ($result['status'] === 'migrated') {
-                    if (!$dryRun) {
-                        DB::table('document_files')
-                            ->where('id', $file->id)
-                            ->update(['storage_path' => $result['new_path']]);
-                    }
-                    $migrated++;
-                } elseif ($result['status'] === 'skipped') {
-                    $skipped++;
-                } else {
-                    $failed++;
-                    $errors[] = "DocumentFile {$file->id}: {$result['error']}";
-                }
-            }
-        }
-
-        return [
-            'migrated' => $migrated,
-            'failed' => $failed,
-            'skipped' => $skipped,
-            'errors' => $errors,
-        ];
-    }
-
-    /**
-     * Migrate ID card templates
-     */
-    public function migrateIdCardTemplates(bool $dryRun = false, ?string $organizationId = null): array
-    {
-        $migrated = 0;
-        $failed = 0;
-        $skipped = 0;
-        $errors = [];
-
-        $query = DB::table('id_card_templates')->whereNull('deleted_at');
-        if ($organizationId) {
-            $query->where('organization_id', $organizationId);
-        }
-
-        $templates = $query->get();
-
-        foreach ($templates as $template) {
-            // Migrate front background
-            if ($template->background_image_path_front) {
-                $result = $this->migrateFile(
-                    $template->background_image_path_front,
-                    'templates',
-                    'id-cards',
-                    null,
-                    $template->organization_id,
-                    $template->school_id,
-                    $dryRun
-                );
-
-                if ($result['status'] === 'migrated') {
-                    if (!$dryRun) {
-                        DB::table('id_card_templates')
-                            ->where('id', $template->id)
-                            ->update(['background_image_path_front' => $result['new_path']]);
-                    }
-                    $migrated++;
-                } elseif ($result['status'] === 'skipped') {
-                    $skipped++;
-                } else {
-                    $failed++;
-                    $errors[] = "IdCardTemplate {$template->id} (front): {$result['error']}";
-                }
-            }
-
-            // Migrate back background
-            if ($template->background_image_path_back) {
-                $result = $this->migrateFile(
-                    $template->background_image_path_back,
-                    'templates',
-                    'id-cards',
-                    null,
-                    $template->organization_id,
-                    $template->school_id,
-                    $dryRun
-                );
-
-                if ($result['status'] === 'migrated') {
-                    if (!$dryRun) {
-                        DB::table('id_card_templates')
-                            ->where('id', $template->id)
-                            ->update(['background_image_path_back' => $result['new_path']]);
-                    }
-                    $migrated++;
-                } elseif ($result['status'] === 'skipped') {
-                    $skipped++;
-                } else {
-                    $failed++;
-                    $errors[] = "IdCardTemplate {$template->id} (back): {$result['error']}";
-                }
-            }
-        }
-
-        return [
-            'migrated' => $migrated,
-            'failed' => $failed,
-            'skipped' => $skipped,
-            'errors' => $errors,
-        ];
-    }
-
-    /**
-     * Migrate certificate templates
-     */
-    public function migrateCertificateTemplates(bool $dryRun = false, ?string $organizationId = null): array
-    {
-        $migrated = 0;
-        $failed = 0;
-        $skipped = 0;
-        $errors = [];
-
-        $query = DB::table('certificate_templates')->whereNull('deleted_at');
-        if ($organizationId) {
-            $query->where('organization_id', $organizationId);
-        }
-
-        $templates = $query->get();
-
-        foreach ($templates as $template) {
-            if ($template->background_image_path) {
-                $result = $this->migrateFile(
-                    $template->background_image_path,
-                    'templates',
-                    'certificates',
-                    null,
-                    $template->organization_id,
-                    $template->school_id,
-                    $dryRun
-                );
-
-                if ($result['status'] === 'migrated') {
-                    if (!$dryRun) {
-                        DB::table('certificate_templates')
-                            ->where('id', $template->id)
-                            ->update(['background_image_path' => $result['new_path']]);
-                    }
-                    $migrated++;
-                } elseif ($result['status'] === 'skipped') {
-                    $skipped++;
-                } else {
-                    $failed++;
-                    $errors[] = "CertificateTemplate {$template->id}: {$result['error']}";
-                }
-            }
-        }
-
-        return [
-            'migrated' => $migrated,
-            'failed' => $failed,
-            'skipped' => $skipped,
-            'errors' => $errors,
-        ];
-    }
-
-    /**
-     * Migrate a single file from old path to new standardized path
-     */
-    private function migrateFile(
-        string $oldPath,
-        string $resourceType,
-        string $resourceId,
-        ?string $subPath,
-        string $organizationId,
-        ?string $schoolId,
-        bool $dryRun,
-        string $disk = 'local'
-    ): array {
-        // Skip if already in new format
-        if (str_starts_with($oldPath, 'organizations/')) {
-            return ['status' => 'skipped', 'reason' => 'Already in new format'];
-        }
-
-        // Check if old file exists
-        if (!Storage::disk($disk)->exists($oldPath)) {
-            return ['status' => 'failed', 'error' => 'Source file not found'];
-        }
-
-        try {
-            // Build new path
-            $newPath = "organizations/{$organizationId}";
-            if ($schoolId) {
-                $newPath .= "/schools/{$schoolId}";
-            }
-            $newPath .= "/{$resourceType}/{$resourceId}";
-            if ($subPath) {
-                $newPath .= "/{$subPath}";
-            }
-
-            // Generate new filename with UUID
-            $extension = pathinfo($oldPath, PATHINFO_EXTENSION);
-            $filename = Str::uuid() . '.' . $extension;
-            $newPath .= '/' . $filename;
-
-            if ($dryRun) {
-                return [
-                    'status' => 'migrated',
-                    'old_path' => $oldPath,
-                    'new_path' => $newPath,
-                    'dry_run' => true,
-                ];
-            }
-
-            // Copy file to new location
-            $contents = Storage::disk($disk)->get($oldPath);
-            Storage::disk($disk)->put($newPath, $contents);
-
-            // Verify new file exists
-            if (!Storage::disk($disk)->exists($newPath)) {
-                return ['status' => 'failed', 'error' => 'Failed to copy file to new location'];
-            }
-
-            Log::info('File migrated successfully', [
-                'old_path' => $oldPath,
-                'new_path' => $newPath,
-                'disk' => $disk,
-            ]);
-
-            return [
-                'status' => 'migrated',
-                'old_path' => $oldPath,
-                'new_path' => $newPath,
-            ];
-        } catch (\Exception $e) {
-            Log::error('File migration failed', [
-                'old_path' => $oldPath,
-                'error' => $e->getMessage(),
-            ]);
-            return ['status' => 'failed', 'error' => $e->getMessage()];
-        }
-    }
-
-    /**
-     * Cleanup old files after successful migration
-     * This should be run separately after verifying migration was successful
-     */
-    public function cleanupOldFiles(array $migratedPaths, string $disk = 'local'): array
-    {
-        $deleted = 0;
-        $failed = 0;
-        $errors = [];
-
-        foreach ($migratedPaths as $path) {
             try {
-                if (Storage::disk($disk)->exists($path)) {
-                    Storage::disk($disk)->delete($path);
-                    $deleted++;
+                $oldPath = $file->storage_path;
+                
+                // Skip if already in new format
+                if (str_starts_with($oldPath, 'organizations/')) {
+                    $skipped++;
+                    continue;
+                }
+
+                if (!Storage::disk('local')->exists($oldPath)) {
+                    $skipped++;
+                    continue;
+                }
+
+                if (!$dryRun) {
+                    // Get document to find school_id
+                    $document = DB::table($file->owner_type === 'incoming' ? 'incoming_documents' : 'outgoing_documents')
+                        ->where('id', $file->owner_id)
+                        ->first();
+                    
+                    if (!$document) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    $fileContent = Storage::disk('local')->get($oldPath);
+                    $extension = pathinfo($oldPath, PATHINFO_EXTENSION);
+                    $newFilename = Str::uuid() . '_' . basename($file->original_name);
+                    
+                    $newPath = "organizations/{$organizationId}/schools/{$document->school_id}/dms/{$file->owner_type}/{$file->owner_id}/files";
+                    $newFullPath = $newPath . '/' . $newFilename;
+
+                    Storage::disk('local')->put($newFullPath, $fileContent);
+
+                    DB::table('document_files')
+                        ->where('id', $file->id)
+                        ->update(['storage_path' => $newFullPath]);
+                }
+
+                $migrated++;
+            } catch (\Exception $e) {
+                Log::error("Failed to migrate DMS file", [
+                    'file_id' => $file->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $errors++;
+            }
+        }
+
+        return [
+            'migrated' => $migrated,
+            'errors' => $errors,
+            'skipped' => $skipped,
+        ];
+    }
+
+    /**
+     * Migrate template files
+     */
+    public function migrateTemplateFiles(string $organizationId, bool $dryRun = false): array
+    {
+        $migrated = 0;
+        $errors = 0;
+        $skipped = 0;
+
+        // ID Card Templates
+        $idCardTemplates = DB::table('id_card_templates')
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->get();
+
+        foreach ($idCardTemplates as $template) {
+            try {
+                if ($template->background_image_path_front) {
+                    $migrated += $this->migrateTemplateFile(
+                        $template->background_image_path_front,
+                        $organizationId,
+                        $template->school_id,
+                        'id-cards',
+                        $template->id,
+                        'background_front',
+                        $dryRun
+                    ) ? 1 : 0;
+                }
+                if ($template->background_image_path_back) {
+                    $migrated += $this->migrateTemplateFile(
+                        $template->background_image_path_back,
+                        $organizationId,
+                        $template->school_id,
+                        'id-cards',
+                        $template->id,
+                        'background_back',
+                        $dryRun
+                    ) ? 1 : 0;
                 }
             } catch (\Exception $e) {
-                $failed++;
-                $errors[] = "{$path}: {$e->getMessage()}";
+                $errors++;
+            }
+        }
+
+        // Certificate Templates
+        $certTemplates = DB::table('certificate_templates')
+            ->where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->get();
+
+        foreach ($certTemplates as $template) {
+            try {
+                if ($template->background_image_path) {
+                    $migrated += $this->migrateTemplateFile(
+                        $template->background_image_path,
+                        $organizationId,
+                        $template->school_id,
+                        'certificates',
+                        $template->id,
+                        'background',
+                        $dryRun
+                    ) ? 1 : 0;
+                }
+            } catch (\Exception $e) {
+                $errors++;
             }
         }
 
         return [
-            'deleted' => $deleted,
-            'failed' => $failed,
+            'migrated' => $migrated,
             'errors' => $errors,
+            'skipped' => $skipped,
         ];
+    }
+
+    /**
+     * Migrate a single template file
+     */
+    private function migrateTemplateFile(
+        string $oldPath,
+        string $organizationId,
+        ?string $schoolId,
+        string $templateType,
+        string $templateId,
+        string $side,
+        bool $dryRun
+    ): bool {
+        if (str_starts_with($oldPath, 'organizations/')) {
+            return false; // Already migrated
+        }
+
+        if (!Storage::disk('local')->exists($oldPath)) {
+            return false;
+        }
+
+        if ($dryRun) {
+            return true;
+        }
+
+        $fileContent = Storage::disk('local')->get($oldPath);
+        $extension = pathinfo($oldPath, PATHINFO_EXTENSION);
+        $newFilename = "background_{$side}.{$extension}";
+        
+        $newPath = "organizations/{$organizationId}/schools/{$schoolId}/templates/{$templateType}/{$templateId}";
+        $newFullPath = $newPath . '/' . $newFilename;
+
+        Storage::disk('local')->put($newFullPath, $fileContent);
+
+        // Update appropriate table
+        if ($templateType === 'id-cards') {
+            $column = $side === 'background_front' ? 'background_image_path_front' : 'background_image_path_back';
+            DB::table('id_card_templates')
+                ->where('id', $templateId)
+                ->update([$column => $newFullPath]);
+        } else {
+            DB::table('certificate_templates')
+                ->where('id', $templateId)
+                ->update(['background_image_path' => $newFullPath]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Migrate report files
+     */
+    public function migrateReportFiles(string $organizationId, bool $dryRun = false): array
+    {
+        $migrated = 0;
+        $errors = 0;
+        $skipped = 0;
+
+        $reports = DB::table('report_runs')
+            ->where('organization_id', $organizationId)
+            ->whereNotNull('output_path')
+            ->get();
+
+        foreach ($reports as $report) {
+            try {
+                $oldPath = $report->output_path;
+                
+                if (str_starts_with($oldPath, 'organizations/')) {
+                    $skipped++;
+                    continue;
+                }
+
+                if (!Storage::disk('local')->exists($oldPath)) {
+                    $skipped++;
+                    continue;
+                }
+
+                if (!$dryRun) {
+                    $fileContent = Storage::disk('local')->get($oldPath);
+                    $filename = basename($oldPath);
+                    
+                    // Get school_id from branding_id
+                    $schoolId = $report->branding_id;
+                    $reportKey = $report->report_key ?? 'general';
+                    
+                    $newPath = "organizations/{$organizationId}/schools/{$schoolId}/reports/{$reportKey}";
+                    $newFullPath = $newPath . '/' . $filename;
+
+                    Storage::disk('local')->put($newFullPath, $fileContent);
+
+                    DB::table('report_runs')
+                        ->where('id', $report->id)
+                        ->update(['output_path' => $newFullPath]);
+                }
+
+                $migrated++;
+            } catch (\Exception $e) {
+                $errors++;
+            }
+        }
+
+        return [
+            'migrated' => $migrated,
+            'errors' => $errors,
+            'skipped' => $skipped,
+        ];
+    }
+
+    /**
+     * Helper method to build path
+     */
+    private function buildPath(string $organizationId, ?string $schoolId, string ...$segments): string
+    {
+        $path = "organizations/{$organizationId}";
+        if ($schoolId) {
+            $path .= "/schools/{$schoolId}";
+        }
+        foreach ($segments as $segment) {
+            if (!empty($segment)) {
+                $path .= "/{$segment}";
+            }
+        }
+        return $path;
     }
 }

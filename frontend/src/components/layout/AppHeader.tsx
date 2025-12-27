@@ -58,32 +58,44 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
   const { selectedSchoolId, setSelectedSchoolId, hasSchoolsAccessAll } = useSchoolContext();
 
-  // Only show school switcher if user has schools_access_all and multiple schools
-  const showSchoolSwitcher = hasSchoolsAccessAll && schools.length > 1;
+  // Auto-select default school if user has one and no school is selected
+  useEffect(() => {
+    if (authProfile?.default_school_id && !selectedSchoolId) {
+      setSelectedSchoolId(authProfile.default_school_id);
+    }
+  }, [authProfile?.default_school_id, selectedSchoolId, setSelectedSchoolId]);
+
+  // Only show school switcher if:
+  // 1. User has schools_access_all AND multiple schools, OR
+  // 2. User has a default school (to show current school even if they can't switch)
+  const showSchoolSwitcher = (hasSchoolsAccessAll && schools.length > 1) || 
+                             (authProfile?.default_school_id && schools.length > 0);
+
+  // For users with schools_access_all: just update context (temporary switch)
+  // For other users: update default_school_id permanently (only if they have permission)
+  const handleSchoolChange = (schoolId: string) => {
+    if (hasSchoolsAccessAll) {
+      // Temporary switch - just update context
+      setSelectedSchoolId(schoolId);
+      // Invalidate queries to refresh data with new school context
+      void queryClient.invalidateQueries();
+      showToast.success(t("common.schoolSwitched"));
+    } else {
+      // Permanent switch - update default_school_id
+      updateMySchool.mutate(schoolId);
+    }
+  };
 
   const updateMySchool = useMutation({
     mutationFn: async (schoolId: string) => {
-      // For users with schools_access_all, just update context (temporary switch)
-      // For other users, update default_school_id permanently
-      if (hasSchoolsAccessAll) {
-        setSelectedSchoolId(schoolId);
-        // Invalidate queries to refresh data with new school context
-        await queryClient.invalidateQueries();
-        return;
-      } else {
-        // Update current user's default_school_id (backend validates org membership)
-        await authApi.updateProfile({ default_school_id: schoolId });
-      }
+      // Update current user's default_school_id (backend validates org membership)
+      await authApi.updateProfile({ default_school_id: schoolId });
     },
     onSuccess: async () => {
-      if (!hasSchoolsAccessAll) {
-        // Force reload AuthContext profile and refresh all cached data
-        await refreshAuth();
-        await queryClient.invalidateQueries();
-        showToast.success(t("toast.profileUpdated"));
-      } else {
-        showToast.success(t("common.schoolSwitched"));
-      }
+      // Force reload AuthContext profile and refresh all cached data
+      await refreshAuth();
+      await queryClient.invalidateQueries();
+      showToast.success(t("toast.profileUpdated"));
     },
     onError: (error: any) => {
       showToast.error(error?.message || t("toast.profileUpdateFailed"));
@@ -158,30 +170,28 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
         {/* Right Section - Actions & Profile */}
         <div className="flex items-center gap-2">
-          {/* School Switcher (only for users with schools_access_all) */}
+          {/* School Switcher */}
           {showSchoolSwitcher && (
             <Select
-              value={selectedSchoolId ?? 'none'}
+              value={selectedSchoolId ?? authProfile?.default_school_id ?? 'none'}
               onValueChange={(value) => {
                 if (value && value !== 'none' && value !== selectedSchoolId) {
-                  updateMySchool.mutate(value);
+                  handleSchoolChange(value);
                 }
               }}
-              disabled={updateMySchool.isPending}
+              disabled={updateMySchool.isPending && !hasSchoolsAccessAll}
             >
               <SelectTrigger className="hidden md:flex w-[200px]">
                 <School className="h-4 w-4 mr-2" />
-                <SelectValue placeholder={t("common.selectSchool")} />
+                <SelectValue placeholder={t("common.selectSchool") || "Select School"} />
               </SelectTrigger>
               <SelectContent>
-                {!selectedSchoolId && (
-                  <SelectItem value="none" disabled>
-                    {t("common.selectSchool")}
-                  </SelectItem>
-                )}
                 {schools.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.schoolName}
+                    {s.id === authProfile?.default_school_id && !hasSchoolsAccessAll && (
+                      <span className="ml-2 text-xs text-muted-foreground">(Default)</span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>

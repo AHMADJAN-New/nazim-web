@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\Storage\FileMigrationService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class MigrateFileStorage extends Command
 {
@@ -13,84 +14,85 @@ class MigrateFileStorage extends Command
      * @var string
      */
     protected $signature = 'storage:migrate
-                            {--dry-run : Show what would be migrated without making changes}
-                            {--resource= : Migrate specific resource type (students, staff, courses, dms, id_card_templates, certificate_templates)}
-                            {--organization= : Migrate files for a specific organization ID only}';
+                            {--dry-run : Show what would be migrated without actually migrating}
+                            {--organization= : Migrate files for a specific organization ID}
+                            {--resource= : Migrate specific resource type (students, staff, courses, dms, templates, reports)}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Migrate existing files to the new standardized folder structure';
-
-    public function __construct(
-        private FileMigrationService $migrationService
-    ) {
-        parent::__construct();
-    }
+    protected $description = 'Migrate existing files to new standardized storage structure';
 
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(FileMigrationService $migrationService): int
     {
         $dryRun = $this->option('dry-run');
-        $resource = $this->option('resource');
         $organizationId = $this->option('organization');
+        $resource = $this->option('resource');
 
         if ($dryRun) {
-            $this->info('DRY RUN MODE - No files will be moved');
+            $this->info('🔍 DRY RUN MODE - No files will be migrated');
             $this->newLine();
         }
 
-        $this->info('Starting file storage migration...');
+        // Get organizations to migrate
+        $organizations = [];
+        if ($organizationId) {
+            $org = DB::table('organizations')->where('id', $organizationId)->first();
+            if (!$org) {
+                $this->error("Organization {$organizationId} not found");
+                return 1;
+            }
+            $organizations = [$org];
+        } else {
+            $organizations = DB::table('organizations')->get();
+        }
+
+        if (empty($organizations)) {
+            $this->warn('No organizations found to migrate');
+            return 0;
+        }
+
+        $this->info("Found " . count($organizations) . " organization(s) to migrate");
         $this->newLine();
 
-        if ($organizationId) {
-            $this->info("Filtering by organization: {$organizationId}");
-            $this->newLine();
-        }
-
         $totalMigrated = 0;
-        $totalFailed = 0;
+        $totalErrors = 0;
         $totalSkipped = 0;
-        $allErrors = [];
 
-        if ($resource) {
-            // Migrate specific resource type
-            $result = $this->migrateResourceType($resource, $dryRun, $organizationId);
-            if ($result) {
-                $this->displayResults($resource, $result);
-                $totalMigrated += $result['migrated'];
-                $totalFailed += $result['failed'];
-                $totalSkipped += $result['skipped'];
-                $allErrors = array_merge($allErrors, $result['errors']);
-            }
-        } else {
-            // Migrate all resource types
-            $resourceTypes = [
-                'students' => 'Student files (pictures & documents)',
-                'staff' => 'Staff files (pictures & documents)',
-                'courses' => 'Course documents',
-                'dms' => 'DMS document files',
-                'id_card_templates' => 'ID card templates',
-                'certificate_templates' => 'Certificate templates',
-            ];
+        foreach ($organizations as $org) {
+            $this->info("Migrating files for organization: {$org->name} ({$org->id})");
+            $this->line(str_repeat('-', 60));
 
-            foreach ($resourceTypes as $type => $description) {
-                $this->info("Migrating: {$description}");
-                $result = $this->migrateResourceType($type, $dryRun, $organizationId);
-
-                if ($result) {
-                    $this->displayResults($type, $result);
-                    $totalMigrated += $result['migrated'];
-                    $totalFailed += $result['failed'];
-                    $totalSkipped += $result['skipped'];
-                    $allErrors = array_merge($allErrors, $result['errors']);
+            try {
+                if ($resource) {
+                    // Migrate specific resource type
+                    $results = $this->migrateResource($migrationService, $org->id, $resource, $dryRun);
+                    $this->displayResults($resource, $results);
+                    $totalMigrated += $results['migrated'];
+                    $totalErrors += $results['errors'];
+                    $totalSkipped += $results['skipped'];
+                } else {
+                    // Migrate all resources
+                    $results = $migrationService->migrateOrganization($org->id, $dryRun);
+                    
+                    foreach ($results as $resourceType => $resourceResults) {
+                        $this->displayResults($resourceType, $resourceResults);
+                        $totalMigrated += $resourceResults['migrated'];
+                        $totalErrors += $resourceResults['errors'];
+                        $totalSkipped += $resourceResults['skipped'];
+                    }
                 }
-                $this->newLine();
+            } catch (\Exception $e) {
+                $this->error("Error migrating organization {$org->id}: " . $e->getMessage());
+                $totalErrors++;
             }
+
+            $this->newLine();
         }
 
         // Summary
@@ -100,57 +102,45 @@ class MigrateFileStorage extends Command
             ['Metric', 'Count'],
             [
                 ['Migrated', $totalMigrated],
-                ['Skipped (already migrated)', $totalSkipped],
-                ['Failed', $totalFailed],
+                ['Skipped', $totalSkipped],
+                ['Errors', $totalErrors],
             ]
         );
 
-        if (!empty($allErrors)) {
-            $this->newLine();
-            $this->error('Errors encountered:');
-            foreach (array_slice($allErrors, 0, 20) as $error) {
-                $this->line("  - {$error}");
-            }
-            if (count($allErrors) > 20) {
-                $this->line("  ... and " . (count($allErrors) - 20) . " more errors");
-            }
-        }
-
         if ($dryRun) {
-            $this->newLine();
-            $this->warn('This was a dry run. Run without --dry-run to apply changes.');
+            $this->warn('This was a dry run. Run without --dry-run to perform actual migration.');
         }
 
-        return $totalFailed > 0 ? Command::FAILURE : Command::SUCCESS;
+        return 0;
     }
 
     /**
-     * Migrate a specific resource type
+     * Migrate specific resource type
      */
-    private function migrateResourceType(string $type, bool $dryRun, ?string $organizationId): ?array
+    private function migrateResource(FileMigrationService $migrationService, string $organizationId, string $resource, bool $dryRun): array
     {
-        return match ($type) {
-            'students' => $this->migrationService->migrateStudentFiles($dryRun, $organizationId),
-            'staff' => $this->migrationService->migrateStaffFiles($dryRun, $organizationId),
-            'courses' => $this->migrationService->migrateCourseDocuments($dryRun, $organizationId),
-            'dms' => $this->migrationService->migrateDmsFiles($dryRun, $organizationId),
-            'id_card_templates' => $this->migrationService->migrateIdCardTemplates($dryRun, $organizationId),
-            'certificate_templates' => $this->migrationService->migrateCertificateTemplates($dryRun, $organizationId),
-            default => null,
+        return match ($resource) {
+            'students' => $migrationService->migrateStudentFiles($organizationId, $dryRun),
+            'staff' => $migrationService->migrateStaffFiles($organizationId, $dryRun),
+            'courses' => $migrationService->migrateCourseFiles($organizationId, $dryRun),
+            'dms' => $migrationService->migrateDmsFiles($organizationId, $dryRun),
+            'templates' => $migrationService->migrateTemplateFiles($organizationId, $dryRun),
+            'reports' => $migrationService->migrateReportFiles($organizationId, $dryRun),
+            default => throw new \InvalidArgumentException("Unknown resource type: {$resource}"),
         };
     }
 
     /**
-     * Display results for a resource type
+     * Display migration results for a resource type
      */
-    private function displayResults(string $type, array $result): void
+    private function displayResults(string $resourceType, array $results): void
     {
-        $this->line("  Migrated: {$result['migrated']}");
-        $this->line("  Skipped: {$result['skipped']}");
-        if ($result['failed'] > 0) {
-            $this->error("  Failed: {$result['failed']}");
-        } else {
-            $this->line("  Failed: 0");
+        $icon = $results['errors'] > 0 ? '❌' : ($results['migrated'] > 0 ? '✅' : '⏭️');
+        $this->line("{$icon} {$resourceType}:");
+        $this->line("   Migrated: {$results['migrated']}");
+        $this->line("   Skipped: {$results['skipped']}");
+        if ($results['errors'] > 0) {
+            $this->error("   Errors: {$results['errors']}");
         }
     }
 }

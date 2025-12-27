@@ -114,8 +114,13 @@ class ApiClient {
     // if it's stored in localStorage (set by SchoolContext)
     // This allows users to switch schools and see data from the selected school
     if (typeof window !== 'undefined' && !options.params?.school_id) {
+      // Check if user has schools_access_all permission (stored in localStorage by SchoolContext)
+      const hasSchoolsAccessAll = localStorage.getItem('has_schools_access_all') === 'true';
       const selectedSchoolId = localStorage.getItem('selected_school_id');
-      if (selectedSchoolId) {
+      
+      // Only add school_id if user has schools_access_all permission
+      // For other users, the backend middleware will use their default_school_id
+      if (hasSchoolsAccessAll && selectedSchoolId) {
         // Add school_id to params if not already present
         if (!options.params) {
           options.params = {};

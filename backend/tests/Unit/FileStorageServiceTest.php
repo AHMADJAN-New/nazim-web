@@ -140,11 +140,12 @@ class FileStorageServiceTest extends TestCase
         $file = UploadedFile::fake()->image('background.png');
         $organizationId = 'org-123';
         $schoolId = 'school-789';
+        $templateId = 'template-456';
 
-        $path = $this->service->storeIdCardTemplateBackground($file, $organizationId, $schoolId, 'front');
+        $path = $this->service->storeIdCardTemplateBackground($file, $organizationId, $schoolId, $templateId, 'front');
 
-        $this->assertStringContains('templates/id-cards/', $path);
-        $this->assertStringContains('_front.png', $path);
+        $this->assertStringContains("templates/id-cards/{$templateId}/", $path);
+        $this->assertStringContains('background_front.png', $path);
         Storage::disk('local')->assertExists($path);
     }
 
@@ -152,10 +153,12 @@ class FileStorageServiceTest extends TestCase
     {
         $file = UploadedFile::fake()->image('cert_bg.jpg');
         $organizationId = 'org-123';
+        $templateId = 'template-456';
 
-        $path = $this->service->storeCertificateTemplateBackground($file, $organizationId, null);
+        $path = $this->service->storeCertificateTemplateBackground($file, $organizationId, null, $templateId);
 
-        $this->assertStringContains('templates/certificates/', $path);
+        $this->assertStringContains("templates/certificates/{$templateId}/", $path);
+        $this->assertStringContains('background.jpg', $path);
         Storage::disk('local')->assertExists($path);
     }
 
