@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function CourseCertificates() {
   const { t } = useLanguage();
@@ -89,6 +91,43 @@ export default function CourseCertificates() {
     };
   }, [studentsWithCertificates, courses]);
 
+  const { profile } = useAuth();
+
+  // Report export columns
+  const reportColumns = useMemo(() => [
+    { key: 'student_name', label: t('students.name') || 'Student' },
+    { key: 'father_name', label: t('students.fatherName') || 'Father Name' },
+    { key: 'admission_no', label: t('students.admissionNo') || 'Admission No' },
+    { key: 'course_name', label: t('courses.courseName') || 'Course' },
+    { key: 'certificate_number', label: 'Certificate #' },
+    { key: 'issued_date', label: 'Issued Date' },
+  ], [t]);
+
+  // Transform data for report
+  const transformCertificateData = useCallback((students: typeof filtered) => {
+    return students.map((student) => ({
+      student_name: student.fullName || '-',
+      father_name: student.fatherName || '-',
+      admission_no: student.admissionNo || '-',
+      course_name: courses?.find((c) => c.id === student.courseId)?.name || '-',
+      certificate_number: student.certificateIssuedDate ? formatDate(student.certificateIssuedDate) : '-',
+      issued_date: student.certificateIssuedDate ? formatDate(student.certificateIssuedDate) : '-',
+    }));
+  }, [courses]);
+
+  // Build filters summary
+  const buildFiltersSummary = useCallback(() => {
+    const filters: string[] = [];
+    if (selectedCourseId && selectedCourseId !== 'all') {
+      const course = courses?.find((c) => c.id === selectedCourseId);
+      if (course) filters.push(`${t('courses.courseName') || 'Course'}: ${course.name}`);
+    }
+    if (search) {
+      filters.push(`${t('common.search') || 'Search'}: ${search}`);
+    }
+    return filters.join(', ');
+  }, [selectedCourseId, search, courses, t]);
+
   return (
     <div className="container mx-auto max-w-7xl p-4 md:p-6 space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -127,10 +166,25 @@ export default function CourseCertificates() {
 
       <Card>
         <CardHeader className="space-y-1 pb-3">
-          <CardTitle className="text-lg font-semibold">Issued Certificates</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Filter by course or search by name, admission number, or certificate number.
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold">Issued Certificates</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Filter by course or search by name, admission number, or certificate number.
+              </p>
+            </div>
+            <ReportExportButtons
+              data={filtered}
+              columns={reportColumns}
+              reportKey="short_term_course_certificates"
+              title={t('courses.courseCertificates') || 'Short-term Course Certificates Report'}
+              transformData={transformCertificateData}
+              buildFiltersSummary={buildFiltersSummary}
+              schoolId={profile?.default_school_id}
+              templateType="course_certificates"
+              disabled={isLoading || filtered.length === 0}
+            />
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useShortTermCourses, useCourseStats } from '@/hooks/useShortTermCourses';
@@ -49,6 +49,8 @@ if (typeof window !== 'undefined') {
 // Use regular pdfmake vfs_fonts instead of pdfmake-arabic's (which has issues)
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import { useLanguage } from '@/hooks/useLanguage';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { useAuth } from '@/hooks/useAuth';
 
 // Set up fonts for Arabic/Pashto support
 try {
@@ -119,6 +121,57 @@ export default function CourseDashboard() {
     if (!selectedCourseId || selectedCourseId === 'all') return allStudents;
     return allStudents.filter((s) => s.courseId === selectedCourseId);
   }, [selectedCourseId, allStudents]);
+
+  const { profile } = useAuth();
+
+  // Prepare data for attendance report export (when reportType is 'attendance')
+  const attendanceReportData = useMemo(() => {
+    if (reportType !== 'attendance' || !attendanceReport) return [];
+    return courseStudents.map((student) => {
+      const attendanceData = attendanceReport.find(
+        (r: any) => r.course_student_id === student.id
+      );
+      return {
+        ...student,
+        attendance_rate: attendanceData?.attendance_rate || 0,
+      };
+    });
+  }, [reportType, attendanceReport, courseStudents]);
+
+  // Report export columns for attendance
+  const attendanceReportColumns = useMemo(() => [
+    { key: 'student_name', label: t('courses.student') || 'Student' },
+    { key: 'father_name', label: t('courses.fatherName') || 'Father Name' },
+    { key: 'course_name', label: t('courses.course') || 'Course' },
+    { key: 'status', label: t('courses.status') || 'Status' },
+    { key: 'registration_date', label: t('courses.registration') || 'Registration' },
+    { key: 'attendance_rate', label: t('courses.attendanceRate') || 'Attendance Rate' },
+  ], [t]);
+
+  // Transform data for attendance report
+  const transformAttendanceData = useCallback((students: typeof attendanceReportData) => {
+    return students.map((student) => {
+      const course = courses.find((c) => c.id === student.courseId);
+      return {
+        student_name: student.fullName || '-',
+        father_name: student.fatherName || '-',
+        course_name: course?.name || '-',
+        status: student.status || '-',
+        registration_date: student.registrationDate ? formatDate(student.registrationDate) : '-',
+        attendance_rate: `${Math.round(student.attendance_rate || 0)}%`,
+      };
+    });
+  }, [courses]);
+
+  // Build filters summary for attendance report
+  const buildAttendanceFiltersSummary = useCallback(() => {
+    const filters: string[] = [];
+    if (selectedCourseId && selectedCourseId !== 'all') {
+      const course = courses.find((c) => c.id === selectedCourseId);
+      if (course) filters.push(`${t('courses.courseName') || 'Course'}: ${course.name}`);
+    }
+    return filters.join(', ');
+  }, [selectedCourseId, courses, t]);
 
   // Export functions
   const exportToCsv = () => {
@@ -299,11 +352,25 @@ export default function CourseDashboard() {
               <CardDescription>{t('courses.courseReportsDescription')}</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={exportToCsv}>
-                <Download className="h-4 w-4 mr-1" />
-                {t('courses.csv')}
-              </Button>
-              <Button variant="outline" size="sm" onClick={exportToPdf}>
+              {reportType === 'attendance' ? (
+                <ReportExportButtons
+                  data={attendanceReportData}
+                  columns={attendanceReportColumns}
+                  reportKey="short_term_course_attendance"
+                  title={t('courses.courseReports') || 'Short-term Course Attendance Report'}
+                  transformData={transformAttendanceData}
+                  buildFiltersSummary={buildAttendanceFiltersSummary}
+                  schoolId={profile?.default_school_id}
+                  templateType="course_attendance"
+                  disabled={attendanceReportData.length === 0}
+                />
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" onClick={exportToCsv}>
+                    <Download className="h-4 w-4 mr-1" />
+                    {t('courses.csv')}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={exportToPdf}>
                 <Download className="h-4 w-4 mr-1" />
                 {t('courses.pdf')}
               </Button>
