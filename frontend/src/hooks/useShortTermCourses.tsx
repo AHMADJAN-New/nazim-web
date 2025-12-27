@@ -17,7 +17,7 @@ export const useShortTermCourses = (organizationId?: string, usePaginated?: bool
   });
 
   const { data, isLoading, error, refetch } = useQuery<ShortTermCourse[] | PaginatedResponse<Api.ShortTermCourse>>({
-    queryKey: ['short-term-courses', organizationId ?? profile?.organization_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+    queryKey: ['short-term-courses', organizationId ?? profile?.organization_id ?? null, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
     queryFn: async () => {
       if (!user || !profile) return [];
       const effectiveOrgId = organizationId || profile.organization_id;

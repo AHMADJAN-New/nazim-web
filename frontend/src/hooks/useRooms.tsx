@@ -21,7 +21,7 @@ export const useRooms = (schoolId?: string, organizationId?: string, usePaginate
   });
 
   const { data, isLoading, error } = useQuery<Room[] | PaginatedResponse<RoomApi.Room>>({
-    queryKey: ['rooms', schoolId, organizationId || profile?.organization_id, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+    queryKey: ['rooms', schoolId, organizationId || profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
     queryFn: async () => {
       if (!user || !profile) return [];
 

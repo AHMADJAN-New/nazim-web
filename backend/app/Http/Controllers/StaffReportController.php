@@ -44,33 +44,12 @@ class StaffReportController extends Controller
         return [$profile, null];
     }
 
-    private function applyFilters(Request $request, $query, array $orgIds, array $schoolIds)
+    private function applyFilters(Request $request, $query, string $orgId, string $currentSchoolId)
     {
-        $query->whereIn('organization_id', $orgIds)
-              ->whereNull('deleted_at');
-
-        // Filter by accessible schools (include staff without school assignment)
-        if (!empty($schoolIds)) {
-            $query->where(function($q) use ($schoolIds) {
-                $q->whereIn('school_id', $schoolIds)
-                  ->orWhereNull('school_id');
-            });
-        } else {
-            // If no accessible schools, return empty
-            $query->whereRaw('1 = 0');
-        }
-
-        if ($request->filled('organization_id') && in_array($request->organization_id, $orgIds)) {
-            $query->where('organization_id', $request->organization_id);
-        }
-
-        if ($request->filled('school_id')) {
-            if (in_array($request->school_id, $schoolIds)) {
-                $query->where('school_id', $request->school_id);
-            } else {
-                $query->whereRaw('1 = 0');
-            }
-        }
+        // Strict school scoping (ignore client-provided org/school ids)
+        $query->where('organization_id', $orgId)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at');
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -154,15 +133,11 @@ class StaffReportController extends Controller
             return $errorResponse;
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (empty($schoolIds)) {
-            return response()->json([]);
-        }
-
-        $orgIds = [$profile->organization_id];
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $orgId = $profile->organization_id;
 
         $query = Staff::with(['staffType', 'organization', 'school']);
-        $this->applyFilters($request, $query, $orgIds, $schoolIds);
+        $this->applyFilters($request, $query, $orgId, $currentSchoolId);
 
         $staff = $query->orderBy('full_name')->get();
         $rows = $this->mapStaff($staff);

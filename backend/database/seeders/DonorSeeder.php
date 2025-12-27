@@ -34,11 +34,28 @@ class DonorSeeder extends Seeder
         foreach ($organizations as $organization) {
             $this->command->info("Creating donors for {$organization->name}...");
 
-            // Create donors for this organization
-            $created = $this->createDonorsForOrganization($organization->id);
-            $totalCreated += $created;
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
+                ->whereNull('deleted_at')
+                ->get();
 
-            $this->command->info("  → Created {$created} donor(s) for {$organization->name}");
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping donor seeding for this org.");
+                continue;
+            }
+
+            foreach ($schools as $school) {
+                $this->command->info("Creating donors for {$organization->name} - school: {$school->school_name}...");
+
+                // Create donors for this school
+                $created = $this->createDonorsForSchool($organization->id, $school->id);
+                $totalCreated += $created;
+
+                if ($created > 0) {
+                    $this->command->info("  → Created {$created} donor(s) for {$organization->name} - {$school->school_name}");
+                }
+            }
         }
 
         if ($totalCreated > 0) {
@@ -49,9 +66,9 @@ class DonorSeeder extends Seeder
     }
 
     /**
-     * Create donors for a specific organization
+     * Create donors for a specific school
      */
-    protected function createDonorsForOrganization(string $organizationId): int
+    protected function createDonorsForSchool(string $organizationId, string $schoolId): int
     {
         $createdCount = 0;
 
@@ -106,8 +123,9 @@ class DonorSeeder extends Seeder
         ];
 
         foreach ($donors as $donorData) {
-            // Check if donor already exists for this organization
+            // Check if donor already exists for this school (by name, organization_id, and school_id)
             $exists = Donor::where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
                 ->where('name', $donorData['name'])
                 ->whereNull('deleted_at')
                 ->exists();
@@ -115,6 +133,7 @@ class DonorSeeder extends Seeder
             if (!$exists) {
                 Donor::create([
                     'organization_id' => $organizationId,
+                    'school_id' => $schoolId,
                     'name' => $donorData['name'],
                     'type' => $donorData['type'],
                     'phone' => $donorData['phone'],
@@ -129,7 +148,7 @@ class DonorSeeder extends Seeder
                 $createdCount++;
                 $this->command->info("    ✓ Created donor: {$donorData['name']} ({$donorData['type']})");
             } else {
-                $this->command->info("    ⊘ Donor {$donorData['name']} already exists for this organization");
+                $this->command->info("    ⊘ Donor {$donorData['name']} already exists for this school");
             }
         }
 

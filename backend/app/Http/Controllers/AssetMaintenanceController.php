@@ -21,6 +21,7 @@ class AssetMaintenanceController extends Controller
         }
 
         $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->where('id', $assetId)
             ->first();
 
@@ -44,8 +45,11 @@ class AssetMaintenanceController extends Controller
             ]);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $records = AssetMaintenanceRecord::where('asset_id', $assetId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->orderByDesc(DB::raw('COALESCE(performed_on, created_at)'))
             ->get();
 
@@ -61,7 +65,10 @@ class AssetMaintenanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $assetId)
             ->first();
 
@@ -90,6 +97,7 @@ class AssetMaintenanceController extends Controller
         $record = AssetMaintenanceRecord::create([
             'asset_id' => $assetId,
             'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
             'maintenance_type' => $data['maintenance_type'] ?? null,
             'status' => $data['status'] ?? 'scheduled',
             'performed_on' => $data['performed_on'] ?? now()->toDateString(),
@@ -122,7 +130,10 @@ class AssetMaintenanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $record = AssetMaintenanceRecord::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $recordId)
             ->first();
 
@@ -131,6 +142,7 @@ class AssetMaintenanceController extends Controller
         }
 
         $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $record->asset_id)
             ->first();
 
@@ -188,7 +200,10 @@ class AssetMaintenanceController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $record = AssetMaintenanceRecord::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $recordId)
             ->first();
 
@@ -217,12 +232,14 @@ class AssetMaintenanceController extends Controller
 
         $hasActiveMaintenance = AssetMaintenanceRecord::where('asset_id', $assetId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereIn('status', ['scheduled', 'in_progress'])
             ->exists();
 
         if (!$hasActiveMaintenance) {
             Asset::where('id', $assetId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->update(['status' => 'available']);
         }
 
@@ -231,6 +248,6 @@ class AssetMaintenanceController extends Controller
             'removed_by' => $user->id,
         ]);
 
-        return response()->json(['message' => 'Maintenance record removed']);
+        return response()->noContent();
     }
 }

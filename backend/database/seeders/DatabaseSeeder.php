@@ -32,10 +32,6 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Step 1b: Seeding residency types...');
         $this->call(ResidencyTypeSeeder::class);
 
-        // Step 1c: Seed staff types (lookup table)
-        $this->command->info('Step 1c: Seeding staff types...');
-        $this->call(StaffTypeSeeder::class);
-
         // Step 2: Create 2 organizations
         $this->command->info('Step 2: Creating organizations...');
         $org1 = $this->createOrganization('Organization One', 'org-one', 'First test organization');
@@ -96,6 +92,10 @@ class DatabaseSeeder extends Seeder
         // Step 5: Create schools for organizations
         $this->command->info('Step 5: Creating schools...');
         $this->call(SchoolBrandingSeeder::class);
+
+        // Step 5a: Seed staff types (must run AFTER schools are created)
+        $this->command->info('Step 5a: Seeding staff types...');
+        $this->call(StaffTypeSeeder::class);
 
         // Step 6: Create buildings for schools
         $this->command->info('Step 6: Creating buildings...');

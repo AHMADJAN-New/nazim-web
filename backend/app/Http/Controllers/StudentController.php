@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,10 @@ use Illuminate\Support\Facades\Log;
 
 class StudentController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
+
     /**
      * Get accessible organization IDs for the current user (all users restricted to their own organization)
      */
@@ -65,37 +70,16 @@ class StudentController extends Controller
             return response()->json([]);
         }
 
-        // Get accessible school IDs based on permission and default_school_id
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-
-        // Filter by accessible schools
-        if (empty($schoolIds)) {
-            // If no accessible schools, return empty
-            return response()->json([]);
-        }
+        // Strict school scoping: only current school from middleware context
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $query = Student::with(['organization', 'school'])
             ->whereNull('deleted_at')
             ->whereIn('organization_id', $orgIds)
-            ->whereIn('school_id', $schoolIds);
+            ->where('school_id', $currentSchoolId);
 
-        // Apply filters
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([]);
-            }
-        }
-
-        // Validate school_id filter against accessible schools
-        if ($request->has('school_id') && $request->school_id) {
-            if (in_array($request->school_id, $schoolIds)) {
-                $query->where('school_id', $request->school_id);
-            } else {
-                return response()->json(['error' => 'School not accessible'], 403);
-            }
-        }
+        // NOTE: We intentionally ignore client-provided organization_id/school_id filters.
+        // Everything except permissions is school-scoped, and school context comes from profile.default_school_id.
 
         if ($request->has('student_status') && $request->student_status) {
             $query->where('student_status', $request->student_status);
@@ -148,9 +132,9 @@ class StudentController extends Controller
     /**
      * Display the specified student
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
@@ -182,17 +166,14 @@ class StudentController extends Controller
 
         $student = Student::with(['organization', 'school'])
             ->whereNull('deleted_at')
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->find($id);
 
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Student not found'], 404);
-        }
+        // Org access is implicitly enforced by organization middleware + school scope.
 
         return response()->json($student);
     }
@@ -234,11 +215,8 @@ class StudentController extends Controller
 
         $orgIds = $this->getAccessibleOrgIds($profile);
 
-        // Determine organization_id
-        $organizationId = $request->organization_id ?? $profile->organization_id;
-        if (!$organizationId) {
-            return response()->json(['error' => 'Organization ID is required'], 422);
-        }
+        $organizationId = $profile->organization_id;
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Validate organization access
         if (!in_array($organizationId, $orgIds)) {
@@ -246,7 +224,9 @@ class StudentController extends Controller
         }
 
         $validated = $request->validated();
+        // Force scope (never trust client input)
         $validated['organization_id'] = $organizationId;
+        $validated['school_id'] = $currentSchoolId;
 
         // Set defaults
         $validated['is_orphan'] = $validated['is_orphan'] ?? false;
@@ -295,7 +275,11 @@ class StudentController extends Controller
             ], 403);
         }
 
-        $student = Student::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        $student = Student::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
@@ -303,9 +287,7 @@ class StudentController extends Controller
 
         $orgIds = $this->getAccessibleOrgIds($profile);
 
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot update student from different organization'], 403);
-        }
+        // Org access is enforced by organization middleware + current school scope.
 
         $validated = $request->validated();
 
@@ -324,8 +306,8 @@ class StudentController extends Controller
             'current_data' => $currentData,
         ]);
 
-        // Remove organization_id from update data to prevent changes
-        unset($validated['organization_id']);
+        // Prevent scope changes
+        unset($validated['organization_id'], $validated['school_id']);
 
         // Filter out empty strings for required fields - convert to null or skip
         // admission_no should not be empty - if it is, don't update it
@@ -432,21 +414,20 @@ class StudentController extends Controller
             ], 403);
         }
 
-        $student = Student::whereNull('deleted_at')->find($id);
+        $currentSchoolId = request()->get('current_school_id');
+        $student = Student::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot delete student from different organization'], 403);
-        }
+        // Org access is enforced by organization middleware + school scope.
 
         $student->delete();
 
-        return response()->json(['message' => 'Student deleted successfully']);
+        return response()->noContent();
     }
 
     /**
@@ -473,23 +454,11 @@ class StudentController extends Controller
             ]);
         }
 
-        $query = Student::whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
-        // Apply organization filter if provided
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([
-                    'total' => 0,
-                    'male' => 0,
-                    'female' => 0,
-                    'orphans' => 0,
-                    'feePending' => 0,
-                ]);
-            }
-        }
+        $query = Student::whereNull('deleted_at')
+            ->whereIn('organization_id', $orgIds)
+            ->where('school_id', $currentSchoolId);
 
         $total = (clone $query)->count();
         $male = (clone $query)->where('gender', 'male')->count();
@@ -523,20 +492,17 @@ class StudentController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
-            $student = Student::whereNull('deleted_at')->find($id);
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+            $student = Student::whereNull('deleted_at')
+                ->where('school_id', $currentSchoolId)
+                ->find($id);
 
             if (!$student) {
                 return response()->json(['error' => 'Student not found'], 404);
             }
 
-            $orgIds = $this->getAccessibleOrgIds($profile);
+            // Org access is enforced by organization middleware + school scope.
 
-            if (!in_array($student->organization_id, $orgIds)) {
-                return response()->json(['error' => 'Cannot update student from different organization'], 403);
-            }
-
-            // Validate the file - use image validation instead of mimes to avoid MIME type guessing
-            // Don't use isValid() as it may trigger finfo class usage
             if (!$request->hasFile('file')) {
                 return response()->json(['error' => 'No file provided'], 422);
             }
@@ -546,114 +512,35 @@ class StudentController extends Controller
                 return response()->json(['error' => 'No file provided'], 422);
             }
 
-            // Check file size (max 5MB = 5120 KB)
-            // Use try-catch to handle cases where getSize() fails (temporary file might be moved)
-            $fileSize = null;
-            try {
-                $fileSize = $file->getSize();
-            } catch (\Exception $e) {
-                // Fallback: try to get size from temporary path
-                $tempPath = $file->getPathname();
-                if (file_exists($tempPath)) {
-                    $fileSize = filesize($tempPath);
-                } else {
-                    Log::warning('Cannot determine file size - temporary file not found', [
-                        'temp_path' => $tempPath,
-                        'error' => $e->getMessage(),
-                    ]);
-                    return response()->json(['error' => 'Failed to read file size'], 422);
-                }
-            }
-
-            if ($fileSize === null || $fileSize === false) {
-                return response()->json(['error' => 'Failed to determine file size'], 422);
-            }
-
+            // Check file size (max 5MB)
+            $fileSize = $file->getSize();
             if ($fileSize > 5120 * 1024) {
                 return response()->json(['error' => 'File size exceeds maximum allowed size of 5MB'], 422);
             }
 
-            // Check extension instead of MIME type to avoid php_fileinfo dependency
+            // Check extension
             $extension = strtolower($file->getClientOriginalExtension());
-            $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-            if (!in_array($extension, $allowedExtensions)) {
+            if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
                 return response()->json(['error' => 'The file must be an image (jpg, jpeg, png, gif, or webp).'], 422);
             }
 
-            $timestamp = time();
-            $filename = "{$timestamp}_{$id}.{$extension}";
-            $path = "{$student->organization_id}/students/{$id}/pictures/{$filename}";
-
             // Delete old picture if exists
-            if ($student->picture_path && Storage::disk('local')->exists($student->picture_path)) {
-                Storage::disk('local')->delete($student->picture_path);
+            if ($student->picture_path) {
+                $this->fileStorageService->deleteFile($student->picture_path);
             }
 
-            // Store new picture - use move_uploaded_file() directly to avoid any MIME type detection
-            // This completely bypasses Laravel's file handling that might use finfo
-            try {
-                // Normalize path separators for Windows compatibility
-                $normalizedPath = str_replace('/', DIRECTORY_SEPARATOR, $path);
-                
-                // Get the full storage path
-                $storagePath = storage_path('app' . DIRECTORY_SEPARATOR . $normalizedPath);
-                $storageDir = dirname($storagePath);
-                
-                // Create directory if it doesn't exist
-                if (!is_dir($storageDir)) {
-                    if (!mkdir($storageDir, 0755, true)) {
-                        throw new \Exception("Failed to create directory: {$storageDir}");
-                    }
-                }
-                
-                // Move the uploaded file directly using PHP's move_uploaded_file()
-                // This avoids any Laravel methods that might trigger finfo
-                $tempPath = $file->getPathname(); // Use getPathname() instead of getRealPath()
-                $moved = false;
-                
-                if (is_uploaded_file($tempPath)) {
-                    $moved = move_uploaded_file($tempPath, $storagePath);
-                } else {
-                    // Fallback: try copy if move fails (for non-uploaded files in testing)
-                    $moved = copy($tempPath, $storagePath);
-                }
-                
-                if (!$moved) {
-                    throw new \Exception("Failed to move/copy file from {$tempPath} to {$storagePath}");
-                }
-                
-                // Verify file was actually saved
-                if (!file_exists($storagePath)) {
-                    throw new \Exception("File was moved but not found at destination: {$storagePath}");
-                }
-                
-                // Verify file is not empty
-                if (filesize($storagePath) === 0) {
-                    unlink($storagePath); // Clean up empty file
-                    throw new \Exception("Uploaded file is empty");
-                }
-                
-                Log::info('Student picture file saved successfully', [
-                    'student_id' => $id,
-                    'path' => $path,
-                    'normalized_path' => $normalizedPath,
-                    'storage_path' => $storagePath,
-                    'file_size' => filesize($storagePath),
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Error storing student picture: ' . $e->getMessage(), [
-                    'student_id' => $id,
-                    'path' => $path,
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                return response()->json(['error' => 'Failed to store file: ' . $e->getMessage()], 500);
-            }
+            // Store new picture using FileStorageService (PRIVATE storage for student pictures)
+            $path = $this->fileStorageService->storeStudentPicture(
+                $file,
+                $student->organization_id,
+                $id,
+                $student->school_id
+            );
 
             // Update student record
             $oldPicturePath = $student->picture_path;
             $student->update(['picture_path' => $path]);
 
-            // DEBUG: Log picture upload
             Log::info('Student Picture Upload', [
                 'student_id' => $id,
                 'user_id' => $user->id,
@@ -702,12 +589,10 @@ class StudentController extends Controller
                 abort(404, 'Profile not found');
             }
 
-            // Require organization_id for all users
             if (!$profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
             }
 
-            // Check permission - context already set by middleware
             try {
                 if (!$user->hasPermissionTo('students.read')) {
                     return response()->json([
@@ -725,84 +610,50 @@ class StudentController extends Controller
                 ], 403);
             }
 
-            $student = Student::whereNull('deleted_at')->find($id);
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+            $student = Student::whereNull('deleted_at')
+                ->where('school_id', $currentSchoolId)
+                ->find($id);
 
             if (!$student) {
                 abort(404, 'Student not found');
             }
 
-            $orgIds = $this->getAccessibleOrgIds($profile);
+            // Org access is enforced by organization middleware + school scope.
 
-            if (!in_array($student->organization_id, $orgIds)) {
-                abort(403, 'Cannot access student from different organization');
-            }
-
-            // If no picture_path, return 404
             if (!$student->picture_path) {
                 Log::info('Student picture requested but no picture_path', ['student_id' => $id]);
                 abort(404, 'Picture not found');
             }
 
-            // Normalize path separators for Windows compatibility
-            // Convert forward slashes to DIRECTORY_SEPARATOR
-            $normalizedPath = str_replace('/', DIRECTORY_SEPARATOR, $student->picture_path);
-            $fullPath = storage_path('app' . DIRECTORY_SEPARATOR . $normalizedPath);
-
-            // Check if file exists using file_exists() for better Windows compatibility
-            if (!file_exists($fullPath)) {
+            // Check if file exists using FileStorageService
+            if (!$this->fileStorageService->fileExists($student->picture_path)) {
                 Log::warning('Student picture file not found on disk', [
                     'student_id' => $id,
                     'picture_path' => $student->picture_path,
-                    'normalized_path' => $normalizedPath,
-                    'full_path' => $fullPath,
-                    'file_exists' => file_exists($fullPath),
                 ]);
                 abort(404, 'Picture file not found');
             }
 
-            // Try to get the file content using file_get_contents for better Windows compatibility
-            try {
-                $file = file_get_contents($fullPath);
-                if ($file === false) {
-                    throw new \Exception('Failed to read file contents');
-                }
-            } catch (\Exception $e) {
-                Log::error('Error reading student picture file', [
-                    'student_id' => $id,
-                    'picture_path' => $student->picture_path,
-                    'full_path' => $fullPath,
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                abort(500, 'Error reading picture file');
-            }
-            
+            // Get file content using FileStorageService
+            $file = $this->fileStorageService->getFile($student->picture_path);
+
             if (!$file || empty($file)) {
                 Log::error('Student picture file is empty', [
                     'student_id' => $id,
                     'picture_path' => $student->picture_path,
-                    'full_path' => $fullPath,
                 ]);
                 abort(404, 'Picture file is empty');
             }
-            
-            // Determine MIME type from file extension (avoid mimeType() which requires finfo class)
-            $extension = pathinfo($student->picture_path, PATHINFO_EXTENSION);
-            $mimeTypes = [
-                'jpg' => 'image/jpeg',
-                'jpeg' => 'image/jpeg',
-                'png' => 'image/png',
-                'gif' => 'image/gif',
-                'webp' => 'image/webp',
-            ];
-            $mimeType = $mimeTypes[strtolower($extension)] ?? 'image/jpeg';
+
+            // Determine MIME type from file extension using FileStorageService
+            $mimeType = $this->fileStorageService->getMimeTypeFromExtension($student->picture_path);
 
             return response($file, 200)
                 ->header('Content-Type', $mimeType)
                 ->header('Content-Disposition', 'inline; filename="' . basename($student->picture_path) . '"')
-                ->header('Cache-Control', 'public, max-age=3600');
+                ->header('Cache-Control', 'private, max-age=3600');
         } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
-            // Re-throw HTTP exceptions (abort calls)
             throw $e;
         } catch (\Exception $e) {
             Log::error('Error getting student picture', [
@@ -844,8 +695,10 @@ class StudentController extends Controller
             ]);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $query = Student::whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds);
+            ->whereIn('organization_id', $orgIds)
+            ->where('school_id', $currentSchoolId);
 
         // Get distinct values for each field
         $names = (clone $query)->whereNotNull('full_name')->where('full_name', '!=', '')->distinct()->pluck('full_name')->sort()->values()->toArray();
@@ -913,8 +766,11 @@ class StudentController extends Controller
                 return response()->json([]);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $baseQuery = Student::whereNull('deleted_at')
                 ->whereIn('organization_id', $orgIds)
+                ->where('school_id', $currentSchoolId)
                 ->select('id', 'full_name', 'father_name', 'tazkira_number', 'guardian_tazkira', 'card_number', 'admission_no', 'orig_province', 'admission_year', 'created_at');
 
             // Exact: name + father_name

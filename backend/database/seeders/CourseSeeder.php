@@ -36,11 +36,28 @@ class CourseSeeder extends Seeder
         foreach ($organizations as $organization) {
             $this->command->info("Creating courses for {$organization->name}...");
 
-            // Create courses for this organization
-            $created = $this->createCoursesForOrganization($organization->id);
-            $totalCreated += $created;
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
+                ->whereNull('deleted_at')
+                ->get();
 
-            $this->command->info("  → Created {$created} course(s) for {$organization->name}");
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping course seeding for this org.");
+                continue;
+            }
+
+            foreach ($schools as $school) {
+                $this->command->info("Creating courses for {$organization->name} - school: {$school->school_name}...");
+
+                // Create courses for this school
+                $created = $this->createCoursesForSchool($organization->id, $school->id);
+                $totalCreated += $created;
+
+                if ($created > 0) {
+                    $this->command->info("  → Created {$created} course(s) for {$organization->name} - {$school->school_name}");
+                }
+            }
         }
 
         if ($totalCreated > 0) {
@@ -51,9 +68,9 @@ class CourseSeeder extends Seeder
     }
 
     /**
-     * Create courses for a specific organization
+     * Create courses for a specific school
      */
-    protected function createCoursesForOrganization(string $organizationId): int
+    protected function createCoursesForSchool(string $organizationId, string $schoolId): int
     {
         $createdCount = 0;
 
@@ -95,7 +112,7 @@ class CourseSeeder extends Seeder
         ];
 
         foreach ($courses as $courseData) {
-            $created = $this->createCourse($organizationId, $courseData);
+            $created = $this->createCourse($organizationId, $schoolId, $courseData);
 
             if ($created) {
                 $createdCount++;
@@ -108,16 +125,17 @@ class CourseSeeder extends Seeder
     /**
      * Create a course if it doesn't already exist
      */
-    protected function createCourse(string $organizationId, array $courseData): bool
+    protected function createCourse(string $organizationId, string $schoolId, array $courseData): bool
     {
-        // Check if course already exists for this organization (by name_ar)
+        // Check if course already exists for this school (by name_ar, organization_id, and school_id)
         $existing = ShortTermCourse::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
             ->where('name_ar', $courseData['name_ar'])
             ->whereNull('deleted_at')
             ->first();
 
         if ($existing) {
-            $this->command->info("  ✓ Course '{$courseData['name_ar']}' already exists for organization.");
+            $this->command->info("  ✓ Course '{$courseData['name_ar']}' already exists for this school.");
             return false;
         }
 
@@ -128,6 +146,7 @@ class CourseSeeder extends Seeder
         ShortTermCourse::create([
             'id' => (string) Str::uuid(), // Explicitly set UUID
             'organization_id' => $organizationId,
+            'school_id' => $schoolId,
             'name' => $courseData['name'],
             'name_ar' => $courseData['name_ar'],
             'name_en' => $courseData['name_en'],

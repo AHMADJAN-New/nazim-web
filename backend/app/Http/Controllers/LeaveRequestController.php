@@ -34,7 +34,7 @@ class LeaveRequestController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $query = LeaveRequest::with([
             'student',
             'classModel',
@@ -43,17 +43,8 @@ class LeaveRequestController extends Controller
             'approver'
         ])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at'); // Only get non-deleted leave requests
-            
-        // Apply school filtering only if schoolIds is not empty
-        if (!empty($schoolIds)) {
-            $query->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            });
-        } else {
-            // If no school restrictions, still filter by organization
-            // This ensures we only get leave requests for the user's organization
-        }
 
         if ($request->filled('student_id')) {
             $query->where('student_id', $request->input('student_id'));
@@ -65,10 +56,6 @@ class LeaveRequestController extends Controller
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
-        }
-
-        if ($request->filled('school_id')) {
-            $query->where('school_id', $request->input('school_id'));
         }
 
         if ($request->filled('month')) {
@@ -134,24 +121,22 @@ class LeaveRequestController extends Controller
 
         $validated = $request->validated();
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (!empty($validated['school_id']) && !in_array($validated['school_id'], $schoolIds, true)) {
-            return response()->json(['error' => 'School not accessible'], 403);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $student = Student::where('id', $validated['student_id'])
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->first();
 
         if (!$student) {
-            return response()->json(['error' => 'Student not found for this organization'], 404);
+            return response()->json(['error' => 'Student not found for this school'], 404);
         }
 
         $leaveRequest = LeaveRequest::create([
             'organization_id' => $profile->organization_id,
             'student_id' => $validated['student_id'],
             'class_id' => $validated['class_id'] ?? null,
-            'school_id' => $validated['school_id'] ?? $student->school_id,
+            'school_id' => $currentSchoolId,
             'academic_year_id' => $validated['academic_year_id'] ?? null,
             'leave_type' => $validated['leave_type'],
             'start_date' => Carbon::parse($validated['start_date'])->toDateString(),
@@ -186,17 +171,12 @@ class LeaveRequestController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId(request());
         $requestModel = LeaveRequest::with(['student', 'classModel', 'school', 'academicYear', 'approver'])
-            ->where('organization_id', $profile->organization_id);
-            
-        // Apply school filtering only if schoolIds is not empty
-        if (!empty($schoolIds)) {
-            $requestModel->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            });
-        }
-        
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at');
+
         $requestModel = $requestModel->find($id);
 
         if (!$requestModel) {
@@ -224,23 +204,19 @@ class LeaveRequestController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        $leave = LeaveRequest::where('organization_id', $profile->organization_id);
-        
-        // Apply school filtering only if schoolIds is not empty
-        if (!empty($schoolIds)) {
-            $leave->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            });
-        }
-        
-        $leave = $leave->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $leave = LeaveRequest::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->find($id);
 
         if (!$leave) {
             return response()->json(['error' => 'Leave request not found'], 404);
         }
 
         $validated = $request->validated();
+        // Prevent scope changes
+        unset($validated['school_id'], $validated['organization_id']);
         $leave->update($validated);
 
         return response()->json($leave->fresh(['student', 'classModel', 'school', 'academicYear', 'approver']));
@@ -268,17 +244,11 @@ class LeaveRequestController extends Controller
             'approval_note' => 'nullable|string|max:500',
         ]);
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        $leave = LeaveRequest::where('organization_id', $profile->organization_id);
-        
-        // Apply school filtering only if schoolIds is not empty
-        if (!empty($schoolIds)) {
-            $leave->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            });
-        }
-        
-        $leave = $leave->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $leave = LeaveRequest::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->find($id);
 
         if (!$leave) {
             return response()->json(['error' => 'Leave request not found'], 404);
@@ -322,17 +292,11 @@ class LeaveRequestController extends Controller
             'approval_note' => 'nullable|string|max:500',
         ]);
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        $leave = LeaveRequest::where('organization_id', $profile->organization_id);
-        
-        // Apply school filtering only if schoolIds is not empty
-        if (!empty($schoolIds)) {
-            $leave->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            });
-        }
-        
-        $leave = $leave->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $leave = LeaveRequest::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->find($id);
 
         if (!$leave) {
             return response()->json(['error' => 'Leave request not found'], 404);
@@ -366,18 +330,12 @@ class LeaveRequestController extends Controller
             return response()->json(['error' => 'Access Denied'], 403);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        $currentSchoolId = $this->getCurrentSchoolId(request());
         $leave = LeaveRequest::with(['student', 'classModel', 'school'])
-            ->where('organization_id', $profile->organization_id);
-            
-        // Apply school filtering only if schoolIds is not empty
-        if (!empty($schoolIds)) {
-            $leave->where(function ($q) use ($schoolIds) {
-                $q->whereNull('school_id')->orWhereIn('school_id', $schoolIds);
-            });
-        }
-        
-        $leave = $leave->find($id);
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->find($id);
 
         if (!$leave) {
             return response()->json(['error' => 'Leave request not found'], 404);
@@ -423,6 +381,7 @@ class LeaveRequestController extends Controller
         }
 
         $sessions = AttendanceSession::where('organization_id', $organizationId)
+            ->where('school_id', $leave->school_id)
             ->whereBetween('session_date', [$start->toDateString(), $end->toDateString()])
             ->where(function ($q) use ($leave) {
                 $q->where('class_id', $leave->class_id)

@@ -18,6 +18,7 @@ class LibraryCopy extends Model
     protected $fillable = [
         'id',
         'book_id',
+        'school_id',
         'copy_code',
         'status',
         'acquired_at',
@@ -45,5 +46,10 @@ class LibraryCopy extends Model
     public function loans()
     {
         return $this->hasMany(LibraryLoan::class, 'book_copy_id');
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 }

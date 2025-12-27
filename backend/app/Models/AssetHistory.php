@@ -20,6 +20,7 @@ class AssetHistory extends Model
         'id',
         'asset_id',
         'organization_id',
+        'school_id',
         'event_type',
         'description',
         'metadata',
@@ -45,5 +46,10 @@ class AssetHistory extends Model
     public function asset()
     {
         return $this->belongsTo(Asset::class);
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 }

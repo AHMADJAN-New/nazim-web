@@ -50,22 +50,9 @@ class StudentIdCardController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible school IDs for the user
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        
-        // If no accessible schools, return empty result early
-        if (empty($schoolIds)) {
-            if ($request->has('page') || $request->has('per_page')) {
-                return response()->json([
-                    'data' => [],
-                    'current_page' => 1,
-                    'per_page' => (int)($request->input('per_page', 25)),
-                    'total' => 0,
-                    'last_page' => 1,
-                ]);
-            }
-            return response()->json([]);
-        }
+        // Strict school scoping
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $schoolIds = [$currentSchoolId];
         
         $query = StudentIdCard::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
@@ -86,14 +73,7 @@ class StudentIdCardController extends Controller
             $query->where('class_academic_year_id', $request->class_academic_year_id);
         }
 
-        // Filter by school_id if provided in request
-        if ($request->has('school_id') && $request->school_id) {
-            // Verify the school_id is in accessible schools
-            if (!in_array($request->school_id, $schoolIds, true)) {
-                return response()->json(['error' => 'School not accessible'], 403);
-            }
-            $query->where('school_id', $request->school_id);
-        }
+        // Client-provided school_id is ignored; current school is enforced.
 
         // Filter by template
         if ($request->has('template_id') && $request->template_id) {
@@ -777,15 +757,8 @@ class StudentIdCardController extends Controller
         } elseif (!empty($validated['filters'])) {
             // Query cards based on filters (same logic as index method)
             try {
-                $schoolIds = $this->getAccessibleSchoolIds($profile);
-                
-                if (empty($schoolIds)) {
-                    Log::warning('No accessible schools for export', [
-                        'user_id' => $user->id,
-                        'organization_id' => $profile->organization_id,
-                    ]);
-                    return response()->json(['error' => 'No accessible schools'], 403);
-                }
+                $currentSchoolId = $this->getCurrentSchoolId($request);
+                $schoolIds = [$currentSchoolId];
 
                 $query = StudentIdCard::whereNull('deleted_at')
                     ->where('organization_id', $profile->organization_id)

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\IdCardTemplate;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +12,9 @@ use Illuminate\Support\Str;
 
 class IdCardTemplateController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
     private function getProfile($user)
     {
         return DB::table('profiles')->where('id', (string) $user->id)->first();
@@ -39,12 +43,10 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $query = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
-
-        if ($request->filled('school_id')) {
-            $query->where('school_id', $request->input('school_id'));
-        }
 
         if ($request->filled('active_only') && $request->active_only === 'true') {
             $query->where('is_active', true);
@@ -75,6 +77,7 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -83,7 +86,6 @@ class IdCardTemplateController extends Controller
             'layout_config_front' => 'nullable|json',
             'layout_config_back' => 'nullable|json',
             'card_size' => 'nullable|string|in:CR80',
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'is_default' => 'nullable|in:0,1,true,false',
             'is_active' => 'nullable|in:0,1,true,false',
         ]);
@@ -113,17 +115,19 @@ class IdCardTemplateController extends Controller
             }
         }
 
+        // Generate template ID first so we can use it in file paths
+        $templateId = (string) Str::uuid();
+
         $backgroundPathFront = null;
         if ($request->hasFile('background_image_front')) {
             try {
                 $file = $request->file('background_image_front');
-                $extension = strtolower($file->getClientOriginalExtension());
-                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                
-                if (!in_array($extension, $allowedExtensions)) {
+
+                // Validate image extension using FileStorageService
+                if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
                     return response()->json([
                         'error' => 'The background image front must be a valid image file (jpg, jpeg, png, gif, or webp).',
-                        'errors' => ['background_image_front' => ['Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions)]]
+                        'errors' => ['background_image_front' => ['Invalid file type.']]
                     ], 422);
                 }
 
@@ -134,20 +138,14 @@ class IdCardTemplateController extends Controller
                     ], 422);
                 }
 
-                $directory = 'id-card-templates/' . $profile->organization_id;
-                if (!Storage::disk('local')->exists($directory)) {
-                    Storage::disk('local')->makeDirectory($directory);
-                }
-
-                $fileName = Str::uuid() . '_front.' . $extension;
-                $backgroundPathFront = $file->storeAs($directory, $fileName, 'local');
-
-                if (!$backgroundPathFront) {
-                    return response()->json([
-                        'error' => 'The background image front failed to upload. Please try again.',
-                        'errors' => ['background_image_front' => ['File storage failed']]
-                    ], 422);
-                }
+                // Store using FileStorageService (PRIVATE storage for ID card templates)
+                $backgroundPathFront = $this->fileStorageService->storeIdCardTemplateBackground(
+                    $file,
+                    $profile->organization_id,
+                    $validated['school_id'] ?? null,
+                    $templateId,
+                    'front'
+                );
             } catch (\Exception $e) {
                 Log::error('ID card template background image front upload failed', [
                     'error' => $e->getMessage(),
@@ -164,13 +162,12 @@ class IdCardTemplateController extends Controller
         if ($request->hasFile('background_image_back')) {
             try {
                 $file = $request->file('background_image_back');
-                $extension = strtolower($file->getClientOriginalExtension());
-                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                
-                if (!in_array($extension, $allowedExtensions)) {
+
+                // Validate image extension using FileStorageService
+                if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
                     return response()->json([
                         'error' => 'The background image back must be a valid image file (jpg, jpeg, png, gif, or webp).',
-                        'errors' => ['background_image_back' => ['Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions)]]
+                        'errors' => ['background_image_back' => ['Invalid file type.']]
                     ], 422);
                 }
 
@@ -181,20 +178,14 @@ class IdCardTemplateController extends Controller
                     ], 422);
                 }
 
-                $directory = 'id-card-templates/' . $profile->organization_id;
-                if (!Storage::disk('local')->exists($directory)) {
-                    Storage::disk('local')->makeDirectory($directory);
-                }
-
-                $fileName = Str::uuid() . '_back.' . $extension;
-                $backgroundPathBack = $file->storeAs($directory, $fileName, 'local');
-
-                if (!$backgroundPathBack) {
-                    return response()->json([
-                        'error' => 'The background image back failed to upload. Please try again.',
-                        'errors' => ['background_image_back' => ['File storage failed']]
-                    ], 422);
-                }
+                // Store using FileStorageService (PRIVATE storage for ID card templates)
+                $backgroundPathBack = $this->fileStorageService->storeIdCardTemplateBackground(
+                    $file,
+                    $profile->organization_id,
+                    $validated['school_id'] ?? null,
+                    $templateId,
+                    'back'
+                );
             } catch (\Exception $e) {
                 Log::error('ID card template background image back upload failed', [
                     'error' => $e->getMessage(),
@@ -210,13 +201,15 @@ class IdCardTemplateController extends Controller
         // If this is marked as default, unset other defaults
         if (!empty($validated['is_default'])) {
             IdCardTemplate::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('is_default', true)
                 ->update(['is_default' => false]);
         }
 
         $template = IdCardTemplate::create([
+            'id' => $templateId,
             'organization_id' => $profile->organization_id,
-            'school_id' => $validated['school_id'] ?? null,
+            'school_id' => $currentSchoolId,
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'background_image_path_front' => $backgroundPathFront,
@@ -255,7 +248,9 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -288,7 +283,9 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -304,7 +301,6 @@ class IdCardTemplateController extends Controller
             'layout_config_front' => 'nullable|json',
             'layout_config_back' => 'nullable|json',
             'card_size' => 'nullable|string|in:CR80',
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'is_default' => 'nullable|in:0,1,true,false',
             'is_active' => 'nullable|in:0,1,true,false',
         ]);
@@ -337,19 +333,18 @@ class IdCardTemplateController extends Controller
         // Handle background image front upload
         if ($request->hasFile('background_image_front')) {
             try {
-                // Delete old background if exists
-                if ($template->background_image_path_front && Storage::disk('local')->exists($template->background_image_path_front)) {
-                    Storage::disk('local')->delete($template->background_image_path_front);
+                // Delete old background if exists using FileStorageService
+                if ($template->background_image_path_front) {
+                    $this->fileStorageService->deleteFile($template->background_image_path_front);
                 }
 
                 $file = $request->file('background_image_front');
-                $extension = strtolower($file->getClientOriginalExtension());
-                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                
-                if (!in_array($extension, $allowedExtensions)) {
+
+                // Validate image extension using FileStorageService
+                if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
                     return response()->json([
                         'error' => 'The background image front must be a valid image file (jpg, jpeg, png, gif, or webp).',
-                        'errors' => ['background_image_front' => ['Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions)]]
+                        'errors' => ['background_image_front' => ['Invalid file type.']]
                     ], 422);
                 }
 
@@ -360,20 +355,14 @@ class IdCardTemplateController extends Controller
                     ], 422);
                 }
 
-                $directory = 'id-card-templates/' . $profile->organization_id;
-                if (!Storage::disk('local')->exists($directory)) {
-                    Storage::disk('local')->makeDirectory($directory);
-                }
-
-                $fileName = Str::uuid() . '_front.' . $extension;
-                $validated['background_image_path_front'] = $file->storeAs($directory, $fileName, 'local');
-
-                if (!$validated['background_image_path_front']) {
-                    return response()->json([
-                        'error' => 'The background image front failed to upload. Please try again.',
-                        'errors' => ['background_image_front' => ['File storage failed']]
-                    ], 422);
-                }
+                // Store using FileStorageService (PRIVATE storage for ID card templates)
+                $validated['background_image_path_front'] = $this->fileStorageService->storeIdCardTemplateBackground(
+                    $file,
+                    $profile->organization_id,
+                    $template->school_id,
+                    $template->id,
+                    'front'
+                );
             } catch (\Exception $e) {
                 Log::error('ID card template background image front upload failed', [
                     'error' => $e->getMessage(),
@@ -390,19 +379,18 @@ class IdCardTemplateController extends Controller
         // Handle background image back upload
         if ($request->hasFile('background_image_back')) {
             try {
-                // Delete old background if exists
-                if ($template->background_image_path_back && Storage::disk('local')->exists($template->background_image_path_back)) {
-                    Storage::disk('local')->delete($template->background_image_path_back);
+                // Delete old background if exists using FileStorageService
+                if ($template->background_image_path_back) {
+                    $this->fileStorageService->deleteFile($template->background_image_path_back);
                 }
 
                 $file = $request->file('background_image_back');
-                $extension = strtolower($file->getClientOriginalExtension());
-                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                
-                if (!in_array($extension, $allowedExtensions)) {
+
+                // Validate image extension using FileStorageService
+                if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
                     return response()->json([
                         'error' => 'The background image back must be a valid image file (jpg, jpeg, png, gif, or webp).',
-                        'errors' => ['background_image_back' => ['Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions)]]
+                        'errors' => ['background_image_back' => ['Invalid file type.']]
                     ], 422);
                 }
 
@@ -413,20 +401,14 @@ class IdCardTemplateController extends Controller
                     ], 422);
                 }
 
-                $directory = 'id-card-templates/' . $profile->organization_id;
-                if (!Storage::disk('local')->exists($directory)) {
-                    Storage::disk('local')->makeDirectory($directory);
-                }
-
-                $fileName = Str::uuid() . '_back.' . $extension;
-                $validated['background_image_path_back'] = $file->storeAs($directory, $fileName, 'local');
-
-                if (!$validated['background_image_path_back']) {
-                    return response()->json([
-                        'error' => 'The background image back failed to upload. Please try again.',
-                        'errors' => ['background_image_back' => ['File storage failed']]
-                    ], 422);
-                }
+                // Store using FileStorageService (PRIVATE storage for ID card templates)
+                $validated['background_image_path_back'] = $this->fileStorageService->storeIdCardTemplateBackground(
+                    $file,
+                    $profile->organization_id,
+                    $template->school_id,
+                    $template->id,
+                    'back'
+                );
             } catch (\Exception $e) {
                 Log::error('ID card template background image back upload failed', [
                     'error' => $e->getMessage(),
@@ -443,6 +425,7 @@ class IdCardTemplateController extends Controller
         // If this is marked as default, unset other defaults
         if (!empty($validated['is_default']) && !$template->is_default) {
             IdCardTemplate::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('id', '!=', $id)
                 ->where('is_default', true)
                 ->update(['is_default' => false]);
@@ -477,7 +460,9 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -485,12 +470,12 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'Template not found'], 404);
         }
 
-        // Delete background images if exist
-        if ($template->background_image_path_front && Storage::disk('local')->exists($template->background_image_path_front)) {
-            Storage::disk('local')->delete($template->background_image_path_front);
+        // Delete background images if exist using FileStorageService
+        if ($template->background_image_path_front) {
+            $this->fileStorageService->deleteFile($template->background_image_path_front);
         }
-        if ($template->background_image_path_back && Storage::disk('local')->exists($template->background_image_path_back)) {
-            Storage::disk('local')->delete($template->background_image_path_back);
+        if ($template->background_image_path_back) {
+            $this->fileStorageService->deleteFile($template->background_image_path_back);
         }
 
         $template->delete();
@@ -525,7 +510,9 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'Invalid side. Must be "front" or "back".'], 422);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -533,22 +520,21 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'Template not found'], 404);
         }
 
-        $backgroundPath = $side === 'front' 
-            ? $template->background_image_path_front 
+        $backgroundPath = $side === 'front'
+            ? $template->background_image_path_front
             : $template->background_image_path_back;
 
         if (!$backgroundPath) {
             return response()->json(['error' => 'Background image not found'], 404);
         }
 
-        if (!Storage::disk('local')->exists($backgroundPath)) {
+        // Check if file exists using FileStorageService
+        if (!$this->fileStorageService->fileExists($backgroundPath)) {
             return response()->json(['error' => 'File not found on storage'], 404);
         }
 
-        $mimeType = Storage::disk('local')->mimeType($backgroundPath);
-        return Storage::disk('local')->response($backgroundPath, null, [
-            'Content-Type' => $mimeType,
-        ]);
+        // Get file and return response using FileStorageService
+        return $this->fileStorageService->getFileResponse($backgroundPath);
     }
 
     public function setDefault(Request $request, string $id)
@@ -573,7 +559,9 @@ class IdCardTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $template = IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -583,6 +571,7 @@ class IdCardTemplateController extends Controller
 
         // Unset other defaults
         IdCardTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', '!=', $id)
             ->where('is_default', true)
             ->update(['is_default' => false]);

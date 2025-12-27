@@ -101,7 +101,7 @@ export const useTeacherSubjectAssignments = (organizationId?: string, teacherId?
     });
 
     const { data, isLoading, error } = useQuery<TeacherSubjectAssignment[] | PaginatedResponse<any>>({
-        queryKey: ['teacher-subject-assignments', organizationId || profile?.organization_id, teacherId, academicYearId, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+        queryKey: ['teacher-subject-assignments', organizationId || profile?.organization_id, profile?.default_school_id ?? null, teacherId, academicYearId, usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
         queryFn: async () => {
             if (!user || !profile) return [];
 
@@ -239,8 +239,11 @@ export const useCreateTeacherSubjectAssignment = () => {
             }
 
             // Create assignment via Laravel API
+            // Strict school scoping: do not allow client-selected school_id.
+            // The backend derives school from current school context.
+            const { school_id: _ignoredSchoolId, organization_id: _ignoredOrgId, ...rest } = assignmentData;
             const assignment = await teacherSubjectAssignmentsApi.create({
-                ...assignmentData,
+                ...rest,
                 organization_id: organizationId,
             });
 

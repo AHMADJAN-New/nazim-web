@@ -50,10 +50,9 @@ class ReportTemplateController extends Controller
             return response()->json([]);
         }
 
-        // Filter by school_id if provided
-        if ($request->has('school_id') && $request->school_id) {
-            $query->where('school_id', $request->school_id);
-        }
+        // Strict school scoping
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $query->where('school_id', $currentSchoolId);
 
         $templates = $query->orderBy('created_at', 'desc')->get();
 
@@ -91,6 +90,10 @@ class ReportTemplateController extends Controller
         $orgIds = [$profile->organization_id];
 
         // Verify school belongs to accessible organization
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+        if ($schoolId !== $currentSchoolId) {
+            return response()->json(['error' => 'Access denied to this school'], 403);
+        }
         $school = DB::table('school_branding')
             ->where('id', $schoolId)
             ->whereNull('deleted_at')
@@ -141,10 +144,11 @@ class ReportTemplateController extends Controller
 
         // Determine organization_id (use user's organization)
         $organizationId = $profile->organization_id;
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Verify school belongs to user's organization
         $school = DB::table('school_branding')
-            ->where('id', $request->school_id)
+            ->where('id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -167,7 +171,7 @@ class ReportTemplateController extends Controller
         } elseif ($watermarkId) {
             // UUID = specific watermark, validate it exists and belongs to school
             $watermark = \App\Models\BrandingWatermark::where('id', $watermarkId)
-                ->where('branding_id', $request->school_id)
+                ->where('branding_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->first();
             
@@ -181,7 +185,7 @@ class ReportTemplateController extends Controller
 
         $templateData = [
             'organization_id' => $organizationId,
-            'school_id' => $request->school_id,
+            'school_id' => $currentSchoolId,
             'template_name' => $request->template_name,
             'template_type' => $request->template_type,
             'header_text' => $request->header_text ?? null,
@@ -296,14 +300,7 @@ class ReportTemplateController extends Controller
             return response()->json(['error' => 'Cannot update report template from different organization'], 403);
         }
 
-        // Prevent organization_id and school_id changes
-        if ($request->has('organization_id') && $request->organization_id !== $template->organization_id) {
-            return response()->json(['error' => 'Cannot change organization_id'], 403);
-        }
-
-        if ($request->has('school_id') && $request->school_id !== $template->school_id) {
-            return response()->json(['error' => 'Cannot change school_id'], 403);
-        }
+        // organization_id and school_id are scope fields and cannot be changed via this endpoint
 
         // Validate watermark if provided
         // Sentinel UUID '00000000-0000-0000-0000-000000000000' means "no watermark", null means "use default watermark"
@@ -392,27 +389,14 @@ class ReportTemplateController extends Controller
         }
 
         $request->validate([
-            'school_id' => 'required|uuid',
             'template_type' => 'required|string|max:100',
         ]);
 
-        // Verify school belongs to accessible organization
-        $school = DB::table('school_branding')
-            ->where('id', $request->school_id)
-            ->whereNull('deleted_at')
-            ->first();
-
-        if (!$school) {
-            return response()->json(['error' => 'School not found'], 404);
-        }
-
-        if ($school->organization_id !== $profile->organization_id) {
-            return response()->json(['error' => 'Access denied to this school'], 403);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Get default template for this school and report type
         $template = ReportTemplate::whereNull('deleted_at')
-            ->where('school_id', $request->school_id)
+            ->where('school_id', $currentSchoolId)
             ->where('template_type', $request->template_type)
             ->where('is_active', true)
             ->where('is_default', true)

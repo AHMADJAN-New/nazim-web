@@ -32,11 +32,28 @@ class IncomeCategorySeeder extends Seeder
         foreach ($organizations as $organization) {
             $this->command->info("Creating income categories for {$organization->name}...");
 
-            // Create income categories for this organization
-            $created = $this->createIncomeCategoriesForOrganization($organization->id);
-            $totalCreated += $created;
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
+                ->whereNull('deleted_at')
+                ->get();
 
-            $this->command->info("  → Created {$created} income category(ies) for {$organization->name}");
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping income category seeding for this org.");
+                continue;
+            }
+
+            foreach ($schools as $school) {
+                $this->command->info("Creating income categories for {$organization->name} - school: {$school->school_name}...");
+
+                // Create income categories for this school
+                $created = $this->createIncomeCategoriesForSchool($organization->id, $school->id);
+                $totalCreated += $created;
+
+                if ($created > 0) {
+                    $this->command->info("  → Created {$created} income category(ies) for {$organization->name} - {$school->school_name}");
+                }
+            }
         }
 
         if ($totalCreated > 0) {
@@ -47,9 +64,9 @@ class IncomeCategorySeeder extends Seeder
     }
 
     /**
-     * Create income categories for a specific organization
+     * Create income categories for a specific school
      */
-    protected function createIncomeCategoriesForOrganization(string $organizationId): int
+    protected function createIncomeCategoriesForSchool(string $organizationId, string $schoolId): int
     {
         $createdCount = 0;
         $displayOrder = 1;
@@ -147,8 +164,9 @@ class IncomeCategorySeeder extends Seeder
         ];
 
         foreach ($categories as $categoryData) {
-            // Check if category already exists for this organization
+            // Check if category already exists for this school (by code, organization_id, and school_id)
             $exists = IncomeCategory::where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
                 ->where('code', $categoryData['code'])
                 ->whereNull('deleted_at')
                 ->exists();
@@ -156,7 +174,7 @@ class IncomeCategorySeeder extends Seeder
             if (!$exists) {
                 IncomeCategory::create([
                     'organization_id' => $organizationId,
-                    'school_id' => null,
+                    'school_id' => $schoolId,
                     'name' => $categoryData['name'],
                     'code' => $categoryData['code'],
                     'description' => $categoryData['description'],
@@ -168,7 +186,7 @@ class IncomeCategorySeeder extends Seeder
                 $createdCount++;
                 $this->command->info("    ✓ Created income category: {$categoryData['name']} ({$categoryData['name_en']})");
             } else {
-                $this->command->info("    ⊘ Income category {$categoryData['code']} already exists for this organization");
+                $this->command->info("    ⊘ Income category {$categoryData['code']} already exists for this school");
             }
         }
 

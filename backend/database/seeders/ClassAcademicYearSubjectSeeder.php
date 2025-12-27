@@ -40,16 +40,35 @@ class ClassAcademicYearSubjectSeeder extends Seeder
         foreach ($organizations as $organization) {
             $this->command->info("Processing {$organization->name}...");
 
-            // Step 1: Create class_academic_year entries if they don't exist
-            $classAcademicYearsCreated = $this->createClassAcademicYears($organization->id);
-            $totalClassAcademicYearsCreated += $classAcademicYearsCreated;
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
+                ->whereNull('deleted_at')
+                ->get();
 
-            // Step 2: Assign subjects to class_academic_years
-            $classSubjectsCreated = $this->assignSubjectsToClassAcademicYears($organization->id);
-            $totalClassSubjectsCreated += $classSubjectsCreated;
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping class academic year subject seeding for this org.");
+                continue;
+            }
 
-            $this->command->info("  → Created {$classAcademicYearsCreated} class-academic year(s)");
-            $this->command->info("  → Created {$classSubjectsCreated} class-subject assignment(s)");
+            foreach ($schools as $school) {
+                $this->command->info("Processing {$organization->name} - school: {$school->school_name}...");
+
+                // Step 1: Create class_academic_year entries if they don't exist
+                $classAcademicYearsCreated = $this->createClassAcademicYears($organization->id, $school->id);
+                $totalClassAcademicYearsCreated += $classAcademicYearsCreated;
+
+                // Step 2: Assign subjects to class_academic_years
+                $classSubjectsCreated = $this->assignSubjectsToClassAcademicYears($organization->id, $school->id);
+                $totalClassSubjectsCreated += $classSubjectsCreated;
+
+                if ($classAcademicYearsCreated > 0) {
+                    $this->command->info("  → Created {$classAcademicYearsCreated} class-academic year(s)");
+                }
+                if ($classSubjectsCreated > 0) {
+                    $this->command->info("  → Created {$classSubjectsCreated} class-subject assignment(s)");
+                }
+            }
         }
 
         if ($totalClassAcademicYearsCreated > 0 || $totalClassSubjectsCreated > 0) {
@@ -61,28 +80,30 @@ class ClassAcademicYearSubjectSeeder extends Seeder
     }
 
     /**
-     * Create class_academic_year entries for all classes and academic years
+     * Create class_academic_year entries for all classes and academic years for a school
      * Only creates if they don't already exist
      */
-    protected function createClassAcademicYears(string $organizationId): int
+    protected function createClassAcademicYears(string $organizationId, string $schoolId): int
     {
-        // Get all academic years for this organization
+        // Get all academic years for this school
         $academicYears = AcademicYear::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
             ->whereNull('deleted_at')
             ->get();
 
         if ($academicYears->isEmpty()) {
-            $this->command->warn("  ⚠ No academic years found for organization. Skipping.");
+            $this->command->warn("  ⚠ No academic years found for this school. Skipping.");
             return 0;
         }
 
-        // Get all classes for this organization
+        // Get all classes for this school
         $classes = ClassModel::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
             ->whereNull('deleted_at')
             ->get();
 
         if ($classes->isEmpty()) {
-            $this->command->warn("  ⚠ No classes found for organization. Skipping.");
+            $this->command->warn("  ⚠ No classes found for this school. Skipping.");
             return 0;
         }
 
@@ -109,6 +130,7 @@ class ClassAcademicYearSubjectSeeder extends Seeder
                     'class_id' => $class->id,
                     'academic_year_id' => $academicYear->id,
                     'organization_id' => $organizationId,
+                    'school_id' => $schoolId,
                     'section_name' => null, // Default section
                     'capacity' => $capacity,
                     'current_student_count' => 0,
@@ -127,16 +149,17 @@ class ClassAcademicYearSubjectSeeder extends Seeder
      * Assign subjects from class_subject_templates to class_academic_years
      * Creates class_subjects entries
      */
-    protected function assignSubjectsToClassAcademicYears(string $organizationId): int
+    protected function assignSubjectsToClassAcademicYears(string $organizationId, string $schoolId): int
     {
-        // Get all class_academic_years for this organization
+        // Get all class_academic_years for this school
         $classAcademicYears = ClassAcademicYear::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
             ->whereNull('deleted_at')
             ->with(['class'])
             ->get();
 
         if ($classAcademicYears->isEmpty()) {
-            $this->command->warn("  ⚠ No class-academic years found for organization. Skipping subject assignments.");
+            $this->command->warn("  ⚠ No class-academic years found for this school. Skipping subject assignments.");
             return 0;
         }
 
@@ -148,9 +171,10 @@ class ClassAcademicYearSubjectSeeder extends Seeder
                 continue;
             }
 
-            // Get all subject templates for this class
+            // Get all subject templates for this class (must match school_id)
             $subjectTemplates = ClassSubjectTemplate::where('class_id', $classAcademicYear->class_id)
                 ->where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
                 ->whereNull('deleted_at')
                 ->with(['subject'])
                 ->get();
@@ -183,6 +207,7 @@ class ClassAcademicYearSubjectSeeder extends Seeder
                     'class_academic_year_id' => $classAcademicYear->id,
                     'subject_id' => $template->subject_id,
                     'organization_id' => $organizationId,
+                    'school_id' => $schoolId,
                     'teacher_id' => null, // Can be assigned later
                     'room_id' => null, // Can be assigned later
                     'credits' => $template->credits,

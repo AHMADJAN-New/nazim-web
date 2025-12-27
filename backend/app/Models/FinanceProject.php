@@ -147,6 +147,7 @@ class FinanceProject extends Model
                 if ($entry->currency_id && $entry->currency_id !== $this->currency_id) {
                     $rate = ExchangeRate::getRate(
                         $this->organization_id,
+                        $this->school_id,
                         $entry->currency_id,
                         $this->currency_id,
                         $entry->date ? $entry->date->toDateString() : null
@@ -165,6 +166,7 @@ class FinanceProject extends Model
                 if ($entry->currency_id && $entry->currency_id !== $this->currency_id) {
                     $rate = ExchangeRate::getRate(
                         $this->organization_id,
+                        $this->school_id,
                         $entry->currency_id,
                         $this->currency_id,
                         $entry->date ? $entry->date->toDateString() : null

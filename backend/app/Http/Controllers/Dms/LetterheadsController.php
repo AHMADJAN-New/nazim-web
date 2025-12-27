@@ -15,9 +15,10 @@ class LetterheadsController extends BaseDmsController
             return $context;
         }
         $this->authorize('viewAny', Letterhead::class);
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
-        $query = Letterhead::where('organization_id', $profile->organization_id);
+        $query = Letterhead::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         if ($request->filled('letter_type')) {
             $query->where('letter_type', $request->letter_type);
@@ -47,7 +48,7 @@ class LetterheadsController extends BaseDmsController
             return $context;
         }
         $this->authorize('create', Letterhead::class);
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -57,19 +58,18 @@ class LetterheadsController extends BaseDmsController
             'default_for_layout' => ['nullable', 'string'],
             'position' => ['nullable', 'string', 'in:header,background,watermark'],
             'active' => ['boolean'],
-            'school_id' => ['nullable', 'uuid'],
         ]);
 
         $file = $request->file('file');
         // Store with organization_id in path for multi-tenancy
-        $path = $file->store("letterheads/{$profile->organization_id}");
+        $path = $file->store("letterheads/{$profile->organization_id}/{$currentSchoolId}");
         
         // Detect file type if not provided
         $fileType = $data['file_type'] ?? ($file->getMimeType() === 'application/pdf' ? 'pdf' : 'image');
 
         $record = Letterhead::create([
             'organization_id' => $profile->organization_id,
-            'school_id' => $data['school_id'] ?? null,
+            'school_id' => $currentSchoolId,
             'name' => $data['name'],
             'file_path' => $path,
             'file_type' => $fileType,
@@ -104,10 +104,11 @@ class LetterheadsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $record = Letterhead::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $this->authorize('update', $record);
@@ -125,7 +126,7 @@ class LetterheadsController extends BaseDmsController
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             // Store with organization_id in path for multi-tenancy
-            $data['file_path'] = $file->store("letterheads/{$profile->organization_id}");
+            $data['file_path'] = $file->store("letterheads/{$profile->organization_id}/{$currentSchoolId}");
             
             // Detect file type if not provided
             if (!isset($data['file_type'])) {
@@ -162,10 +163,11 @@ class LetterheadsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $record = Letterhead::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $this->authorize('view', $record);
@@ -184,10 +186,11 @@ class LetterheadsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $record = Letterhead::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $this->authorize('view', $record);
@@ -201,10 +204,11 @@ class LetterheadsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $record = Letterhead::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $this->authorize('delete', $record);
@@ -233,10 +237,11 @@ class LetterheadsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $record = Letterhead::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $this->authorize('view', $record);
@@ -275,10 +280,11 @@ class LetterheadsController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $record = Letterhead::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
         $this->authorize('view', $record);

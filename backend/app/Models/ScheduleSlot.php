@@ -87,24 +87,10 @@ class ScheduleSlot extends Model
      */
     public function scopeForOrganization($query, $organizationId)
     {
-        if ($organizationId === null) {
-            return $query->whereNull('organization_id');
+        if (!$organizationId) {
+            return $query->whereRaw('1=0');
         }
         return $query->where('organization_id', $organizationId);
-    }
-
-    /**
-     * Scope to include global schedule slots (organization_id IS NULL)
-     */
-    public function scopeWithGlobal($query, $organizationId)
-    {
-        if ($organizationId === null) {
-            return $query->whereNull('organization_id');
-        }
-        return $query->where(function ($q) use ($organizationId) {
-            $q->where('organization_id', $organizationId)
-              ->orWhereNull('organization_id');
-        });
     }
 
     /**

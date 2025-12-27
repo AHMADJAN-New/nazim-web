@@ -33,26 +33,16 @@ class StaffSeeder extends Seeder
         foreach ($organizations as $organization) {
             $this->command->info("Creating staff members for {$organization->name}...");
 
-            // Get staff types for this organization (or global ones)
-            $staffTypes = DB::table('staff_types')
-                ->where(function ($query) use ($organization) {
-                    $query->whereNull('organization_id')
-                        ->orWhere('organization_id', $organization->id);
-                })
-                ->whereNull('deleted_at')
-                ->where('is_active', true)
-                ->get();
-
-            if ($staffTypes->isEmpty()) {
-                $this->command->warn("  ⚠ No staff types found for {$organization->name}. Skipping staff creation.");
-                continue;
-            }
-
             // Get schools for this organization
             $schools = DB::table('school_branding')
                 ->where('organization_id', $organization->id)
                 ->whereNull('deleted_at')
                 ->get();
+
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for {$organization->name}. Skipping staff creation.");
+                continue;
+            }
 
             // Get admin profile for created_by field
             $adminProfile = DB::table('profiles')
@@ -62,7 +52,6 @@ class StaffSeeder extends Seeder
 
             $created = $this->createStaffForOrganization(
                 $organization->id,
-                $staffTypes,
                 $schools,
                 $adminProfile?->id
             );
@@ -79,7 +68,6 @@ class StaffSeeder extends Seeder
      */
     protected function createStaffForOrganization(
         string $organizationId,
-        $staffTypes,
         $schools,
         ?string $createdBy
     ): int {
@@ -262,15 +250,32 @@ class StaffSeeder extends Seeder
                 continue;
             }
 
-            // Find staff type by code
-            $staffType = $staffTypes->firstWhere('code', $staffData['staff_type_code']);
+            // Get a school (if available)
+            $schoolId = $schools->random()->id;
+
+            // Find staff type by code for THIS school (strict school scoping)
+            $staffType = DB::table('staff_types')
+                ->where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
+                ->where('code', $staffData['staff_type_code'])
+                ->whereNull('deleted_at')
+                ->first();
+
             if (!$staffType) {
-                // Fallback to first available staff type
-                $staffType = $staffTypes->first();
+                // Fallback to first active type in this school
+                $staffType = DB::table('staff_types')
+                    ->where('organization_id', $organizationId)
+                    ->where('school_id', $schoolId)
+                    ->whereNull('deleted_at')
+                    ->where('is_active', true)
+                    ->orderBy('display_order', 'asc')
+                    ->first();
             }
 
-            // Get a school (if available)
-            $schoolId = $schools->isNotEmpty() ? $schools->random()->id : null;
+            if (!$staffType) {
+                $this->command->warn("  ⚠ No staff types found for school {$schoolId}. Skipping staff creation.");
+                continue;
+            }
 
             // Create staff member
             $staffId = (string) Str::uuid();

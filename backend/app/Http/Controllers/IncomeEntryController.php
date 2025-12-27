@@ -39,8 +39,9 @@ class IncomeEntryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $validated = $request->validate([
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'account_id' => 'nullable|uuid|exists:finance_accounts,id',
                 'income_category_id' => 'nullable|uuid|exists:income_categories,id',
                 'project_id' => 'nullable|uuid|exists:finance_projects,id',
@@ -54,11 +55,8 @@ class IncomeEntryController extends Controller
 
             $query = IncomeEntry::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->with(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency']);
-
-            if (!empty($validated['school_id'])) {
-                $query->where('school_id', $validated['school_id']);
-            }
 
             if (!empty($validated['account_id'])) {
                 $query->where('account_id', $validated['account_id']);
@@ -139,13 +137,14 @@ class IncomeEntryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $validated = $request->validate([
                 'account_id' => 'required|uuid|exists:finance_accounts,id',
                 'income_category_id' => 'required|uuid|exists:income_categories,id',
                 'currency_id' => 'nullable|uuid|exists:currencies,id',
                 'amount' => 'required|numeric|min:0.01',
                 'date' => 'required|date',
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'project_id' => 'nullable|uuid|exists:finance_projects,id',
                 'donor_id' => 'nullable|uuid|exists:donors,id',
                 'reference_no' => 'nullable|string|max:100',
@@ -156,6 +155,7 @@ class IncomeEntryController extends Controller
             // Verify account belongs to organization
             $account = FinanceAccount::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($validated['account_id']);
 
             if (!$account) {
@@ -172,6 +172,7 @@ class IncomeEntryController extends Controller
                 // If account has no currency, use base currency
                 if (!$currencyId) {
                     $baseCurrency = \App\Models\Currency::where('organization_id', $profile->organization_id)
+                            ->where('school_id', $currentSchoolId)
                         ->where('is_base', true)
                         ->where('is_active', true)
                         ->whereNull('deleted_at')
@@ -190,6 +191,7 @@ class IncomeEntryController extends Controller
             // Verify currency belongs to organization
             $currency = \App\Models\Currency::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($currencyId);
 
             if (!$currency) {
@@ -200,6 +202,7 @@ class IncomeEntryController extends Controller
             if ($account->currency_id && $currencyId !== $account->currency_id) {
                 $rate = ExchangeRate::getRate(
                     $profile->organization_id,
+                    $currentSchoolId,
                     $currencyId,
                     $account->currency_id,
                     $validated['date']
@@ -207,7 +210,10 @@ class IncomeEntryController extends Controller
 
                 if ($rate === null) {
                     $fromCurrencyName = $currency->name ?? $currency->code ?? 'Unknown';
-                    $toCurrency = \App\Models\Currency::find($account->currency_id);
+                    $toCurrency = \App\Models\Currency::where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
+                        ->whereNull('deleted_at')
+                        ->find($account->currency_id);
                     $toCurrencyName = $toCurrency ? ($toCurrency->name ?? $toCurrency->code ?? 'Unknown') : 'Unknown';
                     return response()->json([
                         'error' => "Exchange rate not found for converting from {$fromCurrencyName} to {$toCurrencyName} on {$validated['date']}"
@@ -218,6 +224,7 @@ class IncomeEntryController extends Controller
             // Verify income category belongs to organization
             $category = IncomeCategory::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($validated['income_category_id']);
 
             if (!$category) {
@@ -228,6 +235,7 @@ class IncomeEntryController extends Controller
             if (!empty($validated['project_id'])) {
                 $project = FinanceProject::whereNull('deleted_at')
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->find($validated['project_id']);
 
                 if (!$project) {
@@ -239,6 +247,7 @@ class IncomeEntryController extends Controller
             if (!empty($validated['donor_id'])) {
                 $donor = Donor::whereNull('deleted_at')
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->find($validated['donor_id']);
 
                 if (!$donor) {
@@ -249,7 +258,7 @@ class IncomeEntryController extends Controller
             // Create income entry (model hooks will handle balance updates in transaction)
             $entry = IncomeEntry::create([
                 'organization_id' => $profile->organization_id,
-                'school_id' => $validated['school_id'] ?? null,
+                'school_id' => $currentSchoolId,
                 'currency_id' => $currencyId,
                 'account_id' => $validated['account_id'],
                 'income_category_id' => $validated['income_category_id'],
@@ -299,8 +308,11 @@ class IncomeEntryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId(request());
+
             $entry = IncomeEntry::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->with(['account', 'incomeCategory', 'project', 'donor', 'receivedBy', 'currency'])
                 ->find($id);
 
@@ -336,8 +348,11 @@ class IncomeEntryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $entry = IncomeEntry::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($id);
 
             if (!$entry) {
@@ -350,7 +365,6 @@ class IncomeEntryController extends Controller
                 'currency_id' => 'nullable|uuid|exists:currencies,id',
                 'amount' => 'sometimes|numeric|min:0.01',
                 'date' => 'sometimes|date',
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'project_id' => 'nullable|uuid|exists:finance_projects,id',
                 'donor_id' => 'nullable|uuid|exists:donors,id',
                 'reference_no' => 'nullable|string|max:100',
@@ -362,6 +376,7 @@ class IncomeEntryController extends Controller
             if (!empty($validated['account_id'])) {
                 $account = FinanceAccount::whereNull('deleted_at')
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->find($validated['account_id']);
 
                 if (!$account) {
@@ -373,6 +388,7 @@ class IncomeEntryController extends Controller
             if (!empty($validated['income_category_id'])) {
                 $category = IncomeCategory::whereNull('deleted_at')
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->find($validated['income_category_id']);
 
                 if (!$category) {
@@ -384,6 +400,7 @@ class IncomeEntryController extends Controller
             if (array_key_exists('project_id', $validated) && $validated['project_id'] !== null) {
                 $project = FinanceProject::whereNull('deleted_at')
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->find($validated['project_id']);
 
                 if (!$project) {
@@ -395,6 +412,7 @@ class IncomeEntryController extends Controller
             if (array_key_exists('donor_id', $validated) && $validated['donor_id'] !== null) {
                 $donor = Donor::whereNull('deleted_at')
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->find($validated['donor_id']);
 
                 if (!$donor) {
@@ -413,6 +431,7 @@ class IncomeEntryController extends Controller
 
                     if (!$currencyId) {
                         $baseCurrency = \App\Models\Currency::where('organization_id', $profile->organization_id)
+                            ->where('school_id', $currentSchoolId)
                             ->where('is_base', true)
                             ->where('is_active', true)
                             ->whereNull('deleted_at')
@@ -431,6 +450,7 @@ class IncomeEntryController extends Controller
                 // Verify currency belongs to organization
                 $currency = \App\Models\Currency::whereNull('deleted_at')
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->find($currencyId);
 
                 if (!$currency) {
@@ -441,6 +461,7 @@ class IncomeEntryController extends Controller
                 $accountForValidation = !empty($validated['account_id']) 
                     ? FinanceAccount::whereNull('deleted_at')
                         ->where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
                         ->find($validated['account_id'])
                     : $entry->account;
 
@@ -449,6 +470,7 @@ class IncomeEntryController extends Controller
                     $entryDate = $validated['date'] ?? $entry->date->toDateString();
                     $rate = ExchangeRate::getRate(
                         $profile->organization_id,
+                        $currentSchoolId,
                         $currencyId,
                         $accountForValidation->currency_id,
                         $entryDate
@@ -456,7 +478,10 @@ class IncomeEntryController extends Controller
 
                     if ($rate === null) {
                         $fromCurrencyName = $currency->name ?? $currency->code ?? 'Unknown';
-                        $toCurrency = \App\Models\Currency::find($accountForValidation->currency_id);
+                        $toCurrency = \App\Models\Currency::where('organization_id', $profile->organization_id)
+                            ->where('school_id', $currentSchoolId)
+                            ->whereNull('deleted_at')
+                            ->find($accountForValidation->currency_id);
                         $toCurrencyName = $toCurrency ? ($toCurrency->name ?? $toCurrency->code ?? 'Unknown') : 'Unknown';
                         return response()->json([
                             'error' => "Exchange rate not found for converting from {$fromCurrencyName} to {$toCurrencyName} on {$entryDate}"
@@ -474,6 +499,7 @@ class IncomeEntryController extends Controller
 
                     if (!$currencyId) {
                         $baseCurrency = \App\Models\Currency::where('organization_id', $profile->organization_id)
+                            ->where('school_id', $currentSchoolId)
                             ->where('is_base', true)
                             ->where('is_active', true)
                             ->whereNull('deleted_at')
@@ -525,8 +551,11 @@ class IncomeEntryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId(request());
+
             $entry = IncomeEntry::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($id);
 
             if (!$entry) {

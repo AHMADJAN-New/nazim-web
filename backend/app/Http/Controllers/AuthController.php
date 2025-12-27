@@ -180,8 +180,26 @@ class AuthController extends Controller
             'full_name' => 'sometimes|string|max:255',
             'phone' => 'nullable|string|max:20',
             'avatar_url' => 'nullable|url',
-            'default_school_id' => 'nullable|uuid|exists:schools,id',
+            'default_school_id' => 'nullable|uuid|exists:school_branding,id',
         ]);
+
+        // Enforce school belongs to user's organization (school-scoped system)
+        if ($request->filled('default_school_id')) {
+            $profile = DB::table('profiles')->where('id', $request->user()->id)->first();
+            if (!$profile || !$profile->organization_id) {
+                return response()->json(['error' => 'User must be assigned to an organization'], 403);
+            }
+
+            $belongs = DB::table('school_branding')
+                ->where('id', $request->default_school_id)
+                ->where('organization_id', $profile->organization_id)
+                ->whereNull('deleted_at')
+                ->exists();
+
+            if (!$belongs) {
+                return response()->json(['error' => 'Invalid default school for this organization'], 403);
+            }
+        }
 
         DB::table('profiles')
             ->where('id', $request->user()->id)

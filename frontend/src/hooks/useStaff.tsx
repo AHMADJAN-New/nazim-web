@@ -32,7 +32,14 @@ export const useStaff = (organizationId?: string, usePaginated?: boolean) => {
   });
 
   const { data, isLoading, error, refetch } = useQuery<Staff[] | PaginatedResponse<StaffApi.Staff>>({
-    queryKey: ['staff', orgId, orgIds.join(','), usePaginated ? page : undefined, usePaginated ? pageSize : undefined],
+    queryKey: [
+      'staff',
+      orgId,
+      orgIds.join(','),
+      profile?.default_school_id ?? null,
+      usePaginated ? page : undefined,
+      usePaginated ? pageSize : undefined,
+    ],
     queryFn: async () => {
       if (!user || !profile) return [];
       if (orgsLoading) return [];
@@ -87,7 +94,7 @@ export const useStaff = (organizationId?: string, usePaginated?: boolean) => {
       // Map API models to domain models (non-paginated)
       return (apiStaff as StaffApi.Staff[]).map(mapStaffApiToDomain);
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!profile && !!profile.default_school_id,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -127,8 +134,9 @@ export const useStaff = (organizationId?: string, usePaginated?: boolean) => {
 
 // Hook to fetch a single staff member
 export const useStaffMember = (staffId: string) => {
+  const { profile } = useAuth();
   return useQuery<Staff>({
-    queryKey: ['staff', staffId],
+    queryKey: ['staff', staffId, profile?.default_school_id ?? null],
     queryFn: async () => {
       const apiStaff = await staffApi.get(staffId);
       return mapStaffApiToDomain(apiStaff as StaffApi.Staff);
@@ -136,6 +144,7 @@ export const useStaffMember = (staffId: string) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false, // REQUIRED: Performance optimization
     refetchOnReconnect: false, // REQUIRED: Performance optimization
+    enabled: !!profile?.default_school_id,
   });
 };
 
@@ -146,7 +155,7 @@ export const useStaffByType = (staffTypeId: string, organizationId?: string) => 
   const orgId = organizationId || profile?.organization_id || null;
 
   return useQuery<Staff[]>({
-    queryKey: ['staff', 'type', staffTypeId, orgId],
+    queryKey: ['staff', 'type', staffTypeId, orgId, profile?.default_school_id ?? null],
     queryFn: async () => {
       const params: any = {
         staff_type_id: staffTypeId,
@@ -174,7 +183,7 @@ export const useStaffStats = (organizationId?: string) => {
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery<StaffStats>({
-    queryKey: ['staff-stats', organizationId === undefined ? 'all' : organizationId, orgIds.join(',')],
+    queryKey: ['staff-stats', organizationId === undefined ? 'all' : organizationId, orgIds.join(','), profile?.default_school_id ?? null],
     queryFn: async (): Promise<StaffStats> => {
       if (!user || !profile || orgsLoading) {
         return { total: 0, active: 0, inactive: 0, onLeave: 0, terminated: 0, suspended: 0, byType: { teacher: 0, admin: 0, accountant: 0, librarian: 0, other: 0 } };
@@ -354,7 +363,7 @@ export const useStaffTypes = (organizationId?: string) => {
   const { orgIds: accessibleOrgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery<StaffType[]>({
-    queryKey: ['staff-types', organizationId, accessibleOrgIds.join(',')],
+    queryKey: ['staff-types', organizationId, accessibleOrgIds.join(','), profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) return [];
       if (orgsLoading) return [];
@@ -479,7 +488,7 @@ export const useStaffDocuments = (staffId: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<StaffDocument[]>({
-    queryKey: ['staff-files', staffId],
+    queryKey: ['staff-files', staffId, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) return [];
 

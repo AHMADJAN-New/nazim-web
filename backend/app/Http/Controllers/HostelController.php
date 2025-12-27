@@ -53,23 +53,8 @@ class HostelController extends Controller
         // Get accessible organization IDs (user's organization only)
         $orgIds = [$profile->organization_id];
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (empty($schoolIds)) {
-            return response()->json([
-                'summary' => [
-                    'total_rooms' => 0,
-                    'occupied_rooms' => 0,
-                    'total_students_in_rooms' => 0,
-                    'total_buildings' => 0,
-                    'unique_wardens' => 0,
-                    'unassigned_boarders' => 0,
-                    'occupancy_rate' => 0,
-                ],
-                'rooms' => [],
-                'buildings' => [],
-                'unassigned_boarders' => [],
-            ]);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $schoolIds = [$currentSchoolId];
 
         // Filter rooms by accessible schools and organization
         $rooms = DB::table('rooms')

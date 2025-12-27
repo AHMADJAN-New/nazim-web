@@ -31,6 +31,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -41,6 +43,7 @@ class ExamNumberController extends Controller
         }
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -56,6 +59,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         if ($request->filled('exam_class_id')) {
@@ -121,6 +125,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -130,6 +136,7 @@ class ExamNumberController extends Controller
         }
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -158,6 +165,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.roll_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -175,6 +184,7 @@ class ExamNumberController extends Controller
         ]);
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -197,6 +207,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         // Filter by scope
@@ -276,6 +287,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.roll_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -291,6 +304,7 @@ class ExamNumberController extends Controller
         ]);
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -315,6 +329,7 @@ class ExamNumberController extends Controller
                 $examStudent = ExamStudent::where('id', $item['exam_student_id'])
                     ->where('exam_id', $examId)
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
 
@@ -366,6 +381,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.roll_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -379,6 +396,7 @@ class ExamNumberController extends Controller
         ]);
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -397,6 +415,7 @@ class ExamNumberController extends Controller
         $examStudent = ExamStudent::where('id', $examStudentId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -436,6 +455,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -445,6 +466,7 @@ class ExamNumberController extends Controller
         }
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -473,6 +495,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.secret_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -490,6 +514,7 @@ class ExamNumberController extends Controller
         ]);
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -511,6 +536,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         if ($validated['scope'] === 'class' && !empty($validated['exam_class_id'])) {
@@ -585,6 +611,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.secret_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -600,6 +628,7 @@ class ExamNumberController extends Controller
         ]);
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -624,6 +653,7 @@ class ExamNumberController extends Controller
                 $examStudent = ExamStudent::where('id', $item['exam_student_id'])
                     ->where('exam_id', $examId)
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
 
@@ -674,6 +704,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.secret_numbers.assign')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -687,6 +719,7 @@ class ExamNumberController extends Controller
         ]);
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -705,6 +738,7 @@ class ExamNumberController extends Controller
         $examStudent = ExamStudent::where('id', $examStudentId)
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -743,6 +777,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.secret_numbers.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -757,6 +793,7 @@ class ExamNumberController extends Controller
         }
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -771,6 +808,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('exam_secret_number', $secretNumber)
             ->whereNull('deleted_at')
             ->first();
@@ -813,6 +851,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.roll_numbers.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -823,6 +863,7 @@ class ExamNumberController extends Controller
 
         $exam = Exam::with('academicYear')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -837,6 +878,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->whereNotNull('exam_roll_number');
 
@@ -889,6 +931,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.numbers.print')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -899,6 +943,7 @@ class ExamNumberController extends Controller
 
         $exam = Exam::with('academicYear')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -910,6 +955,7 @@ class ExamNumberController extends Controller
         // Get school branding
         $schoolBranding = DB::table('school_branding')
             ->where('organization_id', $profile->organization_id)
+            ->where('id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -922,6 +968,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->whereNotNull('exam_roll_number');
 
@@ -1015,6 +1062,8 @@ class ExamNumberController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exams.numbers.print')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -1024,6 +1073,7 @@ class ExamNumberController extends Controller
         }
 
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $examId)
             ->whereNull('deleted_at')
             ->first();
@@ -1041,6 +1091,7 @@ class ExamNumberController extends Controller
         ])
             ->where('exam_id', $examId)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->whereNotNull('exam_secret_number');
 
@@ -1065,6 +1116,7 @@ class ExamNumberController extends Controller
                     ->where('id', $subjectId)
                     ->where('exam_id', $examId)
                     ->where('organization_id', $profile->organization_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->first();
 
@@ -1073,6 +1125,8 @@ class ExamNumberController extends Controller
                     // Get the actual subject name from the related subject
                     $subject = DB::table('subjects')
                         ->where('id', $examSubject->subject_id)
+                        ->where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
                         ->whereNull('deleted_at')
                         ->first();
                     $subjectName = $subject?->name;
@@ -1080,6 +1134,8 @@ class ExamNumberController extends Controller
                     // Get exam date from exam_times
                     $examTime = DB::table('exam_times')
                         ->where('exam_subject_id', $examSubjectId)
+                        ->where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
                         ->whereNull('deleted_at')
                         ->orderBy('date', 'asc')
                         ->first();
@@ -1093,6 +1149,8 @@ class ExamNumberController extends Controller
                     // Try as direct subject UUID
                     $subject = DB::table('subjects')
                         ->where('id', $subjectId)
+                        ->where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
                         ->whereNull('deleted_at')
                         ->first();
                     $subjectName = $subject?->name;

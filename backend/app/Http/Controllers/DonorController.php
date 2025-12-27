@@ -41,7 +41,8 @@ class DonorController extends Controller
             ]);
 
             $query = Donor::whereNull('deleted_at')
-                ->where('organization_id', $profile->organization_id);
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $this->getCurrentSchoolId($request));
 
             if (!empty($validated['type'])) {
                 $query->where('type', $validated['type']);
@@ -110,8 +111,11 @@ class DonorController extends Controller
                 'is_active' => 'nullable|boolean',
             ]);
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $donor = Donor::create([
                 'organization_id' => $profile->organization_id,
+                'school_id' => $currentSchoolId,
                 'name' => trim($validated['name']),
                 'phone' => $validated['phone'] ?? null,
                 'email' => $validated['email'] ?? null,
@@ -157,6 +161,7 @@ class DonorController extends Controller
 
             $donor = Donor::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', request()->get('current_school_id'))
                 ->find($id);
 
             if (!$donor) {
@@ -193,6 +198,7 @@ class DonorController extends Controller
 
             $donor = Donor::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $this->getCurrentSchoolId($request))
                 ->find($id);
 
             if (!$donor) {
@@ -251,6 +257,7 @@ class DonorController extends Controller
 
             $donor = Donor::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', request()->get('current_school_id'))
                 ->find($id);
 
             if (!$donor) {
@@ -300,6 +307,7 @@ class DonorController extends Controller
 
             $donor = Donor::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $this->getCurrentSchoolId($request))
                 ->find($id);
 
             if (!$donor) {

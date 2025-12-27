@@ -23,6 +23,7 @@ class Donor extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'name',
         'phone',
         'email',
@@ -104,6 +105,7 @@ class Donor extends Model
     {
         // Get organization's base currency
         $baseCurrency = Currency::where('organization_id', $this->organization_id)
+            ->where('school_id', $this->school_id)
             ->where('is_base', true)
             ->where('is_active', true)
             ->whereNull('deleted_at')
@@ -121,6 +123,7 @@ class Donor extends Model
                 if ($entry->currency_id && $entry->currency_id !== $baseCurrency->id) {
                     $rate = ExchangeRate::getRate(
                         $this->organization_id,
+                        $this->school_id,
                         $entry->currency_id,
                         $baseCurrency->id,
                         $entry->date ? $entry->date->toDateString() : null
@@ -149,6 +152,7 @@ class Donor extends Model
     {
         // Get organization's base currency
         $baseCurrency = Currency::where('organization_id', $this->organization_id)
+            ->where('school_id', $this->school_id)
             ->where('is_base', true)
             ->where('is_active', true)
             ->whereNull('deleted_at')
@@ -173,6 +177,7 @@ class Donor extends Model
             if ($entry->currency_id && $entry->currency_id !== $baseCurrency->id) {
                 $rate = ExchangeRate::getRate(
                     $this->organization_id,
+                    $this->school_id,
                     $entry->currency_id,
                     $baseCurrency->id,
                     $entry->date ? $entry->date->toDateString() : null

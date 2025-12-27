@@ -24,6 +24,8 @@ class ScheduleSlotController extends Controller
                 return response()->json(['error' => 'Profile not found'], 404);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             // Require organization_id for all users
             if (!$profile->organization_id) {
                 return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -39,9 +41,6 @@ class ScheduleSlotController extends Controller
                 // Allow access if permission doesn't exist (during migration)
             }
 
-            // Get accessible organization IDs (user's organization only)
-            $orgIds = [$profile->organization_id];
-
             $query = ScheduleSlot::whereNull('deleted_at')
                 ->orderBy('sort_order', 'asc')
                 ->orderBy('start_time', 'asc');
@@ -53,35 +52,13 @@ class ScheduleSlotController extends Controller
                 Log::warning("Failed to eager load relationships for schedule slots: " . $e->getMessage());
             }
 
-            // Filter by organization (include global slots where organization_id IS NULL)
-            if ($request->has('organization_id') && $request->organization_id) {
-                if (in_array($request->organization_id, $orgIds) || empty($orgIds)) {
-                    $query->where(function ($q) use ($request) {
-                        $q->where('organization_id', $request->organization_id)
-                          ->orWhereNull('organization_id'); // Include global slots
-                    });
-                } else {
-                    return response()->json([]);
-                }
-            } else {
-                // Show user's org slots + global slots
-                if (!empty($orgIds)) {
-                    $query->where(function ($q) use ($orgIds) {
-                        $q->whereIn('organization_id', $orgIds)
-                          ->orWhereNull('organization_id'); // Include global slots
-                    });
-                } else {
-                    // No org access, only show global slots
-                    $query->whereNull('organization_id');
-                }
-            }
+            // Strict scoping: org + school from context
+            $query->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId);
 
-            // Filter by academic_year_id if provided
+            // Filter by academic_year_id if provided (still within same school)
             if ($request->has('academic_year_id') && $request->academic_year_id) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('academic_year_id', $request->academic_year_id)
-                      ->orWhereNull('academic_year_id'); // Include global slots
-                });
+                $query->where('academic_year_id', $request->academic_year_id);
             }
 
             $slots = $query->get();
@@ -160,6 +137,8 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -177,12 +156,20 @@ class ScheduleSlotController extends Controller
 
         $validated = $request->validated();
 
-        // Get organization_id - use provided or user's org
-        $organizationId = $validated['organization_id'] ?? $profile->organization_id;
+        // Strict scoping: organization + school from context (ignore client input)
+        $organizationId = $profile->organization_id;
 
-        // Validate organization access (all users)
-        if ($organizationId !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot create slot for different organization'], 403);
+        // Validate academic year belongs to current org + school if provided
+        if (!empty($validated['academic_year_id'])) {
+            $exists = DB::table('academic_years')
+                ->where('id', $validated['academic_year_id'])
+                ->where('organization_id', $organizationId)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->exists();
+            if (!$exists) {
+                return response()->json(['error' => 'Academic year not found'], 404);
+            }
         }
 
         $slot = ScheduleSlot::create([
@@ -193,7 +180,7 @@ class ScheduleSlotController extends Controller
             'days_of_week' => $validated['days_of_week'] ?? [],
             'default_duration_minutes' => $validated['default_duration_minutes'] ?? 45,
             'academic_year_id' => $validated['academic_year_id'] ?? null,
-            'school_id' => $validated['school_id'] ?? null,
+            'school_id' => $currentSchoolId,
             'sort_order' => $validated['sort_order'] ?? 1,
             'is_active' => $validated['is_active'] ?? true,
             'description' => $validated['description'] ?? null,
@@ -243,6 +230,8 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -260,15 +249,12 @@ class ScheduleSlotController extends Controller
 
         $slot = ScheduleSlot::whereNull('deleted_at')
             ->with(['academicYear', 'school'])
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$slot) {
             return response()->json(['error' => 'Schedule slot not found'], 404);
-        }
-
-        // Check organization access (all users)
-        if ($slot->organization_id !== $profile->organization_id && $slot->organization_id !== null) {
-            return response()->json(['error' => 'Access denied to this schedule slot'], 403);
         }
 
         return response()->json([
@@ -312,6 +298,8 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -327,22 +315,31 @@ class ScheduleSlotController extends Controller
             // Allow access if permission doesn't exist (during migration)
         }
 
-        $slot = ScheduleSlot::whereNull('deleted_at')->find($id);
+        $slot = ScheduleSlot::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$slot) {
             return response()->json(['error' => 'Schedule slot not found'], 404);
         }
 
-        // Check organization access (all users)
-        if ($slot->organization_id !== $profile->organization_id && $slot->organization_id !== null) {
-            return response()->json(['error' => 'Cannot update slot from different organization'], 403);
-        }
-
         $validated = $request->validated();
 
-        // Prevent organization_id changes (all users)
-        if (isset($validated['organization_id'])) {
-            unset($validated['organization_id']);
+        // Prevent org/school changes (strict scoping)
+        unset($validated['organization_id'], $validated['school_id']);
+
+        // Validate academic year belongs to current org + school if provided
+        if (array_key_exists('academic_year_id', $validated) && !empty($validated['academic_year_id'])) {
+            $exists = DB::table('academic_years')
+                ->where('id', $validated['academic_year_id'])
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
+                ->whereNull('deleted_at')
+                ->exists();
+            if (!$exists) {
+                return response()->json(['error' => 'Academic year not found'], 404);
+            }
         }
 
         // Update only provided fields
@@ -366,9 +363,6 @@ class ScheduleSlotController extends Controller
         }
         if (isset($validated['academic_year_id'])) {
             $slot->academic_year_id = $validated['academic_year_id'];
-        }
-        if (isset($validated['school_id'])) {
-            $slot->school_id = $validated['school_id'];
         }
         if (isset($validated['sort_order'])) {
             $slot->sort_order = $validated['sort_order'];
@@ -425,6 +419,8 @@ class ScheduleSlotController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -440,15 +436,13 @@ class ScheduleSlotController extends Controller
             // Allow access if permission doesn't exist (during migration)
         }
 
-        $slot = ScheduleSlot::whereNull('deleted_at')->find($id);
+        $slot = ScheduleSlot::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$slot) {
             return response()->json(['error' => 'Schedule slot not found'], 404);
-        }
-
-        // Check organization access (all users)
-        if ($slot->organization_id !== $profile->organization_id && $slot->organization_id !== null) {
-            return response()->json(['error' => 'Cannot delete slot from different organization'], 403);
         }
 
         $slot->delete();

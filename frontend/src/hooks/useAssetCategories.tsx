@@ -20,7 +20,7 @@ export const useAssetCategories = () => {
   const { user, profile } = useAuth();
 
   return useQuery<AssetCategory[]>({
-    queryKey: ['asset-categories', profile?.organization_id],
+    queryKey: ['asset-categories', profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) {
         return [];

@@ -28,7 +28,6 @@ export const useStudentAdmissionReport = (
 
       const params: Record<string, string | number | boolean | undefined> = {
         organization_id: normalizedFilters.organizationId,
-        school_id: normalizedFilters.schoolId,
         academic_year_id: normalizedFilters.academicYearId,
         enrollment_status: normalizedFilters.enrollmentStatus,
         residency_type_id: normalizedFilters.residencyTypeId,
@@ -38,6 +37,7 @@ export const useStudentAdmissionReport = (
         page: normalizedFilters.page || 1,
         per_page: normalizedFilters.perPage || 25,
       };
+      // Strict school scoping: do not allow client-selected school_id.
 
       const apiReport = await studentAdmissionsApi.report(params);
       return mapStudentAdmissionReportApiToDomain(apiReport as StudentAdmissionReportApi.StudentAdmissionReport);

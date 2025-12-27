@@ -20,7 +20,7 @@ export function useStudentAutocomplete() {
     const { data: profile } = useProfile();
 
     return useQuery({
-        queryKey: ['student-autocomplete', profile?.organization_id, profile?.role],
+        queryKey: ['student-autocomplete', profile?.organization_id, profile?.default_school_id ?? null, profile?.role],
         queryFn: async (): Promise<StudentAutocompleteData> => {
             if (!user || !profile) {
                 return {
@@ -37,7 +37,11 @@ export function useStudentAutocomplete() {
             }
 
             // Fetch autocomplete data from Laravel API
-            const data = await studentsApi.autocomplete();
+            // Backend automatically scopes by organization_id and school_id via middleware
+            const data = await studentsApi.autocomplete({
+                organization_id: profile.organization_id,
+                school_id: profile.default_school_id,
+            });
             return data as StudentAutocompleteData;
         },
         enabled: !!user && !!profile,

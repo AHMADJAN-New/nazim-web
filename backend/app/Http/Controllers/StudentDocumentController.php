@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\StudentDocument;
 use App\Http\Requests\StoreStudentDocumentRequest;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,9 @@ use Illuminate\Support\Facades\Log;
 
 class StudentDocumentController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
     /**
      * Get accessible organization IDs for the current user
      */
@@ -37,6 +41,8 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -53,18 +59,17 @@ class StudentDocumentController extends Controller
         }
 
         // Check student exists and user has access
-        $student = Student::whereNull('deleted_at')->find($studentId);
+        $student = Student::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($studentId);
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Student not found'], 404);
-        }
-
         $documents = StudentDocument::where('student_id', $studentId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -107,6 +112,8 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -114,7 +121,7 @@ class StudentDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_documents.read')) {
+            if (!$user->hasPermissionTo('student_documents.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -123,30 +130,30 @@ class StudentDocumentController extends Controller
         }
 
         // Check student exists and user has access
-        $student = Student::whereNull('deleted_at')->find($studentId);
+        $student = Student::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($studentId);
         if (!$student) {
             return response()->json(['error' => 'Student not found'], 404);
         }
 
-        $orgIds = $this->getAccessibleOrgIds($profile);
-
-        if (!in_array($student->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot add document to student from different organization'], 403);
-        }
-
         $file = $request->file('file');
-        $timestamp = time();
-        $sanitizedFileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
-        $filePath = "{$student->organization_id}/students/{$studentId}/documents/{$timestamp}_{$sanitizedFileName}";
 
-        // Store file
-        Storage::disk('local')->put($filePath, file_get_contents($file));
+        // Store file using FileStorageService (PRIVATE storage for student documents)
+        $filePath = $this->fileStorageService->storeStudentDocument(
+            $file,
+            $student->organization_id,
+            $studentId,
+            $student->school_id,
+            $request->document_type
+        );
 
         // Create document record
         $document = StudentDocument::create([
             'student_id' => $studentId,
-            'organization_id' => $student->organization_id,
-            'school_id' => $student->school_id,
+            'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
             'document_type' => $request->document_type,
             'file_name' => $file->getClientOriginalName(),
             'file_path' => $filePath,
@@ -184,6 +191,8 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -191,7 +200,7 @@ class StudentDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('student_documents.read')) {
+            if (!$user->hasPermissionTo('student_documents.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -199,7 +208,10 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $document = StudentDocument::whereNull('deleted_at')->find($id);
+        $document = StudentDocument::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$document) {
             return response()->json(['error' => 'Document not found'], 404);
@@ -211,10 +223,15 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'Cannot delete document from different organization'], 403);
         }
 
+        // Delete file from storage using FileStorageService
+        if ($document->file_path) {
+            $this->fileStorageService->deleteFile($document->file_path);
+        }
+
         // Soft delete
         $document->delete();
 
-        return response()->json(['message' => 'Document deleted successfully']);
+        return response()->noContent();
     }
 
     /**
@@ -228,6 +245,8 @@ class StudentDocumentController extends Controller
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
+
+        $currentSchoolId = $this->getCurrentSchoolId(request());
 
         // Require organization_id for all users
         if (!$profile->organization_id) {
@@ -244,24 +263,29 @@ class StudentDocumentController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $document = StudentDocument::whereNull('deleted_at')->find($id);
+        $document = StudentDocument::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$document) {
             return response()->json(['error' => 'Document not found'], 404);
         }
-
+        
         $orgIds = $this->getAccessibleOrgIds($profile);
 
         if (!in_array($document->organization_id, $orgIds)) {
             return response()->json(['error' => 'Cannot access document from different organization'], 403);
         }
 
-        if (!Storage::disk('local')->exists($document->file_path)) {
+        // Check if file exists using FileStorageService
+        if (!$this->fileStorageService->fileExists($document->file_path)) {
             return response()->json(['error' => 'File not found'], 404);
         }
 
-        $file = Storage::disk('local')->get($document->file_path);
-        $mimeType = $document->mime_type ?? Storage::disk('local')->mimeType($document->file_path);
+        // Get file content using FileStorageService
+        $file = $this->fileStorageService->getFile($document->file_path);
+        $mimeType = $document->mime_type ?? $this->fileStorageService->getMimeTypeFromExtension($document->file_path);
 
         return response($file, 200)
             ->header('Content-Type', $mimeType)

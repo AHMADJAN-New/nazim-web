@@ -138,20 +138,35 @@ class LibraryBookSeeder extends Seeder
         $totalCreated = 0;
         $totalSkipped = 0;
 
-        // Create books for each organization
+        // Create books for each organization and school
         foreach ($organizations as $organization) {
             $this->command->info("Creating books for organization: {$organization->name}");
 
-            // Get all categories for this organization
-            $categories = LibraryCategory::where('organization_id', $organization->id)
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
                 ->whereNull('deleted_at')
-                ->where('is_active', true)
                 ->get();
 
-            if ($categories->isEmpty()) {
-                $this->command->warn("  No categories found for {$organization->name}. Please run LibraryCategorySeeder first.");
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping library book seeding for this org.");
                 continue;
             }
+
+            foreach ($schools as $school) {
+                $this->command->info("Creating books for {$organization->name} - school: {$school->school_name}...");
+
+                // Get all categories for this school
+                $categories = LibraryCategory::where('organization_id', $organization->id)
+                    ->where('school_id', $school->id)
+                    ->whereNull('deleted_at')
+                    ->where('is_active', true)
+                    ->get();
+
+                if ($categories->isEmpty()) {
+                    $this->command->warn("  No categories found for {$organization->name} - {$school->school_name}. Please run LibraryCategorySeeder first.");
+                    continue;
+                }
 
             $orgCreated = 0;
             $orgSkipped = 0;
@@ -172,8 +187,9 @@ class LibraryBookSeeder extends Seeder
 
                 $bookCounter = 1;
                 foreach ($books as $bookData) {
-                    // Check if book already exists for this organization and category
+                    // Check if book already exists for this school and category (by title, organization_id, school_id, and category)
                     $query = LibraryBook::where('organization_id', $organization->id)
+                        ->where('school_id', $school->id)
                         ->where('title', $bookData['title'])
                         ->whereNull('deleted_at');
                     
@@ -230,6 +246,7 @@ class LibraryBookSeeder extends Seeder
                         
                         $bookDataToCreate = [
                             'organization_id' => $organization->id,
+                            'school_id' => $school->id,
                             'title' => $bookData['title'],
                             'author' => $bookData['author'] ?? null,
                             'isbn' => $isbn,
@@ -255,14 +272,15 @@ class LibraryBookSeeder extends Seeder
                 }
             }
 
-            $totalCreated += $orgCreated;
-            $totalSkipped += $orgSkipped;
+                $totalCreated += $orgCreated;
+                $totalSkipped += $orgSkipped;
 
-            if ($orgCreated > 0) {
-                $this->command->info("  → Created {$orgCreated} book(s) for {$organization->name}");
-            }
-            if ($orgSkipped > 0) {
-                $this->command->info("  → Skipped {$orgSkipped} existing book(s) for {$organization->name}");
+                if ($orgCreated > 0) {
+                    $this->command->info("  → Created {$orgCreated} book(s) for {$organization->name} - {$school->school_name}");
+                }
+                if ($orgSkipped > 0) {
+                    $this->command->info("  → Skipped {$orgSkipped} existing book(s) for {$organization->name} - {$school->school_name}");
+                }
             }
         }
 

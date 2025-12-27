@@ -81,15 +81,30 @@ class ReportService
                 'branding_font_size' => $branding['report_font_size'] ?? null,
             ]);
 
+            // Get school ID from branding_id (branding_id is the school_id)
+            $schoolId = $config->brandingId;
+
             // Generate the report
             if ($config->isPdf()) {
-                $result = $this->pdfService->generate($config, $context, function ($progress, $message) use ($reportRun) {
-                    $reportRun->updateProgress(50 + ($progress * 0.4), $message);
-                });
+                $result = $this->pdfService->generate(
+                    $config,
+                    $context,
+                    function ($progress, $message) use ($reportRun) {
+                        $reportRun->updateProgress(50 + ($progress * 0.4), $message);
+                    },
+                    $organizationId,
+                    $schoolId
+                );
             } else {
-                $result = $this->excelService->generate($config, $context, function ($progress, $message) use ($reportRun) {
-                    $reportRun->updateProgress(50 + ($progress * 0.4), $message);
-                });
+                $result = $this->excelService->generate(
+                    $config,
+                    $context,
+                    function ($progress, $message) use ($reportRun) {
+                        $reportRun->updateProgress(50 + ($progress * 0.4), $message);
+                    },
+                    $organizationId,
+                    $schoolId
+                );
             }
 
             $reportRun->updateProgress(95, 'Report generated');

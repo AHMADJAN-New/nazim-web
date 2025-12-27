@@ -26,7 +26,7 @@ export const useTimetables = (organizationId?: string, academicYearId?: string) 
 	const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
 	return useQuery<Timetable[]>({
-		queryKey: ['timetables', organizationId || profile?.organization_id, academicYearId, orgIds.join(',')],
+		queryKey: ['timetables', organizationId || profile?.organization_id, academicYearId, orgIds.join(','), profile?.default_school_id ?? null],
 		queryFn: async () => {
 			if (!user || !profile || orgsLoading) return [];
 
@@ -56,7 +56,7 @@ export const useTimetable = (timetableId?: string) => {
 	const { data: profile } = useProfile();
 
 	return useQuery<{ timetable: Timetable | null; entries: TimetableEntry[] }>({
-		queryKey: ['timetable', timetableId],
+		queryKey: ['timetable', timetableId, profile?.default_school_id ?? null],
 		queryFn: async () => {
 			if (!user || !profile || !timetableId) return { timetable: null, entries: [] };
 
@@ -217,7 +217,7 @@ export const useTeacherPreferences = (organizationId?: string, teacherId?: strin
 	const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
 	return useQuery<TeacherPreference[]>({
-		queryKey: ['teacher-prefs', organizationId || profile?.organization_id, teacherId, academicYearId, orgIds.join(',')],
+		queryKey: ['teacher-prefs', organizationId || profile?.organization_id, teacherId, academicYearId, orgIds.join(','), profile?.default_school_id ?? null],
 		queryFn: async () => {
 			if (!user || !profile || orgsLoading) return [];
 
@@ -231,7 +231,7 @@ export const useTeacherPreferences = (organizationId?: string, teacherId?: strin
 			// Map API models to domain models
 			return (apiPreferences as TimetableApi.TeacherPreference[]).map(mapTeacherPreferenceApiToDomain);
 		},
-		enabled: !!user && !!profile,
+		enabled: !!user && !!profile && !!teacherId,
 		staleTime: 5 * 60 * 1000, // 5 minutes
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,

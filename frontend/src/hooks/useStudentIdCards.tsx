@@ -38,7 +38,7 @@ export const useStudentIdCards = (filters?: StudentIdCardFilters) => {
   const { t } = useLanguage();
 
   return useQuery<StudentIdCard[]>({
-    queryKey: ['student-id-cards', profile?.organization_id, filters],
+    queryKey: ['student-id-cards', profile?.organization_id, profile?.default_school_id ?? null, filters],
     queryFn: async () => {
       if (!user || !profile) {
         if (import.meta.env.DEV) {

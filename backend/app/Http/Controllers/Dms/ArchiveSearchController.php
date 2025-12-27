@@ -15,7 +15,7 @@ class ArchiveSearchController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $clearanceRank = $this->userClearanceRank($user, $profile->organization_id);
 
@@ -26,11 +26,7 @@ class ArchiveSearchController extends BaseDmsController
         $incomingQuery = IncomingDocument::query()
             ->with(['routingDepartment', 'academicYear'])
             ->where('organization_id', $profile->organization_id)
-            ->when(!empty($schoolIds), function ($q) use ($schoolIds) {
-                $q->where(function ($nested) use ($schoolIds) {
-                    $nested->whereIn('school_id', $schoolIds)->orWhereNull('school_id');
-                });
-            })
+            ->where('school_id', $currentSchoolId)
             ->where(function ($q) use ($clearanceRank, $profile) {
                 $q->whereNull('security_level_key')
                     ->orWhereExists(function ($sub) use ($clearanceRank, $profile) {
@@ -46,11 +42,7 @@ class ArchiveSearchController extends BaseDmsController
         $outgoingQuery = OutgoingDocument::query()
             ->with(['academicYear'])
             ->where('organization_id', $profile->organization_id)
-            ->when(!empty($schoolIds), function ($q) use ($schoolIds) {
-                $q->where(function ($nested) use ($schoolIds) {
-                    $nested->whereIn('school_id', $schoolIds)->orWhereNull('school_id');
-                });
-            })
+            ->where('school_id', $currentSchoolId)
             ->where(function ($q) use ($clearanceRank, $profile) {
                 $q->whereNull('security_level_key')
                     ->orWhereExists(function ($sub) use ($clearanceRank, $profile) {

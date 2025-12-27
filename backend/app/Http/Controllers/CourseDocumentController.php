@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CourseDocument;
 use App\Models\ShortTermCourse;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +13,9 @@ use Illuminate\Support\Str;
 
 class CourseDocumentController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
     private function getProfile($user)
     {
         return DB::table('profiles')->where('id', (string) $user->id)->first();
@@ -26,6 +30,8 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_documents.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -36,6 +42,7 @@ class CourseDocumentController extends Controller
         }
 
         $query = CourseDocument::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         if ($request->filled('course_id')) {
@@ -62,6 +69,8 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_documents.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -81,6 +90,7 @@ class CourseDocumentController extends Controller
 
         // Verify course belongs to organization
         $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($validated['course_id']);
 
@@ -89,15 +99,19 @@ class CourseDocumentController extends Controller
         }
 
         $file = $request->file('file');
-        $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
-        $path = $file->storeAs(
-            'course-documents/' . $profile->organization_id . '/' . $validated['course_id'],
-            $fileName,
-            'local'
+
+        // Store document using FileStorageService (PRIVATE storage for course documents)
+        $path = $this->fileStorageService->storeCourseDocument(
+            $file,
+            $profile->organization_id,
+            $validated['course_id'],
+            $course->school_id ?? null,
+            $validated['document_type']
         );
 
         $document = CourseDocument::create([
             'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
             'course_id' => $validated['course_id'],
             'course_student_id' => $validated['course_student_id'] ?? null,
             'document_type' => $validated['document_type'],
@@ -105,7 +119,7 @@ class CourseDocumentController extends Controller
             'description' => $validated['description'] ?? null,
             'file_name' => $file->getClientOriginalName(),
             'file_path' => $path,
-            'mime_type' => $file->getMimeType(),
+            'mime_type' => $this->fileStorageService->getMimeTypeFromExtension($file->getClientOriginalName()),
             'file_size' => $file->getSize(),
             'uploaded_by' => (string) $user->id,
         ]);
@@ -122,7 +136,10 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $document = CourseDocument::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -142,7 +159,10 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $document = CourseDocument::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -150,14 +170,15 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'Document not found'], 404);
         }
 
-        if (!Storage::disk('local')->exists($document->file_path)) {
+        // Check if file exists using FileStorageService
+        if (!$this->fileStorageService->fileExists($document->file_path)) {
             return response()->json(['error' => 'File not found on storage'], 404);
         }
 
-        return Storage::disk('local')->download(
+        // Download file using FileStorageService
+        return $this->fileStorageService->downloadFile(
             $document->file_path,
-            $document->file_name,
-            ['Content-Type' => $document->mime_type]
+            $document->file_name
         );
     }
 
@@ -170,6 +191,8 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_documents.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -179,6 +202,7 @@ class CourseDocumentController extends Controller
         }
 
         $document = CourseDocument::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -186,9 +210,9 @@ class CourseDocumentController extends Controller
             return response()->json(['error' => 'Document not found'], 404);
         }
 
-        // Delete file from storage
-        if (Storage::disk('local')->exists($document->file_path)) {
-            Storage::disk('local')->delete($document->file_path);
+        // Delete file from storage using FileStorageService
+        if ($document->file_path) {
+            $this->fileStorageService->deleteFile($document->file_path);
         }
 
         $document->delete();

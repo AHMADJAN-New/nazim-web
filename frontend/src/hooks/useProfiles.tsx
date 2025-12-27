@@ -111,6 +111,8 @@ export const useUpdateProfile = () => {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
       queryClient.invalidateQueries({ queryKey: ['auth', 'profile'] });
+      // School switch affects almost every query; invalidate everything to prevent cross-school stale caches.
+      queryClient.invalidateQueries();
       showToast.success('toast.profileUpdated');
     },
     onError: (error: Error) => {

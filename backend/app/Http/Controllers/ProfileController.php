@@ -120,7 +120,7 @@ class ProfileController extends Controller
             'role' => 'sometimes|string|in:admin,teacher,staff,student,parent',
             'is_active' => 'sometimes|boolean',
             'organization_id' => 'nullable|uuid|exists:organizations,id',
-            'default_school_id' => 'nullable|uuid|exists:schools,id',
+            'default_school_id' => 'nullable|uuid|exists:school_branding,id',
         ]);
 
         $user = $request->user();
@@ -194,6 +194,17 @@ class ProfileController extends Controller
         }
 
         if ($request->has('default_school_id')) {
+            // Only allow setting default_school_id within user's organization
+            if ($request->default_school_id) {
+                $belongs = DB::table('school_branding')
+                    ->where('id', $request->default_school_id)
+                    ->where('organization_id', $currentProfile->organization_id)
+                    ->whereNull('deleted_at')
+                    ->exists();
+                if (!$belongs) {
+                    return response()->json(['error' => 'Invalid default school for this organization'], 403);
+                }
+            }
             $updateData['default_school_id'] = $request->default_school_id;
         }
 

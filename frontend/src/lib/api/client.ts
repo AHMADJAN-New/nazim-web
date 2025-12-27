@@ -24,6 +24,7 @@ export interface Profile {
   avatar_url: string | null;
   is_active: boolean;
   default_school_id: string | null;
+  schools_access_all?: boolean;
 }
 
 interface RequestOptions extends RequestInit {
@@ -109,6 +110,26 @@ class ApiClient {
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<T> {
+    // For users with schools_access_all, automatically add school_id query parameter
+    // if it's stored in localStorage (set by SchoolContext)
+    // This allows users to switch schools and see data from the selected school
+    if (typeof window !== 'undefined' && !options.params?.school_id) {
+      // Check if user has schools_access_all permission (stored in localStorage by SchoolContext)
+      const hasSchoolsAccessAll = localStorage.getItem('has_schools_access_all') === 'true';
+      const selectedSchoolId = localStorage.getItem('selected_school_id');
+      
+      // Only add school_id if user has schools_access_all permission
+      // For other users, the backend middleware will use their default_school_id
+      if (hasSchoolsAccessAll && selectedSchoolId) {
+        // Add school_id to params if not already present
+        if (!options.params) {
+          options.params = {};
+        }
+        if (!options.params.school_id) {
+          options.params.school_id = selectedSchoolId;
+        }
+      }
+    }
     const { params, ...fetchOptions } = options;
     const url = this.buildUrl(endpoint, params);
 
@@ -1558,8 +1579,8 @@ export const studentsApi = {
     return apiClient.get('/students/stats', params);
   },
 
-  autocomplete: async () => {
-    return apiClient.get('/students/autocomplete');
+  autocomplete: async (params?: { organization_id?: string; school_id?: string }) => {
+    return apiClient.get('/students/autocomplete', params);
   },
 
   checkDuplicates: async (data: {

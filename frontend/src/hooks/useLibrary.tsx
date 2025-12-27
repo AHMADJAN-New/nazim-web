@@ -16,7 +16,7 @@ export const useLibraryBooks = (usePaginated?: boolean, search?: string) => {
   });
 
   const { data, isLoading, error } = useQuery<LibraryBook[] | PaginatedResponse<LibraryBook>>({
-    queryKey: ['library-books', profile?.organization_id, usePaginated ? page : undefined, usePaginated ? pageSize : undefined, search],
+    queryKey: ['library-books', profile?.organization_id, profile?.default_school_id ?? null, usePaginated ? page : undefined, usePaginated ? pageSize : undefined, search],
     queryFn: async () => {
       if (!user || !profile) {
         return [];
@@ -178,7 +178,7 @@ export const useLibraryLoans = (openOnly?: boolean) => {
   const isEventUser = profile?.is_event_user === true;
   
   return useQuery<LibraryLoan[]>({
-    queryKey: ['library-loans', openOnly],
+    queryKey: ['library-loans', openOnly, profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user) return [];
       return libraryLoansApi.list({ open_only: openOnly });

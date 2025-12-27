@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Staff;
 use App\Models\StaffDocument;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -11,23 +12,22 @@ use Illuminate\Support\Facades\Storage;
 
 class StaffDocumentController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
     /**
      * Display a listing of documents for a staff member
      */
-    public function index(string $staffId)
+    public function index(Request $request, string $staffId)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $staff = Staff::whereNull('deleted_at')->find($staffId);
-
-        if (!$staff) {
-            return response()->json(['error' => 'Staff member not found'], 404);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Require organization_id for all users
         if (!$profile->organization_id) {
@@ -44,12 +44,18 @@ class StaffDocumentController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Check organization access (user's organization only)
-        if ($staff->organization_id !== $profile->organization_id) {
+        $staff = Staff::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($staffId);
+
+        if (!$staff) {
             return response()->json(['error' => 'Staff member not found'], 404);
         }
 
         $documents = StaffDocument::where('staff_id', $staffId)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -69,11 +75,7 @@ class StaffDocumentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $staff = Staff::whereNull('deleted_at')->find($staffId);
-
-        if (!$staff) {
-            return response()->json(['error' => 'Staff member not found'], 404);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Require organization_id for all users
         if (!$profile->organization_id) {
@@ -82,7 +84,7 @@ class StaffDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_documents.read')) {
+            if (!$user->hasPermissionTo('staff_documents.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -90,9 +92,13 @@ class StaffDocumentController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Check organization access (user's organization only)
-        if ($staff->organization_id !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot upload document for staff from different organization'], 403);
+        $staff = Staff::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($staffId);
+
+        if (!$staff) {
+            return response()->json(['error' => 'Staff member not found'], 404);
         }
 
         $request->validate([
@@ -102,36 +108,36 @@ class StaffDocumentController extends Controller
         ]);
 
         $file = $request->file('file');
-        $fileExt = $file->getClientOriginalExtension();
-        $fileName = time() . '.' . $fileExt;
-        
-        // Build path: {organization_id}/{school_id}/{staff_id}/documents/{document_type}/{filename}
-        $schoolPath = $staff->school_id ? "{$staff->school_id}/" : '';
-        $filePath = "{$staff->organization_id}/{$schoolPath}{$staff->id}/documents/{$request->document_type}/{$fileName}";
 
-        // Store file
-        $storedPath = $file->storeAs('staff-files', $filePath, 'public');
+        // Store document using FileStorageService (PRIVATE storage for staff documents)
+        $filePath = $this->fileStorageService->storeStaffDocument(
+            $file,
+            $staff->organization_id,
+            $staffId,
+            $staff->school_id,
+            $request->document_type
+        );
 
         // Create document record
         $document = StaffDocument::create([
             'staff_id' => $staff->id,
             'organization_id' => $staff->organization_id,
-            'school_id' => $staff->school_id,
+            'school_id' => $currentSchoolId,
             'document_type' => $request->document_type,
             'file_name' => $file->getClientOriginalName(),
             'file_path' => $filePath,
             'file_size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
+            'mime_type' => $this->fileStorageService->getMimeTypeFromExtension($file->getClientOriginalName()),
             'description' => $request->description ?? null,
             'uploaded_by' => $user->id,
         ]);
 
-        // Return public URL
-        $publicUrl = Storage::disk('public')->url($storedPath);
+        // Return download URL for private file
+        $downloadUrl = $this->fileStorageService->getPrivateDownloadUrl($filePath);
 
         return response()->json([
             'document' => $document,
-            'url' => $publicUrl,
+            'download_url' => $downloadUrl,
         ], 201);
     }
 
@@ -147,11 +153,7 @@ class StaffDocumentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
-        $document = StaffDocument::whereNull('deleted_at')->find($id);
-
-        if (!$document) {
-            return response()->json(['error' => 'Document not found'], 404);
-        }
+        $currentSchoolId = $this->getCurrentSchoolId(request());
 
         // Require organization_id for all users
         if (!$profile->organization_id) {
@@ -160,7 +162,7 @@ class StaffDocumentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('staff_documents.read')) {
+            if (!$user->hasPermissionTo('staff_documents.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -168,21 +170,24 @@ class StaffDocumentController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
+        $document = StaffDocument::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
-        // Check organization access
-        if (!in_array($document->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot delete document from different organization'], 403);
+        if (!$document) {
+            return response()->json(['error' => 'Document not found'], 404);
+        }
+
+        // Delete file from storage using FileStorageService
+        if ($document->file_path) {
+            $this->fileStorageService->deleteFile($document->file_path);
         }
 
         // Soft delete
-        $document->update(['deleted_at' => now()]);
+        $document->delete();
 
-        // Optionally delete the file from storage
-        // Storage::disk('public')->delete($document->file_path);
-
-        return response()->json(['message' => 'Document deleted successfully']);
+        return response()->noContent();
     }
 }
 

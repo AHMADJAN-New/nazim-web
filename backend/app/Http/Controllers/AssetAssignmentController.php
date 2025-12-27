@@ -22,7 +22,10 @@ class AssetAssignmentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $assetId)
             ->first();
 
@@ -47,7 +50,8 @@ class AssetAssignmentController extends Controller
         }
 
         $query = AssetAssignment::where('asset_id', $assetId)
-            ->where('organization_id', $profile->organization_id);
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         if (Schema::hasTable('asset_copies') && Schema::hasColumn('asset_assignments', 'asset_copy_id')) {
             $query->with(['assetCopy']);
@@ -68,6 +72,7 @@ class AssetAssignmentController extends Controller
         }
 
         $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->where('id', $assetId)
             ->first();
 
@@ -93,7 +98,9 @@ class AssetAssignmentController extends Controller
 
         $data = $request->validated();
 
-        if (!$this->validateAssignee($data['assigned_to_type'], $data['assigned_to_id'], $profile->organization_id)) {
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        if (!$this->validateAssignee($data['assigned_to_type'], $data['assigned_to_id'], $profile->organization_id, $currentSchoolId)) {
             return response()->json(['error' => 'Assignee is not valid for this organization'], 422);
         }
 
@@ -104,6 +111,7 @@ class AssetAssignmentController extends Controller
             // Find an available copy to assign
             $availableCopy = AssetCopy::where('asset_id', $assetId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('status', 'available')
                 ->whereNull('deleted_at')
                 ->first();
@@ -116,6 +124,7 @@ class AssetAssignmentController extends Controller
                 'asset_id' => $assetId,
                 'asset_copy_id' => $availableCopy->id,
                 'organization_id' => $profile->organization_id,
+                'school_id' => $currentSchoolId,
                 'assigned_to_type' => $data['assigned_to_type'],
                 'assigned_to_id' => $data['assigned_to_id'] ?? null,
                 'assigned_on' => $data['assigned_on'] ?? now()->toDateString(),
@@ -135,6 +144,7 @@ class AssetAssignmentController extends Controller
             $assignment = AssetAssignment::create([
                 'asset_id' => $assetId,
                 'organization_id' => $profile->organization_id,
+                'school_id' => $currentSchoolId,
                 'assigned_to_type' => $data['assigned_to_type'],
                 'assigned_to_id' => $data['assigned_to_id'] ?? null,
                 'assigned_on' => $data['assigned_on'] ?? now()->toDateString(),
@@ -176,7 +186,10 @@ class AssetAssignmentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $assignment = AssetAssignment::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $assignmentId)
             ->first();
 
@@ -185,6 +198,7 @@ class AssetAssignmentController extends Controller
         }
 
         $asset = Asset::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $assignment->asset_id)
             ->first();
 
@@ -267,7 +281,10 @@ class AssetAssignmentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         $assignment = AssetAssignment::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $assignmentId)
             ->first();
 
@@ -305,6 +322,7 @@ class AssetAssignmentController extends Controller
         if ($hasCopiesTable && $hasCopyIdColumn && $copyId) {
             $copy = AssetCopy::where('id', $copyId)
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->first();
 
             if ($copy) {
@@ -336,10 +354,10 @@ class AssetAssignmentController extends Controller
             }
         }
 
-        return response()->json(['message' => 'Assignment removed']);
+        return response()->noContent();
     }
 
-    private function validateAssignee(string $type, ?string $id, string $organizationId): bool
+    private function validateAssignee(string $type, ?string $id, string $organizationId, string $currentSchoolId): bool
     {
         if ($type === 'other') {
             return true;
@@ -353,6 +371,7 @@ class AssetAssignmentController extends Controller
             return DB::table('staff')
                 ->where('id', $id)
                 ->where('organization_id', $organizationId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->exists();
         }
@@ -361,6 +380,7 @@ class AssetAssignmentController extends Controller
             return DB::table('students')
                 ->where('id', $id)
                 ->where('organization_id', $organizationId)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->exists();
         }
@@ -374,6 +394,7 @@ class AssetAssignmentController extends Controller
             return DB::table('school_branding')
                 ->where('id', $room->school_id)
                 ->where('organization_id', $organizationId)
+                ->where('id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->exists();
         }

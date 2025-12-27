@@ -8,7 +8,7 @@ export const useLibraryCategories = () => {
   const { user, profile } = useAuth();
 
   return useQuery<LibraryCategory[]>({
-    queryKey: ['library-categories', profile?.organization_id],
+    queryKey: ['library-categories', profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !profile.organization_id) return [];
 

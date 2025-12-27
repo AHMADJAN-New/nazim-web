@@ -118,6 +118,7 @@ class FeeAssignmentSeeder extends Seeder
     {
         $query = StudentAdmission::whereNull('deleted_at')
             ->where('organization_id', $feeStructure->organization_id)
+            ->where('school_id', $feeStructure->school_id)
             ->where('academic_year_id', $feeStructure->academic_year_id);
 
         // Match by class_academic_year_id if available

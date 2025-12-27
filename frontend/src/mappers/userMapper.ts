@@ -17,6 +17,7 @@ export function mapUserProfileApiToDomain(api: UserApi.UserProfile): UserProfile
     staffId: api.staff_id,
     phone: api.phone,
     avatar: api.avatar,
+    schoolsAccessAll: api.schools_access_all ?? false,
     isActive: api.is_active,
     createdAt: new Date(api.created_at),
     updatedAt: new Date(api.updated_at),
@@ -60,6 +61,7 @@ export function mapUpdateUserDataDomainToApi(domain: UpdateUserData): UserApi.Up
   if (domain.organizationId !== undefined) update.organization_id = domain.organizationId;
   if (domain.defaultSchoolId !== undefined) update.default_school_id = domain.defaultSchoolId;
   if (domain.staffId !== undefined) update.staff_id = domain.staffId;
+  if (domain.schoolsAccessAll !== undefined) update.schools_access_all = domain.schoolsAccessAll;
   if (domain.phone !== undefined) update.phone = domain.phone;
   if (domain.isActive !== undefined) update.is_active = domain.isActive;
   

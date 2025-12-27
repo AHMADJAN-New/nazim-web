@@ -32,7 +32,7 @@ export const useExamStudentsWithNumbers = (
   const { user, profile } = useAuth();
 
   return useQuery<StudentsWithNumbersResponse | null>({
-    queryKey: ['exam-students-with-numbers', examId, examClassId, profile?.organization_id],
+    queryKey: ['exam-students-with-numbers', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       const params: { exam_class_id?: string } = {};
@@ -55,7 +55,7 @@ export const useRollNumberStartFrom = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<string>({
-    queryKey: ['roll-number-start-from', examId, profile?.organization_id],
+    queryKey: ['roll-number-start-from', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return '1001';
       const response = await examsApi.rollNumberStartFrom(examId);
@@ -173,7 +173,7 @@ export const useSecretNumberStartFrom = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<string>({
-    queryKey: ['secret-number-start-from', examId, profile?.organization_id],
+    queryKey: ['secret-number-start-from', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return '1';
       const response = await examsApi.secretNumberStartFrom(examId);
@@ -308,7 +308,7 @@ export const useRollNumberReport = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<RollNumberReportResponse | null>({
-    queryKey: ['roll-number-report', examId, examClassId, profile?.organization_id],
+    queryKey: ['roll-number-report', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       const params: { exam_class_id?: string } = {};
@@ -328,7 +328,7 @@ export const useRollSlipsHtml = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<RollSlipsHtmlResponse | null>({
-    queryKey: ['roll-slips-html', examId, examClassId, profile?.organization_id],
+    queryKey: ['roll-slips-html', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       const params: { exam_class_id?: string } = {};
@@ -361,7 +361,7 @@ export const useSecretLabelsHtml = (
   const { user, profile } = useAuth();
 
   return useQuery<SecretLabelsHtmlResponse | null>({
-    queryKey: ['secret-labels-html', examId, examClassId, subjectId, profile?.organization_id],
+    queryKey: ['secret-labels-html', examId, examClassId, subjectId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       const params: { exam_class_id?: string; subject_id?: string } = {};

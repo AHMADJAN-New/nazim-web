@@ -36,6 +36,8 @@ class TeacherSubjectAssignmentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -68,16 +70,10 @@ class TeacherSubjectAssignmentController extends Controller
             'organization:id,name',
         ])
             ->whereNull('deleted_at')
-            ->whereIn('organization_id', $orgIds);
+            ->whereIn('organization_id', $orgIds)
+            ->where('school_id', $currentSchoolId);
 
-        // Apply filters
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where('organization_id', $request->organization_id);
-            } else {
-                return response()->json([]);
-            }
-        }
+        // Client-provided organization_id is ignored; organization is derived from profile.
 
         if ($request->has('teacher_id') && $request->teacher_id) {
             $query->where('teacher_id', $request->teacher_id);
@@ -122,6 +118,8 @@ class TeacherSubjectAssignmentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -148,6 +146,7 @@ class TeacherSubjectAssignmentController extends Controller
             'organization:id,name',
         ])
             ->whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$assignment) {
@@ -175,6 +174,8 @@ class TeacherSubjectAssignmentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -182,7 +183,7 @@ class TeacherSubjectAssignmentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('teacher_subject_assignments.read')) {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -192,23 +193,8 @@ class TeacherSubjectAssignmentController extends Controller
 
         $orgIds = $this->getAccessibleOrgIds($profile);
 
-        // Get organization_id from request or class_academic_year
-        $organizationId = $request->organization_id;
-        if (!$organizationId) {
-            // Get from class_academic_year
-            $classAcademicYear = DB::table('class_academic_years')
-                ->where('id', $request->class_academic_year_id)
-                ->whereNull('deleted_at')
-                ->first();
-
-            if ($classAcademicYear) {
-                $organizationId = $classAcademicYear->organization_id;
-            }
-        }
-
-        if (!$organizationId) {
-            return response()->json(['error' => 'Organization ID is required'], 422);
-        }
+        // Strict scoping: organization comes from profile
+        $organizationId = $profile->organization_id;
 
         // Validate organization access
         if (!in_array($organizationId, $orgIds)) {
@@ -217,6 +203,12 @@ class TeacherSubjectAssignmentController extends Controller
 
         $validated = $request->validated();
         $validated['organization_id'] = $organizationId;
+        $validated['school_id'] = $currentSchoolId;
+
+        // Never trust client-provided school_id
+        if (array_key_exists('school_id', $validated)) {
+            $validated['school_id'] = $currentSchoolId;
+        }
 
         // Ensure schedule_slot_ids is an array
         if (isset($validated['schedule_slot_ids']) && !is_array($validated['schedule_slot_ids'])) {
@@ -257,6 +249,8 @@ class TeacherSubjectAssignmentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -264,7 +258,7 @@ class TeacherSubjectAssignmentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('teacher_subject_assignments.read')) {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -272,7 +266,9 @@ class TeacherSubjectAssignmentController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $assignment = TeacherSubjectAssignment::whereNull('deleted_at')->find($id);
+        $assignment = TeacherSubjectAssignment::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$assignment) {
             return response()->json(['error' => 'Teacher subject assignment not found'], 404);
@@ -285,6 +281,7 @@ class TeacherSubjectAssignmentController extends Controller
         }
 
         $validated = $request->validated();
+        unset($validated['organization_id'], $validated['school_id']);
 
         // Ensure schedule_slot_ids is an array if provided
         if (isset($validated['schedule_slot_ids']) && !is_array($validated['schedule_slot_ids'])) {
@@ -325,6 +322,8 @@ class TeacherSubjectAssignmentController extends Controller
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         // Require organization_id for all users
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
@@ -332,7 +331,7 @@ class TeacherSubjectAssignmentController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('teacher_subject_assignments.read')) {
+            if (!$user->hasPermissionTo('teacher_subject_assignments.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -340,7 +339,9 @@ class TeacherSubjectAssignmentController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $assignment = TeacherSubjectAssignment::whereNull('deleted_at')->find($id);
+        $assignment = TeacherSubjectAssignment::whereNull('deleted_at')
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$assignment) {
             return response()->json(['error' => 'Teacher subject assignment not found'], 404);
@@ -355,7 +356,7 @@ class TeacherSubjectAssignmentController extends Controller
         try {
             $assignment->delete(); // Soft delete
 
-            return response()->json(['message' => 'Teacher subject assignment deleted successfully']);
+            return response()->noContent();
         } catch (\Exception $e) {
             Log::error('Error deleting teacher subject assignment: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to delete teacher subject assignment'], 500);

@@ -42,33 +42,10 @@ class ClassController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        $query = ClassModel::whereNull('deleted_at');
-
-        // Filter by organization (include global classes where organization_id IS NULL)
-        if ($request->has('organization_id') && $request->organization_id) {
-            if (in_array($request->organization_id, $orgIds)) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('organization_id', $request->organization_id)
-                      ->orWhereNull('organization_id'); // Include global classes
-                });
-            } else {
-                return response()->json([]);
-            }
-        } else {
-            // Show user's org classes + global classes
-            if (!empty($orgIds)) {
-                $query->where(function ($q) use ($orgIds) {
-                    $q->whereIn('organization_id', $orgIds)
-                      ->orWhereNull('organization_id'); // Include global classes
-                });
-            } else {
-                // No org access, only show global classes
-                $query->whereNull('organization_id');
-            }
-        }
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $query = ClassModel::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId);
 
         // Support pagination if page and per_page parameters are provided
         if ($request->has('page') || $request->has('per_page')) {
@@ -114,7 +91,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.read')) {
+            if (!$user->hasPermissionTo('classes.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -122,13 +99,8 @@ class ClassController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        // Get organization_id - use provided or user's org
-        $organizationId = $request->organization_id ?? $profile->organization_id;
-
-        // Validate organization access (all users)
-        if ($organizationId !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot create class for different organization'], 403);
-        }
+        $organizationId = $profile->organization_id;
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $class = ClassModel::create([
             'name' => $request->name,
@@ -138,6 +110,7 @@ class ClassController extends Controller
             'default_capacity' => $request->default_capacity ?? 30,
             'is_active' => $request->is_active ?? true,
             'organization_id' => $organizationId,
+            'school_id' => $currentSchoolId,
         ]);
 
         return response()->json($class, 201);
@@ -146,9 +119,9 @@ class ClassController extends Controller
     /**
      * Display the specified class
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
@@ -170,7 +143,11 @@ class ClassController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $class = ClassModel::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $class = ClassModel::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$class) {
             return response()->json(['error' => 'Class not found'], 404);
@@ -181,13 +158,7 @@ class ClassController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        // Check organization access (allow global classes)
-        if ($class->organization_id !== null && !in_array($class->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Class not found'], 404);
-        }
+        // Org access enforced by organization middleware + school scope.
 
         return response()->json($class);
     }
@@ -211,7 +182,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.read')) {
+            if (!$user->hasPermissionTo('classes.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -219,7 +190,11 @@ class ClassController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $class = ClassModel::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $class = ClassModel::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$class) {
             return response()->json(['error' => 'Class not found'], 404);
@@ -230,17 +205,9 @@ class ClassController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        // Check organization access (all users)
-        if ($class->organization_id !== null && !in_array($class->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot update class from different organization'], 403);
-        }
-
-        // Prevent organization_id changes (all users)
-        if ($request->has('organization_id')) {
-            return response()->json(['error' => 'Cannot change organization_id'], 403);
+        // Prevent scope changes
+        if ($request->has('organization_id') || $request->has('school_id')) {
+            return response()->json(['error' => 'Cannot change scope fields'], 403);
         }
 
         $class->update($request->only([
@@ -274,7 +241,7 @@ class ClassController extends Controller
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('classes.read')) {
+            if (!$user->hasPermissionTo('classes.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
@@ -282,29 +249,19 @@ class ClassController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $class = ClassModel::whereNull('deleted_at')->find($id);
+        $currentSchoolId = request()->get('current_school_id');
+        $class = ClassModel::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$class) {
             return response()->json(['error' => 'Class not found'], 404);
         }
 
-        // Get accessible organization IDs
-        $orgIds = [];
-        // Require organization_id for all users
-        if (!$profile->organization_id) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
-        }
-
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        // Check organization access (all users)
-        if ($class->organization_id !== null && !in_array($class->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot delete class from different organization'], 403);
-        }
-
         // Check if class is in use (has active class_academic_years)
         $activeInstances = ClassAcademicYear::where('class_id', $id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->exists();
 
@@ -315,7 +272,7 @@ class ClassController extends Controller
         // Soft delete
         $class->delete();
 
-        return response()->json(['message' => 'Class deleted successfully']);
+        return response()->noContent();
     }
 
     /**
@@ -374,7 +331,11 @@ class ClassController extends Controller
         }
 
         // Get class to determine organization_id
-        $classModel = ClassModel::whereNull('deleted_at')->find($classId);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $classModel = ClassModel::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($classId);
         if (!$classModel) {
             return response()->json(['error' => 'Class not found'], 404);
         }
@@ -382,32 +343,20 @@ class ClassController extends Controller
         // Get academic year to verify organization_id matches
         $academicYear = DB::table('academic_years')
             ->where('id', $request->academic_year_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
         if (!$academicYear) {
             return response()->json(['error' => 'Academic year not found'], 404);
         }
 
-        // Determine organization_id (prefer class's, fallback to academic year's)
-        $organizationId = $classModel->organization_id ?? $academicYear->organization_id;
-
-        // Validate organization access
-        // Require organization_id for all users
-        if (!$profile->organization_id) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
-        }
-
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        if ($organizationId !== null && !in_array($organizationId, $orgIds)) {
-            return response()->json(['error' => 'Cannot assign class to academic year from different organization'], 403);
-        }
+        $organizationId = $profile->organization_id;
 
         // Check for duplicate (same class, year, and section)
         $sectionKey = $request->section_name ?: '';
         $existing = ClassAcademicYear::where('class_id', $classId)
             ->where('academic_year_id', $request->academic_year_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->where(function ($q) use ($sectionKey) {
                 if ($sectionKey === '') {
@@ -439,6 +388,7 @@ class ClassController extends Controller
             'class_id' => $classId,
             'academic_year_id' => $request->academic_year_id,
             'organization_id' => $organizationId,
+            'school_id' => $currentSchoolId,
             'section_name' => $request->section_name ?: null,
             'room_id' => $roomId,
             'teacher_id' => $teacherId,
@@ -468,7 +418,11 @@ class ClassController extends Controller
 
 
         // Get class to determine organization_id
-        $class = ClassModel::whereNull('deleted_at')->find($request->class_id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $class = ClassModel::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($request->class_id);
         if (!$class) {
             return response()->json(['error' => 'Class not found'], 404);
         }
@@ -476,31 +430,19 @@ class ClassController extends Controller
         // Get academic year
         $academicYear = DB::table('academic_years')
             ->where('id', $request->academic_year_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
         if (!$academicYear) {
             return response()->json(['error' => 'Academic year not found'], 404);
         }
 
-        // Determine organization_id
-        $organizationId = $class->organization_id ?? $academicYear->organization_id;
-
-        // Validate organization access
-        // Require organization_id for all users
-        if (!$profile->organization_id) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
-        }
-
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        if ($organizationId !== null && !in_array($organizationId, $orgIds)) {
-            return response()->json(['error' => 'Cannot assign class to academic year from different organization'], 403);
-        }
+        $organizationId = $profile->organization_id;
 
         // Check for existing sections
         $existingInstances = ClassAcademicYear::where('class_id', $request->class_id)
             ->where('academic_year_id', $request->academic_year_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
@@ -533,6 +475,7 @@ class ClassController extends Controller
                 'class_id' => $request->class_id,
                 'academic_year_id' => $request->academic_year_id,
                 'organization_id' => $organizationId,
+                'school_id' => $request->get('current_school_id'),
                 'section_name' => trim($section) ?: null,
                 'room_id' => $roomId,
                 'capacity' => $request->default_capacity ?? $class->default_capacity,
@@ -546,6 +489,7 @@ class ClassController extends Controller
 
         $created = ClassAcademicYear::where('class_id', $request->class_id)
             ->where('academic_year_id', $request->academic_year_id)
+            ->where('school_id', $currentSchoolId)
             ->whereIn('section_name', array_map('trim', $newSections))
             ->whereNull('deleted_at')
             ->get();
@@ -592,29 +536,23 @@ class ClassController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        $instance = ClassAcademicYear::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $instance = ClassAcademicYear::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
         if (!$instance) {
             return response()->json(['error' => 'Class instance not found'], 404);
         }
 
-        // Validate organization access
-        // Require organization_id for all users
-        if (!$profile->organization_id) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
-        }
-
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        if ($instance->organization_id !== null && !in_array($instance->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot update class instance from different organization'], 403);
-        }
+        // Org access enforced by organization middleware + school scope.
 
         // Check for duplicate section if section_name is being updated
         if ($request->has('section_name')) {
             $sectionKey = $request->section_name ?: '';
             $existing = ClassAcademicYear::where('class_id', $instance->class_id)
                 ->where('academic_year_id', $instance->academic_year_id)
+                ->where('school_id', $currentSchoolId)
                 ->where('id', '!=', $id)
                 ->whereNull('deleted_at')
                 ->where(function ($q) use ($sectionKey) {
@@ -672,22 +610,16 @@ class ClassController extends Controller
         }
 
 
-        $instance = ClassAcademicYear::whereNull('deleted_at')->find($id);
+        $currentSchoolId = request()->get('current_school_id');
+        $instance = ClassAcademicYear::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
         if (!$instance) {
             return response()->json(['error' => 'Class instance not found'], 404);
         }
 
-        // Require organization_id for all users
-        if (!$profile->organization_id) {
-            return response()->json(['error' => 'User must be assigned to an organization'], 403);
-        }
-
-        // Get accessible organization IDs (user's organization only)
-        $orgIds = [$profile->organization_id];
-
-        if ($instance->organization_id !== null && !in_array($instance->organization_id, $orgIds)) {
-            return response()->json(['error' => 'Cannot remove class instance from different organization'], 403);
-        }
+        // Org access enforced by organization middleware + school scope.
 
         // Check if there are enrolled students
         if ($instance->current_student_count > 0) {
@@ -697,7 +629,7 @@ class ClassController extends Controller
         // Soft delete
         $instance->delete();
 
-        return response()->json(['message' => 'Class removed from academic year successfully']);
+        return response()->noContent();
     }
 
     /**
@@ -728,7 +660,9 @@ class ClassController extends Controller
         }
 
         // Get all class instances to copy
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $sourceInstances = ClassAcademicYear::where('academic_year_id', $request->from_academic_year_id)
+            ->where('school_id', $currentSchoolId)
             ->whereIn('id', $request->class_instance_ids)
             ->whereNull('deleted_at')
             ->get();
@@ -745,6 +679,7 @@ class ClassController extends Controller
             // Check for duplicates before inserting
             $existing = ClassAcademicYear::where('class_id', $instance->class_id)
                 ->where('academic_year_id', $request->to_academic_year_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->where(function ($q) use ($sectionKey) {
                     if ($sectionKey === '') {
@@ -764,6 +699,7 @@ class ClassController extends Controller
                 'class_id' => $instance->class_id,
                 'academic_year_id' => $request->to_academic_year_id,
                 'organization_id' => $instance->organization_id,
+                'school_id' => $currentSchoolId,
                 'section_name' => $instance->section_name,
                 'capacity' => $instance->capacity,
                 'notes' => $instance->notes,
@@ -788,6 +724,7 @@ class ClassController extends Controller
         ClassAcademicYear::insert($newInstances);
 
         $created = ClassAcademicYear::where('academic_year_id', $request->to_academic_year_id)
+            ->where('school_id', $currentSchoolId)
             ->whereIn('class_id', array_column($newInstances, 'class_id'))
             ->whereNull('deleted_at')
             ->get();
@@ -814,8 +751,10 @@ class ClassController extends Controller
         }
 
         // Get instances first (without JOIN to avoid UUID parsing errors with corrupted data)
+        $currentSchoolId = request()->get('current_school_id');
         $instances = DB::table('class_academic_years')
             ->where('class_id', $class)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->get();
 
@@ -826,6 +765,7 @@ class ClassController extends Controller
         // Load class data separately
         $classData = DB::table('classes')
             ->where('id', $class)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -839,6 +779,7 @@ class ClassController extends Controller
         if ($academicYearIds->isNotEmpty()) {
             $academicYears = DB::table('academic_years')
                 ->whereIn('id', $academicYearIds)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->get()
                 ->keyBy('id');
@@ -850,6 +791,7 @@ class ClassController extends Controller
         if ($roomIds->isNotEmpty()) {
             $rooms = DB::table('rooms')
                 ->whereIn('id', $roomIds)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->get()
                 ->keyBy('id');
@@ -925,18 +867,18 @@ class ClassController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = request()->get('current_school_id');
         $classAcademicYear = ClassAcademicYear::with(['class', 'academicYear', 'teacher', 'room'])
             ->whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$classAcademicYear) {
             return response()->json(['error' => 'Class academic year not found'], 404);
         }
 
-        // Check organization access
-        if ($classAcademicYear->organization_id !== $profile->organization_id) {
-            return response()->json(['error' => 'Access denied to this class academic year'], 403);
-        }
+        // Org access enforced by query.
 
         return response()->json($classAcademicYear);
     }
@@ -967,6 +909,7 @@ class ClassController extends Controller
             // Verify academic year exists
             $academicYear = DB::table('academic_years')
                 ->where('id', $request->academic_year_id)
+                ->where('school_id', $this->getCurrentSchoolId($request))
                 ->whereNull('deleted_at')
                 ->first();
 
@@ -980,6 +923,7 @@ class ClassController extends Controller
             }
 
             $orgIds = [$profile->organization_id];
+            $currentSchoolId = $this->getCurrentSchoolId($request);
 
             // Use raw SQL to filter out invalid UUIDs at database level
             // CRITICAL: Wrap in try-catch and use a subquery approach to safely filter invalid UUIDs
@@ -988,6 +932,7 @@ class ClassController extends Controller
                 // First, get all instances without filtering class_id (to avoid UUID parsing errors)
                 $allInstances = DB::table('class_academic_years')
                     ->where('academic_year_id', $request->academic_year_id)
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->get();
 
@@ -1001,19 +946,10 @@ class ClassController extends Controller
                 });
 
                 // Filter by organization
-                if ($request->has('organization_id') && $request->organization_id) {
-                    if (in_array($request->organization_id, $orgIds)) {
-                        $instances = $instances->filter(function($instance) use ($request) {
-                            return $instance->organization_id === $request->organization_id || $instance->organization_id === null;
-                        });
-                    } else {
-                        return response()->json([]);
-                    }
-                } else {
-                    $instances = $instances->filter(function($instance) use ($orgIds) {
-                        return in_array($instance->organization_id, $orgIds) || $instance->organization_id === null;
-                    });
-                }
+                // Strict school scope: ignore org filter and disallow global instances
+                $instances = $instances->filter(function ($instance) use ($orgIds) {
+                    return in_array($instance->organization_id, $orgIds, true);
+                });
 
                 // Sort by section_name
                 $instances = $instances->sortBy('section_name')->values();
@@ -1047,6 +983,7 @@ class ClassController extends Controller
             try {
                 $classes = DB::table('classes')
                     ->whereIn('id', $classIds->toArray())
+                    ->where('school_id', $currentSchoolId)
                     ->whereNull('deleted_at')
                     ->get()
                     ->keyBy('id');

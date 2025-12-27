@@ -474,9 +474,7 @@ class GraduationBatchService
         }
 
         $template = CertificateTemplate::where('organization_id', $organizationId)
-            ->where(function ($query) use ($schoolId) {
-                $query->whereNull('school_id')->orWhere('school_id', $schoolId);
-            })
+            ->where('school_id', $schoolId)
             ->whereNull('deleted_at')
             ->where('is_active', true)
             ->find($templateId);

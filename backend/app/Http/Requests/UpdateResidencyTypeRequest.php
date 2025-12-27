@@ -25,6 +25,7 @@ class UpdateResidencyTypeRequest extends FormRequest
         $residencyTypeId = $this->route('residency-type') ?? $this->route('id');
         $user = $this->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
+        $currentSchoolId = $this->get('current_school_id');
         
         // Get current residency type to determine organization_id
         $currentResidencyType = null;
@@ -35,7 +36,7 @@ class UpdateResidencyTypeRequest extends FormRequest
                 ->first();
         }
         
-        $organizationId = $this->input('organization_id', $currentResidencyType->organization_id ?? $profile->organization_id ?? null);
+        $organizationId = $profile->organization_id ?? ($currentResidencyType->organization_id ?? null);
 
         return [
             'name' => 'sometimes|required|string|max:100',
@@ -44,17 +45,18 @@ class UpdateResidencyTypeRequest extends FormRequest
                 'required',
                 'string',
                 'max:50',
-                function ($attribute, $value, $fail) use ($organizationId, $residencyTypeId) {
-                    if ($value && $organizationId !== null && $residencyTypeId) {
+                function ($attribute, $value, $fail) use ($organizationId, $currentSchoolId, $residencyTypeId) {
+                    if ($value && $organizationId !== null && $currentSchoolId && $residencyTypeId) {
                         $trimmedCode = strtolower(trim($value));
                         $exists = DB::table('residency_types')
                             ->where('code', $trimmedCode)
                             ->where('organization_id', $organizationId)
+                            ->where('school_id', $currentSchoolId)
                             ->where('id', '!=', $residencyTypeId)
                             ->whereNull('deleted_at')
                             ->exists();
                         if ($exists) {
-                            $fail('A residency type with this code already exists for this organization.');
+                            $fail('A residency type with this code already exists for this school.');
                         }
                     }
                 },

@@ -29,6 +29,8 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_students.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -39,6 +41,7 @@ class CourseStudentController extends Controller
         }
 
         $query = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
 
         if ($request->filled('course_id')) {
@@ -78,6 +81,8 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_students.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -89,10 +94,12 @@ class CourseStudentController extends Controller
 
         $validated = $request->validated();
         $validated['organization_id'] = $profile->organization_id;
+        $validated['school_id'] = $currentSchoolId;
 
         // Auto-generate admission number if not provided or empty
         if (empty($validated['admission_no']) || trim($validated['admission_no'] ?? '') === '') {
             $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->find($validated['course_id']);
             
@@ -149,6 +156,8 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_students.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -159,6 +168,7 @@ class CourseStudentController extends Controller
         }
 
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->with(['course', 'mainStudent'])
             ->find($id);
@@ -179,6 +189,8 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_students.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -189,6 +201,7 @@ class CourseStudentController extends Controller
         }
 
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -196,7 +209,9 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'Course student not found'], 404);
         }
 
-        $student->update($request->validated());
+        $payload = $request->validated();
+        unset($payload['organization_id'], $payload['school_id']);
+        $student->update($payload);
 
         return response()->json($student);
     }
@@ -210,6 +225,8 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_students.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -220,6 +237,7 @@ class CourseStudentController extends Controller
         }
 
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -241,6 +259,8 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_students.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -251,6 +271,7 @@ class CourseStudentController extends Controller
         }
 
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -272,6 +293,8 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_students.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -282,6 +305,7 @@ class CourseStudentController extends Controller
         }
 
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -303,6 +327,8 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_students.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -313,6 +339,7 @@ class CourseStudentController extends Controller
         }
 
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -334,6 +361,8 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_students.enroll_from_main')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -345,6 +374,7 @@ class CourseStudentController extends Controller
 
         $validated = $request->validated();
         $course = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($validated['course_id']);
 
@@ -356,6 +386,7 @@ class CourseStudentController extends Controller
 
         foreach ($validated['main_student_ids'] as $mainStudentId) {
             $mainStudent = Student::where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->whereNull('deleted_at')
                 ->find($mainStudentId);
 
@@ -420,6 +451,7 @@ class CourseStudentController extends Controller
             ]);
 
             $data['organization_id'] = $profile->organization_id;
+            $data['school_id'] = $currentSchoolId;
             $data['course_id'] = $course->id;
             $data['main_student_id'] = $mainStudent->id;
             $data['admission_no'] = $this->generateAdmissionNumber($course);
@@ -466,6 +498,8 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_students.copy_to_main')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -476,6 +510,7 @@ class CourseStudentController extends Controller
         }
 
         $student = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -525,6 +560,7 @@ class CourseStudentController extends Controller
         ]);
 
         $data['organization_id'] = $profile->organization_id;
+        $data['school_id'] = $currentSchoolId;
         $data['admission_no'] = $generateNew ? null : $student->admission_no;
 
         $newStudent = Student::create($data);
@@ -549,6 +585,8 @@ class CourseStudentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('course_students.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -567,6 +605,7 @@ class CourseStudentController extends Controller
 
         // Get the existing course student
         $existingStudent = CourseStudent::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -576,6 +615,7 @@ class CourseStudentController extends Controller
 
         // Check if the new course exists
         $newCourse = ShortTermCourse::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at')
             ->find($request->course_id);
 
@@ -609,6 +649,7 @@ class CourseStudentController extends Controller
         // Create new enrollment with same personal info but new course
         $newEnrollmentData = $existingStudent->only([
             'organization_id',
+            'school_id',
             'main_student_id',
             'full_name',
             'father_name',
@@ -636,6 +677,7 @@ class CourseStudentController extends Controller
         ]);
 
         $newEnrollmentData['course_id'] = $request->course_id;
+        $newEnrollmentData['school_id'] = $currentSchoolId;
         $newEnrollmentData['registration_date'] = $request->registration_date ?? now()->toDateString();
         $newEnrollmentData['completion_status'] = 'enrolled';
         $newEnrollmentData['fee_paid'] = $request->fee_paid ?? $existingStudent->fee_paid ?? false;

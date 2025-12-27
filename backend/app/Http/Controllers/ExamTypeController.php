@@ -27,6 +27,9 @@ class ExamTypeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Exam types are organization-scoped configuration, but we still require school context for routes.
+        $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exam_types.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -62,6 +65,8 @@ class ExamTypeController extends Controller
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        $this->getCurrentSchoolId($request);
 
         try {
             if (!$user->hasPermissionTo('exam_types.create')) {
@@ -117,6 +122,8 @@ class ExamTypeController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('exam_types.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -149,6 +156,8 @@ class ExamTypeController extends Controller
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        $this->getCurrentSchoolId($request);
 
         try {
             if (!$user->hasPermissionTo('exam_types.update')) {
@@ -205,6 +214,8 @@ class ExamTypeController extends Controller
         if (!$profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
+
+        $this->getCurrentSchoolId($request);
 
         try {
             if (!$user->hasPermissionTo('exam_types.delete')) {

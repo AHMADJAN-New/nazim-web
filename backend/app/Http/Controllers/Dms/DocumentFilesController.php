@@ -6,13 +6,16 @@ use App\Models\IncomingDocument;
 use App\Models\OutgoingDocument;
 use App\Models\DocumentFile;
 use App\Services\SecurityGateService;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class DocumentFilesController extends BaseDmsController
 {
-    public function __construct(private SecurityGateService $securityGateService)
-    {
+    public function __construct(
+        private SecurityGateService $securityGateService,
+        private FileStorageService $fileStorageService
+    ) {
     }
 
     public function index(Request $request)
@@ -21,7 +24,7 @@ class DocumentFilesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $request->validate([
             'owner_type' => ['required', 'in:incoming,outgoing'],
@@ -29,9 +32,10 @@ class DocumentFilesController extends BaseDmsController
         ]);
 
         // For file listing, allow if user created the document or has clearance
-        $document = $this->resolveOwnerDocument($request->owner_type, $request->owner_id, $profile->organization_id, $schoolIds, $user, true);
+        $document = $this->resolveOwnerDocument($request->owner_type, $request->owner_id, $profile->organization_id, $currentSchoolId, $user, true);
 
         $files = DocumentFile::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('owner_type', $request->owner_type)
             ->where('owner_id', $document->id)
             ->orderByDesc('version')
@@ -51,7 +55,7 @@ class DocumentFilesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $data = $request->validate([
             'owner_type' => ['required', 'in:incoming,outgoing'],
@@ -60,14 +64,22 @@ class DocumentFilesController extends BaseDmsController
             'file' => ['required', 'file'],
         ]);
 
-        $file = $request->file('file');
-        $path = $file->store('document-files');
-
         // For file uploads, allow if user created the document or has clearance
-        $document = $this->resolveOwnerDocument($data['owner_type'], $data['owner_id'], $profile->organization_id, $schoolIds, $user, true);
+        $document = $this->resolveOwnerDocument($data['owner_type'], $data['owner_id'], $profile->organization_id, $currentSchoolId, $user, true);
 
         $tempModel = new DocumentFile(['owner_type' => $data['owner_type'], 'owner_id' => $document->id]);
         $this->authorize('create', $tempModel);
+
+        $file = $request->file('file');
+
+        // Store DMS file using FileStorageService (PRIVATE storage, school-scoped)
+        $path = $this->fileStorageService->storeDmsFile(
+            $file,
+            $profile->organization_id,
+            $document->school_id ?? 'general',
+            $data['owner_type'],
+            $document->id
+        );
 
         $latestVersion = DocumentFile::where('owner_type', $data['owner_type'])
             ->where('owner_id', $document->id)
@@ -75,12 +87,12 @@ class DocumentFilesController extends BaseDmsController
 
         $record = DocumentFile::create([
             'organization_id' => $profile->organization_id,
-            'school_id' => $document->school_id,
+            'school_id' => $currentSchoolId,
             'owner_type' => $data['owner_type'],
             'owner_id' => $document->id,
             'file_type' => $data['file_type'],
             'original_name' => $file->getClientOriginalName(),
-            'mime_type' => $file->getMimeType(),
+            'mime_type' => $this->fileStorageService->getMimeTypeFromExtension($file->getClientOriginalName()),
             'size_bytes' => $file->getSize(),
             'storage_path' => $path,
             'version' => $latestVersion + 1,
@@ -96,29 +108,27 @@ class DocumentFilesController extends BaseDmsController
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [$user, $profile, $schoolIds] = $context;
+        [$user, $profile, $currentSchoolId] = $context;
 
         $file = DocumentFile::where('id', $id)
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
 
-        $this->resolveOwnerDocument($file->owner_type, $file->owner_id, $profile->organization_id, $schoolIds, $user);
+        $this->resolveOwnerDocument($file->owner_type, $file->owner_id, $profile->organization_id, $currentSchoolId, $user);
         $this->authorize('view', $file);
 
-        return Storage::download($file->storage_path, $file->original_name);
+        // Download file using FileStorageService
+        return $this->fileStorageService->downloadFile($file->storage_path, $file->original_name);
     }
 
-    private function resolveOwnerDocument(string $ownerType, string $ownerId, string $organizationId, array $schoolIds, $user, bool $skipSecurityCheck = false)
+    private function resolveOwnerDocument(string $ownerType, string $ownerId, string $organizationId, string $currentSchoolId, $user, bool $skipSecurityCheck = false)
     {
         $model = $ownerType === 'incoming' ? IncomingDocument::class : OutgoingDocument::class;
         $document = $model::where('id', $ownerId)
             ->where('organization_id', $organizationId)
+            ->where('school_id', $currentSchoolId)
             ->firstOrFail();
-
-        if ($response = $this->ensureSchoolAccess($document->school_id, $schoolIds)) {
-            $payload = (array) $response->getData(true);
-            abort($response->getStatusCode(), $payload['error'] ?? 'School not accessible');
-        }
 
         // For file operations, allow access if:
         // 1. User created the document (created_by = user->id), OR

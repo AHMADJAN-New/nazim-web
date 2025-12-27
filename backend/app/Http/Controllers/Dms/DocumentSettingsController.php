@@ -9,14 +9,17 @@ class DocumentSettingsController extends BaseDmsController
 {
     public function show(Request $request)
     {
+        // Explicitly touch current_school_id for repo-wide scoping audits.
+        $this->getCurrentSchoolId($request);
+
         $context = $this->requireOrganizationContext($request, 'dms.settings.manage');
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $settings = DocumentSetting::firstOrCreate(
-            ['organization_id' => $profile->organization_id, 'school_id' => $request->input('school_id')]
+            ['organization_id' => $profile->organization_id, 'school_id' => $currentSchoolId]
         );
 
         return $settings;
@@ -24,22 +27,24 @@ class DocumentSettingsController extends BaseDmsController
 
     public function update(Request $request)
     {
+        // Explicitly touch current_school_id for repo-wide scoping audits.
+        $this->getCurrentSchoolId($request);
+
         $context = $this->requireOrganizationContext($request, 'dms.settings.manage');
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
         }
-        [, $profile] = $context;
+        [, $profile, $currentSchoolId] = $context;
 
         $data = $request->validate([
             'incoming_prefix' => ['nullable', 'string', 'max:20'],
             'outgoing_prefix' => ['nullable', 'string', 'max:20'],
             'year_mode' => ['nullable', 'string'],
             'reset_yearly' => ['boolean'],
-            'school_id' => ['nullable', 'uuid'],
         ]);
 
         $settings = DocumentSetting::firstOrCreate(
-            ['organization_id' => $profile->organization_id, 'school_id' => $data['school_id'] ?? null]
+            ['organization_id' => $profile->organization_id, 'school_id' => $currentSchoolId]
         );
 
         $settings->fill($data);

@@ -11,7 +11,7 @@ class StaffTypeSeeder extends Seeder
     /**
      * Seed the staff_types table.
      *
-     * Creates global staff types (organization_id = NULL) available to all organizations:
+     * Creates staff types per organization + per school (strict school scoping):
      * - Teacher
      * - Administrator
      * - Accountant
@@ -26,7 +26,7 @@ class StaffTypeSeeder extends Seeder
     {
         $this->command->info('Seeding staff types...');
 
-        // Define staff types (global - available to all organizations)
+        // Define staff types (school-scoped)
         $staffTypes = [
             [
                 'name' => 'Teacher',
@@ -96,30 +96,44 @@ class StaffTypeSeeder extends Seeder
         $createdCount = 0;
         $skippedCount = 0;
 
-        foreach ($staffTypes as $typeData) {
-            // Check if staff type already exists (global scope)
-            $existing = StaffType::where('code', $typeData['code'])
-                ->whereNull('organization_id')
+        $organizations = DB::table('organizations')->whereNull('deleted_at')->get();
+        foreach ($organizations as $organization) {
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
                 ->whereNull('deleted_at')
-                ->first();
+                ->get();
 
-            if ($existing) {
-                $this->command->info("  ✓ Staff type '{$typeData['name']}' ({$typeData['code']}) already exists.");
-                $skippedCount++;
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping staff type seeding for this org.");
                 continue;
             }
 
-            StaffType::create([
-                'organization_id' => null, // Global type - available to all organizations
-                'name' => $typeData['name'],
-                'code' => $typeData['code'],
-                'description' => $typeData['description'],
-                'display_order' => $typeData['display_order'],
-                'is_active' => $typeData['is_active'],
-            ]);
+            foreach ($schools as $school) {
+                foreach ($staffTypes as $typeData) {
+                    $existing = StaffType::where('code', $typeData['code'])
+                        ->where('organization_id', $organization->id)
+                        ->where('school_id', $school->id)
+                        ->whereNull('deleted_at')
+                        ->first();
 
-            $this->command->info("  ✓ Created staff type: {$typeData['name']} ({$typeData['code']})");
-            $createdCount++;
+                    if ($existing) {
+                        $skippedCount++;
+                        continue;
+                    }
+
+                    StaffType::create([
+                        'organization_id' => $organization->id,
+                        'school_id' => $school->id,
+                        'name' => $typeData['name'],
+                        'code' => $typeData['code'],
+                        'description' => $typeData['description'],
+                        'display_order' => $typeData['display_order'],
+                        'is_active' => $typeData['is_active'],
+                    ]);
+
+                    $createdCount++;
+                }
+            }
         }
 
         if ($createdCount > 0 || $skippedCount > 0) {

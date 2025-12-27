@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useNavigate } from "react-router-dom";
-import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages } from "lucide-react";
+import { Bell, Search, User, LogOut, Settings, Moon, Sun, Languages, School } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +15,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useSchools } from "@/hooks/useSchools";
+import { useSchoolContext } from "@/contexts/SchoolContext";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authApi } from "@/lib/api/client";
+import { showToast } from "@/lib/toast";
 
 interface UserProfile {
   full_name: string;
@@ -33,7 +45,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] }: AppHeaderProps) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, profile: authProfile, refreshAuth } = useAuth();
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,8 +53,54 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
   const [currentLanguage, setCurrentLanguage] = useState("en");
   // Use React Query hook for notifications (properly cached)
   const { data: notifications = [] } = useNotifications();
-  
-  const { profile: authProfile } = useAuth();
+
+  const queryClient = useQueryClient();
+  const { data: schools = [] } = useSchools(authProfile?.organization_id ?? undefined);
+  const { selectedSchoolId, setSelectedSchoolId, hasSchoolsAccessAll } = useSchoolContext();
+
+  // Auto-select default school if user has one and no school is selected
+  useEffect(() => {
+    if (authProfile?.default_school_id && !selectedSchoolId) {
+      setSelectedSchoolId(authProfile.default_school_id);
+    }
+  }, [authProfile?.default_school_id, selectedSchoolId, setSelectedSchoolId]);
+
+  // Only show school switcher if:
+  // 1. User has schools_access_all AND multiple schools, OR
+  // 2. User has a default school (to show current school even if they can't switch)
+  const showSchoolSwitcher = (hasSchoolsAccessAll && schools.length > 1) || 
+                             (authProfile?.default_school_id && schools.length > 0);
+
+  // For users with schools_access_all: just update context (temporary switch)
+  // For other users: update default_school_id permanently (only if they have permission)
+  const handleSchoolChange = (schoolId: string) => {
+    if (hasSchoolsAccessAll) {
+      // Temporary switch - just update context
+      setSelectedSchoolId(schoolId);
+      // Invalidate queries to refresh data with new school context
+      void queryClient.invalidateQueries();
+      showToast.success(t("common.schoolSwitched"));
+    } else {
+      // Permanent switch - update default_school_id
+      updateMySchool.mutate(schoolId);
+    }
+  };
+
+  const updateMySchool = useMutation({
+    mutationFn: async (schoolId: string) => {
+      // Update current user's default_school_id (backend validates org membership)
+      await authApi.updateProfile({ default_school_id: schoolId });
+    },
+    onSuccess: async () => {
+      // Force reload AuthContext profile and refresh all cached data
+      await refreshAuth();
+      await queryClient.invalidateQueries();
+      showToast.success(t("toast.profileUpdated"));
+    },
+    onError: (error: any) => {
+      showToast.error(error?.message || t("toast.profileUpdateFailed"));
+    },
+  });
   
   // Map auth profile to UserProfile format
   const profile: UserProfile | null = authProfile ? {
@@ -112,6 +170,34 @@ export function AppHeader({ title, showBreadcrumb = false, breadcrumbItems = [] 
 
         {/* Right Section - Actions & Profile */}
         <div className="flex items-center gap-2">
+          {/* School Switcher */}
+          {showSchoolSwitcher && (
+            <Select
+              value={selectedSchoolId ?? authProfile?.default_school_id ?? 'none'}
+              onValueChange={(value) => {
+                if (value && value !== 'none' && value !== selectedSchoolId) {
+                  handleSchoolChange(value);
+                }
+              }}
+              disabled={updateMySchool.isPending && !hasSchoolsAccessAll}
+            >
+              <SelectTrigger className="hidden md:flex w-[200px]">
+                <School className="h-4 w-4 mr-2" />
+                <SelectValue placeholder={t("common.selectSchool") || "Select School"} />
+              </SelectTrigger>
+              <SelectContent>
+                {schools.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.schoolName}
+                    {s.id === authProfile?.default_school_id && !hasSchoolsAccessAll && (
+                      <span className="ml-2 text-xs text-muted-foreground">(Default)</span>
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           {/* Language Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -81,6 +81,7 @@ use App\Http\Controllers\Dms\LetterheadsController;
 use App\Http\Controllers\Dms\LetterTemplatesController;
 use App\Http\Controllers\Dms\LetterTypesController;
 use App\Http\Controllers\Dms\OutgoingDocumentsController;
+use App\Http\Controllers\StorageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -107,8 +108,18 @@ Route::post('/verify/certificate/search', [CertificateVerifyController::class, '
 Route::get('/stats/students-count', [StatsController::class, 'studentsCount']);
 Route::get('/stats/staff-count', [StatsController::class, 'staffCount']);
 
-// Protected routes
-Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
+// Protected routes (organization context is mandatory everywhere)
+Route::middleware(['auth:sanctum', 'organization'])->group(function () {
+    // Storage routes (private file access)
+    Route::get('/storage/download/{encodedPath}', [StorageController::class, 'download'])
+        ->where('encodedPath', '.*')
+        ->name('storage.download');
+    Route::get('/storage/force-download/{encodedPath}', [StorageController::class, 'forceDownload'])
+        ->where('encodedPath', '.*')
+        ->name('storage.force-download');
+    Route::get('/storage/info/{encodedPath}', [StorageController::class, 'info'])
+        ->where('encodedPath', '.*')
+        ->name('storage.info');
     // Auth routes
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/user', [AuthController::class, 'user']);
@@ -170,101 +181,107 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/translations', [TranslationController::class, 'index']);
     Route::post('/translations', [TranslationController::class, 'store']);
 
-    // Buildings
-    Route::apiResource('buildings', BuildingController::class);
+    // ============================================================
+    // School-scoped routes
+    // Rule: Everything is school-scoped except org/permissions/roles/schools.
+    // ============================================================
+    Route::middleware(['school.context'])->group(function () {
 
-    // Rooms
-    Route::apiResource('rooms', RoomController::class);
+        // Buildings
+        Route::apiResource('buildings', BuildingController::class);
 
-    // Staff
-    Route::get('/staff/stats', [StaffController::class, 'stats']);
-    Route::get('/staff/report/export', [StaffReportController::class, 'export']);
-    Route::post('/staff/{id}/picture', [StaffController::class, 'uploadPicture']);
-    Route::post('/staff/{id}/document', [StaffController::class, 'uploadDocument']);
-    Route::apiResource('staff', StaffController::class);
+        // Rooms
+        Route::apiResource('rooms', RoomController::class);
 
-    // Staff Types
-    Route::apiResource('staff-types', StaffTypeController::class);
+        // Staff
+        Route::get('/staff/stats', [StaffController::class, 'stats']);
+        Route::get('/staff/report/export', [StaffReportController::class, 'export']);
+        Route::post('/staff/{id}/picture', [StaffController::class, 'uploadPicture']);
+        Route::post('/staff/{id}/document', [StaffController::class, 'uploadDocument']);
+        Route::apiResource('staff', StaffController::class);
 
-    // Residency Types
-    Route::apiResource('residency-types', ResidencyTypeController::class);
+        // Staff Types
+        Route::apiResource('staff-types', StaffTypeController::class);
 
-    // Report Templates
-    Route::get('/report-templates/school/{schoolId}', [ReportTemplateController::class, 'bySchool']);
-    Route::get('/report-templates/default', [ReportTemplateController::class, 'getDefault']);
-    Route::apiResource('report-templates', ReportTemplateController::class);
+        // Residency Types
+        Route::apiResource('residency-types', ResidencyTypeController::class);
 
-    // Staff Documents
-    Route::get('/staff/{id}/documents', [StaffDocumentController::class, 'index']);
-    Route::post('/staff/{id}/documents', [StaffDocumentController::class, 'store']);
-    Route::delete('/staff-documents/{id}', [StaffDocumentController::class, 'destroy']);
+        // Report Templates
+        Route::get('/report-templates/school/{schoolId}', [ReportTemplateController::class, 'bySchool']);
+        Route::get('/report-templates/default', [ReportTemplateController::class, 'getDefault']);
+        Route::apiResource('report-templates', ReportTemplateController::class);
 
-    // Students
-    // IMPORTANT: More specific routes must come before parameterized routes
-    Route::get('/students/stats', [StudentController::class, 'stats']);
-    Route::get('/students/autocomplete', [StudentController::class, 'autocomplete']);
-    Route::post('/students/check-duplicates', [StudentController::class, 'checkDuplicates']);
-    // Picture routes must come before resource route to avoid conflicts
-    Route::get('/students/{id}/picture', [StudentController::class, 'getPicture']);
-    Route::post('/students/{id}/picture', [StudentController::class, 'uploadPicture']);
-    Route::get('/students/report/export', [StudentReportController::class, 'export']);
-    Route::apiResource('students', StudentController::class);
+        // Staff Documents
+        Route::get('/staff/{id}/documents', [StaffDocumentController::class, 'index']);
+        Route::post('/staff/{id}/documents', [StaffDocumentController::class, 'store']);
+        Route::delete('/staff-documents/{id}', [StaffDocumentController::class, 'destroy']);
 
-    // Student Documents
-    Route::get('/students/{id}/documents', [StudentDocumentController::class, 'index']);
-    Route::post('/students/{id}/documents', [StudentDocumentController::class, 'store']);
-    Route::get('/student-documents/{id}/download', [StudentDocumentController::class, 'download']);
-    Route::delete('/student-documents/{id}', [StudentDocumentController::class, 'destroy']);
+        // Students
+        // IMPORTANT: More specific routes must come before parameterized routes
+        Route::get('/students/stats', [StudentController::class, 'stats']);
+        Route::get('/students/autocomplete', [StudentController::class, 'autocomplete']);
+        Route::post('/students/check-duplicates', [StudentController::class, 'checkDuplicates']);
+        // Picture routes must come before resource route to avoid conflicts
+        Route::get('/students/{id}/picture', [StudentController::class, 'getPicture']);
+        Route::post('/students/{id}/picture', [StudentController::class, 'uploadPicture']);
+        Route::get('/students/report/export', [StudentReportController::class, 'export']);
+        Route::apiResource('students', StudentController::class);
 
-    // Student Educational History
-    Route::get('/students/{id}/educational-history', [StudentEducationalHistoryController::class, 'index']);
-    Route::post('/students/{id}/educational-history', [StudentEducationalHistoryController::class, 'store']);
-    Route::put('/student-educational-history/{id}', [StudentEducationalHistoryController::class, 'update']);
-    Route::delete('/student-educational-history/{id}', [StudentEducationalHistoryController::class, 'destroy']);
+        // Student Documents
+        Route::get('/students/{id}/documents', [StudentDocumentController::class, 'index']);
+        Route::post('/students/{id}/documents', [StudentDocumentController::class, 'store']);
+        Route::get('/student-documents/{id}/download', [StudentDocumentController::class, 'download']);
+        Route::delete('/student-documents/{id}', [StudentDocumentController::class, 'destroy']);
 
-    // Student Discipline Records
-    Route::get('/students/{id}/discipline-records', [StudentDisciplineRecordController::class, 'index']);
-    Route::post('/students/{id}/discipline-records', [StudentDisciplineRecordController::class, 'store']);
-    Route::put('/student-discipline-records/{id}', [StudentDisciplineRecordController::class, 'update']);
-    Route::delete('/student-discipline-records/{id}', [StudentDisciplineRecordController::class, 'destroy']);
-    Route::post('/student-discipline-records/{id}/resolve', [StudentDisciplineRecordController::class, 'resolve']);
+        // Student Educational History
+        Route::get('/students/{id}/educational-history', [StudentEducationalHistoryController::class, 'index']);
+        Route::post('/students/{id}/educational-history', [StudentEducationalHistoryController::class, 'store']);
+        Route::put('/student-educational-history/{id}', [StudentEducationalHistoryController::class, 'update']);
+        Route::delete('/student-educational-history/{id}', [StudentEducationalHistoryController::class, 'destroy']);
 
-    // Student Admissions
-    Route::get('/student-admissions/stats', [StudentAdmissionController::class, 'stats']);
-    Route::get('/student-admissions/report', [StudentAdmissionController::class, 'report']);
-    Route::post('/student-admissions/bulk-deactivate', [StudentAdmissionController::class, 'bulkDeactivate']);
-    Route::post('/student-admissions/bulk-deactivate-by-student-ids', [StudentAdmissionController::class, 'bulkDeactivateByStudentIds']);
-    Route::apiResource('student-admissions', StudentAdmissionController::class);
+        // Student Discipline Records
+        Route::get('/students/{id}/discipline-records', [StudentDisciplineRecordController::class, 'index']);
+        Route::post('/students/{id}/discipline-records', [StudentDisciplineRecordController::class, 'store']);
+        Route::put('/student-discipline-records/{id}', [StudentDisciplineRecordController::class, 'update']);
+        Route::delete('/student-discipline-records/{id}', [StudentDisciplineRecordController::class, 'destroy']);
+        Route::post('/student-discipline-records/{id}/resolve', [StudentDisciplineRecordController::class, 'resolve']);
 
-    // Hostel aggregation
-    Route::get('/hostel/overview', [HostelController::class, 'overview']);
+        // Student Admissions
+        Route::get('/student-admissions/stats', [StudentAdmissionController::class, 'stats']);
+        Route::get('/student-admissions/report', [StudentAdmissionController::class, 'report']);
+        Route::post('/student-admissions/bulk-deactivate', [StudentAdmissionController::class, 'bulkDeactivate']);
+        Route::post('/student-admissions/bulk-deactivate-by-student-ids', [StudentAdmissionController::class, 'bulkDeactivateByStudentIds']);
+        Route::apiResource('student-admissions', StudentAdmissionController::class);
 
-    // Classes - Specific routes must come BEFORE resource route to avoid route conflicts
-    Route::get('/classes/academic-years', [ClassController::class, 'byAcademicYear']);
-    Route::post('/classes/bulk-assign-sections', [ClassController::class, 'bulkAssignSections']);
-    Route::post('/classes/copy-between-years', [ClassController::class, 'copyBetweenYears']);
-    Route::get('/class-academic-years/{id}', [ClassController::class, 'getClassAcademicYear']);
-    Route::put('/classes/academic-years/{id}', [ClassController::class, 'updateInstance']);
-    Route::delete('/classes/academic-years/{id}', [ClassController::class, 'removeFromYear']);
-    Route::get('/classes/{class}/academic-years', [ClassController::class, 'academicYears']);
-    Route::post('/classes/{class}/assign-to-year', [ClassController::class, 'assignToYear']);
-    Route::apiResource('classes', ClassController::class);
+        // Hostel aggregation
+        Route::get('/hostel/overview', [HostelController::class, 'overview']);
 
-    // Subjects
-    Route::apiResource('subjects', SubjectController::class);
+        // Classes - Specific routes must come BEFORE resource route to avoid route conflicts
+        Route::get('/classes/academic-years', [ClassController::class, 'byAcademicYear']);
+        Route::post('/classes/bulk-assign-sections', [ClassController::class, 'bulkAssignSections']);
+        Route::post('/classes/copy-between-years', [ClassController::class, 'copyBetweenYears']);
+        Route::get('/class-academic-years/{id}', [ClassController::class, 'getClassAcademicYear']);
+        Route::put('/classes/academic-years/{id}', [ClassController::class, 'updateInstance']);
+        Route::delete('/classes/academic-years/{id}', [ClassController::class, 'removeFromYear']);
+        Route::get('/classes/{class}/academic-years', [ClassController::class, 'academicYears']);
+        Route::post('/classes/{class}/assign-to-year', [ClassController::class, 'assignToYear']);
+        Route::apiResource('classes', ClassController::class);
 
-    // Class Subject Templates
-    Route::apiResource('class-subject-templates', ClassSubjectTemplateController::class);
+        // Subjects
+        Route::apiResource('subjects', SubjectController::class);
 
-    // Class Subjects
-    Route::apiResource('class-subjects', ClassSubjectController::class);
+        // Class Subject Templates
+        Route::apiResource('class-subject-templates', ClassSubjectTemplateController::class);
 
-    // Exams
-    Route::apiResource('exams', ExamController::class);
-    Route::post('/exams/{exam}/status', [ExamController::class, 'updateStatus']);
+        // Class Subjects
+        Route::apiResource('class-subjects', ClassSubjectController::class);
 
-    // Exam Types
-    Route::apiResource('exam-types', ExamTypeController::class);
+        // Exams
+        Route::apiResource('exams', ExamController::class);
+        Route::post('/exams/{exam}/status', [ExamController::class, 'updateStatus']);
+
+        // Exam Types
+        Route::apiResource('exam-types', ExamTypeController::class);
 
     // Exam Classes
     Route::apiResource('exam-classes', ExamClassController::class)->only(['index', 'store', 'destroy']);
@@ -327,73 +344,73 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::put('/exam-attendance/{id}', [ExamAttendanceController::class, 'update']);
     Route::delete('/exam-attendance/{id}', [ExamAttendanceController::class, 'destroy']);
 
-    // Academic Years
-    Route::apiResource('academic-years', AcademicYearController::class);
+        // Academic Years
+        Route::apiResource('academic-years', AcademicYearController::class);
 
-    // Grades (Academic Settings)
-    Route::apiResource('grades', GradeController::class);
+        // Grades (Academic Settings)
+        Route::apiResource('grades', GradeController::class);
 
-    // Timetables
-    Route::apiResource('timetables', TimetableController::class);
-    Route::get('/timetables/{id}/entries', [TimetableController::class, 'entries']);
+        // Timetables
+        Route::apiResource('timetables', TimetableController::class);
+        Route::get('/timetables/{id}/entries', [TimetableController::class, 'entries']);
 
-    // Schedule Slots
-    Route::apiResource('schedule-slots', ScheduleSlotController::class);
+        // Schedule Slots
+        Route::apiResource('schedule-slots', ScheduleSlotController::class);
 
-    // Teacher Timetable Preferences
-    Route::apiResource('teacher-timetable-preferences', TeacherTimetablePreferenceController::class);
-    Route::post('/teacher-timetable-preferences/upsert', [TeacherTimetablePreferenceController::class, 'upsert']);
+        // Teacher Timetable Preferences
+        Route::apiResource('teacher-timetable-preferences', TeacherTimetablePreferenceController::class);
+        Route::post('/teacher-timetable-preferences/upsert', [TeacherTimetablePreferenceController::class, 'upsert']);
 
-    // Teacher Subject Assignments
-    Route::apiResource('teacher-subject-assignments', TeacherSubjectAssignmentController::class);
+        // Teacher Subject Assignments
+        Route::apiResource('teacher-subject-assignments', TeacherSubjectAssignmentController::class);
 
-    // Assets
-    Route::get('/assets/stats', [AssetController::class, 'stats']);
-    Route::get('/assets/{id}/history', [AssetController::class, 'history']);
-    Route::get('/assets/{id}/assignments', [AssetController::class, 'assignments']);
-    Route::post('/assets/{id}/assignments', [AssetController::class, 'createAssignment']);
-    Route::get('/assets/{id}/maintenance', [AssetMaintenanceController::class, 'index']);
-    Route::post('/assets/{id}/maintenance', [AssetMaintenanceController::class, 'store']);
-    Route::apiResource('assets', AssetController::class);
-    Route::apiResource('asset-assignments', AssetAssignmentController::class);
-    Route::apiResource('asset-maintenance', AssetMaintenanceController::class);
-    Route::apiResource('asset-categories', AssetCategoryController::class);
+        // Assets
+        Route::get('/assets/stats', [AssetController::class, 'stats']);
+        Route::get('/assets/{id}/history', [AssetController::class, 'history']);
+        Route::get('/assets/{id}/assignments', [AssetController::class, 'assignments']);
+        Route::post('/assets/{id}/assignments', [AssetController::class, 'createAssignment']);
+        Route::get('/assets/{id}/maintenance', [AssetMaintenanceController::class, 'index']);
+        Route::post('/assets/{id}/maintenance', [AssetMaintenanceController::class, 'store']);
+        Route::apiResource('assets', AssetController::class);
+        Route::apiResource('asset-assignments', AssetAssignmentController::class);
+        Route::apiResource('asset-maintenance', AssetMaintenanceController::class);
+        Route::apiResource('asset-categories', AssetCategoryController::class);
 
-    // Attendance Sessions
-    Route::get('/attendance-sessions/roster', [AttendanceSessionController::class, 'roster']);
-    Route::get('/attendance-sessions/totals-report', [AttendanceSessionController::class, 'totalsReport']);
-    Route::get('/attendance-sessions/report', [AttendanceSessionController::class, 'report']);
-    Route::post('/attendance-sessions/{id}/close', [AttendanceSessionController::class, 'close']);
-    Route::post('/attendance-sessions/{id}/records', [AttendanceSessionController::class, 'markRecords']);
-    Route::post('/attendance-sessions/{id}/scan', [AttendanceSessionController::class, 'scan']);
-    Route::get('/attendance-sessions/{id}/scans', [AttendanceSessionController::class, 'scanFeed']);
-    Route::apiResource('attendance-sessions', AttendanceSessionController::class);
+        // Attendance Sessions
+        Route::get('/attendance-sessions/roster', [AttendanceSessionController::class, 'roster']);
+        Route::get('/attendance-sessions/totals-report', [AttendanceSessionController::class, 'totalsReport']);
+        Route::get('/attendance-sessions/report', [AttendanceSessionController::class, 'report']);
+        Route::post('/attendance-sessions/{id}/close', [AttendanceSessionController::class, 'close']);
+        Route::post('/attendance-sessions/{id}/records', [AttendanceSessionController::class, 'markRecords']);
+        Route::post('/attendance-sessions/{id}/scan', [AttendanceSessionController::class, 'scan']);
+        Route::get('/attendance-sessions/{id}/scans', [AttendanceSessionController::class, 'scanFeed']);
+        Route::apiResource('attendance-sessions', AttendanceSessionController::class);
 
-    // Library Management
-    Route::apiResource('library-categories', LibraryCategoryController::class);
-    Route::apiResource('library-books', LibraryBookController::class);
-    Route::post('/library-copies', [LibraryCopyController::class, 'store']);
-    Route::put('/library-copies/{id}', [LibraryCopyController::class, 'update']);
-    Route::delete('/library-copies/{id}', [LibraryCopyController::class, 'destroy']);
-    Route::get('/library-loans', [LibraryLoanController::class, 'index']);
-    Route::post('/library-loans', [LibraryLoanController::class, 'store']);
-    Route::post('/library-loans/{id}/return', [LibraryLoanController::class, 'returnCopy']);
-    Route::get('/library-loans/due-soon', [LibraryLoanController::class, 'dueSoon']);
+        // Library Management
+        Route::apiResource('library-categories', LibraryCategoryController::class);
+        Route::apiResource('library-books', LibraryBookController::class);
+        Route::post('/library-copies', [LibraryCopyController::class, 'store']);
+        Route::put('/library-copies/{id}', [LibraryCopyController::class, 'update']);
+        Route::delete('/library-copies/{id}', [LibraryCopyController::class, 'destroy']);
+        Route::get('/library-loans', [LibraryLoanController::class, 'index']);
+        Route::post('/library-loans', [LibraryLoanController::class, 'store']);
+        Route::post('/library-loans/{id}/return', [LibraryLoanController::class, 'returnCopy']);
+        Route::get('/library-loans/due-soon', [LibraryLoanController::class, 'dueSoon']);
 
-    // Short-term courses
-    Route::apiResource('short-term-courses', ShortTermCourseController::class);
-    Route::post('/short-term-courses/{id}/close', [ShortTermCourseController::class, 'close']);
-    Route::post('/short-term-courses/{id}/reopen', [ShortTermCourseController::class, 'reopen']);
-    Route::get('/short-term-courses/{id}/stats', [ShortTermCourseController::class, 'stats']);
+        // Short-term courses
+        Route::apiResource('short-term-courses', ShortTermCourseController::class);
+        Route::post('/short-term-courses/{id}/close', [ShortTermCourseController::class, 'close']);
+        Route::post('/short-term-courses/{id}/reopen', [ShortTermCourseController::class, 'reopen']);
+        Route::get('/short-term-courses/{id}/stats', [ShortTermCourseController::class, 'stats']);
 
-    // Course students
-    Route::apiResource('course-students', CourseStudentController::class);
-    Route::post('/course-students/enroll-from-main', [CourseStudentController::class, 'enrollFromMain']);
-    Route::post('/course-students/{id}/copy-to-main', [CourseStudentController::class, 'copyToMain']);
-    Route::post('/course-students/{id}/complete', [CourseStudentController::class, 'markCompleted']);
-    Route::post('/course-students/{id}/drop', [CourseStudentController::class, 'markDropped']);
-    Route::post('/course-students/{id}/issue-certificate', [CourseStudentController::class, 'issueCertificate']);
-    Route::post('/course-students/{id}/enroll-to-new-course', [CourseStudentController::class, 'enrollToNewCourse']);
+        // Course students
+        Route::apiResource('course-students', CourseStudentController::class);
+        Route::post('/course-students/enroll-from-main', [CourseStudentController::class, 'enrollFromMain']);
+        Route::post('/course-students/{id}/copy-to-main', [CourseStudentController::class, 'copyToMain']);
+        Route::post('/course-students/{id}/complete', [CourseStudentController::class, 'markCompleted']);
+        Route::post('/course-students/{id}/drop', [CourseStudentController::class, 'markDropped']);
+        Route::post('/course-students/{id}/issue-certificate', [CourseStudentController::class, 'issueCertificate']);
+        Route::post('/course-students/{id}/enroll-to-new-course', [CourseStudentController::class, 'enrollToNewCourse']);
 
     // Course student discipline records
     Route::get('/course-students/{id}/discipline-records', [CourseStudentDisciplineRecordController::class, 'index']);
@@ -402,44 +419,44 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::delete('/course-student-discipline-records/{id}', [CourseStudentDisciplineRecordController::class, 'destroy']);
     Route::post('/course-student-discipline-records/{id}/resolve', [CourseStudentDisciplineRecordController::class, 'resolve']);
 
-    // Course Attendance Sessions
-    Route::get('/course-attendance-sessions/roster', [CourseAttendanceSessionController::class, 'roster']);
-    Route::get('/course-attendance-sessions/report', [CourseAttendanceSessionController::class, 'report']);
-    Route::post('/course-attendance-sessions/{id}/close', [CourseAttendanceSessionController::class, 'close']);
-    Route::post('/course-attendance-sessions/{id}/records', [CourseAttendanceSessionController::class, 'markRecords']);
-    Route::post('/course-attendance-sessions/{id}/scan', [CourseAttendanceSessionController::class, 'scan']);
-    Route::get('/course-attendance-sessions/{id}/scans', [CourseAttendanceSessionController::class, 'scans']);
-    Route::apiResource('course-attendance-sessions', CourseAttendanceSessionController::class);
+        // Course Attendance Sessions
+        Route::get('/course-attendance-sessions/roster', [CourseAttendanceSessionController::class, 'roster']);
+        Route::get('/course-attendance-sessions/report', [CourseAttendanceSessionController::class, 'report']);
+        Route::post('/course-attendance-sessions/{id}/close', [CourseAttendanceSessionController::class, 'close']);
+        Route::post('/course-attendance-sessions/{id}/records', [CourseAttendanceSessionController::class, 'markRecords']);
+        Route::post('/course-attendance-sessions/{id}/scan', [CourseAttendanceSessionController::class, 'scan']);
+        Route::get('/course-attendance-sessions/{id}/scans', [CourseAttendanceSessionController::class, 'scans']);
+        Route::apiResource('course-attendance-sessions', CourseAttendanceSessionController::class);
 
-    // Course Documents
-    Route::get('/course-documents/{id}/download', [CourseDocumentController::class, 'download']);
-    Route::apiResource('course-documents', CourseDocumentController::class);
+        // Course Documents
+        Route::get('/course-documents/{id}/download', [CourseDocumentController::class, 'download']);
+        Route::apiResource('course-documents', CourseDocumentController::class);
 
-    // Certificate Templates
-    Route::get('/certificate-templates/{id}/background', [CertificateTemplateController::class, 'getBackgroundImage'])
-        ->name('certificate-templates.background');
-    Route::post('/certificate-templates/{id}/set-default', [CertificateTemplateController::class, 'setDefault']);
-    Route::post('/certificate-templates/generate/{courseStudentId}', [CertificateTemplateController::class, 'generateCertificate']);
-    Route::get('/certificate-templates/certificate-data/{courseStudentId}', [CertificateTemplateController::class, 'getCertificateData']);
-    Route::apiResource('certificate-templates', CertificateTemplateController::class);
+        // Certificate Templates
+        Route::get('/certificate-templates/{id}/background', [CertificateTemplateController::class, 'getBackgroundImage'])
+            ->name('certificate-templates.background');
+        Route::post('/certificate-templates/{id}/set-default', [CertificateTemplateController::class, 'setDefault']);
+        Route::post('/certificate-templates/generate/{courseStudentId}', [CertificateTemplateController::class, 'generateCertificate']);
+        Route::get('/certificate-templates/certificate-data/{courseStudentId}', [CertificateTemplateController::class, 'getCertificateData']);
+        Route::apiResource('certificate-templates', CertificateTemplateController::class);
 
-    // ID Card Templates
-    Route::get('/id-card-templates/{id}/background/{side}', [IdCardTemplateController::class, 'getBackgroundImage'])
-        ->name('id-card-templates.background');
-    Route::post('/id-card-templates/{id}/set-default', [IdCardTemplateController::class, 'setDefault']);
-    Route::apiResource('id-card-templates', IdCardTemplateController::class);
+        // ID Card Templates
+        Route::get('/id-card-templates/{id}/background/{side}', [IdCardTemplateController::class, 'getBackgroundImage'])
+            ->name('id-card-templates.background');
+        Route::post('/id-card-templates/{id}/set-default', [IdCardTemplateController::class, 'setDefault']);
+        Route::apiResource('id-card-templates', IdCardTemplateController::class);
 
-    // Student ID Cards
-    Route::get('/student-id-cards', [\App\Http\Controllers\StudentIdCardController::class, 'index']);
-    Route::post('/student-id-cards/assign', [\App\Http\Controllers\StudentIdCardController::class, 'assign']);
-    Route::get('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'show']);
-    Route::put('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'update']);
-    Route::delete('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'destroy']);
-    Route::post('/student-id-cards/{id}/mark-printed', [\App\Http\Controllers\StudentIdCardController::class, 'markPrinted']);
-    Route::post('/student-id-cards/{id}/mark-fee-paid', [\App\Http\Controllers\StudentIdCardController::class, 'markFeePaid']);
-    Route::get('/student-id-cards/export/preview', [\App\Http\Controllers\StudentIdCardController::class, 'preview']);
-    Route::post('/student-id-cards/export/bulk', [\App\Http\Controllers\StudentIdCardController::class, 'exportBulk']);
-    Route::get('/student-id-cards/export/individual/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'exportIndividual']);
+        // Student ID Cards
+        Route::get('/student-id-cards', [\App\Http\Controllers\StudentIdCardController::class, 'index']);
+        Route::post('/student-id-cards/assign', [\App\Http\Controllers\StudentIdCardController::class, 'assign']);
+        Route::get('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'show']);
+        Route::put('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'update']);
+        Route::delete('/student-id-cards/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'destroy']);
+        Route::post('/student-id-cards/{id}/mark-printed', [\App\Http\Controllers\StudentIdCardController::class, 'markPrinted']);
+        Route::post('/student-id-cards/{id}/mark-fee-paid', [\App\Http\Controllers\StudentIdCardController::class, 'markFeePaid']);
+        Route::get('/student-id-cards/export/preview', [\App\Http\Controllers\StudentIdCardController::class, 'preview']);
+        Route::post('/student-id-cards/export/bulk', [\App\Http\Controllers\StudentIdCardController::class, 'exportBulk']);
+        Route::get('/student-id-cards/export/individual/{id}', [\App\Http\Controllers\StudentIdCardController::class, 'exportIndividual']);
 
     // Certificate Templates (v2 API - frontend compatibility)
     Route::get('/certificates/templates', [CertificateTemplateController::class, 'index']);
@@ -451,15 +468,15 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/certificates/templates/{id}/activate', [CertificateTemplateController::class, 'activate']);
     Route::post('/certificates/templates/{id}/deactivate', [CertificateTemplateController::class, 'deactivate']);
 
-    // Graduation Batches
-    Route::get('/graduation/batches', [GraduationBatchController::class, 'index']);
-    Route::post('/graduation/batches', [GraduationBatchController::class, 'store']);
-    Route::get('/graduation/batches/{id}', [GraduationBatchController::class, 'show']);
-    Route::put('/graduation/batches/{id}', [GraduationBatchController::class, 'update']);
-    Route::delete('/graduation/batches/{id}', [GraduationBatchController::class, 'destroy']);
-    Route::post('/graduation/batches/{id}/generate-students', [GraduationBatchController::class, 'generateStudents']);
-    Route::post('/graduation/batches/{id}/approve', [GraduationBatchController::class, 'approve']);
-    Route::post('/graduation/batches/{id}/issue-certificates', [GraduationBatchController::class, 'issueCertificates']);
+        // Graduation Batches
+        Route::get('/graduation/batches', [GraduationBatchController::class, 'index']);
+        Route::post('/graduation/batches', [GraduationBatchController::class, 'store']);
+        Route::get('/graduation/batches/{id}', [GraduationBatchController::class, 'show']);
+        Route::put('/graduation/batches/{id}', [GraduationBatchController::class, 'update']);
+        Route::delete('/graduation/batches/{id}', [GraduationBatchController::class, 'destroy']);
+        Route::post('/graduation/batches/{id}/generate-students', [GraduationBatchController::class, 'generateStudents']);
+        Route::post('/graduation/batches/{id}/approve', [GraduationBatchController::class, 'approve']);
+        Route::post('/graduation/batches/{id}/issue-certificates', [GraduationBatchController::class, 'issueCertificates']);
 
     // Issued Certificates
     Route::get('/issued-certificates', [IssuedCertificateController::class, 'index']);
@@ -476,21 +493,21 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/certificates/issued/{id}/pdf', [IssuedCertificateController::class, 'downloadPdf']);
     Route::get('/certificates/batches/{batchId}/pdf', [IssuedCertificateController::class, 'downloadBatchZip']);
 
-    // Leave Requests
-    Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
-    Route::post('/leave-requests/{id}/approve', [LeaveRequestController::class, 'approve']);
-    Route::post('/leave-requests/{id}/reject', [LeaveRequestController::class, 'reject']);
-    Route::apiResource('leave-requests', LeaveRequestController::class);
+        // Leave Requests
+        Route::get('/leave-requests/{id}/print', [LeaveRequestController::class, 'printData']);
+        Route::post('/leave-requests/{id}/approve', [LeaveRequestController::class, 'approve']);
+        Route::post('/leave-requests/{id}/reject', [LeaveRequestController::class, 'reject']);
+        Route::apiResource('leave-requests', LeaveRequestController::class);
 
-    // Dashboard
-    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+        // Dashboard
+        Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
     // ============================================
     // Finance Module
     // ============================================
 
-    // Finance Accounts (cash locations)
-    Route::apiResource('finance-accounts', \App\Http\Controllers\FinanceAccountController::class);
+        // Finance Accounts (cash locations)
+        Route::apiResource('finance-accounts', \App\Http\Controllers\FinanceAccountController::class);
 
     // Income Categories
     Route::apiResource('income-categories', \App\Http\Controllers\IncomeCategoryController::class);
@@ -512,21 +529,21 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     // Expense Entries
     Route::apiResource('expense-entries', \App\Http\Controllers\ExpenseEntryController::class);
 
-    // Finance Reports
-    Route::get('/finance/dashboard', [\App\Http\Controllers\FinanceReportController::class, 'dashboard']);
-    Route::get('/finance/reports/daily-cashbook', [\App\Http\Controllers\FinanceReportController::class, 'dailyCashbook']);
-    Route::get('/finance/reports/income-vs-expense', [\App\Http\Controllers\FinanceReportController::class, 'incomeVsExpense']);
-    Route::get('/finance/reports/project-summary', [\App\Http\Controllers\FinanceReportController::class, 'projectSummary']);
-    Route::get('/finance/reports/donor-summary', [\App\Http\Controllers\FinanceReportController::class, 'donorSummary']);
-    Route::get('/finance/reports/account-balances', [\App\Http\Controllers\FinanceReportController::class, 'accountBalances']);
+        // Finance Reports
+        Route::get('/finance/dashboard', [\App\Http\Controllers\FinanceReportController::class, 'dashboard']);
+        Route::get('/finance/reports/daily-cashbook', [\App\Http\Controllers\FinanceReportController::class, 'dailyCashbook']);
+        Route::get('/finance/reports/income-vs-expense', [\App\Http\Controllers\FinanceReportController::class, 'incomeVsExpense']);
+        Route::get('/finance/reports/project-summary', [\App\Http\Controllers\FinanceReportController::class, 'projectSummary']);
+        Route::get('/finance/reports/donor-summary', [\App\Http\Controllers\FinanceReportController::class, 'donorSummary']);
+        Route::get('/finance/reports/account-balances', [\App\Http\Controllers\FinanceReportController::class, 'accountBalances']);
 
-    // Fees
-    Route::get('/fees/structures', [FeeStructureController::class, 'index']);
-    Route::post('/fees/structures', [FeeStructureController::class, 'store']);
-    Route::get('/fees/structures/{id}', [FeeStructureController::class, 'show']);
-    Route::put('/fees/structures/{id}', [FeeStructureController::class, 'update']);
-    Route::patch('/fees/structures/{id}', [FeeStructureController::class, 'update']);
-    Route::delete('/fees/structures/{id}', [FeeStructureController::class, 'destroy']);
+        // Fees
+        Route::get('/fees/structures', [FeeStructureController::class, 'index']);
+        Route::post('/fees/structures', [FeeStructureController::class, 'store']);
+        Route::get('/fees/structures/{id}', [FeeStructureController::class, 'show']);
+        Route::put('/fees/structures/{id}', [FeeStructureController::class, 'update']);
+        Route::patch('/fees/structures/{id}', [FeeStructureController::class, 'update']);
+        Route::delete('/fees/structures/{id}', [FeeStructureController::class, 'destroy']);
 
     Route::get('/fees/assignments', [FeeAssignmentController::class, 'index']);
     Route::post('/fees/assignments', [FeeAssignmentController::class, 'store']);
@@ -550,17 +567,17 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/fees/reports/collection', [FeeReportController::class, 'collectionReport']);
     Route::get('/fees/reports/defaulters', [FeeReportController::class, 'defaulters']);
 
-    // Currency Management
-    Route::apiResource('currencies', \App\Http\Controllers\CurrencyController::class);
+        // Currency Management
+        Route::apiResource('currencies', \App\Http\Controllers\CurrencyController::class);
 
     // Exchange Rate Management
     Route::apiResource('exchange-rates', \App\Http\Controllers\ExchangeRateController::class);
     Route::post('/exchange-rates/convert', [\App\Http\Controllers\ExchangeRateController::class, 'convert']);
 
-    // Document Management System (DMS)
-    Route::get('/dms/dashboard', [DocumentReportsController::class, 'dashboard']);
-    Route::get('/dms/reports/distribution', [DocumentReportsController::class, 'distribution']);
-    Route::get('/dms/archive', ArchiveSearchController::class);
+        // Document Management System (DMS)
+        Route::get('/dms/dashboard', [DocumentReportsController::class, 'dashboard']);
+        Route::get('/dms/reports/distribution', [DocumentReportsController::class, 'distribution']);
+        Route::get('/dms/archive', ArchiveSearchController::class);
 
     Route::get('/dms/settings', [DocumentSettingsController::class, 'show']);
     Route::put('/dms/settings', [DocumentSettingsController::class, 'update']);
@@ -614,16 +631,17 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/dms/files/{id}/download', [DocumentFilesController::class, 'download']);
 
     // ============================================
-    // Central Reporting System
-    // ============================================
+        // Central Reporting System
+        // ============================================
 
-    Route::post('/reports/generate', [\App\Http\Controllers\ReportGenerationController::class, 'generate']);
-    Route::get('/reports', [\App\Http\Controllers\ReportGenerationController::class, 'index']);
-    Route::get('/reports/{id}/status', [\App\Http\Controllers\ReportGenerationController::class, 'status']);
-    Route::get('/reports/{id}/download', [\App\Http\Controllers\ReportGenerationController::class, 'download']);
-    Route::delete('/reports/{id}', [\App\Http\Controllers\ReportGenerationController::class, 'destroy']);
-    // Events & Guests Module
-    // ============================================
+        Route::post('/reports/generate', [\App\Http\Controllers\ReportGenerationController::class, 'generate']);
+        Route::get('/reports', [\App\Http\Controllers\ReportGenerationController::class, 'index']);
+        Route::get('/reports/{id}/status', [\App\Http\Controllers\ReportGenerationController::class, 'status']);
+        Route::get('/reports/{id}/download', [\App\Http\Controllers\ReportGenerationController::class, 'download']);
+        Route::delete('/reports/{id}', [\App\Http\Controllers\ReportGenerationController::class, 'destroy']);
+
+        // Events & Guests Module
+        // ============================================
 
     // Event Types (Form Designer)
     Route::get('/event-types', [\App\Http\Controllers\EventTypeController::class, 'index']);
@@ -634,13 +652,13 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::get('/event-types/{id}/fields', [\App\Http\Controllers\EventTypeController::class, 'getFields']);
     Route::post('/event-types/{id}/fields', [\App\Http\Controllers\EventTypeController::class, 'saveFields']);
 
-    // Events
-    Route::get('/events', [\App\Http\Controllers\EventController::class, 'index']);
-    Route::post('/events', [\App\Http\Controllers\EventController::class, 'store']);
-    Route::get('/events/{id}', [\App\Http\Controllers\EventController::class, 'show']);
-    Route::put('/events/{id}', [\App\Http\Controllers\EventController::class, 'update']);
-    Route::delete('/events/{id}', [\App\Http\Controllers\EventController::class, 'destroy']);
-    Route::get('/events/{id}/stats', [\App\Http\Controllers\EventController::class, 'stats']);
+        // Events
+        Route::get('/events', [\App\Http\Controllers\EventController::class, 'index']);
+        Route::post('/events', [\App\Http\Controllers\EventController::class, 'store']);
+        Route::get('/events/{id}', [\App\Http\Controllers\EventController::class, 'show']);
+        Route::put('/events/{id}', [\App\Http\Controllers\EventController::class, 'update']);
+        Route::delete('/events/{id}', [\App\Http\Controllers\EventController::class, 'destroy']);
+        Route::get('/events/{id}/stats', [\App\Http\Controllers\EventController::class, 'stats']);
 
     // Event Guests
     Route::get('/events/{eventId}/guests', [\App\Http\Controllers\EventGuestController::class, 'index']);
@@ -661,11 +679,12 @@ Route::middleware(['auth:sanctum', 'org.context'])->group(function () {
     Route::post('/events/{eventId}/checkin/lookup', [\App\Http\Controllers\EventCheckinController::class, 'lookupByToken']);
     Route::delete('/events/{eventId}/checkin/{checkinId}', [\App\Http\Controllers\EventCheckinController::class, 'undoCheckin']);
     
-    // Event-specific users management
-    Route::get('/events/{eventId}/users', [\App\Http\Controllers\EventUserController::class, 'index']);
-    Route::post('/events/{eventId}/users', [\App\Http\Controllers\EventUserController::class, 'store']);
-    Route::put('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'update']);
-    Route::delete('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'destroy']);
+        // Event-specific users management
+        Route::get('/events/{eventId}/users', [\App\Http\Controllers\EventUserController::class, 'index']);
+        Route::post('/events/{eventId}/users', [\App\Http\Controllers\EventUserController::class, 'store']);
+        Route::put('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'update']);
+        Route::delete('/events/{eventId}/users/{userId}', [\App\Http\Controllers\EventUserController::class, 'destroy']);
+    });
 });
 
 // Preview route (no auth required for template preview)

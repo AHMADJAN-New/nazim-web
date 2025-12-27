@@ -44,23 +44,12 @@ class StudentReportController extends Controller
         return [$profile, null];
     }
 
-    private function applyFilters(Request $request, $query, array $orgIds, array $schoolIds)
+    private function applyFilters(Request $request, $query, string $orgId, string $currentSchoolId)
     {
-        $query->whereIn('organization_id', $orgIds)
-              ->whereIn('school_id', $schoolIds)
-              ->whereNull('deleted_at');
-
-        if ($request->filled('organization_id') && in_array($request->organization_id, $orgIds)) {
-            $query->where('organization_id', $request->organization_id);
-        }
-
-        if ($request->filled('school_id')) {
-            if (in_array($request->school_id, $schoolIds)) {
-                $query->where('school_id', $request->school_id);
-            } else {
-                $query->whereRaw('1 = 0');
-            }
-        }
+        // Strict school scoping (ignore client-provided org/school ids)
+        $query->where('organization_id', $orgId)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at');
 
         if ($request->filled('student_status')) {
             $query->where('student_status', $request->student_status);
@@ -136,15 +125,11 @@ class StudentReportController extends Controller
             return $errorResponse;
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-        if (empty($schoolIds)) {
-            return response()->json([]);
-        }
-
-        $orgIds = [$profile->organization_id];
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        $orgId = $profile->organization_id;
 
         $query = Student::with(['school']);
-        $this->applyFilters($request, $query, $orgIds, $schoolIds);
+        $this->applyFilters($request, $query, $orgId, $currentSchoolId);
 
         $students = $query->orderBy('full_name')->get();
         $rows = $this->mapStudents($students);

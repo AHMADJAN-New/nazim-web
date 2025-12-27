@@ -18,7 +18,7 @@ export const useExamTypes = (filters?: { is_active?: boolean }) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamType[]>({
-    queryKey: ['exam-types', profile?.organization_id, filters],
+    queryKey: ['exam-types', profile?.organization_id, profile?.default_school_id ?? null, filters],
     queryFn: async () => {
       if (!user || !profile) {
         if (import.meta.env.DEV) {
@@ -44,7 +44,7 @@ export const useExamType = (id?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamType>({
-    queryKey: ['exam-type', id],
+    queryKey: ['exam-type', id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!id) throw new Error('Missing exam type id');
       const apiType = await examTypesApi.get(id);

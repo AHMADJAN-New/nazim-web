@@ -22,6 +22,10 @@ abstract class BaseDmsController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        // Require strict school context (enforced by school.context middleware).
+        // This must be used for all DMS data access to avoid cross-school leakage.
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         // Scope Spatie permissions to the organization
         // Set the team context for Spatie permissions
         // Note: setPermissionsTeamId() is a global helper function, not a method on User
@@ -80,9 +84,7 @@ abstract class BaseDmsController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
-
-        return [$user, $profile, $schoolIds];
+        return [$user, $profile, $currentSchoolId];
     }
 
     protected function userClearanceRank($user, string $organizationId): int
@@ -100,27 +102,6 @@ abstract class BaseDmsController extends Controller
         return $level?->rank ?? 0;
     }
 
-    protected function ensureSchoolAccess(?string $schoolId, array $schoolIds): ?JsonResponse
-    {
-        if (empty($schoolIds) || !$schoolId) {
-            return null;
-        }
-
-        if (!in_array($schoolId, $schoolIds, true)) {
-            return response()->json(['error' => 'School not accessible for this user'], 403);
-        }
-
-        return null;
-    }
-
-    /**
-     * Get accessible school IDs for the user.
-     * Returns empty array if user has access to all schools in the organization.
-     */
-    protected function getAccessibleSchoolIds($profile): array
-    {
-        // For now, return empty array to allow access to all schools
-        // This can be enhanced later with school-specific permissions
-        return [];
-    }
+    // NOTE: DMS is strictly school-scoped (permissions are org-scoped).
+    // Any "multi-school access" must be implemented explicitly and safely, not via empty allowlists.
 }

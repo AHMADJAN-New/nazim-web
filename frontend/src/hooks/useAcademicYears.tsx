@@ -16,7 +16,7 @@ export const useAcademicYears = (organizationId?: string) => {
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery<AcademicYear[]>({
-    queryKey: ['academic-years', organizationId || profile?.organization_id, orgIds.join(',')],
+    queryKey: ['academic-years', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -28,7 +28,7 @@ export const useAcademicYears = (organizationId?: string) => {
       // Map API models to domain models
       return (apiAcademicYears as AcademicYearApi.AcademicYear[]).map(mapAcademicYearApiToDomain);
     },
-    enabled: !!user && !!profile && !orgsLoading,
+    enabled: !!user && !!profile && !!profile.default_school_id && !orgsLoading,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -40,7 +40,7 @@ export const useCurrentAcademicYear = (organizationId?: string) => {
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery<AcademicYear | null>({
-    queryKey: ['current-academic-year', organizationId || profile?.organization_id, orgIds.join(',')],
+    queryKey: ['current-academic-year', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile) return null;
 
@@ -56,7 +56,7 @@ export const useCurrentAcademicYear = (organizationId?: string) => {
       
       return null;
     },
-    enabled: !!user && !!profile && !orgsLoading,
+    enabled: !!user && !!profile && !!profile.default_school_id && !orgsLoading,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,

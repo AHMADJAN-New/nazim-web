@@ -56,7 +56,7 @@ export const useExamPaperTemplates = (filters?: ExamPaperTemplateFilters) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamPaperTemplate[]>({
-    queryKey: ['exam-paper-templates', profile?.organization_id, filters],
+    queryKey: ['exam-paper-templates', profile?.organization_id, profile?.default_school_id ?? null, filters],
     queryFn: async () => {
       if (!user || !profile) return [];
 
@@ -93,7 +93,7 @@ export const useExamPaperTemplate = (templateId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamPaperTemplate | null>({
-    queryKey: ['exam-paper-template', templateId, profile?.organization_id],
+    queryKey: ['exam-paper-template', templateId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !templateId) return null;
 
@@ -301,7 +301,7 @@ export const useExamPaperStats = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamPaperStats | null>({
-    queryKey: ['exam-paper-stats', examId, profile?.organization_id],
+    queryKey: ['exam-paper-stats', examId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
 
@@ -331,7 +331,7 @@ export const useExamPaperPreviewStudent = (templateId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamPaperPreview | null>({
-    queryKey: ['exam-paper-preview-student', templateId, profile?.organization_id],
+    queryKey: ['exam-paper-preview-student', templateId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !templateId) return null;
 
@@ -359,7 +359,7 @@ export const useExamPaperPreviewTeacher = (templateId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamPaperPreview | null>({
-    queryKey: ['exam-paper-preview-teacher', templateId, profile?.organization_id],
+    queryKey: ['exam-paper-preview-teacher', templateId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !templateId) return null;
 
@@ -387,7 +387,7 @@ export const useAvailableTemplates = (examSubjectId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<AvailableTemplatesResponse | null>({
-    queryKey: ['available-templates', examSubjectId, profile?.organization_id],
+    queryKey: ['available-templates', examSubjectId, profile?.organization_id, profile?.default_school_id ?? null],
     queryFn: async () => {
       if (!user || !profile || !examSubjectId) return null;
 

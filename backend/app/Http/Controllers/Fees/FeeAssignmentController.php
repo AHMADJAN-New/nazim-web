@@ -26,6 +26,8 @@ class FeeAssignmentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('fees.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -48,6 +50,7 @@ class FeeAssignmentController extends Controller
 
         $query = FeeAssignment::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->with([
                 'feeStructure',
                 'student',
@@ -86,6 +89,8 @@ class FeeAssignmentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('fees.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -99,6 +104,7 @@ class FeeAssignmentController extends Controller
         // Ensure related models belong to the same organization
         $structure = FeeStructure::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($validated['fee_structure_id']);
 
         if (!$structure) {
@@ -107,6 +113,7 @@ class FeeAssignmentController extends Controller
 
         $admission = StudentAdmission::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($validated['student_admission_id']);
 
         if (!$admission) {
@@ -114,6 +121,7 @@ class FeeAssignmentController extends Controller
         }
 
         $validated['organization_id'] = $profile->organization_id;
+        $validated['school_id'] = $currentSchoolId;
         $validated['original_amount'] = $validated['original_amount'] ?? $structure->amount;
         $validated['assigned_amount'] = $validated['assigned_amount'] ?? $structure->amount;
         $validated['remaining_amount'] = $validated['assigned_amount'];
@@ -143,6 +151,8 @@ class FeeAssignmentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
         try {
             if (!$user->hasPermissionTo('fees.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -153,6 +163,7 @@ class FeeAssignmentController extends Controller
 
         $assignment = FeeAssignment::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$assignment) {
@@ -165,6 +176,7 @@ class FeeAssignmentController extends Controller
         if (isset($validated['fee_structure_id'])) {
             $structure = FeeStructure::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($validated['fee_structure_id']);
 
             if (!$structure) {
@@ -183,6 +195,7 @@ class FeeAssignmentController extends Controller
             $validated['remaining_amount'] = $validated['assigned_amount'] - $assignment->paid_amount;
         }
 
+        unset($validated['organization_id'], $validated['school_id']);
         $assignment->update($validated);
         $assignment->calculateRemainingAmount();
         $assignment->updateStatus();
@@ -204,6 +217,8 @@ class FeeAssignmentController extends Controller
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         try {
             if (!$user->hasPermissionTo('fees.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
@@ -214,6 +229,7 @@ class FeeAssignmentController extends Controller
 
         $assignment = FeeAssignment::whereNull('deleted_at')
             ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->find($id);
 
         if (!$assignment) {

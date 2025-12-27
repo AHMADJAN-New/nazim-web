@@ -11,8 +11,8 @@ class LibraryCategorySeeder extends Seeder
     /**
      * Seed the library_categories table.
      *
-     * Creates Islamic book categories in Arabic for all organizations.
-     * Categories are organization-specific (organization_id is required).
+     * Creates Islamic book categories in Arabic per organization + per school (strict school scoping).
+     * Categories are school-specific (organization_id and school_id are required).
      */
     public function run(): void
     {
@@ -155,51 +155,55 @@ class LibraryCategorySeeder extends Seeder
         $totalCreated = 0;
         $totalSkipped = 0;
 
-        // Create categories for each organization
+        // Create categories for each organization and school
         foreach ($organizations as $organization) {
-            $this->command->info("Creating categories for organization: {$organization->name}");
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
+                ->whereNull('deleted_at')
+                ->get();
 
-            $orgCreated = 0;
-            $orgSkipped = 0;
-
-            foreach ($categories as $categoryData) {
-                // Check if category already exists for this organization
-                $existing = LibraryCategory::where('organization_id', $organization->id)
-                    ->where('code', $categoryData['code'])
-                    ->whereNull('deleted_at')
-                    ->first();
-
-                if ($existing) {
-                    $orgSkipped++;
-                    continue;
-                }
-
-                // Create category for this organization
-                try {
-                    LibraryCategory::create([
-                        'organization_id' => $organization->id,
-                        'name' => $categoryData['name'],
-                        'code' => $categoryData['code'],
-                        'description' => $categoryData['description'],
-                        'is_active' => true,
-                        'display_order' => $categoryData['display_order'],
-                    ]);
-
-                    $orgCreated++;
-                    $this->command->info("  ✓ Created: {$categoryData['name']} ({$categoryData['code']})");
-                } catch (\Exception $e) {
-                    $this->command->error("  ✗ Failed to create {$categoryData['name']}: {$e->getMessage()}");
-                }
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping library category seeding for this org.");
+                continue;
             }
 
-            $totalCreated += $orgCreated;
-            $totalSkipped += $orgSkipped;
+            foreach ($schools as $school) {
+                $orgCreated = 0;
+                $orgSkipped = 0;
 
-            if ($orgCreated > 0) {
-                $this->command->info("  → Created {$orgCreated} category/categories for {$organization->name}");
-            }
-            if ($orgSkipped === count($categories) && $orgCreated === 0) {
-                $this->command->info("  ✓ All categories already exist for {$organization->name}");
+                foreach ($categories as $categoryData) {
+                    // Check if category already exists for this organization and school
+                    $existing = LibraryCategory::where('organization_id', $organization->id)
+                        ->where('school_id', $school->id)
+                        ->where('code', $categoryData['code'])
+                        ->whereNull('deleted_at')
+                        ->first();
+
+                    if ($existing) {
+                        $orgSkipped++;
+                        continue;
+                    }
+
+                    // Create category for this organization and school
+                    try {
+                        LibraryCategory::create([
+                            'organization_id' => $organization->id,
+                            'school_id' => $school->id,
+                            'name' => $categoryData['name'],
+                            'code' => $categoryData['code'],
+                            'description' => $categoryData['description'],
+                            'is_active' => true,
+                            'display_order' => $categoryData['display_order'],
+                        ]);
+
+                        $orgCreated++;
+                    } catch (\Exception $e) {
+                        $this->command->error("  ✗ Failed to create {$categoryData['name']}: {$e->getMessage()}");
+                    }
+                }
+
+                $totalCreated += $orgCreated;
+                $totalSkipped += $orgSkipped;
             }
         }
 

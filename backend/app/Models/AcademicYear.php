@@ -21,6 +21,7 @@ class AcademicYear extends Model
     protected $fillable = [
         'id',
         'organization_id',
+        'school_id',
         'name',
         'start_date',
         'end_date',
@@ -55,6 +56,7 @@ class AcademicYear extends Model
         static::updating(function ($model) {
             if ($model->isDirty('is_current') && $model->is_current === true) {
                 static::where('organization_id', $model->organization_id)
+                    ->where('school_id', $model->school_id)
                     ->where('id', '!=', $model->id)
                     ->whereNull('deleted_at')
                     ->update(['is_current' => false]);
@@ -71,6 +73,14 @@ class AcademicYear extends Model
     }
 
     /**
+     * Get the school that owns the academic year
+     */
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
+    }
+
+    /**
      * Get all class academic year instances for this academic year
      */
     public function classAcademicYears()
@@ -79,17 +89,15 @@ class AcademicYear extends Model
     }
 
     /**
-     * Scope to filter by organization (including global years)
+     * Scope to filter by organization.
+     * Note: Academic years are strictly school-scoped (no global rows).
      */
     public function scopeForOrganization($query, $organizationId)
     {
-        if ($organizationId === null) {
-            return $query->whereNull('organization_id');
+        if (!$organizationId) {
+            return $query->whereRaw('1=0');
         }
-        return $query->where(function ($q) use ($organizationId) {
-            $q->where('organization_id', $organizationId)
-              ->orWhereNull('organization_id'); // Include global years
-        });
+        return $query->where('organization_id', $organizationId);
     }
 
     /**

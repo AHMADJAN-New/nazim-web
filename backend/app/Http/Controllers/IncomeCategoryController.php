@@ -35,17 +35,15 @@ class IncomeCategoryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $validated = $request->validate([
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'is_active' => 'nullable|boolean',
             ]);
 
             $query = IncomeCategory::whereNull('deleted_at')
-                ->where('organization_id', $profile->organization_id);
-
-            if (!empty($validated['school_id'])) {
-                $query->where('school_id', $validated['school_id']);
-            }
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId);
 
             if (isset($validated['is_active'])) {
                 $query->where('is_active', filter_var($validated['is_active'], FILTER_VALIDATE_BOOLEAN));
@@ -90,12 +88,15 @@ class IncomeCategoryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'code' => ['nullable', 'string', 'max:50', Rule::unique('income_categories')->where(function ($query) use ($profile) {
-                    return $query->where('organization_id', $profile->organization_id)->whereNull('deleted_at');
+                'code' => ['nullable', 'string', 'max:50', Rule::unique('income_categories')->where(function ($query) use ($profile, $currentSchoolId) {
+                    return $query->where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
+                        ->whereNull('deleted_at');
                 })],
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'description' => 'nullable|string',
                 'is_restricted' => 'nullable|boolean',
                 'is_active' => 'nullable|boolean',
@@ -104,7 +105,7 @@ class IncomeCategoryController extends Controller
 
             $category = IncomeCategory::create([
                 'organization_id' => $profile->organization_id,
-                'school_id' => $validated['school_id'] ?? null,
+                'school_id' => $currentSchoolId,
                 'name' => trim($validated['name']),
                 'code' => $validated['code'] ?? null,
                 'description' => $validated['description'] ?? null,
@@ -146,8 +147,11 @@ class IncomeCategoryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId(request());
+
             $category = IncomeCategory::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($id);
 
             if (!$category) {
@@ -182,8 +186,11 @@ class IncomeCategoryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId($request);
+
             $category = IncomeCategory::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($id);
 
             if (!$category) {
@@ -192,10 +199,11 @@ class IncomeCategoryController extends Controller
 
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
-                'code' => ['nullable', 'string', 'max:50', Rule::unique('income_categories')->where(function ($query) use ($profile) {
-                    return $query->where('organization_id', $profile->organization_id)->whereNull('deleted_at');
+                'code' => ['nullable', 'string', 'max:50', Rule::unique('income_categories')->where(function ($query) use ($profile, $currentSchoolId) {
+                    return $query->where('organization_id', $profile->organization_id)
+                        ->where('school_id', $currentSchoolId)
+                        ->whereNull('deleted_at');
                 })->ignore($id)],
-                'school_id' => 'nullable|uuid|exists:school_branding,id',
                 'description' => 'nullable|string',
                 'is_restricted' => 'nullable|boolean',
                 'is_active' => 'nullable|boolean',
@@ -241,8 +249,11 @@ class IncomeCategoryController extends Controller
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
 
+            $currentSchoolId = $this->getCurrentSchoolId(request());
+
             $category = IncomeCategory::whereNull('deleted_at')
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId)
                 ->find($id);
 
             if (!$category) {

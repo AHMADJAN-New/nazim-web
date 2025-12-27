@@ -244,6 +244,7 @@ class UserController extends Controller
             'default_school_id' => $defaultSchoolId,
             'staff_id' => $request->staff_id ?? null,
             'phone' => $request->phone ?? null,
+            'schools_access_all' => $request->boolean('schools_access_all', false),
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -402,6 +403,7 @@ class UserController extends Controller
         if ($request->has('is_active')) $updateData['is_active'] = $request->is_active;
         if ($request->has('default_school_id')) $updateData['default_school_id'] = $request->default_school_id;
         if ($request->has('staff_id')) $updateData['staff_id'] = $request->staff_id;
+        if ($request->has('schools_access_all')) $updateData['schools_access_all'] = $request->boolean('schools_access_all');
 
         // Prevent organization_id changes (all users)
         if ($request->has('organization_id') && $request->organization_id !== $targetProfile->organization_id) {
@@ -432,39 +434,6 @@ class UserController extends Controller
         DB::table('profiles')
             ->where('id', $id)
             ->update($updateData);
-
-        // Handle schools.access_all permission assignment/removal
-        if ($request->has('schools_access_all')) {
-            $userModel = \App\Models\User::find($id);
-            if ($userModel) {
-                // Ensure organization context is set
-                if (function_exists('setPermissionsTeamId')) {
-                    setPermissionsTeamId($targetProfile->organization_id);
-                }
-                
-                if ($request->boolean('schools_access_all')) {
-                    // Grant permission
-                    try {
-                        $userModel->givePermissionTo('schools.access_all');
-                    } catch (\Exception $e) {
-                        Log::warning("Failed to grant schools.access_all permission", [
-                            'user_id' => $id,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                } else {
-                    // Revoke permission
-                    try {
-                        $userModel->revokePermissionTo('schools.access_all');
-                    } catch (\Exception $e) {
-                        Log::warning("Failed to revoke schools.access_all permission", [
-                            'user_id' => $id,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                }
-            }
-        }
 
         $updatedProfile = DB::table('profiles')->where('id', $id)->first();
 

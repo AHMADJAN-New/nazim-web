@@ -40,23 +40,41 @@ class ExchangeRateSeeder extends Seeder
         foreach ($organizations as $organization) {
             $this->command->info("Creating exchange rates for {$organization->name}...");
 
-            // Get currencies for this organization
-            $currencies = Currency::where('organization_id', $organization->id)
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
                 ->whereNull('deleted_at')
-                ->where('is_active', true)
-                ->get()
-                ->keyBy('code');
+                ->get();
 
-            if ($currencies->isEmpty()) {
-                $this->command->warn("  ⚠ No currencies found for {$organization->name}. Please run CurrencySeeder first.");
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping exchange rate seeding for this org.");
                 continue;
             }
 
-            // Create exchange rates for this organization
-            $created = $this->createExchangeRatesForOrganization($organization->id, $currencies);
-            $totalCreated += $created;
+            foreach ($schools as $school) {
+                $this->command->info("Creating exchange rates for {$organization->name} - school: {$school->school_name}...");
 
-            $this->command->info("  → Created {$created} exchange rate(s) for {$organization->name}");
+                // Get currencies for this school
+                $currencies = Currency::where('organization_id', $organization->id)
+                    ->where('school_id', $school->id)
+                    ->whereNull('deleted_at')
+                    ->where('is_active', true)
+                    ->get()
+                    ->keyBy('code');
+
+                if ($currencies->isEmpty()) {
+                    $this->command->warn("  ⚠ No currencies found for {$organization->name} - {$school->school_name}. Please run CurrencySeeder first.");
+                    continue;
+                }
+
+                // Create exchange rates for this school
+                $created = $this->createExchangeRatesForSchool($organization->id, $school->id, $currencies);
+                $totalCreated += $created;
+
+                if ($created > 0) {
+                    $this->command->info("  → Created {$created} exchange rate(s) for {$organization->name} - {$school->school_name}");
+                }
+            }
         }
 
         if ($totalCreated > 0) {
@@ -67,9 +85,9 @@ class ExchangeRateSeeder extends Seeder
     }
 
     /**
-     * Create exchange rates for a specific organization
+     * Create exchange rates for a specific school
      */
-    protected function createExchangeRatesForOrganization(string $organizationId, $currencies): int
+    protected function createExchangeRatesForSchool(string $organizationId, string $schoolId, $currencies): int
     {
         $createdCount = 0;
         $effectiveDate = Carbon::today()->toDateString();
@@ -114,6 +132,7 @@ class ExchangeRateSeeder extends Seeder
                 // Create forward rate (from -> to)
                 $created = $this->createRateIfNotExists(
                     $organizationId,
+                    $schoolId,
                     $currencyIds[$fromCode],
                     $currencyIds[$toCode],
                     $rate,
@@ -128,6 +147,7 @@ class ExchangeRateSeeder extends Seeder
                 // Create reverse rate (to -> from)
                 $created = $this->createRateIfNotExists(
                     $organizationId,
+                    $schoolId,
                     $currencyIds[$toCode],
                     $currencyIds[$fromCode],
                     $reverseRate,
@@ -192,14 +212,16 @@ class ExchangeRateSeeder extends Seeder
      */
     protected function createRateIfNotExists(
         string $organizationId,
+        string $schoolId,
         string $fromCurrencyId,
         string $toCurrencyId,
         float $rate,
         string $effectiveDate,
         string $notes = null
     ): bool {
-        // Check if rate already exists for this date
+        // Check if rate already exists for this date (by organization_id, school_id, from_currency_id, to_currency_id, and effective_date)
         $exists = ExchangeRate::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
             ->where('from_currency_id', $fromCurrencyId)
             ->where('to_currency_id', $toCurrencyId)
             ->where('effective_date', $effectiveDate)
@@ -212,6 +234,7 @@ class ExchangeRateSeeder extends Seeder
 
         ExchangeRate::create([
             'organization_id' => $organizationId,
+            'school_id' => $schoolId,
             'from_currency_id' => $fromCurrencyId,
             'to_currency_id' => $toCurrencyId,
             'rate' => $rate, // Already rounded to 2 decimal places before calling

@@ -20,6 +20,7 @@ class AssetMaintenanceRecord extends Model
         'id',
         'asset_id',
         'organization_id',
+        'school_id',
         'maintenance_type',
         'status',
         'performed_on',
@@ -51,5 +52,10 @@ class AssetMaintenanceRecord extends Model
     public function asset()
     {
         return $this->belongsTo(Asset::class);
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(SchoolBranding::class, 'school_id');
     }
 }

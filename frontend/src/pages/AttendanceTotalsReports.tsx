@@ -362,7 +362,7 @@ export default function AttendanceTotalsReports() {
                                             <Icon className="h-3.5 w-3.5" />
                                             {meta.label}
                                         </div>
-                                        <div className="text-2xl font-semibold">{formatDateTime(total)}</div>
+                                        <div className="text-2xl font-semibold">{total}</div>
                                         <p className="text-xs text-muted-foreground">{t('attendanceTotalsReport.records') || 'records'}</p>
                                     </div>
                                 );

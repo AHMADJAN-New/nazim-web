@@ -9,7 +9,7 @@ export const useLetterTypes = (activeOnly = false) => {
   const { user, profile } = useAuth();
 
   return useQuery<LetterTypeEntity[]>({
-    queryKey: ['dms', 'letter-types', profile?.organization_id, activeOnly],
+    queryKey: ['dms', 'letter-types', profile?.organization_id, profile?.default_school_id ?? null, activeOnly],
     queryFn: async () => {
       if (!user || !profile) return [];
 

@@ -33,22 +33,40 @@ class FinanceAccountSeeder extends Seeder
         foreach ($organizations as $organization) {
             $this->command->info("Creating finance accounts for {$organization->name}...");
 
-            // Get base currency for this organization
-            $baseCurrency = Currency::where('organization_id', $organization->id)
-                ->where('is_base', true)
+            // Get all schools for this organization
+            $schools = DB::table('school_branding')
+                ->where('organization_id', $organization->id)
                 ->whereNull('deleted_at')
-                ->first();
+                ->get();
 
-            if (!$baseCurrency) {
-                $this->command->warn("  ⚠ No base currency found for {$organization->name}. Skipping accounts.");
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$organization->name}. Skipping finance account seeding for this org.");
                 continue;
             }
 
-            // Create accounts for this organization
-            $created = $this->createAccountsForOrganization($organization->id, $baseCurrency->id);
-            $totalCreated += $created;
+            foreach ($schools as $school) {
+                $this->command->info("Creating finance accounts for {$organization->name} - school: {$school->school_name}...");
 
-            $this->command->info("  → Created {$created} account(s) for {$organization->name}");
+                // Get base currency for this school
+                $baseCurrency = Currency::where('organization_id', $organization->id)
+                    ->where('school_id', $school->id)
+                    ->where('is_base', true)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if (!$baseCurrency) {
+                    $this->command->warn("  ⚠ No base currency found for {$organization->name} - {$school->school_name}. Skipping accounts.");
+                    continue;
+                }
+
+                // Create accounts for this school
+                $created = $this->createAccountsForSchool($organization->id, $school->id, $baseCurrency->id);
+                $totalCreated += $created;
+
+                if ($created > 0) {
+                    $this->command->info("  → Created {$created} account(s) for {$organization->name} - {$school->school_name}");
+                }
+            }
         }
 
         if ($totalCreated > 0) {
@@ -59,9 +77,9 @@ class FinanceAccountSeeder extends Seeder
     }
 
     /**
-     * Create finance accounts for a specific organization
+     * Create finance accounts for a specific school
      */
-    protected function createAccountsForOrganization(string $organizationId, string $currencyId): int
+    protected function createAccountsForSchool(string $organizationId, string $schoolId, string $currencyId): int
     {
         $createdCount = 0;
 
@@ -115,8 +133,9 @@ class FinanceAccountSeeder extends Seeder
         ];
 
         foreach ($accounts as $accountData) {
-            // Check if account already exists for this organization
+            // Check if account already exists for this school (by code, organization_id, and school_id)
             $exists = FinanceAccount::where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
                 ->where('code', $accountData['code'])
                 ->whereNull('deleted_at')
                 ->exists();
@@ -124,7 +143,7 @@ class FinanceAccountSeeder extends Seeder
             if (!$exists) {
                 FinanceAccount::create([
                     'organization_id' => $organizationId,
-                    'school_id' => null,
+                    'school_id' => $schoolId,
                     'currency_id' => $currencyId,
                     'name' => $accountData['name'],
                     'code' => $accountData['code'],
@@ -138,7 +157,7 @@ class FinanceAccountSeeder extends Seeder
                 $createdCount++;
                 $this->command->info("    ✓ Created account: {$accountData['name']} ({$accountData['name_en']})");
             } else {
-                $this->command->info("    ⊘ Account {$accountData['code']} already exists for this organization");
+                $this->command->info("    ⊘ Account {$accountData['code']} already exists for this school");
             }
         }
 

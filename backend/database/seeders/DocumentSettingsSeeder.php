@@ -10,23 +10,42 @@ class DocumentSettingsSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * Creates document settings per organization + per school (strict school scoping).
      */
     public function run(): void
     {
-        $organizations = DB::table('organizations')->get();
+        $createdCount = 0;
+        $skippedCount = 0;
+
+        $organizations = DB::table('organizations')->whereNull('deleted_at')->get();
 
         foreach ($organizations as $org) {
-            // Check if settings already exist for this organization
-            $exists = DB::table('document_settings')
+            $schools = DB::table('school_branding')
                 ->where('organization_id', $org->id)
-                ->whereNull('school_id')
-                ->exists();
+                ->whereNull('deleted_at')
+                ->get();
 
-            if (!$exists) {
+            if ($schools->isEmpty()) {
+                $this->command->warn("  ⚠ No schools found for organization {$org->name}. Skipping document settings seeding for this org.");
+                continue;
+            }
+
+            foreach ($schools as $school) {
+                // Check if settings already exist for this organization and school
+                $exists = DB::table('document_settings')
+                    ->where('organization_id', $org->id)
+                    ->where('school_id', $school->id)
+                    ->exists();
+
+                if ($exists) {
+                    $skippedCount++;
+                    continue;
+                }
+
                 DB::table('document_settings')->insert([
                     'id' => Str::uuid(),
                     'organization_id' => $org->id,
-                    'school_id' => null,
+                    'school_id' => $school->id,
                     'incoming_prefix' => 'IN',
                     'outgoing_prefix' => 'OUT',
                     'year_mode' => 'gregorian', // or 'shamsi', 'hijri'
@@ -34,9 +53,17 @@ class DocumentSettingsSeeder extends Seeder
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+                $createdCount++;
             }
         }
 
-        $this->command->info('Document settings seeded successfully for all organizations.');
+        if ($createdCount > 0 || $skippedCount > 0) {
+            $this->command->info("  → Created {$createdCount} document setting(s), skipped {$skippedCount} existing");
+        }
+
+        $this->command->info('✅ Document settings seeded successfully for all organizations and schools.');
     }
 }
+
+

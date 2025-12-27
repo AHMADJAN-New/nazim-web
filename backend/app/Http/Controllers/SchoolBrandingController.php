@@ -42,9 +42,11 @@ class SchoolBrandingController extends Controller
             return response()->json([]);
         }
 
-        // Get accessible school IDs based on permission and default_school_id
-        $schoolIds = $this->getAccessibleSchoolIds($profile);
+        // Get accessible school IDs based on schools_access_all permission
+        $schoolIds = $this->getAccessibleSchoolIds($profile, $request);
 
+        // If user has schools_access_all, show all schools in organization
+        // Otherwise, show only their default school
         if (empty($schoolIds)) {
             return response()->json([]);
         }

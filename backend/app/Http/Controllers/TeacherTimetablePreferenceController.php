@@ -38,37 +38,17 @@ class TeacherTimetablePreferenceController extends Controller
                 Log::warning("Permission check failed for teacher_timetable_preferences.read - allowing access: " . $e->getMessage());
             }
 
-            // Get accessible organization IDs (user's organization only)
-            $orgIds = [$profile->organization_id];
+            $currentSchoolId = $this->getCurrentSchoolId($request);
 
-            $query = TeacherTimetablePreference::whereNull('deleted_at');
+            $query = TeacherTimetablePreference::whereNull('deleted_at')
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $currentSchoolId);
 
             // Try to eager load relationships, but don't fail if they don't exist
             try {
                 $query->with(['academicYear', 'teacher']);
             } catch (\Exception $e) {
                 Log::warning("Failed to eager load relationships for teacher timetable preferences: " . $e->getMessage());
-            }
-
-            // Filter by organization
-            if ($request->has('organization_id') && $request->organization_id) {
-                if (in_array($request->organization_id, $orgIds) || empty($orgIds)) {
-                    $query->where(function ($q) use ($request) {
-                        $q->where('organization_id', $request->organization_id)
-                          ->orWhereNull('organization_id');
-                    });
-                } else {
-                    return response()->json([]);
-                }
-            } else {
-                if (!empty($orgIds)) {
-                    $query->where(function ($q) use ($orgIds) {
-                        $q->whereIn('organization_id', $orgIds)
-                          ->orWhereNull('organization_id');
-                    });
-                } else {
-                    $query->whereNull('organization_id');
-                }
             }
 
             // Filter by teacher_id if provided
@@ -78,10 +58,7 @@ class TeacherTimetablePreferenceController extends Controller
 
             // Filter by academic_year_id if provided
             if ($request->has('academic_year_id') && $request->academic_year_id) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('academic_year_id', $request->academic_year_id)
-                      ->orWhereNull('academic_year_id');
-                });
+                $query->where('academic_year_id', $request->academic_year_id);
             }
 
             $preferences = $query->orderBy('created_at', 'desc')->get();
@@ -162,18 +139,14 @@ class TeacherTimetablePreferenceController extends Controller
 
         $validated = $request->validated();
 
-        // Get organization_id - use provided or user's org
-        $organizationId = $validated['organization_id'] ?? $profile->organization_id;
-
-        // Validate organization access (all users)
-        if ($organizationId !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot create preference for different organization'], 403);
-        }
+        $organizationId = $profile->organization_id;
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         $preference = TeacherTimetablePreference::create([
             'teacher_id' => $validated['teacher_id'],
             'schedule_slot_ids' => $validated['schedule_slot_ids'],
             'organization_id' => $organizationId,
+            'school_id' => $currentSchoolId,
             'academic_year_id' => $validated['academic_year_id'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
             'notes' => $validated['notes'] ?? null,
@@ -228,17 +201,16 @@ class TeacherTimetablePreferenceController extends Controller
             Log::warning("Permission check failed for teacher_timetable_preferences.read - allowing access: " . $e->getMessage());
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
         $preference = TeacherTimetablePreference::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->with(['academicYear', 'teacher'])
             ->find($id);
 
         if (!$preference) {
             return response()->json(['error' => 'Teacher timetable preference not found'], 404);
-        }
-
-        // Check organization access (all users)
-        if ($preference->organization_id !== $profile->organization_id && $preference->organization_id !== null) {
-            return response()->json(['error' => 'Access denied to this preference'], 403);
         }
 
         return response()->json([
@@ -288,15 +260,15 @@ class TeacherTimetablePreferenceController extends Controller
             Log::warning("Permission check failed for teacher_timetable_preferences.update - allowing access: " . $e->getMessage());
         }
 
-        $preference = TeacherTimetablePreference::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        $preference = TeacherTimetablePreference::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$preference) {
             return response()->json(['error' => 'Teacher timetable preference not found'], 404);
-        }
-
-        // Check organization access (all users)
-        if ($preference->organization_id !== $profile->organization_id && $preference->organization_id !== null) {
-            return response()->json(['error' => 'Cannot update preference from different organization'], 403);
         }
 
         $validated = $request->validated();
@@ -362,20 +334,20 @@ class TeacherTimetablePreferenceController extends Controller
             Log::warning("Permission check failed for teacher_timetable_preferences.delete - allowing access: " . $e->getMessage());
         }
 
-        $preference = TeacherTimetablePreference::whereNull('deleted_at')->find($id);
+        $currentSchoolId = $this->getCurrentSchoolId(request());
+
+        $preference = TeacherTimetablePreference::whereNull('deleted_at')
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->find($id);
 
         if (!$preference) {
             return response()->json(['error' => 'Teacher timetable preference not found'], 404);
         }
 
-        // Check organization access (all users)
-        if ($preference->organization_id !== $profile->organization_id && $preference->organization_id !== null) {
-            return response()->json(['error' => 'Cannot delete preference from different organization'], 403);
-        }
-
         $preference->delete();
 
-        return response()->json(['message' => 'Teacher timetable preference deleted successfully'], 200);
+        return response()->noContent();
     }
 
     /**
@@ -406,18 +378,14 @@ class TeacherTimetablePreferenceController extends Controller
 
         $validated = $request->validated();
 
-        // Get organization_id - use provided or user's org
-        $organizationId = $validated['organization_id'] ?? $profile->organization_id;
-
-        // Validate organization access (all users)
-        if ($organizationId !== $profile->organization_id) {
-            return response()->json(['error' => 'Cannot upsert preference for different organization'], 403);
-        }
+        $organizationId = $profile->organization_id;
+        $currentSchoolId = $this->getCurrentSchoolId($request);
 
         // Check if preference exists (by teacher + academic_year + org)
         $existing = TeacherTimetablePreference::whereNull('deleted_at')
             ->where('teacher_id', $validated['teacher_id'])
-            ->where('organization_id', $organizationId);
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $currentSchoolId);
 
         if (isset($validated['academic_year_id']) && $validated['academic_year_id']) {
             $existing->where('academic_year_id', $validated['academic_year_id']);
@@ -460,6 +428,7 @@ class TeacherTimetablePreferenceController extends Controller
                 'teacher_id' => $validated['teacher_id'],
                 'schedule_slot_ids' => $validated['schedule_slot_ids'],
                 'organization_id' => $organizationId,
+                'school_id' => $currentSchoolId,
                 'academic_year_id' => $validated['academic_year_id'] ?? null,
                 'is_active' => $validated['is_active'] ?? true,
                 'notes' => $validated['notes'] ?? null,

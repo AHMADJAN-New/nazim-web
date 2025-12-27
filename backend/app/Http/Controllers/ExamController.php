@@ -40,7 +40,8 @@ class ExamController extends Controller
         try {
             $query = Exam::with(['academicYear'])
                 ->whereNull('deleted_at')
-                ->where('organization_id', $profile->organization_id);
+                ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $this->getCurrentSchoolId($request));
 
             // Filter by academic year
             if ($request->filled('academic_year_id')) {
@@ -101,8 +102,9 @@ class ExamController extends Controller
 
         // Validate academic year belongs to organization
         $academicYear = AcademicYear::find($validated['academic_year_id']);
-        if ($academicYear && $academicYear->organization_id && $academicYear->organization_id !== $profile->organization_id) {
-            return response()->json(['error' => 'Academic year does not belong to your organization'], 403);
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+        if (!$academicYear || $academicYear->organization_id !== $profile->organization_id || $academicYear->school_id !== $currentSchoolId) {
+            return response()->json(['error' => 'Academic year does not belong to your school'], 403);
         }
 
         // Validate date range consistency
@@ -122,6 +124,7 @@ class ExamController extends Controller
             'end_date' => $validated['end_date'] ?? null,
             'status' => $validated['status'] ?? Exam::STATUS_DRAFT,
             'organization_id' => $profile->organization_id,
+            'school_id' => $currentSchoolId,
         ]);
 
         $exam->load(['academicYear']);
@@ -132,9 +135,9 @@ class ExamController extends Controller
     /**
      * Get a specific exam
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $user = request()->user();
+        $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
         if (!$profile) {
@@ -157,6 +160,7 @@ class ExamController extends Controller
         try {
             $exam = Exam::with(['academicYear', 'examClasses.classAcademicYear.class'])
                 ->where('organization_id', $profile->organization_id)
+                ->where('school_id', $this->getCurrentSchoolId($request))
                 ->where('id', $id)
                 ->whereNull('deleted_at')
                 ->first();
@@ -201,7 +205,9 @@ class ExamController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->whereNull('deleted_at')
             ->first();
@@ -230,8 +236,8 @@ class ExamController extends Controller
         // Validate academic year if being changed
         if (isset($validated['academic_year_id'])) {
             $academicYear = AcademicYear::find($validated['academic_year_id']);
-            if ($academicYear && $academicYear->organization_id && $academicYear->organization_id !== $profile->organization_id) {
-                return response()->json(['error' => 'Academic year does not belong to your organization'], 403);
+            if (!$academicYear || $academicYear->organization_id !== $profile->organization_id || $academicYear->school_id !== $currentSchoolId) {
+                return response()->json(['error' => 'Academic year does not belong to your school'], 403);
             }
         }
 
@@ -290,7 +296,9 @@ class ExamController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = request()->get('current_school_id');
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->whereNull('deleted_at')
             ->first();
@@ -353,7 +361,9 @@ class ExamController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->where('id', $id)
             ->whereNull('deleted_at')
             ->first();

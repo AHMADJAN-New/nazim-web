@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Certificates;
 
 use App\Http\Controllers\Controller;
 use App\Models\CertificateTemplate;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +12,9 @@ use Illuminate\Support\Facades\Storage;
 
 class CertificateTemplateController extends Controller
 {
+    public function __construct(
+        private FileStorageService $fileStorageService
+    ) {}
     private function getProfile($user)
     {
         return DB::table('profiles')->where('id', (string) $user->id)->first();
@@ -29,14 +33,10 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $query = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
             ->whereNull('deleted_at');
-
-        if ($request->filled('school_id')) {
-            $query->where(function ($q) use ($request) {
-                $q->whereNull('school_id')->orWhere('school_id', $request->input('school_id'));
-            });
-        }
 
         if ($request->filled('type')) {
             $query->where('type', $request->input('type'));
@@ -58,8 +58,8 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
+        $currentSchoolId = $this->getCurrentSchoolId($request);
         $validated = $request->validate([
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'type' => 'required|string|in:graduation,promotion,completion,merit,appreciation',
             'title' => 'required|string|max:255',
             'body_html' => 'nullable|string',
@@ -74,21 +74,30 @@ class CertificateTemplateController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
-        // If school_id is provided, verify it belongs to the user's organization
-        $schoolId = $validated['school_id'] ?? $profile->default_school_id;
-        if ($schoolId) {
-            $schoolBelongsToOrg = DB::table('school_branding')
-                ->where('id', $schoolId)
-                ->where('organization_id', $profile->organization_id)
-                ->exists();
-            if (!$schoolBelongsToOrg) {
-                return response()->json(['error' => 'School does not belong to your organization'], 403);
-            }
-        }
+        $schoolId = $currentSchoolId;
+
+        // Generate template ID first so we can use it in file paths
+        $templateId = (string) \Illuminate\Support\Str::uuid();
 
         $backgroundPath = null;
         if ($request->hasFile('background_image')) {
-            $backgroundPath = $request->file('background_image')->store('certificate-templates/' . $profile->organization_id, 'local');
+            $file = $request->file('background_image');
+
+            // Validate image extension using FileStorageService
+            if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
+                return response()->json([
+                    'error' => 'The background image must be a valid image file (jpg, jpeg, png, gif, or webp).',
+                    'errors' => ['background_image' => ['Invalid file type.']]
+                ], 422);
+            }
+
+            // Store using FileStorageService (PRIVATE storage for certificate templates)
+            $backgroundPath = $this->fileStorageService->storeCertificateTemplateBackground(
+                $file,
+                $profile->organization_id,
+                $schoolId,
+                $templateId
+            );
         }
 
         // Parse layout_config if provided
@@ -103,6 +112,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::create([
+            'id' => $templateId,
             'organization_id' => $profile->organization_id,
             'school_id' => $schoolId,
             'type' => $validated['type'],
@@ -138,6 +148,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -146,7 +157,6 @@ class CertificateTemplateController extends Controller
         }
 
         $validated = $request->validate([
-            'school_id' => 'nullable|uuid|exists:school_branding,id',
             'type' => 'nullable|string|in:graduation,promotion,completion,merit,appreciation',
             'title' => 'nullable|string|max:255',
             'body_html' => 'nullable|string',
@@ -163,10 +173,28 @@ class CertificateTemplateController extends Controller
 
         if ($request->hasFile('background_image')) {
             try {
-                if ($template->background_image_path && Storage::exists($template->background_image_path)) {
-                    Storage::delete($template->background_image_path);
+                $file = $request->file('background_image');
+
+                // Validate image extension using FileStorageService
+                if (!$this->fileStorageService->isAllowedExtension($file->getClientOriginalName(), $this->fileStorageService->getAllowedImageExtensions())) {
+                    return response()->json([
+                        'error' => 'The background image must be a valid image file (jpg, jpeg, png, gif, or webp).',
+                        'errors' => ['background_image' => ['Invalid file type.']]
+                    ], 422);
                 }
-                $validated['background_image_path'] = $request->file('background_image')->store('certificate-templates/' . $profile->organization_id, 'local');
+
+                // Delete old background if exists using FileStorageService
+                if ($template->background_image_path) {
+                    $this->fileStorageService->deleteFile($template->background_image_path);
+                }
+
+                // Store using FileStorageService (PRIVATE storage for certificate templates)
+                $validated['background_image_path'] = $this->fileStorageService->storeCertificateTemplateBackground(
+                    $file,
+                    $profile->organization_id,
+                    $template->school_id,
+                    $template->id
+                );
             } catch (\Exception $e) {
                 Log::error('Certificate template background upload failed', ['error' => $e->getMessage()]);
             }
@@ -205,6 +233,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -229,6 +258,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -256,6 +286,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
@@ -263,11 +294,13 @@ class CertificateTemplateController extends Controller
             return response()->json(['error' => 'Background image not found'], 404);
         }
 
-        if (!Storage::exists($template->background_image_path)) {
+        // Check if file exists using FileStorageService
+        if (!$this->fileStorageService->fileExists($template->background_image_path)) {
             return response()->json(['error' => 'Background image file not found'], 404);
         }
 
-        return Storage::response($template->background_image_path);
+        // Get file and return response using FileStorageService
+        return $this->fileStorageService->getFileResponse($template->background_image_path);
     }
 
     public function activate(Request $request, string $id)
@@ -294,6 +327,7 @@ class CertificateTemplateController extends Controller
         }
 
         $template = CertificateTemplate::where('organization_id', $profile->organization_id)
+            ->where('school_id', $this->getCurrentSchoolId($request))
             ->whereNull('deleted_at')
             ->find($id);
 
