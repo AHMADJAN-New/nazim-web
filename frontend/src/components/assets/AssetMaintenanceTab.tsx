@@ -29,6 +29,7 @@ import { ColumnDef, flexRender } from '@tanstack/react-table';
 import { toast } from 'sonner';
 import { useLanguage } from '@/hooks/useLanguage';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 const maintenanceSchema = z.object({
   assetId: z.string().min(1, 'Asset is required'),
@@ -325,6 +326,30 @@ export default function AssetMaintenanceTab() {
     paginationMeta: null,
   });
 
+  // Transform maintenance records for export
+  const transformMaintenanceForExport = (data: typeof filteredMaintenance): Record<string, any>[] => {
+    return data.map((m) => ({
+      asset_name: m.assetName || '',
+      asset_tag: m.assetTag || '',
+      maintenance_type: m.data.maintenanceType || 'General',
+      status: m.data.status || '',
+      performed_on: m.data.performedOn ? formatDate(m.data.performedOn) : 'N/A',
+      next_due_date: m.data.nextDueDate ? formatDate(m.data.nextDueDate) : 'N/A',
+      cost: m.data.cost ? `$${Number(m.data.cost).toFixed(2)}` : 'N/A',
+      vendor: m.data.vendor || 'N/A',
+      notes: m.data.notes || '',
+    }));
+  };
+
+  // Build filters summary
+  const buildFiltersSummary = (): string => {
+    const parts: string[] = [];
+    if (statusFilter !== 'all') {
+      parts.push(`Status: ${statusFilter}`);
+    }
+    return parts.length > 0 ? parts.join(' | ') : 'All maintenance records';
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters and Actions */}
@@ -352,8 +377,34 @@ export default function AssetMaintenanceTab() {
       {/* Maintenance Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('assets.maintenanceRecords')}</CardTitle>
-          <CardDescription>Track all maintenance activities for your assets</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{t('assets.maintenanceRecords')}</CardTitle>
+              <CardDescription>Track all maintenance activities for your assets</CardDescription>
+            </div>
+            <ReportExportButtons
+              data={filteredMaintenance}
+              columns={[
+                { key: 'asset_name', label: 'Asset Name', align: 'left' },
+                { key: 'asset_tag', label: 'Asset Tag', align: 'left' },
+                { key: 'maintenance_type', label: 'Type', align: 'left' },
+                { key: 'status', label: 'Status', align: 'left' },
+                { key: 'performed_on', label: 'Performed On', align: 'left' },
+                { key: 'next_due_date', label: 'Next Due Date', align: 'left' },
+                { key: 'cost', label: 'Cost', align: 'left' },
+                { key: 'vendor', label: 'Vendor', align: 'left' },
+                { key: 'notes', label: 'Notes', align: 'left' },
+              ]}
+              reportKey="assets_maintenance"
+              title="Assets Maintenance Report"
+              transformData={transformMaintenanceForExport}
+              buildFiltersSummary={buildFiltersSummary}
+              templateType="assets_maintenance"
+              disabled={filteredMaintenance.length === 0}
+              buttonSize="sm"
+              buttonVariant="outline"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {filteredMaintenance.length === 0 ? (

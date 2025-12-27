@@ -31,6 +31,7 @@ import { ColumnDef, flexRender } from '@tanstack/react-table';
 import { toast } from 'sonner';
 import { useLanguage } from '@/hooks/useLanguage';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 const assignmentSchema = z.object({
   assetId: z.string().min(1, 'Asset is required'),
@@ -340,6 +341,29 @@ export default function AssetAssignmentsTab() {
     },
   });
 
+  // Transform assignments for export
+  const transformAssignmentsForExport = (data: typeof filteredAssignments): Record<string, any>[] => {
+    return data.map((a) => ({
+      asset_name: a.assetName || '',
+      asset_tag: a.assetTag || '',
+      assigned_to: getAssigneeName(a.data),
+      assigned_to_type: a.data.assignedToType || '',
+      assigned_on: a.data.assignedOn ? formatDate(a.data.assignedOn) : 'N/A',
+      expected_return: a.data.expectedReturnDate ? formatDate(a.data.expectedReturnDate) : 'N/A',
+      status: a.data.status || '',
+      notes: a.data.notes || '',
+    }));
+  };
+
+  // Build filters summary
+  const buildFiltersSummary = (): string => {
+    const parts: string[] = [];
+    if (statusFilter !== 'all') {
+      parts.push(`Status: ${statusFilter}`);
+    }
+    return parts.length > 0 ? parts.join(' | ') : 'All assignments';
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -377,8 +401,33 @@ export default function AssetAssignmentsTab() {
       {/* Assignments Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Asset Assignments</CardTitle>
-          <CardDescription>Track all asset assignments across your organization</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Asset Assignments</CardTitle>
+              <CardDescription>Track all asset assignments across your organization</CardDescription>
+            </div>
+            <ReportExportButtons
+              data={filteredAssignments}
+              columns={[
+                { key: 'asset_name', label: 'Asset Name', align: 'left' },
+                { key: 'asset_tag', label: 'Asset Tag', align: 'left' },
+                { key: 'assigned_to', label: 'Assigned To', align: 'left' },
+                { key: 'assigned_to_type', label: 'Type', align: 'left' },
+                { key: 'assigned_on', label: 'Assigned On', align: 'left' },
+                { key: 'expected_return', label: 'Expected Return', align: 'left' },
+                { key: 'status', label: 'Status', align: 'left' },
+                { key: 'notes', label: 'Notes', align: 'left' },
+              ]}
+              reportKey="assets_assignments"
+              title="Assets Assignments Report"
+              transformData={transformAssignmentsForExport}
+              buildFiltersSummary={buildFiltersSummary}
+              templateType="assets_assignments"
+              disabled={filteredAssignments.length === 0}
+              buttonSize="sm"
+              buttonVariant="outline"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {filteredAssignments.length === 0 ? (

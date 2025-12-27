@@ -42,6 +42,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 const categorySchema = z.object({
     name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -96,6 +97,26 @@ export default function AssetCategories() {
             (category.description && category.description.toLowerCase().includes(query))
         );
     }, [categories, searchQuery]);
+
+    // Transform categories for export
+    const transformCategoriesForExport = (data: AssetCategory[]): Record<string, any>[] => {
+        return data.map((category) => ({
+            name: category.name || '',
+            code: category.code || '',
+            description: category.description || '',
+            display_order: category.display_order ?? 0,
+            status: category.is_active ? 'Active' : 'Inactive',
+        }));
+    };
+
+    // Build filters summary
+    const buildFiltersSummary = (): string => {
+        const parts: string[] = [];
+        if (searchQuery) {
+            parts.push(`Search: ${searchQuery}`);
+        }
+        return parts.length > 0 ? parts.join(' | ') : 'All categories';
+    };
 
     const handleOpenDialog = (categoryId?: string) => {
         if (categoryId) {
@@ -214,10 +235,32 @@ export default function AssetCategories() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Categories</CardTitle>
-                    <CardDescription>
-                        {Array.isArray(categories) ? categories.length : 0} total categories
-                    </CardDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Categories</CardTitle>
+                            <CardDescription>
+                                {Array.isArray(categories) ? categories.length : 0} total categories
+                            </CardDescription>
+                        </div>
+                        <ReportExportButtons
+                            data={filteredCategories}
+                            columns={[
+                                { key: 'name', label: 'Name', align: 'left' },
+                                { key: 'code', label: 'Code', align: 'left' },
+                                { key: 'description', label: 'Description', align: 'left' },
+                                { key: 'display_order', label: 'Order', align: 'left' },
+                                { key: 'status', label: 'Status', align: 'left' },
+                            ]}
+                            reportKey="asset_categories"
+                            title="Asset Categories Report"
+                            transformData={transformCategoriesForExport}
+                            buildFiltersSummary={buildFiltersSummary}
+                            templateType="asset_categories"
+                            disabled={isLoading || filteredCategories.length === 0}
+                            buttonSize="sm"
+                            buttonVariant="outline"
+                        />
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div className="mb-4">

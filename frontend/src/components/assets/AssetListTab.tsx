@@ -33,6 +33,7 @@ import { useFinanceAccounts } from '@/hooks/useFinance';
 import { useCurrencies } from '@/hooks/useCurrencies';
 import type { Asset } from '@/types/domain/asset';
 import { CalendarFormField } from '@/components/ui/calendar-form-field';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
@@ -49,6 +50,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 const assetSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -543,6 +545,42 @@ export default function AssetListTab() {
     },
   });
 
+  // Transform assets for export
+  const transformAssetsForExport = (data: Asset[]): Record<string, any>[] => {
+    return data.map((asset) => ({
+      name: asset.name || '',
+      asset_tag: asset.assetTag || '',
+      status: asset.status || '',
+      category: asset.categoryName || asset.category || '',
+      serial_number: asset.serialNumber || '',
+      purchase_price: asset.purchasePrice ? `$${asset.purchasePrice.toFixed(2)}` : '',
+      total_copies: asset.totalCopiesCount ?? asset.totalCopies ?? 1,
+      available_copies: asset.availableCopiesCount ?? 0,
+      purchase_date: asset.purchaseDate ? formatDate(asset.purchaseDate) : '',
+      warranty_expiry: asset.warrantyExpiry ? formatDate(asset.warrantyExpiry) : '',
+      vendor: asset.vendor || '',
+      location: asset.roomNumber 
+        ? `Room: ${asset.roomNumber}`
+        : asset.buildingName 
+        ? `Building: ${asset.buildingName}`
+        : asset.schoolName 
+        ? `School: ${asset.schoolName}`
+        : 'Unassigned',
+    }));
+  };
+
+  // Build filters summary
+  const buildFiltersSummary = (): string => {
+    const parts: string[] = [];
+    if (search) {
+      parts.push(`Search: ${search}`);
+    }
+    if (statusFilter) {
+      parts.push(`Status: ${statusFilter}`);
+    }
+    return parts.length > 0 ? parts.join(' | ') : 'All assets';
+  };
+
   return (
     <div className="space-y-4">
       {/* Stats Cards */}
@@ -612,8 +650,37 @@ export default function AssetListTab() {
       {/* Assets Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Assets</CardTitle>
-          <CardDescription>Manage and track all assets in your organization</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Assets</CardTitle>
+              <CardDescription>Manage and track all assets in your organization</CardDescription>
+            </div>
+            <ReportExportButtons
+              data={assets as Asset[]}
+              columns={[
+                { key: 'name', label: 'Name', align: 'left' },
+                { key: 'asset_tag', label: 'Asset Tag', align: 'left' },
+                { key: 'status', label: 'Status', align: 'left' },
+                { key: 'category', label: 'Category', align: 'left' },
+                { key: 'serial_number', label: 'Serial Number', align: 'left' },
+                { key: 'purchase_price', label: 'Purchase Price', align: 'left' },
+                { key: 'total_copies', label: 'Total Copies', align: 'left' },
+                { key: 'available_copies', label: 'Available Copies', align: 'left' },
+                { key: 'purchase_date', label: 'Purchase Date', align: 'left' },
+                { key: 'warranty_expiry', label: 'Warranty Expiry', align: 'left' },
+                { key: 'vendor', label: 'Vendor', align: 'left' },
+                { key: 'location', label: 'Location', align: 'left' },
+              ]}
+              reportKey="assets_management"
+              title="Assets Management Report"
+              transformData={transformAssetsForExport}
+              buildFiltersSummary={buildFiltersSummary}
+              templateType="assets_management"
+              disabled={isLoading || assets.length === 0}
+              buttonSize="sm"
+              buttonVariant="outline"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -752,14 +819,38 @@ export default function AssetListTab() {
                 <Label>
                   Purchase Date <span className="text-destructive">*</span>
                 </Label>
-                <CalendarFormField control={control} name="purchaseDate" label="Purchase Date" />
+                <Controller
+                  control={control}
+                  name="purchaseDate"
+                  render={({ field }) => (
+                    <CalendarDatePicker
+                      date={field.value ? (typeof field.value === 'string' ? new Date(field.value) : field.value) : undefined}
+                      onDateChange={(date) => {
+                        field.onChange(date ? date.toISOString().slice(0, 10) : '');
+                      }}
+                      placeholder="Select purchase date"
+                    />
+                  )}
+                />
                 {errors.purchaseDate && (
                   <p className="text-sm text-destructive mt-1">{errors.purchaseDate.message}</p>
                 )}
               </div>
               <div>
                 <Label>Warranty Expiry</Label>
-                <CalendarFormField control={control} name="warrantyExpiry" label="Warranty Expiry" />
+                <Controller
+                  control={control}
+                  name="warrantyExpiry"
+                  render={({ field }) => (
+                    <CalendarDatePicker
+                      date={field.value ? (typeof field.value === 'string' ? new Date(field.value) : field.value) : undefined}
+                      onDateChange={(date) => {
+                        field.onChange(date ? date.toISOString().slice(0, 10) : null);
+                      }}
+                      placeholder="Select warranty expiry date"
+                    />
+                  )}
+                />
               </div>
               <div>
                 <Label>Vendor</Label>
