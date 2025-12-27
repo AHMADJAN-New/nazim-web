@@ -12,6 +12,8 @@ import { Trash2, Plus, Pencil, CheckCircle, XCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Switch } from '@/components/ui/switch';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
+import { useProfile } from '@/hooks/useProfiles';
 import {
   Dialog,
   DialogContent,
@@ -231,6 +233,7 @@ function GradeDialog({ open, onOpenChange, gradeId }: GradeDialogProps) {
 
 export default function GradesManagement() {
   const { t } = useLanguage();
+  const { data: profile } = useProfile();
   const { data: grades, isLoading } = useGrades();
   const deleteGrade = useDeleteGrade();
   const canCreate = useHasPermission('grades.create');
@@ -274,12 +277,43 @@ export default function GradesManagement() {
               <CardTitle>{t('grades.management')}</CardTitle>
               <CardDescription>{t('grades.managementDescription')}</CardDescription>
             </div>
-            {canCreate && (
-              <Button onClick={handleCreate}>
-                <Plus className="h-4 w-4 mr-2" />
-                {t('grades.create')}
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {grades && grades.length > 0 && (
+                <ReportExportButtons
+                  data={grades}
+                  columns={[
+                    { key: 'nameEn', label: t('grades.nameEn') },
+                    { key: 'nameAr', label: t('grades.nameAr') },
+                    { key: 'namePs', label: t('grades.namePs') },
+                    { key: 'nameFa', label: t('grades.nameFa') },
+                    { key: 'percentageRange', label: t('grades.percentageRange') },
+                    { key: 'order', label: t('grades.order') },
+                    { key: 'isPass', label: t('grades.isPass') },
+                  ]}
+                  reportKey="grades"
+                  title={t('grades.management') || 'Grades Report'}
+                  transformData={(data) => data.map((grade) => ({
+                    nameEn: grade.nameEn || '',
+                    nameAr: grade.nameAr || '',
+                    namePs: grade.namePs || '',
+                    nameFa: grade.nameFa || '',
+                    percentageRange: `${grade.minPercentage}% - ${grade.maxPercentage}%`,
+                    order: grade.order || 0,
+                    isPass: grade.isPass ? t('grades.passingGrade') : t('grades.failingGrade'),
+                  }))}
+                  buildFiltersSummary={() => ''}
+                  schoolId={profile?.default_school_id}
+                  templateType="grades"
+                  disabled={!grades || grades.length === 0}
+                />
+              )}
+              {canCreate && (
+                <Button onClick={handleCreate}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('grades.create')}
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

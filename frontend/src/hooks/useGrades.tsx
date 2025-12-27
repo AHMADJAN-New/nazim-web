@@ -73,17 +73,10 @@ export const useCreateGrade = () => {
       queryClient.invalidateQueries({ queryKey: ['grades'] });
 
       // Show success message
-      showToast({
-        title: t?.('grades.created') || 'Grade created successfully',
-        type: 'success',
-      });
+      showToast.success(t('grades.created') || 'Grade created successfully');
     },
     onError: (error: any) => {
-      showToast({
-        title: t?.('grades.createError') || 'Failed to create grade',
-        description: error.message || 'An error occurred',
-        type: 'error',
-      });
+      showToast.error(error.message || t('grades.createError') || 'Failed to create grade');
     },
   });
 };
@@ -109,17 +102,10 @@ export const useUpdateGrade = () => {
       queryClient.invalidateQueries({ queryKey: ['grades'] });
       queryClient.invalidateQueries({ queryKey: ['grade', updatedGrade.id] });
 
-      showToast({
-        title: t?.('grades.updated') || 'Grade updated successfully',
-        type: 'success',
-      });
+      showToast.success(t('grades.updated') || 'Grade updated successfully');
     },
     onError: (error: any) => {
-      showToast({
-        title: t?.('grades.updateError') || 'Failed to update grade',
-        description: error.message || 'An error occurred',
-        type: 'error',
-      });
+      showToast.error(error.message || t('grades.updateError') || 'Failed to update grade');
     },
   });
 };
@@ -143,17 +129,10 @@ export const useDeleteGrade = () => {
       queryClient.invalidateQueries({ queryKey: ['grades'] });
       queryClient.invalidateQueries({ queryKey: ['grade', deletedId] });
 
-      showToast({
-        title: t?.('grades.deleted') || 'Grade deleted successfully',
-        type: 'success',
-      });
+      showToast.success(t('grades.deleted') || 'Grade deleted successfully');
     },
     onError: (error: any) => {
-      showToast({
-        title: t?.('grades.deleteError') || 'Failed to delete grade',
-        description: error.message || 'An error occurred',
-        type: 'error',
-      });
+      showToast.error(error.message || t('grades.deleteError') || 'Failed to delete grade');
     },
   });
 };
