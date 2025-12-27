@@ -8,6 +8,7 @@ use App\Services\Reports\ReportConfig;
 use App\Services\Reports\ReportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ReportGenerationController extends Controller
@@ -42,6 +43,7 @@ class ReportGenerationController extends Controller
         ]);
 
         // Get organization from authenticated user
+        $user = $request->user();
         $profile = Auth::user()?->profile;
         $organizationId = $profile?->organization_id;
         $currentSchoolId = $request->get('current_school_id');
@@ -53,9 +55,29 @@ class ReportGenerationController extends Controller
             return response()->json(['error' => 'School context is required'], 403);
         }
 
+        // Check if user has schools_access_all permission
+        $hasSchoolsAccessAll = (bool) ($profile->schools_access_all ?? false);
+
         // Enforce school scoping: branding_id is the school id (school_branding)
-        if (!empty($validated['branding_id']) && $validated['branding_id'] !== $currentSchoolId) {
-            return response()->json(['error' => 'Cannot generate report for a different school'], 403);
+        // For users with schools_access_all, allow generating reports for any school in their organization
+        // For other users, branding_id must match their current school
+        if (!empty($validated['branding_id'])) {
+            if (!$hasSchoolsAccessAll && $validated['branding_id'] !== $currentSchoolId) {
+                return response()->json(['error' => 'Cannot generate report for a different school'], 403);
+            }
+            
+            // For users with schools_access_all, validate that the branding_id belongs to their organization
+            if ($hasSchoolsAccessAll) {
+                $brandingSchool = DB::table('school_branding')
+                    ->where('id', $validated['branding_id'])
+                    ->where('organization_id', $organizationId)
+                    ->whereNull('deleted_at')
+                    ->first();
+                
+                if (!$brandingSchool) {
+                    return response()->json(['error' => 'Invalid school for report generation'], 403);
+                }
+            }
         }
 
         // Create config

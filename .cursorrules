@@ -3792,6 +3792,117 @@ The reporting system provides:
 - **Template auto-selection** based on column count
 - **Custom ReportTemplates** for per-report-type customization
 
+### Report Acceptance Criteria
+
+**CRITICAL: ALL reports MUST meet these acceptance criteria before being considered complete.**
+
+#### General Requirements
+- ✅ **Exports match the on-screen filters**: Reports must include only the data that matches the current filter state visible to the user
+- ✅ **RTL text never breaks**: Pashto/Arabic/Farsi text must display correctly with proper alignment and no text wrapping issues
+- ✅ **RTL alignment correct**: Right-to-left languages must be properly aligned (right-aligned text, proper column ordering)
+
+#### PDF Report Requirements
+- ✅ **Title**: Report must include a clear, descriptive title
+- ✅ **Organization/School name**: Must display the organization name and/or school name
+- ✅ **Date range**: Must show the date range of the data (if applicable) or generation date
+- ✅ **Page numbers**: Must include page numbers (e.g., "Page 1 of 5") on all pages
+- ✅ **Filter summary**: Should include a summary of active filters (optional but recommended)
+
+#### Excel Report Requirements
+- ✅ **Title row**: First row must contain the report title (merged cells across all columns)
+- ✅ **Column headings**: Second row must contain clear column headers matching the data columns
+- ✅ **Totals row** (where applicable): Last row before data ends must show totals for numeric columns (e.g., sum, count, average)
+- ✅ **Filter summary**: Should include a summary of active filters in a separate row or sheet (optional but recommended)
+
+#### RTL Text Handling
+
+**CRITICAL: RTL languages (Pashto, Arabic, Farsi) require special handling to prevent text breaking and alignment issues.**
+
+##### PDF RTL Requirements
+- ✅ **Text direction**: RTL text must use proper `dir="rtl"` attribute in HTML
+- ✅ **Font support**: Must use fonts that support RTL characters (e.g., Noto Sans Arabic, Tahoma)
+- ✅ **Column alignment**: RTL text columns must be right-aligned
+- ✅ **No text wrapping**: Long RTL text should not break mid-word; use proper line breaks or column width adjustments
+- ✅ **Bidi algorithm**: Must respect bidirectional text algorithm for mixed LTR/RTL content
+
+##### Excel RTL Requirements
+- ✅ **Cell alignment**: RTL text cells must be right-aligned (`setAlignment('right')`)
+- ✅ **Column width**: Columns with RTL text must have sufficient width to prevent text wrapping
+- ✅ **Font support**: Must use fonts that support RTL characters
+- ✅ **Text direction**: Excel cells should respect RTL text direction (handled by PhpSpreadsheet automatically for RTL fonts)
+- ✅ **No text truncation**: Ensure column widths accommodate full RTL text without truncation
+
+##### Implementation Pattern for RTL
+
+```php
+// In ExcelReportService - RTL column width calculation
+private function calculateColumnWidth($sheet, string $colLetter, int $startRow, int $endRow): float
+{
+    $maxWidth = 0;
+    $defaultFontSize = $this->parseFontSize($sheet->getStyle("{$colLetter}{$startRow}")->getFont()->getSize() ?? 12);
+    
+    for ($row = $startRow; $row <= $endRow; $row++) {
+        $cell = $sheet->getCell("{$colLetter}{$row}");
+        $value = $cell->getValue();
+        
+        if ($value !== null && $value !== '') {
+            $text = (string) $value;
+            $charCount = mb_strlen($text, 'UTF-8');
+            $cellFontSize = $this->parseFontSize($sheet->getStyle("{$colLetter}{$row}")->getFont()->getSize() ?? $defaultFontSize);
+            
+            // Check for RTL characters
+            $hasRTL = preg_match('/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}]/u', $text);
+            $rtlFactor = $hasRTL ? 1.5 : 1.0; // RTL characters are ~50% wider
+            
+            $width = $charCount * ($cellFontSize / 11.0) * $rtlFactor;
+            $maxWidth = max($maxWidth, $width);
+        }
+    }
+    return $maxWidth;
+}
+
+// Set RTL alignment for cells with RTL text
+if ($hasRTL) {
+    $sheet->getStyle("{$colLetter}{$row}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+}
+```
+
+```html
+<!-- In PDF Blade templates - RTL support -->
+<div dir="rtl" lang="ar" style="font-family: 'Noto Sans Arabic', Tahoma, sans-serif;">
+    <table style="direction: rtl; text-align: right;">
+        <tr>
+            <td style="text-align: right;">{{ $rtlText }}</td>
+        </tr>
+    </table>
+</div>
+```
+
+#### Report Validation Checklist
+
+Before marking a report feature as complete, verify:
+
+**General:**
+- [ ] Exports match on-screen filters exactly
+- [ ] RTL text displays correctly without breaking
+- [ ] RTL alignment is correct (right-aligned for RTL languages)
+- [ ] Mixed LTR/RTL content handles correctly
+
+**PDF:**
+- [ ] Title is present and clear
+- [ ] Organization/school name is displayed
+- [ ] Date range or generation date is shown
+- [ ] Page numbers are present on all pages
+- [ ] Filter summary is included (if applicable)
+
+**Excel:**
+- [ ] Title row is present (merged across columns)
+- [ ] Column headings are clear and match data
+- [ ] Totals row is present for numeric columns (where applicable)
+- [ ] Filter summary is included (if applicable)
+- [ ] RTL text columns are right-aligned
+- [ ] Column widths accommodate RTL text without wrapping
+
 ### Database Tables
 
 | Table | Description |

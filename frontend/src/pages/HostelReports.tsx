@@ -1,7 +1,9 @@
 import { useMemo, useState, useEffect } from 'react';
-import { BarChart3, BedDouble, Building2, FileDown, ShieldCheck, Users, Search, X, MapPin, UserCheck, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BarChart3, BedDouble, Building2, ShieldCheck, Users, Search, X, MapPin, UserCheck } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHostelOverview } from '@/hooks/useHostel';
+import { useLanguage } from '@/hooks/useLanguage';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -30,6 +32,7 @@ interface WardenCoverageRow {
 }
 
 export function HostelReports() {
+  const { t } = useLanguage();
   const { data: profile } = useProfile();
   const orgId = profile?.organization_id;
 
@@ -208,27 +211,74 @@ export function HostelReports() {
     return hostelOverview.rooms.filter((room) => room.buildingId === selectedBuilding);
   }, [hostelOverview, selectedBuilding]);
 
-  const exportBuildingCsv = () => {
-    const headers = ['Building', 'Rooms', 'Occupied Rooms', 'Boarders Assigned', 'Rooms With Wardens'];
-    const rows = buildingReports.map((row) => [
-      row.buildingName,
-      row.totalRooms.toString(),
-      row.occupiedRooms.toString(),
-      row.boardersAssigned.toString(),
-      row.wardensCovering.toString(),
-    ]);
+  // Transform functions for report exports
+  const transformBuildingReports = (data: BuildingReportRow[]) => {
+    return data.map((row) => ({
+      building_name: row.buildingName,
+      total_rooms: row.totalRooms,
+      occupied_rooms: row.occupiedRooms,
+      boarders_assigned: row.boardersAssigned,
+      wardens_covering: row.wardensCovering,
+      utilization_rate: row.totalRooms > 0 ? ((row.occupiedRooms / row.totalRooms) * 100).toFixed(1) + '%' : '0%',
+    }));
+  };
 
-    const csvContent = [headers, ...rows]
-      .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(','))
-      .join('\n');
+  const transformWardenCoverage = (data: WardenCoverageRow[]) => {
+    return data.map((row) => ({
+      warden_name: row.wardenName,
+      buildings: row.buildings,
+      rooms: row.rooms,
+      students: row.students,
+    }));
+  };
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'hostel-building-report.csv';
-    link.click();
-    URL.revokeObjectURL(url);
+  const transformAssignedBoarders = (data: Array<HostelOccupant & { roomNumber: string; buildingName: string | null; roomId: string }>) => {
+    return data.map((boarder) => ({
+      student_name: boarder.studentName || '—',
+      admission_number: boarder.admissionNumber || '—',
+      building_name: boarder.buildingName || '—',
+      room_number: boarder.roomNumber || '—',
+      admission_year: boarder.admissionYear || '—',
+    }));
+  };
+
+  const transformUnassignedBoarders = (data: HostelOccupant[]) => {
+    return data.map((boarder) => ({
+      student_name: boarder.studentName || '—',
+      admission_number: boarder.admissionNumber || '—',
+      class_name: boarder.className || '—',
+      residency_type: boarder.residencyTypeName || 'Boarder',
+    }));
+  };
+
+  // Build filters summary functions
+  const buildBuildingFiltersSummary = () => {
+    return `Total buildings: ${buildingReports.length}`;
+  };
+
+  const buildWardenFiltersSummary = () => {
+    return `Total wardens: ${wardenCoverage.length}`;
+  };
+
+  const buildAssignedBoardersFiltersSummary = () => {
+    const parts: string[] = [];
+    if (assignedSearchQuery) parts.push(`Search: "${assignedSearchQuery}"`);
+    if (selectedBuilding !== 'all') {
+      const building = buildingsForFilter.find(b => b.id === selectedBuilding);
+      if (building) parts.push(`Building: ${building.buildingName}`);
+    }
+    if (selectedRoom !== 'all') {
+      const room = roomsForFilter.find(r => r.id === selectedRoom);
+      if (room) parts.push(`Room: ${room.roomNumber}`);
+    }
+    return parts.length > 0 ? parts.join(' • ') : `Total assigned boarders: ${filteredAssignedBoarders.length}`;
+  };
+
+  const buildUnassignedBoardersFiltersSummary = () => {
+    if (unassignedSearchQuery) {
+      return `Search: "${unassignedSearchQuery}" • Total: ${filteredUnassignedBoarders.length}`;
+    }
+    return `Total unassigned boarders: ${filteredUnassignedBoarders.length}`;
   };
 
   if (isLoading) {
@@ -238,12 +288,12 @@ export function HostelReports() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Hostel reporting
+              {t('hostel.reports.hostelReporting') || 'Hostel reporting'}
             </CardTitle>
-            <CardDescription>Preparing hostel reporting data...</CardDescription>
+            <CardDescription>{t('hostel.reports.preparingReportData') || 'Preparing hostel reporting data...'}</CardDescription>
           </CardHeader>
           <CardContent>
-            <LoadingSpinner size="lg" text="Loading hostel reports..." />
+            <LoadingSpinner size="lg" text={t('hostel.reports.loadingHostelReports') || 'Loading hostel reports...'} />
           </CardContent>
         </Card>
       </div>
@@ -256,16 +306,12 @@ export function HostelReports() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <BarChart3 className="h-6 w-6" />
-            Hostel reporting
+            {t('hostel.reports.hostelReporting') || 'Hostel reporting'}
           </h1>
           <p className="text-muted-foreground">
-            Monitor hostel utilization by building, warden coverage, and unassigned boarders.
+            {t('hostel.reports.monitorUtilization') || 'Monitor hostel utilization by building, warden coverage, and unassigned boarders.'}
           </p>
         </div>
-        <Button variant="outline" onClick={exportBuildingCsv} disabled={buildingReports.length === 0}>
-          <FileDown className="h-4 w-4 mr-2" />
-          Export building report
-        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -354,15 +400,30 @@ export function HostelReports() {
           <Card>
             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle>Building utilization</CardTitle>
-                <CardDescription>Rooms, occupancy, and warden coverage by building.</CardDescription>
+                <CardTitle>{t('hostel.reports.buildingUtilization') || 'Building utilization'}</CardTitle>
+                <CardDescription>{t('hostel.reports.buildingUtilizationDescription') || 'Rooms, occupancy, and warden coverage by building.'}</CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{buildingReports.length} buildings</Badge>
-                <Button variant="outline" size="sm" onClick={exportBuildingCsv} disabled={buildingReports.length === 0}>
-                  <FileDown className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
+                <ReportExportButtons
+                  data={buildingReports}
+                  columns={[
+                    { key: 'building_name', label: t('hostel.reports.buildingColumn') || t('settings.buildings.buildingName') || 'Building', align: 'left' },
+                    { key: 'total_rooms', label: t('hostel.reports.roomsColumn') || t('hostel.reports.rooms') || 'Rooms', align: 'left' },
+                    { key: 'occupied_rooms', label: t('hostel.reports.occupiedColumn') || t('hostel.reports.occupiedRooms') || 'Occupied Rooms', align: 'left' },
+                    { key: 'boarders_assigned', label: t('hostel.reports.boardersColumn') || t('hostel.reports.boardersAssigned') || 'Boarders Assigned', align: 'left' },
+                    { key: 'wardens_covering', label: t('hostel.reports.roomsWithWardens') || 'Rooms With Wardens', align: 'left' },
+                    { key: 'utilization_rate', label: t('hostel.reports.utilizationColumn') || 'Utilization Rate', align: 'left' },
+                  ]}
+                  reportKey="hostel_building_utilization"
+                  title={t('hostel.reports.buildingUtilization') || 'Building Utilization Report'}
+                  transformData={transformBuildingReports}
+                  buildFiltersSummary={buildBuildingFiltersSummary}
+                  templateType="hostel_building_utilization"
+                  disabled={isLoading || buildingReports.length === 0}
+                  buttonSize="sm"
+                  buttonVariant="outline"
+                />
               </div>
             </CardHeader>
             <CardContent>
@@ -428,10 +489,29 @@ export function HostelReports() {
           <Card>
             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle>Warden coverage</CardTitle>
-                <CardDescription>Room assignments and student counts per warden.</CardDescription>
+                <CardTitle>{t('hostel.reports.wardenCoverage') || 'Warden coverage'}</CardTitle>
+                <CardDescription>{t('hostel.reports.wardenCoverageDescription') || 'Room assignments and student counts per warden.'}</CardDescription>
               </div>
-              <Badge variant="outline">{wardenCoverage.length} wardens</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{wardenCoverage.length} wardens</Badge>
+                <ReportExportButtons
+                  data={wardenCoverage}
+                  columns={[
+                    { key: 'warden_name', label: t('hostel.reports.wardenName') || t('hostel.warden') || 'Warden', align: 'left' },
+                    { key: 'buildings', label: t('hostel.reports.buildingsColumn') || t('hostel.reports.buildings') || 'Buildings', align: 'left' },
+                    { key: 'rooms', label: t('hostel.reports.roomsColumn') || t('hostel.reports.rooms') || 'Rooms', align: 'left' },
+                    { key: 'students', label: t('hostel.reports.studentsLabel') || t('hostel.reports.students') || 'Boarders', align: 'left' },
+                  ]}
+                  reportKey="hostel_warden_coverage"
+                  title={t('hostel.reports.wardenCoverage') || 'Warden Coverage Report'}
+                  transformData={transformWardenCoverage}
+                  buildFiltersSummary={buildWardenFiltersSummary}
+                  templateType="hostel_warden_coverage"
+                  disabled={isLoading || wardenCoverage.length === 0}
+                  buttonSize="sm"
+                  buttonVariant="outline"
+                />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
@@ -478,8 +558,8 @@ export function HostelReports() {
         <TabsContent value="room-buildings" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Room & Buildings Report</CardTitle>
-              <CardDescription>All students assigned to rooms, organized by building and room.</CardDescription>
+              <CardTitle>{t('hostel.reports.roomAndBuildingsTitle') || 'Room & Buildings Report'}</CardTitle>
+              <CardDescription>{t('hostel.reports.roomAndBuildingsDescription') || 'All students assigned to rooms, organized by building and room.'}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
@@ -563,9 +643,29 @@ export function HostelReports() {
         {/* Assigned Boarders Tab */}
         <TabsContent value="assigned-boarders" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Assigned Boarders</CardTitle>
-              <CardDescription>All students currently assigned to rooms. Search and filter by building or room.</CardDescription>
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle>{t('hostel.reports.assignedBoarders') || 'Assigned Boarders'}</CardTitle>
+                <CardDescription>{t('hostel.reports.assignedBoardersDescription') || 'All students currently assigned to rooms. Search and filter by building or room.'}</CardDescription>
+              </div>
+              <ReportExportButtons
+                data={filteredAssignedBoarders}
+                columns={[
+                  { key: 'student_name', label: t('hostel.reports.student') || 'Student', align: 'left' },
+                  { key: 'admission_number', label: t('hostel.reports.admissionNumberColumn') || 'Admission #', align: 'left' },
+                  { key: 'building_name', label: t('hostel.reports.buildingColumn') || t('settings.buildings.buildingName') || 'Building', align: 'left' },
+                  { key: 'room_number', label: t('hostel.reports.roomLabel') || t('settings.rooms.roomNumber') || 'Room', align: 'left' },
+                  { key: 'admission_year', label: t('hostel.reports.admissionYearColumn') || 'Admission Year', align: 'left' },
+                ]}
+                reportKey="hostel_assigned_boarders"
+                title={t('hostel.reports.assignedBoardersTitle') || t('hostel.reports.assignedBoarders') || 'Assigned Boarders Report'}
+                transformData={transformAssignedBoarders}
+                buildFiltersSummary={buildAssignedBoardersFiltersSummary}
+                templateType="hostel_assigned_boarders"
+                disabled={isLoading || filteredAssignedBoarders.length === 0}
+                buttonSize="sm"
+                buttonVariant="outline"
+              />
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col gap-4 md:flex-row">
@@ -721,9 +821,28 @@ export function HostelReports() {
         {/* Unassigned Boarders Tab */}
         <TabsContent value="unassigned-boarders" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Unassigned Boarders</CardTitle>
-              <CardDescription>Students marked as boarders who still need a room assignment.</CardDescription>
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle>{t('hostel.reports.unassignedBoarders') || 'Unassigned Boarders'}</CardTitle>
+                <CardDescription>{t('hostel.reports.unassignedBoardersDescription') || 'Students marked as boarders who still need a room assignment.'}</CardDescription>
+              </div>
+              <ReportExportButtons
+                data={filteredUnassignedBoarders}
+                columns={[
+                  { key: 'student_name', label: t('hostel.reports.student') || 'Student', align: 'left' },
+                  { key: 'admission_number', label: t('hostel.reports.admissionNumberColumn') || 'Admission #', align: 'left' },
+                  { key: 'class_name', label: t('hostel.reports.classColumn') || 'Class', align: 'left' },
+                  { key: 'residency_type', label: t('hostel.reports.residencyTypeColumn') || 'Residency Type', align: 'left' },
+                ]}
+                reportKey="hostel_unassigned_boarders"
+                title={t('hostel.reports.unassignedBoardersTitle') || t('hostel.reports.unassignedBoarders') || 'Unassigned Boarders Report'}
+                transformData={transformUnassignedBoarders}
+                buildFiltersSummary={buildUnassignedBoardersFiltersSummary}
+                templateType="hostel_unassigned_boarders"
+                disabled={isLoading || filteredUnassignedBoarders.length === 0}
+                buttonSize="sm"
+                buttonVariant="outline"
+              />
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="relative">

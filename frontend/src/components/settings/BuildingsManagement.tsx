@@ -1,13 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useBuildings, useCreateBuilding, useUpdateBuilding, useDeleteBuilding, type Building } from '@/hooks/useBuildings';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { useSchools, useSchool } from '@/hooks/useSchools';
-import { useReportTemplates } from '@/hooks/useReportTemplates';
-import { useServerReport } from '@/hooks/useServerReport';
-import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
-import { showToast } from '@/lib/toast';
+import { useSchools } from '@/hooks/useSchools';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,7 +39,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Search, Building2, FileDown, FileSpreadsheet } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Building2 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -116,10 +113,6 @@ export function BuildingsManagement() {
     return selectedSchoolId || profile?.default_school_id || (schools && schools.length > 0 ? schools[0].id : undefined);
   }, [selectedSchoolId, profile?.default_school_id, schools]);
 
-  const { data: school } = useSchool(effectiveSchoolId || '');
-  const { data: templates } = useReportTemplates(effectiveSchoolId);
-  const { generateReport, status, progress, downloadUrl, isGenerating, error: reportError, downloadReport, reset: resetReport } = useServerReport();
-  const [showReportProgress, setShowReportProgress] = useState(false);
 
   // Auto-set school_id when schools load and user has default_school_id
   useEffect(() => {
@@ -233,13 +226,6 @@ export function BuildingsManagement() {
     },
   });
 
-  // Find default template for buildings
-  const defaultTemplate = useMemo(() => {
-    if (!templates) return null;
-    return templates.find(
-      (t) => t.is_default && t.template_type === 'buildings' && t.is_active
-    ) || templates.find((t) => t.template_type === 'buildings' && t.is_active) || null;
-  }, [templates]);
 
   // Transform buildings data for export - pass dates as ISO strings for backend formatting
   const transformBuildingsForExport = (buildingsToTransform: Building[]): BuildingReportRow[] => {
@@ -277,140 +263,6 @@ export function BuildingsManagement() {
     return parts.length > 0 ? parts.join(' | ') : '';
   };
 
-  // Export handlers using central reporting system
-  const handleExportPdf = async () => {
-    if (!school) {
-      showToast.error(t('settings.buildings.exportErrorNoSchool'));
-      return;
-    }
-
-    if (!filteredBuildings || filteredBuildings.length === 0) {
-      showToast.error(t('settings.buildings.exportErrorNoBuildings'));
-      return;
-    }
-
-    if (import.meta.env.DEV) {
-      console.log('[BuildingsManagement] Generating PDF report with branding:', {
-        schoolId: school.id,
-        schoolName: school.school_name,
-        brandingId: school.id,
-        hasTemplate: !!defaultTemplate,
-        templateId: defaultTemplate?.id,
-      });
-    }
-
-    try {
-      const reportData = transformBuildingsForExport(filteredBuildings);
-
-      // Show progress dialog
-      setShowReportProgress(true);
-      resetReport();
-
-      // Generate report using central reporting system
-      await generateReport({
-        reportKey: 'buildings',
-        reportType: 'pdf',
-        title: t('settings.buildings.reportTitle'),
-        columns: [
-          { key: 'building_name', label: t('settings.buildings.reportBuildingName'), align: 'left' },
-          { key: 'school_name', label: t('settings.buildings.reportSchoolName'), align: 'left' },
-          { key: 'organization_name', label: t('settings.buildings.reportOrganization'), align: 'left' },
-          { key: 'rooms_count', label: t('settings.buildings.reportRoomsCount') || 'Rooms', align: 'left' },
-          { key: 'created_at', label: t('settings.buildings.reportCreatedAt'), align: 'left' },
-        ],
-        rows: reportData,
-        brandingId: school.id, // School.id IS the branding_id (School = SchoolBranding)
-        reportTemplateId: defaultTemplate?.id,
-        async: true,
-        onProgress: (progress, message) => {
-          if (import.meta.env.DEV) {
-            console.log(`Report progress: ${progress}%${message ? ` - ${message}` : ''}`);
-          }
-        },
-        onComplete: () => {
-          showToast.success(t('settings.buildings.exportSuccessPdf'));
-          // Auto-download when complete using authenticated download
-          // Wait for state to be updated, then download
-          setTimeout(() => {
-            downloadReport();
-          }, 300);
-          setShowReportProgress(false);
-        },
-        onError: (error) => {
-          showToast.error(error || t('settings.buildings.exportErrorPdf'));
-          setShowReportProgress(false);
-        },
-      });
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Export error:', error);
-      }
-      showToast.error(error instanceof Error ? error.message : t('settings.buildings.exportErrorPdf'));
-      setShowReportProgress(false);
-    }
-  };
-
-  const handleExportExcel = async () => {
-    if (!school) {
-      showToast.error(t('settings.buildings.exportErrorNoSchool'));
-      return;
-    }
-
-    if (!filteredBuildings || filteredBuildings.length === 0) {
-      showToast.error(t('settings.buildings.exportErrorNoBuildings'));
-      return;
-    }
-
-    try {
-      const reportData = transformBuildingsForExport(filteredBuildings);
-
-      // Show progress dialog
-      setShowReportProgress(true);
-      resetReport();
-
-      // Generate report using central reporting system
-      await generateReport({
-        reportKey: 'buildings',
-        reportType: 'excel',
-        title: t('settings.buildings.reportTitle'),
-        columns: [
-          { key: 'building_name', label: t('settings.buildings.reportBuildingName'), align: 'left' },
-          { key: 'school_name', label: t('settings.buildings.reportSchoolName'), align: 'left' },
-          { key: 'organization_name', label: t('settings.buildings.reportOrganization'), align: 'left' },
-          { key: 'rooms_count', label: t('settings.buildings.reportRoomsCount') || 'Rooms', align: 'left' },
-          { key: 'created_at', label: t('settings.buildings.reportCreatedAt'), align: 'left' },
-        ],
-        rows: reportData,
-        brandingId: school.id, // School.id IS the branding_id (School = SchoolBranding)
-        reportTemplateId: defaultTemplate?.id,
-        async: true,
-        onProgress: (progress, message) => {
-          if (import.meta.env.DEV) {
-            console.log(`Report progress: ${progress}%${message ? ` - ${message}` : ''}`);
-          }
-        },
-        onComplete: () => {
-          showToast.success(t('settings.buildings.exportSuccessExcel'));
-          // Auto-download when complete using authenticated download
-          // Wait for state to be updated, then download
-          setTimeout(() => {
-            downloadReport();
-          }, 300);
-          setShowReportProgress(false);
-        },
-        onError: (error) => {
-          showToast.error(error || t('settings.buildings.exportErrorExcel'));
-          setShowReportProgress(false);
-        },
-      });
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Export error:', error);
-      }
-      showToast.error(error instanceof Error ? error.message : t('settings.buildings.exportErrorExcel'));
-      setShowReportProgress(false);
-    }
-  };
 
   const handleOpenDialog = (buildingId?: string) => {
     if (buildingId) {
@@ -536,24 +388,29 @@ export function BuildingsManagement() {
               <CardDescription>{t('settings.buildings.title')}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportExcel}
-                disabled={!filteredBuildings || filteredBuildings.length === 0 || !school}
-              >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                {t('settings.buildings.exportExcel')}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportPdf}
-                disabled={!filteredBuildings || filteredBuildings.length === 0 || !school}
-              >
-                <FileDown className="h-4 w-4 mr-2" />
-                {t('settings.buildings.exportPdf')}
-              </Button>
+              <ReportExportButtons
+                data={filteredBuildings}
+                columns={[
+                  { key: 'building_name', label: t('settings.buildings.reportBuildingName'), align: 'left' },
+                  { key: 'school_name', label: t('settings.buildings.reportSchoolName'), align: 'left' },
+                  { key: 'organization_name', label: t('settings.buildings.reportOrganization'), align: 'left' },
+                  { key: 'rooms_count', label: t('settings.buildings.reportRoomsCount') || 'Rooms', align: 'left' },
+                  { key: 'created_at', label: t('settings.buildings.reportCreatedAt'), align: 'left' },
+                ]}
+                reportKey="buildings"
+                title={t('settings.buildings.reportTitle')}
+                transformData={transformBuildingsForExport}
+                buildFiltersSummary={buildFiltersSummary}
+                schoolId={effectiveSchoolId}
+                templateType="buildings"
+                disabled={isLoading}
+                errorNoSchool={t('settings.buildings.exportErrorNoSchool')}
+                errorNoData={t('settings.buildings.exportErrorNoBuildings')}
+                successPdf={t('settings.buildings.exportSuccessPdf')}
+                successExcel={t('settings.buildings.exportSuccessExcel')}
+                errorPdf={t('settings.buildings.exportErrorPdf')}
+                errorExcel={t('settings.buildings.exportErrorExcel')}
+              />
               {hasCreatePermission && (
                 <Button onClick={() => handleOpenDialog()}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -747,17 +604,6 @@ export function BuildingsManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Report Progress Dialog */}
-      <ReportProgressDialog
-        open={showReportProgress}
-        onOpenChange={setShowReportProgress}
-        status={status}
-        progress={progress}
-        downloadUrl={downloadUrl}
-        error={reportError}
-        onDownload={downloadReport}
-      />
     </div>
   );
 }

@@ -42,10 +42,31 @@
             }
         },
         {
+            "label": "Backend: Start Queue Worker",
+            "type": "shell",
+            "command": "php artisan queue:work --tries=1",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "focus": false,
+                "clear": true,
+                "group": "dev-servers"
+            },
+            "isBackground": true,
+            "runOptions": {
+                "runOn": "default"
+            }
+        },
+        {
             "label": "Start All Servers",
             "dependsOn": [
                 "Frontend: Start Dev Server",
-                "Backend: Start Laravel Server"
+                "Backend: Start Laravel Server",
+                "Backend: Start Queue Worker"
             ],
             "dependsOrder": "parallel",
             "problemMatcher": [],

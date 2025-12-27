@@ -5,6 +5,7 @@ import { useBuildings } from '@/hooks/useBuildings';
 import { useStaff } from '@/hooks/useStaff';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,6 +62,16 @@ const roomSchema = z.object({
 
 type RoomFormData = z.infer<typeof roomSchema>;
 
+// Room report row type - dates should be ISO strings for backend formatting
+interface RoomReportRow {
+  room_number: string;
+  building_name: string;
+  staff_name: string;
+  school_name?: string;
+  organization_name?: string;
+  created_at: string; // ISO date string - backend will format based on user's calendar preference
+}
+
 export function RoomsManagement() {
   const { t } = useLanguage();
   const { data: profile } = useProfile();
@@ -102,6 +113,34 @@ export function RoomsManagement() {
   });
 
   const isLoading = roomsLoading || buildingsLoading || staffLoading;
+
+  // Transform rooms data for export - pass dates as ISO strings for backend formatting
+  const transformRoomsForExport = (roomsToTransform: Room[]): RoomReportRow[] => {
+    return roomsToTransform.map((room: Room) => {
+      const roomBuilding = buildings?.find((b) => b.id === room.buildingId);
+
+      return {
+        room_number: room.roomNumber,
+        building_name: roomBuilding?.buildingName || t('settings.rooms.na'),
+        staff_name: room.staff?.profile?.fullName || t('settings.rooms.noStaffAssigned'),
+        // Pass date as ISO string - backend DateConversionService will format it based on user's calendar preference
+        created_at: room.createdAt instanceof Date 
+          ? room.createdAt.toISOString().slice(0, 10) 
+          : room.createdAt,
+      };
+    });
+  };
+
+  // Build filters summary string
+  const buildFiltersSummary = (): string => {
+    const parts: string[] = [];
+
+    if (searchQuery) {
+      parts.push(`${t('common.search')}: ${searchQuery}`);
+    }
+
+    return parts.length > 0 ? parts.join(' | ') : '';
+  };
 
   // Client-side filtering for search
   // Note: When search is active, we filter the current page's results
@@ -235,6 +274,7 @@ export function RoomsManagement() {
     reset();
   };
 
+
   const onSubmit = (data: RoomFormData) => {
     if (selectedRoom) {
       updateRoom.mutate(
@@ -297,12 +337,35 @@ export function RoomsManagement() {
               </CardTitle>
               <CardDescription>{t('settings.rooms.title')}</CardDescription>
             </div>
-            {hasCreatePermission && (
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="h-4 w-4 mr-2" />
-                {t('settings.rooms.addRoom')}
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <ReportExportButtons
+                data={filteredRooms}
+                columns={[
+                  { key: 'room_number', label: t('settings.rooms.roomNumber'), align: 'left' },
+                  { key: 'building_name', label: t('settings.rooms.building'), align: 'left' },
+                  { key: 'staff_name', label: t('settings.rooms.staffWarden'), align: 'left' },
+                  { key: 'created_at', label: t('settings.rooms.createdAt'), align: 'left' },
+                ]}
+                reportKey="rooms"
+                title={t('settings.rooms.reportTitle') || 'Rooms Report'}
+                transformData={transformRoomsForExport}
+                buildFiltersSummary={buildFiltersSummary}
+                templateType="rooms"
+                disabled={isLoading}
+                errorNoSchool={t('settings.rooms.exportErrorNoSchool')}
+                errorNoData={t('settings.rooms.exportErrorNoRooms')}
+                successPdf={t('settings.rooms.exportSuccessPdf')}
+                successExcel={t('settings.rooms.exportSuccessExcel')}
+                errorPdf={t('settings.rooms.exportErrorPdf')}
+                errorExcel={t('settings.rooms.exportErrorExcel')}
+              />
+              {hasCreatePermission && (
+                <Button onClick={() => handleOpenDialog()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('settings.rooms.addRoom')}
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

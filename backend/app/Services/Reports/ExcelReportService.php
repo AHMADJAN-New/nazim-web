@@ -461,7 +461,7 @@ class ExcelReportService
             $rowNumber++;
         }
 
-        // Set column widths - use COL_WIDTHS from context if available, otherwise auto-size
+        // Set column widths - use COL_WIDTHS from context if available, otherwise auto-size based on content
         $colWidths = $context['COL_WIDTHS'] ?? [];
         
         for ($i = 1; $i <= $colIndex - 1; $i++) {
@@ -477,8 +477,32 @@ class ExcelReportService
                 $excelWidth = max(8, min(50, $baseWidth * $percentage * 2)); // Scale and limit
                 $sheet->getColumnDimension($colLetter)->setWidth($excelWidth);
             } else {
-                // Auto-size if no width specified
-                $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+                // Disable auto-size first (in case it was set)
+                $sheet->getColumnDimension($colLetter)->setAutoSize(false);
+                
+                // Calculate width based on actual content
+                $calculatedWidth = $this->calculateColumnWidth($sheet, $colLetter, $headerRow, $currentRow - 1);
+                
+                if ($calculatedWidth > 0) {
+                    // Add padding (3 units) and set explicit width
+                    // Minimum 8 units, maximum 50 units to prevent extreme sizes
+                    $finalWidth = max(8, min(50, $calculatedWidth + 3));
+                    $sheet->getColumnDimension($colLetter)->setWidth($finalWidth);
+                    
+                    // Log for debugging (only in dev mode)
+                    if (config('app.debug')) {
+                        $endRow = $currentRow - 1;
+                        \Log::debug("Excel column width set", [
+                            'column' => $colLetter,
+                            'calculated' => $calculatedWidth,
+                            'final' => $finalWidth,
+                            'rows' => "{$headerRow}-{$endRow}",
+                        ]);
+                    }
+                } else {
+                    // Fallback: set a reasonable default width
+                    $sheet->getColumnDimension($colLetter)->setWidth(12);
+                }
             }
         }
 
@@ -890,6 +914,62 @@ class ExcelReportService
         $uuid = Str::uuid()->toString();
 
         return "{$safeName}_{$timestamp}_{$uuid}.xlsx";
+    }
+
+    /**
+     * Calculate column width based on content
+     * 
+     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
+     * @param string $colLetter Column letter (e.g., 'A', 'B')
+     * @param int $startRow Starting row number
+     * @param int $endRow Ending row number
+     * @return float Calculated width in Excel units
+     */
+    private function calculateColumnWidth($sheet, string $colLetter, int $startRow, int $endRow): float
+    {
+        $maxWidth = 0;
+        
+        // Get default font size from header row
+        $headerFontSize = $sheet->getStyle("{$colLetter}{$startRow}")->getFont()->getSize();
+        $defaultFontSize = is_numeric($headerFontSize) ? (float)$headerFontSize : 11.0;
+        
+        // Check all cells in this column
+        for ($row = $startRow; $row <= $endRow; $row++) {
+            $cell = $sheet->getCell("{$colLetter}{$row}");
+            $value = $cell->getValue();
+            
+            if ($value !== null && $value !== '') {
+                // Convert value to string
+                $text = (string) $value;
+                
+                // Get actual cell font size
+                $cellFontSize = $sheet->getStyle("{$colLetter}{$row}")->getFont()->getSize();
+                $fontSize = is_numeric($cellFontSize) ? (float)$cellFontSize : $defaultFontSize;
+                
+                // Calculate width based on character count and font size
+                // Excel column width formula: width = (character_count * font_size_factor) + padding
+                // For standard fonts: 1 character ≈ 1 unit at 11pt font
+                $charCount = mb_strlen($text, 'UTF-8');
+                
+                // Base width calculation: Excel uses character units
+                // Standard: 1 char = 1 unit at 11pt font
+                $baseCharWidth = 1.0;
+                
+                // Adjust for font size (Excel scales proportionally)
+                $fontSizeFactor = $fontSize / 11.0;
+                
+                // Check for RTL characters (Arabic/Persian/Pashto) - these are wider
+                $hasRTL = preg_match('/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}]/u', $text);
+                $rtlFactor = $hasRTL ? 1.5 : 1.0; // RTL characters are ~50% wider
+                
+                // Calculate width: characters * font_size_factor * rtl_factor
+                $width = $charCount * $baseCharWidth * $fontSizeFactor * $rtlFactor;
+                
+                $maxWidth = max($maxWidth, $width);
+            }
+        }
+        
+        return $maxWidth;
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Services\Reports\DateConversionService;
 use App\Services\Reports\ExcelReportService;
 use App\Services\Reports\PdfReportService;
 use App\Services\Reports\ReportService;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Support\ServiceProvider;
 
 class ReportServiceProvider extends ServiceProvider
@@ -23,12 +24,16 @@ class ReportServiceProvider extends ServiceProvider
 
         // Register PdfReportService
         $this->app->bind(PdfReportService::class, function ($app) {
-            return new PdfReportService();
+            return new PdfReportService(
+                $app->make(FileStorageService::class)
+            );
         });
 
         // Register ExcelReportService
         $this->app->bind(ExcelReportService::class, function ($app) {
-            return new ExcelReportService();
+            return new ExcelReportService(
+                $app->make(FileStorageService::class)
+            );
         });
 
         // Register DateConversionService
