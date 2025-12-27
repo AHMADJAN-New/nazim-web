@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, ChevronUp, ChevronDown, ArrowUpDown, Edit, Trash2, Eye, Calendar, Users, GraduationCap, FileText, X, ArrowRightLeft, Filter, LayoutGrid, Table as TableIcon, RefreshCw, CheckCircle2, HelpCircle } from 'lucide-react';
@@ -30,6 +30,7 @@ import { BatchWorkflowStepper } from '@/components/graduation/BatchWorkflowStepp
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {
@@ -283,6 +284,84 @@ export default function GraduationBatchesPage() {
   useEffect(() => {
     setPage(1);
   }, [statusFilter, dateFrom, dateTo, searchQuery, academicYearId, classId, examId]);
+
+  // Report export columns
+  const reportColumns = useMemo(() => [
+    { key: 'academic_year', label: t('fees.academicYear') || 'Academic Year' },
+    { key: 'class_name', label: t('fees.class') || 'Class' },
+    { key: 'graduation_type', label: t('graduation.graduationType') || 'Graduation Type' },
+    { key: 'class_transfer', label: t('graduation.classTransfer') || 'Class Transfer' },
+    { key: 'exams', label: t('nav.exams') || 'Exams' },
+    { key: 'graduation_date', label: t('common.graduationDate') || 'Graduation Date' },
+    { key: 'status', label: t('common.statusLabel') || 'Status' },
+    { key: 'students_count', label: t('graduation.table.students') || 'Students' },
+    { key: 'created_at', label: t('common.createdAt') || 'Created At' },
+  ], [t]);
+
+  // Transform data for report
+  const transformGraduationBatchData = useCallback((batches: typeof sortedBatches) => {
+    return batches.map((batch: any) => ({
+      academic_year: batch.academic_year?.name || batch.academic_year_id || '-',
+      class_name: batch.class?.name || batch.class_id || '-',
+      graduation_type: batch.graduation_type === 'final_year'
+        ? (t('graduation.types.finalYear') || 'Final Year')
+        : batch.graduation_type === 'promotion'
+          ? (t('graduation.types.promotion') || 'Promotion')
+          : batch.graduation_type === 'transfer'
+            ? (t('graduation.types.transfer') || 'Transfer')
+            : batch.graduation_type || '-',
+      class_transfer: (batch.graduation_type === 'transfer' || batch.graduation_type === 'promotion') && batch.from_class_id && batch.to_class_id
+        ? `${batch.from_class?.name || batch.from_class_id} → ${batch.to_class?.name || batch.to_class_id}`
+        : '-',
+      exams: batch.exams && Array.isArray(batch.exams) && batch.exams.length > 0
+        ? batch.exams.map((e: any) => e.name || e.exam?.name || 'Unknown').join(', ')
+        : '-',
+      graduation_date: batch.graduation_date ? formatDate(batch.graduation_date) : '-',
+      status: batch.status === 'draft'
+        ? (t('graduation.status.draft') || 'Draft')
+        : batch.status === 'approved'
+          ? (t('graduation.status.approved') || 'Approved')
+          : batch.status === 'issued'
+            ? (t('graduation.status.issued') || 'Issued')
+            : batch.status || '-',
+      students_count: (batch.students_count || batch.students?.length || 0).toString(),
+      created_at: batch.created_at ? formatDate(batch.created_at) : '-',
+    }));
+  }, [t]);
+
+  // Build filters summary
+  const buildFiltersSummary = useCallback(() => {
+    const filters: string[] = [];
+    if (schoolId) {
+      const school = schools.find(s => s.id === schoolId);
+      if (school) filters.push(`${t('common.schoolManagement') || 'School'}: ${school.schoolName}`);
+    }
+    if (academicYearId) {
+      const year = academicYears.find(ay => ay.id === academicYearId);
+      if (year) filters.push(`${t('fees.academicYear') || 'Academic Year'}: ${year.name}`);
+    }
+    if (classId) {
+      const cls = classes.find(c => c.id === classId);
+      if (cls) filters.push(`${t('fees.class') || 'Class'}: ${cls.name}`);
+    }
+    if (examId) {
+      const exam = exams.find(e => e.id === examId);
+      if (exam) filters.push(`${t('nav.exams') || 'Exam'}: ${exam.name}`);
+    }
+    if (statusFilter !== 'all') {
+      filters.push(`${t('common.statusLabel') || 'Status'}: ${statusFilter}`);
+    }
+    if (dateFrom) {
+      filters.push(`${t('graduation.filters.dateFrom') || 'From Date'}: ${formatDate(dateFrom)}`);
+    }
+    if (dateTo) {
+      filters.push(`${t('graduation.filters.dateTo') || 'To Date'}: ${formatDate(dateTo)}`);
+    }
+    if (searchQuery) {
+      filters.push(`${t('common.search') || 'Search'}: ${searchQuery}`);
+    }
+    return filters.join(', ');
+  }, [schoolId, academicYearId, classId, examId, statusFilter, dateFrom, dateTo, searchQuery, schools, academicYears, classes, exams, t]);
 
   const handleCreate = async (data: GraduationBatchFormData) => {
     try {
@@ -686,7 +765,7 @@ export default function GraduationBatchesPage() {
         </Button>
       </div>
 
-      {/* Search Bar and View Toggle */}
+      {/* Search Bar, View Toggle, and Export */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -708,6 +787,17 @@ export default function GraduationBatchesPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <ReportExportButtons
+            data={sortedBatches}
+            columns={reportColumns}
+            reportKey="graduation_batches"
+            title={t('nav.graduation.batches') || 'Graduation Batches Report'}
+            transformData={transformGraduationBatchData}
+            buildFiltersSummary={buildFiltersSummary}
+            schoolId={schoolId}
+            templateType="graduation_batches"
+            disabled={isLoading || sortedBatches.length === 0}
+          />
           <Button
             variant={viewMode === 'cards' ? 'default' : 'outline'}
             size="sm"

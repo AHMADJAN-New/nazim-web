@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { showToast } from '@/lib/toast';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 
 export default function IssuedCertificatesPage() {
   const { t } = useLanguage();
@@ -194,12 +195,71 @@ export default function IssuedCertificatesPage() {
     setSelectedCertificate(null);
   };
 
+  // Report export columns
+  const reportColumns = useMemo(() => [
+    { key: 'certificate_no', label: 'Certificate No' },
+    { key: 'student_name', label: t('students.name') || 'Student' },
+    { key: 'student_id', label: t('students.studentId') || 'Student ID' },
+    { key: 'batch_graduation_date', label: t('common.graduationDate') || 'Graduation Date' },
+    { key: 'batch_class', label: t('fees.class') || 'Class' },
+    { key: 'issued_at', label: 'Issued At' },
+    { key: 'status', label: t('common.statusLabel') || 'Status' },
+    { key: 'revoked_at', label: 'Revoked At' },
+    { key: 'revoke_reason', label: 'Revoke Reason' },
+  ], [t]);
+
+  // Transform data for report
+  const transformCertificateData = useCallback((certs: typeof certificates) => {
+    return certs.map((cert: any) => ({
+      certificate_no: cert.certificate_no || '-',
+      student_name: cert.student?.full_name || cert.student_id || '-',
+      student_id: cert.student_id || '-',
+      batch_graduation_date: cert.batch?.graduation_date ? formatDate(cert.batch.graduation_date) : '-',
+      batch_class: cert.batch?.class_id || '-',
+      issued_at: cert.issued_at ? formatDateTime(cert.issued_at) : '-',
+      status: cert.revoked_at
+        ? 'Revoked'
+        : 'Valid',
+      revoked_at: cert.revoked_at ? formatDateTime(cert.revoked_at) : '-',
+      revoke_reason: cert.revoke_reason || '-',
+    }));
+  }, []);
+
+  // Build filters summary
+  const buildFiltersSummary = useCallback(() => {
+    const filters: string[] = [];
+    if (schoolId) {
+      const school = schools.find(s => s.id === schoolId);
+      if (school) filters.push(`${t('common.schoolManagement') || 'School'}: ${school.schoolName}`);
+    }
+    if (batchId) {
+      filters.push(`Batch ID: ${batchId}`);
+    }
+    if (studentId) {
+      filters.push(`Student ID: ${studentId}`);
+    }
+    return filters.join(', ');
+  }, [schoolId, batchId, studentId, schools, t]);
+
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>{t('certificates.issued') ?? 'Issued Certificates'}</CardTitle>
+          <div className="flex items-start justify-between">
+            <CardTitle>{t('certificates.issued') ?? 'Issued Certificates'}</CardTitle>
+            <ReportExportButtons
+              data={certificates}
+              columns={reportColumns}
+              reportKey="graduation_issued_certificates"
+              title={t('certificates.issued') || 'Issued Certificates Report'}
+              transformData={transformCertificateData}
+              buildFiltersSummary={buildFiltersSummary}
+              schoolId={schoolId}
+              templateType="graduation_certificates"
+              disabled={isLoading || certificates.length === 0}
+            />
+          </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
